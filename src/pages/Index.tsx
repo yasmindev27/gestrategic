@@ -6,6 +6,7 @@ import TasksSection from "@/components/TasksSection";
 import DocumentsSection from "@/components/DocumentsSection";
 import FormsSection from "@/components/FormsSection";
 import TeamSection from "@/components/TeamSection";
+import SalusPanels from "@/components/SalusPanels";
 import LGPDConsent from "@/components/LGPDConsent";
 import AccessDenied from "@/components/AccessDenied";
 import { useLGPDConsent } from "@/hooks/useLGPDConsent";
@@ -43,7 +44,10 @@ const Index = () => {
               <StatsCards />
               
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <TasksSection />
+                <div className="space-y-6">
+                  <TasksSection />
+                  <SalusPanels />
+                </div>
                 <div className="space-y-6">
                   <DocumentsSection />
                   <FormsSection />
