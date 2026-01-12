@@ -61,9 +61,9 @@ const agendaItems: AgendaItem[] = [
 ];
 
 const typeLabels = {
-  reuniao: { label: "Reunião", color: "bg-primary/10 text-primary" },
-  relatorio: { label: "Relatório", color: "bg-info/10 text-info" },
-  nota_fiscal: { label: "Nota Fiscal", color: "bg-warning/10 text-warning" },
+  reuniao: { label: "Reunião", className: "bg-primary/10 text-primary border-primary/20" },
+  relatorio: { label: "Relatório", className: "bg-info/10 text-info border-info/20" },
+  nota_fiscal: { label: "Nota Fiscal", className: "bg-warning/10 text-warning border-warning/20" },
 };
 
 const StatsCards = () => {
@@ -151,18 +151,19 @@ const StatsCards = () => {
   const renderTasksDialog = () => (
     <DialogContent className="max-w-md">
       <DialogHeader>
-        <DialogTitle>Tarefas Atribuídas</DialogTitle>
+        <DialogTitle className="text-foreground">Tarefas Atribuídas</DialogTitle>
       </DialogHeader>
       <div className="space-y-4">
-        <div className="space-y-3 border rounded-lg p-3 bg-muted/30">
-          <Label className="text-sm font-medium">Nova Tarefa</Label>
+        <div className="space-y-3 border border-border rounded-lg p-4 bg-secondary/30">
+          <Label className="text-sm font-medium text-foreground">Nova Tarefa</Label>
           <Input
             placeholder="Título da tarefa"
             value={newTaskTitle}
             onChange={(e) => setNewTaskTitle(e.target.value)}
+            className="bg-background"
           />
           <Select value={newTaskSector} onValueChange={setNewTaskSector}>
-            <SelectTrigger>
+            <SelectTrigger className="bg-background">
               <SelectValue placeholder="Selecione o setor" />
             </SelectTrigger>
             <SelectContent>
@@ -173,7 +174,7 @@ const StatsCards = () => {
               ))}
             </SelectContent>
           </Select>
-          <Button onClick={handleAddTask} className="w-full" size="sm">
+          <Button onClick={handleAddTask} className="w-full bg-primary hover:bg-primary/90" size="sm">
             Atribuir Tarefa
           </Button>
         </div>
@@ -183,16 +184,22 @@ const StatsCards = () => {
             {tasks.map((task) => (
               <div
                 key={task.id}
-                className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                className="flex items-center justify-between p-3 border border-border rounded-lg hover:bg-secondary/50 cursor-pointer transition-colors"
                 onClick={() => toggleTaskStatus(task.id)}
               >
                 <div className="flex-1">
-                  <p className={`font-medium text-sm ${task.status === "concluida" ? "line-through text-muted-foreground" : ""}`}>
+                  <p className={`font-medium text-sm ${task.status === "concluida" ? "line-through text-muted-foreground" : "text-foreground"}`}>
                     {task.title}
                   </p>
                   <p className="text-xs text-muted-foreground">{task.sector}</p>
                 </div>
-                <Badge variant={task.status === "concluida" ? "secondary" : "default"}>
+                <Badge 
+                  variant="outline"
+                  className={task.status === "concluida" 
+                    ? "bg-success/10 text-success border-success/20" 
+                    : "bg-warning/10 text-warning border-warning/20"
+                  }
+                >
                   {task.status === "concluida" ? "Concluída" : "Pendente"}
                 </Badge>
               </div>
@@ -206,7 +213,7 @@ const StatsCards = () => {
   const renderAgendaDialog = () => (
     <DialogContent className="max-w-md">
       <DialogHeader>
-        <DialogTitle>Agenda</DialogTitle>
+        <DialogTitle className="text-foreground">Agenda</DialogTitle>
       </DialogHeader>
       <ScrollArea className="h-[350px]">
         <div className="space-y-3">
@@ -215,16 +222,16 @@ const StatsCards = () => {
             return (
               <div
                 key={item.id}
-                className="p-3 border rounded-lg hover:bg-muted/50 transition-colors"
+                className="p-3 border border-border rounded-lg hover:bg-secondary/50 transition-colors"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
-                    <p className="font-medium text-sm">{item.title}</p>
+                    <p className="font-medium text-sm text-foreground">{item.title}</p>
                     <p className="text-xs text-muted-foreground mt-1">
                       {item.date} às {item.time}
                     </p>
                   </div>
-                  <Badge className={typeInfo.color} variant="secondary">
+                  <Badge variant="outline" className={typeInfo.className}>
                     {typeInfo.label}
                   </Badge>
                 </div>
@@ -244,7 +251,7 @@ const StatsCards = () => {
 
         const cardContent = (
           <Card 
-            className={`shadow-sm hover:shadow-md transition-shadow ${stat.clickable ? "cursor-pointer" : ""}`}
+            className={`shadow-sm hover:shadow-md transition-all border-border ${stat.clickable ? "cursor-pointer hover:border-primary/30" : ""}`}
           >
             <CardContent className="p-4">
               <div className="flex items-center justify-between">

@@ -35,11 +35,11 @@ const statusConfig = {
 
 const FormsSection = () => {
   return (
-    <Card className="shadow-sm">
+    <Card className="shadow-sm border-border">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
-          <div className="p-1.5 bg-accent/20 rounded-lg">
-            <ClipboardList className="h-4 w-4 text-accent" />
+        <CardTitle className="text-lg font-semibold flex items-center gap-2 text-foreground">
+          <div className="p-1.5 bg-primary/10 rounded-lg">
+            <ClipboardList className="h-4 w-4 text-primary" />
           </div>
           Formulários Ativos
         </CardTitle>
@@ -53,8 +53,8 @@ const FormsSection = () => {
               key={form.id}
               className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors group"
             >
-              <div className="p-2 bg-accent/10 rounded-lg">
-                <ClipboardList className="h-4 w-4 text-accent" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <ClipboardList className="h-4 w-4 text-primary" />
               </div>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">
@@ -74,7 +74,7 @@ const FormsSection = () => {
               <Badge variant="outline" className={config.className}>
                 {config.label}
               </Badge>
-              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity">
+              <Button variant="ghost" size="icon" className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground">
                 <ExternalLink className="h-4 w-4" />
               </Button>
             </div>
