@@ -14,6 +14,140 @@ export type Database = {
   }
   public: {
     Tables: {
+      avaliacoes_prontuarios: {
+        Row: {
+          avaliador_id: string
+          created_at: string
+          data_conclusao: string | null
+          data_inicio: string
+          id: string
+          observacoes: string | null
+          prontuario_id: string
+          saida_prontuario_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          avaliador_id: string
+          created_at?: string
+          data_conclusao?: string | null
+          data_inicio?: string
+          id?: string
+          observacoes?: string | null
+          prontuario_id: string
+          saida_prontuario_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          avaliador_id?: string
+          created_at?: string
+          data_conclusao?: string | null
+          data_inicio?: string
+          id?: string
+          observacoes?: string | null
+          prontuario_id?: string
+          saida_prontuario_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avaliacoes_prontuarios_prontuario_id_fkey"
+            columns: ["prontuario_id"]
+            isOneToOne: false
+            referencedRelation: "prontuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "avaliacoes_prontuarios_saida_prontuario_id_fkey"
+            columns: ["saida_prontuario_id"]
+            isOneToOne: false
+            referencedRelation: "saida_prontuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cadastros_inconsistentes: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          numero_prontuario: string | null
+          prontuario_id: string | null
+          registrado_por: string
+          resolvido_em: string | null
+          resolvido_por: string | null
+          status: string
+          tipo_inconsistencia: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          id?: string
+          numero_prontuario?: string | null
+          prontuario_id?: string | null
+          registrado_por: string
+          resolvido_em?: string | null
+          resolvido_por?: string | null
+          status?: string
+          tipo_inconsistencia: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          numero_prontuario?: string | null
+          prontuario_id?: string | null
+          registrado_por?: string
+          resolvido_em?: string | null
+          resolvido_por?: string | null
+          status?: string
+          tipo_inconsistencia?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cadastros_inconsistentes_prontuario_id_fkey"
+            columns: ["prontuario_id"]
+            isOneToOne: false
+            referencedRelation: "prontuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logs_acesso: {
+        Row: {
+          acao: string
+          created_at: string
+          detalhes: Json | null
+          id: string
+          ip_address: string | null
+          modulo: string
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          detalhes?: Json | null
+          id?: string
+          ip_address?: string | null
+          modulo: string
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          detalhes?: Json | null
+          id?: string
+          ip_address?: string | null
+          modulo?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -50,6 +184,107 @@ export type Database = {
         }
         Relationships: []
       }
+      prontuarios: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_atendimento: string | null
+          id: string
+          numero_prontuario: string
+          observacoes: string | null
+          paciente_cpf: string | null
+          paciente_nome: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_atendimento?: string | null
+          id?: string
+          numero_prontuario: string
+          observacoes?: string | null
+          paciente_cpf?: string | null
+          paciente_nome: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_atendimento?: string | null
+          id?: string
+          numero_prontuario?: string
+          observacoes?: string | null
+          paciente_cpf?: string | null
+          paciente_nome?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      saida_prontuarios: {
+        Row: {
+          conferido_nir_em: string | null
+          conferido_nir_por: string | null
+          created_at: string
+          existe_fisicamente: boolean | null
+          id: string
+          numero_prontuario: string
+          observacao_classificacao: string | null
+          observacao_nir: string | null
+          prontuario_id: string | null
+          registrado_recepcao_em: string | null
+          registrado_recepcao_por: string | null
+          status: string
+          updated_at: string
+          validado_classificacao_em: string | null
+          validado_classificacao_por: string | null
+        }
+        Insert: {
+          conferido_nir_em?: string | null
+          conferido_nir_por?: string | null
+          created_at?: string
+          existe_fisicamente?: boolean | null
+          id?: string
+          numero_prontuario: string
+          observacao_classificacao?: string | null
+          observacao_nir?: string | null
+          prontuario_id?: string | null
+          registrado_recepcao_em?: string | null
+          registrado_recepcao_por?: string | null
+          status?: string
+          updated_at?: string
+          validado_classificacao_em?: string | null
+          validado_classificacao_por?: string | null
+        }
+        Update: {
+          conferido_nir_em?: string | null
+          conferido_nir_por?: string | null
+          created_at?: string
+          existe_fisicamente?: boolean | null
+          id?: string
+          numero_prontuario?: string
+          observacao_classificacao?: string | null
+          observacao_nir?: string | null
+          prontuario_id?: string | null
+          registrado_recepcao_em?: string | null
+          registrado_recepcao_por?: string | null
+          status?: string
+          updated_at?: string
+          validado_classificacao_em?: string | null
+          validado_classificacao_por?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saida_prontuarios_prontuario_id_fkey"
+            columns: ["prontuario_id"]
+            isOneToOne: false
+            referencedRelation: "prontuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
@@ -76,6 +311,13 @@ export type Database = {
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_any_role: {
+        Args: {
+          _roles: Database["public"]["Enums"]["app_role"][]
+          _user_id: string
+        }
+        Returns: boolean
       }
       has_role: {
         Args: {

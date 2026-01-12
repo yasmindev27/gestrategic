@@ -5,11 +5,11 @@ import { User, Session } from "@supabase/supabase-js";
 import Sidebar from "@/components/Sidebar";
 import GreetingHeader from "@/components/GreetingHeader";
 import StatsCards from "@/components/StatsCards";
-import TasksSection from "@/components/TasksSection";
-import DocumentsSection from "@/components/DocumentsSection";
-import FormsSection from "@/components/FormsSection";
 import TeamSection from "@/components/TeamSection";
-import SalusPanels from "@/components/SalusPanels";
+import { FaturamentoModule } from "@/components/modules/FaturamentoModule";
+import { SaidaProntuariosModule } from "@/components/modules/SaidaProntuariosModule";
+import { ControleFichasModule } from "@/components/modules/ControleFichasModule";
+import { AdminModule } from "@/components/modules/AdminModule";
 import { Loader2 } from "lucide-react";
 
 const Dashboard = () => {
@@ -67,30 +67,17 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto space-y-6">
           <GreetingHeader />
           
-          {activeSection === "dashboard" && (
-            <>
-              <StatsCards />
-              
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-6">
-                  <TasksSection />
-                  <SalusPanels />
-                </div>
-                <div className="space-y-6">
-                  <DocumentsSection />
-                  <FormsSection />
-                </div>
-              </div>
-            </>
-          )}
+          {activeSection === "dashboard" && <StatsCards />}
+
+          {activeSection === "faturamento" && <SaidaProntuariosModule />}
+
+          {activeSection === "controle-fichas" && <ControleFichasModule />}
+
+          {activeSection === "prontuarios" && <FaturamentoModule />}
 
           {activeSection === "equipe" && <TeamSection />}
 
-          {activeSection === "tarefas" && <TasksSection />}
-
-          {activeSection === "documentos" && <DocumentsSection />}
-
-          {activeSection === "formularios" && <FormsSection />}
+          {activeSection === "admin" && <AdminModule />}
         </div>
       </main>
     </div>
