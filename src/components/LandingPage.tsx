@@ -1,13 +1,12 @@
 import { ShieldCheck, Clock, Network, HeartPulse } from "lucide-react";
 import { Button } from "@/components/ui/button";
-
 interface LandingPageProps {
   onEnterDashboard: () => void;
 }
-
-const LandingPage = ({ onEnterDashboard }: LandingPageProps) => {
-  return (
-    <div className="min-h-screen bg-background">
+const LandingPage = ({
+  onEnterDashboard
+}: LandingPageProps) => {
+  return <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-[hsl(210,50%,20%)] text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -19,7 +18,7 @@ const LandingPage = ({ onEnterDashboard }: LandingPageProps) => {
               </div>
               <div>
                 <span className="font-bold text-lg tracking-tight">GESTRATEGIC</span>
-                <p className="text-xs text-white/60">Tecnologia com olhar pra vida.</p>
+                
               </div>
             </div>
 
@@ -33,11 +32,7 @@ const LandingPage = ({ onEnterDashboard }: LandingPageProps) => {
             </nav>
 
             {/* CTA Button */}
-            <Button 
-              variant="outline" 
-              className="border-primary text-primary hover:bg-primary hover:text-white"
-              onClick={onEnterDashboard}
-            >
+            <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white" onClick={onEnterDashboard}>
               [ Área do Cliente / Login ]
             </Button>
           </div>
@@ -48,7 +43,7 @@ const LandingPage = ({ onEnterDashboard }: LandingPageProps) => {
       <section className="relative bg-gradient-to-r from-[hsl(210,50%,25%)] to-[hsl(210,40%,35%)] overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_50%,hsl(174,62%,40%)_0%,transparent_50%)]" />
+          
         </div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
@@ -63,15 +58,10 @@ const LandingPage = ({ onEnterDashboard }: LandingPageProps) => {
                 Automação inteligente e infraestrutura de TI de alta performance para hospitais, clínicas e centros diagnóstico.
               </p>
               <div className="flex flex-wrap gap-4 pt-4">
-                <Button 
-                  className="bg-primary hover:bg-primary/90 text-white rounded-full px-6"
-                >
+                <Button className="bg-primary hover:bg-primary/90 text-white rounded-full px-6">
                   [ Conheça nossas Soluções ]
                 </Button>
-                <Button 
-                  variant="outline" 
-                  className="border-white/50 text-white hover:bg-white/10 rounded-full px-6"
-                >
+                <Button variant="outline" className="border-white/50 text-white hover:bg-white/10 rounded-full px-6">
                   [ Agendar Consultoria ]
                 </Button>
               </div>
@@ -156,8 +146,6 @@ const LandingPage = ({ onEnterDashboard }: LandingPageProps) => {
           </p>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default LandingPage;
