@@ -9,11 +9,13 @@ import TeamSection from "@/components/TeamSection";
 import SalusPanels from "@/components/SalusPanels";
 import LGPDConsent from "@/components/LGPDConsent";
 import AccessDenied from "@/components/AccessDenied";
+import LandingPage from "@/components/LandingPage";
 import { useLGPDConsent } from "@/hooks/useLGPDConsent";
 
 const Index = () => {
   const { consentStatus, isLoading, acceptConsent, rejectConsent, resetConsent } = useLGPDConsent();
   const [activeSection, setActiveSection] = useState("dashboard");
+  const [showDashboard, setShowDashboard] = useState(false);
 
   if (isLoading) {
     return (
@@ -29,6 +31,11 @@ const Index = () => {
 
   if (consentStatus === "pending") {
     return <LGPDConsent onAccept={acceptConsent} onReject={rejectConsent} />;
+  }
+
+  // Show landing page first, then dashboard after clicking login
+  if (!showDashboard) {
+    return <LandingPage onEnterDashboard={() => setShowDashboard(true)} />;
   }
 
   return (
