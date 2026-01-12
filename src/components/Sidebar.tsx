@@ -24,13 +24,15 @@ interface SidebarProps {
   onSectionChange: (section: string) => void;
 }
 
+import { FileOutput, ClipboardX, Receipt, Shield } from "lucide-react";
+
 const menuItems = [
   { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-  { icon: ClipboardList, label: "Tarefas", id: "tarefas" },
-  { icon: FileText, label: "Documentos", id: "documentos" },
-  { icon: ClipboardList, label: "Formulários", id: "formularios" },
+  { icon: FileOutput, label: "Faturamento", id: "faturamento" },
+  { icon: ClipboardX, label: "Controle de Fichas", id: "controle-fichas" },
+  { icon: Receipt, label: "Prontuários", id: "prontuarios" },
   { icon: Users, label: "Equipe", id: "equipe" },
-  { icon: Activity, label: "Relatórios", id: "relatorios" },
+  { icon: Shield, label: "Administração", id: "admin" },
 ];
 
 const bottomItems = [
