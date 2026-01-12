@@ -213,6 +213,98 @@ export type Database = {
           },
         ]
       }
+      chamados: {
+        Row: {
+          atribuido_para: string | null
+          categoria: string
+          created_at: string
+          data_abertura: string
+          data_resolucao: string | null
+          descricao: string
+          id: string
+          numero_chamado: string
+          prioridade: string
+          solicitante_id: string
+          solicitante_nome: string
+          solicitante_setor: string | null
+          solucao: string | null
+          status: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          atribuido_para?: string | null
+          categoria: string
+          created_at?: string
+          data_abertura?: string
+          data_resolucao?: string | null
+          descricao: string
+          id?: string
+          numero_chamado: string
+          prioridade?: string
+          solicitante_id: string
+          solicitante_nome: string
+          solicitante_setor?: string | null
+          solucao?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          atribuido_para?: string | null
+          categoria?: string
+          created_at?: string
+          data_abertura?: string
+          data_resolucao?: string | null
+          descricao?: string
+          id?: string
+          numero_chamado?: string
+          prioridade?: string
+          solicitante_id?: string
+          solicitante_nome?: string
+          solicitante_setor?: string | null
+          solucao?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chamados_comentarios: {
+        Row: {
+          chamado_id: string
+          comentario: string
+          created_at: string
+          id: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          chamado_id: string
+          comentario: string
+          created_at?: string
+          id?: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Update: {
+          chamado_id?: string
+          comentario?: string
+          created_at?: string
+          id?: string
+          usuario_id?: string
+          usuario_nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chamados_comentarios_chamado_id_fkey"
+            columns: ["chamado_id"]
+            isOneToOne: false
+            referencedRelation: "chamados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       logs_acesso: {
         Row: {
           acao: string
@@ -240,6 +332,107 @@ export type Database = {
           ip_address?: string | null
           modulo?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      movimentacoes_estoque: {
+        Row: {
+          created_at: string
+          id: string
+          motivo: string | null
+          observacao: string | null
+          produto_id: string
+          quantidade: number
+          quantidade_anterior: number
+          quantidade_nova: number
+          setor: string
+          tipo: string
+          usuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          observacao?: string | null
+          produto_id: string
+          quantidade: number
+          quantidade_anterior: number
+          quantidade_nova: number
+          setor: string
+          tipo: string
+          usuario_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          motivo?: string | null
+          observacao?: string | null
+          produto_id?: string
+          quantidade?: number
+          quantidade_anterior?: number
+          quantidade_nova?: number
+          setor?: string
+          tipo?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "movimentacoes_estoque_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      produtos: {
+        Row: {
+          ativo: boolean | null
+          categoria: string | null
+          codigo: string | null
+          created_at: string
+          created_by: string | null
+          descricao: string | null
+          id: string
+          localizacao: string | null
+          nome: string
+          quantidade_atual: number | null
+          quantidade_minima: number | null
+          setor_responsavel: string
+          unidade_medida: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria?: string | null
+          codigo?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          localizacao?: string | null
+          nome: string
+          quantidade_atual?: number | null
+          quantidade_minima?: number | null
+          setor_responsavel: string
+          unidade_medida?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria?: string | null
+          codigo?: string | null
+          created_at?: string
+          created_by?: string | null
+          descricao?: string | null
+          id?: string
+          localizacao?: string | null
+          nome?: string
+          quantidade_atual?: number | null
+          quantidade_minima?: number | null
+          setor_responsavel?: string
+          unidade_medida?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -442,6 +635,9 @@ export type Database = {
         | "classificacao"
         | "nir"
         | "faturamento"
+        | "ti"
+        | "manutencao"
+        | "engenharia_clinica"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -577,6 +773,9 @@ export const Constants = {
         "classificacao",
         "nir",
         "faturamento",
+        "ti",
+        "manutencao",
+        "engenharia_clinica",
       ],
     },
   },

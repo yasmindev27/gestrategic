@@ -96,16 +96,22 @@ const roleLabels: Record<AppRole, string> = {
   classificacao: "Classificação",
   nir: "NIR",
   faturamento: "Faturamento",
+  ti: "TI",
+  manutencao: "Manutenção",
+  engenharia_clinica: "Engenharia Clínica",
 };
 
 const roleColors: Record<AppRole, string> = {
   admin: "bg-destructive text-destructive-foreground",
   gestor: "bg-primary text-primary-foreground",
   funcionario: "bg-secondary text-secondary-foreground",
-  recepcao: "bg-info text-info-foreground",
-  classificacao: "bg-warning text-warning-foreground",
+  recepcao: "bg-blue-500 text-white",
+  classificacao: "bg-yellow-500 text-black",
   nir: "bg-accent text-accent-foreground",
-  faturamento: "bg-success text-success-foreground",
+  faturamento: "bg-green-500 text-white",
+  ti: "bg-purple-500 text-white",
+  manutencao: "bg-orange-500 text-white",
+  engenharia_clinica: "bg-teal-500 text-white",
 };
 
 export const AdminModule = () => {
