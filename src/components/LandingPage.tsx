@@ -1,12 +1,14 @@
 import { ShieldCheck, Clock, Network, HeartPulse } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
 import logoGestrategic from "@/assets/logo-gestrategic.jpg";
-interface LandingPageProps {
-  onEnterDashboard: () => void;
-}
-const LandingPage = ({
-  onEnterDashboard
-}: LandingPageProps) => {
+
+const LandingPage = () => {
+  const navigate = useNavigate();
+  
+  const handleLogin = () => {
+    navigate("/auth");
+  };
   return <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-[hsl(210,50%,20%)] text-white">
@@ -27,7 +29,7 @@ const LandingPage = ({
             </nav>
 
             {/* CTA Button */}
-            <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white" onClick={onEnterDashboard}>
+            <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white" onClick={handleLogin}>
               [ Área do Cliente / Login ]
             </Button>
           </div>
