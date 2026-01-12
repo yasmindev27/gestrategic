@@ -203,9 +203,13 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
         .eq("user_id", user?.id)
         .single();
       
+      // Gerar número do chamado
+      const numeroChamado = `CH-${setor.toUpperCase()}-${Date.now()}`;
+      
       const { error } = await supabase
         .from("chamados")
         .insert({
+          numero_chamado: numeroChamado,
           titulo: chamadoForm.titulo,
           descricao: chamadoForm.descricao,
           prioridade: chamadoForm.prioridade,
