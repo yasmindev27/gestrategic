@@ -4,40 +4,57 @@
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
+
+Design System para Sistema Hospitalar:
+- Primary: Teal suave (saúde, confiança)
+- Secondary: Cinza neutro
+- Accent: Verde (sucesso)
+- Status: Verde (sucesso), Amarelo (atenção), Vermelho (erro), Azul (info)
 */
 
 @layer base {
   :root {
+    /* Background & Foreground */
     --background: 200 20% 98%;
-    --foreground: 200 50% 10%;
+    --foreground: 210 40% 15%;
 
+    /* Cards */
     --card: 0 0% 100%;
-    --card-foreground: 200 50% 10%;
+    --card-foreground: 210 40% 15%;
 
+    /* Popovers */
     --popover: 0 0% 100%;
-    --popover-foreground: 200 50% 10%;
+    --popover-foreground: 210 40% 15%;
 
-    --primary: 174 62% 40%;
+    /* Primary: Teal suave - transmite saúde e confiança */
+    --primary: 174 62% 42%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 200 20% 94%;
-    --secondary-foreground: 200 50% 15%;
+    /* Secondary: Cinza neutro para fundos e separações */
+    --secondary: 210 20% 94%;
+    --secondary-foreground: 210 40% 20%;
 
-    --muted: 200 15% 92%;
-    --muted-foreground: 200 15% 45%;
+    /* Muted: Tons suaves */
+    --muted: 210 15% 92%;
+    --muted-foreground: 210 15% 45%;
 
-    --accent: 142 50% 45%;
+    /* Accent: Teal mais intenso para destaques */
+    --accent: 174 62% 35%;
     --accent-foreground: 0 0% 100%;
 
+    /* Destructive: Vermelho para erros */
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 200 20% 88%;
-    --input: 200 20% 88%;
-    --ring: 174 62% 40%;
+    /* Borders & Inputs */
+    --border: 210 20% 88%;
+    --input: 210 20% 88%;
+    --ring: 174 62% 42%;
 
+    /* Radius */
     --radius: 0.75rem;
 
+    /* Status Colors */
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
@@ -47,44 +64,49 @@ All colors MUST be HSL.
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
+    /* Header: Azul escuro profissional */
+    --header: 210 50% 20%;
+    --header-foreground: 0 0% 100%;
+
+    /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 200 50% 15%;
-    --sidebar-primary: 174 62% 40%;
+    --sidebar-foreground: 210 40% 20%;
+    --sidebar-primary: 174 62% 42%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 200 20% 94%;
-    --sidebar-accent-foreground: 200 50% 15%;
-    --sidebar-border: 200 20% 88%;
-    --sidebar-ring: 174 62% 40%;
+    --sidebar-accent: 210 20% 94%;
+    --sidebar-accent-foreground: 210 40% 20%;
+    --sidebar-border: 210 20% 88%;
+    --sidebar-ring: 174 62% 42%;
   }
 
   .dark {
-    --background: 200 50% 8%;
-    --foreground: 200 20% 95%;
+    --background: 210 40% 8%;
+    --foreground: 210 20% 95%;
 
-    --card: 200 40% 12%;
-    --card-foreground: 200 20% 95%;
+    --card: 210 35% 12%;
+    --card-foreground: 210 20% 95%;
 
-    --popover: 200 40% 12%;
-    --popover-foreground: 200 20% 95%;
+    --popover: 210 35% 12%;
+    --popover-foreground: 210 20% 95%;
 
-    --primary: 174 62% 45%;
+    --primary: 174 62% 48%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 200 30% 18%;
-    --secondary-foreground: 200 20% 90%;
+    --secondary: 210 30% 18%;
+    --secondary-foreground: 210 20% 90%;
 
-    --muted: 200 25% 20%;
-    --muted-foreground: 200 15% 60%;
+    --muted: 210 25% 20%;
+    --muted-foreground: 210 15% 60%;
 
-    --accent: 142 50% 50%;
+    --accent: 174 62% 40%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 200 30% 22%;
-    --input: 200 30% 22%;
-    --ring: 174 62% 45%;
+    --border: 210 30% 22%;
+    --input: 210 30% 22%;
+    --ring: 174 62% 48%;
 
     --warning: 38 92% 55%;
     --warning-foreground: 0 0% 100%;
@@ -95,14 +117,17 @@ All colors MUST be HSL.
     --info: 199 89% 55%;
     --info-foreground: 0 0% 100%;
 
-    --sidebar-background: 200 40% 10%;
-    --sidebar-foreground: 200 20% 90%;
-    --sidebar-primary: 174 62% 45%;
+    --header: 210 45% 12%;
+    --header-foreground: 210 20% 95%;
+
+    --sidebar-background: 210 35% 10%;
+    --sidebar-foreground: 210 20% 90%;
+    --sidebar-primary: 174 62% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 200 30% 18%;
-    --sidebar-accent-foreground: 200 20% 90%;
-    --sidebar-border: 200 30% 22%;
-    --sidebar-ring: 174 62% 45%;
+    --sidebar-accent: 210 30% 18%;
+    --sidebar-accent-foreground: 210 20% 90%;
+    --sidebar-border: 210 30% 22%;
+    --sidebar-ring: 174 62% 48%;
   }
 }
 
@@ -112,6 +137,56 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/* Typography */
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+}
+
+/* Consistent card styling */
+@layer components {
+  .card-hover {
+    @apply transition-all duration-200 hover:shadow-md hover:border-primary/20;
+  }
+  
+  .status-badge-success {
+    @apply bg-success/10 text-success border-success/20;
+  }
+  
+  .status-badge-warning {
+    @apply bg-warning/10 text-warning border-warning/20;
+  }
+  
+  .status-badge-error {
+    @apply bg-destructive/10 text-destructive border-destructive/20;
+  }
+  
+  .status-badge-info {
+    @apply bg-info/10 text-info border-info/20;
+  }
+  
+  .icon-container {
+    @apply p-2 rounded-lg;
+  }
+  
+  .icon-container-primary {
+    @apply bg-primary/10 text-primary;
+  }
+  
+  .icon-container-success {
+    @apply bg-success/10 text-success;
+  }
+  
+  .icon-container-warning {
+    @apply bg-warning/10 text-warning;
+  }
+  
+  .icon-container-info {
+    @apply bg-info/10 text-info;
   }
 }

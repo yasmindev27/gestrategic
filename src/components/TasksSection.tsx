@@ -21,37 +21,41 @@ const statusConfig = {
   pending: {
     icon: Circle,
     label: "Pendente",
-    className: "bg-muted text-muted-foreground"
+    className: "bg-muted text-muted-foreground border-muted",
+    iconColor: "text-muted-foreground"
   },
   "in-progress": {
     icon: Clock,
     label: "Em andamento",
-    className: "bg-info/10 text-info"
+    className: "bg-warning/10 text-warning border-warning/20",
+    iconColor: "text-warning"
   },
   completed: {
     icon: CheckCircle2,
     label: "Concluída",
-    className: "bg-success/10 text-success"
+    className: "bg-success/10 text-success border-success/20",
+    iconColor: "text-success"
   },
   urgent: {
     icon: AlertCircle,
     label: "Urgente",
-    className: "bg-destructive/10 text-destructive"
+    className: "bg-destructive/10 text-destructive border-destructive/20",
+    iconColor: "text-destructive"
   }
 };
 
 const TasksSection = () => {
   return (
-    <Card className="shadow-sm">
+    <Card className="shadow-sm border-border">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="text-lg font-semibold flex items-center gap-2">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2 text-foreground">
             <div className="p-1.5 bg-primary/10 rounded-lg">
               <CheckCircle2 className="h-4 w-4 text-primary" />
             </div>
             Minhas Tarefas
           </CardTitle>
-          <Badge variant="secondary" className="font-normal">
+          <Badge variant="secondary" className="font-normal bg-secondary text-secondary-foreground">
             {mockTasks.filter(t => t.status !== "completed").length} pendentes
           </Badge>
         </div>
@@ -66,12 +70,7 @@ const TasksSection = () => {
               key={task.id}
               className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors cursor-pointer group"
             >
-              <Icon className={`h-5 w-5 flex-shrink-0 ${
-                task.status === "completed" ? "text-success" :
-                task.status === "urgent" ? "text-destructive" :
-                task.status === "in-progress" ? "text-info" :
-                "text-muted-foreground"
-              }`} />
+              <Icon className={`h-5 w-5 flex-shrink-0 ${config.iconColor}`} />
               <div className="flex-1 min-w-0">
                 <p className={`text-sm font-medium truncate ${
                   task.status === "completed" ? "line-through text-muted-foreground" : "text-foreground"
@@ -82,7 +81,7 @@ const TasksSection = () => {
               {task.time && (
                 <span className="text-xs text-muted-foreground">{task.time}</span>
               )}
-              <Badge className={`text-xs ${config.className}`} variant="outline">
+              <Badge variant="outline" className={`text-xs ${config.className}`}>
                 {config.label}
               </Badge>
             </div>

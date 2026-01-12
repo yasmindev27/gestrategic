@@ -1,4 +1,4 @@
-import { BarChart3, ExternalLink, Activity, Users } from "lucide-react";
+import { BarChart3, ExternalLink, Activity } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -22,8 +22,14 @@ const dashboards = [
 ];
 
 const colorClasses = {
-  primary: "bg-primary/10 text-primary hover:bg-primary hover:text-primary-foreground",
-  info: "bg-info/10 text-info hover:bg-info hover:text-info-foreground",
+  primary: {
+    container: "bg-primary/10 text-primary",
+    hover: "hover:bg-primary hover:text-primary-foreground hover:border-primary"
+  },
+  info: {
+    container: "bg-info/10 text-info",
+    hover: "hover:bg-info hover:text-info-foreground hover:border-info"
+  },
 };
 
 const SalusPanels = () => {
@@ -32,9 +38,9 @@ const SalusPanels = () => {
   };
 
   return (
-    <Card className="shadow-sm">
+    <Card className="shadow-sm border-border">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+        <CardTitle className="text-lg font-semibold flex items-center gap-2 text-foreground">
           <div className="p-1.5 bg-primary/10 rounded-lg">
             <BarChart3 className="h-4 w-4 text-primary" />
           </div>
@@ -44,23 +50,23 @@ const SalusPanels = () => {
       <CardContent className="space-y-3">
         {dashboards.map((dashboard) => {
           const Icon = dashboard.icon;
-          const colorClass = colorClasses[dashboard.color as keyof typeof colorClasses];
+          const colorConfig = colorClasses[dashboard.color as keyof typeof colorClasses];
           
           return (
             <Button
               key={dashboard.id}
               variant="outline"
-              className={`w-full h-auto p-4 flex items-center gap-4 justify-start transition-all ${colorClass}`}
+              className={`w-full h-auto p-4 flex items-center gap-4 justify-start transition-all border-border ${colorConfig.hover}`}
               onClick={() => openDashboard(dashboard.url)}
             >
-              <div className="p-2 rounded-lg bg-background/50">
+              <div className={`p-2 rounded-lg ${colorConfig.container}`}>
                 <Icon className="h-5 w-5" />
               </div>
               <div className="flex-1 text-left">
-                <p className="font-semibold">{dashboard.title}</p>
-                <p className="text-xs opacity-80 font-normal">{dashboard.description}</p>
+                <p className="font-semibold text-foreground">{dashboard.title}</p>
+                <p className="text-xs text-muted-foreground font-normal">{dashboard.description}</p>
               </div>
-              <ExternalLink className="h-4 w-4 opacity-60" />
+              <ExternalLink className="h-4 w-4 text-muted-foreground" />
             </Button>
           );
         })}

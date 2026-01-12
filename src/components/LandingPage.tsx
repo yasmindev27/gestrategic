@@ -9,57 +9,80 @@ const LandingPage = () => {
   const handleLogin = () => {
     navigate("/auth");
   };
-  return <div className="min-h-screen bg-background">
+
+  return (
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-[hsl(210,50%,20%)] text-white">
+      <header className="bg-header text-header-foreground">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              
+              <img 
+                src={logoGestrategic} 
+                alt="GESTRATEGIC" 
+                className="h-10 w-auto object-contain rounded"
+              />
             </div>
 
             {/* Navigation */}
             <nav className="hidden md:flex items-center gap-8">
-              <a href="#" className="text-sm hover:text-primary transition-colors">Home</a>
-              <a href="#" className="text-sm hover:text-primary transition-colors">Soluções</a>
-              <a href="#" className="text-sm hover:text-primary transition-colors">Segurança & LGPD</a>
-              <a href="#" className="text-sm hover:text-primary transition-colors">Sobre Nós</a>
-              <a href="#" className="text-sm hover:text-primary transition-colors">Contato</a>
+              <a href="#" className="text-sm text-header-foreground/80 hover:text-header-foreground transition-colors">
+                Home
+              </a>
+              <a href="#" className="text-sm text-header-foreground/80 hover:text-header-foreground transition-colors">
+                Soluções
+              </a>
+              <a href="#" className="text-sm text-header-foreground/80 hover:text-header-foreground transition-colors">
+                Segurança & LGPD
+              </a>
+              <a href="#" className="text-sm text-header-foreground/80 hover:text-header-foreground transition-colors">
+                Sobre Nós
+              </a>
+              <a href="#" className="text-sm text-header-foreground/80 hover:text-header-foreground transition-colors">
+                Contato
+              </a>
             </nav>
 
             {/* CTA Button */}
-            <Button variant="outline" className="border-primary text-primary hover:bg-primary hover:text-white" onClick={handleLogin}>
-              [ Área do Cliente / Login ]
+            <Button 
+              variant="outline" 
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-colors" 
+              onClick={handleLogin}
+            >
+              Área do Cliente
             </Button>
           </div>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-[hsl(210,50%,25%)] to-[hsl(210,40%,35%)] overflow-hidden">
+      <section className="relative bg-gradient-to-br from-header to-header/80 overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          
+        <div className="absolute inset-0 opacity-5">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,_rgba(255,255,255,0.1)_1px,_transparent_1px)] bg-[length:24px_24px]" />
         </div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-24">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Text Content */}
             <div className="space-y-6 z-10">
-              <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-white italic leading-tight">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-light text-header-foreground leading-tight">
                 Tecnologia que<br />
-                <span className="font-normal">pulsa pela vida.</span>
+                <span className="font-semibold text-primary">pulsa pela vida.</span>
               </h1>
-              <p className="text-white/70 text-lg max-w-md">
+              <p className="text-header-foreground/70 text-lg max-w-md">
                 Automação inteligente e infraestrutura de TI de alta performance para hospitais, clínicas e centros diagnóstico.
               </p>
               <div className="flex flex-wrap gap-4 pt-4">
-                <Button className="bg-primary hover:bg-primary/90 text-white rounded-full px-6">
-                  [ Conheça nossas Soluções ]
+                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-full px-6 transition-colors">
+                  Conheça nossas Soluções
                 </Button>
-                <Button variant="outline" className="border-white/50 text-white hover:bg-white/10 rounded-full px-6">
-                  [ Agendar Consultoria ]
+                <Button 
+                  variant="outline" 
+                  className="border-header-foreground/30 text-header-foreground hover:bg-header-foreground/10 rounded-full px-6 transition-colors"
+                >
+                  Agendar Consultoria
                 </Button>
               </div>
             </div>
@@ -80,13 +103,13 @@ const LandingPage = () => {
                 </div>
                 
                 {/* Floating elements */}
-                <div className="absolute top-8 right-8 w-12 h-12 rounded-full bg-white/10 flex items-center justify-center">
+                <div className="absolute top-8 right-8 w-12 h-12 rounded-full bg-header-foreground/10 flex items-center justify-center">
                   <ShieldCheck className="w-6 h-6 text-primary" />
                 </div>
-                <div className="absolute bottom-12 left-4 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                <div className="absolute bottom-12 left-4 w-10 h-10 rounded-full bg-header-foreground/10 flex items-center justify-center">
                   <Clock className="w-5 h-5 text-primary" />
                 </div>
-                <div className="absolute bottom-8 right-16 w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                <div className="absolute bottom-8 right-16 w-10 h-10 rounded-full bg-header-foreground/10 flex items-center justify-center">
                   <Network className="w-5 h-5 text-primary" />
                 </div>
               </div>
@@ -98,37 +121,46 @@ const LandingPage = () => {
       {/* Features Section */}
       <section className="py-16 md:py-24 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-semibold text-foreground mb-4">
+              Por que escolher a <span className="text-primary">GESTRATEGIC</span>?
+            </h2>
+            <p className="text-muted-foreground max-w-2xl mx-auto">
+              Soluções completas para a gestão e tecnologia da sua unidade de saúde
+            </p>
+          </div>
+          
           <div className="grid md:grid-cols-3 gap-8">
             {/* Feature 1 */}
-            <div className="text-center space-y-4">
-              <div className="mx-auto w-20 h-20 rounded-full border-2 border-primary flex items-center justify-center">
-                <ShieldCheck className="w-10 h-10 text-primary" />
+            <div className="text-center space-y-4 p-6 rounded-xl bg-card border border-border hover:shadow-md hover:border-primary/20 transition-all">
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <ShieldCheck className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground">Segurança Máxima:</h3>
-              <p className="text-muted-foreground">
-                Proteção de dados sensíveis e conformidade com LGPD.
+              <h3 className="text-lg font-semibold text-foreground">Segurança Máxima</h3>
+              <p className="text-muted-foreground text-sm">
+                Proteção de dados sensíveis e conformidade total com LGPD para sua tranquilidade.
               </p>
             </div>
 
             {/* Feature 2 */}
-            <div className="text-center space-y-4">
-              <div className="mx-auto w-20 h-20 rounded-full border-2 border-primary flex items-center justify-center">
-                <Clock className="w-10 h-10 text-primary" />
+            <div className="text-center space-y-4 p-6 rounded-xl bg-card border border-border hover:shadow-md hover:border-primary/20 transition-all">
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Clock className="w-8 h-8 text-primary" />
               </div>
               <h3 className="text-lg font-semibold text-foreground">Monitoramento 24/7</h3>
-              <p className="text-muted-foreground">
-                NOC especializado em ambientes críticos de saúde.
+              <p className="text-muted-foreground text-sm">
+                NOC especializado em ambientes críticos de saúde com resposta imediata.
               </p>
             </div>
 
             {/* Feature 3 */}
-            <div className="text-center space-y-4">
-              <div className="mx-auto w-20 h-20 rounded-full border-2 border-primary flex items-center justify-center">
-                <Network className="w-10 h-10 text-primary" />
+            <div className="text-center space-y-4 p-6 rounded-xl bg-card border border-border hover:shadow-md hover:border-primary/20 transition-all">
+              <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+                <Network className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-lg font-semibold text-foreground">Integração Total:</h3>
-              <p className="text-muted-foreground">
-                Conectamos seu HIS/PACS com eficiência e rapidez.
+              <h3 className="text-lg font-semibold text-foreground">Integração Total</h3>
+              <p className="text-muted-foreground text-sm">
+                Conectamos seu HIS/PACS com eficiência e rapidez para operação fluida.
               </p>
             </div>
           </div>
@@ -136,11 +168,22 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-[hsl(210,50%,15%)] text-white/60 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-sm">© 2026 GESTRATEGIC  Todos os direitos reservados.</p>
+      <footer className="bg-header text-header-foreground/60 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <img 
+                src={logoGestrategic} 
+                alt="GESTRATEGIC" 
+                className="h-8 w-auto object-contain rounded opacity-80"
+              />
+            </div>
+            <p className="text-sm">© 2026 GESTRATEGIC — Todos os direitos reservados.</p>
+          </div>
         </div>
       </footer>
-    </div>;
+    </div>
+  );
 };
+
 export default LandingPage;

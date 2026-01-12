@@ -42,7 +42,7 @@ const TeamSection = () => {
           return (
             <Card 
               key={index} 
-              className="shadow-sm hover:shadow-md transition-all cursor-pointer group hover:border-primary/50"
+              className="shadow-sm hover:shadow-md transition-all cursor-pointer group hover:border-primary/30 border-border"
             >
               <CardContent className="p-4">
                 <div className="flex items-center gap-4">
@@ -64,16 +64,16 @@ const TeamSection = () => {
       </div>
 
       {/* Today's Team */}
-      <Card className="shadow-sm">
+      <Card className="shadow-sm border-border">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-semibold flex items-center gap-2">
+            <CardTitle className="text-lg font-semibold flex items-center gap-2 text-foreground">
               <div className="p-1.5 bg-success/10 rounded-lg">
                 <Users className="h-4 w-4 text-success" />
               </div>
               Equipe de Plantão Hoje
             </CardTitle>
-            <Badge variant="secondary" className="font-normal">
+            <Badge variant="secondary" className="font-normal bg-secondary text-secondary-foreground">
               {todayTeam.filter(m => m.status === "active").length} em serviço
             </Badge>
           </div>
@@ -85,7 +85,7 @@ const TeamSection = () => {
               className="flex items-center gap-3 p-3 rounded-lg bg-secondary/50 hover:bg-secondary transition-colors"
             >
               <Avatar className="h-10 w-10">
-                <AvatarFallback className="bg-primary/10 text-primary font-medium">
+                <AvatarFallback className="bg-primary/10 text-primary font-medium text-sm">
                   {member.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
                 </AvatarFallback>
               </Avatar>
@@ -103,8 +103,8 @@ const TeamSection = () => {
                 <Badge 
                   variant="outline" 
                   className={member.status === "active" 
-                    ? "bg-success/10 text-success border-success/20 text-xs" 
-                    : "bg-muted text-muted-foreground text-xs"
+                    ? "bg-success/10 text-success border-success/20 text-xs mt-1" 
+                    : "bg-muted text-muted-foreground text-xs mt-1"
                   }
                 >
                   {member.status === "active" ? "Em serviço" : "Próximo turno"}

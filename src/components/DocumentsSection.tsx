@@ -19,9 +19,9 @@ const mockDocuments: Document[] = [
 
 const DocumentsSection = () => {
   return (
-    <Card className="shadow-sm">
+    <Card className="shadow-sm border-border">
       <CardHeader className="pb-3">
-        <CardTitle className="text-lg font-semibold flex items-center gap-2">
+        <CardTitle className="text-lg font-semibold flex items-center gap-2 text-foreground">
           <div className="p-1.5 bg-info/10 rounded-lg">
             <FileText className="h-4 w-4 text-info" />
           </div>
@@ -42,7 +42,7 @@ const DocumentsSection = () => {
                 {doc.title}
               </p>
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                <span>{doc.type}</span>
+                <span className="font-medium">{doc.type}</span>
                 <span>•</span>
                 <span>{doc.size}</span>
                 <span>•</span>
@@ -53,10 +53,10 @@ const DocumentsSection = () => {
               </div>
             </div>
             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
                 <Eye className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
+              <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground">
                 <Download className="h-4 w-4" />
               </Button>
             </div>
