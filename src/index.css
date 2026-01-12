@@ -5,17 +5,17 @@
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 
-Design System para Sistema Hospitalar:
-- Primary: Teal suave (saúde, confiança)
+Design System para Sistema Hospitalar - GESTRATEGIC:
+- Primary: Azul profissional (confiança, saúde)
 - Secondary: Cinza neutro
-- Accent: Verde (sucesso)
-- Status: Verde (sucesso), Amarelo (atenção), Vermelho (erro), Azul (info)
+- Accent: Azul mais vibrante
+- Status: Verde (sucesso), Amarelo (atenção), Vermelho (erro), Azul claro (info)
 */
 
 @layer base {
   :root {
     /* Background & Foreground */
-    --background: 200 20% 98%;
+    --background: 210 25% 97%;
     --foreground: 210 40% 15%;
 
     /* Cards */
@@ -26,11 +26,11 @@ Design System para Sistema Hospitalar:
     --popover: 0 0% 100%;
     --popover-foreground: 210 40% 15%;
 
-    /* Primary: Teal suave - transmite saúde e confiança */
-    --primary: 174 62% 42%;
+    /* Primary: Azul profissional - transmite confiança e profissionalismo */
+    --primary: 210 65% 45%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Cinza neutro para fundos e separações */
+    /* Secondary: Cinza azulado neutro para fundos e separações */
     --secondary: 210 20% 94%;
     --secondary-foreground: 210 40% 20%;
 
@@ -38,8 +38,8 @@ Design System para Sistema Hospitalar:
     --muted: 210 15% 92%;
     --muted-foreground: 210 15% 45%;
 
-    /* Accent: Teal mais intenso para destaques */
-    --accent: 174 62% 35%;
+    /* Accent: Azul mais intenso para destaques */
+    --accent: 210 70% 38%;
     --accent-foreground: 0 0% 100%;
 
     /* Destructive: Vermelho para erros */
@@ -49,7 +49,7 @@ Design System para Sistema Hospitalar:
     /* Borders & Inputs */
     --border: 210 20% 88%;
     --input: 210 20% 88%;
-    --ring: 174 62% 42%;
+    --ring: 210 65% 45%;
 
     /* Radius */
     --radius: 0.75rem;
@@ -64,19 +64,19 @@ Design System para Sistema Hospitalar:
     --info: 199 89% 48%;
     --info-foreground: 0 0% 100%;
 
-    /* Header: Azul escuro profissional */
+    /* Header: Azul escuro profissional (harmoniza com logo) */
     --header: 210 50% 20%;
     --header-foreground: 0 0% 100%;
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
     --sidebar-foreground: 210 40% 20%;
-    --sidebar-primary: 174 62% 42%;
+    --sidebar-primary: 210 65% 45%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 210 20% 94%;
     --sidebar-accent-foreground: 210 40% 20%;
     --sidebar-border: 210 20% 88%;
-    --sidebar-ring: 174 62% 42%;
+    --sidebar-ring: 210 65% 45%;
   }
 
   .dark {
@@ -89,7 +89,7 @@ Design System para Sistema Hospitalar:
     --popover: 210 35% 12%;
     --popover-foreground: 210 20% 95%;
 
-    --primary: 174 62% 48%;
+    --primary: 210 65% 50%;
     --primary-foreground: 0 0% 100%;
 
     --secondary: 210 30% 18%;
@@ -98,7 +98,7 @@ Design System para Sistema Hospitalar:
     --muted: 210 25% 20%;
     --muted-foreground: 210 15% 60%;
 
-    --accent: 174 62% 40%;
+    --accent: 210 70% 45%;
     --accent-foreground: 0 0% 100%;
 
     --destructive: 0 72% 55%;
@@ -106,7 +106,7 @@ Design System para Sistema Hospitalar:
 
     --border: 210 30% 22%;
     --input: 210 30% 22%;
-    --ring: 174 62% 48%;
+    --ring: 210 65% 50%;
 
     --warning: 38 92% 55%;
     --warning-foreground: 0 0% 100%;
@@ -122,12 +122,12 @@ Design System para Sistema Hospitalar:
 
     --sidebar-background: 210 35% 10%;
     --sidebar-foreground: 210 20% 90%;
-    --sidebar-primary: 174 62% 48%;
+    --sidebar-primary: 210 65% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 210 30% 18%;
     --sidebar-accent-foreground: 210 20% 90%;
     --sidebar-border: 210 30% 22%;
-    --sidebar-ring: 174 62% 48%;
+    --sidebar-ring: 210 65% 50%;
   }
 }
 
