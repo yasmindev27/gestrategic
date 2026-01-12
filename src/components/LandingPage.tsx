@@ -1,11 +1,9 @@
 import { ShieldCheck, Clock, Network, HeartPulse } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import logoGestrategic from "@/assets/logo-gestrategic.jpg";
-
 interface LandingPageProps {
   onEnterDashboard: () => void;
 }
-
 const LandingPage = ({
   onEnterDashboard
 }: LandingPageProps) => {
@@ -16,11 +14,7 @@ const LandingPage = ({
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-3">
-              <img 
-                src={logoGestrategic} 
-                alt="GESTRATEGIC Logo" 
-                className="h-12 w-auto object-contain"
-              />
+              
             </div>
 
             {/* Navigation */}
@@ -142,9 +136,7 @@ const LandingPage = ({
       {/* Footer */}
       <footer className="bg-[hsl(210,50%,15%)] text-white/60 py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <p className="text-sm">
-            © 2024 GESTRATEGIC - Tecnologia com olhar pra vida. Todos os direitos reservados.
-          </p>
+          <p className="text-sm">© 2026 GESTRATEGIC  Todos os direitos reservados.</p>
         </div>
       </footer>
     </div>;
