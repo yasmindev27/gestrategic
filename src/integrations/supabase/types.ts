@@ -14,41 +14,136 @@ export type Database = {
   }
   public: {
     Tables: {
+      avaliacoes_historico: {
+        Row: {
+          acao: string
+          avaliacao_id: string | null
+          created_at: string
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          executado_por: string | null
+          id: string
+          prontuario_id: string
+        }
+        Insert: {
+          acao: string
+          avaliacao_id?: string | null
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          executado_por?: string | null
+          id?: string
+          prontuario_id: string
+        }
+        Update: {
+          acao?: string
+          avaliacao_id?: string | null
+          created_at?: string
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          executado_por?: string | null
+          id?: string
+          prontuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "avaliacoes_historico_avaliacao_id_fkey"
+            columns: ["avaliacao_id"]
+            isOneToOne: false
+            referencedRelation: "avaliacoes_prontuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       avaliacoes_prontuarios: {
         Row: {
+          acolhimento_triagem: string | null
+          acolhimento_triagem_obs: string | null
+          atendimento_medico: string | null
+          atendimento_medico_obs: string | null
           avaliador_id: string
+          comentarios_finais: string | null
           created_at: string
           data_conclusao: string | null
           data_inicio: string
+          documentacao_medica_cfm: string | null
+          documentacao_medica_cfm_obs: string | null
+          enfermagem_medicacao: string | null
+          enfermagem_medicacao_obs: string | null
           id: string
+          identificacao_paciente: string | null
+          identificacao_paciente_obs: string | null
+          is_finalizada: boolean
+          numero_prontuario: string | null
           observacoes: string | null
+          paciente_internado: string | null
+          paciente_internado_obs: string | null
+          paciente_nome: string | null
           prontuario_id: string
+          resultado_final: string | null
           saida_prontuario_id: string | null
           status: string
+          unidade_setor: string | null
           updated_at: string
         }
         Insert: {
+          acolhimento_triagem?: string | null
+          acolhimento_triagem_obs?: string | null
+          atendimento_medico?: string | null
+          atendimento_medico_obs?: string | null
           avaliador_id: string
+          comentarios_finais?: string | null
           created_at?: string
           data_conclusao?: string | null
           data_inicio?: string
+          documentacao_medica_cfm?: string | null
+          documentacao_medica_cfm_obs?: string | null
+          enfermagem_medicacao?: string | null
+          enfermagem_medicacao_obs?: string | null
           id?: string
+          identificacao_paciente?: string | null
+          identificacao_paciente_obs?: string | null
+          is_finalizada?: boolean
+          numero_prontuario?: string | null
           observacoes?: string | null
+          paciente_internado?: string | null
+          paciente_internado_obs?: string | null
+          paciente_nome?: string | null
           prontuario_id: string
+          resultado_final?: string | null
           saida_prontuario_id?: string | null
           status?: string
+          unidade_setor?: string | null
           updated_at?: string
         }
         Update: {
+          acolhimento_triagem?: string | null
+          acolhimento_triagem_obs?: string | null
+          atendimento_medico?: string | null
+          atendimento_medico_obs?: string | null
           avaliador_id?: string
+          comentarios_finais?: string | null
           created_at?: string
           data_conclusao?: string | null
           data_inicio?: string
+          documentacao_medica_cfm?: string | null
+          documentacao_medica_cfm_obs?: string | null
+          enfermagem_medicacao?: string | null
+          enfermagem_medicacao_obs?: string | null
           id?: string
+          identificacao_paciente?: string | null
+          identificacao_paciente_obs?: string | null
+          is_finalizada?: boolean
+          numero_prontuario?: string | null
           observacoes?: string | null
+          paciente_internado?: string | null
+          paciente_internado_obs?: string | null
+          paciente_nome?: string | null
           prontuario_id?: string
+          resultado_final?: string | null
           saida_prontuario_id?: string | null
           status?: string
+          unidade_setor?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -308,6 +403,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_prontuario_status: {
+        Args: { p_prontuario_id: string }
+        Returns: {
+          avaliacao_status: string
+          fluxo_status: string
+          id: string
+          numero_prontuario: string
+          paciente_nome: string
+          prontuario_status: string
+        }[]
+      }
       get_user_role: {
         Args: { _user_id: string }
         Returns: Database["public"]["Enums"]["app_role"]

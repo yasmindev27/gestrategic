@@ -2,11 +2,21 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   Table, 
   TableBody, 
@@ -22,13 +32,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   FileText, 
-  Plus, 
   Search,
   ClipboardCheck,
   AlertCircle,
-  Loader2 
+  Loader2,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Eye
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -36,6 +56,7 @@ import { ptBR } from "date-fns/locale";
 
 interface SaidaProntuario {
   id: string;
+  prontuario_id: string | null;
   numero_prontuario: string;
   status: string;
   registrado_recepcao_em: string | null;
@@ -44,49 +65,161 @@ interface SaidaProntuario {
   created_at: string;
 }
 
+interface Avaliacao {
+  id: string;
+  numero_prontuario: string | null;
+  paciente_nome: string | null;
+  unidade_setor: string | null;
+  identificacao_paciente: string | null;
+  identificacao_paciente_obs: string | null;
+  acolhimento_triagem: string | null;
+  acolhimento_triagem_obs: string | null;
+  atendimento_medico: string | null;
+  atendimento_medico_obs: string | null;
+  documentacao_medica_cfm: string | null;
+  documentacao_medica_cfm_obs: string | null;
+  enfermagem_medicacao: string | null;
+  enfermagem_medicacao_obs: string | null;
+  paciente_internado: string | null;
+  paciente_internado_obs: string | null;
+  resultado_final: string | null;
+  comentarios_finais: string | null;
+  is_finalizada: boolean;
+  data_inicio: string;
+  data_conclusao: string | null;
+  avaliador_id: string;
+}
+
+interface FormData {
+  unidade_setor: string;
+  identificacao_paciente: string;
+  identificacao_paciente_obs: string;
+  acolhimento_triagem: string;
+  acolhimento_triagem_obs: string;
+  atendimento_medico: string;
+  atendimento_medico_obs: string;
+  documentacao_medica_cfm: string;
+  documentacao_medica_cfm_obs: string;
+  enfermagem_medicacao: string;
+  enfermagem_medicacao_obs: string;
+  paciente_internado: string;
+  paciente_internado_obs: string;
+  resultado_final: string;
+  comentarios_finais: string;
+}
+
+const initialFormData: FormData = {
+  unidade_setor: "",
+  identificacao_paciente: "",
+  identificacao_paciente_obs: "",
+  acolhimento_triagem: "",
+  acolhimento_triagem_obs: "",
+  atendimento_medico: "",
+  atendimento_medico_obs: "",
+  documentacao_medica_cfm: "",
+  documentacao_medica_cfm_obs: "",
+  enfermagem_medicacao: "",
+  enfermagem_medicacao_obs: "",
+  paciente_internado: "",
+  paciente_internado_obs: "",
+  resultado_final: "",
+  comentarios_finais: "",
+};
+
+const unidadeSetorOptions = [
+  { value: "emergencia", label: "Emergência" },
+  { value: "internacao", label: "Internação" },
+  { value: "atendimento_medico_pa", label: "Atendimento Médico – P.A" },
+];
+
+const conformeOptions = [
+  { value: "conforme", label: "Conforme" },
+  { value: "nao_conforme", label: "Não Conforme" },
+];
+
+const identificacaoOptions = [
+  { value: "completa", label: "Completa" },
+  { value: "incompleta", label: "Incompleta" },
+];
+
+const pacienteInternadoOptions = [
+  { value: "nao_se_aplica", label: "Não se aplica" },
+  { value: "conforme", label: "Conforme" },
+  { value: "nao_conforme", label: "Não Conforme" },
+];
+
+const resultadoFinalOptions = [
+  { value: "completo", label: "Completo" },
+  { value: "com_pendencias", label: "Com Pendências" },
+  { value: "incompleto", label: "Incompleto" },
+];
+
 export const FaturamentoModule = () => {
   const { isFaturamento, isAdmin, userId } = useUserRole();
   const { logAction } = useLogAccess();
   const { toast } = useToast();
   
   const [saidas, setSaidas] = useState<SaidaProntuario[]>([]);
+  const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
   const [prontuariosFaltantes, setProntuariosFaltantes] = useState<SaidaProntuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<"lista" | "faltantes">("lista");
+  const [activeTab, setActiveTab] = useState<"lista" | "faltantes" | "avaliados">("lista");
+  
+  // Form dialog
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedProntuario, setSelectedProntuario] = useState<SaidaProntuario | null>(null);
-  const [observacao, setObservacao] = useState("");
+  const [formData, setFormData] = useState<FormData>(initialFormData);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // View dialog
+  const [viewDialogOpen, setViewDialogOpen] = useState(false);
+  const [selectedAvaliacao, setSelectedAvaliacao] = useState<Avaliacao | null>(null);
 
   const canAccess = isFaturamento || isAdmin;
 
   useEffect(() => {
     if (canAccess) {
-      fetchSaidas();
+      fetchData();
       logAction("acesso", "faturamento", { modulo: "prontuarios" });
     }
   }, [canAccess]);
 
-  const fetchSaidas = async () => {
+  const fetchData = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch saidas
+      const { data: saidasData, error: saidasError } = await supabase
         .from("saida_prontuarios")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (saidasError) throw saidasError;
 
-      setSaidas(data || []);
+      // Fetch avaliacoes
+      const { data: avaliacoesData, error: avaliacoesError } = await supabase
+        .from("avaliacoes_prontuarios")
+        .select("*")
+        .order("data_inicio", { ascending: false });
+
+      if (avaliacoesError) throw avaliacoesError;
+
+      setSaidas(saidasData || []);
+      setAvaliacoes(avaliacoesData || []);
+      
+      // Filter faltantes - those without completed evaluation
+      const avaliadosIds = (avaliacoesData || [])
+        .filter(a => a.is_finalizada)
+        .map(a => a.numero_prontuario);
+      
       setProntuariosFaltantes(
-        (data || []).filter(s => s.status === "pendente" || !s.conferido_nir_em)
+        (saidasData || []).filter(s => !avaliadosIds.includes(s.numero_prontuario))
       );
     } catch (error) {
-      console.error("Error fetching saidas:", error);
+      console.error("Error fetching data:", error);
       toast({
         title: "Erro",
-        description: "Erro ao carregar lista de prontuários.",
+        description: "Erro ao carregar dados.",
         variant: "destructive",
       });
     } finally {
@@ -94,73 +227,134 @@ export const FaturamentoModule = () => {
     }
   };
 
-  const iniciarAvaliacao = async () => {
+  const handleOpenForm = (saida: SaidaProntuario) => {
+    setSelectedProntuario(saida);
+    setFormData(initialFormData);
+    setDialogOpen(true);
+  };
+
+  const handleSubmitAvaliacao = async () => {
     if (!selectedProntuario || !userId) return;
+    
+    // Validate required fields
+    if (!formData.unidade_setor || !formData.identificacao_paciente || 
+        !formData.acolhimento_triagem || !formData.atendimento_medico ||
+        !formData.documentacao_medica_cfm || !formData.enfermagem_medicacao ||
+        !formData.paciente_internado || !formData.resultado_final) {
+      toast({
+        title: "Campos obrigatórios",
+        description: "Preencha todos os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     setIsSubmitting(true);
     try {
-      // Check if prontuario exists, if not create it
-      let prontuarioId: string | null = null;
+      // Get or create prontuario
+      let prontuarioId: string | null = selectedProntuario.prontuario_id;
       
-      const { data: existingProntuario } = await supabase
-        .from("prontuarios")
-        .select("id")
-        .eq("numero_prontuario", selectedProntuario.numero_prontuario)
-        .maybeSingle();
-
-      if (existingProntuario) {
-        prontuarioId = existingProntuario.id;
-      } else {
-        const { data: newProntuario, error: createError } = await supabase
+      if (!prontuarioId) {
+        const { data: existingProntuario } = await supabase
           .from("prontuarios")
-          .insert({
-            numero_prontuario: selectedProntuario.numero_prontuario,
-            paciente_nome: "A identificar",
-            created_by: userId,
-          })
-          .select("id")
-          .single();
+          .select("id, paciente_nome")
+          .eq("numero_prontuario", selectedProntuario.numero_prontuario)
+          .maybeSingle();
 
-        if (createError) throw createError;
-        prontuarioId = newProntuario.id;
+        if (existingProntuario) {
+          prontuarioId = existingProntuario.id;
+        } else {
+          const { data: newProntuario, error: createError } = await supabase
+            .from("prontuarios")
+            .insert({
+              numero_prontuario: selectedProntuario.numero_prontuario,
+              paciente_nome: "A identificar",
+              created_by: userId,
+            })
+            .select("id")
+            .single();
+
+          if (createError) throw createError;
+          prontuarioId = newProntuario.id;
+        }
       }
 
-      // Create evaluation
-      const { error } = await supabase
+      // Create the evaluation
+      const { error: avaliacaoError } = await supabase
         .from("avaliacoes_prontuarios")
         .insert({
           prontuario_id: prontuarioId,
           saida_prontuario_id: selectedProntuario.id,
           avaliador_id: userId,
-          observacoes: observacao || null,
+          numero_prontuario: selectedProntuario.numero_prontuario,
+          unidade_setor: formData.unidade_setor,
+          identificacao_paciente: formData.identificacao_paciente,
+          identificacao_paciente_obs: formData.identificacao_paciente_obs || null,
+          acolhimento_triagem: formData.acolhimento_triagem,
+          acolhimento_triagem_obs: formData.acolhimento_triagem_obs || null,
+          atendimento_medico: formData.atendimento_medico,
+          atendimento_medico_obs: formData.atendimento_medico_obs || null,
+          documentacao_medica_cfm: formData.documentacao_medica_cfm,
+          documentacao_medica_cfm_obs: formData.documentacao_medica_cfm_obs || null,
+          enfermagem_medicacao: formData.enfermagem_medicacao,
+          enfermagem_medicacao_obs: formData.enfermagem_medicacao_obs || null,
+          paciente_internado: formData.paciente_internado,
+          paciente_internado_obs: formData.paciente_internado_obs || null,
+          resultado_final: formData.resultado_final,
+          comentarios_finais: formData.comentarios_finais || null,
+          is_finalizada: true,
+          data_conclusao: new Date().toISOString(),
         });
 
-      if (error) throw error;
+      if (avaliacaoError) throw avaliacaoError;
 
-      // Update saida status
+      // Update prontuario status based on resultado_final
+      const newStatus = formData.resultado_final === "completo" ? "ativo" : 
+                       formData.resultado_final === "incompleto" ? "faltante" : "ativo";
+      
+      await supabase
+        .from("prontuarios")
+        .update({ status: newStatus })
+        .eq("id", prontuarioId);
+
+      // Update saida_prontuarios status
       await supabase
         .from("saida_prontuarios")
-        .update({ status: "em_avaliacao" })
+        .update({ status: "concluido" })
         .eq("id", selectedProntuario.id);
 
-      await logAction("iniciar_avaliacao", "faturamento", { 
-        prontuario: selectedProntuario.numero_prontuario 
+      // Log action
+      await logAction("finalizar_avaliacao", "faturamento", { 
+        prontuario: selectedProntuario.numero_prontuario,
+        resultado: formData.resultado_final
       });
+
+      // Log to historico
+      if (prontuarioId) {
+        await supabase
+          .from("avaliacoes_historico")
+          .insert([{
+            prontuario_id: prontuarioId,
+            acao: "criar_avaliacao",
+            dados_novos: formData as unknown as null,
+            executado_por: userId,
+          }]);
+      }
 
       toast({
         title: "Sucesso",
-        description: "Avaliação iniciada com sucesso!",
+        description: "Avaliação finalizada com sucesso!",
       });
 
       setDialogOpen(false);
       setSelectedProntuario(null);
-      setObservacao("");
-      fetchSaidas();
+      setFormData(initialFormData);
+      fetchData();
     } catch (error) {
       console.error("Error:", error);
       toast({
         title: "Erro",
-        description: "Erro ao iniciar avaliação.",
+        description: "Erro ao salvar avaliação.",
         variant: "destructive",
       });
     } finally {
@@ -169,21 +363,103 @@ export const FaturamentoModule = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "outline" | "destructive" }> = {
-      aguardando_classificacao: { label: "Aguardando Classificação", variant: "secondary" },
-      aguardando_nir: { label: "Aguardando NIR", variant: "secondary" },
-      aguardando_faturamento: { label: "Aguardando Faturamento", variant: "default" },
-      em_avaliacao: { label: "Em Avaliação", variant: "outline" },
-      concluido: { label: "Concluído", variant: "default" },
-      pendente: { label: "Pendente", variant: "destructive" },
+    const statusConfig: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
+      aguardando_classificacao: { label: "Aguardando Classificação", className: "bg-warning text-warning-foreground", icon: <Clock className="h-3 w-3" /> },
+      aguardando_nir: { label: "Aguardando NIR", className: "bg-info text-info-foreground", icon: <Clock className="h-3 w-3" /> },
+      aguardando_faturamento: { label: "Aguardando Faturamento", className: "bg-primary text-primary-foreground", icon: <Clock className="h-3 w-3" /> },
+      em_avaliacao: { label: "Em Avaliação", className: "bg-secondary text-secondary-foreground", icon: <Clock className="h-3 w-3" /> },
+      concluido: { label: "Concluído", className: "bg-success text-success-foreground", icon: <CheckCircle className="h-3 w-3" /> },
+      pendente: { label: "Pendente", className: "bg-destructive text-destructive-foreground", icon: <AlertCircle className="h-3 w-3" /> },
     };
     
-    const config = statusConfig[status] || { label: status, variant: "secondary" as const };
-    return <Badge variant={config.variant}>{config.label}</Badge>;
+    const config = statusConfig[status] || { label: status, className: "bg-secondary", icon: null };
+    return (
+      <Badge className={`${config.className} flex items-center gap-1`}>
+        {config.icon}
+        {config.label}
+      </Badge>
+    );
   };
 
-  const filteredSaidas = (activeTab === "lista" ? saidas : prontuariosFaltantes).filter(
+  const getResultadoBadge = (resultado: string | null) => {
+    if (!resultado) return null;
+    const config: Record<string, { label: string; className: string; icon: React.ReactNode }> = {
+      completo: { label: "Completo", className: "bg-success text-success-foreground", icon: <CheckCircle className="h-3 w-3" /> },
+      com_pendencias: { label: "Com Pendências", className: "bg-warning text-warning-foreground", icon: <AlertCircle className="h-3 w-3" /> },
+      incompleto: { label: "Incompleto", className: "bg-destructive text-destructive-foreground", icon: <XCircle className="h-3 w-3" /> },
+    };
+    const c = config[resultado] || { label: resultado, className: "bg-secondary", icon: null };
+    return (
+      <Badge className={`${c.className} flex items-center gap-1`}>
+        {c.icon}
+        {c.label}
+      </Badge>
+    );
+  };
+
+  const isProntuarioAvaliado = (numeroProntuario: string) => {
+    return avaliacoes.some(a => a.numero_prontuario === numeroProntuario && a.is_finalizada);
+  };
+
+  const getListaAtual = () => {
+    switch (activeTab) {
+      case "lista":
+        return saidas;
+      case "faltantes":
+        return prontuariosFaltantes;
+      case "avaliados":
+        return saidas.filter(s => isProntuarioAvaliado(s.numero_prontuario));
+      default:
+        return saidas;
+    }
+  };
+
+  const filteredSaidas = getListaAtual().filter(
     s => s.numero_prontuario.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const handleViewAvaliacao = (numeroProntuario: string) => {
+    const avaliacao = avaliacoes.find(a => a.numero_prontuario === numeroProntuario && a.is_finalizada);
+    if (avaliacao) {
+      setSelectedAvaliacao(avaliacao);
+      setViewDialogOpen(true);
+    }
+  };
+
+  const renderFormField = (
+    label: string, 
+    fieldName: keyof FormData, 
+    options: { value: string; label: string }[],
+    obsFieldName?: keyof FormData
+  ) => (
+    <div className="space-y-3 p-4 bg-muted/30 rounded-lg">
+      <Label className="text-sm font-semibold">{label} *</Label>
+      <RadioGroup
+        value={formData[fieldName]}
+        onValueChange={(value) => setFormData(prev => ({ ...prev, [fieldName]: value }))}
+        className="flex flex-wrap gap-4"
+      >
+        {options.map((option) => (
+          <div key={option.value} className="flex items-center space-x-2">
+            <RadioGroupItem value={option.value} id={`${fieldName}-${option.value}`} />
+            <Label htmlFor={`${fieldName}-${option.value}`} className="cursor-pointer font-normal">
+              {option.label}
+            </Label>
+          </div>
+        ))}
+      </RadioGroup>
+      {obsFieldName && (
+        <div className="mt-2">
+          <Label className="text-xs text-muted-foreground">Observações (opcional)</Label>
+          <Textarea
+            value={formData[obsFieldName] as string}
+            onChange={(e) => setFormData(prev => ({ ...prev, [obsFieldName]: e.target.value }))}
+            placeholder="Adicione observações se necessário..."
+            className="mt-1 h-20"
+          />
+        </div>
+      )}
+    </div>
   );
 
   if (!canAccess) {
@@ -204,18 +480,18 @@ export const FaturamentoModule = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Prontuários</h2>
-          <p className="text-muted-foreground">Gestão e avaliação de prontuários</p>
+          <p className="text-muted-foreground">Avaliação e gestão de prontuários médicos</p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Button
           variant={activeTab === "lista" ? "default" : "outline"}
           onClick={() => setActiveTab("lista")}
         >
           <FileText className="h-4 w-4 mr-2" />
-          Lista Geral
+          Lista Geral ({saidas.length})
         </Button>
         <Button
           variant={activeTab === "faltantes" ? "default" : "outline"}
@@ -223,6 +499,13 @@ export const FaturamentoModule = () => {
         >
           <AlertCircle className="h-4 w-4 mr-2" />
           Faltantes ({prontuariosFaltantes.length})
+        </Button>
+        <Button
+          variant={activeTab === "avaliados" ? "default" : "outline"}
+          onClick={() => setActiveTab("avaliados")}
+        >
+          <CheckCircle className="h-4 w-4 mr-2" />
+          Avaliados ({avaliacoes.filter(a => a.is_finalizada).length})
         </Button>
       </div>
 
@@ -245,8 +528,15 @@ export const FaturamentoModule = () => {
       <Card>
         <CardHeader>
           <CardTitle>
-            {activeTab === "lista" ? "Lista de Prontuários" : "Prontuários Faltantes"}
+            {activeTab === "lista" && "Lista de Prontuários"}
+            {activeTab === "faltantes" && "Prontuários Faltantes"}
+            {activeTab === "avaliados" && "Prontuários Avaliados"}
           </CardTitle>
+          <CardDescription>
+            {activeTab === "lista" && "Todos os prontuários registrados no sistema"}
+            {activeTab === "faltantes" && "Prontuários que ainda não foram avaliados"}
+            {activeTab === "avaliados" && "Prontuários com avaliação finalizada"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -262,88 +552,323 @@ export const FaturamentoModule = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Nº Prontuário</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Status Fluxo</TableHead>
                   <TableHead>Recepção</TableHead>
                   <TableHead>Classificação</TableHead>
                   <TableHead>NIR</TableHead>
+                  <TableHead>Resultado</TableHead>
                   <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSaidas.map((saida) => (
-                  <TableRow key={saida.id}>
-                    <TableCell className="font-medium">{saida.numero_prontuario}</TableCell>
-                    <TableCell>{getStatusBadge(saida.status)}</TableCell>
-                    <TableCell>
-                      {saida.registrado_recepcao_em 
-                        ? format(new Date(saida.registrado_recepcao_em), "dd/MM/yy HH:mm", { locale: ptBR })
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      {saida.validado_classificacao_em 
-                        ? format(new Date(saida.validado_classificacao_em), "dd/MM/yy HH:mm", { locale: ptBR })
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      {saida.conferido_nir_em 
-                        ? format(new Date(saida.conferido_nir_em), "dd/MM/yy HH:mm", { locale: ptBR })
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      <Dialog open={dialogOpen && selectedProntuario?.id === saida.id} onOpenChange={(open) => {
-                        setDialogOpen(open);
-                        if (!open) setSelectedProntuario(null);
-                      }}>
-                        <DialogTrigger asChild>
+                {filteredSaidas.map((saida) => {
+                  const avaliacao = avaliacoes.find(a => a.numero_prontuario === saida.numero_prontuario && a.is_finalizada);
+                  return (
+                    <TableRow key={saida.id}>
+                      <TableCell className="font-medium">{saida.numero_prontuario}</TableCell>
+                      <TableCell>{getStatusBadge(saida.status)}</TableCell>
+                      <TableCell>
+                        {saida.registrado_recepcao_em 
+                          ? format(new Date(saida.registrado_recepcao_em), "dd/MM/yy HH:mm", { locale: ptBR })
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {saida.validado_classificacao_em 
+                          ? format(new Date(saida.validado_classificacao_em), "dd/MM/yy HH:mm", { locale: ptBR })
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {saida.conferido_nir_em 
+                          ? format(new Date(saida.conferido_nir_em), "dd/MM/yy HH:mm", { locale: ptBR })
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {avaliacao ? getResultadoBadge(avaliacao.resultado_final) : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {avaliacao ? (
                           <Button 
                             size="sm" 
-                            onClick={() => setSelectedProntuario(saida)}
-                            disabled={saida.status === "em_avaliacao" || saida.status === "concluido"}
+                            variant="outline"
+                            onClick={() => handleViewAvaliacao(saida.numero_prontuario)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Visualizar
+                          </Button>
+                        ) : (
+                          <Button 
+                            size="sm" 
+                            onClick={() => handleOpenForm(saida)}
                           >
                             <ClipboardCheck className="h-4 w-4 mr-1" />
                             Iniciar Avaliação
                           </Button>
-                        </DialogTrigger>
-                        <DialogContent>
-                          <DialogHeader>
-                            <DialogTitle>Iniciar Avaliação de Prontuário</DialogTitle>
-                          </DialogHeader>
-                          <div className="space-y-4 pt-4">
-                            <div>
-                              <label className="text-sm font-medium">Número do Prontuário</label>
-                              <Input value={saida.numero_prontuario} disabled />
-                            </div>
-                            <div>
-                              <label className="text-sm font-medium">Observações (opcional)</label>
-                              <Textarea
-                                value={observacao}
-                                onChange={(e) => setObservacao(e.target.value)}
-                                placeholder="Adicione observações iniciais..."
-                              />
-                            </div>
-                            <Button 
-                              onClick={iniciarAvaliacao} 
-                              className="w-full"
-                              disabled={isSubmitting}
-                            >
-                              {isSubmitting ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              ) : (
-                                <ClipboardCheck className="h-4 w-4 mr-2" />
-                              )}
-                              Confirmar Início da Avaliação
-                            </Button>
-                          </div>
-                        </DialogContent>
-                      </Dialog>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}
         </CardContent>
       </Card>
+
+      {/* Evaluation Form Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5 text-primary" />
+              Avaliação de Prontuário
+            </DialogTitle>
+          </DialogHeader>
+          
+          <ScrollArea className="max-h-[70vh] pr-4">
+            <div className="space-y-6 py-4">
+              {/* Header Info */}
+              <div className="grid grid-cols-2 gap-4 p-4 bg-primary/5 rounded-lg border">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Número do Prontuário</Label>
+                  <Input value={selectedProntuario?.numero_prontuario || ""} disabled className="mt-1 font-mono font-bold" />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Data/Hora da Avaliação</Label>
+                  <Input value={format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })} disabled className="mt-1" />
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* RF-03.1 - Unidade/Setor */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Unidade / Setor *</Label>
+                <Select
+                  value={formData.unidade_setor}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, unidade_setor: value }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a unidade/setor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {unidadeSetorOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <Separator />
+
+              {/* Accordion for evaluation sections */}
+              <Accordion type="multiple" defaultValue={["identificacao", "acolhimento", "atendimento", "documentacao", "enfermagem", "internado"]} className="space-y-2">
+                <AccordionItem value="identificacao" className="border rounded-lg px-4">
+                  <AccordionTrigger className="hover:no-underline">
+                    <span className="font-semibold">Identificação do Paciente</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {renderFormField("Status", "identificacao_paciente", identificacaoOptions, "identificacao_paciente_obs")}
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="acolhimento" className="border rounded-lg px-4">
+                  <AccordionTrigger className="hover:no-underline">
+                    <span className="font-semibold">Acolhimento, Triagem e Classificação</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {renderFormField("Status", "acolhimento_triagem", conformeOptions, "acolhimento_triagem_obs")}
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="atendimento" className="border rounded-lg px-4">
+                  <AccordionTrigger className="hover:no-underline">
+                    <span className="font-semibold">Atendimento Médico</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {renderFormField("Status", "atendimento_medico", conformeOptions, "atendimento_medico_obs")}
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="documentacao" className="border rounded-lg px-4">
+                  <AccordionTrigger className="hover:no-underline">
+                    <span className="font-semibold">Documentação Médica (CFM)</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {renderFormField("Status", "documentacao_medica_cfm", conformeOptions, "documentacao_medica_cfm_obs")}
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="enfermagem" className="border rounded-lg px-4">
+                  <AccordionTrigger className="hover:no-underline">
+                    <span className="font-semibold">Enfermagem / Medicação</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {renderFormField("Status", "enfermagem_medicacao", conformeOptions, "enfermagem_medicacao_obs")}
+                  </AccordionContent>
+                </AccordionItem>
+
+                <AccordionItem value="internado" className="border rounded-lg px-4">
+                  <AccordionTrigger className="hover:no-underline">
+                    <span className="font-semibold">Paciente Internado</span>
+                  </AccordionTrigger>
+                  <AccordionContent>
+                    {renderFormField("Status", "paciente_internado", pacienteInternadoOptions, "paciente_internado_obs")}
+                  </AccordionContent>
+                </AccordionItem>
+              </Accordion>
+
+              <Separator />
+
+              {/* RF-03.9 - Resultado Final */}
+              <div className="space-y-3 p-4 bg-primary/5 rounded-lg border-2 border-primary/20">
+                <Label className="text-sm font-semibold text-primary">Resultado Final do Prontuário *</Label>
+                <RadioGroup
+                  value={formData.resultado_final}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, resultado_final: value }))}
+                  className="flex flex-wrap gap-4"
+                >
+                  {resultadoFinalOptions.map((option) => (
+                    <div key={option.value} className="flex items-center space-x-2">
+                      <RadioGroupItem value={option.value} id={`resultado-${option.value}`} />
+                      <Label htmlFor={`resultado-${option.value}`} className="cursor-pointer font-normal">
+                        {option.label}
+                      </Label>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
+
+              {/* RF-03.10 - Comentários Finais */}
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">Comentários Finais (opcional)</Label>
+                <Textarea
+                  value={formData.comentarios_finais}
+                  onChange={(e) => setFormData(prev => ({ ...prev, comentarios_finais: e.target.value }))}
+                  placeholder="Adicione comentários finais sobre a avaliação..."
+                  className="h-24"
+                />
+              </div>
+
+              {/* Submit Button */}
+              <div className="flex justify-end gap-3 pt-4">
+                <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                  Cancelar
+                </Button>
+                <Button 
+                  onClick={handleSubmitAvaliacao}
+                  disabled={isSubmitting}
+                  className="min-w-[180px]"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4 mr-2" />
+                  )}
+                  Finalizar Avaliação
+                </Button>
+              </div>
+            </div>
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Evaluation Dialog */}
+      <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-5 w-5 text-primary" />
+              Visualização da Avaliação
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedAvaliacao && (
+            <ScrollArea className="max-h-[70vh] pr-4">
+              <div className="space-y-4 py-4">
+                {/* Header */}
+                <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Prontuário</p>
+                    <p className="font-bold">{selectedAvaliacao.numero_prontuario}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Data da Avaliação</p>
+                    <p className="font-medium">
+                      {selectedAvaliacao.data_conclusao 
+                        ? format(new Date(selectedAvaliacao.data_conclusao), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                        : "-"}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-3 bg-muted/30 rounded">
+                    <p className="text-xs text-muted-foreground">Unidade/Setor</p>
+                    <p className="font-medium">{unidadeSetorOptions.find(o => o.value === selectedAvaliacao.unidade_setor)?.label || "-"}</p>
+                  </div>
+                  <div className="p-3 bg-muted/30 rounded">
+                    <p className="text-xs text-muted-foreground">Resultado Final</p>
+                    {getResultadoBadge(selectedAvaliacao.resultado_final)}
+                  </div>
+                </div>
+
+                <Separator />
+
+                {/* Evaluation Details */}
+                <div className="space-y-3">
+                  {[
+                    { label: "Identificação do Paciente", value: selectedAvaliacao.identificacao_paciente, obs: selectedAvaliacao.identificacao_paciente_obs },
+                    { label: "Acolhimento, Triagem e Classificação", value: selectedAvaliacao.acolhimento_triagem, obs: selectedAvaliacao.acolhimento_triagem_obs },
+                    { label: "Atendimento Médico", value: selectedAvaliacao.atendimento_medico, obs: selectedAvaliacao.atendimento_medico_obs },
+                    { label: "Documentação Médica (CFM)", value: selectedAvaliacao.documentacao_medica_cfm, obs: selectedAvaliacao.documentacao_medica_cfm_obs },
+                    { label: "Enfermagem / Medicação", value: selectedAvaliacao.enfermagem_medicacao, obs: selectedAvaliacao.enfermagem_medicacao_obs },
+                    { label: "Paciente Internado", value: selectedAvaliacao.paciente_internado, obs: selectedAvaliacao.paciente_internado_obs },
+                  ].map((item, index) => (
+                    <div key={index} className="flex items-start justify-between p-3 bg-muted/20 rounded">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">{item.label}</p>
+                        {item.obs && <p className="text-xs text-muted-foreground mt-1">{item.obs}</p>}
+                      </div>
+                      <Badge 
+                        className={
+                          item.value === "conforme" || item.value === "completa" 
+                            ? "bg-success text-success-foreground" 
+                            : item.value === "nao_se_aplica"
+                            ? "bg-secondary text-secondary-foreground"
+                            : "bg-destructive text-destructive-foreground"
+                        }
+                      >
+                        {item.value === "conforme" ? "Conforme" : 
+                         item.value === "nao_conforme" ? "Não Conforme" :
+                         item.value === "completa" ? "Completa" :
+                         item.value === "incompleta" ? "Incompleta" :
+                         item.value === "nao_se_aplica" ? "N/A" : item.value}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+
+                {selectedAvaliacao.comentarios_finais && (
+                  <>
+                    <Separator />
+                    <div className="p-3 bg-muted/30 rounded">
+                      <p className="text-xs text-muted-foreground mb-1">Comentários Finais</p>
+                      <p className="text-sm">{selectedAvaliacao.comentarios_finais}</p>
+                    </div>
+                  </>
+                )}
+
+                <div className="p-3 bg-warning/10 border border-warning/30 rounded flex items-center gap-2 text-sm text-warning">
+                  <AlertCircle className="h-4 w-4" />
+                  Esta avaliação está finalizada e não pode ser editada.
+                </div>
+              </div>
+            </ScrollArea>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
