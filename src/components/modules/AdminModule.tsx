@@ -171,10 +171,18 @@ export const AdminModule = () => {
         supabase.from("setores").select("id, nome").eq("ativo", true).order("nome"),
       ]);
 
-      if (cargosRes.data) setCargosOptions(cargosRes.data);
-      if (setoresRes.data) setSetoresOptions(setoresRes.data);
+      if (cargosRes.error) throw cargosRes.error;
+      if (setoresRes.error) throw setoresRes.error;
+
+      setCargosOptions(cargosRes.data || []);
+      setSetoresOptions(setoresRes.data || []);
     } catch (error) {
       console.error("Error fetching cargos/setores:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar cargos e setores.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -299,6 +307,12 @@ export const AdminModule = () => {
       role: "funcionario",
     });
     setShowPassword(false);
+  };
+
+  const openCreateUserDialog = () => {
+    resetFormData();
+    fetchCargosSetores();
+    setCreateDialogOpen(true);
   };
 
   const handleCreateUser = async () => {
@@ -460,6 +474,7 @@ export const AdminModule = () => {
       setor: user.setor || "",
       role: user.role,
     });
+    fetchCargosSetores();
     setEditUserDialogOpen(true);
   };
 
@@ -536,7 +551,7 @@ export const AdminModule = () => {
                   <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                   Atualizar
                 </Button>
-                <Button onClick={() => { resetFormData(); setCreateDialogOpen(true); }}>
+                <Button onClick={openCreateUserDialog}>
                   <UserPlus className="h-4 w-4 mr-2" />
                   Novo Usuário
                 </Button>
