@@ -127,7 +127,7 @@ export const RestauranteModule = () => {
   const { toast } = useToast();
   const { isAdmin, hasRole, userId } = useUserRole();
   const isRestaurante = hasRole("restaurante");
-  const canManage = isRestaurante;
+  const canManage = isAdmin || isRestaurante;
 
   const [activeTab, setActiveTab] = useState("cardapio");
   const [cardapioView, setCardapioView] = useState<"dia" | "semana">("dia");
