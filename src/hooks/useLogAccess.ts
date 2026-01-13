@@ -1,8 +1,13 @@
 import { useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
+type LogDetailsValue = string | number | boolean | null | undefined | LogDetailsObject;
+interface LogDetailsObject {
+  [key: string]: LogDetailsValue;
+}
+
 interface LogDetails {
-  [key: string]: string | number | boolean | null | undefined;
+  [key: string]: LogDetailsValue;
 }
 
 export const useLogAccess = () => {
