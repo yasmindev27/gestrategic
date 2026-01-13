@@ -90,18 +90,16 @@ export const LogsAuditoriaModule = () => {
 
       if (error) throw error;
 
-      // Fetch user names for each unique user_id
+      // Fetch user names for each unique user_id using RPC function
       const userIds = [...new Set((data || []).map(l => l.user_id).filter(Boolean))] as string[];
       
       let userMap: Record<string, string> = {};
       if (userIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, full_name")
-          .in("user_id", userIds);
+        const { data: userNames } = await supabase
+          .rpc("get_user_names_by_ids", { _user_ids: userIds });
         
-        if (profiles) {
-          userMap = profiles.reduce((acc, p) => {
+        if (userNames) {
+          userMap = (userNames as { user_id: string; full_name: string }[]).reduce((acc, p) => {
             acc[p.user_id] = p.full_name;
             return acc;
           }, {} as Record<string, string>);
