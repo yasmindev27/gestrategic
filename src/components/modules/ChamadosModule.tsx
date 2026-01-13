@@ -50,6 +50,8 @@ import {
   MessageSquare,
   Eye,
   LayoutDashboard,
+  Package,
+  Minus,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -75,6 +77,27 @@ interface Chamado {
   data_abertura: string;
   data_resolucao: string | null;
   solucao: string | null;
+  prazo_conclusao: string | null;
+}
+
+interface Produto {
+  id: string;
+  nome: string;
+  codigo: string | null;
+  quantidade_atual: number | null;
+  setor_responsavel: string;
+}
+
+interface MaterialUtilizado {
+  id: string;
+  produto_id: string;
+  quantidade: number;
+  observacao: string | null;
+  created_at: string;
+  produtos?: {
+    nome: string;
+    codigo: string | null;
+  };
 }
 
 interface Comentario {
@@ -140,13 +163,62 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
   const [novoComentario, setNovoComentario] = useState("");
   const [novoStatus, setNovoStatus] = useState("");
   const [solucao, setSolucao] = useState("");
+  
+  // Estados para materiais
+  const [produtos, setProdutos] = useState<Produto[]>([]);
+  const [materiaisUtilizados, setMateriaisUtilizados] = useState<MaterialUtilizado[]>([]);
+  const [materialForm, setMaterialForm] = useState({
+    produto_id: "",
+    quantidade: 1,
+    observacao: "",
+  });
+  const [isAddingMaterial, setIsAddingMaterial] = useState(false);
 
   const isResponsavel = role === 'admin' || role === setor;
 
   useEffect(() => {
     fetchChamados();
+    fetchProdutos();
     logAction("acesso", `chamados_${setor}`);
   }, [setor]);
+
+  const fetchProdutos = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("produtos")
+        .select("id, nome, codigo, quantidade_atual, setor_responsavel")
+        .eq("setor_responsavel", setor)
+        .eq("ativo", true)
+        .order("nome");
+
+      if (error) throw error;
+      setProdutos(data || []);
+    } catch (error) {
+      console.error("Error fetching produtos:", error);
+    }
+  };
+
+  const fetchMateriaisUtilizados = async (chamadoId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from("chamados_materiais")
+        .select(`
+          id,
+          produto_id,
+          quantidade,
+          observacao,
+          created_at,
+          produtos (nome, codigo)
+        `)
+        .eq("chamado_id", chamadoId)
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setMateriaisUtilizados(data || []);
+    } catch (error) {
+      console.error("Error fetching materiais:", error);
+    }
+  };
 
   const fetchChamados = async () => {
     setIsLoading(true);
@@ -328,12 +400,95 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
     }
   };
 
+  const handleAddMaterial = async () => {
+    if (!materialForm.produto_id || materialForm.quantidade <= 0 || !selectedChamado) {
+      toast({
+        title: "Erro",
+        description: "Selecione um produto e quantidade válida.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAddingMaterial(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const { error } = await supabase
+        .from("chamados_materiais")
+        .insert({
+          chamado_id: selectedChamado.id,
+          produto_id: materialForm.produto_id,
+          quantidade: materialForm.quantidade,
+          observacao: materialForm.observacao || null,
+          registrado_por: user?.id,
+        });
+
+      if (error) {
+        if (error.message.includes("Estoque insuficiente")) {
+          toast({
+            title: "Estoque Insuficiente",
+            description: error.message,
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      toast({
+        title: "Sucesso",
+        description: "Material registrado e baixa no estoque realizada.",
+      });
+
+      await logAction("registrar_material", `chamados_${setor}`, { 
+        chamado: selectedChamado.numero_chamado,
+        produto_id: materialForm.produto_id,
+        quantidade: materialForm.quantidade,
+      });
+
+      setMaterialForm({ produto_id: "", quantidade: 1, observacao: "" });
+      fetchMateriaisUtilizados(selectedChamado.id);
+      fetchProdutos(); // Atualizar estoque exibido
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao registrar material.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAddingMaterial(false);
+    }
+  };
+
   const openDetails = (chamado: Chamado) => {
     setSelectedChamado(chamado);
     setNovoStatus(chamado.status);
     setSolucao(chamado.solucao || "");
+    setMaterialForm({ produto_id: "", quantidade: 1, observacao: "" });
     fetchComentarios(chamado.id);
+    fetchMateriaisUtilizados(chamado.id);
     setDetailsDialog(true);
+  };
+
+  const getPrazoStatus = (chamado: Chamado) => {
+    if (!chamado.prazo_conclusao) return null;
+    if (chamado.status === 'resolvido' || chamado.status === 'cancelado') return null;
+    
+    const prazo = new Date(chamado.prazo_conclusao);
+    const agora = new Date();
+    const diffHoras = (prazo.getTime() - agora.getTime()) / (1000 * 60 * 60);
+    
+    if (diffHoras < 0) {
+      return { status: 'atrasado', label: 'Atrasado', color: 'bg-red-500 text-white' };
+    } else if (diffHoras < 2) {
+      return { status: 'critico', label: 'Crítico', color: 'bg-orange-500 text-white' };
+    } else if (diffHoras < 4) {
+      return { status: 'alerta', label: 'Atenção', color: 'bg-yellow-500 text-black' };
+    }
+    return { status: 'ok', label: 'No prazo', color: 'bg-green-500 text-white' };
   };
 
   const filteredChamados = chamados.filter(c => {
@@ -484,43 +639,59 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
                     <TableRow>
                       <TableHead>Número</TableHead>
                       <TableHead>Título</TableHead>
-                      <TableHead>Solicitante</TableHead>
                       <TableHead>Prioridade</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Prazo</TableHead>
                       <TableHead>Abertura</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredChamados.map((chamado) => (
-                      <TableRow key={chamado.id}>
-                        <TableCell className="font-mono">{chamado.numero_chamado}</TableCell>
-                        <TableCell className="font-medium max-w-xs truncate">{chamado.titulo}</TableCell>
-                        <TableCell>{chamado.solicitante_nome}</TableCell>
-                        <TableCell>
-                          <Badge className={prioridadeColors[chamado.prioridade]}>
-                            {chamado.prioridade.charAt(0).toUpperCase() + chamado.prioridade.slice(1)}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[chamado.status]}>
-                            {statusLabels[chamado.status]}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          {format(new Date(chamado.data_abertura), "dd/MM/yy HH:mm", { locale: ptBR })}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button 
-                            size="sm" 
-                            variant="outline"
-                            onClick={() => openDetails(chamado)}
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                    {filteredChamados.map((chamado) => {
+                      const prazoStatus = getPrazoStatus(chamado);
+                      return (
+                        <TableRow key={chamado.id}>
+                          <TableCell className="font-mono text-xs">{chamado.numero_chamado}</TableCell>
+                          <TableCell className="font-medium max-w-xs truncate">{chamado.titulo}</TableCell>
+                          <TableCell>
+                            <Badge className={prioridadeColors[chamado.prioridade]}>
+                              {chamado.prioridade.charAt(0).toUpperCase() + chamado.prioridade.slice(1)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={statusColors[chamado.status]}>
+                              {statusLabels[chamado.status]}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {chamado.prazo_conclusao ? (
+                              <div className="flex flex-col gap-1">
+                                <span className="text-xs text-muted-foreground">
+                                  {format(new Date(chamado.prazo_conclusao), "dd/MM HH:mm", { locale: ptBR })}
+                                </span>
+                                {prazoStatus && (
+                                  <Badge className={prazoStatus.color} variant="outline">
+                                    {prazoStatus.label}
+                                  </Badge>
+                                )}
+                              </div>
+                            ) : "-"}
+                          </TableCell>
+                          <TableCell>
+                            {format(new Date(chamado.data_abertura), "dd/MM/yy HH:mm", { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button 
+                              size="sm" 
+                              variant="outline"
+                              onClick={() => openDetails(chamado)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
@@ -653,6 +824,28 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
                   </div>
                 </div>
               </div>
+
+              {/* Prazo de Conclusão */}
+              {selectedChamado.prazo_conclusao && (
+                <div className="bg-muted/50 p-3 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label className="text-muted-foreground">Prazo de Conclusão</Label>
+                      <p className="font-medium">
+                        {format(new Date(selectedChamado.prazo_conclusao), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                      </p>
+                    </div>
+                    {(() => {
+                      const prazoStatus = getPrazoStatus(selectedChamado);
+                      return prazoStatus && (
+                        <Badge className={prazoStatus.color}>
+                          {prazoStatus.label}
+                        </Badge>
+                      );
+                    })()}
+                  </div>
+                </div>
+              )}
               
               <div>
                 <Label className="text-muted-foreground">Título</Label>
@@ -717,6 +910,119 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
                   </Button>
                 </div>
               </div>
+
+              {/* Materiais Utilizados (apenas para responsáveis) */}
+              {isResponsavel && (
+                <div className="border-t pt-4">
+                  <Label className="text-muted-foreground flex items-center gap-2 mb-3">
+                    <Package className="h-4 w-4" />
+                    Materiais Utilizados
+                  </Label>
+                  
+                  {/* Lista de materiais já adicionados */}
+                  {materiaisUtilizados.length > 0 && (
+                    <div className="space-y-2 mb-4 max-h-32 overflow-y-auto">
+                      {materiaisUtilizados.map((m) => (
+                        <div key={m.id} className="flex justify-between items-center bg-muted p-2 rounded text-sm">
+                          <div>
+                            <span className="font-medium">{m.produtos?.nome}</span>
+                            {m.produtos?.codigo && (
+                              <span className="text-xs text-muted-foreground ml-2">({m.produtos.codigo})</span>
+                            )}
+                          </div>
+                          <Badge variant="outline">Qtd: {m.quantidade}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Formulário para adicionar material */}
+                  {selectedChamado.status !== 'resolvido' && selectedChamado.status !== 'cancelado' && (
+                    <div className="space-y-3 bg-muted/30 p-3 rounded-lg">
+                      <div className="grid grid-cols-2 gap-2">
+                        <div>
+                          <Label className="text-xs">Produto</Label>
+                          <Select 
+                            value={materialForm.produto_id}
+                            onValueChange={(v) => setMaterialForm({ ...materialForm, produto_id: v })}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Selecionar..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {produtos.map((p) => (
+                                <SelectItem key={p.id} value={p.id}>
+                                  <div className="flex items-center gap-2">
+                                    <span>{p.nome}</span>
+                                    <span className="text-xs text-muted-foreground">
+                                      (Disp: {p.quantidade_atual ?? 0})
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label className="text-xs">Quantidade</Label>
+                          <div className="flex items-center gap-2">
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => setMaterialForm({ 
+                                ...materialForm, 
+                                quantidade: Math.max(1, materialForm.quantidade - 1) 
+                              })}
+                            >
+                              <Minus className="h-4 w-4" />
+                            </Button>
+                            <Input
+                              type="number"
+                              min={1}
+                              value={materialForm.quantidade}
+                              onChange={(e) => setMaterialForm({ 
+                                ...materialForm, 
+                                quantidade: Math.max(1, parseInt(e.target.value) || 1) 
+                              })}
+                              className="text-center w-20"
+                            />
+                            <Button 
+                              type="button" 
+                              variant="outline" 
+                              size="icon"
+                              onClick={() => setMaterialForm({ 
+                                ...materialForm, 
+                                quantidade: materialForm.quantidade + 1 
+                              })}
+                            >
+                              <Plus className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Observação (opcional)</Label>
+                        <Input
+                          value={materialForm.observacao}
+                          onChange={(e) => setMaterialForm({ ...materialForm, observacao: e.target.value })}
+                          placeholder="Observação sobre o uso do material"
+                        />
+                      </div>
+                      <Button 
+                        size="sm" 
+                        onClick={handleAddMaterial}
+                        disabled={isAddingMaterial || !materialForm.produto_id}
+                        className="w-full"
+                      >
+                        {isAddingMaterial && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                        <Package className="h-4 w-4 mr-2" />
+                        Registrar Material (Baixa Automática)
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Atualizar Status (apenas para responsáveis) */}
               {isResponsavel && selectedChamado.status !== 'resolvido' && selectedChamado.status !== 'cancelado' && (
