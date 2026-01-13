@@ -72,8 +72,16 @@ serve(async (req) => {
 
     if (createError) {
       console.error("Error creating user:", createError);
+      
+      // Return user-friendly error messages in Portuguese
+      let errorMessage = createError.message;
+      if (createError.message.includes("already been registered") || 
+          (createError as any).code === "email_exists") {
+        errorMessage = "Este e-mail já está cadastrado no sistema";
+      }
+      
       return new Response(
-        JSON.stringify({ error: createError.message }),
+        JSON.stringify({ error: errorMessage }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
