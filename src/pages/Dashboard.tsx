@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import Sidebar from "@/components/Sidebar";
 import GreetingHeader from "@/components/GreetingHeader";
-import StatsCards from "@/components/StatsCards";
+import DashboardPersonalizado from "@/components/dashboard/DashboardPersonalizado";
 import TeamSection from "@/components/TeamSection";
 import { FaturamentoModule } from "@/components/modules/FaturamentoModule";
 import { SaidaProntuariosModule } from "@/components/modules/SaidaProntuariosModule";
@@ -74,7 +74,7 @@ const Dashboard = () => {
         <div className="max-w-7xl mx-auto space-y-6">
           <GreetingHeader />
           
-          {activeSection === "dashboard" && <StatsCards />}
+          {activeSection === "dashboard" && <DashboardPersonalizado />}
 
           {activeSection === "abrir-chamado" && <AbrirChamadoModule />}
 
