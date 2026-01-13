@@ -61,7 +61,7 @@ const statusColors: Record<string, string> = {
 
 export const AgendaColaboradores = ({ onAtribuirTarefa }: Props) => {
   const { toast } = useToast();
-  const { userId, isAdmin } = useUserRole();
+  const { userId, isAdmin, canViewAgendaColaboradores, canAtribuirTarefas } = useUserRole();
   const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [colaboradorItems, setColaboradorItems] = useState<Record<string, AgendaItem[]>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -70,8 +70,10 @@ export const AgendaColaboradores = ({ onAtribuirTarefa }: Props) => {
   const [novoItemDialogOpen, setNovoItemDialogOpen] = useState(false);
 
   useEffect(() => {
-    fetchColaboradores();
-  }, [userId, isAdmin]);
+    if (canViewAgendaColaboradores) {
+      fetchColaboradores();
+    }
+  }, [userId, isAdmin, canViewAgendaColaboradores]);
 
   const fetchColaboradores = async () => {
     setIsLoading(true);
@@ -224,15 +226,17 @@ export const AgendaColaboradores = ({ onAtribuirTarefa }: Props) => {
                   </AccordionTrigger>
                   <AccordionContent>
                     <div className="pl-12 space-y-4">
-                      <div className="flex justify-end">
-                        <Button
-                          size="sm"
-                          onClick={() => handleAtribuirTarefa(colaborador)}
-                        >
-                          <Plus className="h-4 w-4 mr-2" />
-                          Atribuir Tarefa
-                        </Button>
-                      </div>
+                      {canAtribuirTarefas && (
+                        <div className="flex justify-end">
+                          <Button
+                            size="sm"
+                            onClick={() => handleAtribuirTarefa(colaborador)}
+                          >
+                            <Plus className="h-4 w-4 mr-2" />
+                            Atribuir Tarefa
+                          </Button>
+                        </div>
+                      )}
 
                       {items.length === 0 ? (
                         <p className="text-sm text-muted-foreground py-4">

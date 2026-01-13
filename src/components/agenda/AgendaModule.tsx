@@ -23,7 +23,7 @@ import { NovoItemDialog } from "./NovoItemDialog";
 
 export const AgendaModule = () => {
   const { toast } = useToast();
-  const { userId, isAdmin, isGestor } = useUserRole();
+  const { userId, canViewAgendaColaboradores } = useUserRole();
   const [isLoading, setIsLoading] = useState(true);
   const [pendentesCount, setPendentesCount] = useState(0);
   const [novoItemDialogOpen, setNovoItemDialogOpen] = useState(false);
@@ -128,7 +128,7 @@ export const AgendaModule = () => {
             <ListTodo className="h-4 w-4 mr-2" />
             Minha Agenda
           </TabsTrigger>
-          {(isAdmin || isGestor) && (
+          {canViewAgendaColaboradores && (
             <TabsTrigger value="colaboradores">
               <Users className="h-4 w-4 mr-2" />
               Agenda de Colaboradores
@@ -140,7 +140,7 @@ export const AgendaModule = () => {
           <MinhaAgenda key={refreshKey} />
         </TabsContent>
 
-        {(isAdmin || isGestor) && (
+        {canViewAgendaColaboradores && (
           <TabsContent value="colaboradores" className="mt-4">
             <AgendaColaboradores key={refreshKey} onAtribuirTarefa={() => setNovoItemDialogOpen(true)} />
           </TabsContent>

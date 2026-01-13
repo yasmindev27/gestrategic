@@ -43,58 +43,125 @@ const Sidebar = ({
 }: SidebarProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isTecnico } = useUserRole();
+  const { role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isTecnico, isRecepcao, isClassificacao, isNir, isFaturamento } = useUserRole();
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
   const [isCollapsed, setIsCollapsed] = useState(false);
 
-  // Menu items baseado no role do usuário
+  // Menu items baseado no perfil do usuário conforme escopo técnico
   const getMenuItems = () => {
     const items: { icon: typeof LayoutDashboard; label: string; id: string }[] = [];
 
-    // Dashboard e Abrir Chamado - NÃO mostrar para Manutenção, Engenharia Clínica e Laboratório puros
-    if (!isManutencao && !isEngenhariaCinica && !isLaboratorio) {
+    // ADMINISTRADOR - acesso total
+    if (isAdmin) {
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
-      );
-    }
-
-    // Itens específicos para técnicos - mostrar apenas seu módulo
-    if (isTI || isAdmin) {
-      items.push({ icon: Monitor, label: "TI", id: "tecnico-ti" });
-    }
-    if (isManutencao || isAdmin) {
-      items.push({ icon: Wrench, label: "Manutenção", id: "tecnico-manutencao" });
-    }
-    if (isEngenhariaCinica || isAdmin) {
-      items.push({ icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" });
-    }
-    if (isLaboratorio || isAdmin) {
-      items.push({ icon: FlaskConical, label: "Laboratório", id: "laboratorio" });
-    }
-
-    // Itens gerais (esconder para técnicos puros, mostrar para admin e outros)
-    if (!isTecnico || isAdmin) {
-      items.push(
-        { icon: FileOutput, label: "Faturamento", id: "faturamento" },
+        { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
         { icon: ClipboardX, label: "Controle de Fichas", id: "controle-fichas" },
         { icon: Receipt, label: "Prontuários", id: "prontuarios" },
+        { icon: Monitor, label: "TI", id: "tecnico-ti" },
+        { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao" },
+        { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" },
+        { icon: FlaskConical, label: "Laboratório", id: "laboratorio" },
+        { icon: Calendar, label: "Agenda", id: "agenda" },
+        { icon: Users, label: "Equipe", id: "equipe" },
+        { icon: Shield, label: "Administração", id: "admin" },
       );
+      return items;
     }
 
-    // Agenda - todos os usuários
-    items.push({ icon: Calendar, label: "Agenda", id: "agenda" });
-
-    // Equipe - apenas admin e gestor
-    if (isAdmin || isGestor) {
-      items.push({ icon: Users, label: "Equipe", id: "equipe" });
+    // GESTOR - Agenda própria + Agenda colaboradores + Atribuir tarefas
+    if (isGestor) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: Calendar, label: "Agenda", id: "agenda" },
+        { icon: Users, label: "Equipe", id: "equipe" },
+      );
+      return items;
     }
 
-    // Admin sempre tem acesso à administração
-    if (isAdmin) {
-      items.push({ icon: Shield, label: "Administração", id: "admin" });
+    // RECEPÇÃO - Lista saída prontuários + Controle fichas inconsistentes
+    if (isRecepcao) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
+        { icon: ClipboardX, label: "Controle de Fichas", id: "controle-fichas" },
+        { icon: Calendar, label: "Agenda", id: "agenda" },
+      );
+      return items;
     }
+
+    // CLASSIFICAÇÃO - Lista saída prontuários (validar existência)
+    if (isClassificacao) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
+        { icon: Calendar, label: "Agenda", id: "agenda" },
+      );
+      return items;
+    }
+
+    // NIR - Lista saída prontuários (validar registros)
+    if (isNir) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
+        { icon: Calendar, label: "Agenda", id: "agenda" },
+      );
+      return items;
+    }
+
+    // FATURAMENTO - Lista prontuários + Prontuários faltantes + Avaliação
+    if (isFaturamento) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
+        { icon: Receipt, label: "Avaliar Prontuários", id: "prontuarios" },
+        { icon: Calendar, label: "Agenda", id: "agenda" },
+      );
+      return items;
+    }
+
+    // TÉCNICOS - apenas seus módulos específicos
+    if (isTI) {
+      items.push(
+        { icon: Monitor, label: "TI", id: "tecnico-ti" },
+        { icon: Calendar, label: "Agenda", id: "agenda" },
+      );
+      return items;
+    }
+
+    if (isManutencao) {
+      items.push(
+        { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao" },
+        { icon: Calendar, label: "Agenda", id: "agenda" },
+      );
+      return items;
+    }
+
+    if (isEngenhariaCinica) {
+      items.push(
+        { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" },
+        { icon: Calendar, label: "Agenda", id: "agenda" },
+      );
+      return items;
+    }
+
+    if (isLaboratorio) {
+      items.push(
+        { icon: FlaskConical, label: "Laboratório", id: "laboratorio" },
+        { icon: Calendar, label: "Agenda", id: "agenda" },
+      );
+      return items;
+    }
+
+    // FUNCIONÁRIO padrão - apenas Dashboard e Agenda
+    items.push(
+      { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+      { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
+      { icon: Calendar, label: "Agenda", id: "agenda" },
+    );
 
     return items;
   };
