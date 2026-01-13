@@ -19,6 +19,7 @@ import {
   Wrench,
   Stethoscope,
   Ticket,
+  FlaskConical,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -41,7 +42,7 @@ const Sidebar = ({
 }: SidebarProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { role, isAdmin, isTI, isManutencao, isEngenhariaCinica, isTecnico } = useUserRole();
+  const { role, isAdmin, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isTecnico } = useUserRole();
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -50,8 +51,8 @@ const Sidebar = ({
   const getMenuItems = () => {
     const items: { icon: typeof LayoutDashboard; label: string; id: string }[] = [];
 
-    // Dashboard e Abrir Chamado - NÃO mostrar para Manutenção e Engenharia Clínica puros
-    if (!isManutencao && !isEngenhariaCinica) {
+    // Dashboard e Abrir Chamado - NÃO mostrar para Manutenção, Engenharia Clínica e Laboratório puros
+    if (!isManutencao && !isEngenhariaCinica && !isLaboratorio) {
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
@@ -67,6 +68,9 @@ const Sidebar = ({
     }
     if (isEngenhariaCinica || isAdmin) {
       items.push({ icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" });
+    }
+    if (isLaboratorio || isAdmin) {
+      items.push({ icon: FlaskConical, label: "Laboratório", id: "laboratorio" });
     }
 
     // Itens gerais (esconder para técnicos puros, mostrar para admin e outros)

@@ -353,6 +353,48 @@ export type Database = {
           },
         ]
       }
+      escalas_laboratorio: {
+        Row: {
+          ano: number
+          created_at: string
+          created_by: string
+          dia: number
+          funcionario_id: string | null
+          funcionario_nome: string
+          id: string
+          mes: number
+          observacao: string | null
+          turno: string
+          updated_at: string
+        }
+        Insert: {
+          ano: number
+          created_at?: string
+          created_by: string
+          dia: number
+          funcionario_id?: string | null
+          funcionario_nome: string
+          id?: string
+          mes: number
+          observacao?: string | null
+          turno: string
+          updated_at?: string
+        }
+        Update: {
+          ano?: number
+          created_at?: string
+          created_by?: string
+          dia?: number
+          funcionario_id?: string | null
+          funcionario_nome?: string
+          id?: string
+          mes?: number
+          observacao?: string | null
+          turno?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       logs_acesso: {
         Row: {
           acao: string
@@ -686,6 +728,7 @@ export type Database = {
         | "ti"
         | "manutencao"
         | "engenharia_clinica"
+        | "laboratorio"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -824,6 +867,7 @@ export const Constants = {
         "ti",
         "manutencao",
         "engenharia_clinica",
+        "laboratorio",
       ],
     },
   },
