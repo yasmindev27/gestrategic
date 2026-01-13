@@ -120,6 +120,7 @@ const statusColors: Record<string, string> = {
   pendente: "bg-yellow-500 text-white",
   aprovada: "bg-green-500 text-white",
   rejeitada: "bg-red-500 text-white",
+  cancelada: "bg-gray-500 text-white",
 };
 
 export const RestauranteModule = () => {
@@ -398,6 +399,31 @@ export const RestauranteModule = () => {
       toast({
         title: "Erro",
         description: "Erro ao atualizar status.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleCancelarSolicitacao = async (id: string) => {
+    try {
+      const { error } = await supabase
+        .from("solicitacoes_dieta")
+        .update({ status: "cancelada" })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Solicitação cancelada com sucesso.",
+      });
+
+      fetchData();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao cancelar solicitação.",
         variant: "destructive",
       });
     }
@@ -729,6 +755,7 @@ export const RestauranteModule = () => {
                       <TableHead>Período</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Solicitado em</TableHead>
+                      <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -759,6 +786,19 @@ export const RestauranteModule = () => {
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
+                        </TableCell>
+                        <TableCell>
+                          {s.status === "pendente" && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 text-red-600 hover:bg-red-50"
+                              onClick={() => handleCancelarSolicitacao(s.id)}
+                            >
+                              <XCircle className="h-4 w-4 mr-1" />
+                              Cancelar
+                            </Button>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
