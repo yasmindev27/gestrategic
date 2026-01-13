@@ -1,73 +1,100 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
+interface UserRoleState {
+  roles: AppRole[];
+  primaryRole: AppRole | null;
+  userId: string | null;
+  isLoading: boolean;
+}
+
 export const useUserRole = () => {
-  const [roles, setRoles] = useState<AppRole[]>([]);
-  const [primaryRole, setPrimaryRole] = useState<AppRole | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [state, setState] = useState<UserRoleState>({
+    roles: [],
+    primaryRole: null,
+    userId: null,
+    isLoading: true,
+  });
 
   useEffect(() => {
+    let isMounted = true;
+    
     const fetchUserRoles = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
-        if (!user) {
-          setIsLoading(false);
+        if (!user || !isMounted) {
+          if (isMounted) {
+            setState(prev => ({ ...prev, isLoading: false }));
+          }
           return;
         }
-        
-        setUserId(user.id);
 
         const { data, error } = await supabase
           .from("user_roles")
           .select("role")
           .eq("user_id", user.id);
 
+        if (!isMounted) return;
+
         if (error) {
           console.error("Error fetching user roles:", error);
+          setState(prev => ({ ...prev, isLoading: false, userId: user.id }));
         } else if (data && data.length > 0) {
           const userRoles = data.map(r => r.role);
-          setRoles(userRoles);
           // Define role primário (prioridade: admin > gestor > outros)
+          let primary: AppRole;
           if (userRoles.includes("admin")) {
-            setPrimaryRole("admin");
+            primary = "admin";
           } else if (userRoles.includes("gestor")) {
-            setPrimaryRole("gestor");
+            primary = "gestor";
           } else {
-            setPrimaryRole(userRoles[0]);
+            primary = userRoles[0];
           }
+          setState({
+            roles: userRoles,
+            primaryRole: primary,
+            userId: user.id,
+            isLoading: false,
+          });
+        } else {
+          setState(prev => ({ ...prev, isLoading: false, userId: user.id }));
         }
       } catch (error) {
         console.error("Error:", error);
-      } finally {
-        setIsLoading(false);
+        if (isMounted) {
+          setState(prev => ({ ...prev, isLoading: false }));
+        }
       }
     };
 
     fetchUserRoles();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const hasRole = (checkRole: AppRole): boolean => {
-    return roles.includes(checkRole);
-  };
+  const hasRole = useCallback((checkRole: AppRole): boolean => {
+    return state.roles.includes(checkRole);
+  }, [state.roles]);
 
-  const hasAnyRole = (checkRoles: AppRole[]): boolean => {
-    return roles.some(r => checkRoles.includes(r));
-  };
+  const hasAnyRole = useCallback((checkRoles: AppRole[]): boolean => {
+    return state.roles.some(r => checkRoles.includes(r));
+  }, [state.roles]);
 
-  const isAdmin = hasRole("admin");
-  const isGestor = hasRole("gestor");
-  const isRecepcao = hasRole("recepcao");
-  const isClassificacao = hasRole("classificacao");
-  const isNir = hasRole("nir");
-  const isFaturamento = hasRole("faturamento");
-  const isTI = hasRole("ti");
-  const isManutencao = hasRole("manutencao");
-  const isEngenhariaCinica = hasRole("engenharia_clinica");
-  const isLaboratorio = hasRole("laboratorio");
+  const isAdmin = state.roles.includes("admin");
+  const isGestor = state.roles.includes("gestor");
+  const isRecepcao = state.roles.includes("recepcao");
+  const isClassificacao = state.roles.includes("classificacao");
+  const isNir = state.roles.includes("nir");
+  const isFaturamento = state.roles.includes("faturamento");
+  const isTI = state.roles.includes("ti");
+  const isManutencao = state.roles.includes("manutencao");
+  const isEngenhariaCinica = state.roles.includes("engenharia_clinica");
+  const isLaboratorio = state.roles.includes("laboratorio");
   const isTecnico = isTI || isManutencao || isEngenhariaCinica || isLaboratorio;
 
   // Permissões específicas por módulo
@@ -79,10 +106,10 @@ export const useUserRole = () => {
   const canViewAgendaColaboradores = isAdmin || isGestor;
 
   return {
-    role: primaryRole,
-    roles,
-    userId,
-    isLoading,
+    role: state.primaryRole,
+    roles: state.roles,
+    userId: state.userId,
+    isLoading: state.isLoading,
     hasRole,
     hasAnyRole,
     isAdmin,
