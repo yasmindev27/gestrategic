@@ -1,82 +1,101 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LayoutDashboard, ClipboardList, FileText, Users, Settings, HelpCircle, Activity, LogOut, ChevronLeft, ChevronRight } from "lucide-react";
+import { useUserRole } from "@/hooks/useUserRole";
+import { 
+  LayoutDashboard, 
+  Users, 
+  Settings, 
+  HelpCircle, 
+  Activity, 
+  LogOut, 
+  ChevronLeft, 
+  ChevronRight,
+  FileOutput, 
+  ClipboardX, 
+  Receipt, 
+  Shield,
+  Monitor,
+  Wrench,
+  Stethoscope,
+} from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+
 interface SidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
 }
-import { FileOutput, ClipboardX, Receipt, Shield } from "lucide-react";
-const menuItems = [{
-  icon: LayoutDashboard,
-  label: "Dashboard",
-  id: "dashboard"
-}, {
-  icon: FileOutput,
-  label: "Faturamento",
-  id: "faturamento"
-}, {
-  icon: ClipboardX,
-  label: "Controle de Fichas",
-  id: "controle-fichas"
-}, {
-  icon: Receipt,
-  label: "Prontuários",
-  id: "prontuarios"
-}, {
-  icon: Users,
-  label: "Equipe",
-  id: "equipe"
-}, {
-  icon: Shield,
-  label: "Administração",
-  id: "admin"
-}];
-const bottomItems = [{
-  icon: Settings,
-  label: "Configurações",
-  id: "configuracoes"
-}, {
-  icon: HelpCircle,
-  label: "Ajuda",
-  id: "ajuda"
-}];
+
+const bottomItems = [
+  { icon: Settings, label: "Configurações", id: "configuracoes" },
+  { icon: HelpCircle, label: "Ajuda", id: "ajuda" },
+];
 const Sidebar = ({
   activeSection,
   onSectionChange
 }: SidebarProps) => {
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+  const { role, isAdmin, isTI, isManutencao, isEngenhariaCinica, isTecnico } = useUserRole();
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
   const [isCollapsed, setIsCollapsed] = useState(false);
+
+  // Menu items baseado no role do usuário
+  const getMenuItems = () => {
+    const items = [
+      { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+    ];
+
+    // Itens específicos para técnicos - mostrar apenas seu módulo
+    if (isTI || isAdmin) {
+      items.push({ icon: Monitor, label: "TI", id: "tecnico-ti" });
+    }
+    if (isManutencao || isAdmin) {
+      items.push({ icon: Wrench, label: "Manutenção", id: "tecnico-manutencao" });
+    }
+    if (isEngenhariaCinica || isAdmin) {
+      items.push({ icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" });
+    }
+
+    // Itens gerais (esconder para técnicos puros, mostrar para admin e outros)
+    if (!isTecnico || isAdmin) {
+      items.push(
+        { icon: FileOutput, label: "Faturamento", id: "faturamento" },
+        { icon: ClipboardX, label: "Controle de Fichas", id: "controle-fichas" },
+        { icon: Receipt, label: "Prontuários", id: "prontuarios" },
+        { icon: Users, label: "Equipe", id: "equipe" },
+      );
+    }
+
+    // Admin sempre tem acesso à administração
+    if (isAdmin) {
+      items.push({ icon: Shield, label: "Administração", id: "admin" });
+    }
+
+    return items;
+  };
+
+  const menuItems = getMenuItems();
+
   useEffect(() => {
     const fetchUserData = async () => {
-      const {
-        data: {
-          user
-        }
-      } = await supabase.auth.getUser();
+      const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setUserEmail(user.email || "");
-        // Try to get full name from user metadata or profile
         const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Usuário";
         setUserName(fullName);
       }
     };
     fetchUserData();
   }, []);
+
   const handleLogout = async () => {
-    const {
-      error
-    } = await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
     if (error) {
       toast({
         title: "Erro",
@@ -87,6 +106,7 @@ const Sidebar = ({
       navigate("/");
     }
   };
+
   const getInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };

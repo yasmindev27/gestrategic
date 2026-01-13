@@ -10,6 +10,7 @@ import { FaturamentoModule } from "@/components/modules/FaturamentoModule";
 import { SaidaProntuariosModule } from "@/components/modules/SaidaProntuariosModule";
 import { ControleFichasModule } from "@/components/modules/ControleFichasModule";
 import { AdminModule } from "@/components/modules/AdminModule";
+import { TecnicoModule } from "@/components/modules/TecnicoModule";
 import { Loader2 } from "lucide-react";
 
 const Dashboard = () => {
@@ -78,6 +79,13 @@ const Dashboard = () => {
           {activeSection === "equipe" && <TeamSection />}
 
           {activeSection === "admin" && <AdminModule />}
+
+          {/* Módulos dos Técnicos */}
+          {activeSection === "tecnico-ti" && <TecnicoModule setor="ti" />}
+          
+          {activeSection === "tecnico-manutencao" && <TecnicoModule setor="manutencao" />}
+          
+          {activeSection === "tecnico-engenharia" && <TecnicoModule setor="engenharia_clinica" />}
         </div>
       </main>
     </div>

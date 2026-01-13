@@ -55,6 +55,10 @@ export const useUserRole = () => {
   const isClassificacao = hasRole("classificacao");
   const isNir = hasRole("nir");
   const isFaturamento = hasRole("faturamento");
+  const isTI = hasRole("ti");
+  const isManutencao = hasRole("manutencao");
+  const isEngenhariaCinica = hasRole("engenharia_clinica");
+  const isTecnico = isTI || isManutencao || isEngenhariaCinica;
 
   return {
     role,
@@ -68,5 +72,9 @@ export const useUserRole = () => {
     isClassificacao,
     isNir,
     isFaturamento,
+    isTI,
+    isManutencao,
+    isEngenhariaCinica,
+    isTecnico,
   };
 };
