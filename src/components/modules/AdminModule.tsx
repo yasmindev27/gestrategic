@@ -61,11 +61,16 @@ import {
   Eye,
   EyeOff,
   RefreshCw,
+  Briefcase,
+  Building2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Database } from "@/integrations/supabase/types";
+import { CargosManager } from "@/components/admin/CargosManager";
+import { SetoresManager } from "@/components/admin/SetoresManager";
+import { GestoresVinculacao } from "@/components/admin/GestoresVinculacao";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -124,6 +129,8 @@ export const AdminModule = () => {
   
   const [users, setUsers] = useState<UserWithRole[]>([]);
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [cargosOptions, setCargosOptions] = useState<{ id: string; nome: string }[]>([]);
+  const [setoresOptions, setSetoresOptions] = useState<{ id: string; nome: string }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   
@@ -152,9 +159,24 @@ export const AdminModule = () => {
     if (isAdmin) {
       fetchUsers();
       fetchLogs();
+      fetchCargosSetores();
       logAction("acesso", "admin");
     }
   }, [isAdmin]);
+
+  const fetchCargosSetores = async () => {
+    try {
+      const [cargosRes, setoresRes] = await Promise.all([
+        supabase.from("cargos").select("id, nome").eq("ativo", true).order("nome"),
+        supabase.from("setores").select("id, nome").eq("ativo", true).order("nome"),
+      ]);
+
+      if (cargosRes.data) setCargosOptions(cargosRes.data);
+      if (setoresRes.data) setSetoresOptions(setoresRes.data);
+    } catch (error) {
+      console.error("Error fetching cargos/setores:", error);
+    }
+  };
 
   const fetchUsers = async () => {
     setIsLoading(true);
@@ -469,14 +491,26 @@ export const AdminModule = () => {
       </div>
 
       <Tabs defaultValue="usuarios">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="usuarios">
             <Users className="h-4 w-4 mr-2" />
             Usuários
           </TabsTrigger>
+          <TabsTrigger value="cargos">
+            <Briefcase className="h-4 w-4 mr-2" />
+            Cargos
+          </TabsTrigger>
+          <TabsTrigger value="setores">
+            <Building2 className="h-4 w-4 mr-2" />
+            Setores
+          </TabsTrigger>
+          <TabsTrigger value="gestores">
+            <UserCog className="h-4 w-4 mr-2" />
+            Gestores
+          </TabsTrigger>
           <TabsTrigger value="logs">
             <History className="h-4 w-4 mr-2" />
-            Logs de Acesso
+            Logs
           </TabsTrigger>
           <TabsTrigger value="configuracoes">
             <Settings className="h-4 w-4 mr-2" />
@@ -589,6 +623,18 @@ export const AdminModule = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="cargos" className="space-y-4 mt-4">
+          <CargosManager />
+        </TabsContent>
+
+        <TabsContent value="setores" className="space-y-4 mt-4">
+          <SetoresManager />
+        </TabsContent>
+
+        <TabsContent value="gestores" className="space-y-4 mt-4">
+          <GestoresVinculacao />
         </TabsContent>
 
         <TabsContent value="logs" className="space-y-4 mt-4">
@@ -760,22 +806,40 @@ export const AdminModule = () => {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="create-cargo">Cargo</Label>
-                <Input
-                  id="create-cargo"
+                <Label htmlFor="create-cargo">Cargo *</Label>
+                <Select
                   value={formData.cargo}
-                  onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
-                  placeholder="Cargo"
-                />
+                  onValueChange={(value) => setFormData({ ...formData, cargo: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o cargo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cargosOptions.map((cargo) => (
+                      <SelectItem key={cargo.id} value={cargo.nome}>
+                        {cargo.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="create-setor">Setor</Label>
-                <Input
-                  id="create-setor"
+                <Label htmlFor="create-setor">Setor *</Label>
+                <Select
                   value={formData.setor}
-                  onChange={(e) => setFormData({ ...formData, setor: e.target.value })}
-                  placeholder="Setor"
-                />
+                  onValueChange={(value) => setFormData({ ...formData, setor: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o setor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {setoresOptions.map((setor) => (
+                      <SelectItem key={setor.id} value={setor.nome}>
+                        {setor.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="space-y-2">
@@ -859,21 +923,39 @@ export const AdminModule = () => {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="edit-cargo">Cargo</Label>
-                <Input
-                  id="edit-cargo"
+                <Select
                   value={formData.cargo}
-                  onChange={(e) => setFormData({ ...formData, cargo: e.target.value })}
-                  placeholder="Cargo"
-                />
+                  onValueChange={(value) => setFormData({ ...formData, cargo: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o cargo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {cargosOptions.map((cargo) => (
+                      <SelectItem key={cargo.id} value={cargo.nome}>
+                        {cargo.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="edit-setor">Setor</Label>
-                <Input
-                  id="edit-setor"
+                <Select
                   value={formData.setor}
-                  onChange={(e) => setFormData({ ...formData, setor: e.target.value })}
-                  placeholder="Setor"
-                />
+                  onValueChange={(value) => setFormData({ ...formData, setor: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o setor" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {setoresOptions.map((setor) => (
+                      <SelectItem key={setor.id} value={setor.nome}>
+                        {setor.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
