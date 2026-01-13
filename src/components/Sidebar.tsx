@@ -21,6 +21,7 @@ import {
   Ticket,
   FlaskConical,
   Calendar,
+  ScrollText,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -66,6 +67,7 @@ const Sidebar = ({
         { icon: FlaskConical, label: "Laboratório", id: "laboratorio" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
         { icon: Users, label: "Equipe", id: "equipe" },
+        { icon: ScrollText, label: "Logs", id: "logs" },
         { icon: Shield, label: "Administração", id: "admin" },
       );
       return items;
