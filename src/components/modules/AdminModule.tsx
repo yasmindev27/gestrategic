@@ -106,6 +106,7 @@ const roleLabels: Record<AppRole, string> = {
   manutencao: "Manutenção",
   engenharia_clinica: "Engenharia Clínica",
   laboratorio: "Laboratório",
+  restaurante: "Restaurante",
 };
 
 const roleColors: Record<AppRole, string> = {
@@ -120,6 +121,7 @@ const roleColors: Record<AppRole, string> = {
   manutencao: "bg-orange-500 text-white",
   engenharia_clinica: "bg-teal-500 text-white",
   laboratorio: "bg-pink-500 text-white",
+  restaurante: "bg-amber-600 text-white",
 };
 
 export const AdminModule = () => {
