@@ -250,22 +250,33 @@ export const RestauranteModule = () => {
   };
 
   const handleSubmitSolicitacao = async () => {
-    if (!formData.tipo_dieta || !formData.data_inicio || !formData.paciente_nome || !formData.quarto_leito) {
-      toast({
-        title: "Erro",
-        description: "Preencha os campos obrigatórios: nome do paciente, quarto/leito, tipo de dieta e data início.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (formData.is_dieta_extra && !formData.observacao_dieta_extra.trim()) {
-      toast({
-        title: "Erro",
-        description: "Para dieta extra, é obrigatório informar o motivo na observação.",
-        variant: "destructive",
-      });
-      return;
+    // Validação diferente para dieta extra
+    if (formData.is_dieta_extra) {
+      if (!formData.tipo_dieta || !formData.data_inicio) {
+        toast({
+          title: "Erro",
+          description: "Preencha os campos obrigatórios: tipo de dieta e data início.",
+          variant: "destructive",
+        });
+        return;
+      }
+      if (!formData.observacao_dieta_extra.trim()) {
+        toast({
+          title: "Erro",
+          description: "Para dieta extra, é obrigatório informar o motivo na observação.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } else {
+      if (!formData.tipo_dieta || !formData.data_inicio || !formData.paciente_nome || !formData.quarto_leito) {
+        toast({
+          title: "Erro",
+          description: "Preencha os campos obrigatórios: nome do paciente, quarto/leito, tipo de dieta e data início.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     setIsSubmitting(true);
@@ -282,9 +293,9 @@ export const RestauranteModule = () => {
         solicitante_id: user.id,
         solicitante_nome: userName,
         tipo_dieta: formData.tipo_dieta,
-        paciente_nome: formData.paciente_nome,
+        paciente_nome: formData.paciente_nome || null,
         paciente_data_nascimento: formData.paciente_data_nascimento || null,
-        quarto_leito: formData.quarto_leito,
+        quarto_leito: formData.quarto_leito || null,
         tem_acompanhante: formData.tem_acompanhante,
         restricoes_alimentares: formData.restricoes_alimentares || null,
         horarios_refeicoes: formData.horarios_refeicoes,
