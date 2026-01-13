@@ -60,6 +60,7 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  RefreshCw,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -497,6 +498,10 @@ export const AdminModule = () => {
                     className="pl-10"
                   />
                 </div>
+                <Button variant="outline" onClick={() => fetchUsers()} disabled={isLoading}>
+                  <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+                  Atualizar
+                </Button>
                 <Button onClick={() => { resetFormData(); setCreateDialogOpen(true); }}>
                   <UserPlus className="h-4 w-4 mr-2" />
                   Novo Usuário
