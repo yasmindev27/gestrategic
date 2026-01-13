@@ -58,7 +58,8 @@ export const useUserRole = () => {
   const isTI = hasRole("ti");
   const isManutencao = hasRole("manutencao");
   const isEngenhariaCinica = hasRole("engenharia_clinica");
-  const isTecnico = isTI || isManutencao || isEngenhariaCinica;
+  const isLaboratorio = hasRole("laboratorio");
+  const isTecnico = isTI || isManutencao || isEngenhariaCinica || isLaboratorio;
 
   return {
     role,
@@ -75,6 +76,7 @@ export const useUserRole = () => {
     isTI,
     isManutencao,
     isEngenhariaCinica,
+    isLaboratorio,
     isTecnico,
   };
 };
