@@ -1,0 +1,421 @@
+import { useState, useEffect, useMemo, useCallback } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useLogAccess } from "@/hooks/useLogAccess";
+import { useToast } from "@/hooks/use-toast";
+import { subDays, differenceInHours, parseISO, format } from "date-fns";
+
+import { DashboardFiltersComponent } from "./DashboardFilters";
+import { KPICards } from "./KPICards";
+import { CategoriaCharts } from "./CategoriaCharts";
+import { EvolucaoChart } from "./EvolucaoChart";
+import { TempoAtendimentoCards } from "./TempoAtendimentoCards";
+import { ProdutividadeEquipe } from "./ProdutividadeEquipe";
+import { RelatorioIADialog } from "./RelatorioIADialog";
+import { 
+  Chamado, 
+  DashboardFilters, 
+  KPIMetrics, 
+  AtendenteProdutividade,
+  SLA_HORAS,
+} from "./types";
+
+export const ChamadosDashboard = () => {
+  const { role } = useUserRole();
+  const { logAction } = useLogAccess();
+  const { toast } = useToast();
+
+  const [chamados, setChamados] = useState<Chamado[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isExporting, setIsExporting] = useState(false);
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [relatorioIA, setRelatorioIA] = useState("");
+  const [showRelatorioDialog, setShowRelatorioDialog] = useState(false);
+
+  const today = new Date();
+  const [filters, setFilters] = useState<DashboardFilters>({
+    periodo: "30dias",
+    dataInicio: subDays(today, 30),
+    dataFim: today,
+    atendente: "todos",
+    categoria: "todos",
+    status: "todos",
+  });
+
+  // Fetch chamados
+  useEffect(() => {
+    const fetchChamados = async () => {
+      setIsLoading(true);
+      try {
+        let query = supabase
+          .from("chamados")
+          .select("*")
+          .order("created_at", { ascending: false });
+
+        if (filters.dataInicio) {
+          query = query.gte("data_abertura", filters.dataInicio.toISOString());
+        }
+        if (filters.dataFim) {
+          query = query.lte("data_abertura", filters.dataFim.toISOString());
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+        
+        setChamados((data || []) as Chamado[]);
+      } catch (error) {
+        console.error("Error fetching chamados:", error);
+        toast({
+          title: "Erro",
+          description: "Erro ao carregar chamados.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchChamados();
+    logAction("acesso", "dashboard_chamados");
+  }, [filters.dataInicio, filters.dataFim]);
+
+  // Filter chamados based on filters
+  const filteredChamados = useMemo(() => {
+    return chamados.filter((c) => {
+      if (filters.atendente !== "todos" && c.atribuido_para !== filters.atendente) {
+        return false;
+      }
+      if (filters.categoria !== "todos" && c.categoria !== filters.categoria) {
+        return false;
+      }
+      if (filters.status !== "todos" && c.status !== filters.status) {
+        return false;
+      }
+      return true;
+    });
+  }, [chamados, filters]);
+
+  // Calculate KPIs
+  const metrics: KPIMetrics = useMemo(() => {
+    const resolvidos = filteredChamados.filter(
+      (c) => c.status === "resolvido" && c.data_resolucao
+    );
+
+    // Tempo médio de resolução
+    let tempoMedioResolucao = 0;
+    let maiorTempoResolucao = 0;
+    if (resolvidos.length > 0) {
+      const tempos = resolvidos.map((c) =>
+        differenceInHours(parseISO(c.data_resolucao!), parseISO(c.data_abertura))
+      );
+      tempoMedioResolucao = tempos.reduce((a, b) => a + b, 0) / tempos.length;
+      maiorTempoResolucao = Math.max(...tempos, 0);
+    }
+
+    // Percentual SLA
+    let dentroDeSLA = 0;
+    resolvidos.forEach((c) => {
+      const horasResolucao = differenceInHours(
+        parseISO(c.data_resolucao!),
+        parseISO(c.data_abertura)
+      );
+      const slaHoras = SLA_HORAS[c.prioridade] || 24;
+      if (horasResolucao <= slaHoras) {
+        dentroDeSLA++;
+      }
+    });
+    const percentualSLA = resolvidos.length > 0 
+      ? (dentroDeSLA / resolvidos.length) * 100 
+      : 0;
+
+    // Taxa de reabertura (simplificado - considerando chamados com status aberto que já foram resolvidos)
+    // Em um cenário real, precisaríamos de um histórico de status
+    const taxaReabertura = 0; // Placeholder
+
+    // Média por atendente
+    const atendentes = new Set(filteredChamados.map((c) => c.atribuido_para).filter(Boolean));
+    const mediaChamadosPorAtendente = atendentes.size > 0 
+      ? filteredChamados.length / atendentes.size 
+      : 0;
+
+    // Tempo médio de primeiro atendimento
+    const emAndamentoOuResolvidos = filteredChamados.filter(
+      (c) => c.status !== "aberto" && c.status !== "cancelado"
+    );
+    let tempoMedioPrimeiroAtendimento = 0;
+    if (emAndamentoOuResolvidos.length > 0) {
+      const tempos = emAndamentoOuResolvidos.map((c) =>
+        Math.max(0, differenceInHours(parseISO(c.updated_at), parseISO(c.data_abertura)))
+      );
+      tempoMedioPrimeiroAtendimento = tempos.reduce((a, b) => a + b, 0) / tempos.length;
+    }
+
+    return {
+      totalChamados: filteredChamados.length,
+      tempoMedioAtendimento: tempoMedioPrimeiroAtendimento,
+      tempoMedioResolucao,
+      percentualSLA,
+      taxaReabertura,
+      mediaChamadosPorAtendente,
+      maiorTempoResolucao,
+      tempoMedioPrimeiroAtendimento,
+    };
+  }, [filteredChamados]);
+
+  // Calculate team productivity
+  const produtividade: AtendenteProdutividade[] = useMemo(() => {
+    const atendenteMap = new Map<string, {
+      id: string;
+      nome: string;
+      chamados: Chamado[];
+    }>();
+
+    filteredChamados.forEach((c) => {
+      const id = c.atribuido_para || c.solicitante_id;
+      const nome = c.atribuido_para ? "Atendente" : c.solicitante_nome;
+      
+      if (!atendenteMap.has(id)) {
+        atendenteMap.set(id, { id, nome, chamados: [] });
+      }
+      atendenteMap.get(id)!.chamados.push(c);
+    });
+
+    // Também buscar nomes dos atendentes únicos
+    const result: AtendenteProdutividade[] = [];
+    atendenteMap.forEach((data) => {
+      const resolvidos = data.chamados.filter(
+        (c) => c.status === "resolvido" && c.data_resolucao
+      );
+      
+      let tempoMedio = 0;
+      let slaCumprido = 0;
+      
+      if (resolvidos.length > 0) {
+        const tempos = resolvidos.map((c) =>
+          differenceInHours(parseISO(c.data_resolucao!), parseISO(c.data_abertura))
+        );
+        tempoMedio = tempos.reduce((a, b) => a + b, 0) / tempos.length;
+        
+        resolvidos.forEach((c) => {
+          const horas = differenceInHours(
+            parseISO(c.data_resolucao!),
+            parseISO(c.data_abertura)
+          );
+          if (horas <= (SLA_HORAS[c.prioridade] || 24)) {
+            slaCumprido++;
+          }
+        });
+      }
+
+      result.push({
+        id: data.id,
+        nome: data.nome,
+        chamadosAtendidos: data.chamados.length,
+        tempoMedioAtendimento: tempoMedio,
+        percentualSLA: resolvidos.length > 0 ? (slaCumprido / resolvidos.length) * 100 : 0,
+        chamadosReabertos: 0,
+      });
+    });
+
+    return result.sort((a, b) => b.chamadosAtendidos - a.chamadosAtendidos);
+  }, [filteredChamados]);
+
+  // Get unique categories and attendants
+  const categorias = useMemo(() => {
+    return [...new Set(chamados.map((c) => c.categoria))];
+  }, [chamados]);
+
+  const atendentes = useMemo(() => {
+    const uniqueAtendentes = new Map<string, string>();
+    chamados.forEach((c) => {
+      if (c.atribuido_para) {
+        uniqueAtendentes.set(c.atribuido_para, c.solicitante_nome);
+      }
+    });
+    return Array.from(uniqueAtendentes.entries()).map(([id, nome]) => ({ id, nome }));
+  }, [chamados]);
+
+  // Export PDF
+  const handleExportPDF = useCallback(() => {
+    toast({
+      title: "Exportando PDF",
+      description: "O download do PDF será iniciado em breve...",
+    });
+    
+    // Criar uma versão printable e acionar window.print()
+    setTimeout(() => {
+      window.print();
+    }, 500);
+  }, [toast]);
+
+  // Export Excel
+  const handleExportExcel = useCallback(() => {
+    setIsExporting(true);
+    
+    try {
+      // Criar CSV com dados
+      const headers = [
+        "Número",
+        "Título",
+        "Categoria",
+        "Prioridade",
+        "Status",
+        "Solicitante",
+        "Setor",
+        "Data Abertura",
+        "Data Resolução",
+      ];
+      
+      const rows = filteredChamados.map((c) => [
+        c.numero_chamado,
+        `"${c.titulo.replace(/"/g, '""')}"`,
+        c.categoria,
+        c.prioridade,
+        c.status,
+        c.solicitante_nome,
+        c.solicitante_setor || "",
+        format(parseISO(c.data_abertura), "dd/MM/yyyy HH:mm"),
+        c.data_resolucao ? format(parseISO(c.data_resolucao), "dd/MM/yyyy HH:mm") : "",
+      ]);
+
+      const csvContent = [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
+      
+      const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = `chamados_${format(new Date(), "yyyy-MM-dd")}.csv`;
+      link.click();
+
+      toast({
+        title: "Exportado!",
+        description: "Arquivo CSV gerado com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao exportar dados.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  }, [filteredChamados, toast]);
+
+  // Generate AI Report
+  const handleGerarRelatorioIA = useCallback(async () => {
+    setIsGeneratingReport(true);
+    setShowRelatorioDialog(true);
+    setRelatorioIA("");
+
+    try {
+      // Preparar dados para a IA
+      const porCategoria: Record<string, number> = {};
+      const porPrioridade: Record<string, number> = {};
+      
+      filteredChamados.forEach((c) => {
+        porCategoria[c.categoria] = (porCategoria[c.categoria] || 0) + 1;
+        porPrioridade[c.prioridade] = (porPrioridade[c.prioridade] || 0) + 1;
+      });
+
+      const dados = {
+        total: filteredChamados.length,
+        abertos: filteredChamados.filter((c) => c.status === "aberto").length,
+        emAndamento: filteredChamados.filter((c) => c.status === "em_andamento").length,
+        resolvidos: filteredChamados.filter((c) => c.status === "resolvido").length,
+        cancelados: filteredChamados.filter((c) => c.status === "cancelado").length,
+        porCategoria,
+        porPrioridade,
+        tempoMedioResolucao: metrics.tempoMedioResolucao,
+        percentualSLA: metrics.percentualSLA,
+        taxaReabertura: metrics.taxaReabertura,
+        produtividadeEquipe: produtividade.slice(0, 10).map((p) => ({
+          nome: p.nome,
+          chamadosAtendidos: p.chamadosAtendidos,
+          percentualSLA: p.percentualSLA,
+        })),
+        periodo: {
+          inicio: filters.dataInicio ? format(filters.dataInicio, "dd/MM/yyyy") : "N/A",
+          fim: filters.dataFim ? format(filters.dataFim, "dd/MM/yyyy") : "N/A",
+        } as { inicio: string; fim: string },
+      };
+      const response = await supabase.functions.invoke("gerar-relatorio-chamados", {
+        body: { dados },
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message);
+      }
+
+      setRelatorioIA(response.data.relatorio);
+      
+      await logAction("gerar_relatorio_ia", "dashboard_chamados", {
+        periodo: dados.periodo,
+        totalChamados: dados.total,
+      });
+
+    } catch (error) {
+      console.error("Error generating report:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao gerar relatório com IA. Tente novamente.",
+        variant: "destructive",
+      });
+      setShowRelatorioDialog(false);
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  }, [filteredChamados, metrics, produtividade, filters, logAction, toast]);
+
+  const handleExportRelatorioPDF = useCallback(() => {
+    toast({
+      title: "Exportando Relatório",
+      description: "O download do PDF será iniciado...",
+    });
+    window.print();
+  }, [toast]);
+
+  return (
+    <div className="space-y-6 print:space-y-4">
+      {/* Filters */}
+      <DashboardFiltersComponent
+        filters={filters}
+        onFiltersChange={setFilters}
+        atendentes={atendentes}
+        categorias={categorias}
+        onExportPDF={handleExportPDF}
+        onExportExcel={handleExportExcel}
+        onGerarRelatorioIA={handleGerarRelatorioIA}
+        isExporting={isExporting}
+        isGeneratingReport={isGeneratingReport}
+      />
+
+      {/* KPIs */}
+      <KPICards metrics={metrics} isLoading={isLoading} />
+
+      {/* Categoria Charts */}
+      <CategoriaCharts chamados={filteredChamados} />
+
+      {/* Evolução no Tempo */}
+      <EvolucaoChart
+        chamados={filteredChamados}
+        dataInicio={filters.dataInicio}
+        dataFim={filters.dataFim}
+      />
+
+      {/* Tempo de Atendimento */}
+      <TempoAtendimentoCards chamados={filteredChamados} />
+
+      {/* Produtividade da Equipe */}
+      <ProdutividadeEquipe produtividade={produtividade} isLoading={isLoading} />
+
+      {/* Relatório IA Dialog */}
+      <RelatorioIADialog
+        open={showRelatorioDialog}
+        onOpenChange={setShowRelatorioDialog}
+        relatorio={relatorioIA}
+        isLoading={isGeneratingReport}
+        onExportPDF={handleExportRelatorioPDF}
+      />
+    </div>
+  );
+};
