@@ -5,12 +5,13 @@ import { Database } from "@/integrations/supabase/types";
 type AppRole = Database["public"]["Enums"]["app_role"];
 
 export const useUserRole = () => {
-  const [role, setRole] = useState<AppRole | null>(null);
+  const [roles, setRoles] = useState<AppRole[]>([]);
+  const [primaryRole, setPrimaryRole] = useState<AppRole | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchUserRole = async () => {
+    const fetchUserRoles = async () => {
       try {
         const { data: { user } } = await supabase.auth.getUser();
         if (!user) {
@@ -23,13 +24,21 @@ export const useUserRole = () => {
         const { data, error } = await supabase
           .from("user_roles")
           .select("role")
-          .eq("user_id", user.id)
-          .maybeSingle();
+          .eq("user_id", user.id);
 
         if (error) {
-          console.error("Error fetching user role:", error);
-        } else if (data) {
-          setRole(data.role);
+          console.error("Error fetching user roles:", error);
+        } else if (data && data.length > 0) {
+          const userRoles = data.map(r => r.role);
+          setRoles(userRoles);
+          // Define role primário (prioridade: admin > gestor > outros)
+          if (userRoles.includes("admin")) {
+            setPrimaryRole("admin");
+          } else if (userRoles.includes("gestor")) {
+            setPrimaryRole("gestor");
+          } else {
+            setPrimaryRole(userRoles[0]);
+          }
         }
       } catch (error) {
         console.error("Error:", error);
@@ -38,15 +47,15 @@ export const useUserRole = () => {
       }
     };
 
-    fetchUserRole();
+    fetchUserRoles();
   }, []);
 
   const hasRole = (checkRole: AppRole): boolean => {
-    return role === checkRole;
+    return roles.includes(checkRole);
   };
 
-  const hasAnyRole = (roles: AppRole[]): boolean => {
-    return role !== null && roles.includes(role);
+  const hasAnyRole = (checkRoles: AppRole[]): boolean => {
+    return roles.some(r => checkRoles.includes(r));
   };
 
   const isAdmin = hasRole("admin");
@@ -70,7 +79,8 @@ export const useUserRole = () => {
   const canViewAgendaColaboradores = isAdmin || isGestor;
 
   return {
-    role,
+    role: primaryRole,
+    roles,
     userId,
     isLoading,
     hasRole,
