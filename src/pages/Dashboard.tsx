@@ -14,6 +14,7 @@ import { TecnicoModule } from "@/components/modules/TecnicoModule";
 import { AbrirChamadoModule } from "@/components/modules/AbrirChamadoModule";
 import { LaboratorioModule } from "@/components/modules/LaboratorioModule";
 import { Loader2 } from "lucide-react";
+import { useUserRole } from "@/hooks/useUserRole";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -21,6 +22,7 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
+  const { isAdmin, isGestor } = useUserRole();
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -80,7 +82,7 @@ const Dashboard = () => {
 
           {activeSection === "prontuarios" && <FaturamentoModule />}
 
-          {activeSection === "equipe" && <TeamSection />}
+          {activeSection === "equipe" && (isAdmin || isGestor) && <TeamSection />}
 
           {activeSection === "admin" && <AdminModule />}
 
