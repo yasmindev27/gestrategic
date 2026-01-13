@@ -1,0 +1,812 @@
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { 
+  UtensilsCrossed, 
+  Calendar, 
+  CalendarDays, 
+  Salad, 
+  Loader2,
+  Plus,
+  Coffee,
+  Sun,
+  Cookie,
+  Moon,
+  Clock,
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, addDays } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+interface Cardapio {
+  id: string;
+  data: string;
+  tipo_refeicao: string;
+  descricao: string;
+  observacoes: string | null;
+}
+
+interface SolicitacaoDieta {
+  id: string;
+  solicitante_id: string;
+  solicitante_nome: string;
+  tipo_dieta: string;
+  descricao_especifica: string | null;
+  data_inicio: string;
+  data_fim: string | null;
+  status: string;
+  observacoes: string | null;
+  created_at: string;
+}
+
+const tipoRefeicaoLabels: Record<string, { label: string; icon: React.ReactNode }> = {
+  cafe: { label: "Café da Manhã", icon: <Coffee className="h-4 w-4" /> },
+  almoco: { label: "Almoço", icon: <Sun className="h-4 w-4" /> },
+  lanche: { label: "Lanche", icon: <Cookie className="h-4 w-4" /> },
+  jantar: { label: "Jantar", icon: <Moon className="h-4 w-4" /> },
+};
+
+const tipoDietaLabels: Record<string, string> = {
+  normal: "Normal",
+  vegetariana: "Vegetariana",
+  low_carb: "Low Carb",
+  sem_gluten: "Sem Glúten",
+  sem_lactose: "Sem Lactose",
+  outra: "Outra",
+};
+
+const statusColors: Record<string, string> = {
+  pendente: "bg-yellow-500 text-white",
+  aprovada: "bg-green-500 text-white",
+  rejeitada: "bg-red-500 text-white",
+};
+
+export const RestauranteModule = () => {
+  const { toast } = useToast();
+  const { isAdmin, hasRole, userId } = useUserRole();
+  const isRestaurante = hasRole("restaurante");
+  const canManage = isAdmin || isRestaurante;
+
+  const [activeTab, setActiveTab] = useState("cardapio");
+  const [cardapioView, setCardapioView] = useState<"dia" | "semana">("dia");
+  const [cardapios, setCardapios] = useState<Cardapio[]>([]);
+  const [minhasSolicitacoes, setMinhasSolicitacoes] = useState<SolicitacaoDieta[]>([]);
+  const [todasSolicitacoes, setTodasSolicitacoes] = useState<SolicitacaoDieta[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [userName, setUserName] = useState("");
+
+  const [formData, setFormData] = useState({
+    tipo_dieta: "",
+    descricao_especifica: "",
+    data_inicio: format(new Date(), "yyyy-MM-dd"),
+    data_fim: "",
+    observacoes: "",
+  });
+
+  // Cardápio management states (for admin/restaurante)
+  const [cardapioDialogOpen, setCardapioDialogOpen] = useState(false);
+  const [cardapioFormData, setCardapioFormData] = useState({
+    data: format(new Date(), "yyyy-MM-dd"),
+    tipo_refeicao: "",
+    descricao: "",
+    observacoes: "",
+  });
+
+  useEffect(() => {
+    fetchData();
+    fetchUserName();
+  }, [cardapioView]);
+
+  const fetchUserName = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .single();
+      
+      if (profile) {
+        setUserName(profile.full_name);
+      }
+    }
+  };
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      // Fetch cardápios
+      let startDate: Date;
+      let endDate: Date;
+
+      if (cardapioView === "dia") {
+        startDate = new Date();
+        endDate = new Date();
+      } else {
+        startDate = startOfWeek(new Date(), { weekStartsOn: 1 });
+        endDate = endOfWeek(new Date(), { weekStartsOn: 1 });
+      }
+
+      const { data: cardapiosData, error: cardapiosError } = await supabase
+        .from("cardapios")
+        .select("*")
+        .gte("data", format(startDate, "yyyy-MM-dd"))
+        .lte("data", format(endDate, "yyyy-MM-dd"))
+        .order("data")
+        .order("tipo_refeicao");
+
+      if (cardapiosError) throw cardapiosError;
+      setCardapios(cardapiosData || []);
+
+      // Fetch minhas solicitações
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: minhasData, error: minhasError } = await supabase
+          .from("solicitacoes_dieta")
+          .select("*")
+          .eq("solicitante_id", user.id)
+          .order("created_at", { ascending: false });
+
+        if (minhasError) throw minhasError;
+        setMinhasSolicitacoes(minhasData || []);
+
+        // Se for admin ou restaurante, buscar todas as solicitações
+        if (canManage) {
+          const { data: todasData, error: todasError } = await supabase
+            .from("solicitacoes_dieta")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+          if (todasError) throw todasError;
+          setTodasSolicitacoes(todasData || []);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching data:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar dados.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleSubmitSolicitacao = async () => {
+    if (!formData.tipo_dieta || !formData.data_inicio) {
+      toast({
+        title: "Erro",
+        description: "Preencha os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { error } = await supabase.from("solicitacoes_dieta").insert({
+        solicitante_id: user.id,
+        solicitante_nome: userName,
+        tipo_dieta: formData.tipo_dieta,
+        descricao_especifica: formData.descricao_especifica || null,
+        data_inicio: formData.data_inicio,
+        data_fim: formData.data_fim || null,
+        observacoes: formData.observacoes || null,
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Solicitação de dieta enviada com sucesso.",
+      });
+
+      setDialogOpen(false);
+      resetForm();
+      fetchData();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao enviar solicitação.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleSubmitCardapio = async () => {
+    if (!cardapioFormData.data || !cardapioFormData.tipo_refeicao || !cardapioFormData.descricao) {
+      toast({
+        title: "Erro",
+        description: "Preencha os campos obrigatórios.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { error } = await supabase.from("cardapios").upsert({
+        data: cardapioFormData.data,
+        tipo_refeicao: cardapioFormData.tipo_refeicao,
+        descricao: cardapioFormData.descricao,
+        observacoes: cardapioFormData.observacoes || null,
+        criado_por: user.id,
+      }, { onConflict: "data,tipo_refeicao" });
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Cardápio salvo com sucesso.",
+      });
+
+      setCardapioDialogOpen(false);
+      resetCardapioForm();
+      fetchData();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao salvar cardápio.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateSolicitacaoStatus = async (id: string, newStatus: string) => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const { error } = await supabase
+        .from("solicitacoes_dieta")
+        .update({
+          status: newStatus,
+          aprovado_por: user.id,
+          aprovado_em: new Date().toISOString(),
+        })
+        .eq("id", id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: `Solicitação ${newStatus === "aprovada" ? "aprovada" : "rejeitada"} com sucesso.`,
+      });
+
+      fetchData();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar status.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const resetForm = () => {
+    setFormData({
+      tipo_dieta: "",
+      descricao_especifica: "",
+      data_inicio: format(new Date(), "yyyy-MM-dd"),
+      data_fim: "",
+      observacoes: "",
+    });
+  };
+
+  const resetCardapioForm = () => {
+    setCardapioFormData({
+      data: format(new Date(), "yyyy-MM-dd"),
+      tipo_refeicao: "",
+      descricao: "",
+      observacoes: "",
+    });
+  };
+
+  const getCardapioForDay = (date: Date) => {
+    const dateStr = format(date, "yyyy-MM-dd");
+    return cardapios.filter(c => c.data === dateStr);
+  };
+
+  const weekDays = eachDayOfInterval({
+    start: startOfWeek(new Date(), { weekStartsOn: 1 }),
+    end: endOfWeek(new Date(), { weekStartsOn: 1 }),
+  });
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <UtensilsCrossed className="h-7 w-7" />
+            Restaurante
+          </h2>
+          <p className="text-muted-foreground">Cardápio e solicitações de dieta</p>
+        </div>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="cardapio" className="flex items-center gap-2">
+            <UtensilsCrossed className="h-4 w-4" />
+            Cardápio
+          </TabsTrigger>
+          <TabsTrigger value="solicitar" className="flex items-center gap-2">
+            <Salad className="h-4 w-4" />
+            Dietas
+          </TabsTrigger>
+          {canManage && (
+            <TabsTrigger value="gerenciar" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Gerenciar
+            </TabsTrigger>
+          )}
+        </TabsList>
+
+        {/* Cardápio Tab */}
+        <TabsContent value="cardapio" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Visualizar Cardápio</CardTitle>
+                  <CardDescription>Confira o cardápio do dia ou da semana</CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant={cardapioView === "dia" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCardapioView("dia")}
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Hoje
+                  </Button>
+                  <Button
+                    variant={cardapioView === "semana" ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => setCardapioView("semana")}
+                  >
+                    <CalendarDays className="h-4 w-4 mr-2" />
+                    Semana
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : cardapioView === "dia" ? (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">
+                    {format(new Date(), "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                  </h3>
+                  {getCardapioForDay(new Date()).length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <UtensilsCrossed className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                      <p>Nenhum cardápio cadastrado para hoje.</p>
+                    </div>
+                  ) : (
+                    <div className="grid gap-4 md:grid-cols-2">
+                      {["cafe", "almoco", "lanche", "jantar"].map((tipo) => {
+                        const cardapio = getCardapioForDay(new Date()).find(c => c.tipo_refeicao === tipo);
+                        if (!cardapio) return null;
+                        return (
+                          <Card key={tipo} className="border-l-4 border-l-primary">
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-base flex items-center gap-2">
+                                {tipoRefeicaoLabels[tipo]?.icon}
+                                {tipoRefeicaoLabels[tipo]?.label}
+                              </CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              <p className="text-sm">{cardapio.descricao}</p>
+                              {cardapio.observacoes && (
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  {cardapio.observacoes}
+                                </p>
+                              )}
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {weekDays.map((day) => {
+                    const dayCardapios = getCardapioForDay(day);
+                    return (
+                      <div key={day.toISOString()} className={`p-4 rounded-lg border ${isToday(day) ? "bg-primary/5 border-primary" : ""}`}>
+                        <h4 className="font-semibold mb-3 flex items-center gap-2">
+                          {format(day, "EEEE, dd/MM", { locale: ptBR })}
+                          {isToday(day) && <Badge>Hoje</Badge>}
+                        </h4>
+                        {dayCardapios.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">Sem cardápio cadastrado</p>
+                        ) : (
+                          <div className="grid gap-2 md:grid-cols-4">
+                            {["cafe", "almoco", "lanche", "jantar"].map((tipo) => {
+                              const cardapio = dayCardapios.find(c => c.tipo_refeicao === tipo);
+                              if (!cardapio) return null;
+                              return (
+                                <div key={tipo} className="p-2 bg-secondary/50 rounded text-sm">
+                                  <span className="font-medium flex items-center gap-1">
+                                    {tipoRefeicaoLabels[tipo]?.icon}
+                                    {tipoRefeicaoLabels[tipo]?.label}
+                                  </span>
+                                  <p className="text-muted-foreground truncate">{cardapio.descricao}</p>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Dietas Tab */}
+        <TabsContent value="solicitar" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Solicitações de Dieta</CardTitle>
+                  <CardDescription>Solicite uma dieta especial</CardDescription>
+                </div>
+                <Button onClick={() => setDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Nova Solicitação
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                </div>
+              ) : minhasSolicitacoes.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <Salad className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Você ainda não fez nenhuma solicitação de dieta.</p>
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Tipo de Dieta</TableHead>
+                      <TableHead>Período</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Solicitado em</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {minhasSolicitacoes.map((s) => (
+                      <TableRow key={s.id}>
+                        <TableCell>
+                          <div>
+                            <span className="font-medium">{tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta}</span>
+                            {s.descricao_especifica && (
+                              <p className="text-xs text-muted-foreground">{s.descricao_especifica}</p>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-sm">
+                            <Clock className="h-3 w-3" />
+                            {format(new Date(s.data_inicio), "dd/MM/yyyy")}
+                            {s.data_fim && ` - ${format(new Date(s.data_fim), "dd/MM/yyyy")}`}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={statusColors[s.status]}>
+                            {s.status === "pendente" && <AlertCircle className="h-3 w-3 mr-1" />}
+                            {s.status === "aprovada" && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                            {s.status === "rejeitada" && <XCircle className="h-3 w-3 mr-1" />}
+                            {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground text-sm">
+                          {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Gerenciar Tab (Admin/Restaurante only) */}
+        {canManage && (
+          <TabsContent value="gerenciar" className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              {/* Gerenciar Cardápio */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">Cardápios</CardTitle>
+                    <Button size="sm" onClick={() => setCardapioDialogOpen(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Novo
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Cadastre os cardápios do dia ou da semana.
+                  </p>
+                  <div className="space-y-2">
+                    {cardapios.slice(0, 5).map((c) => (
+                      <div key={c.id} className="p-2 border rounded text-sm flex justify-between items-center">
+                        <div>
+                          <span className="font-medium">{format(new Date(c.data + 'T12:00:00'), "dd/MM")}</span>
+                          <span className="text-muted-foreground mx-2">-</span>
+                          <span>{tipoRefeicaoLabels[c.tipo_refeicao]?.label}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Gerenciar Solicitações */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Solicitações de Dieta</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {todasSolicitacoes.filter(s => s.status === "pendente").length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Nenhuma solicitação pendente.</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {todasSolicitacoes
+                        .filter(s => s.status === "pendente")
+                        .slice(0, 5)
+                        .map((s) => (
+                          <div key={s.id} className="p-3 border rounded space-y-2">
+                            <div className="flex justify-between items-start">
+                              <div>
+                                <p className="font-medium text-sm">{s.solicitante_nome}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {tipoDietaLabels[s.tipo_dieta]} - {format(new Date(s.data_inicio), "dd/MM")}
+                                </p>
+                              </div>
+                              <div className="flex gap-1">
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-green-600 hover:bg-green-50"
+                                  onClick={() => handleUpdateSolicitacaoStatus(s.id, "aprovada")}
+                                >
+                                  <CheckCircle2 className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="h-7 text-red-600 hover:bg-red-50"
+                                  onClick={() => handleUpdateSolicitacaoStatus(s.id, "rejeitada")}
+                                >
+                                  <XCircle className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+        )}
+      </Tabs>
+
+      {/* Dialog para Solicitar Dieta */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Solicitar Dieta Especial</DialogTitle>
+            <DialogDescription>
+              Preencha os dados para solicitar uma dieta especial.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>Tipo de Dieta *</Label>
+              <Select
+                value={formData.tipo_dieta}
+                onValueChange={(value) => setFormData({ ...formData, tipo_dieta: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(tipoDietaLabels).map(([value, label]) => (
+                    <SelectItem key={value} value={value}>
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {formData.tipo_dieta === "outra" && (
+              <div className="space-y-2">
+                <Label>Especifique a dieta *</Label>
+                <Input
+                  value={formData.descricao_especifica}
+                  onChange={(e) => setFormData({ ...formData, descricao_especifica: e.target.value })}
+                  placeholder="Descreva a dieta necessária"
+                />
+              </div>
+            )}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Data Início *</Label>
+                <Input
+                  type="date"
+                  value={formData.data_inicio}
+                  onChange={(e) => setFormData({ ...formData, data_inicio: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Data Fim (opcional)</Label>
+                <Input
+                  type="date"
+                  value={formData.data_fim}
+                  onChange={(e) => setFormData({ ...formData, data_fim: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Observações</Label>
+              <Textarea
+                value={formData.observacoes}
+                onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
+                placeholder="Informações adicionais sobre sua necessidade alimentar"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmitSolicitacao} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Enviar Solicitação
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog para Cadastrar Cardápio */}
+      <Dialog open={cardapioDialogOpen} onOpenChange={setCardapioDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Cadastrar Cardápio</DialogTitle>
+            <DialogDescription>
+              Adicione ou atualize o cardápio de uma refeição.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Data *</Label>
+                <Input
+                  type="date"
+                  value={cardapioFormData.data}
+                  onChange={(e) => setCardapioFormData({ ...cardapioFormData, data: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Refeição *</Label>
+                <Select
+                  value={cardapioFormData.tipo_refeicao}
+                  onValueChange={(value) => setCardapioFormData({ ...cardapioFormData, tipo_refeicao: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(tipoRefeicaoLabels).map(([value, { label }]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Descrição do Cardápio *</Label>
+              <Textarea
+                value={cardapioFormData.descricao}
+                onChange={(e) => setCardapioFormData({ ...cardapioFormData, descricao: e.target.value })}
+                placeholder="Ex: Arroz, feijão, frango grelhado, salada..."
+                rows={3}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Observações</Label>
+              <Input
+                value={cardapioFormData.observacoes}
+                onChange={(e) => setCardapioFormData({ ...cardapioFormData, observacoes: e.target.value })}
+                placeholder="Informações adicionais"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCardapioDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmitCardapio} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Salvar Cardápio
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
