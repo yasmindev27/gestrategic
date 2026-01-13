@@ -82,6 +82,12 @@ interface SolicitacaoDieta {
   status: string;
   observacoes: string | null;
   created_at: string;
+  paciente_nome: string | null;
+  paciente_data_nascimento: string | null;
+  quarto_leito: string | null;
+  tem_acompanhante: boolean | null;
+  restricoes_alimentares: string | null;
+  horarios_refeicoes: string[] | null;
 }
 
 const tipoRefeicaoLabels: Record<string, { label: string; icon: React.ReactNode }> = {
@@ -92,13 +98,23 @@ const tipoRefeicaoLabels: Record<string, { label: string; icon: React.ReactNode 
 };
 
 const tipoDietaLabels: Record<string, string> = {
-  normal: "Normal",
-  vegetariana: "Vegetariana",
-  low_carb: "Low Carb",
-  sem_gluten: "Sem Glúten",
-  sem_lactose: "Sem Lactose",
-  outra: "Outra",
+  pastosa: "Pastosa",
+  geral: "Geral",
+  liquida: "Líquida",
+  hipossodica: "Hipossódica (Baixo Sódio)",
+  hipocalorica: "Hipocalórica (Baixas Calorias)",
+  has_dm: "HAS/DM",
+  enteral: "Enteral",
+  branda: "Branda",
+  suspensa: "Suspensa",
 };
+
+const horariosRefeicaoOptions = [
+  { value: "cafe", label: "Café da Manhã" },
+  { value: "almoco", label: "Almoço" },
+  { value: "lanche", label: "Lanche da Tarde" },
+  { value: "jantar", label: "Jantar" },
+];
 
 const statusColors: Record<string, string> = {
   pendente: "bg-yellow-500 text-white",
@@ -123,8 +139,13 @@ export const RestauranteModule = () => {
   const [userName, setUserName] = useState("");
 
   const [formData, setFormData] = useState({
+    paciente_nome: "",
+    paciente_data_nascimento: "",
+    quarto_leito: "",
+    tem_acompanhante: false,
     tipo_dieta: "",
-    descricao_especifica: "",
+    restricoes_alimentares: "",
+    horarios_refeicoes: ["cafe", "almoco", "lanche", "jantar"] as string[],
     data_inicio: format(new Date(), "yyyy-MM-dd"),
     data_fim: "",
     observacoes: "",
@@ -227,10 +248,10 @@ export const RestauranteModule = () => {
   };
 
   const handleSubmitSolicitacao = async () => {
-    if (!formData.tipo_dieta || !formData.data_inicio) {
+    if (!formData.tipo_dieta || !formData.data_inicio || !formData.paciente_nome || !formData.quarto_leito) {
       toast({
         title: "Erro",
-        description: "Preencha os campos obrigatórios.",
+        description: "Preencha os campos obrigatórios: nome do paciente, quarto/leito, tipo de dieta e data início.",
         variant: "destructive",
       });
       return;
@@ -245,7 +266,12 @@ export const RestauranteModule = () => {
         solicitante_id: user.id,
         solicitante_nome: userName,
         tipo_dieta: formData.tipo_dieta,
-        descricao_especifica: formData.descricao_especifica || null,
+        paciente_nome: formData.paciente_nome,
+        paciente_data_nascimento: formData.paciente_data_nascimento || null,
+        quarto_leito: formData.quarto_leito,
+        tem_acompanhante: formData.tem_acompanhante,
+        restricoes_alimentares: formData.restricoes_alimentares || null,
+        horarios_refeicoes: formData.horarios_refeicoes,
         data_inicio: formData.data_inicio,
         data_fim: formData.data_fim || null,
         observacoes: formData.observacoes || null,
@@ -352,8 +378,13 @@ export const RestauranteModule = () => {
 
   const resetForm = () => {
     setFormData({
+      paciente_nome: "",
+      paciente_data_nascimento: "",
+      quarto_leito: "",
+      tem_acompanhante: false,
       tipo_dieta: "",
-      descricao_especifica: "",
+      restricoes_alimentares: "",
+      horarios_refeicoes: ["cafe", "almoco", "lanche", "jantar"],
       data_inicio: format(new Date(), "yyyy-MM-dd"),
       data_fim: "",
       observacoes: "",
@@ -422,8 +453,13 @@ export const RestauranteModule = () => {
   const exportToExcel = () => {
     const dataToExport = dashboardSolicitacoes.map(s => ({
       "Solicitante": s.solicitante_nome,
+      "Paciente": s.paciente_nome || "-",
+      "Data Nascimento": s.paciente_data_nascimento ? format(new Date(s.paciente_data_nascimento), "dd/MM/yyyy") : "-",
+      "Quarto/Leito": s.quarto_leito || "-",
+      "Tem Acompanhante": s.tem_acompanhante ? "Sim" : "Não",
       "Tipo de Dieta": tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
-      "Descrição": s.descricao_especifica || "-",
+      "Restrições Alimentares": s.restricoes_alimentares || "-",
+      "Horários": s.horarios_refeicoes?.map(h => horariosRefeicaoOptions.find(o => o.value === h)?.label).join(", ") || "-",
       "Data Início": format(new Date(s.data_inicio), "dd/MM/yyyy"),
       "Data Fim": s.data_fim ? format(new Date(s.data_fim), "dd/MM/yyyy") : "-",
       "Status": s.status.charAt(0).toUpperCase() + s.status.slice(1),
@@ -445,7 +481,7 @@ export const RestauranteModule = () => {
   };
 
   const exportToPDF = () => {
-    const doc = new jsPDF();
+    const doc = new jsPDF({ orientation: "landscape" });
     
     // Header
     doc.setFontSize(18);
@@ -460,16 +496,18 @@ export const RestauranteModule = () => {
     
     // Table
     const tableData = dashboardSolicitacoes.map(s => [
-      s.solicitante_nome,
+      s.paciente_nome || "-",
+      s.quarto_leito || "-",
       tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
+      s.restricoes_alimentares || "-",
       format(new Date(s.data_inicio), "dd/MM/yyyy"),
       s.status.charAt(0).toUpperCase() + s.status.slice(1),
-      format(new Date(s.created_at), "dd/MM/yyyy"),
+      s.solicitante_nome,
     ]);
 
     autoTable(doc, {
       startY: 50,
-      head: [["Solicitante", "Tipo de Dieta", "Data Início", "Status", "Solicitado em"]],
+      head: [["Paciente", "Quarto/Leito", "Tipo de Dieta", "Restrições", "Data Início", "Status", "Solicitante"]],
       body: tableData,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [59, 130, 246] },
@@ -824,22 +862,31 @@ export const RestauranteModule = () => {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Solicitante</TableHead>
+                            <TableHead>Paciente</TableHead>
+                            <TableHead>Quarto/Leito</TableHead>
                             <TableHead>Tipo de Dieta</TableHead>
                             <TableHead>Período</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead>Solicitado em</TableHead>
+                            <TableHead>Solicitante</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
                           {dashboardSolicitacoes.map((s) => (
                             <TableRow key={s.id}>
-                              <TableCell className="font-medium">{s.solicitante_nome}</TableCell>
+                              <TableCell>
+                                <div>
+                                  <span className="font-medium">{s.paciente_nome || "N/A"}</span>
+                                  {s.tem_acompanhante && (
+                                    <p className="text-xs text-muted-foreground">Com acompanhante</p>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>{s.quarto_leito || "N/A"}</TableCell>
                               <TableCell>
                                 <div>
                                   <span>{tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta}</span>
-                                  {s.descricao_especifica && (
-                                    <p className="text-xs text-muted-foreground">{s.descricao_especifica}</p>
+                                  {s.restricoes_alimentares && (
+                                    <p className="text-xs text-muted-foreground">{s.restricoes_alimentares}</p>
                                   )}
                                 </div>
                               </TableCell>
@@ -859,7 +906,7 @@ export const RestauranteModule = () => {
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-muted-foreground text-sm">
-                                {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
+                                {s.solicitante_nome}
                               </TableCell>
                             </TableRow>
                           ))}
@@ -922,10 +969,16 @@ export const RestauranteModule = () => {
                         .map((s) => (
                           <div key={s.id} className="p-3 border rounded space-y-2">
                             <div className="flex justify-between items-start">
-                              <div>
-                                <p className="font-medium text-sm">{s.solicitante_nome}</p>
+                              <div className="space-y-1">
+                                <p className="font-medium text-sm">Paciente: {s.paciente_nome || "N/A"}</p>
                                 <p className="text-xs text-muted-foreground">
-                                  {tipoDietaLabels[s.tipo_dieta]} - {format(new Date(s.data_inicio), "dd/MM")}
+                                  Quarto/Leito: {s.quarto_leito || "N/A"}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  {tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta} - {format(new Date(s.data_inicio), "dd/MM")}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Solicitado por: {s.solicitante_nome}
                                 </p>
                               </div>
                               <div className="flex gap-1">
@@ -960,42 +1013,119 @@ export const RestauranteModule = () => {
 
       {/* Dialog para Solicitar Dieta */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Solicitar Dieta Especial</DialogTitle>
+            <DialogTitle>Solicitar Dieta para Paciente</DialogTitle>
             <DialogDescription>
-              Preencha os dados para solicitar uma dieta especial.
+              Preencha os dados do paciente para solicitar uma dieta especial.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            <div className="space-y-2">
-              <Label>Tipo de Dieta *</Label>
-              <Select
-                value={formData.tipo_dieta}
-                onValueChange={(value) => setFormData({ ...formData, tipo_dieta: value })}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(tipoDietaLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            {formData.tipo_dieta === "outra" && (
+            {/* Dados do Paciente */}
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <h4 className="font-medium text-sm">Dados do Paciente</h4>
               <div className="space-y-2">
-                <Label>Especifique a dieta *</Label>
+                <Label>Nome Completo do Paciente *</Label>
                 <Input
-                  value={formData.descricao_especifica}
-                  onChange={(e) => setFormData({ ...formData, descricao_especifica: e.target.value })}
-                  placeholder="Descreva a dieta necessária"
+                  value={formData.paciente_nome}
+                  onChange={(e) => setFormData({ ...formData, paciente_nome: e.target.value })}
+                  placeholder="Nome completo do paciente"
                 />
               </div>
-            )}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Data de Nascimento</Label>
+                  <Input
+                    type="date"
+                    value={formData.paciente_data_nascimento}
+                    onChange={(e) => setFormData({ ...formData, paciente_data_nascimento: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Quarto e Leito *</Label>
+                  <Input
+                    value={formData.quarto_leito}
+                    onChange={(e) => setFormData({ ...formData, quarto_leito: e.target.value })}
+                    placeholder="Ex: Quarto 101 - Leito A"
+                  />
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="tem_acompanhante"
+                  checked={formData.tem_acompanhante}
+                  onChange={(e) => setFormData({ ...formData, tem_acompanhante: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="tem_acompanhante">O paciente tem acompanhante?</Label>
+              </div>
+            </div>
+
+            {/* Tipo de Dieta */}
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <h4 className="font-medium text-sm">Tipo de Dieta</h4>
+              <div className="space-y-2">
+                <Label>Selecione o Tipo de Dieta *</Label>
+                <Select
+                  value={formData.tipo_dieta}
+                  onValueChange={(value) => setFormData({ ...formData, tipo_dieta: value })}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo de dieta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(tipoDietaLabels).map(([value, label]) => (
+                      <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Restrições Alimentares</Label>
+                <Textarea
+                  value={formData.restricoes_alimentares}
+                  onChange={(e) => setFormData({ ...formData, restricoes_alimentares: e.target.value })}
+                  placeholder="Descreva as restrições alimentares do paciente (alergias, intolerâncias, etc.)"
+                  rows={2}
+                />
+              </div>
+            </div>
+
+            {/* Horários das Refeições */}
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <h4 className="font-medium text-sm">Horários das Refeições</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {horariosRefeicaoOptions.map((horario) => (
+                  <div key={horario.value} className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`horario_${horario.value}`}
+                      checked={formData.horarios_refeicoes.includes(horario.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setFormData({
+                            ...formData,
+                            horarios_refeicoes: [...formData.horarios_refeicoes, horario.value],
+                          });
+                        } else {
+                          setFormData({
+                            ...formData,
+                            horarios_refeicoes: formData.horarios_refeicoes.filter((h) => h !== horario.value),
+                          });
+                        }
+                      }}
+                      className="h-4 w-4 rounded border-gray-300"
+                    />
+                    <Label htmlFor={`horario_${horario.value}`}>{horario.label}</Label>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Período e Observações */}
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Data Início *</Label>
@@ -1019,7 +1149,7 @@ export const RestauranteModule = () => {
               <Textarea
                 value={formData.observacoes}
                 onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
-                placeholder="Informações adicionais sobre sua necessidade alimentar"
+                placeholder="Informações adicionais sobre a dieta ou o paciente"
               />
             </div>
           </div>

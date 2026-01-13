@@ -902,11 +902,17 @@ export type Database = {
           data_fim: string | null
           data_inicio: string
           descricao_especifica: string | null
+          horarios_refeicoes: string[] | null
           id: string
           observacoes: string | null
+          paciente_data_nascimento: string | null
+          paciente_nome: string | null
+          quarto_leito: string | null
+          restricoes_alimentares: string | null
           solicitante_id: string
           solicitante_nome: string
           status: string
+          tem_acompanhante: boolean | null
           tipo_dieta: string
           updated_at: string
         }
@@ -917,11 +923,17 @@ export type Database = {
           data_fim?: string | null
           data_inicio: string
           descricao_especifica?: string | null
+          horarios_refeicoes?: string[] | null
           id?: string
           observacoes?: string | null
+          paciente_data_nascimento?: string | null
+          paciente_nome?: string | null
+          quarto_leito?: string | null
+          restricoes_alimentares?: string | null
           solicitante_id: string
           solicitante_nome: string
           status?: string
+          tem_acompanhante?: boolean | null
           tipo_dieta: string
           updated_at?: string
         }
@@ -932,11 +944,17 @@ export type Database = {
           data_fim?: string | null
           data_inicio?: string
           descricao_especifica?: string | null
+          horarios_refeicoes?: string[] | null
           id?: string
           observacoes?: string | null
+          paciente_data_nascimento?: string | null
+          paciente_nome?: string | null
+          quarto_leito?: string | null
+          restricoes_alimentares?: string | null
           solicitante_id?: string
           solicitante_nome?: string
           status?: string
+          tem_acompanhante?: boolean | null
           tipo_dieta?: string
           updated_at?: string
         }
