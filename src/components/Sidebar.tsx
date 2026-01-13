@@ -18,6 +18,7 @@ import {
   Monitor,
   Wrench,
   Stethoscope,
+  Ticket,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -49,6 +50,7 @@ const Sidebar = ({
   const getMenuItems = () => {
     const items = [
       { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+      { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
     ];
 
     // Itens específicos para técnicos - mostrar apenas seu módulo

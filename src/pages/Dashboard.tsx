@@ -11,6 +11,7 @@ import { SaidaProntuariosModule } from "@/components/modules/SaidaProntuariosMod
 import { ControleFichasModule } from "@/components/modules/ControleFichasModule";
 import { AdminModule } from "@/components/modules/AdminModule";
 import { TecnicoModule } from "@/components/modules/TecnicoModule";
+import { AbrirChamadoModule } from "@/components/modules/AbrirChamadoModule";
 import { Loader2 } from "lucide-react";
 
 const Dashboard = () => {
@@ -69,6 +70,8 @@ const Dashboard = () => {
           <GreetingHeader />
           
           {activeSection === "dashboard" && <StatsCards />}
+
+          {activeSection === "abrir-chamado" && <AbrirChamadoModule />}
 
           {activeSection === "faturamento" && <SaidaProntuariosModule />}
 
