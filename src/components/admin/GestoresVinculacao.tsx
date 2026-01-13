@@ -28,9 +28,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { UserCog, Loader2, RefreshCw, Users, Briefcase, Building2 } from "lucide-react";
+import { UserCog, Loader2, RefreshCw, Users, Briefcase, Building2, UserPlus, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
 
 interface Gestor {
   user_id: string;
@@ -63,17 +64,28 @@ interface GestorSetor {
   setor_nome?: string;
 }
 
+interface UserProfile {
+  user_id: string;
+  full_name: string;
+  cargo: string | null;
+  setor: string | null;
+}
+
 export const GestoresVinculacao = () => {
   const { toast } = useToast();
   const [gestores, setGestores] = useState<Gestor[]>([]);
+  const [allUsers, setAllUsers] = useState<UserProfile[]>([]);
   const [cargos, setCargos] = useState<Cargo[]>([]);
   const [setores, setSetores] = useState<Setor[]>([]);
   const [gestorCargos, setGestorCargos] = useState<GestorCargo[]>([]);
   const [gestorSetores, setGestorSetores] = useState<GestorSetor[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [addGestorDialogOpen, setAddGestorDialogOpen] = useState(false);
   const [selectedGestor, setSelectedGestor] = useState<Gestor | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
   
   // Selection states
   const [selectedCargos, setSelectedCargos] = useState<string[]>([]);
@@ -96,14 +108,18 @@ export const GestoresVinculacao = () => {
 
       const gestorIds = roles?.map(r => r.user_id) || [];
 
-      if (gestorIds.length > 0) {
-        const { data: profiles, error: profilesError } = await supabase
-          .from("profiles")
-          .select("user_id, full_name, cargo, setor")
-          .in("user_id", gestorIds);
+      // Fetch all profiles for adding new gestores
+      const { data: allProfiles, error: allProfilesError } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, cargo, setor")
+        .order("full_name");
 
-        if (profilesError) throw profilesError;
-        setGestores(profiles || []);
+      if (allProfilesError) throw allProfilesError;
+      setAllUsers(allProfiles || []);
+
+      if (gestorIds.length > 0) {
+        const gestorProfiles = (allProfiles || []).filter(p => gestorIds.includes(p.user_id));
+        setGestores(gestorProfiles);
       } else {
         setGestores([]);
       }
@@ -262,6 +278,81 @@ export const GestoresVinculacao = () => {
     );
   };
 
+  const handleAddGestor = async () => {
+    if (!selectedUserId) {
+      toast({ title: "Erro", description: "Selecione um usuário.", variant: "destructive" });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Check if user already has gestor role
+      const { data: existingRole } = await supabase
+        .from("user_roles")
+        .select("id")
+        .eq("user_id", selectedUserId)
+        .eq("role", "gestor")
+        .maybeSingle();
+
+      if (existingRole) {
+        toast({ title: "Aviso", description: "Este usuário já é um gestor.", variant: "destructive" });
+        return;
+      }
+
+      // Add gestor role
+      const { error } = await supabase
+        .from("user_roles")
+        .insert({ user_id: selectedUserId, role: "gestor" });
+
+      if (error) throw error;
+
+      toast({ title: "Sucesso", description: "Usuário promovido a gestor com sucesso." });
+      setAddGestorDialogOpen(false);
+      setSelectedUserId("");
+      setSearchTerm("");
+      fetchData();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({ title: "Erro", description: "Erro ao promover usuário.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleRemoveGestor = async (gestorUserId: string) => {
+    if (!confirm("Tem certeza que deseja remover este gestor?")) return;
+
+    setIsSubmitting(true);
+    try {
+      // Remove gestor role
+      const { error: roleError } = await supabase
+        .from("user_roles")
+        .delete()
+        .eq("user_id", gestorUserId)
+        .eq("role", "gestor");
+
+      if (roleError) throw roleError;
+
+      // Remove all vinculations
+      await supabase.from("gestor_cargos").delete().eq("gestor_user_id", gestorUserId);
+      await supabase.from("gestor_setores").delete().eq("gestor_user_id", gestorUserId);
+
+      toast({ title: "Sucesso", description: "Gestor removido com sucesso." });
+      fetchData();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({ title: "Erro", description: "Erro ao remover gestor.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Filter users that are not already gestores
+  const availableUsers = allUsers.filter(
+    user => !gestores.some(g => g.user_id === user.user_id) &&
+    (searchTerm === "" || user.full_name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
   return (
     <Card>
       <CardHeader>
@@ -275,9 +366,15 @@ export const GestoresVinculacao = () => {
               Define quais cargos e setores cada gestor pode gerenciar
             </CardDescription>
           </div>
-          <Button variant="outline" size="sm" onClick={fetchData} disabled={isLoading}>
-            <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={fetchData} disabled={isLoading}>
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
+            </Button>
+            <Button size="sm" onClick={() => setAddGestorDialogOpen(true)}>
+              <UserPlus className="h-4 w-4 mr-2" />
+              Novo Gestor
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
@@ -340,14 +437,25 @@ export const GestoresVinculacao = () => {
                       </div>
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openVinculacaoDialog(gestor)}
-                      >
-                        <UserCog className="h-4 w-4 mr-2" />
-                        Configurar
-                      </Button>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => openVinculacaoDialog(gestor)}
+                        >
+                          <UserCog className="h-4 w-4 mr-2" />
+                          Vincular
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => handleRemoveGestor(gestor.user_id)}
+                          disabled={isSubmitting}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 );
@@ -436,6 +544,65 @@ export const GestoresVinculacao = () => {
             <Button onClick={handleSaveVinculacao} disabled={isSubmitting}>
               {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Salvar Vinculações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Gestor Dialog */}
+      <Dialog open={addGestorDialogOpen} onOpenChange={setAddGestorDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Adicionar Novo Gestor</DialogTitle>
+            <DialogDescription>
+              Selecione um usuário para promover a gestor
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Buscar Usuário</Label>
+              <Input
+                placeholder="Digite o nome do usuário..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label>Selecionar Usuário</Label>
+              <Select value={selectedUserId} onValueChange={setSelectedUserId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um usuário" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableUsers.length === 0 ? (
+                    <div className="p-2 text-sm text-muted-foreground text-center">
+                      Nenhum usuário disponível
+                    </div>
+                  ) : (
+                    availableUsers.map((user) => (
+                      <SelectItem key={user.user_id} value={user.user_id}>
+                        {user.full_name} {user.cargo && `(${user.cargo})`}
+                      </SelectItem>
+                    ))
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setAddGestorDialogOpen(false);
+              setSelectedUserId("");
+              setSearchTerm("");
+            }}>
+              Cancelar
+            </Button>
+            <Button onClick={handleAddGestor} disabled={isSubmitting || !selectedUserId}>
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Promover a Gestor
             </Button>
           </DialogFooter>
         </DialogContent>
