@@ -20,6 +20,7 @@ import {
   Stethoscope,
   Ticket,
   FlaskConical,
+  Calendar,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -81,6 +82,9 @@ const Sidebar = ({
         { icon: Receipt, label: "Prontuários", id: "prontuarios" },
       );
     }
+
+    // Agenda - todos os usuários
+    items.push({ icon: Calendar, label: "Agenda", id: "agenda" });
 
     // Equipe - apenas admin e gestor
     if (isAdmin || isGestor) {

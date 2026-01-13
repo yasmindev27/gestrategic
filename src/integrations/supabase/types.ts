@@ -14,6 +14,86 @@ export type Database = {
   }
   public: {
     Tables: {
+      agenda_destinatarios: {
+        Row: {
+          agenda_item_id: string
+          created_at: string | null
+          id: string
+          usuario_id: string
+          visualizado: boolean | null
+          visualizado_em: string | null
+        }
+        Insert: {
+          agenda_item_id: string
+          created_at?: string | null
+          id?: string
+          usuario_id: string
+          visualizado?: boolean | null
+          visualizado_em?: string | null
+        }
+        Update: {
+          agenda_item_id?: string
+          created_at?: string | null
+          id?: string
+          usuario_id?: string
+          visualizado?: boolean | null
+          visualizado_em?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agenda_destinatarios_agenda_item_id_fkey"
+            columns: ["agenda_item_id"]
+            isOneToOne: false
+            referencedRelation: "agenda_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agenda_items: {
+        Row: {
+          created_at: string | null
+          criado_por: string
+          data_fim: string | null
+          data_inicio: string
+          descricao: string | null
+          hora: string | null
+          id: string
+          prioridade: string | null
+          status: string | null
+          tipo: string
+          titulo: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          criado_por: string
+          data_fim?: string | null
+          data_inicio: string
+          descricao?: string | null
+          hora?: string | null
+          id?: string
+          prioridade?: string | null
+          status?: string | null
+          tipo: string
+          titulo: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          criado_por?: string
+          data_fim?: string | null
+          data_inicio?: string
+          descricao?: string | null
+          hora?: string | null
+          id?: string
+          prioridade?: string | null
+          status?: string | null
+          tipo?: string
+          titulo?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       avaliacoes_historico: {
         Row: {
           acao: string
@@ -808,6 +888,10 @@ export type Database = {
         Args: { _gestor_id: string; _usuario_id: string }
         Returns: boolean
       }
+      gestor_pode_atribuir: {
+        Args: { _gestor_id: string; _usuario_id: string }
+        Returns: boolean
+      }
       get_prontuario_status: {
         Args: { p_prontuario_id: string }
         Returns: {
@@ -818,6 +902,10 @@ export type Database = {
           paciente_nome: string
           prontuario_status: string
         }[]
+      }
+      get_tarefas_pendentes_count: {
+        Args: { _user_id: string }
+        Returns: number
       }
       get_user_role: {
         Args: { _user_id: string }
