@@ -942,6 +942,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_agenda_creator: {
+        Args: { _item_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_agenda_recipient: {
+        Args: { _item_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role:
