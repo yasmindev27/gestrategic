@@ -223,6 +223,7 @@ export type Database = {
           descricao: string
           id: string
           numero_chamado: string
+          prazo_conclusao: string | null
           prioridade: string
           solicitante_id: string
           solicitante_nome: string
@@ -241,6 +242,7 @@ export type Database = {
           descricao: string
           id?: string
           numero_chamado: string
+          prazo_conclusao?: string | null
           prioridade?: string
           solicitante_id: string
           solicitante_nome: string
@@ -259,6 +261,7 @@ export type Database = {
           descricao?: string
           id?: string
           numero_chamado?: string
+          prazo_conclusao?: string | null
           prioridade?: string
           solicitante_id?: string
           solicitante_nome?: string
@@ -301,6 +304,51 @@ export type Database = {
             columns: ["chamado_id"]
             isOneToOne: false
             referencedRelation: "chamados"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chamados_materiais: {
+        Row: {
+          chamado_id: string
+          created_at: string
+          id: string
+          observacao: string | null
+          produto_id: string
+          quantidade: number
+          registrado_por: string
+        }
+        Insert: {
+          chamado_id: string
+          created_at?: string
+          id?: string
+          observacao?: string | null
+          produto_id: string
+          quantidade: number
+          registrado_por: string
+        }
+        Update: {
+          chamado_id?: string
+          created_at?: string
+          id?: string
+          observacao?: string | null
+          produto_id?: string
+          quantidade?: number
+          registrado_por?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chamados_materiais_chamado_id_fkey"
+            columns: ["chamado_id"]
+            isOneToOne: false
+            referencedRelation: "chamados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chamados_materiais_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
             referencedColumns: ["id"]
           },
         ]
