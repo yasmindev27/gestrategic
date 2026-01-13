@@ -48,10 +48,15 @@ const Sidebar = ({
 
   // Menu items baseado no role do usuário
   const getMenuItems = () => {
-    const items = [
-      { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-      { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
-    ];
+    const items: { icon: typeof LayoutDashboard; label: string; id: string }[] = [];
+
+    // Dashboard e Abrir Chamado - NÃO mostrar para Manutenção e Engenharia Clínica puros
+    if (!isManutencao && !isEngenhariaCinica) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
+      );
+    }
 
     // Itens específicos para técnicos - mostrar apenas seu módulo
     if (isTI || isAdmin) {
