@@ -22,6 +22,7 @@ import {
   FlaskConical,
   Calendar,
   ScrollText,
+  UtensilsCrossed,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -158,17 +159,26 @@ const Sidebar = ({
       return items;
     }
 
-    // FUNCIONÁRIO padrão - apenas Dashboard e Agenda
+    // FUNCIONÁRIO padrão - apenas Dashboard, Chamado, Agenda e Restaurante
     items.push(
       { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
       { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
       { icon: Calendar, label: "Agenda", id: "agenda" },
+      { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante" },
     );
 
     return items;
   };
 
-  const menuItems = getMenuItems();
+  // Adicionar Restaurante a todos os menus
+  const addRestauranteToMenu = (items: { icon: typeof LayoutDashboard; label: string; id: string }[]) => {
+    if (!items.some(item => item.id === "restaurante")) {
+      items.push({ icon: UtensilsCrossed, label: "Restaurante", id: "restaurante" });
+    }
+    return items;
+  };
+
+  const menuItems = addRestauranteToMenu(getMenuItems());
 
   useEffect(() => {
     const fetchUserData = async () => {

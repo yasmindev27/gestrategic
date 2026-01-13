@@ -293,6 +293,39 @@ export type Database = {
           },
         ]
       }
+      cardapios: {
+        Row: {
+          created_at: string
+          criado_por: string
+          data: string
+          descricao: string
+          id: string
+          observacoes: string | null
+          tipo_refeicao: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criado_por: string
+          data: string
+          descricao: string
+          id?: string
+          observacoes?: string | null
+          tipo_refeicao: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criado_por?: string
+          data?: string
+          descricao?: string
+          id?: string
+          observacoes?: string | null
+          tipo_refeicao?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cargos: {
         Row: {
           ativo: boolean | null
@@ -858,6 +891,54 @@ export type Database = {
           id?: string
           nome?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      solicitacoes_dieta: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          created_at: string
+          data_fim: string | null
+          data_inicio: string
+          descricao_especifica: string | null
+          id: string
+          observacoes: string | null
+          solicitante_id: string
+          solicitante_nome: string
+          status: string
+          tipo_dieta: string
+          updated_at: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          created_at?: string
+          data_fim?: string | null
+          data_inicio: string
+          descricao_especifica?: string | null
+          id?: string
+          observacoes?: string | null
+          solicitante_id: string
+          solicitante_nome: string
+          status?: string
+          tipo_dieta: string
+          updated_at?: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          created_at?: string
+          data_fim?: string | null
+          data_inicio?: string
+          descricao_especifica?: string | null
+          id?: string
+          observacoes?: string | null
+          solicitante_id?: string
+          solicitante_nome?: string
+          status?: string
+          tipo_dieta?: string
+          updated_at?: string
         }
         Relationships: []
       }
