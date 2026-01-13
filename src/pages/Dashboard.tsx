@@ -13,6 +13,7 @@ import { AdminModule } from "@/components/modules/AdminModule";
 import { TecnicoModule } from "@/components/modules/TecnicoModule";
 import { AbrirChamadoModule } from "@/components/modules/AbrirChamadoModule";
 import { LaboratorioModule } from "@/components/modules/LaboratorioModule";
+import { AgendaModule } from "@/components/agenda";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -83,6 +84,8 @@ const Dashboard = () => {
           {activeSection === "prontuarios" && <FaturamentoModule />}
 
           {activeSection === "equipe" && (isAdmin || isGestor) && <TeamSection />}
+
+          {activeSection === "agenda" && <AgendaModule />}
 
           {activeSection === "admin" && <AdminModule />}
 
