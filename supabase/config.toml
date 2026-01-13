@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.classificar-prioridade]
 verify_jwt = false
+
+[functions.gerar-relatorio-chamados]
+verify_jwt = false

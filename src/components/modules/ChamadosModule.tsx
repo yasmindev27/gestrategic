@@ -49,10 +49,12 @@ import {
   XCircle,
   MessageSquare,
   Eye,
+  LayoutDashboard,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { ChamadosDashboard } from "@/components/chamados";
 
 interface ChamadosModuleProps {
   setor: 'ti' | 'manutencao' | 'engenharia_clinica';
@@ -425,7 +427,11 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
           </TabsTrigger>
           <TabsTrigger value="dashboard">
             <BarChart3 className="h-4 w-4 mr-2" />
-            Dashboard
+            Dashboard Simples
+          </TabsTrigger>
+          <TabsTrigger value="analitico">
+            <LayoutDashboard className="h-4 w-4 mr-2" />
+            Dashboard Analítico
           </TabsTrigger>
         </TabsList>
 
@@ -559,6 +565,10 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="analitico" className="mt-4">
+          <ChamadosDashboard />
         </TabsContent>
       </Tabs>
 
