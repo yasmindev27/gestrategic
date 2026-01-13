@@ -42,7 +42,7 @@ const Sidebar = ({
 }: SidebarProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { role, isAdmin, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isTecnico } = useUserRole();
+  const { role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isTecnico } = useUserRole();
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -79,8 +79,12 @@ const Sidebar = ({
         { icon: FileOutput, label: "Faturamento", id: "faturamento" },
         { icon: ClipboardX, label: "Controle de Fichas", id: "controle-fichas" },
         { icon: Receipt, label: "Prontuários", id: "prontuarios" },
-        { icon: Users, label: "Equipe", id: "equipe" },
       );
+    }
+
+    // Equipe - apenas admin e gestor
+    if (isAdmin || isGestor) {
+      items.push({ icon: Users, label: "Equipe", id: "equipe" });
     }
 
     // Admin sempre tem acesso à administração
