@@ -50,11 +50,18 @@ import {
   CheckCircle2,
   XCircle,
   AlertCircle,
+  BarChart3,
+  FileDown,
+  FileSpreadsheet,
+  Filter,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, addDays } from "date-fns";
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, addDays, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 interface Cardapio {
   id: string;
@@ -131,6 +138,12 @@ export const RestauranteModule = () => {
     descricao: "",
     observacoes: "",
   });
+
+  // Dashboard states
+  const [dashboardDataInicio, setDashboardDataInicio] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
+  const [dashboardDataFim, setDashboardDataFim] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
+  const [dashboardSolicitacoes, setDashboardSolicitacoes] = useState<SolicitacaoDieta[]>([]);
+  const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -366,6 +379,111 @@ export const RestauranteModule = () => {
     end: endOfWeek(new Date(), { weekStartsOn: 1 }),
   });
 
+  // Dashboard functions
+  const fetchDashboardData = async () => {
+    if (!canManage) return;
+    
+    setIsLoadingDashboard(true);
+    try {
+      const { data, error } = await supabase
+        .from("solicitacoes_dieta")
+        .select("*")
+        .gte("created_at", dashboardDataInicio)
+        .lte("created_at", dashboardDataFim + "T23:59:59")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+      setDashboardSolicitacoes(data || []);
+    } catch (error) {
+      console.error("Error fetching dashboard data:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao carregar dados do dashboard.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoadingDashboard(false);
+    }
+  };
+
+  useEffect(() => {
+    if (canManage && activeTab === "dashboard") {
+      fetchDashboardData();
+    }
+  }, [activeTab, dashboardDataInicio, dashboardDataFim, canManage]);
+
+  const dashboardStats = {
+    total: dashboardSolicitacoes.length,
+    aprovadas: dashboardSolicitacoes.filter(s => s.status === "aprovada").length,
+    rejeitadas: dashboardSolicitacoes.filter(s => s.status === "rejeitada").length,
+    pendentes: dashboardSolicitacoes.filter(s => s.status === "pendente").length,
+  };
+
+  const exportToExcel = () => {
+    const dataToExport = dashboardSolicitacoes.map(s => ({
+      "Solicitante": s.solicitante_nome,
+      "Tipo de Dieta": tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
+      "Descrição": s.descricao_especifica || "-",
+      "Data Início": format(new Date(s.data_inicio), "dd/MM/yyyy"),
+      "Data Fim": s.data_fim ? format(new Date(s.data_fim), "dd/MM/yyyy") : "-",
+      "Status": s.status.charAt(0).toUpperCase() + s.status.slice(1),
+      "Solicitado em": format(new Date(s.created_at), "dd/MM/yyyy HH:mm"),
+      "Observações": s.observacoes || "-",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Solicitações de Dieta");
+    
+    const fileName = `dietas_${format(new Date(dashboardDataInicio), "ddMMyyyy")}_${format(new Date(dashboardDataFim), "ddMMyyyy")}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    
+    toast({
+      title: "Sucesso",
+      description: "Arquivo Excel exportado com sucesso.",
+    });
+  };
+
+  const exportToPDF = () => {
+    const doc = new jsPDF();
+    
+    // Header
+    doc.setFontSize(18);
+    doc.text("Relatório de Solicitações de Dieta", 14, 22);
+    
+    doc.setFontSize(11);
+    doc.text(`Período: ${format(new Date(dashboardDataInicio), "dd/MM/yyyy")} a ${format(new Date(dashboardDataFim), "dd/MM/yyyy")}`, 14, 32);
+    
+    // Stats
+    doc.setFontSize(10);
+    doc.text(`Total: ${dashboardStats.total} | Aprovadas: ${dashboardStats.aprovadas} | Rejeitadas: ${dashboardStats.rejeitadas} | Pendentes: ${dashboardStats.pendentes}`, 14, 42);
+    
+    // Table
+    const tableData = dashboardSolicitacoes.map(s => [
+      s.solicitante_nome,
+      tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
+      format(new Date(s.data_inicio), "dd/MM/yyyy"),
+      s.status.charAt(0).toUpperCase() + s.status.slice(1),
+      format(new Date(s.created_at), "dd/MM/yyyy"),
+    ]);
+
+    autoTable(doc, {
+      startY: 50,
+      head: [["Solicitante", "Tipo de Dieta", "Data Início", "Status", "Solicitado em"]],
+      body: tableData,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [59, 130, 246] },
+    });
+    
+    const fileName = `dietas_${format(new Date(dashboardDataInicio), "ddMMyyyy")}_${format(new Date(dashboardDataFim), "ddMMyyyy")}.pdf`;
+    doc.save(fileName);
+    
+    toast({
+      title: "Sucesso",
+      description: "Arquivo PDF exportado com sucesso.",
+    });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -389,10 +507,16 @@ export const RestauranteModule = () => {
             Dietas
           </TabsTrigger>
           {canManage && (
-            <TabsTrigger value="gerenciar" className="flex items-center gap-2">
-              <Calendar className="h-4 w-4" />
-              Gerenciar
-            </TabsTrigger>
+            <>
+              <TabsTrigger value="dashboard" className="flex items-center gap-2">
+                <BarChart3 className="h-4 w-4" />
+                Dashboard
+              </TabsTrigger>
+              <TabsTrigger value="gerenciar" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Gerenciar
+              </TabsTrigger>
+            </>
           )}
         </TabsList>
 
@@ -577,6 +701,177 @@ export const RestauranteModule = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Dashboard Tab (Restaurante only) */}
+        {canManage && (
+          <TabsContent value="dashboard" className="space-y-4">
+            {/* Filters */}
+            <Card>
+              <CardHeader className="pb-4">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                  <div>
+                    <CardTitle className="flex items-center gap-2">
+                      <BarChart3 className="h-5 w-5" />
+                      Dashboard de Dietas
+                    </CardTitle>
+                    <CardDescription>Visualize estatísticas e exporte relatórios</CardDescription>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="flex items-center gap-2">
+                      <Filter className="h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="date"
+                        value={dashboardDataInicio}
+                        onChange={(e) => setDashboardDataInicio(e.target.value)}
+                        className="w-[140px]"
+                      />
+                      <span className="text-muted-foreground">até</span>
+                      <Input
+                        type="date"
+                        value={dashboardDataFim}
+                        onChange={(e) => setDashboardDataFim(e.target.value)}
+                        className="w-[140px]"
+                      />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button variant="outline" size="sm" onClick={exportToExcel}>
+                        <FileSpreadsheet className="h-4 w-4 mr-2" />
+                        Excel
+                      </Button>
+                      <Button variant="outline" size="sm" onClick={exportToPDF}>
+                        <FileDown className="h-4 w-4 mr-2" />
+                        PDF
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+
+            {/* KPI Cards */}
+            {isLoadingDashboard ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : (
+              <>
+                <div className="grid gap-4 md:grid-cols-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardDescription>Total de Solicitações</CardDescription>
+                      <CardTitle className="text-3xl">{dashboardStats.total}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-xs text-muted-foreground">No período selecionado</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-l-4 border-l-green-500">
+                    <CardHeader className="pb-2">
+                      <CardDescription className="flex items-center gap-1">
+                        <CheckCircle2 className="h-4 w-4 text-green-500" />
+                        Aprovadas
+                      </CardDescription>
+                      <CardTitle className="text-3xl text-green-600">{dashboardStats.aprovadas}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-xs text-muted-foreground">
+                        {dashboardStats.total > 0 ? ((dashboardStats.aprovadas / dashboardStats.total) * 100).toFixed(1) : 0}% do total
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-l-4 border-l-red-500">
+                    <CardHeader className="pb-2">
+                      <CardDescription className="flex items-center gap-1">
+                        <XCircle className="h-4 w-4 text-red-500" />
+                        Rejeitadas
+                      </CardDescription>
+                      <CardTitle className="text-3xl text-red-600">{dashboardStats.rejeitadas}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-xs text-muted-foreground">
+                        {dashboardStats.total > 0 ? ((dashboardStats.rejeitadas / dashboardStats.total) * 100).toFixed(1) : 0}% do total
+                      </p>
+                    </CardContent>
+                  </Card>
+                  <Card className="border-l-4 border-l-yellow-500">
+                    <CardHeader className="pb-2">
+                      <CardDescription className="flex items-center gap-1">
+                        <AlertCircle className="h-4 w-4 text-yellow-500" />
+                        Pendentes
+                      </CardDescription>
+                      <CardTitle className="text-3xl text-yellow-600">{dashboardStats.pendentes}</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-xs text-muted-foreground">
+                        {dashboardStats.total > 0 ? ((dashboardStats.pendentes / dashboardStats.total) * 100).toFixed(1) : 0}% do total
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Table with all requests */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg">Detalhamento das Solicitações</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {dashboardSolicitacoes.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Salad className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Nenhuma solicitação encontrada no período.</p>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Solicitante</TableHead>
+                            <TableHead>Tipo de Dieta</TableHead>
+                            <TableHead>Período</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead>Solicitado em</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {dashboardSolicitacoes.map((s) => (
+                            <TableRow key={s.id}>
+                              <TableCell className="font-medium">{s.solicitante_nome}</TableCell>
+                              <TableCell>
+                                <div>
+                                  <span>{tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta}</span>
+                                  {s.descricao_especifica && (
+                                    <p className="text-xs text-muted-foreground">{s.descricao_especifica}</p>
+                                  )}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-1 text-sm">
+                                  <Clock className="h-3 w-3" />
+                                  {format(new Date(s.data_inicio), "dd/MM/yyyy")}
+                                  {s.data_fim && ` - ${format(new Date(s.data_fim), "dd/MM/yyyy")}`}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={statusColors[s.status]}>
+                                  {s.status === "pendente" && <AlertCircle className="h-3 w-3 mr-1" />}
+                                  {s.status === "aprovada" && <CheckCircle2 className="h-3 w-3 mr-1" />}
+                                  {s.status === "rejeitada" && <XCircle className="h-3 w-3 mr-1" />}
+                                  {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </TabsContent>
+        )}
 
         {/* Gerenciar Tab (Admin/Restaurante only) */}
         {canManage && (
