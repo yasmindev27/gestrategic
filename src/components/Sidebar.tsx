@@ -124,7 +124,10 @@ const Sidebar = ({
   return <aside className={cn("bg-card border-r border-border h-screen flex flex-col sticky top-0 transition-all duration-300", isCollapsed ? "w-20" : "w-64")}>
       {/* Logo & Brand */}
       <div className="p-4 border-b border-border">
-        <div className="flex items-center gap-3">
+        <button 
+          onClick={() => onSectionChange("dashboard")} 
+          className="flex items-center gap-3 w-full text-left hover:opacity-80 transition-opacity"
+        >
           <div className="p-2 bg-primary rounded-xl flex-shrink-0">
             <Activity className="h-6 w-6 text-primary-foreground" />
           </div>
@@ -132,7 +135,7 @@ const Sidebar = ({
               <h1 className="font-bold text-lg text-foreground truncate">UPA Sistema</h1>
               <p className="text-xs text-muted-foreground">Tecnologia em Saúde</p>
             </div>}
-        </div>
+        </button>
       </div>
 
       {/* Collapse Toggle */}
