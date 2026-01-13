@@ -20,8 +20,11 @@ import {
   Eye,
   User,
   Activity,
-  Clock
+  Clock,
+  Download,
+  FileSpreadsheet
 } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
@@ -173,6 +176,89 @@ export const LogsAuditoriaModule = () => {
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
+  const exportToCSV = () => {
+    const headers = ["Data/Hora", "Usuário", "Módulo", "Ação", "Detalhes"];
+    const rows = filteredLogs.map(log => [
+      format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss"),
+      log.user_name || "Sistema",
+      formatModulo(log.modulo),
+      acaoLabels[log.acao]?.label || log.acao,
+      log.detalhes ? JSON.stringify(log.detalhes) : ""
+    ]);
+
+    const csvContent = [
+      headers.join(";"),
+      ...rows.map(row => row.map(cell => `"${cell}"`).join(";"))
+    ].join("\n");
+
+    const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `logs_auditoria_${format(new Date(), "yyyy-MM-dd_HH-mm")}.csv`;
+    link.click();
+  };
+
+  const exportToPDF = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Logs de Auditoria - ${format(new Date(), "dd/MM/yyyy HH:mm")}</title>
+        <style>
+          body { font-family: Arial, sans-serif; margin: 20px; }
+          h1 { color: #333; font-size: 18px; margin-bottom: 5px; }
+          p { color: #666; font-size: 12px; margin-bottom: 20px; }
+          table { width: 100%; border-collapse: collapse; font-size: 11px; }
+          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+          th { background-color: #f5f5f5; font-weight: bold; }
+          tr:nth-child(even) { background-color: #fafafa; }
+          .badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+          .acesso { background: #dbeafe; color: #1d4ed8; }
+          .criar { background: #dcfce7; color: #16a34a; }
+          .editar { background: #fef3c7; color: #ca8a04; }
+          .excluir { background: #fee2e2; color: #dc2626; }
+          @media print { body { margin: 0; } }
+        </style>
+      </head>
+      <body>
+        <h1>Relatório de Logs de Auditoria</h1>
+        <p>Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR })}</p>
+        <p>Período: ${dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Início"} até ${dateTo ? format(dateTo, "dd/MM/yyyy") : "Hoje"}</p>
+        <p>Total de registros: ${filteredLogs.length}</p>
+        <table>
+          <thead>
+            <tr>
+              <th>Data/Hora</th>
+              <th>Usuário</th>
+              <th>Módulo</th>
+              <th>Ação</th>
+              <th>Detalhes</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${filteredLogs.map(log => `
+              <tr>
+                <td>${format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss")}</td>
+                <td>${log.user_name || "Sistema"}</td>
+                <td>${formatModulo(log.modulo)}</td>
+                <td><span class="badge ${log.acao}">${acaoLabels[log.acao]?.label || log.acao}</span></td>
+                <td>${log.detalhes ? JSON.stringify(log.detalhes) : "-"}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+        <script>window.onload = function() { window.print(); }</script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -180,10 +266,30 @@ export const LogsAuditoriaModule = () => {
           <h2 className="text-2xl font-bold text-foreground">Logs de Auditoria</h2>
           <p className="text-muted-foreground">Monitoramento de ações e acessos do sistema</p>
         </div>
-        <Button onClick={fetchLogs} variant="outline" disabled={isLoading}>
-          <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
-          Atualizar
-        </Button>
+        <div className="flex gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" disabled={filteredLogs.length === 0}>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={exportToCSV}>
+                <FileSpreadsheet className="h-4 w-4 mr-2" />
+                Exportar CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToPDF}>
+                <FileText className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <Button onClick={fetchLogs} variant="outline" disabled={isLoading}>
+            <RefreshCw className={cn("h-4 w-4 mr-2", isLoading && "animate-spin")} />
+            Atualizar
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}
