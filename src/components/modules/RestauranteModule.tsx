@@ -149,6 +149,8 @@ export const RestauranteModule = () => {
     data_inicio: format(new Date(), "yyyy-MM-dd"),
     data_fim: "",
     observacoes: "",
+    is_dieta_extra: false,
+    observacao_dieta_extra: "",
   });
 
   // Cardápio management states (for admin/restaurante)
@@ -257,10 +259,24 @@ export const RestauranteModule = () => {
       return;
     }
 
+    if (formData.is_dieta_extra && !formData.observacao_dieta_extra.trim()) {
+      toast({
+        title: "Erro",
+        description: "Para dieta extra, é obrigatório informar o motivo na observação.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
+
+      // Combinar observações se for dieta extra
+      const observacoesCompletas = formData.is_dieta_extra 
+        ? `[DIETA EXTRA] ${formData.observacao_dieta_extra}${formData.observacoes ? ` | Observações: ${formData.observacoes}` : ''}`
+        : formData.observacoes || null;
 
       const { error } = await supabase.from("solicitacoes_dieta").insert({
         solicitante_id: user.id,
@@ -274,7 +290,7 @@ export const RestauranteModule = () => {
         horarios_refeicoes: formData.horarios_refeicoes,
         data_inicio: formData.data_inicio,
         data_fim: formData.data_fim || null,
-        observacoes: formData.observacoes || null,
+        observacoes: observacoesCompletas,
       });
 
       if (error) throw error;
@@ -388,6 +404,8 @@ export const RestauranteModule = () => {
       data_inicio: format(new Date(), "yyyy-MM-dd"),
       data_fim: "",
       observacoes: "",
+      is_dieta_extra: false,
+      observacao_dieta_extra: "",
     });
   };
 
@@ -1144,8 +1162,37 @@ export const RestauranteModule = () => {
                 />
               </div>
             </div>
+
+            {/* Dieta Extra */}
+            <div className="space-y-3 p-4 border rounded-lg bg-amber-50/50 border-amber-200">
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="is_dieta_extra"
+                  checked={formData.is_dieta_extra}
+                  onChange={(e) => setFormData({ ...formData, is_dieta_extra: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="is_dieta_extra" className="font-medium text-amber-800">
+                  Dieta Extra (para possíveis internações ou outros casos)
+                </Label>
+              </div>
+              {formData.is_dieta_extra && (
+                <div className="space-y-2">
+                  <Label className="text-amber-700">Observação da Dieta Extra *</Label>
+                  <Textarea
+                    value={formData.observacao_dieta_extra}
+                    onChange={(e) => setFormData({ ...formData, observacao_dieta_extra: e.target.value })}
+                    placeholder="Descreva o motivo da dieta extra (ex: possível internação, acompanhante extra, visitante, etc.)"
+                    rows={2}
+                    className="border-amber-200 focus:border-amber-400"
+                  />
+                </div>
+              )}
+            </div>
+
             <div className="space-y-2">
-              <Label>Observações</Label>
+              <Label>Observações Gerais</Label>
               <Textarea
                 value={formData.observacoes}
                 onChange={(e) => setFormData({ ...formData, observacoes: e.target.value })}
