@@ -23,7 +23,7 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
-  const { isAdmin, isGestor } = useUserRole();
+  const { isAdmin, isGestor, canAccessSaidaProntuarios, canAccessControleFichas, canAccessAvaliacaoProntuarios, canAccessEquipe, isTI, isManutencao, isEngenhariaCinica, isLaboratorio } = useUserRole();
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -77,26 +77,26 @@ const Dashboard = () => {
 
           {activeSection === "abrir-chamado" && <AbrirChamadoModule />}
 
-          {activeSection === "faturamento" && <SaidaProntuariosModule />}
+          {activeSection === "faturamento" && canAccessSaidaProntuarios && <SaidaProntuariosModule />}
 
-          {activeSection === "controle-fichas" && <ControleFichasModule />}
+          {activeSection === "controle-fichas" && canAccessControleFichas && <ControleFichasModule />}
 
-          {activeSection === "prontuarios" && <FaturamentoModule />}
+          {activeSection === "prontuarios" && canAccessAvaliacaoProntuarios && <FaturamentoModule />}
 
-          {activeSection === "equipe" && (isAdmin || isGestor) && <TeamSection />}
+          {activeSection === "equipe" && canAccessEquipe && <TeamSection />}
 
           {activeSection === "agenda" && <AgendaModule />}
 
-          {activeSection === "admin" && <AdminModule />}
+          {activeSection === "admin" && isAdmin && <AdminModule />}
 
           {/* Módulos dos Técnicos */}
-          {activeSection === "tecnico-ti" && <TecnicoModule setor="ti" />}
+          {activeSection === "tecnico-ti" && (isTI || isAdmin) && <TecnicoModule setor="ti" />}
           
-          {activeSection === "tecnico-manutencao" && <TecnicoModule setor="manutencao" />}
+          {activeSection === "tecnico-manutencao" && (isManutencao || isAdmin) && <TecnicoModule setor="manutencao" />}
           
-          {activeSection === "tecnico-engenharia" && <TecnicoModule setor="engenharia_clinica" />}
+          {activeSection === "tecnico-engenharia" && (isEngenhariaCinica || isAdmin) && <TecnicoModule setor="engenharia_clinica" />}
 
-          {activeSection === "laboratorio" && <LaboratorioModule />}
+          {activeSection === "laboratorio" && (isLaboratorio || isAdmin) && <LaboratorioModule />}
         </div>
       </main>
     </div>

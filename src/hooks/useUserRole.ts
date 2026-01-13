@@ -61,6 +61,14 @@ export const useUserRole = () => {
   const isLaboratorio = hasRole("laboratorio");
   const isTecnico = isTI || isManutencao || isEngenhariaCinica || isLaboratorio;
 
+  // Permissões específicas por módulo
+  const canAccessSaidaProntuarios = isAdmin || isRecepcao || isClassificacao || isNir || isFaturamento;
+  const canAccessControleFichas = isAdmin || isRecepcao;
+  const canAccessAvaliacaoProntuarios = isAdmin || isFaturamento;
+  const canAccessEquipe = isAdmin || isGestor;
+  const canAtribuirTarefas = isAdmin || isGestor;
+  const canViewAgendaColaboradores = isAdmin || isGestor;
+
   return {
     role,
     userId,
@@ -78,5 +86,12 @@ export const useUserRole = () => {
     isEngenhariaCinica,
     isLaboratorio,
     isTecnico,
+    // Permissões de módulo
+    canAccessSaidaProntuarios,
+    canAccessControleFichas,
+    canAccessAvaliacaoProntuarios,
+    canAccessEquipe,
+    canAtribuirTarefas,
+    canViewAgendaColaboradores,
   };
 };
