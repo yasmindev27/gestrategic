@@ -213,6 +213,33 @@ export type Database = {
           },
         ]
       }
+      cargos: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       chamados: {
         Row: {
           atribuido_para: string | null
@@ -394,6 +421,70 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      gestor_cargos: {
+        Row: {
+          cargo_id: string
+          created_at: string | null
+          created_by: string | null
+          gestor_user_id: string
+          id: string
+        }
+        Insert: {
+          cargo_id: string
+          created_at?: string | null
+          created_by?: string | null
+          gestor_user_id: string
+          id?: string
+        }
+        Update: {
+          cargo_id?: string
+          created_at?: string | null
+          created_by?: string | null
+          gestor_user_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gestor_cargos_cargo_id_fkey"
+            columns: ["cargo_id"]
+            isOneToOne: false
+            referencedRelation: "cargos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gestor_setores: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          gestor_user_id: string
+          id: string
+          setor_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          gestor_user_id: string
+          id?: string
+          setor_id: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          gestor_user_id?: string
+          id?: string
+          setor_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gestor_setores_setor_id_fkey"
+            columns: ["setor_id"]
+            isOneToOne: false
+            referencedRelation: "setores"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       logs_acesso: {
         Row: {
@@ -663,6 +754,33 @@ export type Database = {
           },
         ]
       }
+      setores: {
+        Row: {
+          ativo: boolean | null
+          created_at: string | null
+          descricao: string | null
+          id: string
+          nome: string
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome: string
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -686,6 +804,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      gestor_gerencia_usuario: {
+        Args: { _gestor_id: string; _usuario_id: string }
+        Returns: boolean
+      }
       get_prontuario_status: {
         Args: { p_prontuario_id: string }
         Returns: {
@@ -702,6 +824,15 @@ export type Database = {
         Returns: Database["public"]["Enums"]["app_role"]
       }
       get_user_setor: { Args: { _user_id: string }; Returns: string }
+      get_usuarios_sob_gestao: {
+        Args: { _gestor_id: string }
+        Returns: {
+          cargo: string
+          full_name: string
+          setor: string
+          user_id: string
+        }[]
+      }
       has_any_role: {
         Args: {
           _roles: Database["public"]["Enums"]["app_role"][]
