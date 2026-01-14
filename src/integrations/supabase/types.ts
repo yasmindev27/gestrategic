@@ -805,6 +805,42 @@ export type Database = {
         }
         Relationships: []
       }
+      refeicoes_registros: {
+        Row: {
+          colaborador_nome: string
+          colaborador_user_id: string | null
+          created_at: string
+          data_registro: string
+          hora_registro: string
+          id: string
+          tipo_pessoa: string
+          tipo_refeicao: string
+          visitante_cpf_hash: string | null
+        }
+        Insert: {
+          colaborador_nome: string
+          colaborador_user_id?: string | null
+          created_at?: string
+          data_registro?: string
+          hora_registro?: string
+          id?: string
+          tipo_pessoa: string
+          tipo_refeicao: string
+          visitante_cpf_hash?: string | null
+        }
+        Update: {
+          colaborador_nome?: string
+          colaborador_user_id?: string | null
+          created_at?: string
+          data_registro?: string
+          hora_registro?: string
+          id?: string
+          tipo_pessoa?: string
+          tipo_refeicao?: string
+          visitante_cpf_hash?: string | null
+        }
+        Relationships: []
+      }
       saida_prontuarios: {
         Row: {
           conferido_nir_em: string | null
