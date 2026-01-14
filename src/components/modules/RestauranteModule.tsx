@@ -1072,22 +1072,26 @@ export const RestauranteModule = () => {
         {canManage && (
           <TabsContent value="gerenciar" className="space-y-4">
             <Tabs defaultValue="geral" className="w-full">
-              <TabsList className="grid w-full grid-cols-4">
-                <TabsTrigger value="geral" className="flex items-center gap-2">
+              <TabsList className="flex flex-wrap h-auto gap-1 p-1 w-full">
+                <TabsTrigger value="geral" className="flex items-center gap-2 flex-1 min-w-fit">
                   <ClipboardList className="h-4 w-4" />
-                  Registro Geral
+                  <span className="hidden sm:inline">Registro Geral</span>
+                  <span className="sm:hidden">Geral</span>
                 </TabsTrigger>
-                <TabsTrigger value="solicitacoes" className="flex items-center gap-2">
+                <TabsTrigger value="solicitacoes" className="flex items-center gap-2 flex-1 min-w-fit">
                   <Salad className="h-4 w-4" />
-                  Solicitações de Dieta
+                  <span className="hidden sm:inline">Solicitações de Dieta</span>
+                  <span className="sm:hidden">Dietas</span>
                 </TabsTrigger>
-                <TabsTrigger value="totem" className="flex items-center gap-2">
+                <TabsTrigger value="totem" className="flex items-center gap-2 flex-1 min-w-fit">
                   <UtensilsCrossed className="h-4 w-4" />
-                  Registros do Totem
+                  <span className="hidden sm:inline">Registros do Totem</span>
+                  <span className="sm:hidden">Totem</span>
                 </TabsTrigger>
-                <TabsTrigger value="cardapios" className="flex items-center gap-2">
+                <TabsTrigger value="cardapios" className="flex items-center gap-2 flex-1 min-w-fit">
                   <Calendar className="h-4 w-4" />
-                  Cardápios
+                  <span className="hidden sm:inline">Cardápios</span>
+                  <span className="sm:hidden">Cardápio</span>
                 </TabsTrigger>
               </TabsList>
 
