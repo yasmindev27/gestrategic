@@ -1325,6 +1325,7 @@ export const RestauranteModule = () => {
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead>Origem</TableHead>
                             <TableHead>Tipo</TableHead>
                             <TableHead>Nome</TableHead>
                             <TableHead>Descrição</TableHead>
@@ -1336,6 +1337,17 @@ export const RestauranteModule = () => {
                         <TableBody>
                           {registrosGerais.map((r) => (
                             <TableRow key={`${r.tipo}-${r.id}`}>
+                              <TableCell>
+                                <Badge 
+                                  variant="outline" 
+                                  className={r.tipo === "dieta" 
+                                    ? "border-orange-500 text-orange-600 bg-orange-50" 
+                                    : "border-blue-500 text-blue-600 bg-blue-50"
+                                  }
+                                >
+                                  {r.tipo === "dieta" ? "Solicitação de Dieta" : "Registro do Totem"}
+                                </Badge>
+                              </TableCell>
                               <TableCell>
                                 <Badge variant={r.tipo === "dieta" ? "default" : "secondary"}>
                                   {r.tipo === "dieta" ? "Dieta" : "Refeição"}
