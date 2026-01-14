@@ -543,6 +543,124 @@ export const RestauranteModule = () => {
     end: endOfWeek(new Date(), { weekStartsOn: 1 }),
   });
 
+  // Export functions
+  const exportRegistroGeralExcel = () => {
+    const data = registrosGerais.map(r => ({
+      "Tipo": r.tipo === "dieta" ? "Dieta" : "Refeição",
+      "Nome": r.nome,
+      "Descrição": r.descricao,
+      "Data": format(new Date(r.data), "dd/MM/yyyy"),
+      "Hora": r.hora ? r.hora.substring(0, 5) : "-",
+      "Detalhes": r.detalhes,
+      "Status": r.status || "Registrado",
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Registro Geral");
+    XLSX.writeFile(wb, `registro_geral_${format(new Date(), "yyyyMMdd_HHmm")}.xlsx`);
+    toast({ title: "Sucesso", description: "Arquivo Excel exportado!" });
+  };
+
+  const exportRegistroGeralPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Registro Geral - Restaurante", 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Período: ${format(new Date(registroGeralDataInicio), "dd/MM/yyyy")} a ${format(new Date(registroGeralDataFim), "dd/MM/yyyy")}`, 14, 22);
+    
+    autoTable(doc, {
+      head: [["Tipo", "Nome", "Descrição", "Data", "Status"]],
+      body: registrosGerais.map(r => [
+        r.tipo === "dieta" ? "Dieta" : "Refeição",
+        r.nome,
+        r.descricao.substring(0, 30) + (r.descricao.length > 30 ? "..." : ""),
+        format(new Date(r.data), "dd/MM/yyyy"),
+        r.status || "Registrado",
+      ]),
+      startY: 28,
+      styles: { fontSize: 8 },
+    });
+    
+    doc.save(`registro_geral_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
+    toast({ title: "Sucesso", description: "Arquivo PDF exportado!" });
+  };
+
+  const exportSolicitacoesExcel = () => {
+    const data = todasSolicitacoes.map(s => ({
+      "Paciente": s.paciente_nome || "N/A",
+      "Quarto/Leito": s.quarto_leito || "N/A",
+      "Tipo de Dieta": tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
+      "Data Início": format(new Date(s.data_inicio), "dd/MM/yyyy"),
+      "Data Fim": s.data_fim ? format(new Date(s.data_fim), "dd/MM/yyyy") : "-",
+      "Solicitante": s.solicitante_nome,
+      "Status": s.status.charAt(0).toUpperCase() + s.status.slice(1),
+      "Restrições": s.restricoes_alimentares || "-",
+      "Observações": s.observacoes || "-",
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Solicitações");
+    XLSX.writeFile(wb, `solicitacoes_dieta_${format(new Date(), "yyyyMMdd_HHmm")}.xlsx`);
+    toast({ title: "Sucesso", description: "Arquivo Excel exportado!" });
+  };
+
+  const exportSolicitacoesPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Solicitações de Dieta para Pacientes", 14, 15);
+    
+    autoTable(doc, {
+      head: [["Paciente", "Quarto", "Dieta", "Período", "Status"]],
+      body: todasSolicitacoes.map(s => [
+        s.paciente_nome || "N/A",
+        s.quarto_leito || "N/A",
+        tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
+        format(new Date(s.data_inicio), "dd/MM") + (s.data_fim ? ` - ${format(new Date(s.data_fim), "dd/MM")}` : ""),
+        s.status.charAt(0).toUpperCase() + s.status.slice(1),
+      ]),
+      startY: 22,
+      styles: { fontSize: 8 },
+    });
+    
+    doc.save(`solicitacoes_dieta_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
+    toast({ title: "Sucesso", description: "Arquivo PDF exportado!" });
+  };
+
+  const exportCardapiosExcel = () => {
+    const data = cardapios.map(c => ({
+      "Data": format(new Date(c.data + 'T12:00:00'), "dd/MM/yyyy"),
+      "Refeição": tipoRefeicaoLabels[c.tipo_refeicao]?.label || c.tipo_refeicao,
+      "Descrição": c.descricao,
+      "Observações": c.observacoes || "-",
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Cardápios");
+    XLSX.writeFile(wb, `cardapios_${format(new Date(), "yyyyMMdd_HHmm")}.xlsx`);
+    toast({ title: "Sucesso", description: "Arquivo Excel exportado!" });
+  };
+
+  const exportCardapiosPDF = () => {
+    const doc = new jsPDF();
+    doc.setFontSize(16);
+    doc.text("Cardápios do Restaurante", 14, 15);
+    
+    autoTable(doc, {
+      head: [["Data", "Refeição", "Descrição", "Observações"]],
+      body: cardapios.map(c => [
+        format(new Date(c.data + 'T12:00:00'), "dd/MM/yyyy"),
+        tipoRefeicaoLabels[c.tipo_refeicao]?.label || c.tipo_refeicao,
+        c.descricao.substring(0, 50) + (c.descricao.length > 50 ? "..." : ""),
+        c.observacoes || "-",
+      ]),
+      startY: 22,
+      styles: { fontSize: 8 },
+    });
+    
+    doc.save(`cardapios_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
+    toast({ title: "Sucesso", description: "Arquivo PDF exportado!" });
+  };
+
   // Dashboard functions
   const fetchDashboardData = async () => {
     if (!canManage) return;
@@ -1136,6 +1254,26 @@ export const RestauranteModule = () => {
                             <SelectItem value="refeicao">Refeições</SelectItem>
                           </SelectContent>
                         </Select>
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => exportRegistroGeralExcel()}
+                            disabled={registrosGerais.length === 0}
+                          >
+                            <FileSpreadsheet className="h-4 w-4 mr-1" />
+                            Excel
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => exportRegistroGeralPDF()}
+                            disabled={registrosGerais.length === 0}
+                          >
+                            <FileDown className="h-4 w-4 mr-1" />
+                            PDF
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   </CardHeader>
@@ -1225,13 +1363,37 @@ export const RestauranteModule = () => {
               <TabsContent value="solicitacoes" className="mt-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Salad className="h-5 w-5" />
-                      Solicitações de Dieta para Pacientes
-                    </CardTitle>
-                    <CardDescription>
-                      Gerencie as solicitações de dietas especiais para pacientes
-                    </CardDescription>
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Salad className="h-5 w-5" />
+                          Solicitações de Dieta para Pacientes
+                        </CardTitle>
+                        <CardDescription>
+                          Gerencie as solicitações de dietas especiais para pacientes
+                        </CardDescription>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => exportSolicitacoesExcel()}
+                          disabled={todasSolicitacoes.length === 0}
+                        >
+                          <FileSpreadsheet className="h-4 w-4 mr-1" />
+                          Excel
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => exportSolicitacoesPDF()}
+                          disabled={todasSolicitacoes.length === 0}
+                        >
+                          <FileDown className="h-4 w-4 mr-1" />
+                          PDF
+                        </Button>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
                     {todasSolicitacoes.length === 0 ? (
@@ -1318,7 +1480,7 @@ export const RestauranteModule = () => {
               <TabsContent value="cardapios" className="mt-4">
                 <Card>
                   <CardHeader>
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                       <div>
                         <CardTitle className="text-lg flex items-center gap-2">
                           <Calendar className="h-5 w-5" />
@@ -1326,10 +1488,30 @@ export const RestauranteModule = () => {
                         </CardTitle>
                         <CardDescription>Cadastre e gerencie os cardápios do restaurante</CardDescription>
                       </div>
-                      <Button size="sm" onClick={() => setCardapioDialogOpen(true)}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Novo Cardápio
-                      </Button>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => exportCardapiosExcel()}
+                          disabled={cardapios.length === 0}
+                        >
+                          <FileSpreadsheet className="h-4 w-4 mr-1" />
+                          Excel
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => exportCardapiosPDF()}
+                          disabled={cardapios.length === 0}
+                        >
+                          <FileDown className="h-4 w-4 mr-1" />
+                          PDF
+                        </Button>
+                        <Button size="sm" onClick={() => setCardapioDialogOpen(true)}>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Novo Cardápio
+                        </Button>
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent>
