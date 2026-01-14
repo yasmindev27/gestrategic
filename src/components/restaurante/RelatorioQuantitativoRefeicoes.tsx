@@ -458,74 +458,74 @@ export const RelatorioQuantitativoRefeicoes = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead rowSpan={2} className="border-r">Data</TableHead>
-                        <TableHead colSpan={5} className="text-center border-r bg-blue-50">
-                          Totem (Colaboradores/Visitantes)
+                        <TableHead rowSpan={2} className="border-r bg-muted">Data</TableHead>
+                        <TableHead colSpan={5} className="text-center border-r bg-blue-500 text-white">
+                          🖥️ Totem (Colaboradores/Visitantes)
                         </TableHead>
-                        <TableHead colSpan={5} className="text-center border-r bg-orange-50">
-                          Dietas (Pacientes/Acompanhantes)
+                        <TableHead colSpan={5} className="text-center border-r bg-orange-500 text-white">
+                          🍽️ Dietas (Pacientes/Acompanhantes)
                         </TableHead>
-                        <TableHead rowSpan={2} className="text-center bg-primary/10 font-bold">
+                        <TableHead rowSpan={2} className="text-center bg-emerald-600 text-white font-bold">
                           Total
                         </TableHead>
                       </TableRow>
                       <TableRow>
-                        <TableHead className="text-center bg-blue-50/50">
+                        <TableHead className="text-center bg-blue-100 text-blue-800">
                           <div className="flex items-center justify-center gap-1">
                             <Coffee className="h-3 w-3" />
                             Café
                           </div>
                         </TableHead>
-                        <TableHead className="text-center bg-blue-50/50">
+                        <TableHead className="text-center bg-blue-100 text-blue-800">
                           <div className="flex items-center justify-center gap-1">
                             <Sun className="h-3 w-3" />
                             Almoço
                           </div>
                         </TableHead>
-                        <TableHead className="text-center bg-blue-50/50">
+                        <TableHead className="text-center bg-blue-100 text-blue-800">
                           <div className="flex items-center justify-center gap-1">
                             <Cookie className="h-3 w-3" />
                             Lanche
                           </div>
                         </TableHead>
-                        <TableHead className="text-center bg-blue-50/50">
+                        <TableHead className="text-center bg-blue-100 text-blue-800">
                           <div className="flex items-center justify-center gap-1">
                             <Moon className="h-3 w-3" />
                             Jantar
                           </div>
                         </TableHead>
-                        <TableHead className="text-center border-r bg-blue-100 font-semibold">Subtotal</TableHead>
-                        <TableHead className="text-center bg-orange-50/50">
+                        <TableHead className="text-center border-r bg-blue-200 text-blue-900 font-semibold">Subtotal</TableHead>
+                        <TableHead className="text-center bg-orange-100 text-orange-800">
                           <div className="flex items-center justify-center gap-1">
                             <Coffee className="h-3 w-3" />
                             Café
                           </div>
                         </TableHead>
-                        <TableHead className="text-center bg-orange-50/50">
+                        <TableHead className="text-center bg-orange-100 text-orange-800">
                           <div className="flex items-center justify-center gap-1">
                             <Sun className="h-3 w-3" />
                             Almoço
                           </div>
                         </TableHead>
-                        <TableHead className="text-center bg-orange-50/50">
+                        <TableHead className="text-center bg-orange-100 text-orange-800">
                           <div className="flex items-center justify-center gap-1">
                             <Cookie className="h-3 w-3" />
                             Lanche
                           </div>
                         </TableHead>
-                        <TableHead className="text-center bg-orange-50/50">
+                        <TableHead className="text-center bg-orange-100 text-orange-800">
                           <div className="flex items-center justify-center gap-1">
                             <Moon className="h-3 w-3" />
                             Jantar
                           </div>
                         </TableHead>
-                        <TableHead className="text-center border-r bg-orange-100 font-semibold">Subtotal</TableHead>
+                        <TableHead className="text-center border-r bg-orange-200 text-orange-900 font-semibold">Subtotal</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {quantitativos.map((q) => (
                         <TableRow key={q.data}>
-                          <TableCell className="border-r font-medium">
+                          <TableCell className="border-r font-medium bg-muted/30">
                             <div>
                               <span>{format(parseISO(q.data), "dd/MM")}</span>
                               <span className="text-xs text-muted-foreground ml-1">
@@ -533,43 +533,43 @@ export const RelatorioQuantitativoRefeicoes = () => {
                               </span>
                             </div>
                           </TableCell>
-                          <TableCell className="text-center">{q.cafe || "-"}</TableCell>
-                          <TableCell className="text-center">{q.almoco || "-"}</TableCell>
-                          <TableCell className="text-center">{q.lanche || "-"}</TableCell>
-                          <TableCell className="text-center">{q.jantar || "-"}</TableCell>
-                          <TableCell className="text-center border-r bg-blue-50/30 font-semibold">
+                          <TableCell className="text-center bg-blue-50">{q.cafe || "-"}</TableCell>
+                          <TableCell className="text-center bg-blue-50">{q.almoco || "-"}</TableCell>
+                          <TableCell className="text-center bg-blue-50">{q.lanche || "-"}</TableCell>
+                          <TableCell className="text-center bg-blue-50">{q.jantar || "-"}</TableCell>
+                          <TableCell className="text-center border-r bg-blue-100 font-semibold text-blue-800">
                             {q.totalRefeicoes}
                           </TableCell>
-                          <TableCell className="text-center">{q.dietasCafe || "-"}</TableCell>
-                          <TableCell className="text-center">{q.dietasAlmoco || "-"}</TableCell>
-                          <TableCell className="text-center">{q.dietasLanche || "-"}</TableCell>
-                          <TableCell className="text-center">{q.dietasJantar || "-"}</TableCell>
-                          <TableCell className="text-center border-r bg-orange-50/30 font-semibold">
+                          <TableCell className="text-center bg-orange-50">{q.dietasCafe || "-"}</TableCell>
+                          <TableCell className="text-center bg-orange-50">{q.dietasAlmoco || "-"}</TableCell>
+                          <TableCell className="text-center bg-orange-50">{q.dietasLanche || "-"}</TableCell>
+                          <TableCell className="text-center bg-orange-50">{q.dietasJantar || "-"}</TableCell>
+                          <TableCell className="text-center border-r bg-orange-100 font-semibold text-orange-800">
                             {q.totalDietas}
                           </TableCell>
-                          <TableCell className="text-center bg-primary/5 font-bold text-primary">
+                          <TableCell className="text-center bg-emerald-100 font-bold text-emerald-800">
                             {q.totalGeral}
                           </TableCell>
                         </TableRow>
                       ))}
                       {/* Linha de Totais */}
-                      <TableRow className="bg-muted/50 font-bold">
-                        <TableCell className="border-r">TOTAIS</TableCell>
-                        <TableCell className="text-center">{totaisGerais.cafe}</TableCell>
-                        <TableCell className="text-center">{totaisGerais.almoco}</TableCell>
-                        <TableCell className="text-center">{totaisGerais.lanche}</TableCell>
-                        <TableCell className="text-center">{totaisGerais.jantar}</TableCell>
-                        <TableCell className="text-center border-r bg-blue-100 text-blue-800">
+                      <TableRow className="font-bold border-t-2 border-gray-400">
+                        <TableCell className="border-r bg-gray-200 text-gray-800">TOTAIS</TableCell>
+                        <TableCell className="text-center bg-blue-100 text-blue-800">{totaisGerais.cafe}</TableCell>
+                        <TableCell className="text-center bg-blue-100 text-blue-800">{totaisGerais.almoco}</TableCell>
+                        <TableCell className="text-center bg-blue-100 text-blue-800">{totaisGerais.lanche}</TableCell>
+                        <TableCell className="text-center bg-blue-100 text-blue-800">{totaisGerais.jantar}</TableCell>
+                        <TableCell className="text-center border-r bg-blue-500 text-white">
                           {totaisGerais.totalRefeicoes}
                         </TableCell>
-                        <TableCell className="text-center">{totaisGerais.dietasCafe}</TableCell>
-                        <TableCell className="text-center">{totaisGerais.dietasAlmoco}</TableCell>
-                        <TableCell className="text-center">{totaisGerais.dietasLanche}</TableCell>
-                        <TableCell className="text-center">{totaisGerais.dietasJantar}</TableCell>
-                        <TableCell className="text-center border-r bg-orange-100 text-orange-800">
+                        <TableCell className="text-center bg-orange-100 text-orange-800">{totaisGerais.dietasCafe}</TableCell>
+                        <TableCell className="text-center bg-orange-100 text-orange-800">{totaisGerais.dietasAlmoco}</TableCell>
+                        <TableCell className="text-center bg-orange-100 text-orange-800">{totaisGerais.dietasLanche}</TableCell>
+                        <TableCell className="text-center bg-orange-100 text-orange-800">{totaisGerais.dietasJantar}</TableCell>
+                        <TableCell className="text-center border-r bg-orange-500 text-white">
                           {totaisGerais.totalDietas}
                         </TableCell>
-                        <TableCell className="text-center bg-primary text-primary-foreground">
+                        <TableCell className="text-center bg-emerald-600 text-white">
                           {totaisGerais.totalGeral}
                         </TableCell>
                       </TableRow>
