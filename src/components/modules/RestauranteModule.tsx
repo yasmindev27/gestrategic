@@ -603,16 +603,12 @@ export const RestauranteModule = () => {
           </TabsTrigger>
         {canManage && (
             <>
-              <TabsTrigger value="registros" className="flex items-center gap-2">
-                <ClipboardList className="h-4 w-4" />
-                Registros
-              </TabsTrigger>
               <TabsTrigger value="dashboard" className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
                 Dashboard
               </TabsTrigger>
               <TabsTrigger value="gerenciar" className="flex items-center gap-2">
-                <Calendar className="h-4 w-4" />
+                <ClipboardList className="h-4 w-4" />
                 Gerenciar
               </TabsTrigger>
             </>
@@ -815,12 +811,6 @@ export const RestauranteModule = () => {
           </Card>
         </TabsContent>
 
-        {/* Registros Tab (Restaurante only) */}
-        {canManage && (
-          <TabsContent value="registros">
-            <RegistrosRefeicoes />
-          </TabsContent>
-        )}
 
         {/* Dashboard Tab (Restaurante only) */}
         {canManage && (
@@ -1005,90 +995,152 @@ export const RestauranteModule = () => {
         {/* Gerenciar Tab (Admin/Restaurante only) */}
         {canManage && (
           <TabsContent value="gerenciar" className="space-y-4">
-            <div className="grid gap-4 md:grid-cols-2">
-              {/* Gerenciar Cardápio */}
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">Cardápios</CardTitle>
-                    <Button size="sm" onClick={() => setCardapioDialogOpen(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
-                      Novo
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    Cadastre os cardápios do dia ou da semana.
-                  </p>
-                  <div className="space-y-2">
-                    {cardapios.slice(0, 5).map((c) => (
-                      <div key={c.id} className="p-2 border rounded text-sm flex justify-between items-center">
-                        <div>
-                          <span className="font-medium">{format(new Date(c.data + 'T12:00:00'), "dd/MM")}</span>
-                          <span className="text-muted-foreground mx-2">-</span>
-                          <span>{tipoRefeicaoLabels[c.tipo_refeicao]?.label}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
+            <Tabs defaultValue="solicitacoes" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="solicitacoes" className="flex items-center gap-2">
+                  <Salad className="h-4 w-4" />
+                  Solicitações de Dieta
+                </TabsTrigger>
+                <TabsTrigger value="totem" className="flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4" />
+                  Registros do Totem
+                </TabsTrigger>
+                <TabsTrigger value="cardapios" className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4" />
+                  Cardápios
+                </TabsTrigger>
+              </TabsList>
 
-              {/* Gerenciar Solicitações */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg">Solicitações de Dieta</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {todasSolicitacoes.filter(s => s.status === "pendente").length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Nenhuma solicitação pendente.</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {todasSolicitacoes
-                        .filter(s => s.status === "pendente")
-                        .slice(0, 5)
-                        .map((s) => (
-                          <div key={s.id} className="p-3 border rounded space-y-2">
-                            <div className="flex justify-between items-start">
-                              <div className="space-y-1">
-                                <p className="font-medium text-sm">Paciente: {s.paciente_nome || "N/A"}</p>
-                                <p className="text-xs text-muted-foreground">
-                                  Quarto/Leito: {s.quarto_leito || "N/A"}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  {tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta} - {format(new Date(s.data_inicio), "dd/MM")}
-                                </p>
-                                <p className="text-xs text-muted-foreground">
-                                  Solicitado por: {s.solicitante_nome}
-                                </p>
-                              </div>
-                              <div className="flex gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-green-600 hover:bg-green-50"
-                                  onClick={() => handleUpdateSolicitacaoStatus(s.id, "aprovada")}
-                                >
-                                  <CheckCircle2 className="h-4 w-4" />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-red-600 hover:bg-red-50"
-                                  onClick={() => handleUpdateSolicitacaoStatus(s.id, "rejeitada")}
-                                >
-                                  <XCircle className="h-4 w-4" />
-                                </Button>
+              {/* Sub-tab: Solicitações de Dieta */}
+              <TabsContent value="solicitacoes" className="mt-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="text-lg flex items-center gap-2">
+                      <Salad className="h-5 w-5" />
+                      Solicitações de Dieta para Pacientes
+                    </CardTitle>
+                    <CardDescription>
+                      Gerencie as solicitações de dietas especiais para pacientes
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    {todasSolicitacoes.filter(s => s.status === "pendente").length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Salad className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Nenhuma solicitação pendente.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-3">
+                        {todasSolicitacoes
+                          .filter(s => s.status === "pendente")
+                          .map((s) => (
+                            <div key={s.id} className="p-4 border rounded-lg space-y-2 hover:bg-muted/30 transition-colors">
+                              <div className="flex justify-between items-start">
+                                <div className="space-y-1">
+                                  <p className="font-medium">Paciente: {s.paciente_nome || "N/A"}</p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Quarto/Leito: {s.quarto_leito || "N/A"}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Dieta: {tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Período: {format(new Date(s.data_inicio), "dd/MM/yyyy")}
+                                    {s.data_fim && ` até ${format(new Date(s.data_fim), "dd/MM/yyyy")}`}
+                                  </p>
+                                  <p className="text-xs text-muted-foreground">
+                                    Solicitado por: {s.solicitante_nome} em {format(new Date(s.created_at), "dd/MM/yyyy 'às' HH:mm")}
+                                  </p>
+                                  {s.restricoes_alimentares && (
+                                    <p className="text-xs text-orange-600">
+                                      Restrições: {s.restricoes_alimentares}
+                                    </p>
+                                  )}
+                                  {s.observacoes && (
+                                    <p className="text-xs text-muted-foreground italic">
+                                      Obs: {s.observacoes}
+                                    </p>
+                                  )}
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-green-600 hover:bg-green-50"
+                                    onClick={() => handleUpdateSolicitacaoStatus(s.id, "aprovada")}
+                                  >
+                                    <CheckCircle2 className="h-4 w-4 mr-1" />
+                                    Aprovar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 hover:bg-red-50"
+                                    onClick={() => handleUpdateSolicitacaoStatus(s.id, "rejeitada")}
+                                  >
+                                    <XCircle className="h-4 w-4 mr-1" />
+                                    Rejeitar
+                                  </Button>
+                                </div>
                               </div>
                             </div>
+                          ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Sub-tab: Registros do Totem */}
+              <TabsContent value="totem" className="mt-4">
+                <RegistrosRefeicoes />
+              </TabsContent>
+
+              {/* Sub-tab: Cardápios */}
+              <TabsContent value="cardapios" className="mt-4">
+                <Card>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <Calendar className="h-5 w-5" />
+                          Gerenciar Cardápios
+                        </CardTitle>
+                        <CardDescription>Cadastre e gerencie os cardápios do restaurante</CardDescription>
+                      </div>
+                      <Button size="sm" onClick={() => setCardapioDialogOpen(true)}>
+                        <Plus className="h-4 w-4 mr-2" />
+                        Novo Cardápio
+                      </Button>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {cardapios.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <UtensilsCrossed className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Nenhum cardápio cadastrado.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {cardapios.map((c) => (
+                          <div key={c.id} className="p-3 border rounded-lg flex justify-between items-center hover:bg-muted/30 transition-colors">
+                            <div>
+                              <span className="font-medium">{format(new Date(c.data + 'T12:00:00'), "dd/MM/yyyy")}</span>
+                              <span className="text-muted-foreground mx-2">-</span>
+                              <span className="inline-flex items-center gap-1">
+                                {tipoRefeicaoLabels[c.tipo_refeicao]?.icon}
+                                {tipoRefeicaoLabels[c.tipo_refeicao]?.label}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground truncate max-w-xs">{c.descricao}</p>
                           </div>
                         ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
           </TabsContent>
         )}
       </Tabs>
