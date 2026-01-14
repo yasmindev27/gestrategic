@@ -1024,20 +1024,26 @@ export const RestauranteModule = () => {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    {todasSolicitacoes.filter(s => s.status === "pendente").length === 0 ? (
+                    {todasSolicitacoes.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         <Salad className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>Nenhuma solicitação pendente.</p>
+                        <p>Nenhuma solicitação encontrada.</p>
                       </div>
                     ) : (
                       <div className="space-y-3">
-                        {todasSolicitacoes
-                          .filter(s => s.status === "pendente")
-                          .map((s) => (
+                        {todasSolicitacoes.map((s) => (
                             <div key={s.id} className="p-4 border rounded-lg space-y-2 hover:bg-muted/30 transition-colors">
                               <div className="flex justify-between items-start">
                                 <div className="space-y-1">
-                                  <p className="font-medium">Paciente: {s.paciente_nome || "N/A"}</p>
+                                  <div className="flex items-center gap-2">
+                                    <p className="font-medium">Paciente: {s.paciente_nome || "N/A"}</p>
+                                    <Badge className={statusColors[s.status]}>
+                                      {s.status === "pendente" && "Pendente"}
+                                      {s.status === "aprovada" && "Aprovada"}
+                                      {s.status === "rejeitada" && "Rejeitada"}
+                                      {s.status === "cancelada" && "Cancelada"}
+                                    </Badge>
+                                  </div>
                                   <p className="text-sm text-muted-foreground">
                                     Quarto/Leito: {s.quarto_leito || "N/A"}
                                   </p>
@@ -1062,26 +1068,28 @@ export const RestauranteModule = () => {
                                     </p>
                                   )}
                                 </div>
-                                <div className="flex gap-2">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-green-600 hover:bg-green-50"
-                                    onClick={() => handleUpdateSolicitacaoStatus(s.id, "aprovada")}
-                                  >
-                                    <CheckCircle2 className="h-4 w-4 mr-1" />
-                                    Aprovar
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    className="text-red-600 hover:bg-red-50"
-                                    onClick={() => handleUpdateSolicitacaoStatus(s.id, "rejeitada")}
-                                  >
-                                    <XCircle className="h-4 w-4 mr-1" />
-                                    Rejeitar
-                                  </Button>
-                                </div>
+                                {s.status === "pendente" && (
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-green-600 hover:bg-green-50"
+                                      onClick={() => handleUpdateSolicitacaoStatus(s.id, "aprovada")}
+                                    >
+                                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                                      Aprovar
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      className="text-red-600 hover:bg-red-50"
+                                      onClick={() => handleUpdateSolicitacaoStatus(s.id, "rejeitada")}
+                                    >
+                                      <XCircle className="h-4 w-4 mr-1" />
+                                      Rejeitar
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           ))}
