@@ -92,11 +92,36 @@ interface SolicitacaoDieta {
   horarios_refeicoes: string[] | null;
 }
 
+interface RegistroRefeicao {
+  id: string;
+  tipo_pessoa: string;
+  colaborador_nome: string;
+  colaborador_user_id: string | null;
+  tipo_refeicao: string;
+  data_registro: string;
+  hora_registro: string;
+  created_at: string;
+}
+
+// Tipo unificado para o registro geral
+interface RegistroGeral {
+  id: string;
+  tipo: "dieta" | "refeicao";
+  nome: string;
+  descricao: string;
+  data: string;
+  hora?: string;
+  status?: string;
+  detalhes: string;
+  created_at: string;
+}
+
 const tipoRefeicaoLabels: Record<string, { label: string; icon: React.ReactNode }> = {
   cafe: { label: "Café da Manhã", icon: <Coffee className="h-4 w-4" /> },
   almoco: { label: "Almoço", icon: <Sun className="h-4 w-4" /> },
   lanche: { label: "Lanche", icon: <Cookie className="h-4 w-4" /> },
   jantar: { label: "Jantar", icon: <Moon className="h-4 w-4" /> },
+  fora_horario: { label: "Fora de Horário", icon: <Clock className="h-4 w-4" /> },
 };
 
 const tipoDietaLabels: Record<string, string> = {
@@ -171,6 +196,12 @@ export const RestauranteModule = () => {
   const [dashboardSolicitacoes, setDashboardSolicitacoes] = useState<SolicitacaoDieta[]>([]);
   const [isLoadingDashboard, setIsLoadingDashboard] = useState(false);
 
+  // Registro Geral states
+  const [registrosRefeicoes, setRegistrosRefeicoes] = useState<RegistroRefeicao[]>([]);
+  const [registroGeralDataInicio, setRegistroGeralDataInicio] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
+  const [registroGeralDataFim, setRegistroGeralDataFim] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [registroGeralFiltroTipo, setRegistroGeralFiltroTipo] = useState<"todos" | "dieta" | "refeicao">("todos");
+
   useEffect(() => {
     fetchData();
     fetchUserName();
@@ -229,7 +260,7 @@ export const RestauranteModule = () => {
         if (minhasError) throw minhasError;
         setMinhasSolicitacoes(minhasData || []);
 
-        // Se for admin ou restaurante, buscar todas as solicitações
+        // Se for admin ou restaurante, buscar todas as solicitações e registros de refeições
         if (canManage) {
           const { data: todasData, error: todasError } = await supabase
             .from("solicitacoes_dieta")
@@ -238,6 +269,15 @@ export const RestauranteModule = () => {
 
           if (todasError) throw todasError;
           setTodasSolicitacoes(todasData || []);
+
+          // Buscar registros de refeições do totem
+          const { data: refeicoesData, error: refeicoesError } = await supabase
+            .from("refeicoes_registros")
+            .select("*")
+            .order("created_at", { ascending: false });
+
+          if (refeicoesError) throw refeicoesError;
+          setRegistrosRefeicoes(refeicoesData || []);
         }
       }
     } catch (error) {
@@ -251,6 +291,42 @@ export const RestauranteModule = () => {
       setIsLoading(false);
     }
   };
+
+  // Combinar registros de dieta e refeições para o registro geral
+  const registrosGerais: RegistroGeral[] = [
+    ...todasSolicitacoes
+      .filter(s => {
+        const data = new Date(s.created_at);
+        return data >= new Date(registroGeralDataInicio) && data <= new Date(registroGeralDataFim + "T23:59:59");
+      })
+      .map(s => ({
+        id: s.id,
+        tipo: "dieta" as const,
+        nome: s.paciente_nome || "N/A",
+        descricao: `Dieta ${tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta}`,
+        data: s.data_inicio,
+        status: s.status,
+        detalhes: `Quarto/Leito: ${s.quarto_leito || "N/A"} | Solicitante: ${s.solicitante_nome}`,
+        created_at: s.created_at,
+      })),
+    ...registrosRefeicoes
+      .filter(r => {
+        const data = new Date(r.data_registro);
+        return data >= new Date(registroGeralDataInicio) && data <= new Date(registroGeralDataFim + "T23:59:59");
+      })
+      .map(r => ({
+        id: r.id,
+        tipo: "refeicao" as const,
+        nome: r.colaborador_nome,
+        descricao: tipoRefeicaoLabels[r.tipo_refeicao]?.label || r.tipo_refeicao,
+        data: r.data_registro,
+        hora: r.hora_registro,
+        detalhes: `Tipo: ${r.tipo_pessoa === "colaborador" ? "Colaborador" : "Visitante"}`,
+        created_at: r.created_at,
+      })),
+  ]
+    .filter(r => registroGeralFiltroTipo === "todos" || r.tipo === registroGeralFiltroTipo)
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   const handleSubmitSolicitacao = async () => {
     // Validação diferente para dieta extra
@@ -995,14 +1071,18 @@ export const RestauranteModule = () => {
         {/* Gerenciar Tab (Admin/Restaurante only) */}
         {canManage && (
           <TabsContent value="gerenciar" className="space-y-4">
-            <Tabs defaultValue="solicitacoes" className="w-full">
-              <TabsList className="grid w-full grid-cols-3">
+            <Tabs defaultValue="geral" className="w-full">
+              <TabsList className="grid w-full grid-cols-4">
+                <TabsTrigger value="geral" className="flex items-center gap-2">
+                  <ClipboardList className="h-4 w-4" />
+                  Registro Geral
+                </TabsTrigger>
                 <TabsTrigger value="solicitacoes" className="flex items-center gap-2">
                   <Salad className="h-4 w-4" />
                   Solicitações de Dieta
                 </TabsTrigger>
                 <TabsTrigger value="totem" className="flex items-center gap-2">
-                  <ClipboardList className="h-4 w-4" />
+                  <UtensilsCrossed className="h-4 w-4" />
                   Registros do Totem
                 </TabsTrigger>
                 <TabsTrigger value="cardapios" className="flex items-center gap-2">
@@ -1010,6 +1090,132 @@ export const RestauranteModule = () => {
                   Cardápios
                 </TabsTrigger>
               </TabsList>
+
+              {/* Sub-tab: Registro Geral */}
+              <TabsContent value="geral" className="mt-4">
+                <Card>
+                  <CardHeader>
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div>
+                        <CardTitle className="text-lg flex items-center gap-2">
+                          <ClipboardList className="h-5 w-5" />
+                          Registro Geral
+                        </CardTitle>
+                        <CardDescription>
+                          Visualização unificada de solicitações de dieta e registros do totem
+                        </CardDescription>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Input
+                          type="date"
+                          value={registroGeralDataInicio}
+                          onChange={(e) => setRegistroGeralDataInicio(e.target.value)}
+                          className="w-[140px]"
+                        />
+                        <span className="text-muted-foreground">até</span>
+                        <Input
+                          type="date"
+                          value={registroGeralDataFim}
+                          onChange={(e) => setRegistroGeralDataFim(e.target.value)}
+                          className="w-[140px]"
+                        />
+                        <Select
+                          value={registroGeralFiltroTipo}
+                          onValueChange={(value: "todos" | "dieta" | "refeicao") => setRegistroGeralFiltroTipo(value)}
+                        >
+                          <SelectTrigger className="w-[150px]">
+                            <SelectValue placeholder="Filtrar tipo" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="todos">Todos</SelectItem>
+                            <SelectItem value="dieta">Dietas</SelectItem>
+                            <SelectItem value="refeicao">Refeições</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    {/* KPIs */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      <div className="p-4 bg-muted/30 rounded-lg">
+                        <p className="text-sm text-muted-foreground">Total de Registros</p>
+                        <p className="text-2xl font-bold">{registrosGerais.length}</p>
+                      </div>
+                      <div className="p-4 bg-orange-50 rounded-lg border-l-4 border-orange-500">
+                        <p className="text-sm text-muted-foreground">Dietas</p>
+                        <p className="text-2xl font-bold text-orange-600">
+                          {registrosGerais.filter(r => r.tipo === "dieta").length}
+                        </p>
+                      </div>
+                      <div className="p-4 bg-blue-50 rounded-lg border-l-4 border-blue-500">
+                        <p className="text-sm text-muted-foreground">Refeições Totem</p>
+                        <p className="text-2xl font-bold text-blue-600">
+                          {registrosGerais.filter(r => r.tipo === "refeicao").length}
+                        </p>
+                      </div>
+                      <div className="p-4 bg-green-50 rounded-lg border-l-4 border-green-500">
+                        <p className="text-sm text-muted-foreground">Dietas Aprovadas</p>
+                        <p className="text-2xl font-bold text-green-600">
+                          {registrosGerais.filter(r => r.tipo === "dieta" && r.status === "aprovada").length}
+                        </p>
+                      </div>
+                    </div>
+
+                    {registrosGerais.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <ClipboardList className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                        <p>Nenhum registro encontrado no período.</p>
+                      </div>
+                    ) : (
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Tipo</TableHead>
+                            <TableHead>Nome</TableHead>
+                            <TableHead>Descrição</TableHead>
+                            <TableHead>Data</TableHead>
+                            <TableHead>Detalhes</TableHead>
+                            <TableHead>Status</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {registrosGerais.map((r) => (
+                            <TableRow key={`${r.tipo}-${r.id}`}>
+                              <TableCell>
+                                <Badge variant={r.tipo === "dieta" ? "default" : "secondary"}>
+                                  {r.tipo === "dieta" ? "Dieta" : "Refeição"}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="font-medium">{r.nome}</TableCell>
+                              <TableCell>{r.descricao}</TableCell>
+                              <TableCell>
+                                {format(new Date(r.data), "dd/MM/yyyy")}
+                                {r.hora && <span className="text-muted-foreground ml-1">às {r.hora.substring(0, 5)}</span>}
+                              </TableCell>
+                              <TableCell className="text-sm text-muted-foreground">{r.detalhes}</TableCell>
+                              <TableCell>
+                                {r.status ? (
+                                  <Badge className={statusColors[r.status]}>
+                                    {r.status === "pendente" && "Pendente"}
+                                    {r.status === "aprovada" && "Aprovada"}
+                                    {r.status === "rejeitada" && "Rejeitada"}
+                                    {r.status === "cancelada" && "Cancelada"}
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="text-green-600 border-green-600">
+                                    Registrado
+                                  </Badge>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
               {/* Sub-tab: Solicitações de Dieta */}
               <TabsContent value="solicitacoes" className="mt-4">
