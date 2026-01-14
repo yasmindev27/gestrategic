@@ -54,7 +54,9 @@ import {
   FileDown,
   FileSpreadsheet,
   Filter,
+  ClipboardList,
 } from "lucide-react";
+import { RegistrosRefeicoes } from "@/components/restaurante/RegistrosRefeicoes";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, addDays, startOfMonth, endOfMonth } from "date-fns";
@@ -599,8 +601,12 @@ export const RestauranteModule = () => {
             <Salad className="h-4 w-4" />
             Dietas
           </TabsTrigger>
-          {canManage && (
+        {canManage && (
             <>
+              <TabsTrigger value="registros" className="flex items-center gap-2">
+                <ClipboardList className="h-4 w-4" />
+                Registros
+              </TabsTrigger>
               <TabsTrigger value="dashboard" className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
                 Dashboard
@@ -808,6 +814,13 @@ export const RestauranteModule = () => {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* Registros Tab (Restaurante only) */}
+        {canManage && (
+          <TabsContent value="registros">
+            <RegistrosRefeicoes />
+          </TabsContent>
+        )}
 
         {/* Dashboard Tab (Restaurante only) */}
         {canManage && (
