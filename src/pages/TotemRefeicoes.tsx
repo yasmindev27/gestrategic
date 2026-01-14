@@ -125,8 +125,16 @@ const TotemRefeicoes = () => {
   const [cpfValido, setCpfValido] = useState(true);
   const [aceitouLGPD, setAceitouLGPD] = useState(false);
   
+  // Modal seleção de refeição (fora de horário)
+  const [showSelecionarRefeicaoModal, setShowSelecionarRefeicaoModal] = useState(false);
+  const [colaboradorPendente, setColaboradorPendente] = useState<Colaborador | null>(null);
+  const [tipoRefeicaoSelecionado, setTipoRefeicaoSelecionado] = useState<TipoRefeicao | null>(null);
+  
   const tipoRefeicaoAtual = determinarTipoRefeicao();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  
+  // Tipos de refeição disponíveis para seleção (exclui fora_horario)
+  const tiposRefeicaoDisponiveis: TipoRefeicao[] = ["cafe", "almoco", "lanche", "jantar"];
 
   // Buscar colaboradores
   useEffect(() => {
@@ -159,8 +167,22 @@ const TotemRefeicoes = () => {
     c.full_name.toLowerCase().includes(busca.toLowerCase())
   );
 
+  // Handler quando clica em um colaborador
+  const handleClickColaborador = (colaborador: Colaborador) => {
+    if (isRegistrando) return;
+    
+    // Se está fora de horário, abre modal para selecionar o tipo
+    if (tipoRefeicaoAtual === "fora_horario") {
+      setColaboradorPendente(colaborador);
+      setTipoRefeicaoSelecionado(null);
+      setShowSelecionarRefeicaoModal(true);
+    } else {
+      registrarRefeicaoColaborador(colaborador, tipoRefeicaoAtual);
+    }
+  };
+
   // Registrar refeição de colaborador
-  const registrarRefeicaoColaborador = async (colaborador: Colaborador) => {
+  const registrarRefeicaoColaborador = async (colaborador: Colaborador, tipoRefeicao: TipoRefeicao) => {
     if (isRegistrando) return;
     
     setIsRegistrando(true);
@@ -169,14 +191,16 @@ const TotemRefeicoes = () => {
         tipo_pessoa: "colaborador",
         colaborador_user_id: colaborador.user_id,
         colaborador_nome: colaborador.full_name,
-        tipo_refeicao: tipoRefeicaoAtual,
+        tipo_refeicao: tipoRefeicao,
       });
       
       if (error) throw error;
       
-      setUltimoRegistro({ nome: colaborador.full_name, tipo: tipoRefeicaoAtual });
+      setUltimoRegistro({ nome: colaborador.full_name, tipo: tipoRefeicao });
       setShowSucesso(true);
       setBusca("");
+      setShowSelecionarRefeicaoModal(false);
+      setColaboradorPendente(null);
       
       // Ocultar mensagem após 3 segundos
       setTimeout(() => {
@@ -194,6 +218,24 @@ const TotemRefeicoes = () => {
       setIsRegistrando(false);
     }
   };
+
+  // Confirmar seleção de refeição (fora de horário)
+  const confirmarSelecaoRefeicao = () => {
+    if (!colaboradorPendente || !tipoRefeicaoSelecionado) {
+      toast({
+        title: "Atenção",
+        description: "Selecione o tipo de refeição.",
+        variant: "destructive",
+      });
+      return;
+    }
+    registrarRefeicaoColaborador(colaboradorPendente, tipoRefeicaoSelecionado);
+  };
+
+  // Modal seleção de refeição para visitante (fora de horário)
+  const [showSelecionarRefeicaoVisitanteModal, setShowSelecionarRefeicaoVisitanteModal] = useState(false);
+  const [visitantePendente, setVisitantePendente] = useState<{ nome: string; cpfHash: string } | null>(null);
+  const [tipoRefeicaoVisitanteSelecionado, setTipoRefeicaoVisitanteSelecionado] = useState<TipoRefeicao | null>(null);
 
   // Registrar refeição de visitante
   const registrarRefeicaoVisitante = async () => {
@@ -218,22 +260,48 @@ const TotemRefeicoes = () => {
       return;
     }
     
+    // Se está fora de horário, abre modal para selecionar o tipo
+    if (tipoRefeicaoAtual === "fora_horario") {
+      const cpfHash = await hashCPF(visitanteCPF);
+      setVisitantePendente({ nome: visitanteNome.trim(), cpfHash });
+      setTipoRefeicaoVisitanteSelecionado(null);
+      setShowVisitanteModal(false);
+      setShowSelecionarRefeicaoVisitanteModal(true);
+      return;
+    }
+    
+    await finalizarRegistroVisitante(tipoRefeicaoAtual);
+  };
+
+  // Finalizar registro de visitante com tipo de refeição
+  const finalizarRegistroVisitante = async (tipoRefeicao: TipoRefeicao) => {
     setIsRegistrando(true);
     try {
-      const cpfHash = await hashCPF(visitanteCPF);
+      let cpfHash: string;
+      let nomeVisitante: string;
+      
+      if (visitantePendente) {
+        cpfHash = visitantePendente.cpfHash;
+        nomeVisitante = visitantePendente.nome;
+      } else {
+        cpfHash = await hashCPF(visitanteCPF);
+        nomeVisitante = visitanteNome.trim();
+      }
       
       const { error } = await supabase.from("refeicoes_registros").insert({
         tipo_pessoa: "visitante",
-        colaborador_nome: visitanteNome.trim(),
+        colaborador_nome: nomeVisitante,
         visitante_cpf_hash: cpfHash,
-        tipo_refeicao: tipoRefeicaoAtual,
+        tipo_refeicao: tipoRefeicao,
       });
       
       if (error) throw error;
       
-      setUltimoRegistro({ nome: visitanteNome.trim(), tipo: tipoRefeicaoAtual });
+      setUltimoRegistro({ nome: nomeVisitante, tipo: tipoRefeicao });
       setShowSucesso(true);
       setShowVisitanteModal(false);
+      setShowSelecionarRefeicaoVisitanteModal(false);
+      setVisitantePendente(null);
       resetVisitanteForm();
       
       setTimeout(() => {
@@ -250,6 +318,19 @@ const TotemRefeicoes = () => {
     } finally {
       setIsRegistrando(false);
     }
+  };
+
+  // Confirmar seleção de refeição para visitante
+  const confirmarSelecaoRefeicaoVisitante = () => {
+    if (!tipoRefeicaoVisitanteSelecionado) {
+      toast({
+        title: "Atenção",
+        description: "Selecione o tipo de refeição.",
+        variant: "destructive",
+      });
+      return;
+    }
+    finalizarRegistroVisitante(tipoRefeicaoVisitanteSelecionado);
   };
 
   const resetVisitanteForm = () => {
@@ -374,7 +455,7 @@ const TotemRefeicoes = () => {
                   {colaboradoresFiltrados.map((colaborador) => (
                     <button
                       key={colaborador.user_id}
-                      onClick={() => registrarRefeicaoColaborador(colaborador)}
+                      onClick={() => handleClickColaborador(colaborador)}
                       disabled={isRegistrando}
                       className="w-full p-4 text-left hover:bg-primary/5 active:bg-primary/10 transition-colors flex items-center gap-4 disabled:opacity-50"
                     >
@@ -496,6 +577,120 @@ const TotemRefeicoes = () => {
               Cancelar
             </Button>
             <Button onClick={registrarRefeicaoVisitante} disabled={isRegistrando}>
+              {isRegistrando && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Seleção de Refeição (Colaborador - Fora de Horário) */}
+      <Dialog open={showSelecionarRefeicaoModal} onOpenChange={(open) => {
+        setShowSelecionarRefeicaoModal(open);
+        if (!open) {
+          setColaboradorPendente(null);
+          setTipoRefeicaoSelecionado(null);
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Registro Fora de Horário
+            </DialogTitle>
+            <DialogDescription>
+              {colaboradorPendente && (
+                <span className="font-medium text-foreground">{colaboradorPendente.full_name}</span>
+              )}, selecione o tipo de refeição:
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-2 gap-3 py-4">
+            {tiposRefeicaoDisponiveis.map((tipo) => (
+              <button
+                key={tipo}
+                onClick={() => setTipoRefeicaoSelecionado(tipo)}
+                className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${
+                  tipoRefeicaoSelecionado === tipo
+                    ? "border-primary bg-primary/10"
+                    : "border-muted hover:border-primary/50"
+                }`}
+              >
+                <div className={`p-3 rounded-full ${tipoRefeicaoInfo[tipo].cor}`}>
+                  {tipoRefeicaoInfo[tipo].icon}
+                </div>
+                <span className="font-medium text-sm">{tipoRefeicaoInfo[tipo].label}</span>
+              </button>
+            ))}
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => {
+              setShowSelecionarRefeicaoModal(false);
+              setColaboradorPendente(null);
+              setTipoRefeicaoSelecionado(null);
+            }}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmarSelecaoRefeicao} disabled={isRegistrando || !tipoRefeicaoSelecionado}>
+              {isRegistrando && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Seleção de Refeição (Visitante - Fora de Horário) */}
+      <Dialog open={showSelecionarRefeicaoVisitanteModal} onOpenChange={(open) => {
+        setShowSelecionarRefeicaoVisitanteModal(open);
+        if (!open) {
+          setVisitantePendente(null);
+          setTipoRefeicaoVisitanteSelecionado(null);
+          resetVisitanteForm();
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Clock className="h-5 w-5" />
+              Registro Fora de Horário
+            </DialogTitle>
+            <DialogDescription>
+              {visitantePendente && (
+                <span className="font-medium text-foreground">{visitantePendente.nome}</span>
+              )}, selecione o tipo de refeição:
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-2 gap-3 py-4">
+            {tiposRefeicaoDisponiveis.map((tipo) => (
+              <button
+                key={tipo}
+                onClick={() => setTipoRefeicaoVisitanteSelecionado(tipo)}
+                className={`p-4 rounded-lg border-2 transition-all flex flex-col items-center gap-2 ${
+                  tipoRefeicaoVisitanteSelecionado === tipo
+                    ? "border-primary bg-primary/10"
+                    : "border-muted hover:border-primary/50"
+                }`}
+              >
+                <div className={`p-3 rounded-full ${tipoRefeicaoInfo[tipo].cor}`}>
+                  {tipoRefeicaoInfo[tipo].icon}
+                </div>
+                <span className="font-medium text-sm">{tipoRefeicaoInfo[tipo].label}</span>
+              </button>
+            ))}
+          </div>
+          
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => {
+              setShowSelecionarRefeicaoVisitanteModal(false);
+              setVisitantePendente(null);
+              setTipoRefeicaoVisitanteSelecionado(null);
+              resetVisitanteForm();
+            }}>
+              Cancelar
+            </Button>
+            <Button onClick={confirmarSelecaoRefeicaoVisitante} disabled={isRegistrando || !tipoRefeicaoVisitanteSelecionado}>
               {isRegistrando && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
               Confirmar
             </Button>
