@@ -55,8 +55,10 @@ import {
   FileSpreadsheet,
   Filter,
   ClipboardList,
+  TrendingUp,
 } from "lucide-react";
 import { RegistrosRefeicoes } from "@/components/restaurante/RegistrosRefeicoes";
+import { RelatorioQuantitativoRefeicoes } from "@/components/restaurante/RelatorioQuantitativoRefeicoes";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, addDays, startOfMonth, endOfMonth } from "date-fns";
@@ -1189,8 +1191,13 @@ export const RestauranteModule = () => {
         {/* Gerenciar Tab (Admin/Restaurante only) */}
         {canManage && (
           <TabsContent value="gerenciar" className="space-y-4">
-            <Tabs defaultValue="geral" className="w-full">
+            <Tabs defaultValue="quantitativo" className="w-full">
               <TabsList className="flex flex-wrap h-auto gap-1 p-1 w-full">
+                <TabsTrigger value="quantitativo" className="flex items-center gap-2 flex-1 min-w-fit">
+                  <TrendingUp className="h-4 w-4" />
+                  <span className="hidden sm:inline">Quantitativo Diário</span>
+                  <span className="sm:hidden">Quant.</span>
+                </TabsTrigger>
                 <TabsTrigger value="geral" className="flex items-center gap-2 flex-1 min-w-fit">
                   <ClipboardList className="h-4 w-4" />
                   <span className="hidden sm:inline">Registro Geral</span>
@@ -1212,6 +1219,11 @@ export const RestauranteModule = () => {
                   <span className="sm:hidden">Cardápio</span>
                 </TabsTrigger>
               </TabsList>
+
+              {/* Sub-tab: Quantitativo Diário */}
+              <TabsContent value="quantitativo" className="mt-4">
+                <RelatorioQuantitativoRefeicoes />
+              </TabsContent>
 
               {/* Sub-tab: Registro Geral */}
               <TabsContent value="geral" className="mt-4">
