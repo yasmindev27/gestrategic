@@ -950,6 +950,7 @@ export const RestauranteModule = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Tipo de Dieta</TableHead>
+                      <TableHead>Horários</TableHead>
                       <TableHead>Período</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Solicitado em</TableHead>
@@ -965,6 +966,16 @@ export const RestauranteModule = () => {
                             {s.descricao_especifica && (
                               <p className="text-xs text-muted-foreground">{s.descricao_especifica}</p>
                             )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            {s.horarios_refeicoes && s.horarios_refeicoes.length > 0 
+                              ? s.horarios_refeicoes.map(h => {
+                                  const option = horariosRefeicaoOptions.find(o => o.value === h);
+                                  return option ? option.label : h;
+                                }).join(", ")
+                              : "Todos"}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -1445,6 +1456,14 @@ export const RestauranteModule = () => {
                                   </p>
                                   <p className="text-sm text-muted-foreground">
                                     Dieta: {tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta}
+                                  </p>
+                                  <p className="text-sm text-muted-foreground">
+                                    Horários: {s.horarios_refeicoes && s.horarios_refeicoes.length > 0 
+                                      ? s.horarios_refeicoes.map(h => {
+                                          const option = horariosRefeicaoOptions.find(o => o.value === h);
+                                          return option ? option.label : h;
+                                        }).join(", ")
+                                      : "Todos os horários"}
                                   </p>
                                   <p className="text-sm text-muted-foreground">
                                     Período: {format(new Date(s.data_inicio), "dd/MM/yyyy")}
