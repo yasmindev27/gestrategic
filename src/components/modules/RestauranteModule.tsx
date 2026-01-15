@@ -952,11 +952,13 @@ export const RestauranteModule = () => {
                   <p>Você ainda não fez nenhuma solicitação de dieta.</p>
                 </div>
               ) : (
-                <Table>
+              <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Paciente</TableHead>
                       <TableHead>Tipo de Dieta</TableHead>
                       <TableHead>Horários</TableHead>
+                      <TableHead>Acompanhante</TableHead>
                       <TableHead>Período</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Solicitado em</TableHead>
@@ -966,6 +968,14 @@ export const RestauranteModule = () => {
                   <TableBody>
                     {minhasSolicitacoes.map((s) => (
                       <TableRow key={s.id}>
+                        <TableCell>
+                          <div>
+                            <span className="font-medium">{s.paciente_nome || "N/A"}</span>
+                            {s.quarto_leito && (
+                              <p className="text-xs text-muted-foreground">{s.quarto_leito}</p>
+                            )}
+                          </div>
+                        </TableCell>
                         <TableCell>
                           <div>
                             <span className="font-medium">{tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta}</span>
@@ -983,6 +993,11 @@ export const RestauranteModule = () => {
                                 }).join(", ")
                               : "Todos"}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={s.tem_acompanhante ? "default" : "outline"}>
+                            {s.tem_acompanhante ? "Sim" : "Não"}
+                          </Badge>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-1 text-sm">
