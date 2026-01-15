@@ -1044,6 +1044,33 @@ export type Database = {
         }
         Relationships: []
       }
+      valores_refeicoes: {
+        Row: {
+          atualizado_por: string | null
+          created_at: string
+          id: string
+          tipo_refeicao: string
+          updated_at: string
+          valor: number
+        }
+        Insert: {
+          atualizado_por?: string | null
+          created_at?: string
+          id?: string
+          tipo_refeicao: string
+          updated_at?: string
+          valor?: number
+        }
+        Update: {
+          atualizado_por?: string | null
+          created_at?: string
+          id?: string
+          tipo_refeicao?: string
+          updated_at?: string
+          valor?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
