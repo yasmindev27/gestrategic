@@ -291,7 +291,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
     doc.setTextColor(120, 53, 15);
-    doc.text("☕ Total Café", 18, cardStartY + 6);
+    doc.text("Total Cafe", 18, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
     doc.text(String(totaisGerais.cafe + totaisGerais.dietasCafe), 18, cardStartY + 14);
@@ -306,7 +306,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
     doc.line(14 + cardWidth + cardGap, cardStartY, 14 + cardWidth + cardGap, cardStartY + cardHeight);
     doc.setFontSize(8);
     doc.setTextColor(154, 52, 18);
-    doc.text("☀️ Total Almoço", 18 + cardWidth + cardGap, cardStartY + 6);
+    doc.text("Total Almoco", 18 + cardWidth + cardGap, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
     doc.text(String(totaisGerais.almoco + totaisGerais.dietasAlmoco), 18 + cardWidth + cardGap, cardStartY + 14);
@@ -321,7 +321,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
     doc.line(14 + (cardWidth + cardGap) * 2, cardStartY, 14 + (cardWidth + cardGap) * 2, cardStartY + cardHeight);
     doc.setFontSize(8);
     doc.setTextColor(157, 23, 77);
-    doc.text("🍪 Total Lanche", 18 + (cardWidth + cardGap) * 2, cardStartY + 6);
+    doc.text("Total Lanche", 18 + (cardWidth + cardGap) * 2, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
     doc.text(String(totaisGerais.lanche + totaisGerais.dietasLanche), 18 + (cardWidth + cardGap) * 2, cardStartY + 14);
@@ -336,7 +336,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
     doc.line(14 + (cardWidth + cardGap) * 3, cardStartY, 14 + (cardWidth + cardGap) * 3, cardStartY + cardHeight);
     doc.setFontSize(8);
     doc.setTextColor(55, 48, 163);
-    doc.text("🌙 Total Jantar", 18 + (cardWidth + cardGap) * 3, cardStartY + 6);
+    doc.text("Total Jantar", 18 + (cardWidth + cardGap) * 3, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
     doc.text(String(totaisGerais.jantar + totaisGerais.dietasJantar), 18 + (cardWidth + cardGap) * 3, cardStartY + 14);
@@ -351,7 +351,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
     doc.line(14 + (cardWidth + cardGap) * 4, cardStartY, 14 + (cardWidth + cardGap) * 4, cardStartY + cardHeight);
     doc.setFontSize(8);
     doc.setTextColor(6, 95, 70);
-    doc.text("📈 Total Geral", 18 + (cardWidth + cardGap) * 4, cardStartY + 6);
+    doc.text("Total Geral", 18 + (cardWidth + cardGap) * 4, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
     doc.text(String(totaisGerais.totalGeral), 18 + (cardWidth + cardGap) * 4, cardStartY + 14);
