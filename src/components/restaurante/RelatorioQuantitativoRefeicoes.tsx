@@ -318,14 +318,36 @@ export const RelatorioQuantitativoRefeicoes = () => {
 
       const valorNum = parseFloat(valor);
       
-      const { error } = await supabase
+      // Verificar se já existe registro para o tipo
+      const { data: existingData } = await supabase
         .from("valores_refeicoes")
-        .update({ valor: valorNum, atualizado_por: user.id })
-        .eq("tipo_refeicao", tipo);
+        .select("id")
+        .eq("tipo_refeicao", tipo)
+        .maybeSingle();
       
-      if (error) throw error;
+      if (existingData) {
+        // Atualizar registro existente
+        const { error } = await supabase
+          .from("valores_refeicoes")
+          .update({ valor: valorNum, atualizado_por: user.id, updated_at: new Date().toISOString() })
+          .eq("tipo_refeicao", tipo);
+        
+        if (error) throw error;
+      } else {
+        // Inserir novo registro
+        const { error } = await supabase
+          .from("valores_refeicoes")
+          .insert({ tipo_refeicao: tipo, valor: valorNum, atualizado_por: user.id });
+        
+        if (error) throw error;
+      }
 
+      // Atualizar estado local imediatamente
       setValoresRefeicoes(prev => ({ ...prev, [tipo]: valorNum }));
+      
+      // Recarregar dados para atualizar os cálculos financeiros
+      fetchData();
+      
       toast({ title: "Sucesso", description: `Valor de ${tipo === 'cafe_litro' ? 'Café Litro' : tipo.charAt(0).toUpperCase() + tipo.slice(1)} atualizado!` });
     } catch (error: any) {
       console.error("Erro ao salvar valor:", error);
