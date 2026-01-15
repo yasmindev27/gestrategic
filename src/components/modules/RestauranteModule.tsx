@@ -56,6 +56,8 @@ import {
   Filter,
   ClipboardList,
   TrendingUp,
+  Search,
+  Users,
 } from "lucide-react";
 import { RegistrosRefeicoes } from "@/components/restaurante/RegistrosRefeicoes";
 import { RelatorioQuantitativoRefeicoes } from "@/components/restaurante/RelatorioQuantitativoRefeicoes";
@@ -203,6 +205,10 @@ export const RestauranteModule = () => {
   const [registroGeralDataInicio, setRegistroGeralDataInicio] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
   const [registroGeralDataFim, setRegistroGeralDataFim] = useState(format(new Date(), "yyyy-MM-dd"));
   const [registroGeralFiltroTipo, setRegistroGeralFiltroTipo] = useState<"todos" | "dieta" | "refeicao">("todos");
+
+  // Solicitações de Dieta - Filtros e Pesquisa
+  const [solicitacoesPesquisa, setSolicitacoesPesquisa] = useState("");
+  const [solicitacoesPeriodo, setSolicitacoesPeriodo] = useState<"todos" | "dia" | "semana" | "mes">("todos");
 
   useEffect(() => {
     fetchData();
@@ -1429,87 +1435,209 @@ export const RestauranteModule = () => {
                         </Button>
                       </div>
                     </div>
+
+                    {/* Filtros e Pesquisa */}
+                    <div className="flex flex-col md:flex-row gap-4 mt-4">
+                      <div className="relative flex-1">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Pesquisar por paciente, quarto, tipo de dieta..."
+                          value={solicitacoesPesquisa}
+                          onChange={(e) => setSolicitacoesPesquisa(e.target.value)}
+                          className="pl-9"
+                        />
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          size="sm"
+                          variant={solicitacoesPeriodo === "todos" ? "default" : "outline"}
+                          onClick={() => setSolicitacoesPeriodo("todos")}
+                        >
+                          Todos
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={solicitacoesPeriodo === "dia" ? "default" : "outline"}
+                          onClick={() => setSolicitacoesPeriodo("dia")}
+                        >
+                          Hoje
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={solicitacoesPeriodo === "semana" ? "default" : "outline"}
+                          onClick={() => setSolicitacoesPeriodo("semana")}
+                        >
+                          Semana
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant={solicitacoesPeriodo === "mes" ? "default" : "outline"}
+                          onClick={() => setSolicitacoesPeriodo("mes")}
+                        >
+                          Mês
+                        </Button>
+                      </div>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    {todasSolicitacoes.length === 0 ? (
-                      <div className="text-center py-8 text-muted-foreground">
-                        <Salad className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>Nenhuma solicitação encontrada.</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-3">
-                        {todasSolicitacoes.map((s) => (
-                            <div key={s.id} className="p-4 border rounded-lg space-y-2 hover:bg-muted/30 transition-colors">
-                              <div className="flex justify-between items-start">
-                                <div className="space-y-1">
-                                  <div className="flex items-center gap-2">
-                                    <p className="font-medium">Paciente: {s.paciente_nome || "N/A"}</p>
+                    {(() => {
+                      // Filtrar por período
+                      let solicitacoesFiltradas = todasSolicitacoes.filter(s => {
+                        const dataInicio = new Date(s.data_inicio);
+                        const hoje = new Date();
+                        hoje.setHours(0, 0, 0, 0);
+                        
+                        if (solicitacoesPeriodo === "dia") {
+                          const dataStr = format(hoje, "yyyy-MM-dd");
+                          return s.data_inicio === dataStr || (s.data_fim && s.data_inicio <= dataStr && s.data_fim >= dataStr) || (!s.data_fim && s.data_inicio <= dataStr);
+                        } else if (solicitacoesPeriodo === "semana") {
+                          const inicioSemana = startOfWeek(hoje, { weekStartsOn: 0 });
+                          const fimSemana = endOfWeek(hoje, { weekStartsOn: 0 });
+                          return dataInicio >= inicioSemana && dataInicio <= fimSemana;
+                        } else if (solicitacoesPeriodo === "mes") {
+                          const inicioMes = startOfMonth(hoje);
+                          const fimMes = endOfMonth(hoje);
+                          return dataInicio >= inicioMes && dataInicio <= fimMes;
+                        }
+                        return true;
+                      });
+
+                      // Filtrar por pesquisa
+                      if (solicitacoesPesquisa.trim()) {
+                        const termo = solicitacoesPesquisa.toLowerCase();
+                        solicitacoesFiltradas = solicitacoesFiltradas.filter(s =>
+                          (s.paciente_nome && s.paciente_nome.toLowerCase().includes(termo)) ||
+                          (s.quarto_leito && s.quarto_leito.toLowerCase().includes(termo)) ||
+                          (s.tipo_dieta && s.tipo_dieta.toLowerCase().includes(termo)) ||
+                          (tipoDietaLabels[s.tipo_dieta] && tipoDietaLabels[s.tipo_dieta].toLowerCase().includes(termo)) ||
+                          (s.solicitante_nome && s.solicitante_nome.toLowerCase().includes(termo))
+                        );
+                      }
+
+                      if (solicitacoesFiltradas.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-muted-foreground">
+                            <Salad className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                            <p>Nenhuma solicitação encontrada.</p>
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="overflow-x-auto">
+                          <Table>
+                            <TableHeader>
+                              <TableRow>
+                                <TableHead>Paciente</TableHead>
+                                <TableHead>Tipo de Dieta</TableHead>
+                                <TableHead>Horários</TableHead>
+                                <TableHead className="text-center">
+                                  <div className="flex items-center justify-center gap-1">
+                                    <Users className="h-4 w-4" />
+                                    Acomp.
+                                  </div>
+                                </TableHead>
+                                <TableHead>Quarto/Leito</TableHead>
+                                <TableHead>Período</TableHead>
+                                <TableHead>Status</TableHead>
+                                <TableHead>Ações</TableHead>
+                              </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                              {solicitacoesFiltradas.map((s) => (
+                                <TableRow key={s.id}>
+                                  <TableCell>
+                                    <div>
+                                      <span className="font-medium">{s.paciente_nome || "N/A"}</span>
+                                      <p className="text-xs text-muted-foreground">
+                                        Por: {s.solicitante_nome}
+                                      </p>
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div>
+                                      <span>{tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta}</span>
+                                      {s.restricoes_alimentares && (
+                                        <p className="text-xs text-orange-600 mt-1">
+                                          {s.restricoes_alimentares}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
+                                    <div className="text-sm">
+                                      {s.horarios_refeicoes && s.horarios_refeicoes.length > 0 
+                                        ? s.horarios_refeicoes.map(h => {
+                                            const option = horariosRefeicaoOptions.find(o => o.value === h);
+                                            return option ? option.label : h;
+                                          }).join(", ")
+                                        : "Todos"}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell className="text-center">
+                                    <Badge variant={s.tem_acompanhante ? "default" : "outline"}>
+                                      {s.tem_acompanhante ? "Sim" : "Não"}
+                                    </Badge>
+                                  </TableCell>
+                                  <TableCell>{s.quarto_leito || "N/A"}</TableCell>
+                                  <TableCell>
+                                    <div className="text-sm">
+                                      {format(new Date(s.data_inicio), "dd/MM/yyyy")}
+                                      {s.data_fim && (
+                                        <span className="text-muted-foreground">
+                                          {" → "}{format(new Date(s.data_fim), "dd/MM/yyyy")}
+                                        </span>
+                                      )}
+                                      {!s.data_fim && (
+                                        <span className="text-muted-foreground text-xs block">
+                                          (sem término)
+                                        </span>
+                                      )}
+                                    </div>
+                                  </TableCell>
+                                  <TableCell>
                                     <Badge className={statusColors[s.status]}>
                                       {s.status === "pendente" && "Pendente"}
                                       {s.status === "aprovada" && "Aprovada"}
                                       {s.status === "rejeitada" && "Rejeitada"}
                                       {s.status === "cancelada" && "Cancelada"}
+                                      {s.status === "suspensa" && "Suspensa"}
                                     </Badge>
-                                  </div>
-                                  <p className="text-sm text-muted-foreground">
-                                    Quarto/Leito: {s.quarto_leito || "N/A"}
-                                  </p>
-                                  <p className="text-sm text-muted-foreground">
-                                    Dieta: {tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta}
-                                  </p>
-                                  <p className="text-sm text-muted-foreground">
-                                    Horários: {s.horarios_refeicoes && s.horarios_refeicoes.length > 0 
-                                      ? s.horarios_refeicoes.map(h => {
-                                          const option = horariosRefeicaoOptions.find(o => o.value === h);
-                                          return option ? option.label : h;
-                                        }).join(", ")
-                                      : "Todos os horários"}
-                                  </p>
-                                  <p className="text-sm text-muted-foreground">
-                                    Período: {format(new Date(s.data_inicio), "dd/MM/yyyy")}
-                                    {s.data_fim && ` até ${format(new Date(s.data_fim), "dd/MM/yyyy")}`}
-                                  </p>
-                                  <p className="text-xs text-muted-foreground">
-                                    Solicitado por: {s.solicitante_nome} em {format(new Date(s.created_at), "dd/MM/yyyy 'às' HH:mm")}
-                                  </p>
-                                  {s.restricoes_alimentares && (
-                                    <p className="text-xs text-orange-600">
-                                      Restrições: {s.restricoes_alimentares}
-                                    </p>
-                                  )}
-                                  {s.observacoes && (
-                                    <p className="text-xs text-muted-foreground italic">
-                                      Obs: {s.observacoes}
-                                    </p>
-                                  )}
-                                </div>
-                                {s.status === "pendente" && (
-                                  <div className="flex gap-2">
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="text-green-600 hover:bg-green-50"
-                                      onClick={() => handleUpdateSolicitacaoStatus(s.id, "aprovada")}
-                                    >
-                                      <CheckCircle2 className="h-4 w-4 mr-1" />
-                                      Aprovar
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="outline"
-                                      className="text-red-600 hover:bg-red-50"
-                                      onClick={() => handleUpdateSolicitacaoStatus(s.id, "rejeitada")}
-                                    >
-                                      <XCircle className="h-4 w-4 mr-1" />
-                                      Rejeitar
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    {s.status === "pendente" && (
+                                      <div className="flex gap-1">
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="text-green-600 hover:bg-green-50 h-8 w-8 p-0"
+                                          onClick={() => handleUpdateSolicitacaoStatus(s.id, "aprovada")}
+                                          title="Aprovar"
+                                        >
+                                          <CheckCircle2 className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          variant="outline"
+                                          className="text-red-600 hover:bg-red-50 h-8 w-8 p-0"
+                                          onClick={() => handleUpdateSolicitacaoStatus(s.id, "rejeitada")}
+                                          title="Rejeitar"
+                                        >
+                                          <XCircle className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    )}
+                                    {s.status !== "pendente" && (
+                                      <span className="text-muted-foreground text-xs">-</span>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </div>
+                      );
+                    })()}
                   </CardContent>
                 </Card>
               </TabsContent>
