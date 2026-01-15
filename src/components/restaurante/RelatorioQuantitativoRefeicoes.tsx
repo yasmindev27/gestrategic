@@ -254,29 +254,126 @@ export const RelatorioQuantitativoRefeicoes = () => {
   const exportToPDF = () => {
     const doc = new jsPDF({ orientation: "landscape" });
     
-    doc.setFontSize(16);
+    // Cores em RGB
+    const azulTotem = [59, 130, 246]; // bg-blue-500
+    const azulClaro = [219, 234, 254]; // bg-blue-100
+    const laranjaDeita = [249, 115, 22]; // bg-orange-500
+    const laranjaClaro = [255, 237, 213]; // bg-orange-100
+    const verdeTotal = [5, 150, 105]; // bg-emerald-600
+    const verdeClaro = [209, 250, 229]; // bg-emerald-100
+
+    // Título
+    doc.setFontSize(18);
+    doc.setFont("helvetica", "bold");
     doc.text("Relatório Quantitativo de Refeições Diárias", 14, 15);
     doc.setFontSize(10);
-    doc.text(`Período: ${format(parseISO(dataInicio), "dd/MM/yyyy")} a ${format(parseISO(dataFim), "dd/MM/yyyy")}`, 14, 22);
-    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 28);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Período: ${format(parseISO(dataInicio), "dd/MM/yyyy")} a ${format(parseISO(dataFim), "dd/MM/yyyy")}`, 14, 23);
+    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 29);
 
-    // Resumo geral
-    doc.setFontSize(11);
-    doc.text(`RESUMO: Totem: ${totaisGerais.totalRefeicoes} | Dietas: ${totaisGerais.totalDietas} | Total Geral: ${totaisGerais.totalGeral}`, 14, 36);
+    // Dashboard - KPIs
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("Dashboard - Resumo por Tipo de Refeição", 14, 40);
 
-    // Tabela principal
+    // Cards do Dashboard
+    const cardWidth = 52;
+    const cardHeight = 22;
+    const cardStartY = 45;
+    const cardGap = 4;
+
+    // Card Café (Amber)
+    doc.setFillColor(255, 243, 224);
+    doc.roundedRect(14, cardStartY, cardWidth, cardHeight, 2, 2, "F");
+    doc.setDrawColor(245, 158, 11);
+    doc.setLineWidth(0.8);
+    doc.line(14, cardStartY, 14, cardStartY + cardHeight);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(120, 53, 15);
+    doc.text("☕ Total Café", 18, cardStartY + 6);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(String(totaisGerais.cafe + totaisGerais.dietasCafe), 18, cardStartY + 14);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Totem: ${totaisGerais.cafe} | Dietas: ${totaisGerais.dietasCafe}`, 18, cardStartY + 19);
+
+    // Card Almoço (Orange)
+    doc.setFillColor(255, 237, 213);
+    doc.roundedRect(14 + cardWidth + cardGap, cardStartY, cardWidth, cardHeight, 2, 2, "F");
+    doc.setDrawColor(249, 115, 22);
+    doc.line(14 + cardWidth + cardGap, cardStartY, 14 + cardWidth + cardGap, cardStartY + cardHeight);
+    doc.setFontSize(8);
+    doc.setTextColor(154, 52, 18);
+    doc.text("☀️ Total Almoço", 18 + cardWidth + cardGap, cardStartY + 6);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(String(totaisGerais.almoco + totaisGerais.dietasAlmoco), 18 + cardWidth + cardGap, cardStartY + 14);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Totem: ${totaisGerais.almoco} | Dietas: ${totaisGerais.dietasAlmoco}`, 18 + cardWidth + cardGap, cardStartY + 19);
+
+    // Card Lanche (Pink)
+    doc.setFillColor(252, 231, 243);
+    doc.roundedRect(14 + (cardWidth + cardGap) * 2, cardStartY, cardWidth, cardHeight, 2, 2, "F");
+    doc.setDrawColor(236, 72, 153);
+    doc.line(14 + (cardWidth + cardGap) * 2, cardStartY, 14 + (cardWidth + cardGap) * 2, cardStartY + cardHeight);
+    doc.setFontSize(8);
+    doc.setTextColor(157, 23, 77);
+    doc.text("🍪 Total Lanche", 18 + (cardWidth + cardGap) * 2, cardStartY + 6);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(String(totaisGerais.lanche + totaisGerais.dietasLanche), 18 + (cardWidth + cardGap) * 2, cardStartY + 14);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Totem: ${totaisGerais.lanche} | Dietas: ${totaisGerais.dietasLanche}`, 18 + (cardWidth + cardGap) * 2, cardStartY + 19);
+
+    // Card Jantar (Indigo)
+    doc.setFillColor(224, 231, 255);
+    doc.roundedRect(14 + (cardWidth + cardGap) * 3, cardStartY, cardWidth, cardHeight, 2, 2, "F");
+    doc.setDrawColor(99, 102, 241);
+    doc.line(14 + (cardWidth + cardGap) * 3, cardStartY, 14 + (cardWidth + cardGap) * 3, cardStartY + cardHeight);
+    doc.setFontSize(8);
+    doc.setTextColor(55, 48, 163);
+    doc.text("🌙 Total Jantar", 18 + (cardWidth + cardGap) * 3, cardStartY + 6);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(String(totaisGerais.jantar + totaisGerais.dietasJantar), 18 + (cardWidth + cardGap) * 3, cardStartY + 14);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Totem: ${totaisGerais.jantar} | Dietas: ${totaisGerais.dietasJantar}`, 18 + (cardWidth + cardGap) * 3, cardStartY + 19);
+
+    // Card Total Geral (Emerald)
+    doc.setFillColor(209, 250, 229);
+    doc.roundedRect(14 + (cardWidth + cardGap) * 4, cardStartY, cardWidth, cardHeight, 2, 2, "F");
+    doc.setDrawColor(5, 150, 105);
+    doc.line(14 + (cardWidth + cardGap) * 4, cardStartY, 14 + (cardWidth + cardGap) * 4, cardStartY + cardHeight);
+    doc.setFontSize(8);
+    doc.setTextColor(6, 95, 70);
+    doc.text("📈 Total Geral", 18 + (cardWidth + cardGap) * 4, cardStartY + 6);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(String(totaisGerais.totalGeral), 18 + (cardWidth + cardGap) * 4, cardStartY + 14);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Totem: ${totaisGerais.totalRefeicoes} | Dietas: ${totaisGerais.totalDietas}`, 18 + (cardWidth + cardGap) * 4, cardStartY + 19);
+
+    // Reset text color
+    doc.setTextColor(0, 0, 0);
+
+    // Tabela principal com cores
     const tableBody = quantitativos.map(q => [
-      format(parseISO(q.data), "dd/MM"),
-      format(parseISO(q.data), "EEE", { locale: ptBR }),
-      q.cafe,
-      q.almoco,
-      q.lanche,
-      q.jantar,
+      format(parseISO(q.data), "dd/MM") + " (" + format(parseISO(q.data), "EEE", { locale: ptBR }) + ")",
+      q.cafe || "-",
+      q.almoco || "-",
+      q.lanche || "-",
+      q.jantar || "-",
       q.totalRefeicoes,
-      q.dietasCafe,
-      q.dietasAlmoco,
-      q.dietasLanche,
-      q.dietasJantar,
+      q.dietasCafe || "-",
+      q.dietasAlmoco || "-",
+      q.dietasLanche || "-",
+      q.dietasJantar || "-",
       q.totalDietas,
       q.totalGeral,
     ]);
@@ -284,7 +381,6 @@ export const RelatorioQuantitativoRefeicoes = () => {
     // Adicionar linha de totais
     tableBody.push([
       "TOTAIS",
-      "",
       totaisGerais.cafe,
       totaisGerais.almoco,
       totaisGerais.lanche,
@@ -299,29 +395,65 @@ export const RelatorioQuantitativoRefeicoes = () => {
     ]);
 
     autoTable(doc, {
-      startY: 42,
-      head: [[
-        "Data", "Dia",
-        "Café", "Almoço", "Lanche", "Jantar", "Tot.Totem",
-        "Café", "Almoço", "Lanche", "Jantar", "Tot.Dieta",
-        "TOTAL"
+      startY: 72,
+      head: [
+        [
+          { content: "Data", rowSpan: 2, styles: { halign: "center", valign: "middle", fillColor: [229, 231, 235] } },
+          { content: "🖥️ Totem (Colaboradores/Visitantes)", colSpan: 5, styles: { halign: "center", fillColor: azulTotem as [number, number, number], textColor: 255 } },
+          { content: "🍽️ Dietas (Pacientes/Acompanhantes)", colSpan: 5, styles: { halign: "center", fillColor: laranjaDeita as [number, number, number], textColor: 255 } },
+          { content: "Total", rowSpan: 2, styles: { halign: "center", valign: "middle", fillColor: verdeTotal as [number, number, number], textColor: 255 } },
+        ],
+        [
+          { content: "Café", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
+          { content: "Almoço", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
+          { content: "Lanche", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
+          { content: "Jantar", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
+          { content: "Subtotal", styles: { halign: "center", fillColor: [147, 197, 253] as [number, number, number], textColor: [30, 58, 138], fontStyle: "bold" } },
+          { content: "Café", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
+          { content: "Almoço", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
+          { content: "Lanche", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
+          { content: "Jantar", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
+          { content: "Subtotal", styles: { halign: "center", fillColor: [253, 186, 116] as [number, number, number], textColor: [124, 45, 18], fontStyle: "bold" } },
+        ],
+      ],
+      body: tableBody.slice(0, -1).map((row) => [
+        { content: row[0], styles: { fillColor: [249, 250, 251] as [number, number, number] } },
+        { content: row[1], styles: { halign: "center", fillColor: [239, 246, 255] as [number, number, number] } },
+        { content: row[2], styles: { halign: "center", fillColor: [239, 246, 255] as [number, number, number] } },
+        { content: row[3], styles: { halign: "center", fillColor: [239, 246, 255] as [number, number, number] } },
+        { content: row[4], styles: { halign: "center", fillColor: [239, 246, 255] as [number, number, number] } },
+        { content: row[5], styles: { halign: "center", fillColor: azulClaro as [number, number, number], fontStyle: "bold", textColor: [30, 64, 175] } },
+        { content: row[6], styles: { halign: "center", fillColor: [255, 247, 237] as [number, number, number] } },
+        { content: row[7], styles: { halign: "center", fillColor: [255, 247, 237] as [number, number, number] } },
+        { content: row[8], styles: { halign: "center", fillColor: [255, 247, 237] as [number, number, number] } },
+        { content: row[9], styles: { halign: "center", fillColor: [255, 247, 237] as [number, number, number] } },
+        { content: row[10], styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
+        { content: row[11], styles: { halign: "center", fillColor: verdeClaro as [number, number, number], fontStyle: "bold", textColor: [6, 95, 70] } },
+      ]),
+      foot: [[
+        { content: "TOTAIS", styles: { fillColor: [209, 213, 219] as [number, number, number], fontStyle: "bold" } },
+        { content: String(totaisGerais.cafe), styles: { halign: "center", fillColor: azulClaro as [number, number, number], fontStyle: "bold", textColor: [30, 64, 175] } },
+        { content: String(totaisGerais.almoco), styles: { halign: "center", fillColor: azulClaro as [number, number, number], fontStyle: "bold", textColor: [30, 64, 175] } },
+        { content: String(totaisGerais.lanche), styles: { halign: "center", fillColor: azulClaro as [number, number, number], fontStyle: "bold", textColor: [30, 64, 175] } },
+        { content: String(totaisGerais.jantar), styles: { halign: "center", fillColor: azulClaro as [number, number, number], fontStyle: "bold", textColor: [30, 64, 175] } },
+        { content: String(totaisGerais.totalRefeicoes), styles: { halign: "center", fillColor: azulTotem as [number, number, number], fontStyle: "bold", textColor: 255 } },
+        { content: String(totaisGerais.dietasCafe), styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
+        { content: String(totaisGerais.dietasAlmoco), styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
+        { content: String(totaisGerais.dietasLanche), styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
+        { content: String(totaisGerais.dietasJantar), styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
+        { content: String(totaisGerais.totalDietas), styles: { halign: "center", fillColor: laranjaDeita as [number, number, number], fontStyle: "bold", textColor: 255 } },
+        { content: String(totaisGerais.totalGeral), styles: { halign: "center", fillColor: verdeTotal as [number, number, number], fontStyle: "bold", textColor: 255 } },
       ]],
-      body: tableBody,
-      styles: { fontSize: 7, cellPadding: 1 },
-      headStyles: { fillColor: [59, 130, 246], fontSize: 7 },
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fontSize: 7 },
+      footStyles: { fontSize: 8 },
       columnStyles: {
-        0: { cellWidth: 18 },
-        1: { cellWidth: 16 },
-        6: { fillColor: [240, 240, 240], fontStyle: "bold" },
-        11: { fillColor: [240, 240, 240], fontStyle: "bold" },
-        12: { fillColor: [59, 130, 246], textColor: 255, fontStyle: "bold" },
+        0: { cellWidth: 32 },
       },
-      foot: [["", "", "", "", "", "", "TOTEM", "", "", "", "", "DIETAS", "GERAL"]],
-      footStyles: { fillColor: [200, 200, 200], fontSize: 6 },
     });
 
     doc.save(`quantitativo_refeicoes_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
-    toast({ title: "Sucesso", description: "Arquivo PDF exportado!" });
+    toast({ title: "Sucesso", description: "Arquivo PDF exportado com dashboard!" });
   };
 
   return (
