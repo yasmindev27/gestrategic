@@ -26,6 +26,8 @@ import {
   UtensilsCrossed,
   Droplets,
   Save,
+  DollarSign,
+  Settings,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from "date-fns";
@@ -57,6 +59,12 @@ interface CafeLitroDiario {
   data: string;
   quantidade_litros: number;
   observacao: string | null;
+}
+
+interface ValorRefeicao {
+  id: string;
+  tipo_refeicao: string;
+  valor: number;
 }
 
 interface DailyQuantitativo {
@@ -93,6 +101,14 @@ export const RelatorioQuantitativoRefeicoes = () => {
   const [cafeLitroRegistros, setCafeLitroRegistros] = useState<CafeLitroDiario[]>([]);
   const [cafeLitroInputs, setCafeLitroInputs] = useState<Record<string, string>>({});
   const [savingCafeLitro, setSavingCafeLitro] = useState<string | null>(null);
+  const [valoresRefeicoes, setValoresRefeicoes] = useState<Record<string, number>>({
+    cafe: 0, almoco: 0, lanche: 0, jantar: 0, cafe_litro: 0
+  });
+  const [valoresInputs, setValoresInputs] = useState<Record<string, string>>({
+    cafe: "0", almoco: "0", lanche: "0", jantar: "0", cafe_litro: "0"
+  });
+  const [savingValor, setSavingValor] = useState<string | null>(null);
+  const [showValoresConfig, setShowValoresConfig] = useState(false);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -144,6 +160,22 @@ export const RelatorioQuantitativoRefeicoes = () => {
         inputsIniciais[cl.data] = String(cl.quantidade_litros);
       });
       setCafeLitroInputs(inputsIniciais);
+
+      // Buscar valores das refeições
+      const { data: valores, error: valoresError } = await supabase
+        .from("valores_refeicoes")
+        .select("id, tipo_refeicao, valor");
+
+      if (valoresError) throw valoresError;
+      
+      const valoresMap: Record<string, number> = {};
+      const inputsValores: Record<string, string> = {};
+      (valores || []).forEach((v: any) => {
+        valoresMap[v.tipo_refeicao] = Number(v.valor);
+        inputsValores[v.tipo_refeicao] = String(v.valor);
+      });
+      setValoresRefeicoes(valoresMap);
+      setValoresInputs(inputsValores);
 
       // Processar quantitativos por dia
       processarQuantitativos(refeicoes || [], dietasNoPeriodo, cafeLitro || []);
@@ -276,6 +308,36 @@ export const RelatorioQuantitativoRefeicoes = () => {
     }
   };
 
+  const saveValorRefeicao = async (tipo: string, valor: string) => {
+    if (!valor || isNaN(Number(valor))) return;
+    
+    setSavingValor(tipo);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const valorNum = parseFloat(valor);
+      
+      const { error } = await supabase
+        .from("valores_refeicoes")
+        .update({ valor: valorNum, atualizado_por: user.id })
+        .eq("tipo_refeicao", tipo);
+      
+      if (error) throw error;
+
+      setValoresRefeicoes(prev => ({ ...prev, [tipo]: valorNum }));
+      toast({ title: "Sucesso", description: `Valor de ${tipo === 'cafe_litro' ? 'Café Litro' : tipo.charAt(0).toUpperCase() + tipo.slice(1)} atualizado!` });
+    } catch (error: any) {
+      console.error("Erro ao salvar valor:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao salvar valor.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingValor(null);
+    }
+  };
 
   useEffect(() => {
     fetchData();
@@ -295,6 +357,18 @@ export const RelatorioQuantitativoRefeicoes = () => {
     totalDietas: quantitativos.reduce((acc, q) => acc + q.totalDietas, 0),
     totalGeral: quantitativos.reduce((acc, q) => acc + q.totalGeral, 0),
     cafeLitro: quantitativos.reduce((acc, q) => acc + q.cafeLitro, 0),
+  };
+
+  // Calcular valores financeiros totais
+  const valoresFinanceiros = {
+    cafeLitro: totaisGerais.cafeLitro * (valoresRefeicoes.cafe_litro || 0),
+    cafe: (totaisGerais.cafe + totaisGerais.dietasCafe) * (valoresRefeicoes.cafe || 0),
+    almoco: (totaisGerais.almoco + totaisGerais.dietasAlmoco) * (valoresRefeicoes.almoco || 0),
+    lanche: (totaisGerais.lanche + totaisGerais.dietasLanche) * (valoresRefeicoes.lanche || 0),
+    jantar: (totaisGerais.jantar + totaisGerais.dietasJantar) * (valoresRefeicoes.jantar || 0),
+    get total() {
+      return this.cafeLitro + this.cafe + this.almoco + this.lanche + this.jantar;
+    }
   };
 
   const exportToExcel = () => {
@@ -451,6 +525,51 @@ export const RelatorioQuantitativoRefeicoes = () => {
     // Reset text color
     doc.setTextColor(0, 0, 0);
 
+    // Seção de Valores Financeiros
+    const financeiroY = cardStartY + cardHeight + 8;
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("Resumo Financeiro do Periodo", 14, financeiroY);
+
+    // Tabela de valores financeiros
+    const formatCurrency = (value: number) => 
+      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+    autoTable(doc, {
+      startY: financeiroY + 3,
+      head: [[
+        { content: "Tipo de Refeicao", styles: { halign: "center", fillColor: [59, 130, 246] as [number, number, number], textColor: 255 } },
+        { content: "Qtd Total", styles: { halign: "center", fillColor: [59, 130, 246] as [number, number, number], textColor: 255 } },
+        { content: "Valor Unitario", styles: { halign: "center", fillColor: [59, 130, 246] as [number, number, number], textColor: 255 } },
+        { content: "Valor Total", styles: { halign: "center", fillColor: [5, 150, 105] as [number, number, number], textColor: 255 } },
+      ]],
+      body: [
+        ["Cafe Litro", `${totaisGerais.cafeLitro.toFixed(1)} L`, formatCurrency(valoresRefeicoes.cafe_litro || 0), formatCurrency(valoresFinanceiros.cafeLitro)],
+        ["Cafe", String(totaisGerais.cafe + totaisGerais.dietasCafe), formatCurrency(valoresRefeicoes.cafe || 0), formatCurrency(valoresFinanceiros.cafe)],
+        ["Almoco", String(totaisGerais.almoco + totaisGerais.dietasAlmoco), formatCurrency(valoresRefeicoes.almoco || 0), formatCurrency(valoresFinanceiros.almoco)],
+        ["Lanche", String(totaisGerais.lanche + totaisGerais.dietasLanche), formatCurrency(valoresRefeicoes.lanche || 0), formatCurrency(valoresFinanceiros.lanche)],
+        ["Jantar", String(totaisGerais.jantar + totaisGerais.dietasJantar), formatCurrency(valoresRefeicoes.jantar || 0), formatCurrency(valoresFinanceiros.jantar)],
+      ],
+      foot: [[
+        { content: "TOTAL GERAL", colSpan: 3, styles: { halign: "right", fillColor: [209, 213, 219] as [number, number, number], fontStyle: "bold" } },
+        { content: formatCurrency(valoresFinanceiros.total), styles: { halign: "center", fillColor: [5, 150, 105] as [number, number, number], fontStyle: "bold", textColor: 255 } },
+      ]],
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fontSize: 8 },
+      footStyles: { fontSize: 9 },
+      columnStyles: {
+        0: { halign: "left" },
+        1: { halign: "center" },
+        2: { halign: "center" },
+        3: { halign: "center" },
+      },
+      tableWidth: 140,
+      margin: { left: 14 },
+    });
+
+    // Obter posição Y após a tabela financeira
+    const finalY = (doc as any).lastAutoTable.finalY + 8;
+
     // Tabela principal com cores
     const tableBody = quantitativos.map(q => [
       format(parseISO(q.data), "dd/MM") + " (" + format(parseISO(q.data), "EEE", { locale: ptBR }) + ")",
@@ -486,7 +605,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
     ]);
 
     autoTable(doc, {
-      startY: 72,
+      startY: finalY,
       head: [
         [
           { content: "Data", rowSpan: 2, styles: { halign: "center", valign: "middle", fillColor: [229, 231, 235] } },
@@ -583,6 +702,14 @@ export const RelatorioQuantitativoRefeicoes = () => {
                 <Button
                   size="sm"
                   variant="outline"
+                  onClick={() => setShowValoresConfig(!showValoresConfig)}
+                >
+                  <Settings className="h-4 w-4 mr-1" />
+                  Valores
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
                   onClick={exportToExcel}
                   disabled={quantitativos.length === 0}
                 >
@@ -609,6 +736,107 @@ export const RelatorioQuantitativoRefeicoes = () => {
             </div>
           ) : (
             <>
+              {/* Configuração de Valores */}
+              {showValoresConfig && (
+                <Card className="mb-6 border-2 border-dashed border-primary/30">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <DollarSign className="h-4 w-4" />
+                      Configurar Valores por Refeição
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      {[
+                        { key: "cafe_litro", label: "Café Litro (L)", icon: <Droplets className="h-4 w-4" /> },
+                        { key: "cafe", label: "Café (un)", icon: <Coffee className="h-4 w-4" /> },
+                        { key: "almoco", label: "Almoço (un)", icon: <Sun className="h-4 w-4" /> },
+                        { key: "lanche", label: "Lanche (un)", icon: <Cookie className="h-4 w-4" /> },
+                        { key: "jantar", label: "Jantar (un)", icon: <Moon className="h-4 w-4" /> },
+                      ].map((item) => (
+                        <div key={item.key} className="flex flex-col gap-1">
+                          <label className="text-xs text-muted-foreground flex items-center gap-1">
+                            {item.icon}
+                            {item.label}
+                          </label>
+                          <div className="flex items-center gap-1">
+                            <span className="text-sm font-medium">R$</span>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="0.00"
+                              value={valoresInputs[item.key] || "0"}
+                              onChange={(e) => setValoresInputs(prev => ({ ...prev, [item.key]: e.target.value }))}
+                              className="h-8 text-sm"
+                            />
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 w-8 p-0"
+                              onClick={() => saveValorRefeicao(item.key, valoresInputs[item.key] || "0")}
+                              disabled={savingValor === item.key}
+                            >
+                              {savingValor === item.key ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Save className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Resumo Financeiro */}
+              <div className="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
+                <div className="flex items-center gap-2 mb-3">
+                  <DollarSign className="h-5 w-5 text-emerald-600" />
+                  <h3 className="font-semibold text-emerald-800">Resumo Financeiro do Período</h3>
+                </div>
+                <div className="grid grid-cols-3 md:grid-cols-6 gap-3">
+                  <div className="text-center p-2 bg-white/60 rounded">
+                    <p className="text-xs text-muted-foreground">Café Litro</p>
+                    <p className="font-bold text-emerald-700">
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valoresFinanceiros.cafeLitro)}
+                    </p>
+                  </div>
+                  <div className="text-center p-2 bg-white/60 rounded">
+                    <p className="text-xs text-muted-foreground">Café</p>
+                    <p className="font-bold text-emerald-700">
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valoresFinanceiros.cafe)}
+                    </p>
+                  </div>
+                  <div className="text-center p-2 bg-white/60 rounded">
+                    <p className="text-xs text-muted-foreground">Almoço</p>
+                    <p className="font-bold text-emerald-700">
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valoresFinanceiros.almoco)}
+                    </p>
+                  </div>
+                  <div className="text-center p-2 bg-white/60 rounded">
+                    <p className="text-xs text-muted-foreground">Lanche</p>
+                    <p className="font-bold text-emerald-700">
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valoresFinanceiros.lanche)}
+                    </p>
+                  </div>
+                  <div className="text-center p-2 bg-white/60 rounded">
+                    <p className="text-xs text-muted-foreground">Jantar</p>
+                    <p className="font-bold text-emerald-700">
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valoresFinanceiros.jantar)}
+                    </p>
+                  </div>
+                  <div className="text-center p-2 bg-emerald-600 text-white rounded">
+                    <p className="text-xs opacity-90">Total Geral</p>
+                    <p className="font-bold text-lg">
+                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valoresFinanceiros.total)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {/* KPIs Resumo Geral */}
               <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
                 <div className="p-4 bg-amber-50 rounded-lg border-l-4 border-amber-500">
