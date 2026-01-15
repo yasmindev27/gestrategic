@@ -293,6 +293,36 @@ export type Database = {
           },
         ]
       }
+      cafe_litro_diario: {
+        Row: {
+          created_at: string
+          data: string
+          id: string
+          observacao: string | null
+          quantidade_litros: number
+          registrado_por: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data: string
+          id?: string
+          observacao?: string | null
+          quantidade_litros?: number
+          registrado_por: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data?: string
+          id?: string
+          observacao?: string | null
+          quantidade_litros?: number
+          registrado_por?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cardapios: {
         Row: {
           created_at: string

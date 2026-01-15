@@ -24,6 +24,8 @@ import {
   BarChart3,
   TrendingUp,
   UtensilsCrossed,
+  Droplets,
+  Save,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO } from "date-fns";
@@ -50,6 +52,13 @@ interface SolicitacaoDieta {
   tem_acompanhante: boolean | null;
 }
 
+interface CafeLitroDiario {
+  id: string;
+  data: string;
+  quantidade_litros: number;
+  observacao: string | null;
+}
+
 interface DailyQuantitativo {
   data: string;
   cafe: number;
@@ -63,6 +72,7 @@ interface DailyQuantitativo {
   dietasJantar: number;
   totalDietas: number;
   totalGeral: number;
+  cafeLitro: number;
 }
 
 const tipoRefeicaoLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
@@ -80,6 +90,9 @@ export const RelatorioQuantitativoRefeicoes = () => {
   const [quantitativos, setQuantitativos] = useState<DailyQuantitativo[]>([]);
   const [registrosRefeicoes, setRegistrosRefeicoes] = useState<RegistroRefeicao[]>([]);
   const [solicitacoesDieta, setSolicitacoesDieta] = useState<SolicitacaoDieta[]>([]);
+  const [cafeLitroRegistros, setCafeLitroRegistros] = useState<CafeLitroDiario[]>([]);
+  const [cafeLitroInputs, setCafeLitroInputs] = useState<Record<string, string>>({});
+  const [savingCafeLitro, setSavingCafeLitro] = useState<string | null>(null);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -114,8 +127,26 @@ export const RelatorioQuantitativoRefeicoes = () => {
       
       setSolicitacoesDieta(dietasNoPeriodo);
 
+      // Buscar registros de café litro no período
+      const { data: cafeLitro, error: cafeLitroError } = await supabase
+        .from("cafe_litro_diario")
+        .select("id, data, quantidade_litros, observacao")
+        .gte("data", dataInicio)
+        .lte("data", dataFim)
+        .order("data", { ascending: true });
+
+      if (cafeLitroError) throw cafeLitroError;
+      setCafeLitroRegistros(cafeLitro || []);
+
+      // Inicializar inputs de café litro com valores existentes
+      const inputsIniciais: Record<string, string> = {};
+      (cafeLitro || []).forEach(cl => {
+        inputsIniciais[cl.data] = String(cl.quantidade_litros);
+      });
+      setCafeLitroInputs(inputsIniciais);
+
       // Processar quantitativos por dia
-      processarQuantitativos(refeicoes || [], dietasNoPeriodo);
+      processarQuantitativos(refeicoes || [], dietasNoPeriodo, cafeLitro || []);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -128,7 +159,8 @@ export const RelatorioQuantitativoRefeicoes = () => {
     }
   };
 
-  const processarQuantitativos = (refeicoes: RegistroRefeicao[], dietas: SolicitacaoDieta[]) => {
+
+  const processarQuantitativos = (refeicoes: RegistroRefeicao[], dietas: SolicitacaoDieta[], cafeLitro: CafeLitroDiario[]) => {
     const diasNoPeriodo = eachDayOfInterval({
       start: parseISO(dataInicio),
       end: parseISO(dataFim),
@@ -170,6 +202,10 @@ export const RelatorioQuantitativoRefeicoes = () => {
       const totalDietas = dietasCafe + dietasAlmoco + dietasLanche + dietasJantar;
       const totalGeral = totalRefeicoes + totalDietas;
 
+      // Buscar café litro do dia
+      const cafeLitroDoDia = cafeLitro.find(cl => cl.data === dataStr);
+      const cafeLitroQtd = cafeLitroDoDia ? Number(cafeLitroDoDia.quantidade_litros) : 0;
+
       return {
         data: dataStr,
         cafe,
@@ -183,13 +219,63 @@ export const RelatorioQuantitativoRefeicoes = () => {
         dietasJantar,
         totalDietas,
         totalGeral,
+        cafeLitro: cafeLitroQtd,
       };
     });
 
     // Remover dias sem nenhum registro
-    const resultadoFiltrado = resultado.filter(r => r.totalGeral > 0);
+    const resultadoFiltrado = resultado.filter(r => r.totalGeral > 0 || r.cafeLitro > 0);
     setQuantitativos(resultadoFiltrado);
   };
+
+  const saveCafeLitro = async (data: string, quantidade: string) => {
+    if (!quantidade || isNaN(Number(quantidade))) return;
+    
+    setSavingCafeLitro(data);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      const quantidadeNum = parseFloat(quantidade);
+      
+      // Verificar se já existe registro para a data
+      const registroExistente = cafeLitroRegistros.find(cl => cl.data === data);
+      
+      if (registroExistente) {
+        // Atualizar registro existente
+        const { error } = await supabase
+          .from("cafe_litro_diario")
+          .update({ quantidade_litros: quantidadeNum })
+          .eq("id", registroExistente.id);
+        
+        if (error) throw error;
+      } else {
+        // Inserir novo registro
+        const { error } = await supabase
+          .from("cafe_litro_diario")
+          .insert({
+            data,
+            quantidade_litros: quantidadeNum,
+            registrado_por: user.id,
+          });
+        
+        if (error) throw error;
+      }
+
+      toast({ title: "Sucesso", description: `Café Litro salvo para ${format(parseISO(data), "dd/MM/yyyy")}` });
+      fetchData(); // Recarregar dados
+    } catch (error: any) {
+      console.error("Erro ao salvar café litro:", error);
+      toast({
+        title: "Erro",
+        description: error.message || "Erro ao salvar café litro.",
+        variant: "destructive",
+      });
+    } finally {
+      setSavingCafeLitro(null);
+    }
+  };
+
 
   useEffect(() => {
     fetchData();
@@ -208,12 +294,14 @@ export const RelatorioQuantitativoRefeicoes = () => {
     dietasJantar: quantitativos.reduce((acc, q) => acc + q.dietasJantar, 0),
     totalDietas: quantitativos.reduce((acc, q) => acc + q.totalDietas, 0),
     totalGeral: quantitativos.reduce((acc, q) => acc + q.totalGeral, 0),
+    cafeLitro: quantitativos.reduce((acc, q) => acc + q.cafeLitro, 0),
   };
 
   const exportToExcel = () => {
     const data = quantitativos.map(q => ({
       "Data": format(parseISO(q.data), "dd/MM/yyyy"),
       "Dia": format(parseISO(q.data), "EEEE", { locale: ptBR }),
+      "Café Litro": q.cafeLitro,
       "Café (Totem)": q.cafe,
       "Almoço (Totem)": q.almoco,
       "Lanche (Totem)": q.lanche,
@@ -231,6 +319,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
     data.push({
       "Data": "TOTAIS",
       "Dia": "",
+      "Café Litro": totaisGerais.cafeLitro,
       "Café (Totem)": totaisGerais.cafe,
       "Almoço (Totem)": totaisGerais.almoco,
       "Lanche (Totem)": totaisGerais.lanche,
@@ -365,6 +454,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
     // Tabela principal com cores
     const tableBody = quantitativos.map(q => [
       format(parseISO(q.data), "dd/MM") + " (" + format(parseISO(q.data), "EEE", { locale: ptBR }) + ")",
+      q.cafeLitro > 0 ? q.cafeLitro.toFixed(1) + "L" : "-",
       q.cafe || "-",
       q.almoco || "-",
       q.lanche || "-",
@@ -381,6 +471,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
     // Adicionar linha de totais
     tableBody.push([
       "TOTAIS",
+      totaisGerais.cafeLitro.toFixed(1) + "L",
       totaisGerais.cafe,
       totaisGerais.almoco,
       totaisGerais.lanche,
@@ -399,18 +490,19 @@ export const RelatorioQuantitativoRefeicoes = () => {
       head: [
         [
           { content: "Data", rowSpan: 2, styles: { halign: "center", valign: "middle", fillColor: [229, 231, 235] } },
-          { content: "🖥️ Totem (Colaboradores/Visitantes)", colSpan: 5, styles: { halign: "center", fillColor: azulTotem as [number, number, number], textColor: 255 } },
-          { content: "🍽️ Dietas (Pacientes/Acompanhantes)", colSpan: 5, styles: { halign: "center", fillColor: laranjaDeita as [number, number, number], textColor: 255 } },
+          { content: "Totem (Colaboradores/Visitantes)", colSpan: 6, styles: { halign: "center", fillColor: azulTotem as [number, number, number], textColor: 255 } },
+          { content: "Dietas (Pacientes/Acompanhantes)", colSpan: 5, styles: { halign: "center", fillColor: laranjaDeita as [number, number, number], textColor: 255 } },
           { content: "Total", rowSpan: 2, styles: { halign: "center", valign: "middle", fillColor: verdeTotal as [number, number, number], textColor: 255 } },
         ],
         [
-          { content: "Café", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
-          { content: "Almoço", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
+          { content: "Cafe Litro", styles: { halign: "center", fillColor: [147, 197, 253] as [number, number, number], textColor: [30, 58, 138], fontStyle: "bold" } },
+          { content: "Cafe", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
+          { content: "Almoco", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
           { content: "Lanche", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
           { content: "Jantar", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
           { content: "Subtotal", styles: { halign: "center", fillColor: [147, 197, 253] as [number, number, number], textColor: [30, 58, 138], fontStyle: "bold" } },
-          { content: "Café", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
-          { content: "Almoço", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
+          { content: "Cafe", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
+          { content: "Almoco", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
           { content: "Lanche", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
           { content: "Jantar", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
           { content: "Subtotal", styles: { halign: "center", fillColor: [253, 186, 116] as [number, number, number], textColor: [124, 45, 18], fontStyle: "bold" } },
@@ -418,20 +510,22 @@ export const RelatorioQuantitativoRefeicoes = () => {
       ],
       body: tableBody.slice(0, -1).map((row) => [
         { content: row[0], styles: { fillColor: [249, 250, 251] as [number, number, number] } },
-        { content: row[1], styles: { halign: "center", fillColor: [239, 246, 255] as [number, number, number] } },
+        { content: row[1], styles: { halign: "center", fillColor: [147, 197, 253] as [number, number, number], fontStyle: "bold", textColor: [30, 58, 138] } },
         { content: row[2], styles: { halign: "center", fillColor: [239, 246, 255] as [number, number, number] } },
         { content: row[3], styles: { halign: "center", fillColor: [239, 246, 255] as [number, number, number] } },
         { content: row[4], styles: { halign: "center", fillColor: [239, 246, 255] as [number, number, number] } },
-        { content: row[5], styles: { halign: "center", fillColor: azulClaro as [number, number, number], fontStyle: "bold", textColor: [30, 64, 175] } },
-        { content: row[6], styles: { halign: "center", fillColor: [255, 247, 237] as [number, number, number] } },
+        { content: row[5], styles: { halign: "center", fillColor: [239, 246, 255] as [number, number, number] } },
+        { content: row[6], styles: { halign: "center", fillColor: azulClaro as [number, number, number], fontStyle: "bold", textColor: [30, 64, 175] } },
         { content: row[7], styles: { halign: "center", fillColor: [255, 247, 237] as [number, number, number] } },
         { content: row[8], styles: { halign: "center", fillColor: [255, 247, 237] as [number, number, number] } },
         { content: row[9], styles: { halign: "center", fillColor: [255, 247, 237] as [number, number, number] } },
-        { content: row[10], styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
-        { content: row[11], styles: { halign: "center", fillColor: verdeClaro as [number, number, number], fontStyle: "bold", textColor: [6, 95, 70] } },
+        { content: row[10], styles: { halign: "center", fillColor: [255, 247, 237] as [number, number, number] } },
+        { content: row[11], styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
+        { content: row[12], styles: { halign: "center", fillColor: verdeClaro as [number, number, number], fontStyle: "bold", textColor: [6, 95, 70] } },
       ]),
       foot: [[
         { content: "TOTAIS", styles: { fillColor: [209, 213, 219] as [number, number, number], fontStyle: "bold" } },
+        { content: String(totaisGerais.cafeLitro.toFixed(1) + "L"), styles: { halign: "center", fillColor: [147, 197, 253] as [number, number, number], fontStyle: "bold", textColor: [30, 58, 138] } },
         { content: String(totaisGerais.cafe), styles: { halign: "center", fillColor: azulClaro as [number, number, number], fontStyle: "bold", textColor: [30, 64, 175] } },
         { content: String(totaisGerais.almoco), styles: { halign: "center", fillColor: azulClaro as [number, number, number], fontStyle: "bold", textColor: [30, 64, 175] } },
         { content: String(totaisGerais.lanche), styles: { halign: "center", fillColor: azulClaro as [number, number, number], fontStyle: "bold", textColor: [30, 64, 175] } },
@@ -448,7 +542,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
       headStyles: { fontSize: 7 },
       footStyles: { fontSize: 8 },
       columnStyles: {
-        0: { cellWidth: 32 },
+        0: { cellWidth: 28 },
       },
     });
 
@@ -591,7 +685,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead rowSpan={2} className="border-r bg-muted">Data</TableHead>
-                        <TableHead colSpan={5} className="text-center border-r bg-blue-500 text-white">
+                        <TableHead colSpan={6} className="text-center border-r bg-blue-500 text-white">
                           🖥️ Totem (Colaboradores/Visitantes)
                         </TableHead>
                         <TableHead colSpan={5} className="text-center border-r bg-orange-500 text-white">
@@ -602,6 +696,12 @@ export const RelatorioQuantitativoRefeicoes = () => {
                         </TableHead>
                       </TableRow>
                       <TableRow>
+                        <TableHead className="text-center bg-blue-200 text-blue-900 font-semibold">
+                          <div className="flex items-center justify-center gap-1">
+                            <Droplets className="h-3 w-3" />
+                            Café Litro
+                          </div>
+                        </TableHead>
                         <TableHead className="text-center bg-blue-100 text-blue-800">
                           <div className="flex items-center justify-center gap-1">
                             <Coffee className="h-3 w-3" />
@@ -665,6 +765,32 @@ export const RelatorioQuantitativoRefeicoes = () => {
                               </span>
                             </div>
                           </TableCell>
+                          <TableCell className="text-center bg-blue-200">
+                            <div className="flex items-center justify-center gap-1">
+                              <Input
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                placeholder="0"
+                                value={cafeLitroInputs[q.data] || ""}
+                                onChange={(e) => setCafeLitroInputs(prev => ({ ...prev, [q.data]: e.target.value }))}
+                                className="w-16 h-7 text-center text-sm p-1"
+                              />
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="h-7 w-7 p-0"
+                                onClick={() => saveCafeLitro(q.data, cafeLitroInputs[q.data] || "0")}
+                                disabled={savingCafeLitro === q.data}
+                              >
+                                {savingCafeLitro === q.data ? (
+                                  <Loader2 className="h-3 w-3 animate-spin" />
+                                ) : (
+                                  <Save className="h-3 w-3" />
+                                )}
+                              </Button>
+                            </div>
+                          </TableCell>
                           <TableCell className="text-center bg-blue-50">{q.cafe || "-"}</TableCell>
                           <TableCell className="text-center bg-blue-50">{q.almoco || "-"}</TableCell>
                           <TableCell className="text-center bg-blue-50">{q.lanche || "-"}</TableCell>
@@ -687,6 +813,9 @@ export const RelatorioQuantitativoRefeicoes = () => {
                       {/* Linha de Totais */}
                       <TableRow className="font-bold border-t-2 border-gray-400">
                         <TableCell className="border-r bg-gray-200 text-gray-800">TOTAIS</TableCell>
+                        <TableCell className="text-center bg-blue-200 text-blue-900 font-bold">
+                          {totaisGerais.cafeLitro.toFixed(1)}L
+                        </TableCell>
                         <TableCell className="text-center bg-blue-100 text-blue-800">{totaisGerais.cafe}</TableCell>
                         <TableCell className="text-center bg-blue-100 text-blue-800">{totaisGerais.almoco}</TableCell>
                         <TableCell className="text-center bg-blue-100 text-blue-800">{totaisGerais.lanche}</TableCell>
