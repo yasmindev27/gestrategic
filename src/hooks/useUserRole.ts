@@ -21,59 +21,83 @@ export const useUserRole = () => {
 
   useEffect(() => {
     let isMounted = true;
-    
-    const fetchUserRoles = async () => {
+
+    const setLoading = (loading: boolean) => {
+      if (!isMounted) return;
+      setState((prev) => ({ ...prev, isLoading: loading }));
+    };
+
+    const resolvePrimaryRole = (roles: AppRole[]): AppRole | null => {
+      if (roles.length === 0) return null;
+      if (roles.includes("admin")) return "admin";
+      if (roles.includes("gestor")) return "gestor";
+      return roles[0];
+    };
+
+    const fetchRolesForUser = async (userId: string) => {
+      // 1) Try direct read from table (when RLS allows)
+      const { data, error } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId);
+
+      if (!error && data && data.length > 0) {
+        const roles = data.map((r) => r.role);
+        const primaryRole = resolvePrimaryRole(roles);
+        if (!isMounted) return;
+        setState({ roles, primaryRole, userId, isLoading: false });
+        return;
+      }
+
+      // 2) Fallback: use RPC (works even when RLS blocks direct reads)
+      const { data: role, error: rpcError } = await supabase.rpc("get_user_role", { _user_id: userId });
+
+      if (!rpcError && role) {
+        const roles: AppRole[] = [role];
+        const primaryRole = resolvePrimaryRole(roles);
+        if (!isMounted) return;
+        setState({ roles, primaryRole, userId, isLoading: false });
+        return;
+      }
+
+      // 3) No roles found / not allowed
+      if (!isMounted) return;
+      if (error) console.error("Error fetching user roles:", error);
+      if (rpcError) console.error("Error fetching user role via RPC:", rpcError);
+      setState((prev) => ({ ...prev, roles: [], primaryRole: null, userId, isLoading: false }));
+    };
+
+    const refresh = async () => {
+      setLoading(true);
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (!user || !isMounted) {
-          if (isMounted) {
-            setState(prev => ({ ...prev, isLoading: false }));
-          }
+        const { data: { session } } = await supabase.auth.getSession();
+        const user = session?.user ?? null;
+
+        if (!user) {
+          if (!isMounted) return;
+          setState({ roles: [], primaryRole: null, userId: null, isLoading: false });
           return;
         }
 
-        const { data, error } = await supabase
-          .from("user_roles")
-          .select("role")
-          .eq("user_id", user.id);
-
-        if (!isMounted) return;
-
-        if (error) {
-          console.error("Error fetching user roles:", error);
-          setState(prev => ({ ...prev, isLoading: false, userId: user.id }));
-        } else if (data && data.length > 0) {
-          const userRoles = data.map(r => r.role);
-          // Define role primário (prioridade: admin > gestor > outros)
-          let primary: AppRole;
-          if (userRoles.includes("admin")) {
-            primary = "admin";
-          } else if (userRoles.includes("gestor")) {
-            primary = "gestor";
-          } else {
-            primary = userRoles[0];
-          }
-          setState({
-            roles: userRoles,
-            primaryRole: primary,
-            userId: user.id,
-            isLoading: false,
-          });
-        } else {
-          setState(prev => ({ ...prev, isLoading: false, userId: user.id }));
-        }
+        await fetchRolesForUser(user.id);
       } catch (error) {
         console.error("Error:", error);
-        if (isMounted) {
-          setState(prev => ({ ...prev, isLoading: false }));
-        }
+        if (!isMounted) return;
+        setState((prev) => ({ ...prev, isLoading: false }));
       }
     };
 
-    fetchUserRoles();
-    
+    // Initial load
+    refresh();
+
+    // Keep in sync on login/logout
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      refresh();
+    });
+
     return () => {
       isMounted = false;
+      subscription.unsubscribe();
     };
   }, []);
 

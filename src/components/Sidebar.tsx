@@ -67,7 +67,7 @@ const Sidebar = ({
         { icon: Monitor, label: "TI", id: "tecnico-ti" },
         { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao" },
         { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" },
-        { icon: Ambulance, label: "Dashboard NIR", id: "dashboard-nir" },
+        { icon: Ambulance, label: "NIR", id: "nir" },
         { icon: FlaskConical, label: "Laboratório", id: "laboratorio" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
         { icon: Users, label: "Equipe", id: "equipe" },
