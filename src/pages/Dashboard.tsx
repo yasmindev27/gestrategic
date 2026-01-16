@@ -16,6 +16,7 @@ import { LaboratorioModule } from "@/components/modules/LaboratorioModule";
 import { AgendaModule } from "@/components/agenda";
 import { LogsAuditoriaModule } from "@/components/modules/LogsAuditoriaModule";
 import { RestauranteModule } from "@/components/modules/RestauranteModule";
+import { MapaLeitosModule } from "@/components/modules/MapaLeitosModule";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -101,6 +102,8 @@ const Dashboard = () => {
           {activeSection === "tecnico-engenharia" && <TecnicoModule setor="engenharia_clinica" />}
 
           {activeSection === "tecnico-nir" && <TecnicoModule setor="nir" />}
+
+          {activeSection === "mapa-leitos" && <MapaLeitosModule />}
 
           {activeSection === "laboratorio" && <LaboratorioModule />}
 

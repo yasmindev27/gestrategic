@@ -243,6 +243,81 @@ export type Database = {
           },
         ]
       }
+      bed_records: {
+        Row: {
+          bed_id: string
+          bed_number: string
+          condutas_outros: string | null
+          created_at: string | null
+          data_alta: string | null
+          data_internacao: string | null
+          data_nascimento: string | null
+          enfermeiros: string | null
+          estabelecimento_transferencia: string | null
+          hipotese_diagnostica: string | null
+          id: string
+          medicos: string | null
+          motivo_alta: string | null
+          numero_sus_facil: string | null
+          observacao: string | null
+          patient_name: string | null
+          regulador_nir: string | null
+          sector: string
+          shift_date: string
+          shift_type: string
+          sus_facil: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          bed_id: string
+          bed_number: string
+          condutas_outros?: string | null
+          created_at?: string | null
+          data_alta?: string | null
+          data_internacao?: string | null
+          data_nascimento?: string | null
+          enfermeiros?: string | null
+          estabelecimento_transferencia?: string | null
+          hipotese_diagnostica?: string | null
+          id?: string
+          medicos?: string | null
+          motivo_alta?: string | null
+          numero_sus_facil?: string | null
+          observacao?: string | null
+          patient_name?: string | null
+          regulador_nir?: string | null
+          sector: string
+          shift_date: string
+          shift_type: string
+          sus_facil?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          bed_id?: string
+          bed_number?: string
+          condutas_outros?: string | null
+          created_at?: string | null
+          data_alta?: string | null
+          data_internacao?: string | null
+          data_nascimento?: string | null
+          enfermeiros?: string | null
+          estabelecimento_transferencia?: string | null
+          hipotese_diagnostica?: string | null
+          id?: string
+          medicos?: string | null
+          motivo_alta?: string | null
+          numero_sus_facil?: string | null
+          observacao?: string | null
+          patient_name?: string | null
+          regulador_nir?: string | null
+          sector?: string
+          shift_date?: string
+          shift_type?: string
+          sus_facil?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       cadastros_inconsistentes: {
         Row: {
           created_at: string
@@ -522,6 +597,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      daily_statistics: {
+        Row: {
+          admissions: number | null
+          created_at: string | null
+          date: string
+          discharges: number | null
+          id: string
+          patients_by_sector: Json | null
+          total_patients: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          admissions?: number | null
+          created_at?: string | null
+          date: string
+          discharges?: number | null
+          id?: string
+          patients_by_sector?: Json | null
+          total_patients?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          admissions?: number | null
+          created_at?: string | null
+          date?: string
+          discharges?: number | null
+          id?: string
+          patients_by_sector?: Json | null
+          total_patients?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
       }
       escalas_laboratorio: {
         Row: {
@@ -962,6 +1070,39 @@ export type Database = {
           descricao?: string | null
           id?: string
           nome?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      shift_configurations: {
+        Row: {
+          created_at: string | null
+          enfermeiros: string | null
+          id: string
+          medicos: string | null
+          regulador_nir: string | null
+          shift_date: string
+          shift_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          enfermeiros?: string | null
+          id?: string
+          medicos?: string | null
+          regulador_nir?: string | null
+          shift_date: string
+          shift_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          enfermeiros?: string | null
+          id?: string
+          medicos?: string | null
+          regulador_nir?: string | null
+          shift_date?: string
+          shift_type?: string
           updated_at?: string | null
         }
         Relationships: []
