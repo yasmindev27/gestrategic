@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Ambulance, LayoutDashboard, BedDouble, FileText } from "lucide-react";
+import { Ambulance, LayoutDashboard, BedDouble, ExternalLink } from "lucide-react";
 import { NirDashboardModule } from "./NirDashboardModule";
 import { MapaLeitosModule } from "./MapaLeitosModule";
-import { SusFacilManager } from "@/components/nir";
+import logoSusFacil from "@/assets/logo-susfacil.png";
 
-type NirView = "menu" | "dashboard" | "mapa-leitos" | "sus-facil";
+type NirView = "menu" | "dashboard" | "mapa-leitos";
 
 export const NirModule = () => {
   const [currentView, setCurrentView] = useState<NirView>("menu");
@@ -33,16 +33,6 @@ export const NirModule = () => {
     );
   }
 
-  if (currentView === "sus-facil") {
-    return (
-      <div className="space-y-4">
-        <Button variant="ghost" onClick={() => setCurrentView("menu")} className="mb-2">
-          ← Voltar ao NIR
-        </Button>
-        <SusFacilManager />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -100,17 +90,18 @@ export const NirModule = () => {
           onClick={() => window.open("https://www.susfacil.mg.gov.br/administrativo/seguranca/GEN/gen_acesso.php?ini=1", "_blank")}
         >
           <CardHeader className="text-center pb-2">
-            <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
-              <FileText className="h-8 w-8 text-primary" />
+            <div className="mx-auto p-4 bg-white rounded-lg w-fit group-hover:shadow-md transition-all">
+              <img src={logoSusFacil} alt="SUS Fácil MG" className="h-16 w-auto" />
             </div>
-            <CardTitle className="mt-4">SUS Fácil</CardTitle>
+            <CardTitle className="mt-4">SUS Fácil MG</CardTitle>
             <CardDescription>
-              Portal oficial de regulação - MG
+              Central de Regulação - Portal Oficial
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center">
-            <Button variant="outline" className="w-full">
-              Acessar Portal Externo
+            <Button variant="outline" className="w-full gap-2">
+              <ExternalLink className="h-4 w-4" />
+              Acessar Portal
             </Button>
           </CardContent>
         </Card>
