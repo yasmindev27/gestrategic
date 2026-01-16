@@ -147,12 +147,7 @@ const horariosRefeicaoOptions = [
   { value: "jantar", label: "Jantar" },
 ];
 
-const statusColors: Record<string, string> = {
-  pendente: "bg-yellow-500 text-white",
-  aprovada: "bg-green-500 text-white",
-  rejeitada: "bg-red-500 text-white",
-  cancelada: "bg-gray-500 text-white",
-};
+// Status removido - dietas são automaticamente aceitas
 
 export const RestauranteModule = () => {
   const { toast } = useToast();
@@ -395,13 +390,14 @@ export const RestauranteModule = () => {
         data_inicio: formData.data_inicio,
         data_fim: formData.data_fim || null,
         observacoes: observacoesCompletas,
+        status: "aprovada", // Dietas são automaticamente aceitas
       });
 
       if (error) throw error;
 
       toast({
         title: "Sucesso",
-        description: "Solicitação de dieta enviada com sucesso.",
+        description: "Dieta registrada com sucesso.",
       });
 
       setDialogOpen(false);
@@ -464,62 +460,7 @@ export const RestauranteModule = () => {
     }
   };
 
-  const handleUpdateSolicitacaoStatus = async (id: string, newStatus: string) => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      const { error } = await supabase
-        .from("solicitacoes_dieta")
-        .update({
-          status: newStatus,
-          aprovado_por: user.id,
-          aprovado_em: new Date().toISOString(),
-        })
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Sucesso",
-        description: `Solicitação ${newStatus === "aprovada" ? "aprovada" : "rejeitada"} com sucesso.`,
-      });
-
-      fetchData();
-    } catch (error) {
-      console.error("Error:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao atualizar status.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleCancelarSolicitacao = async (id: string) => {
-    try {
-      const { error } = await supabase
-        .from("solicitacoes_dieta")
-        .update({ status: "cancelada" })
-        .eq("id", id);
-
-      if (error) throw error;
-
-      toast({
-        title: "Sucesso",
-        description: "Solicitação cancelada com sucesso.",
-      });
-
-      fetchData();
-    } catch (error) {
-      console.error("Error:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao cancelar solicitação.",
-        variant: "destructive",
-      });
-    }
-  };
+  // Funções de status removidas - dietas são automaticamente aceitas
 
   const resetForm = () => {
     setFormData({
@@ -710,9 +651,7 @@ export const RestauranteModule = () => {
 
   const dashboardStats = {
     total: dashboardSolicitacoes.length,
-    aprovadas: dashboardSolicitacoes.filter(s => s.status === "aprovada").length,
-    rejeitadas: dashboardSolicitacoes.filter(s => s.status === "rejeitada").length,
-    pendentes: dashboardSolicitacoes.filter(s => s.status === "pendente").length,
+    // Status removidos - dietas são automaticamente aceitas
   };
 
   const exportToExcel = () => {
@@ -727,7 +666,6 @@ export const RestauranteModule = () => {
       "Horários": s.horarios_refeicoes?.map(h => horariosRefeicaoOptions.find(o => o.value === h)?.label).join(", ") || "-",
       "Data Início": format(new Date(s.data_inicio), "dd/MM/yyyy"),
       "Data Fim": s.data_fim ? format(new Date(s.data_fim), "dd/MM/yyyy") : "-",
-      "Status": s.status.charAt(0).toUpperCase() + s.status.slice(1),
       "Solicitado em": format(new Date(s.created_at), "dd/MM/yyyy HH:mm"),
       "Observações": s.observacoes || "-",
     }));
@@ -757,7 +695,7 @@ export const RestauranteModule = () => {
     
     // Stats
     doc.setFontSize(10);
-    doc.text(`Total: ${dashboardStats.total} | Aprovadas: ${dashboardStats.aprovadas} | Rejeitadas: ${dashboardStats.rejeitadas} | Pendentes: ${dashboardStats.pendentes}`, 14, 42);
+    doc.text(`Total de Dietas: ${dashboardStats.total}`, 14, 42);
     
     // Table
     const tableData = dashboardSolicitacoes.map(s => [
@@ -766,13 +704,12 @@ export const RestauranteModule = () => {
       tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
       s.restricoes_alimentares || "-",
       format(new Date(s.data_inicio), "dd/MM/yyyy"),
-      s.status.charAt(0).toUpperCase() + s.status.slice(1),
       s.solicitante_nome,
     ]);
 
     autoTable(doc, {
       startY: 50,
-      head: [["Paciente", "Quarto/Leito", "Tipo de Dieta", "Restrições", "Data Início", "Status", "Solicitante"]],
+      head: [["Paciente", "Quarto/Leito", "Tipo de Dieta", "Restrições", "Data Início", "Solicitante"]],
       body: tableData,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [59, 130, 246] },
@@ -975,9 +912,7 @@ export const RestauranteModule = () => {
                       <TableHead>Horários</TableHead>
                       <TableHead>Acompanhante</TableHead>
                       <TableHead>Período</TableHead>
-                      <TableHead>Status</TableHead>
                       <TableHead>Solicitado em</TableHead>
-                      <TableHead>Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1021,29 +956,8 @@ export const RestauranteModule = () => {
                             {s.data_fim && ` - ${format(new Date(s.data_fim), "dd/MM/yyyy")}`}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <Badge className={statusColors[s.status]}>
-                            {s.status === "pendente" && <AlertCircle className="h-3 w-3 mr-1" />}
-                            {s.status === "aprovada" && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                            {s.status === "rejeitada" && <XCircle className="h-3 w-3 mr-1" />}
-                            {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
-                          </Badge>
-                        </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
-                        </TableCell>
-                        <TableCell>
-                          {s.status === "pendente" && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 text-red-600 hover:bg-red-50"
-                              onClick={() => handleCancelarSolicitacao(s.id)}
-                            >
-                              <XCircle className="h-4 w-4 mr-1" />
-                              Cancelar
-                            </Button>
-                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1108,56 +1022,17 @@ export const RestauranteModule = () => {
               </div>
             ) : (
               <>
-                <div className="grid gap-4 md:grid-cols-4">
-                  <Card>
+                <div className="grid gap-4 md:grid-cols-1">
+                  <Card className="border-l-4 border-l-primary">
                     <CardHeader className="pb-2">
-                      <CardDescription>Total de Solicitações</CardDescription>
-                      <CardTitle className="text-3xl">{dashboardStats.total}</CardTitle>
+                      <CardDescription className="flex items-center gap-1">
+                        <Salad className="h-4 w-4 text-primary" />
+                        Total de Dietas
+                      </CardDescription>
+                      <CardTitle className="text-3xl text-primary">{dashboardStats.total}</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <p className="text-xs text-muted-foreground">No período selecionado</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="border-l-4 border-l-green-500">
-                    <CardHeader className="pb-2">
-                      <CardDescription className="flex items-center gap-1">
-                        <CheckCircle2 className="h-4 w-4 text-green-500" />
-                        Aprovadas
-                      </CardDescription>
-                      <CardTitle className="text-3xl text-green-600">{dashboardStats.aprovadas}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-xs text-muted-foreground">
-                        {dashboardStats.total > 0 ? ((dashboardStats.aprovadas / dashboardStats.total) * 100).toFixed(1) : 0}% do total
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card className="border-l-4 border-l-red-500">
-                    <CardHeader className="pb-2">
-                      <CardDescription className="flex items-center gap-1">
-                        <XCircle className="h-4 w-4 text-red-500" />
-                        Rejeitadas
-                      </CardDescription>
-                      <CardTitle className="text-3xl text-red-600">{dashboardStats.rejeitadas}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-xs text-muted-foreground">
-                        {dashboardStats.total > 0 ? ((dashboardStats.rejeitadas / dashboardStats.total) * 100).toFixed(1) : 0}% do total
-                      </p>
-                    </CardContent>
-                  </Card>
-                  <Card className="border-l-4 border-l-yellow-500">
-                    <CardHeader className="pb-2">
-                      <CardDescription className="flex items-center gap-1">
-                        <AlertCircle className="h-4 w-4 text-yellow-500" />
-                        Pendentes
-                      </CardDescription>
-                      <CardTitle className="text-3xl text-yellow-600">{dashboardStats.pendentes}</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-xs text-muted-foreground">
-                        {dashboardStats.total > 0 ? ((dashboardStats.pendentes / dashboardStats.total) * 100).toFixed(1) : 0}% do total
-                      </p>
                     </CardContent>
                   </Card>
                 </div>
@@ -1165,13 +1040,13 @@ export const RestauranteModule = () => {
                 {/* Table with all requests */}
                 <Card>
                   <CardHeader>
-                    <CardTitle className="text-lg">Detalhamento das Solicitações</CardTitle>
+                    <CardTitle className="text-lg">Detalhamento das Dietas</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {dashboardSolicitacoes.length === 0 ? (
                       <div className="text-center py-8 text-muted-foreground">
                         <Salad className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                        <p>Nenhuma solicitação encontrada no período.</p>
+                        <p>Nenhuma dieta encontrada no período.</p>
                       </div>
                     ) : (
                       <Table>
@@ -1181,7 +1056,6 @@ export const RestauranteModule = () => {
                             <TableHead>Quarto/Leito</TableHead>
                             <TableHead>Tipo de Dieta</TableHead>
                             <TableHead>Período</TableHead>
-                            <TableHead>Status</TableHead>
                             <TableHead>Solicitante</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1211,14 +1085,6 @@ export const RestauranteModule = () => {
                                   {format(new Date(s.data_inicio), "dd/MM/yyyy")}
                                   {s.data_fim && ` - ${format(new Date(s.data_fim), "dd/MM/yyyy")}`}
                                 </div>
-                              </TableCell>
-                              <TableCell>
-                                <Badge className={statusColors[s.status]}>
-                                  {s.status === "pendente" && <AlertCircle className="h-3 w-3 mr-1" />}
-                                  {s.status === "aprovada" && <CheckCircle2 className="h-3 w-3 mr-1" />}
-                                  {s.status === "rejeitada" && <XCircle className="h-3 w-3 mr-1" />}
-                                  {s.status.charAt(0).toUpperCase() + s.status.slice(1)}
-                                </Badge>
                               </TableCell>
                               <TableCell className="text-muted-foreground text-sm">
                                 {s.solicitante_nome}
@@ -1378,7 +1244,6 @@ export const RestauranteModule = () => {
                             <TableHead>Descrição</TableHead>
                             <TableHead>Data</TableHead>
                             <TableHead>Detalhes</TableHead>
-                            <TableHead>Status</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1392,7 +1257,7 @@ export const RestauranteModule = () => {
                                     : "border-blue-500 text-blue-600 bg-blue-50"
                                   }
                                 >
-                                  {r.tipo === "dieta" ? "Solicitação de Dieta" : "Registro do Totem"}
+                                  {r.tipo === "dieta" ? "Dieta" : "Totem"}
                                 </Badge>
                               </TableCell>
                               <TableCell>
@@ -1407,20 +1272,6 @@ export const RestauranteModule = () => {
                                 {r.hora && <span className="text-muted-foreground ml-1">às {r.hora.substring(0, 5)}</span>}
                               </TableCell>
                               <TableCell className="text-sm text-muted-foreground">{r.detalhes}</TableCell>
-                              <TableCell>
-                                {r.status ? (
-                                  <Badge className={statusColors[r.status]}>
-                                    {r.status === "pendente" && "Pendente"}
-                                    {r.status === "aprovada" && "Aprovada"}
-                                    {r.status === "rejeitada" && "Rejeitada"}
-                                    {r.status === "cancelada" && "Cancelada"}
-                                  </Badge>
-                                ) : (
-                                  <Badge variant="outline" className="text-green-600 border-green-600">
-                                    Registrado
-                                  </Badge>
-                                )}
-                              </TableCell>
                             </TableRow>
                           ))}
                         </TableBody>
@@ -1569,8 +1420,7 @@ export const RestauranteModule = () => {
                                 </TableHead>
                                 <TableHead>Quarto/Leito</TableHead>
                                 <TableHead>Período</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead>Ações</TableHead>
+                                <TableHead>Solicitante</TableHead>
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -1579,9 +1429,6 @@ export const RestauranteModule = () => {
                                   <TableCell>
                                     <div>
                                       <span className="font-medium">{s.paciente_nome || "N/A"}</span>
-                                      <p className="text-xs text-muted-foreground">
-                                        Por: {s.solicitante_nome}
-                                      </p>
                                     </div>
                                   </TableCell>
                                   <TableCell>
@@ -1626,40 +1473,7 @@ export const RestauranteModule = () => {
                                     </div>
                                   </TableCell>
                                   <TableCell>
-                                    <Badge className={statusColors[s.status]}>
-                                      {s.status === "pendente" && "Pendente"}
-                                      {s.status === "aprovada" && "Aprovada"}
-                                      {s.status === "rejeitada" && "Rejeitada"}
-                                      {s.status === "cancelada" && "Cancelada"}
-                                      {s.status === "suspensa" && "Suspensa"}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    {s.status === "pendente" && (
-                                      <div className="flex gap-1">
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          className="text-green-600 hover:bg-green-50 h-8 w-8 p-0"
-                                          onClick={() => handleUpdateSolicitacaoStatus(s.id, "aprovada")}
-                                          title="Aprovar"
-                                        >
-                                          <CheckCircle2 className="h-4 w-4" />
-                                        </Button>
-                                        <Button
-                                          size="sm"
-                                          variant="outline"
-                                          className="text-red-600 hover:bg-red-50 h-8 w-8 p-0"
-                                          onClick={() => handleUpdateSolicitacaoStatus(s.id, "rejeitada")}
-                                          title="Rejeitar"
-                                        >
-                                          <XCircle className="h-4 w-4" />
-                                        </Button>
-                                      </div>
-                                    )}
-                                    {s.status !== "pendente" && (
-                                      <span className="text-muted-foreground text-xs">-</span>
-                                    )}
+                                    <span className="text-sm text-muted-foreground">{s.solicitante_nome}</span>
                                   </TableCell>
                                 </TableRow>
                               ))}
