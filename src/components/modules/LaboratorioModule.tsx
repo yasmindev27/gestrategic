@@ -7,10 +7,18 @@ import { InventarioModule } from "./InventarioModule";
 import { EscalaLaboratorioModule } from "./EscalaLaboratorioModule";
 
 export const LaboratorioModule = () => {
-  const { isAdmin, isLaboratorio } = useUserRole();
+  const { isAdmin, isLaboratorio, isLoading } = useUserRole();
   const [activeTab, setActiveTab] = useState("escala");
   
   const hasAccess = isAdmin || isLaboratorio;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!hasAccess) {
     return (

@@ -63,7 +63,7 @@ const tiposInconsistencia = [
 ];
 
 export const ControleFichasModule = () => {
-  const { isRecepcao, isAdmin, userId } = useUserRole();
+  const { isRecepcao, isAdmin, userId, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
   const { toast } = useToast();
   
@@ -81,11 +81,11 @@ export const ControleFichasModule = () => {
   const canAccess = isRecepcao || isAdmin;
 
   useEffect(() => {
-    if (canAccess) {
+    if (!isLoadingRole && canAccess) {
       fetchInconsistencias();
       logAction("acesso", "controle_fichas");
     }
-  }, [canAccess]);
+  }, [canAccess, isLoadingRole]);
 
   const fetchInconsistencias = async () => {
     setIsLoading(true);
@@ -204,6 +204,14 @@ export const ControleFichasModule = () => {
     i => (i.numero_prontuario?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
          i.descricao.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (isLoadingRole) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!canAccess) {
     return (

@@ -54,7 +54,7 @@ interface SaidaProntuario {
 }
 
 export const SaidaProntuariosModule = () => {
-  const { isRecepcao, isClassificacao, isNir, isAdmin, userId, role } = useUserRole();
+  const { isRecepcao, isClassificacao, isNir, isAdmin, userId, role, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
   const { toast } = useToast();
   
@@ -77,11 +77,11 @@ export const SaidaProntuariosModule = () => {
   const canValidateNir = isNir || isAdmin;
 
   useEffect(() => {
-    if (canAccess) {
+    if (!isLoadingRole && canAccess) {
       fetchSaidas();
       logAction("acesso", "saida_prontuarios", { role: role || "unknown" });
     }
-  }, [canAccess, role]);
+  }, [canAccess, isLoadingRole, role]);
 
   const fetchSaidas = async () => {
     setIsLoading(true);
@@ -285,6 +285,14 @@ export const SaidaProntuariosModule = () => {
   const filteredSaidas = saidas.filter(
     s => s.numero_prontuario.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  if (isLoadingRole) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!canAccess) {
     return (

@@ -93,7 +93,7 @@ const setorLabels: Record<string, string> = {
 };
 
 export const InventarioModule = ({ setor }: InventarioModuleProps) => {
-  const { role } = useUserRole();
+  const { role, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
   const { toast } = useToast();
   
@@ -318,6 +318,14 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
   const produtosBaixoEstoque = produtos.filter(p => 
     (p.quantidade_atual || 0) <= (p.quantidade_minima || 0)
   ).length;
+
+  if (isLoadingRole) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!hasAccess) {
     return (

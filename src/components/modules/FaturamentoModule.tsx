@@ -155,7 +155,7 @@ const resultadoFinalOptions = [
 ];
 
 export const FaturamentoModule = () => {
-  const { isFaturamento, isAdmin, userId } = useUserRole();
+  const { isFaturamento, isAdmin, userId, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
   const { toast } = useToast();
   
@@ -179,11 +179,11 @@ export const FaturamentoModule = () => {
   const canAccess = isFaturamento || isAdmin;
 
   useEffect(() => {
-    if (canAccess) {
+    if (!isLoadingRole && canAccess) {
       fetchData();
       logAction("acesso", "faturamento", { modulo: "prontuarios" });
     }
-  }, [canAccess]);
+  }, [canAccess, isLoadingRole]);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -461,6 +461,14 @@ export const FaturamentoModule = () => {
       )}
     </div>
   );
+
+  if (isLoadingRole) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!canAccess) {
     return (
