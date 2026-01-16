@@ -97,7 +97,7 @@ export const NirModule = () => {
 
         <Card 
           className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
-          onClick={() => setCurrentView("sus-facil")}
+          onClick={() => window.open("https://www.susfacil.mg.gov.br/administrativo/seguranca/GEN/gen_acesso.php?ini=1", "_blank")}
         >
           <CardHeader className="text-center pb-2">
             <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
@@ -105,12 +105,12 @@ export const NirModule = () => {
             </div>
             <CardTitle className="mt-4">SUS Fácil</CardTitle>
             <CardDescription>
-              Regulação de vagas externas e internas
+              Portal oficial de regulação - MG
             </CardDescription>
           </CardHeader>
           <CardContent className="text-center">
             <Button variant="outline" className="w-full">
-              Acessar SUS Fácil
+              Acessar Portal Externo
             </Button>
           </CardContent>
         </Card>
