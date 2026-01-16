@@ -77,6 +77,12 @@ Design System para Sistema Hospitalar - GESTRATEGIC:
     --sidebar-accent-foreground: 210 40% 20%;
     --sidebar-border: 210 20% 88%;
     --sidebar-ring: 210 65% 45%;
+
+    /* Hospital Status Colors for Bed Map */
+    --hospital-green: 142 70% 40%;
+    --hospital-green-light: 142 60% 95%;
+    --hospital-amber: 38 90% 50%;
+    --hospital-amber-light: 38 80% 95%;
   }
 
   .dark {
@@ -128,6 +134,12 @@ Design System para Sistema Hospitalar - GESTRATEGIC:
     --sidebar-accent-foreground: 210 20% 90%;
     --sidebar-border: 210 30% 22%;
     --sidebar-ring: 210 65% 50%;
+
+    /* Hospital Status Colors for Bed Map - Dark Mode */
+    --hospital-green: 142 60% 45%;
+    --hospital-green-light: 142 40% 15%;
+    --hospital-amber: 38 85% 55%;
+    --hospital-amber-light: 38 50% 15%;
   }
 }
 

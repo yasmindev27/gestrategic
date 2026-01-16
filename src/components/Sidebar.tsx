@@ -23,6 +23,7 @@ import {
   Calendar,
   ScrollText,
   UtensilsCrossed,
+  Ambulance,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -59,14 +60,14 @@ const Sidebar = ({
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
-        { icon: Activity, label: "Mapa de Leitos", id: "mapa-leitos" },
+        { icon: Ambulance, label: "Mapa de Leitos", id: "mapa-leitos" },
         { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
         { icon: ClipboardX, label: "Controle de Fichas", id: "controle-fichas" },
         { icon: Receipt, label: "Prontuários", id: "prontuarios" },
         { icon: Monitor, label: "TI", id: "tecnico-ti" },
         { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao" },
         { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" },
-        { icon: HelpCircle, label: "NIR", id: "tecnico-nir" },
+        { icon: Ambulance, label: "NIR", id: "tecnico-nir" },
         { icon: FlaskConical, label: "Laboratório", id: "laboratorio" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
         { icon: Users, label: "Equipe", id: "equipe" },
@@ -111,7 +112,7 @@ const Sidebar = ({
     if (isNir) {
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Activity, label: "Mapa de Leitos", id: "mapa-leitos" },
+        { icon: Ambulance, label: "Mapa de Leitos", id: "mapa-leitos" },
         { icon: Ticket, label: "Chamados NIR", id: "tecnico-nir" },
         { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
