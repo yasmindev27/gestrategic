@@ -304,12 +304,14 @@ export const RestauranteModule = () => {
   };
 
   // Combinar registros de dieta e refeições para o registro geral
+  // Usar mesma lógica do Quantitativo: dietas ATIVAS no período (não apenas as que iniciaram no período)
   const registrosGerais: RegistroGeral[] = [
     ...todasSolicitacoes
       .filter(s => {
-        // Filtrar por data_inicio da dieta (não created_at)
-        const dataInicio = s.data_inicio;
-        return dataInicio >= registroGeralDataInicio && dataInicio <= registroGeralDataFim;
+        // Dieta está ativa se: começou antes/durante o período E termina durante/depois do período
+        const inicio = s.data_inicio;
+        const fim = s.data_fim || registroGeralDataFim;
+        return inicio <= registroGeralDataFim && fim >= registroGeralDataInicio;
       })
       .map(s => ({
         id: s.id,
