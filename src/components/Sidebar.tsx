@@ -87,12 +87,12 @@ const Sidebar = ({
       return items;
     }
 
-    // RECEPÇÃO - Lista saída prontuários + Controle fichas inconsistentes
+    // RECEPÇÃO - Módulo próprio com Controle de Fichas interno
     if (isRecepcao) {
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: ClipboardX, label: "Recepção", id: "recepcao" },
         { icon: Receipt, label: "Faturamento", id: "faturamento" },
-        { icon: ClipboardX, label: "Controle de Fichas", id: "controle-fichas" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
       );
       return items;

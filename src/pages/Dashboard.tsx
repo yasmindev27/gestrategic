@@ -17,6 +17,7 @@ import { LogsAuditoriaModule } from "@/components/modules/LogsAuditoriaModule";
 import { RestauranteModule } from "@/components/modules/RestauranteModule";
 import { MapaLeitosModule } from "@/components/modules/MapaLeitosModule";
 import { NirModule } from "@/components/modules/NirModule";
+import { RecepcaoModule } from "@/components/modules/RecepcaoModule";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -26,7 +27,7 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("");
-  const { isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isNir, isLoading: isLoadingRole } = useUserRole();
+  const { isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isNir, isRecepcao, isLoading: isLoadingRole } = useUserRole();
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -61,11 +62,13 @@ const Dashboard = () => {
     if (!isLoadingRole && activeSection === "") {
       if (isNir) {
         setActiveSection("nir");
+      } else if (isRecepcao) {
+        setActiveSection("recepcao");
       } else {
         setActiveSection("dashboard");
       }
     }
-  }, [isLoadingRole, isNir, activeSection]);
+  }, [isLoadingRole, isNir, isRecepcao, activeSection]);
 
   if (isLoading || isLoadingRole || activeSection === "") {
     return (
@@ -116,6 +119,9 @@ const Dashboard = () => {
           {activeSection === "laboratorio" && <LaboratorioModule />}
 
           {activeSection === "restaurante" && <RestauranteModule />}
+
+          {/* Módulo Recepção */}
+          {activeSection === "recepcao" && <RecepcaoModule />}
         </div>
       </main>
     </div>
