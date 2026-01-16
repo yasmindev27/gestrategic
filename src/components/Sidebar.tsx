@@ -108,12 +108,12 @@ const Sidebar = ({
       return items;
     }
 
-    // NIR - Mapa de Leitos + Chamados + Saída Prontuários
+    // NIR - Regulação Hospitalar (não é técnico)
     if (isNir) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: LayoutDashboard, label: "Dashboard NIR", id: "dashboard-nir" },
         { icon: Ambulance, label: "Mapa de Leitos", id: "mapa-leitos" },
-        { icon: Ticket, label: "Chamados NIR", id: "tecnico-nir" },
+        { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
         { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
       );
