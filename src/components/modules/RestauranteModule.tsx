@@ -205,6 +205,9 @@ export const RestauranteModule = () => {
   const [solicitacoesPesquisa, setSolicitacoesPesquisa] = useState("");
   const [solicitacoesPeriodo, setSolicitacoesPeriodo] = useState<"todos" | "dia" | "semana" | "mes">("todos");
 
+  // Minhas Solicitações - Filtros (aba Dietas)
+  const [minhasDietasFiltro, setMinhasDietasFiltro] = useState<"todos" | "dia" | "semana" | "mes">("todos");
+
   useEffect(() => {
     // Só busca dados quando o role terminou de carregar
     if (!isLoadingRole) {
@@ -724,6 +727,91 @@ export const RestauranteModule = () => {
     });
   };
 
+  // Filtrar minhas solicitações pelo período selecionado
+  const minhasSolicitacoesFiltradas = minhasSolicitacoes.filter(s => {
+    const hoje = new Date();
+    const dataInicio = new Date(s.data_inicio);
+    
+    switch (minhasDietasFiltro) {
+      case "dia":
+        return format(dataInicio, "yyyy-MM-dd") === format(hoje, "yyyy-MM-dd");
+      case "semana":
+        const inicioSemana = startOfWeek(hoje, { weekStartsOn: 0 });
+        const fimSemana = endOfWeek(hoje, { weekStartsOn: 0 });
+        return dataInicio >= inicioSemana && dataInicio <= fimSemana;
+      case "mes":
+        return dataInicio >= startOfMonth(hoje) && dataInicio <= endOfMonth(hoje);
+      default:
+        return true;
+    }
+  });
+
+  // Exportar minhas solicitações para Excel
+  const exportMinhasDietasToExcel = () => {
+    const dataToExport = minhasSolicitacoesFiltradas.map(s => ({
+      "Paciente": s.paciente_nome || "-",
+      "Quarto/Leito": s.quarto_leito || "-",
+      "Tipo de Dieta": tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
+      "Tem Acompanhante": s.tem_acompanhante ? "Sim" : "Não",
+      "Restrições Alimentares": s.restricoes_alimentares || "-",
+      "Horários": s.horarios_refeicoes?.map(h => horariosRefeicaoOptions.find(o => o.value === h)?.label).join(", ") || "Todos",
+      "Data Início": format(new Date(s.data_inicio), "dd/MM/yyyy"),
+      "Data Fim": s.data_fim ? format(new Date(s.data_fim), "dd/MM/yyyy") : "-",
+      "Solicitado em": format(new Date(s.created_at), "dd/MM/yyyy HH:mm"),
+      "Observações": s.observacoes || "-",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Minhas Dietas");
+    
+    const fileName = `minhas_dietas_${format(new Date(), "ddMMyyyy")}.xlsx`;
+    XLSX.writeFile(wb, fileName);
+    
+    toast({
+      title: "Sucesso",
+      description: "Arquivo Excel exportado com sucesso.",
+    });
+  };
+
+  // Exportar minhas solicitações para PDF
+  const exportMinhasDietasToPDF = () => {
+    const doc = new jsPDF({ orientation: "landscape" });
+    
+    doc.setFontSize(18);
+    doc.text("Minhas Solicitações de Dieta", 14, 22);
+    
+    doc.setFontSize(11);
+    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 32);
+    doc.text(`Total: ${minhasSolicitacoesFiltradas.length} dietas`, 14, 40);
+    
+    const tableData = minhasSolicitacoesFiltradas.map(s => [
+      s.paciente_nome || "-",
+      s.quarto_leito || "-",
+      tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
+      s.tem_acompanhante ? "Sim" : "Não",
+      format(new Date(s.data_inicio), "dd/MM/yyyy"),
+      s.data_fim ? format(new Date(s.data_fim), "dd/MM/yyyy") : "-",
+      format(new Date(s.created_at), "dd/MM/yyyy"),
+    ]);
+
+    autoTable(doc, {
+      startY: 48,
+      head: [["Paciente", "Quarto/Leito", "Tipo", "Acomp.", "Data Início", "Data Fim", "Solicitado em"]],
+      body: tableData,
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [59, 130, 246] },
+    });
+    
+    const fileName = `minhas_dietas_${format(new Date(), "ddMMyyyy")}.pdf`;
+    doc.save(fileName);
+    
+    toast({
+      title: "Sucesso",
+      description: "Arquivo PDF exportado com sucesso.",
+    });
+  };
+
   // Mostrar loading enquanto verifica roles
   if (isLoadingRole) {
     return (
@@ -882,15 +970,71 @@ export const RestauranteModule = () => {
         <TabsContent value="solicitar" className="space-y-4">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle>Solicitações de Dieta</CardTitle>
-                  <CardDescription>Solicite uma dieta especial</CardDescription>
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Solicitações de Dieta</CardTitle>
+                    <CardDescription>Solicite uma dieta especial</CardDescription>
+                  </div>
+                  <Button onClick={() => setDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Solicitação
+                  </Button>
                 </div>
-                <Button onClick={() => setDialogOpen(true)}>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Nova Solicitação
-                </Button>
+                
+                {/* Filtros e Exportação */}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 border-t">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant={minhasDietasFiltro === "todos" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setMinhasDietasFiltro("todos")}
+                    >
+                      Todos
+                    </Button>
+                    <Button
+                      variant={minhasDietasFiltro === "dia" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setMinhasDietasFiltro("dia")}
+                    >
+                      Hoje
+                    </Button>
+                    <Button
+                      variant={minhasDietasFiltro === "semana" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setMinhasDietasFiltro("semana")}
+                    >
+                      Semana
+                    </Button>
+                    <Button
+                      variant={minhasDietasFiltro === "mes" ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => setMinhasDietasFiltro("mes")}
+                    >
+                      Mês
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={exportMinhasDietasToExcel}
+                      disabled={minhasSolicitacoesFiltradas.length === 0}
+                    >
+                      <FileSpreadsheet className="h-4 w-4 mr-1" />
+                      Excel
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={exportMinhasDietasToPDF}
+                      disabled={minhasSolicitacoesFiltradas.length === 0}
+                    >
+                      <FileDown className="h-4 w-4 mr-1" />
+                      PDF
+                    </Button>
+                  </div>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -898,10 +1042,13 @@ export const RestauranteModule = () => {
                 <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
-              ) : minhasSolicitacoes.length === 0 ? (
+              ) : minhasSolicitacoesFiltradas.length === 0 ? (
                 <div className="text-center py-8 text-muted-foreground">
                   <Salad className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Você ainda não fez nenhuma solicitação de dieta.</p>
+                  <p>{minhasSolicitacoes.length === 0 
+                    ? "Você ainda não fez nenhuma solicitação de dieta." 
+                    : "Nenhuma dieta encontrada para o período selecionado."}
+                  </p>
                 </div>
               ) : (
               <Table>
@@ -916,7 +1063,7 @@ export const RestauranteModule = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {minhasSolicitacoes.map((s) => (
+                    {minhasSolicitacoesFiltradas.map((s) => (
                       <TableRow key={s.id}>
                         <TableCell>
                           <div>
