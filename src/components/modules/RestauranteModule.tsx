@@ -307,8 +307,9 @@ export const RestauranteModule = () => {
   const registrosGerais: RegistroGeral[] = [
     ...todasSolicitacoes
       .filter(s => {
-        const data = new Date(s.created_at);
-        return data >= new Date(registroGeralDataInicio) && data <= new Date(registroGeralDataFim + "T23:59:59");
+        // Filtrar por data_inicio da dieta (não created_at)
+        const dataInicio = s.data_inicio;
+        return dataInicio >= registroGeralDataInicio && dataInicio <= registroGeralDataFim;
       })
       .map(s => ({
         id: s.id,
@@ -322,8 +323,8 @@ export const RestauranteModule = () => {
       })),
     ...registrosRefeicoes
       .filter(r => {
-        const data = new Date(r.data_registro);
-        return data >= new Date(registroGeralDataInicio) && data <= new Date(registroGeralDataFim + "T23:59:59");
+        // Filtrar por data_registro
+        return r.data_registro >= registroGeralDataInicio && r.data_registro <= registroGeralDataFim;
       })
       .map(r => ({
         id: r.id,

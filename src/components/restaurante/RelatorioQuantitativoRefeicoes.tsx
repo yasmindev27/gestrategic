@@ -221,7 +221,10 @@ export const RelatorioQuantitativoRefeicoes = () => {
       let dietasJantar = 0;
 
       dietasAtivasNoDia.forEach(d => {
-        const horarios = d.horarios_refeicoes || ["cafe", "almoco", "lanche", "jantar"];
+        // Se horarios_refeicoes for null, undefined ou array vazio, assume todos os horários
+        const horarios = (d.horarios_refeicoes && d.horarios_refeicoes.length > 0) 
+          ? d.horarios_refeicoes 
+          : ["cafe", "almoco", "lanche", "jantar"];
         const multiplicador = d.tem_acompanhante ? 2 : 1; // Se tem acompanhante, conta 2
 
         if (horarios.includes("cafe")) dietasCafe += multiplicador;
