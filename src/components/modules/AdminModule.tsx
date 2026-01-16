@@ -150,12 +150,14 @@ export const AdminModule = () => {
   // Form states for creating/editing user
   const [formData, setFormData] = useState({
     email: "",
+    matricula: "",
     password: "",
     full_name: "",
     cargo: "",
     setor: "",
     role: "funcionario" as AppRole,
   });
+  const [loginType, setLoginType] = useState<"email" | "matricula">("email");
 
   useEffect(() => {
     if (isAdmin) {
@@ -302,6 +304,7 @@ export const AdminModule = () => {
   const resetFormData = () => {
     setFormData({
       email: "",
+      matricula: "",
       password: "",
       full_name: "",
       cargo: "",
@@ -309,6 +312,7 @@ export const AdminModule = () => {
       role: "funcionario",
     });
     setShowPassword(false);
+    setLoginType("email");
   };
 
   const openCreateUserDialog = () => {
@@ -318,10 +322,28 @@ export const AdminModule = () => {
   };
 
   const handleCreateUser = async () => {
-    if (!formData.email || !formData.password || !formData.full_name) {
+    if (!formData.full_name) {
       toast({
         title: "Erro",
-        description: "Email, senha e nome são obrigatórios.",
+        description: "Nome completo é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (loginType === "email" && !formData.email) {
+      toast({
+        title: "Erro",
+        description: "Email é obrigatório.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (loginType === "matricula" && !formData.matricula) {
+      toast({
+        title: "Erro",
+        description: "Matrícula é obrigatória.",
         variant: "destructive",
       });
       return;
@@ -470,6 +492,7 @@ export const AdminModule = () => {
     setSelectedUser(user);
     setFormData({
       email: "",
+      matricula: "",
       password: "",
       full_name: user.full_name,
       cargo: user.cargo || "",
@@ -777,7 +800,7 @@ export const AdminModule = () => {
           <DialogHeader>
             <DialogTitle>Novo Usuário</DialogTitle>
             <DialogDescription>
-              Preencha os dados para criar um novo usuário no sistema.
+              Preencha os dados para criar um novo usuário no sistema. A senha padrão é 123456.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
@@ -790,25 +813,70 @@ export const AdminModule = () => {
                 placeholder="Nome completo do usuário"
               />
             </div>
+            
+            {/* Login Type Selector */}
             <div className="space-y-2">
-              <Label htmlFor="create-email">Email *</Label>
-              <Input
-                id="create-email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="email@exemplo.com"
-              />
+              <Label>Tipo de Acesso *</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={loginType === "email" ? "default" : "outline"}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    setLoginType("email");
+                    setFormData({ ...formData, matricula: "" });
+                  }}
+                >
+                  Email
+                </Button>
+                <Button
+                  type="button"
+                  variant={loginType === "matricula" ? "default" : "outline"}
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => {
+                    setLoginType("matricula");
+                    setFormData({ ...formData, email: "" });
+                  }}
+                >
+                  Matrícula
+                </Button>
+              </div>
             </div>
+            
+            {loginType === "email" ? (
+              <div className="space-y-2">
+                <Label htmlFor="create-email">Email *</Label>
+                <Input
+                  id="create-email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  placeholder="email@exemplo.com"
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label htmlFor="create-matricula">Matrícula *</Label>
+                <Input
+                  id="create-matricula"
+                  value={formData.matricula}
+                  onChange={(e) => setFormData({ ...formData, matricula: e.target.value })}
+                  placeholder="Ex: 12345"
+                />
+              </div>
+            )}
+            
             <div className="space-y-2">
-              <Label htmlFor="create-password">Senha *</Label>
+              <Label htmlFor="create-password">Senha (opcional, padrão: 123456)</Label>
               <div className="relative">
                 <Input
                   id="create-password"
                   type={showPassword ? "text" : "password"}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Deixe vazio para usar 123456"
                 />
                 <Button
                   type="button"
@@ -884,7 +952,12 @@ export const AdminModule = () => {
             </Button>
             <Button 
               onClick={handleCreateUser}
-              disabled={!formData.email || !formData.password || !formData.full_name || isSubmitting}
+              disabled={
+                !formData.full_name || 
+                (loginType === "email" && !formData.email) || 
+                (loginType === "matricula" && !formData.matricula) || 
+                isSubmitting
+              }
             >
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

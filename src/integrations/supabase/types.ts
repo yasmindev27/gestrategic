@@ -765,8 +765,10 @@ export type Database = {
           avatar_url: string | null
           cargo: string | null
           created_at: string
+          deve_trocar_senha: boolean | null
           full_name: string
           id: string
+          matricula: string | null
           setor: string | null
           telefone: string | null
           updated_at: string
@@ -776,8 +778,10 @@ export type Database = {
           avatar_url?: string | null
           cargo?: string | null
           created_at?: string
+          deve_trocar_senha?: boolean | null
           full_name: string
           id?: string
+          matricula?: string | null
           setor?: string | null
           telefone?: string | null
           updated_at?: string
@@ -787,8 +791,10 @@ export type Database = {
           avatar_url?: string | null
           cargo?: string | null
           created_at?: string
+          deve_trocar_senha?: boolean | null
           full_name?: string
           id?: string
+          matricula?: string | null
           setor?: string | null
           telefone?: string | null
           updated_at?: string

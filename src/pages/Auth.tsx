@@ -9,41 +9,81 @@ import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import logoGestrategic from "@/assets/logo-gestrategic.jpg";
 import { z } from "zod";
+import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 
 const emailSchema = z.string().email("Email inválido");
 const passwordSchema = z.string().min(6, "Senha deve ter pelo menos 6 caracteres");
+const matriculaSchema = z.string().min(1, "Matrícula é obrigatória");
 
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  
+  // Login type: email or matricula
+  const [loginType, setLoginType] = useState<"email" | "matricula">("email");
   
   // Login form
-  const [loginEmail, setLoginEmail] = useState("");
+  const [loginIdentifier, setLoginIdentifier] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
   useEffect(() => {
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (session?.user) {
-        navigate("/dashboard");
+      if (session?.user && !showChangePasswordDialog) {
+        // Check if user needs to change password
+        setTimeout(() => {
+          checkFirstLogin(session.user.id);
+        }, 0);
       }
     });
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        navigate("/dashboard");
+      if (session?.user && !showChangePasswordDialog) {
+        checkFirstLogin(session.user.id);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, [navigate]);
+  }, [navigate, showChangePasswordDialog]);
+
+  const checkFirstLogin = async (userId: string) => {
+    try {
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("deve_trocar_senha")
+        .eq("user_id", userId)
+        .single();
+
+      if (error) {
+        console.error("Erro ao verificar perfil:", error);
+        navigate("/dashboard");
+        return;
+      }
+
+      if (profile?.deve_trocar_senha) {
+        setCurrentUserId(userId);
+        setShowChangePasswordDialog(true);
+      } else {
+        navigate("/dashboard");
+      }
+    } catch (error) {
+      console.error("Erro:", error);
+      navigate("/dashboard");
+    }
+  };
 
   const validateLogin = () => {
     try {
-      emailSchema.parse(loginEmail);
+      if (loginType === "email") {
+        emailSchema.parse(loginIdentifier);
+      } else {
+        matriculaSchema.parse(loginIdentifier);
+      }
       passwordSchema.parse(loginPassword);
       return true;
     } catch (error) {
@@ -65,8 +105,32 @@ const Auth = () => {
     
     setIsLoading(true);
     
+    let email = loginIdentifier;
+    
+    // If logging in with matricula, find the associated email
+    if (loginType === "matricula") {
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("user_id")
+        .eq("matricula", loginIdentifier)
+        .single();
+
+      if (profileError || !profile) {
+        setIsLoading(false);
+        toast({
+          title: "Erro",
+          description: "Matrícula não encontrada no sistema.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Get the email from the profile - we use the internal email format
+      email = `${loginIdentifier}@interno.local`;
+    }
+    
     const { error } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
+      email,
       password: loginPassword,
     });
 
@@ -76,7 +140,9 @@ const Auth = () => {
       let errorMessage = "Erro ao fazer login";
       
       if (error.message.includes("Invalid login credentials")) {
-        errorMessage = "Email ou senha incorretos";
+        errorMessage = loginType === "email" 
+          ? "Email ou senha incorretos" 
+          : "Matrícula ou senha incorretos";
       } else if (error.message.includes("Email not confirmed")) {
         errorMessage = "Por favor, confirme seu email antes de fazer login";
       }
@@ -87,6 +153,12 @@ const Auth = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handlePasswordChangeSuccess = () => {
+    setShowChangePasswordDialog(false);
+    setCurrentUserId(null);
+    navigate("/dashboard");
   };
 
   return (
@@ -117,14 +189,44 @@ const Auth = () => {
         </CardHeader>
         <CardContent className="pt-4">
           <form onSubmit={handleLogin} className="space-y-4">
+            {/* Login Type Selector */}
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant={loginType === "email" ? "default" : "outline"}
+                size="sm"
+                className="flex-1"
+                onClick={() => {
+                  setLoginType("email");
+                  setLoginIdentifier("");
+                }}
+              >
+                Email
+              </Button>
+              <Button
+                type="button"
+                variant={loginType === "matricula" ? "default" : "outline"}
+                size="sm"
+                className="flex-1"
+                onClick={() => {
+                  setLoginType("matricula");
+                  setLoginIdentifier("");
+                }}
+              >
+                Matrícula
+              </Button>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="login-email" className="text-foreground">Email</Label>
+              <Label htmlFor="login-identifier" className="text-foreground">
+                {loginType === "email" ? "Email" : "Matrícula"}
+              </Label>
               <Input
-                id="login-email"
-                type="email"
-                placeholder="seu@email.com"
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
+                id="login-identifier"
+                type={loginType === "email" ? "email" : "text"}
+                placeholder={loginType === "email" ? "seu@email.com" : "Digite sua matrícula"}
+                value={loginIdentifier}
+                onChange={(e) => setLoginIdentifier(e.target.value)}
                 required
                 className="bg-background border-input"
               />
@@ -173,6 +275,15 @@ const Auth = () => {
           </p>
         </CardContent>
       </Card>
+
+      {/* Change Password Dialog */}
+      {currentUserId && (
+        <ChangePasswordDialog
+          open={showChangePasswordDialog}
+          onSuccess={handlePasswordChangeSuccess}
+          userId={currentUserId}
+        />
+      )}
     </div>
   );
 };
