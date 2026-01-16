@@ -985,6 +985,99 @@ export type Database = {
         }
         Relationships: []
       }
+      regulacao_sus_facil: {
+        Row: {
+          cid: string | null
+          created_at: string
+          created_by: string | null
+          data_efetivacao: string | null
+          data_resposta: string | null
+          data_solicitacao: string
+          estabelecimento_destino: string | null
+          estabelecimento_origem: string | null
+          hipotese_diagnostica: string | null
+          id: string
+          justificativa_negativa: string | null
+          leito_destino: string | null
+          medico_solicitante: string | null
+          numero_solicitacao: string
+          observacoes: string | null
+          paciente_idade: number | null
+          paciente_nome: string
+          paciente_sexo: string | null
+          prioridade: string | null
+          procedimentos_necessarios: string | null
+          quadro_clinico: string | null
+          regulador_responsavel: string | null
+          setor_destino: string | null
+          status: string
+          telefone_contato: string | null
+          tipo: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          cid?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_efetivacao?: string | null
+          data_resposta?: string | null
+          data_solicitacao?: string
+          estabelecimento_destino?: string | null
+          estabelecimento_origem?: string | null
+          hipotese_diagnostica?: string | null
+          id?: string
+          justificativa_negativa?: string | null
+          leito_destino?: string | null
+          medico_solicitante?: string | null
+          numero_solicitacao: string
+          observacoes?: string | null
+          paciente_idade?: number | null
+          paciente_nome: string
+          paciente_sexo?: string | null
+          prioridade?: string | null
+          procedimentos_necessarios?: string | null
+          quadro_clinico?: string | null
+          regulador_responsavel?: string | null
+          setor_destino?: string | null
+          status?: string
+          telefone_contato?: string | null
+          tipo: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          cid?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_efetivacao?: string | null
+          data_resposta?: string | null
+          data_solicitacao?: string
+          estabelecimento_destino?: string | null
+          estabelecimento_origem?: string | null
+          hipotese_diagnostica?: string | null
+          id?: string
+          justificativa_negativa?: string | null
+          leito_destino?: string | null
+          medico_solicitante?: string | null
+          numero_solicitacao?: string
+          observacoes?: string | null
+          paciente_idade?: number | null
+          paciente_nome?: string
+          paciente_sexo?: string | null
+          prioridade?: string | null
+          procedimentos_necessarios?: string | null
+          quadro_clinico?: string | null
+          regulador_responsavel?: string | null
+          setor_destino?: string | null
+          status?: string
+          telefone_contato?: string | null
+          tipo?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       saida_prontuarios: {
         Row: {
           conferido_nir_em: string | null
