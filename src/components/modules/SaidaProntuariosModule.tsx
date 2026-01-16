@@ -76,7 +76,7 @@ export const SaidaProntuariosModule = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canAccess = isRecepcao || isClassificacao || isNir || isAdmin;
-  const canInsert = isRecepcao || isAdmin;
+  const canInsert = isRecepcao || isClassificacao || isNir || isAdmin;
   const canValidateClassificacao = isClassificacao || isAdmin;
   const canValidateNir = isNir || isAdmin;
 
