@@ -24,6 +24,7 @@ import {
   ScrollText,
   UtensilsCrossed,
   Ambulance,
+  FileText,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -113,6 +114,7 @@ const Sidebar = ({
       items.push(
         { icon: LayoutDashboard, label: "Dashboard NIR", id: "dashboard-nir" },
         { icon: Ambulance, label: "Mapa de Leitos", id: "mapa-leitos" },
+        { icon: FileText, label: "SUS Fácil", id: "sus-facil" },
         { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
         { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
         { icon: Calendar, label: "Agenda", id: "agenda" },

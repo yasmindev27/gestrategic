@@ -18,6 +18,7 @@ import { LogsAuditoriaModule } from "@/components/modules/LogsAuditoriaModule";
 import { RestauranteModule } from "@/components/modules/RestauranteModule";
 import { MapaLeitosModule } from "@/components/modules/MapaLeitosModule";
 import { NirDashboardModule } from "@/components/modules/NirDashboardModule";
+import { SusFacilManager } from "@/components/nir";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -106,6 +107,8 @@ const Dashboard = () => {
           {activeSection === "dashboard-nir" && <NirDashboardModule />}
 
           {activeSection === "mapa-leitos" && <MapaLeitosModule />}
+
+          {activeSection === "sus-facil" && <SusFacilManager />}
 
           {activeSection === "laboratorio" && <LaboratorioModule />}
 
