@@ -111,9 +111,7 @@ const Sidebar = ({
     // NIR - Regulação Hospitalar (não é técnico)
     if (isNir) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard NIR", id: "dashboard-nir" },
-        { icon: Ambulance, label: "Mapa de Leitos", id: "mapa-leitos" },
-        { icon: FileText, label: "SUS Fácil", id: "sus-facil" },
+        { icon: Ambulance, label: "NIR", id: "nir" },
         { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
         { icon: Receipt, label: "Faturamento", id: "faturamento" },
         { icon: Calendar, label: "Agenda", id: "agenda" },

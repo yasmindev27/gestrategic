@@ -16,8 +16,7 @@ import { AgendaModule } from "@/components/agenda";
 import { LogsAuditoriaModule } from "@/components/modules/LogsAuditoriaModule";
 import { RestauranteModule } from "@/components/modules/RestauranteModule";
 import { MapaLeitosModule } from "@/components/modules/MapaLeitosModule";
-import { NirDashboardModule } from "@/components/modules/NirDashboardModule";
-import { SusFacilManager } from "@/components/nir";
+import { NirModule } from "@/components/modules/NirModule";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -61,7 +60,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (!isLoadingRole && activeSection === "") {
       if (isNir) {
-        setActiveSection("dashboard-nir");
+        setActiveSection("nir");
       } else {
         setActiveSection("dashboard");
       }
@@ -112,11 +111,9 @@ const Dashboard = () => {
           {activeSection === "tecnico-engenharia" && <TecnicoModule setor="engenharia_clinica" />}
 
           {/* Módulo NIR */}
-          {activeSection === "dashboard-nir" && <NirDashboardModule />}
+          {activeSection === "nir" && <NirModule />}
 
           {activeSection === "mapa-leitos" && <MapaLeitosModule />}
-
-          {activeSection === "sus-facil" && <SusFacilManager />}
 
           {activeSection === "laboratorio" && <LaboratorioModule />}
 
