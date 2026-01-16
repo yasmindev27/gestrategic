@@ -346,7 +346,7 @@ export const SaidaProntuariosModule = () => {
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Nascimento</label>
+                  <label className="text-sm font-medium">Data de Nascimento</label>
                   <Input
                     type="date"
                     value={nascimentoMae}
@@ -420,7 +420,7 @@ export const SaidaProntuariosModule = () => {
               <TableHeader>
                 <TableRow>
                   <TableHead>Paciente</TableHead>
-                  <TableHead>Nascimento</TableHead>
+                  <TableHead>Data Nasc.</TableHead>
                   <TableHead>Nº Prontuário</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Recepção</TableHead>
