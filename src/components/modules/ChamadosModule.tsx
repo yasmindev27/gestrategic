@@ -59,7 +59,7 @@ import { ptBR } from "date-fns/locale";
 import { ChamadosDashboard } from "@/components/chamados";
 
 interface ChamadosModuleProps {
-  setor: 'ti' | 'manutencao' | 'engenharia_clinica';
+  setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'nir';
 }
 
 interface Chamado {

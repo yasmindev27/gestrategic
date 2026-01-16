@@ -25,7 +25,7 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
-  const { isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isLoading: isLoadingRole } = useUserRole();
+  const { isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isNir, isLoading: isLoadingRole } = useUserRole();
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -99,6 +99,8 @@ const Dashboard = () => {
           {activeSection === "tecnico-manutencao" && <TecnicoModule setor="manutencao" />}
           
           {activeSection === "tecnico-engenharia" && <TecnicoModule setor="engenharia_clinica" />}
+
+          {activeSection === "tecnico-nir" && <TecnicoModule setor="nir" />}
 
           {activeSection === "laboratorio" && <LaboratorioModule />}
 

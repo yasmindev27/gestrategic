@@ -65,6 +65,7 @@ const Sidebar = ({
         { icon: Monitor, label: "TI", id: "tecnico-ti" },
         { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao" },
         { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" },
+        { icon: HelpCircle, label: "NIR", id: "tecnico-nir" },
         { icon: FlaskConical, label: "Laboratório", id: "laboratorio" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
         { icon: Users, label: "Equipe", id: "equipe" },
@@ -105,10 +106,11 @@ const Sidebar = ({
       return items;
     }
 
-    // NIR - Lista saída prontuários (validar registros)
+    // NIR - Lista saída prontuários (validar registros) + Chamados NIR
     if (isNir) {
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: Ticket, label: "Chamados NIR", id: "tecnico-nir" },
         { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
       );
