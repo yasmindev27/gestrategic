@@ -40,6 +40,8 @@ import { ptBR } from "date-fns/locale";
 interface SaidaProntuario {
   id: string;
   numero_prontuario: string;
+  paciente_nome: string | null;
+  nascimento_mae: string | null;
   status: string;
   registrado_recepcao_em: string | null;
   registrado_recepcao_por: string | null;
@@ -66,6 +68,8 @@ export const SaidaProntuariosModule = () => {
   const [selectedSaida, setSelectedSaida] = useState<SaidaProntuario | null>(null);
   
   // Form states
+  const [pacienteNome, setPacienteNome] = useState("");
+  const [nascimentoMae, setNascimentoMae] = useState("");
   const [numeroProntuario, setNumeroProntuario] = useState("");
   const [existeFisicamente, setExisteFisicamente] = useState(true);
   const [observacao, setObservacao] = useState("");
@@ -106,13 +110,15 @@ export const SaidaProntuariosModule = () => {
   };
 
   const handleAddSaida = async () => {
-    if (!numeroProntuario.trim() || !userId) return;
+    if (!pacienteNome.trim() || !numeroProntuario.trim() || !userId) return;
     
     setIsSubmitting(true);
     try {
       const { error } = await supabase
         .from("saida_prontuarios")
         .insert({
+          paciente_nome: pacienteNome.trim(),
+          nascimento_mae: nascimentoMae || null,
           numero_prontuario: numeroProntuario.trim(),
           registrado_recepcao_por: userId,
           registrado_recepcao_em: new Date().toISOString(),
@@ -122,6 +128,7 @@ export const SaidaProntuariosModule = () => {
       if (error) throw error;
 
       await logAction("registrar_saida", "saida_prontuarios", { 
+        paciente: pacienteNome,
         prontuario: numeroProntuario 
       });
 
@@ -131,6 +138,8 @@ export const SaidaProntuariosModule = () => {
       });
 
       setNewProntuarioOpen(false);
+      setPacienteNome("");
+      setNascimentoMae("");
       setNumeroProntuario("");
       fetchSaidas();
     } catch (error) {
@@ -283,7 +292,8 @@ export const SaidaProntuariosModule = () => {
   };
 
   const filteredSaidas = saidas.filter(
-    s => s.numero_prontuario.toLowerCase().includes(searchTerm.toLowerCase())
+    s => s.numero_prontuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
+         (s.paciente_nome && s.paciente_nome.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   if (isLoadingRole) {
@@ -328,7 +338,23 @@ export const SaidaProntuariosModule = () => {
               </DialogHeader>
               <div className="space-y-4 pt-4">
                 <div>
-                  <label className="text-sm font-medium">Número do Prontuário</label>
+                  <label className="text-sm font-medium">Paciente <span className="text-destructive">*</span></label>
+                  <Input
+                    value={pacienteNome}
+                    onChange={(e) => setPacienteNome(e.target.value)}
+                    placeholder="Nome completo do paciente"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Nascimento Mãe</label>
+                  <Input
+                    type="date"
+                    value={nascimentoMae}
+                    onChange={(e) => setNascimentoMae(e.target.value)}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Número do Prontuário <span className="text-destructive">*</span></label>
                   <Input
                     value={numeroProntuario}
                     onChange={(e) => setNumeroProntuario(e.target.value)}
@@ -339,7 +365,7 @@ export const SaidaProntuariosModule = () => {
               <DialogFooter>
                 <Button 
                   onClick={handleAddSaida} 
-                  disabled={!numeroProntuario.trim() || isSubmitting}
+                  disabled={!pacienteNome.trim() || !numeroProntuario.trim() || isSubmitting}
                 >
                   {isSubmitting ? (
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -360,7 +386,7 @@ export const SaidaProntuariosModule = () => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por número do prontuário..."
+              placeholder="Buscar por paciente ou número do prontuário..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
@@ -393,6 +419,8 @@ export const SaidaProntuariosModule = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Paciente</TableHead>
+                  <TableHead>Nascimento Mãe</TableHead>
                   <TableHead>Nº Prontuário</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Recepção</TableHead>
@@ -404,7 +432,13 @@ export const SaidaProntuariosModule = () => {
               <TableBody>
                 {filteredSaidas.map((saida) => (
                   <TableRow key={saida.id}>
-                    <TableCell className="font-medium">{saida.numero_prontuario}</TableCell>
+                    <TableCell className="font-medium">{saida.paciente_nome || "-"}</TableCell>
+                    <TableCell>
+                      {saida.nascimento_mae 
+                        ? format(new Date(saida.nascimento_mae), "dd/MM/yyyy", { locale: ptBR })
+                        : "-"}
+                    </TableCell>
+                    <TableCell>{saida.numero_prontuario}</TableCell>
                     <TableCell>{getStatusBadge(saida.status)}</TableCell>
                     <TableCell>
                       {saida.registrado_recepcao_em 

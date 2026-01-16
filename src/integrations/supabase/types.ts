@@ -1199,9 +1199,11 @@ export type Database = {
           created_at: string
           existe_fisicamente: boolean | null
           id: string
+          nascimento_mae: string | null
           numero_prontuario: string
           observacao_classificacao: string | null
           observacao_nir: string | null
+          paciente_nome: string | null
           prontuario_id: string | null
           registrado_recepcao_em: string | null
           registrado_recepcao_por: string | null
@@ -1216,9 +1218,11 @@ export type Database = {
           created_at?: string
           existe_fisicamente?: boolean | null
           id?: string
+          nascimento_mae?: string | null
           numero_prontuario: string
           observacao_classificacao?: string | null
           observacao_nir?: string | null
+          paciente_nome?: string | null
           prontuario_id?: string | null
           registrado_recepcao_em?: string | null
           registrado_recepcao_por?: string | null
@@ -1233,9 +1237,11 @@ export type Database = {
           created_at?: string
           existe_fisicamente?: boolean | null
           id?: string
+          nascimento_mae?: string | null
           numero_prontuario?: string
           observacao_classificacao?: string | null
           observacao_nir?: string | null
+          paciente_nome?: string | null
           prontuario_id?: string | null
           registrado_recepcao_em?: string | null
           registrado_recepcao_por?: string | null
