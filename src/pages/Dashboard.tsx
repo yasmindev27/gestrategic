@@ -25,7 +25,7 @@ const Dashboard = () => {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("dashboard");
-  const { isAdmin, isGestor, canAccessSaidaProntuarios, canAccessControleFichas, canAccessAvaliacaoProntuarios, canAccessEquipe, isTI, isManutencao, isEngenhariaCinica, isLaboratorio } = useUserRole();
+  const { isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isLoading: isLoadingRole } = useUserRole();
 
   useEffect(() => {
     // Set up auth state listener FIRST
@@ -55,7 +55,7 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  if (isLoading) {
+  if (isLoading || isLoadingRole) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -79,28 +79,28 @@ const Dashboard = () => {
 
           {activeSection === "abrir-chamado" && <AbrirChamadoModule />}
 
-          {activeSection === "faturamento" && canAccessSaidaProntuarios && <SaidaProntuariosModule />}
+          {activeSection === "faturamento" && <SaidaProntuariosModule />}
 
-          {activeSection === "controle-fichas" && canAccessControleFichas && <ControleFichasModule />}
+          {activeSection === "controle-fichas" && <ControleFichasModule />}
 
-          {activeSection === "prontuarios" && canAccessAvaliacaoProntuarios && <FaturamentoModule />}
+          {activeSection === "prontuarios" && <FaturamentoModule />}
 
-          {activeSection === "equipe" && canAccessEquipe && <TeamSection />}
+          {activeSection === "equipe" && <TeamSection />}
 
           {activeSection === "agenda" && <AgendaModule />}
 
-          {activeSection === "admin" && isAdmin && <AdminModule />}
+          {activeSection === "admin" && <AdminModule />}
 
-          {activeSection === "logs" && isAdmin && <LogsAuditoriaModule />}
+          {activeSection === "logs" && <LogsAuditoriaModule />}
 
           {/* Módulos dos Técnicos */}
-          {activeSection === "tecnico-ti" && (isTI || isAdmin) && <TecnicoModule setor="ti" />}
+          {activeSection === "tecnico-ti" && <TecnicoModule setor="ti" />}
           
-          {activeSection === "tecnico-manutencao" && (isManutencao || isAdmin) && <TecnicoModule setor="manutencao" />}
+          {activeSection === "tecnico-manutencao" && <TecnicoModule setor="manutencao" />}
           
-          {activeSection === "tecnico-engenharia" && (isEngenhariaCinica || isAdmin) && <TecnicoModule setor="engenharia_clinica" />}
+          {activeSection === "tecnico-engenharia" && <TecnicoModule setor="engenharia_clinica" />}
 
-          {activeSection === "laboratorio" && (isLaboratorio || isAdmin) && <LaboratorioModule />}
+          {activeSection === "laboratorio" && <LaboratorioModule />}
 
           {activeSection === "restaurante" && <RestauranteModule />}
         </div>
