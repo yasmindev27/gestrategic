@@ -25,6 +25,7 @@ import {
   UtensilsCrossed,
   Ambulance,
   FileText,
+  UserCog,
 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -47,7 +48,7 @@ const Sidebar = ({
 }: SidebarProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isTecnico, isRecepcao, isClassificacao, isNir, isFaturamento } = useUserRole();
+  const { role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isTecnico, isRecepcao, isClassificacao, isNir, isFaturamento, isRHDP } = useUserRole();
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -69,6 +70,7 @@ const Sidebar = ({
         { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" },
         { icon: Ambulance, label: "NIR", id: "nir" },
         { icon: FlaskConical, label: "Laboratório", id: "laboratorio" },
+        { icon: UserCog, label: "RH/DP", id: "rhdp" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
         { icon: Users, label: "Equipe", id: "equipe" },
         { icon: ScrollText, label: "Logs", id: "logs" },
@@ -157,6 +159,16 @@ const Sidebar = ({
     if (isLaboratorio) {
       items.push(
         { icon: FlaskConical, label: "Laboratório", id: "laboratorio" },
+        { icon: Calendar, label: "Agenda", id: "agenda" },
+      );
+      return items;
+    }
+
+    // RH/DP - Banco de Horas + Central de Atestados
+    if (isRHDP) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: UserCog, label: "RH/DP", id: "rhdp" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
       );
       return items;

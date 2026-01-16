@@ -107,6 +107,7 @@ const roleLabels: Record<AppRole, string> = {
   engenharia_clinica: "Engenharia Clínica",
   laboratorio: "Laboratório",
   restaurante: "Restaurante",
+  rh_dp: "RH/DP",
 };
 
 // Roles disponíveis para seleção (exclui "funcionario" que é o padrão)
@@ -127,6 +128,7 @@ const roleColors: Record<AppRole, string> = {
   engenharia_clinica: "bg-teal-500 text-white",
   laboratorio: "bg-pink-500 text-white",
   restaurante: "bg-amber-600 text-white",
+  rh_dp: "bg-indigo-500 text-white",
 };
 
 export const AdminModule = () => {

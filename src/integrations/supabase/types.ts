@@ -94,6 +94,69 @@ export type Database = {
         }
         Relationships: []
       }
+      atestados: {
+        Row: {
+          arquivo_url: string | null
+          cid: string | null
+          created_at: string
+          crm: string | null
+          data_fim: string
+          data_inicio: string
+          dias_afastamento: number
+          funcionario_nome: string
+          funcionario_user_id: string
+          id: string
+          medico_nome: string | null
+          observacao: string | null
+          registrado_por: string
+          status: string
+          tipo: string
+          updated_at: string
+          validado_em: string | null
+          validado_por: string | null
+        }
+        Insert: {
+          arquivo_url?: string | null
+          cid?: string | null
+          created_at?: string
+          crm?: string | null
+          data_fim: string
+          data_inicio: string
+          dias_afastamento: number
+          funcionario_nome: string
+          funcionario_user_id: string
+          id?: string
+          medico_nome?: string | null
+          observacao?: string | null
+          registrado_por: string
+          status?: string
+          tipo: string
+          updated_at?: string
+          validado_em?: string | null
+          validado_por?: string | null
+        }
+        Update: {
+          arquivo_url?: string | null
+          cid?: string | null
+          created_at?: string
+          crm?: string | null
+          data_fim?: string
+          data_inicio?: string
+          dias_afastamento?: number
+          funcionario_nome?: string
+          funcionario_user_id?: string
+          id?: string
+          medico_nome?: string | null
+          observacao?: string | null
+          registrado_por?: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+          validado_em?: string | null
+          validado_por?: string | null
+        }
+        Relationships: []
+      }
       avaliacoes_historico: {
         Row: {
           acao: string
@@ -242,6 +305,57 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      banco_horas: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          created_at: string
+          data: string
+          funcionario_nome: string
+          funcionario_user_id: string
+          horas: number
+          id: string
+          motivo: string | null
+          observacao: string | null
+          registrado_por: string
+          status: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          created_at?: string
+          data: string
+          funcionario_nome: string
+          funcionario_user_id: string
+          horas: number
+          id?: string
+          motivo?: string | null
+          observacao?: string | null
+          registrado_por: string
+          status?: string
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          created_at?: string
+          data?: string
+          funcionario_nome?: string
+          funcionario_user_id?: string
+          horas?: number
+          id?: string
+          motivo?: string | null
+          observacao?: string | null
+          registrado_por?: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       bed_records: {
         Row: {
