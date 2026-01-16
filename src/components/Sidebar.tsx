@@ -62,13 +62,12 @@ const Sidebar = ({
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
         { icon: Ambulance, label: "Mapa de Leitos", id: "mapa-leitos" },
-        { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
+        { icon: Receipt, label: "Faturamento", id: "faturamento" },
         { icon: ClipboardX, label: "Controle de Fichas", id: "controle-fichas" },
-        { icon: Receipt, label: "Prontuários", id: "prontuarios" },
         { icon: Monitor, label: "TI", id: "tecnico-ti" },
         { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao" },
         { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" },
-        { icon: Ambulance, label: "NIR", id: "tecnico-nir" },
+        { icon: Ambulance, label: "Dashboard NIR", id: "dashboard-nir" },
         { icon: FlaskConical, label: "Laboratório", id: "laboratorio" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
         { icon: Users, label: "Equipe", id: "equipe" },
@@ -92,7 +91,7 @@ const Sidebar = ({
     if (isRecepcao) {
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
+        { icon: Receipt, label: "Faturamento", id: "faturamento" },
         { icon: ClipboardX, label: "Controle de Fichas", id: "controle-fichas" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
       );
@@ -103,7 +102,7 @@ const Sidebar = ({
     if (isClassificacao) {
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
+        { icon: Receipt, label: "Faturamento", id: "faturamento" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
       );
       return items;
@@ -116,7 +115,7 @@ const Sidebar = ({
         { icon: Ambulance, label: "Mapa de Leitos", id: "mapa-leitos" },
         { icon: FileText, label: "SUS Fácil", id: "sus-facil" },
         { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
-        { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
+        { icon: Receipt, label: "Faturamento", id: "faturamento" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
       );
       return items;
@@ -126,8 +125,7 @@ const Sidebar = ({
     if (isFaturamento) {
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
-        { icon: Receipt, label: "Avaliar Prontuários", id: "prontuarios" },
+        { icon: Receipt, label: "Faturamento", id: "faturamento" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
       );
       return items;
