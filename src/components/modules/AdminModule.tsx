@@ -109,6 +109,11 @@ const roleLabels: Record<AppRole, string> = {
   restaurante: "Restaurante",
 };
 
+// Roles disponíveis para seleção (exclui "funcionario" que é o padrão)
+const selectableRoles = Object.entries(roleLabels).filter(
+  ([key]) => key !== "funcionario"
+) as [AppRole, string][];
+
 const roleColors: Record<AppRole, string> = {
   admin: "bg-destructive text-destructive-foreground",
   gestor: "bg-primary text-primary-foreground",
@@ -766,7 +771,7 @@ export const AdminModule = () => {
                   <SelectValue placeholder="Selecione o perfil" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.entries(roleLabels) as [AppRole, string][]).map(([value, label]) => (
+                  {selectableRoles.map(([value, label]) => (
                     <SelectItem key={value} value={value}>
                       {label}
                     </SelectItem>
@@ -937,7 +942,7 @@ export const AdminModule = () => {
                   <SelectValue placeholder="Selecione o perfil" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.entries(roleLabels) as [AppRole, string][]).map(([value, label]) => (
+                  {selectableRoles.map(([value, label]) => (
                     <SelectItem key={value} value={value}>
                       {label}
                     </SelectItem>
