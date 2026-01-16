@@ -1082,6 +1082,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
                           </TableCell>
                           <TableCell className="text-center bg-orange-50">{q.dietasCafe || "-"}</TableCell>
                           <TableCell className="text-center bg-orange-50">{q.dietasAlmoco || "-"}</TableCell>
+                          <TableCell className="text-center bg-orange-50">{q.dietasLanche || "-"}</TableCell>
                           <TableCell className="text-center bg-orange-50">{q.dietasJantar || "-"}</TableCell>
                           <TableCell className="text-center border-r bg-orange-100 font-semibold text-orange-800">
                             {q.totalDietas}
