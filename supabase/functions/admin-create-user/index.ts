@@ -53,19 +53,32 @@ serve(async (req) => {
       );
     }
 
-    const { email, password, full_name, cargo, setor, role } = await req.json();
+    const { email, password, full_name, cargo, setor, role, matricula } = await req.json();
 
-    if (!email || !password || !full_name) {
+    // Validar campos obrigatórios - precisa de email OU matrícula
+    if (!full_name) {
       return new Response(
-        JSON.stringify({ error: "Email, senha e nome completo são obrigatórios" }),
+        JSON.stringify({ error: "Nome completo é obrigatório" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    if (!email && !matricula) {
+      return new Response(
+        JSON.stringify({ error: "Email ou matrícula é obrigatório" }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Gerar email fictício se apenas matrícula foi fornecida
+    const userEmail = email || `${matricula}@interno.local`;
+    // Senha padrão é 123456
+    const userPassword = password || "123456";
+
     // Create user using admin client
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
-      email,
-      password,
+      email: userEmail,
+      password: userPassword,
       email_confirm: true,
       user_metadata: { full_name },
     });
@@ -77,7 +90,9 @@ serve(async (req) => {
       let errorMessage = createError.message;
       if (createError.message.includes("already been registered") || 
           (createError as any).code === "email_exists") {
-        errorMessage = "Este e-mail já está cadastrado no sistema";
+        errorMessage = email 
+          ? "Este e-mail já está cadastrado no sistema"
+          : "Esta matrícula já está cadastrada no sistema";
       }
       
       return new Response(
@@ -86,13 +101,16 @@ serve(async (req) => {
       );
     }
 
-    // Update profile with additional info
-    if (cargo || setor) {
-      await supabaseAdmin
-        .from("profiles")
-        .update({ cargo, setor })
-        .eq("user_id", newUser.user.id);
-    }
+    // Update profile with additional info (cargo, setor, matricula, e flag de troca de senha)
+    const profileUpdate: Record<string, unknown> = { deve_trocar_senha: true };
+    if (cargo) profileUpdate.cargo = cargo;
+    if (setor) profileUpdate.setor = setor;
+    if (matricula) profileUpdate.matricula = matricula;
+    
+    await supabaseAdmin
+      .from("profiles")
+      .update(profileUpdate)
+      .eq("user_id", newUser.user.id);
 
     // Update role if different from default
     if (role && role !== "funcionario") {
@@ -109,14 +127,15 @@ serve(async (req) => {
       modulo: "admin",
       detalhes: { 
         novo_usuario_id: newUser.user.id,
-        email,
+        email: email || null,
+        matricula: matricula || null,
         nome: full_name,
         role: role || "funcionario"
       },
     });
 
     return new Response(
-      JSON.stringify({ success: true, user: { id: newUser.user.id, email } }),
+      JSON.stringify({ success: true, user: { id: newUser.user.id, email: userEmail, matricula } }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (error) {
