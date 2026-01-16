@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,10 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Search, Clock, TrendingUp, TrendingDown, CheckCircle, XCircle, Filter } from "lucide-react";
+import { Plus, Search, Clock, TrendingUp, TrendingDown, Download, Upload, Filter } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import * as XLSX from "xlsx";
 
 interface BancoHora {
   id: string;
@@ -23,7 +24,6 @@ interface BancoHora {
   horas: number;
   motivo: string | null;
   observacao: string | null;
-  status: string;
   created_at: string;
 }
 
@@ -34,13 +34,16 @@ interface Profile {
 
 export const BancoHorasSection = () => {
   const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [registros, setRegistros] = useState<BancoHora[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("todos");
   const [filterTipo, setFilterTipo] = useState("todos");
+  const [filterDataInicio, setFilterDataInicio] = useState("");
+  const [filterDataFim, setFilterDataFim] = useState("");
 
   // Form state
   const [formData, setFormData] = useState({
@@ -144,7 +147,7 @@ export const BancoHorasSection = () => {
 
   const calcularSaldo = (funcionarioId: string) => {
     const registrosFuncionario = registros.filter(
-      r => r.funcionario_user_id === funcionarioId && r.status === "aprovado"
+      r => r.funcionario_user_id === funcionarioId
     );
     
     let saldo = 0;
@@ -161,29 +164,134 @@ export const BancoHorasSection = () => {
 
   const filteredRegistros = registros.filter(r => {
     const matchesSearch = r.funcionario_nome.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = filterStatus === "todos" || r.status === filterStatus;
     const matchesTipo = filterTipo === "todos" || r.tipo === filterTipo;
-    return matchesSearch && matchesStatus && matchesTipo;
+    const matchesDataInicio = !filterDataInicio || r.data >= filterDataInicio;
+    const matchesDataFim = !filterDataFim || r.data <= filterDataFim;
+    return matchesSearch && matchesTipo && matchesDataInicio && matchesDataFim;
   });
 
   const totalCreditos = registros
-    .filter(r => r.tipo === "credito" && r.status === "aprovado")
+    .filter(r => r.tipo === "credito")
     .reduce((sum, r) => sum + Number(r.horas), 0);
 
   const totalDebitos = registros
-    .filter(r => r.tipo === "debito" && r.status === "aprovado")
+    .filter(r => r.tipo === "debito")
     .reduce((sum, r) => sum + Number(r.horas), 0);
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "aprovado":
-        return <Badge className="bg-green-500">Aprovado</Badge>;
-      case "pendente":
-        return <Badge variant="secondary">Pendente</Badge>;
-      case "rejeitado":
-        return <Badge variant="destructive">Rejeitado</Badge>;
-      default:
-        return <Badge>{status}</Badge>;
+  // Exportar para Excel
+  const handleExport = () => {
+    const dataToExport = filteredRegistros.map(r => ({
+      "Colaborador": r.funcionario_nome,
+      "Data": format(new Date(r.data), "dd/MM/yyyy"),
+      "Tipo": r.tipo === "credito" ? "Crédito" : "Débito",
+      "Horas": Number(r.horas).toFixed(1),
+      "Motivo": r.motivo || "",
+      "Observação": r.observacao || "",
+      "Saldo Atual": calcularSaldo(r.funcionario_user_id).toFixed(1) + "h",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(dataToExport);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Banco de Horas");
+    XLSX.writeFile(wb, `banco_horas_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+
+    toast({
+      title: "Exportado",
+      description: "Planilha exportada com sucesso.",
+    });
+  };
+
+  // Importar do Excel
+  const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      try {
+        const data = new Uint8Array(event.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: "array" });
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        const jsonData = XLSX.utils.sheet_to_json(worksheet) as Record<string, unknown>[];
+
+        let importados = 0;
+        let erros = 0;
+
+        for (const row of jsonData) {
+          const colaboradorNome = String(row["Colaborador"] || row["colaborador"] || "");
+          const profile = profiles.find(p => 
+            p.full_name.toLowerCase() === colaboradorNome.toLowerCase()
+          );
+
+          if (!profile) {
+            erros++;
+            continue;
+          }
+
+          const tipoRaw = String(row["Tipo"] || row["tipo"] || "").toLowerCase();
+          const tipo = tipoRaw.includes("créd") || tipoRaw.includes("cred") ? "credito" : "debito";
+
+          let dataValue = row["Data"] || row["data"];
+          let dataFormatted: string;
+          
+          if (typeof dataValue === "number") {
+            // Excel date serial number
+            const date = XLSX.SSF.parse_date_code(dataValue);
+            dataFormatted = `${date.y}-${String(date.m).padStart(2, "0")}-${String(date.d).padStart(2, "0")}`;
+          } else {
+            const dateStr = String(dataValue);
+            const parts = dateStr.split("/");
+            if (parts.length === 3) {
+              dataFormatted = `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+            } else {
+              dataFormatted = dateStr;
+            }
+          }
+
+          const horas = parseFloat(String(row["Horas"] || row["horas"] || "0").replace(",", "."));
+
+          const { error } = await supabase.from("banco_horas").insert({
+            funcionario_user_id: profile.user_id,
+            funcionario_nome: profile.full_name,
+            data: dataFormatted,
+            tipo,
+            horas,
+            motivo: String(row["Motivo"] || row["motivo"] || "") || null,
+            observacao: String(row["Observação"] || row["observacao"] || row["Observacao"] || "") || null,
+            registrado_por: user.id,
+            status: "aprovado",
+          });
+
+          if (error) {
+            erros++;
+          } else {
+            importados++;
+          }
+        }
+
+        toast({
+          title: "Importação concluída",
+          description: `${importados} registros importados. ${erros > 0 ? `${erros} erros.` : ""}`,
+        });
+
+        loadData();
+      } catch (error) {
+        console.error("Erro na importação:", error);
+        toast({
+          title: "Erro",
+          description: "Erro ao processar a planilha.",
+          variant: "destructive",
+        });
+      }
+    };
+
+    reader.readAsArrayBuffer(file);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
@@ -225,147 +333,204 @@ export const BancoHorasSection = () => {
       </div>
 
       {/* Barra de ações */}
-      <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-        <div className="flex flex-1 gap-4 flex-wrap">
-          <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar colaborador..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-wrap gap-2 items-center justify-between">
+          <div className="flex gap-2 flex-wrap">
+            <div className="relative min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar colaborador..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              <Filter className="h-4 w-4 mr-2" />
+              Filtros
+            </Button>
           </div>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos Status</SelectItem>
-              <SelectItem value="aprovado">Aprovado</SelectItem>
-              <SelectItem value="pendente">Pendente</SelectItem>
-              <SelectItem value="rejeitado">Rejeitado</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filterTipo} onValueChange={setFilterTipo}>
-            <SelectTrigger className="w-[150px]">
-              <SelectValue placeholder="Tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos Tipos</SelectItem>
-              <SelectItem value="credito">Crédito</SelectItem>
-              <SelectItem value="debito">Débito</SelectItem>
-            </SelectContent>
-          </Select>
+
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar
+            </Button>
+            
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImport}
+              accept=".xlsx,.xls"
+              className="hidden"
+            />
+            <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+              <Upload className="h-4 w-4 mr-2" />
+              Importar
+            </Button>
+
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Novo Registro
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Novo Registro de Horas</DialogTitle>
+                  <DialogDescription>
+                    Registre crédito ou débito de horas para um colaborador.
+                  </DialogDescription>
+                </DialogHeader>
+
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="funcionario">Colaborador</Label>
+                    <Select
+                      value={formData.funcionario_user_id}
+                      onValueChange={(value) => setFormData({ ...formData, funcionario_user_id: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Selecione o colaborador" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {profiles.map((profile) => (
+                          <SelectItem key={profile.user_id} value={profile.user_id}>
+                            {profile.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="data">Data</Label>
+                      <Input
+                        id="data"
+                        type="date"
+                        value={formData.data}
+                        onChange={(e) => setFormData({ ...formData, data: e.target.value })}
+                        required
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="tipo">Tipo</Label>
+                      <Select
+                        value={formData.tipo}
+                        onValueChange={(value) => setFormData({ ...formData, tipo: value })}
+                      >
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="credito">Crédito (+)</SelectItem>
+                          <SelectItem value="debito">Débito (-)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="horas">Horas</Label>
+                    <Input
+                      id="horas"
+                      type="number"
+                      step="0.5"
+                      min="0.5"
+                      value={formData.horas}
+                      onChange={(e) => setFormData({ ...formData, horas: e.target.value })}
+                      placeholder="Ex: 2.5"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="motivo">Motivo</Label>
+                    <Input
+                      id="motivo"
+                      value={formData.motivo}
+                      onChange={(e) => setFormData({ ...formData, motivo: e.target.value })}
+                      placeholder="Hora extra, compensação, etc."
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="observacao">Observação</Label>
+                    <Textarea
+                      id="observacao"
+                      value={formData.observacao}
+                      onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
+                      placeholder="Observações adicionais..."
+                    />
+                  </div>
+
+                  <DialogFooter>
+                    <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                      Cancelar
+                    </Button>
+                    <Button type="submit">Salvar</Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
         </div>
 
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Registro
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Novo Registro de Horas</DialogTitle>
-              <DialogDescription>
-                Registre crédito ou débito de horas para um colaborador.
-              </DialogDescription>
-            </DialogHeader>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="funcionario">Colaborador</Label>
-                <Select
-                  value={formData.funcionario_user_id}
-                  onValueChange={(value) => setFormData({ ...formData, funcionario_user_id: value })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o colaborador" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {profiles.map((profile) => (
-                      <SelectItem key={profile.user_id} value={profile.user_id}>
-                        {profile.full_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="data">Data</Label>
-                  <Input
-                    id="data"
-                    type="date"
-                    value={formData.data}
-                    onChange={(e) => setFormData({ ...formData, data: e.target.value })}
-                    required
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="tipo">Tipo</Label>
-                  <Select
-                    value={formData.tipo}
-                    onValueChange={(value) => setFormData({ ...formData, tipo: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="credito">Crédito (+)</SelectItem>
-                      <SelectItem value="debito">Débito (-)</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="horas">Horas</Label>
-                <Input
-                  id="horas"
-                  type="number"
-                  step="0.5"
-                  min="0.5"
-                  value={formData.horas}
-                  onChange={(e) => setFormData({ ...formData, horas: e.target.value })}
-                  placeholder="Ex: 2.5"
-                  required
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="motivo">Motivo</Label>
-                <Input
-                  id="motivo"
-                  value={formData.motivo}
-                  onChange={(e) => setFormData({ ...formData, motivo: e.target.value })}
-                  placeholder="Hora extra, compensação, etc."
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="observacao">Observação</Label>
-                <Textarea
-                  id="observacao"
-                  value={formData.observacao}
-                  onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
-                  placeholder="Observações adicionais..."
-                />
-              </div>
-
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit">Salvar</Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>
+        {/* Filtros expandidos */}
+        {showFilters && (
+          <div className="flex flex-wrap gap-4 p-4 bg-secondary/30 rounded-lg">
+            <div className="space-y-1">
+              <Label className="text-xs">Tipo</Label>
+              <Select value={filterTipo} onValueChange={setFilterTipo}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos Tipos</SelectItem>
+                  <SelectItem value="credito">Crédito</SelectItem>
+                  <SelectItem value="debito">Débito</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Data Início</Label>
+              <Input
+                type="date"
+                value={filterDataInicio}
+                onChange={(e) => setFilterDataInicio(e.target.value)}
+                className="w-[150px]"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Data Fim</Label>
+              <Input
+                type="date"
+                value={filterDataFim}
+                onChange={(e) => setFilterDataFim(e.target.value)}
+                className="w-[150px]"
+              />
+            </div>
+            <div className="flex items-end">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setFilterTipo("todos");
+                  setFilterDataInicio("");
+                  setFilterDataFim("");
+                }}
+              >
+                Limpar filtros
+              </Button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tabela */}
@@ -378,20 +543,19 @@ export const BancoHorasSection = () => {
               <TableHead>Tipo</TableHead>
               <TableHead>Horas</TableHead>
               <TableHead>Motivo</TableHead>
-              <TableHead>Status</TableHead>
               <TableHead>Saldo Atual</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8">
+                <TableCell colSpan={6} className="text-center py-8">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
                 </TableCell>
               </TableRow>
             ) : filteredRegistros.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                   Nenhum registro encontrado.
                 </TableCell>
               </TableRow>
@@ -416,7 +580,6 @@ export const BancoHorasSection = () => {
                     {registro.tipo === "credito" ? "+" : "-"}{Number(registro.horas).toFixed(1)}h
                   </TableCell>
                   <TableCell>{registro.motivo || "-"}</TableCell>
-                  <TableCell>{getStatusBadge(registro.status)}</TableCell>
                   <TableCell className="font-medium">
                     {calcularSaldo(registro.funcionario_user_id).toFixed(1)}h
                   </TableCell>
