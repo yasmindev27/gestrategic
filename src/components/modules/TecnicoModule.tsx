@@ -18,11 +18,19 @@ const setorLabels: Record<string, string> = {
 };
 
 export const TecnicoModule = ({ setor }: TecnicoModuleProps) => {
-  const { role, isAdmin } = useUserRole();
+  const { role, isAdmin, isLoading } = useUserRole();
   const [activeTab, setActiveTab] = useState("chamados");
   
   // Técnicos só podem acessar seu próprio setor ou se for admin
   const hasAccess = isAdmin || role === setor;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!hasAccess) {
     return (

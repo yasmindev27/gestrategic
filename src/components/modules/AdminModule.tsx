@@ -130,7 +130,7 @@ const roleColors: Record<AppRole, string> = {
 };
 
 export const AdminModule = () => {
-  const { isAdmin } = useUserRole();
+  const { isAdmin, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
   const { toast } = useToast();
   
@@ -512,6 +512,14 @@ export const AdminModule = () => {
     u => u.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
          (u.cargo?.toLowerCase() || "").includes(searchTerm.toLowerCase())
   );
+
+  if (isLoadingRole) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   if (!isAdmin) {
     return (

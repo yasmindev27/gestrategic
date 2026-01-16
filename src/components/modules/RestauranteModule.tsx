@@ -156,7 +156,7 @@ const statusColors: Record<string, string> = {
 
 export const RestauranteModule = () => {
   const { toast } = useToast();
-  const { isAdmin, hasRole, userId } = useUserRole();
+  const { isAdmin, hasRole, userId, isLoading: isLoadingRole } = useUserRole();
   const isRestaurante = hasRole("restaurante");
   const canManage = isAdmin || isRestaurante;
 
@@ -211,9 +211,12 @@ export const RestauranteModule = () => {
   const [solicitacoesPeriodo, setSolicitacoesPeriodo] = useState<"todos" | "dia" | "semana" | "mes">("todos");
 
   useEffect(() => {
-    fetchData();
+    // Só busca dados quando o role terminou de carregar
+    if (!isLoadingRole) {
+      fetchData();
+    }
     fetchUserName();
-  }, [cardapioView]);
+  }, [cardapioView, canManage, isLoadingRole]);
 
   const fetchUserName = async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -780,6 +783,15 @@ export const RestauranteModule = () => {
       description: "Arquivo PDF exportado com sucesso.",
     });
   };
+
+  // Mostrar loading enquanto verifica roles
+  if (isLoadingRole) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
