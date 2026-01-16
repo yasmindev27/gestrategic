@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { 
   Ambulance, 
   Bed, 
@@ -13,7 +13,10 @@ import {
   FileSpreadsheet,
   FileText,
   Clock,
-  Filter
+  Filter,
+  RefreshCw,
+  AlertTriangle,
+  CheckCircle
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +28,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameDay } from 'date-fns';
@@ -71,6 +75,13 @@ interface SectorOccupancy {
   rate: number;
 }
 
+interface SusFacilStats {
+  entradasPendentes: number;
+  saidasPendentes: number;
+  efetivadosHoje: number;
+  urgentes: number;
+}
+
 const COLORS = ['hsl(142, 70%, 40%)', 'hsl(210, 65%, 45%)', 'hsl(38, 90%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(280, 60%, 50%)'];
 
 type DatePreset = 'today' | 'week' | 'month' | 'custom';
@@ -79,6 +90,7 @@ export const NirDashboardModule = () => {
   const { isAdmin, isNir, isLoading: isLoadingRole } = useUserRole();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [datePreset, setDatePreset] = useState<DatePreset>('today');
   const [startDate, setStartDate] = useState<Date>(new Date());
   const [endDate, setEndDate] = useState<Date>(new Date());
@@ -92,14 +104,79 @@ export const NirDashboardModule = () => {
   const [sectorOccupancy, setSectorOccupancy] = useState<SectorOccupancy[]>([]);
   const [todayAdmissions, setTodayAdmissions] = useState(0);
   const [todayDischarges, setTodayDischarges] = useState(0);
+  const [susFacilStats, setSusFacilStats] = useState<SusFacilStats>({
+    entradasPendentes: 0,
+    saidasPendentes: 0,
+    efetivadosHoje: 0,
+    urgentes: 0
+  });
 
   const hasAccess = isAdmin || isNir;
 
+  const loadDashboardData = useCallback(async () => {
+    if (!hasAccess) return;
+    
+    setIsLoading(true);
+    try {
+      await Promise.all([
+        loadBedData(),
+        loadSusFacilData()
+      ]);
+      setLastUpdate(new Date());
+    } catch (error) {
+      console.error('Error loading dashboard data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [hasAccess, startDate, endDate]);
+
+  // Initial load and date change effect
   useEffect(() => {
     if (!hasAccess || isLoadingRole) return;
-    
     loadDashboardData();
-  }, [hasAccess, isLoadingRole, startDate, endDate]);
+  }, [hasAccess, isLoadingRole, loadDashboardData]);
+
+  // Real-time subscription for bed_records
+  useEffect(() => {
+    if (!hasAccess || isLoadingRole) return;
+
+    const bedChannel = supabase
+      .channel('bed-records-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bed_records'
+        },
+        () => {
+          console.log('Bed records updated - refreshing dashboard');
+          loadDashboardData();
+        }
+      )
+      .subscribe();
+
+    const susFacilChannel = supabase
+      .channel('sus-facil-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'regulacao_sus_facil'
+        },
+        () => {
+          console.log('SUS Fácil updated - refreshing dashboard');
+          loadDashboardData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(bedChannel);
+      supabase.removeChannel(susFacilChannel);
+    };
+  }, [hasAccess, isLoadingRole, loadDashboardData]);
 
   const handleDatePresetChange = (preset: DatePreset) => {
     setDatePreset(preset);
@@ -124,104 +201,121 @@ export const NirDashboardModule = () => {
     }
   };
 
-  const loadDashboardData = async () => {
-    setIsLoading(true);
-    try {
-      const today = new Date().toISOString().split('T')[0];
+  const loadBedData = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Load bed records for today
+    const { data: bedRecords, error: bedError } = await supabase
+      .from('bed_records')
+      .select('bed_id, sector, patient_name, data_alta, data_internacao')
+      .eq('shift_date', today);
+
+    if (bedError) throw bedError;
+
+    // Calculate total beds from SECTORS config
+    let totalBeds = 0;
+    SECTORS.forEach(sector => {
+      totalBeds += sector.beds.length;
+    });
+
+    // Calculate occupied beds
+    const occupiedBeds = bedRecords?.filter(r => r.patient_name && !r.data_alta).length || 0;
+    const availableBeds = totalBeds - occupiedBeds;
+    const occupancyRate = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
+
+    setOccupancyStats({
+      totalBeds,
+      occupiedBeds,
+      availableBeds,
+      occupancyRate
+    });
+
+    // Calculate sector occupancy
+    const sectorStats: SectorOccupancy[] = SECTORS.map(sector => {
+      const sectorBeds = sector.beds.length;
+      const sectorOccupied = bedRecords?.filter(
+        r => r.sector === sector.id && r.patient_name && !r.data_alta
+      ).length || 0;
       
-      // Load bed records for today
-      const { data: bedRecords, error: bedError } = await supabase
-        .from('bed_records')
-        .select('bed_id, sector, patient_name, data_alta, data_internacao')
-        .eq('shift_date', today);
+      return {
+        name: sector.name,
+        occupied: sectorOccupied,
+        total: sectorBeds,
+        rate: sectorBeds > 0 ? Math.round((sectorOccupied / sectorBeds) * 100) : 0
+      };
+    });
+    setSectorOccupancy(sectorStats);
 
-      if (bedError) throw bedError;
+    // Calculate today's admissions and discharges based on selected date range
+    const startDateStr = format(startDate, 'yyyy-MM-dd');
+    const endDateStr = format(endDate, 'yyyy-MM-dd');
+    
+    const todayAdm = bedRecords?.filter(r => {
+      if (!r.data_internacao) return false;
+      return r.data_internacao >= startDateStr && r.data_internacao <= endDateStr;
+    }).length || 0;
+    
+    const todayDis = bedRecords?.filter(r => {
+      if (!r.data_alta) return false;
+      const altaDate = r.data_alta.split('T')[0];
+      return altaDate >= startDateStr && altaDate <= endDateStr;
+    }).length || 0;
+    
+    setTodayAdmissions(todayAdm);
+    setTodayDischarges(todayDis);
 
-      // Calculate total beds from SECTORS config
-      let totalBeds = 0;
-      SECTORS.forEach(sector => {
-        totalBeds += sector.beds.length;
-      });
+    // Load daily statistics for the selected period or last 7 days
+    const daysToShow = isSameDay(startDate, endDate) ? 7 : Math.min(30, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    const baseDate = isSameDay(startDate, endDate) ? new Date() : endDate;
+    
+    const dateRange = Array.from({ length: daysToShow }, (_, i) => {
+      const date = subDays(baseDate, daysToShow - 1 - i);
+      return format(date, 'yyyy-MM-dd');
+    });
 
-      // Calculate occupied beds
-      const occupiedBeds = bedRecords?.filter(r => r.patient_name && !r.data_alta).length || 0;
-      const availableBeds = totalBeds - occupiedBeds;
-      const occupancyRate = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
+    const { data: dailyData, error: dailyError } = await supabase
+      .from('daily_statistics')
+      .select('date, admissions, discharges, total_patients')
+      .in('date', dateRange)
+      .order('date', { ascending: true });
 
-      setOccupancyStats({
-        totalBeds,
-        occupiedBeds,
-        availableBeds,
-        occupancyRate
-      });
+    if (dailyError) throw dailyError;
 
-      // Calculate sector occupancy
-      const sectorStats: SectorOccupancy[] = SECTORS.map(sector => {
-        const sectorBeds = sector.beds.length;
-        const sectorOccupied = bedRecords?.filter(
-          r => r.sector === sector.id && r.patient_name && !r.data_alta
-        ).length || 0;
-        
-        return {
-          name: sector.name,
-          occupied: sectorOccupied,
-          total: sectorBeds,
-          rate: sectorBeds > 0 ? Math.round((sectorOccupied / sectorBeds) * 100) : 0
-        };
-      });
-      setSectorOccupancy(sectorStats);
+    const stats: DailyStats[] = dateRange.map(date => {
+      const dayData = dailyData?.find(d => d.date === date);
+      return {
+        date: format(new Date(date), 'dd/MM', { locale: ptBR }),
+        admissions: dayData?.admissions || 0,
+        discharges: dayData?.discharges || 0,
+        total: dayData?.total_patients || 0
+      };
+    });
+    setDailyStats(stats);
+  };
 
-      // Calculate today's admissions and discharges based on selected date range
-      const startDateStr = format(startDate, 'yyyy-MM-dd');
-      const endDateStr = format(endDate, 'yyyy-MM-dd');
-      
-      const todayAdm = bedRecords?.filter(r => {
-        if (!r.data_internacao) return false;
-        return r.data_internacao >= startDateStr && r.data_internacao <= endDateStr;
-      }).length || 0;
-      
-      const todayDis = bedRecords?.filter(r => {
-        if (!r.data_alta) return false;
-        const altaDate = r.data_alta.split('T')[0];
-        return altaDate >= startDateStr && altaDate <= endDateStr;
-      }).length || 0;
-      
-      setTodayAdmissions(todayAdm);
-      setTodayDischarges(todayDis);
+  const loadSusFacilData = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { data: susFacilData, error: susFacilError } = await supabase
+      .from('regulacao_sus_facil')
+      .select('tipo, status, prioridade, data_resposta');
 
-      // Load daily statistics for the selected period or last 7 days
-      const daysToShow = isSameDay(startDate, endDate) ? 7 : Math.min(30, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
-      const baseDate = isSameDay(startDate, endDate) ? new Date() : endDate;
-      
-      const dateRange = Array.from({ length: daysToShow }, (_, i) => {
-        const date = subDays(baseDate, daysToShow - 1 - i);
-        return format(date, 'yyyy-MM-dd');
-      });
+    if (susFacilError) throw susFacilError;
 
-      const { data: dailyData, error: dailyError } = await supabase
-        .from('daily_statistics')
-        .select('date, admissions, discharges, total_patients')
-        .in('date', dateRange)
-        .order('date', { ascending: true });
+    const entradasPendentes = susFacilData?.filter(s => s.tipo === 'entrada' && s.status === 'pendente').length || 0;
+    const saidasPendentes = susFacilData?.filter(s => s.tipo === 'saida' && s.status === 'pendente').length || 0;
+    const efetivadosHoje = susFacilData?.filter(s => 
+      s.status === 'efetivada' && 
+      s.data_resposta?.startsWith(today)
+    ).length || 0;
+    const urgentes = susFacilData?.filter(s => s.prioridade === 'urgente' && s.status === 'pendente').length || 0;
 
-      if (dailyError) throw dailyError;
-
-      const stats: DailyStats[] = dateRange.map(date => {
-        const dayData = dailyData?.find(d => d.date === date);
-        return {
-          date: format(new Date(date), 'dd/MM', { locale: ptBR }),
-          admissions: dayData?.admissions || 0,
-          discharges: dayData?.discharges || 0,
-          total: dayData?.total_patients || 0
-        };
-      });
-      setDailyStats(stats);
-
-    } catch (error) {
-      console.error('Error loading dashboard data:', error);
-    } finally {
-      setIsLoading(false);
-    }
+    setSusFacilStats({
+      entradasPendentes,
+      saidasPendentes,
+      efetivadosHoje,
+      urgentes
+    });
   };
 
   const exportToCSV = () => {
@@ -378,12 +472,33 @@ export const NirDashboardModule = () => {
             <Ambulance className="h-6 w-6 text-primary" />
             Dashboard de Regulação - NIR
           </h2>
-          <p className="text-muted-foreground">
-            Núcleo Interno de Regulação - Gestão de Fluxo Hospitalar
-          </p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-muted-foreground">
+              Núcleo Interno de Regulação - Gestão de Fluxo Hospitalar
+            </p>
+            <Badge variant="outline" className="gap-1 text-xs">
+              <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              Tempo real
+            </Badge>
+            <span className="text-xs text-muted-foreground">
+              Atualizado: {format(lastUpdate, 'HH:mm:ss', { locale: ptBR })}
+            </span>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {/* Refresh Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadDashboardData}
+            disabled={isLoading}
+            className="gap-2"
+          >
+            <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+            Atualizar
+          </Button>
+
           {/* Date Preset Buttons */}
           <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
             <Button
@@ -466,7 +581,66 @@ export const NirDashboardModule = () => {
         </div>
       ) : (
         <>
-          {/* KPI Cards */}
+          {/* SUS Fácil KPIs */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <Card className="border-l-4 border-l-success">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-success/10">
+                    <ArrowDownRight className="h-5 w-5 text-success" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Entradas Pendentes</p>
+                    <p className="text-2xl font-bold">{susFacilStats.entradasPendentes}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-info">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-info/10">
+                    <ArrowUpRight className="h-5 w-5 text-info" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Saídas Pendentes</p>
+                    <p className="text-2xl font-bold">{susFacilStats.saidasPendentes}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-primary">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-primary/10">
+                    <CheckCircle className="h-5 w-5 text-primary" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Efetivadas Hoje</p>
+                    <p className="text-2xl font-bold">{susFacilStats.efetivadosHoje}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-warning">
+              <CardContent className="pt-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 rounded-lg bg-warning/10">
+                    <AlertTriangle className="h-5 w-5 text-warning" />
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Urgentes</p>
+                    <p className="text-2xl font-bold">{susFacilStats.urgentes}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Bed KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
               <CardContent className="pt-6">
