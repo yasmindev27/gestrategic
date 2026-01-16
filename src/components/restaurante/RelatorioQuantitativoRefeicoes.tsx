@@ -18,6 +18,7 @@ import {
   Sun,
   Cookie,
   Moon,
+  Clock,
   FileSpreadsheet,
   FileDown,
   Filter,
@@ -73,6 +74,7 @@ interface DailyQuantitativo {
   almoco: number;
   lanche: number;
   jantar: number;
+  foraHorario: number;
   totalRefeicoes: number;
   dietasCafe: number;
   dietasAlmoco: number;
@@ -88,6 +90,7 @@ const tipoRefeicaoLabels: Record<string, { label: string; icon: React.ReactNode;
   almoco: { label: "Almoço", icon: <Sun className="h-4 w-4" />, color: "bg-orange-500" },
   lanche: { label: "Lanche", icon: <Cookie className="h-4 w-4" />, color: "bg-pink-500" },
   jantar: { label: "Jantar", icon: <Moon className="h-4 w-4" />, color: "bg-indigo-500" },
+  fora_horario: { label: "Fora Horário", icon: <Clock className="h-4 w-4" />, color: "bg-gray-500" },
 };
 
 export const RelatorioQuantitativoRefeicoes = () => {
@@ -207,6 +210,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
       const almoco = refeicoesNoDia.filter(r => r.tipo_refeicao === "almoco").length;
       const lanche = refeicoesNoDia.filter(r => r.tipo_refeicao === "lanche").length;
       const jantar = refeicoesNoDia.filter(r => r.tipo_refeicao === "jantar").length;
+      const foraHorario = refeicoesNoDia.filter(r => r.tipo_refeicao === "fora_horario").length;
 
       // Contar dietas ativas no dia para cada refeição
       const dietasAtivasNoDia = dietas.filter(d => {
@@ -233,7 +237,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
         if (horarios.includes("jantar")) dietasJantar += multiplicador;
       });
 
-      const totalRefeicoes = cafe + almoco + lanche + jantar;
+      const totalRefeicoes = cafe + almoco + lanche + jantar + foraHorario;
       const totalDietas = dietasCafe + dietasAlmoco + dietasLanche + dietasJantar;
       const totalGeral = totalRefeicoes + totalDietas;
 
@@ -247,6 +251,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
         almoco,
         lanche,
         jantar,
+        foraHorario,
         totalRefeicoes,
         dietasCafe,
         dietasAlmoco,
@@ -374,6 +379,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
     almoco: quantitativos.reduce((acc, q) => acc + q.almoco, 0),
     lanche: quantitativos.reduce((acc, q) => acc + q.lanche, 0),
     jantar: quantitativos.reduce((acc, q) => acc + q.jantar, 0),
+    foraHorario: quantitativos.reduce((acc, q) => acc + q.foraHorario, 0),
     totalRefeicoes: quantitativos.reduce((acc, q) => acc + q.totalRefeicoes, 0),
     dietasCafe: quantitativos.reduce((acc, q) => acc + q.dietasCafe, 0),
     dietasAlmoco: quantitativos.reduce((acc, q) => acc + q.dietasAlmoco, 0),
@@ -405,6 +411,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
       "Almoço (Totem)": q.almoco,
       "Lanche (Totem)": q.lanche,
       "Jantar (Totem)": q.jantar,
+      "Fora Horário (Totem)": q.foraHorario,
       "Total Totem": q.totalRefeicoes,
       "Café (Dietas)": q.dietasCafe,
       "Almoço (Dietas)": q.dietasAlmoco,
@@ -423,6 +430,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
       "Almoço (Totem)": totaisGerais.almoco,
       "Lanche (Totem)": totaisGerais.lanche,
       "Jantar (Totem)": totaisGerais.jantar,
+      "Fora Horário (Totem)": totaisGerais.foraHorario,
       "Total Totem": totaisGerais.totalRefeicoes,
       "Café (Dietas)": totaisGerais.dietasCafe,
       "Almoço (Dietas)": totaisGerais.dietasAlmoco,
@@ -863,7 +871,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
               </div>
 
               {/* KPIs Resumo Geral */}
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
                 <div className="p-4 bg-amber-50 rounded-lg border-l-4 border-amber-500">
                   <div className="flex items-center gap-2 mb-1">
                     <Coffee className="h-4 w-4 text-amber-600" />
@@ -912,6 +920,20 @@ export const RelatorioQuantitativoRefeicoes = () => {
                     Totem: {totaisGerais.jantar} | Dietas: {totaisGerais.dietasJantar}
                   </p>
                 </div>
+                {totaisGerais.foraHorario > 0 && (
+                  <div className="p-4 bg-gray-50 rounded-lg border-l-4 border-gray-500">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Clock className="h-4 w-4 text-gray-600" />
+                      <p className="text-sm text-muted-foreground">Fora Horário</p>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-700">
+                      {totaisGerais.foraHorario}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Totem: {totaisGerais.foraHorario}
+                    </p>
+                  </div>
+                )}
                 <div className="p-4 bg-primary/10 rounded-lg border-l-4 border-primary">
                   <div className="flex items-center gap-2 mb-1">
                     <TrendingUp className="h-4 w-4 text-primary" />
@@ -938,7 +960,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead rowSpan={2} className="border-r bg-muted">Data</TableHead>
-                        <TableHead colSpan={6} className="text-center border-r bg-blue-500 text-white">
+                        <TableHead colSpan={7} className="text-center border-r bg-blue-500 text-white">
                           🖥️ Totem (Colaboradores/Visitantes)
                         </TableHead>
                         <TableHead colSpan={5} className="text-center border-r bg-orange-500 text-white">
@@ -977,6 +999,12 @@ export const RelatorioQuantitativoRefeicoes = () => {
                           <div className="flex items-center justify-center gap-1">
                             <Moon className="h-3 w-3" />
                             Jantar
+                          </div>
+                        </TableHead>
+                        <TableHead className="text-center bg-gray-200 text-gray-800">
+                          <div className="flex items-center justify-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            Fora Hr.
                           </div>
                         </TableHead>
                         <TableHead className="text-center border-r bg-blue-200 text-blue-900 font-semibold">Subtotal</TableHead>
@@ -1048,12 +1076,12 @@ export const RelatorioQuantitativoRefeicoes = () => {
                           <TableCell className="text-center bg-blue-50">{q.almoco || "-"}</TableCell>
                           <TableCell className="text-center bg-blue-50">{q.lanche || "-"}</TableCell>
                           <TableCell className="text-center bg-blue-50">{q.jantar || "-"}</TableCell>
+                          <TableCell className="text-center bg-gray-100">{q.foraHorario || "-"}</TableCell>
                           <TableCell className="text-center border-r bg-blue-100 font-semibold text-blue-800">
                             {q.totalRefeicoes}
                           </TableCell>
                           <TableCell className="text-center bg-orange-50">{q.dietasCafe || "-"}</TableCell>
                           <TableCell className="text-center bg-orange-50">{q.dietasAlmoco || "-"}</TableCell>
-                          <TableCell className="text-center bg-orange-50">{q.dietasLanche || "-"}</TableCell>
                           <TableCell className="text-center bg-orange-50">{q.dietasJantar || "-"}</TableCell>
                           <TableCell className="text-center border-r bg-orange-100 font-semibold text-orange-800">
                             {q.totalDietas}
@@ -1073,6 +1101,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
                         <TableCell className="text-center bg-blue-100 text-blue-800">{totaisGerais.almoco}</TableCell>
                         <TableCell className="text-center bg-blue-100 text-blue-800">{totaisGerais.lanche}</TableCell>
                         <TableCell className="text-center bg-blue-100 text-blue-800">{totaisGerais.jantar}</TableCell>
+                        <TableCell className="text-center bg-gray-200 text-gray-800">{totaisGerais.foraHorario}</TableCell>
                         <TableCell className="text-center border-r bg-blue-500 text-white">
                           {totaisGerais.totalRefeicoes}
                         </TableCell>
