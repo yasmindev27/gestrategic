@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { Activity, Loader2 } from 'lucide-react';
+import { Ambulance, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useBeds } from '@/hooks/useBeds';
@@ -129,7 +129,7 @@ export const MapaLeitosModule = () => {
       <Card className="border-destructive">
         <CardContent className="pt-6">
           <div className="flex items-center gap-2 text-destructive">
-            <Activity className="h-5 w-5" />
+            <Ambulance className="h-5 w-5" />
             <span>Você não tem permissão para acessar o Mapa de Leitos.</span>
           </div>
         </CardContent>
@@ -144,11 +144,11 @@ export const MapaLeitosModule = () => {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            <Activity className="h-6 w-6 text-primary" />
+            <Ambulance className="h-6 w-6 text-primary" />
             Mapa de Leitos
           </h2>
           <p className="text-muted-foreground">
-            Sistema de Gestão de Ocupação Hospitalar
+            Sistema de Gestão de Ocupação Hospitalar - NIR
           </p>
         </div>
         <div className="flex items-center gap-2">

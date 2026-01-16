@@ -73,6 +73,16 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
+        hospital: {
+          green: {
+            DEFAULT: "hsl(var(--hospital-green))",
+            light: "hsl(var(--hospital-green-light))",
+          },
+          amber: {
+            DEFAULT: "hsl(var(--hospital-amber))",
+            light: "hsl(var(--hospital-amber-light))",
+          },
+        },
       },
       borderRadius: {
         lg: "var(--radius)",
