@@ -28,12 +28,22 @@ import {
   Clock,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 interface Colaborador {
   user_id: string;
   full_name: string;
   setor: string | null;
   cargo: string | null;
+}
+
+interface Cardapio {
+  id: string;
+  data: string;
+  tipo_refeicao: string;
+  descricao: string;
+  observacoes: string | null;
 }
 
 type TipoRefeicao = "cafe" | "almoco" | "lanche" | "jantar" | "fora_horario";
@@ -136,22 +146,52 @@ const TotemRefeicoes = () => {
   // Tipos de refeição disponíveis para seleção (exclui fora_horario)
   const tiposRefeicaoDisponiveis: TipoRefeicao[] = ["cafe", "almoco", "lanche", "jantar"];
 
-  // Buscar colaboradores
+  // Cardápio do dia
+  const [cardapioDoDia, setCardapioDoDia] = useState<Cardapio | null>(null);
+
+  // Mapeamento do tipo de refeição para o campo do cardápio
+  const tipoRefeicaoToCardapio: Record<TipoRefeicao, string> = {
+    cafe: "cafe",
+    almoco: "almoco",
+    lanche: "lanche",
+    jantar: "jantar",
+    fora_horario: "",
+  };
+
+  // Buscar colaboradores e cardápio do dia
   useEffect(() => {
-    const fetchColaboradores = async () => {
+    const fetchData = async () => {
       try {
-        const { data, error } = await supabase
+        // Buscar colaboradores
+        const { data: colaboradoresData, error: colaboradoresError } = await supabase
           .from("profiles")
           .select("user_id, full_name, setor, cargo")
           .order("full_name");
         
-        if (error) throw error;
-        setColaboradores(data || []);
+        if (colaboradoresError) throw colaboradoresError;
+        setColaboradores(colaboradoresData || []);
+
+        // Buscar cardápio do dia para a refeição atual
+        const hoje = format(new Date(), "yyyy-MM-dd");
+        const tipoCardapio = tipoRefeicaoToCardapio[tipoRefeicaoAtual];
+        
+        if (tipoCardapio) {
+          const { data: cardapioData, error: cardapioError } = await supabase
+            .from("cardapios")
+            .select("*")
+            .eq("data", hoje)
+            .eq("tipo_refeicao", tipoCardapio)
+            .maybeSingle();
+          
+          if (!cardapioError && cardapioData) {
+            setCardapioDoDia(cardapioData);
+          }
+        }
       } catch (error) {
-        console.error("Erro ao buscar colaboradores:", error);
+        console.error("Erro ao buscar dados:", error);
         toast({
           title: "Erro",
-          description: "Não foi possível carregar a lista de colaboradores.",
+          description: "Não foi possível carregar os dados.",
           variant: "destructive",
         });
       } finally {
@@ -159,8 +199,8 @@ const TotemRefeicoes = () => {
       }
     };
     
-    fetchColaboradores();
-  }, [toast]);
+    fetchData();
+  }, [toast, tipoRefeicaoAtual]);
 
   // Filtrar colaboradores pela busca
   const colaboradoresFiltrados = colaboradores.filter(c =>
@@ -411,6 +451,35 @@ const TotemRefeicoes = () => {
               </div>
             </Card>
           </div>
+        )}
+
+        {/* Cardápio do dia */}
+        {cardapioDoDia && tipoRefeicaoAtual !== "fora_horario" && (
+          <Card className="mb-4 border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5">
+            <CardContent className="p-4">
+              <div className="flex items-start gap-3">
+                <div className={`p-2 rounded-lg ${tipoRefeicaoInfo[tipoRefeicaoAtual].cor}`}>
+                  {tipoRefeicaoInfo[tipoRefeicaoAtual].icon}
+                </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className="font-semibold text-lg">
+                      Cardápio de Hoje - {tipoRefeicaoInfo[tipoRefeicaoAtual].label}
+                    </h3>
+                    <Badge variant="outline" className="text-xs">
+                      {format(new Date(), "dd 'de' MMMM", { locale: ptBR })}
+                    </Badge>
+                  </div>
+                  <p className="text-foreground text-base leading-relaxed">{cardapioDoDia.descricao}</p>
+                  {cardapioDoDia.observacoes && (
+                    <p className="text-sm text-muted-foreground mt-2 italic">
+                      {cardapioDoDia.observacoes}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* Campo de busca */}
