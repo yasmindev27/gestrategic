@@ -146,8 +146,9 @@ const TotemRefeicoes = () => {
   // Tipos de refeição disponíveis para seleção (exclui fora_horario)
   const tiposRefeicaoDisponiveis: TipoRefeicao[] = ["cafe", "almoco", "lanche", "jantar"];
 
-  // Cardápio do dia
+  // Cardápio do dia (único ou múltiplos para fora de horário)
   const [cardapioDoDia, setCardapioDoDia] = useState<Cardapio | null>(null);
+  const [cardapiosDoDia, setCardapiosDoDia] = useState<Cardapio[]>([]);
 
   // Mapeamento do tipo de refeição para o campo do cardápio
   const tipoRefeicaoToCardapio: Record<TipoRefeicao, string> = {
@@ -171,21 +172,38 @@ const TotemRefeicoes = () => {
         if (colaboradoresError) throw colaboradoresError;
         setColaboradores(colaboradoresData || []);
 
-        // Buscar cardápio do dia para a refeição atual
+        // Buscar cardápio do dia
         const hoje = format(new Date(), "yyyy-MM-dd");
-        const tipoCardapio = tipoRefeicaoToCardapio[tipoRefeicaoAtual];
         
-        if (tipoCardapio) {
-          const { data: cardapioData, error: cardapioError } = await supabase
+        if (tipoRefeicaoAtual === "fora_horario") {
+          // Fora de horário: buscar todos os cardápios do dia
+          const { data: cardapiosData, error: cardapiosError } = await supabase
             .from("cardapios")
             .select("*")
             .eq("data", hoje)
-            .eq("tipo_refeicao", tipoCardapio)
-            .maybeSingle();
+            .order("tipo_refeicao");
           
-          if (!cardapioError && cardapioData) {
-            setCardapioDoDia(cardapioData);
+          if (!cardapiosError && cardapiosData) {
+            setCardapiosDoDia(cardapiosData);
           }
+          setCardapioDoDia(null);
+        } else {
+          // Horário normal: buscar apenas o cardápio da refeição atual
+          const tipoCardapio = tipoRefeicaoToCardapio[tipoRefeicaoAtual];
+          
+          if (tipoCardapio) {
+            const { data: cardapioData, error: cardapioError } = await supabase
+              .from("cardapios")
+              .select("*")
+              .eq("data", hoje)
+              .eq("tipo_refeicao", tipoCardapio)
+              .maybeSingle();
+            
+            if (!cardapioError && cardapioData) {
+              setCardapioDoDia(cardapioData);
+            }
+          }
+          setCardapiosDoDia([]);
         }
       } catch (error) {
         console.error("Erro ao buscar dados:", error);
@@ -453,7 +471,7 @@ const TotemRefeicoes = () => {
           </div>
         )}
 
-        {/* Cardápio do dia */}
+        {/* Cardápio do dia - Refeição atual */}
         {cardapioDoDia && tipoRefeicaoAtual !== "fora_horario" && (
           <Card className="mb-4 border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5">
             <CardContent className="p-4">
@@ -477,6 +495,44 @@ const TotemRefeicoes = () => {
                     </p>
                   )}
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Cardápios do dia - Fora de horário (mostra todos) */}
+        {tipoRefeicaoAtual === "fora_horario" && cardapiosDoDia.length > 0 && (
+          <Card className="mb-4 border-2 border-primary/20 bg-gradient-to-r from-primary/5 to-secondary/5">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-4">
+                <h3 className="font-semibold text-lg">Cardápios de Hoje</h3>
+                <Badge variant="outline" className="text-xs">
+                  {format(new Date(), "dd 'de' MMMM", { locale: ptBR })}
+                </Badge>
+              </div>
+              <div className="grid gap-3">
+                {cardapiosDoDia.map((cardapio) => {
+                  const tipo = cardapio.tipo_refeicao as TipoRefeicao;
+                  const info = tipoRefeicaoInfo[tipo] || tipoRefeicaoInfo.cafe;
+                  return (
+                    <div key={cardapio.id} className="flex items-start gap-3 p-3 bg-background/50 rounded-lg">
+                      <div className={`p-2 rounded-lg ${info.cor}`}>
+                        {info.icon}
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-medium text-sm text-muted-foreground mb-1">
+                          {info.label}
+                        </h4>
+                        <p className="text-foreground text-base leading-relaxed">{cardapio.descricao}</p>
+                        {cardapio.observacoes && (
+                          <p className="text-sm text-muted-foreground mt-1 italic">
+                            {cardapio.observacoes}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
