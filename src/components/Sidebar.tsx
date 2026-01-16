@@ -59,6 +59,7 @@ const Sidebar = ({
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
+        { icon: Activity, label: "Mapa de Leitos", id: "mapa-leitos" },
         { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
         { icon: ClipboardX, label: "Controle de Fichas", id: "controle-fichas" },
         { icon: Receipt, label: "Prontuários", id: "prontuarios" },
@@ -106,10 +107,11 @@ const Sidebar = ({
       return items;
     }
 
-    // NIR - Lista saída prontuários (validar registros) + Chamados NIR
+    // NIR - Mapa de Leitos + Chamados + Saída Prontuários
     if (isNir) {
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: Activity, label: "Mapa de Leitos", id: "mapa-leitos" },
         { icon: Ticket, label: "Chamados NIR", id: "tecnico-nir" },
         { icon: FileOutput, label: "Saída Prontuários", id: "faturamento" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
