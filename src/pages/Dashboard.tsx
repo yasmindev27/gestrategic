@@ -6,8 +6,7 @@ import Sidebar from "@/components/Sidebar";
 import GreetingHeader from "@/components/GreetingHeader";
 import DashboardPersonalizado from "@/components/dashboard/DashboardPersonalizado";
 import TeamSection from "@/components/TeamSection";
-import { FaturamentoModule } from "@/components/modules/FaturamentoModule";
-import { SaidaProntuariosModule } from "@/components/modules/SaidaProntuariosModule";
+import { FaturamentoUnificadoModule } from "@/components/modules/FaturamentoUnificadoModule";
 import { ControleFichasModule } from "@/components/modules/ControleFichasModule";
 import { AdminModule } from "@/components/modules/AdminModule";
 import { TecnicoModule } from "@/components/modules/TecnicoModule";
@@ -27,7 +26,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState("dashboard");
+  const [activeSection, setActiveSection] = useState("");
   const { isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isNir, isLoading: isLoadingRole } = useUserRole();
 
   useEffect(() => {
@@ -58,7 +57,18 @@ const Dashboard = () => {
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  if (isLoading || isLoadingRole) {
+  // Define a seção inicial com base no perfil do usuário
+  useEffect(() => {
+    if (!isLoadingRole && activeSection === "") {
+      if (isNir) {
+        setActiveSection("dashboard-nir");
+      } else {
+        setActiveSection("dashboard");
+      }
+    }
+  }, [isLoadingRole, isNir, activeSection]);
+
+  if (isLoading || isLoadingRole || activeSection === "") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -82,11 +92,9 @@ const Dashboard = () => {
 
           {activeSection === "abrir-chamado" && <AbrirChamadoModule />}
 
-          {activeSection === "faturamento" && <SaidaProntuariosModule />}
+          {activeSection === "faturamento" && <FaturamentoUnificadoModule />}
 
           {activeSection === "controle-fichas" && <ControleFichasModule />}
-
-          {activeSection === "prontuarios" && <FaturamentoModule />}
 
           {activeSection === "equipe" && <TeamSection />}
 
