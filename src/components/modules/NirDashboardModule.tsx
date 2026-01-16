@@ -3,21 +3,37 @@ import {
   Ambulance, 
   Bed, 
   Users, 
-  TrendingUp, 
-  TrendingDown,
-  Clock,
+  TrendingUp,
   ArrowUpRight,
   ArrowDownRight,
   Activity,
   CalendarDays,
-  Loader2
+  Loader2,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Clock,
+  Filter
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
-import { format, subDays, differenceInDays } from 'date-fns';
+import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { SECTORS } from '@/types/bed';
+import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import {
   BarChart,
   Bar,
@@ -57,9 +73,15 @@ interface SectorOccupancy {
 
 const COLORS = ['hsl(142, 70%, 40%)', 'hsl(210, 65%, 45%)', 'hsl(38, 90%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(280, 60%, 50%)'];
 
+type DatePreset = 'today' | 'week' | 'month' | 'custom';
+
 export const NirDashboardModule = () => {
   const { isAdmin, isNir, isLoading: isLoadingRole } = useUserRole();
+  const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(true);
+  const [datePreset, setDatePreset] = useState<DatePreset>('today');
+  const [startDate, setStartDate] = useState<Date>(new Date());
+  const [endDate, setEndDate] = useState<Date>(new Date());
   const [occupancyStats, setOccupancyStats] = useState<OccupancyStats>({
     totalBeds: 0,
     occupiedBeds: 0,
@@ -77,7 +99,30 @@ export const NirDashboardModule = () => {
     if (!hasAccess || isLoadingRole) return;
     
     loadDashboardData();
-  }, [hasAccess, isLoadingRole]);
+  }, [hasAccess, isLoadingRole, startDate, endDate]);
+
+  const handleDatePresetChange = (preset: DatePreset) => {
+    setDatePreset(preset);
+    const today = new Date();
+    
+    switch (preset) {
+      case 'today':
+        setStartDate(today);
+        setEndDate(today);
+        break;
+      case 'week':
+        setStartDate(startOfWeek(today, { locale: ptBR }));
+        setEndDate(endOfWeek(today, { locale: ptBR }));
+        break;
+      case 'month':
+        setStartDate(startOfMonth(today));
+        setEndDate(endOfMonth(today));
+        break;
+      case 'custom':
+        // Keep current dates for custom
+        break;
+    }
+  };
 
   const loadDashboardData = async () => {
     setIsLoading(true);
@@ -126,27 +171,42 @@ export const NirDashboardModule = () => {
       });
       setSectorOccupancy(sectorStats);
 
-      // Calculate today's admissions and discharges
-      const todayAdm = bedRecords?.filter(r => r.data_internacao === today).length || 0;
-      const todayDis = bedRecords?.filter(r => r.data_alta?.startsWith(today)).length || 0;
+      // Calculate today's admissions and discharges based on selected date range
+      const startDateStr = format(startDate, 'yyyy-MM-dd');
+      const endDateStr = format(endDate, 'yyyy-MM-dd');
+      
+      const todayAdm = bedRecords?.filter(r => {
+        if (!r.data_internacao) return false;
+        return r.data_internacao >= startDateStr && r.data_internacao <= endDateStr;
+      }).length || 0;
+      
+      const todayDis = bedRecords?.filter(r => {
+        if (!r.data_alta) return false;
+        const altaDate = r.data_alta.split('T')[0];
+        return altaDate >= startDateStr && altaDate <= endDateStr;
+      }).length || 0;
+      
       setTodayAdmissions(todayAdm);
       setTodayDischarges(todayDis);
 
-      // Load daily statistics for the last 7 days
-      const last7Days = Array.from({ length: 7 }, (_, i) => {
-        const date = subDays(new Date(), 6 - i);
+      // Load daily statistics for the selected period or last 7 days
+      const daysToShow = isSameDay(startDate, endDate) ? 7 : Math.min(30, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+      const baseDate = isSameDay(startDate, endDate) ? new Date() : endDate;
+      
+      const dateRange = Array.from({ length: daysToShow }, (_, i) => {
+        const date = subDays(baseDate, daysToShow - 1 - i);
         return format(date, 'yyyy-MM-dd');
       });
 
       const { data: dailyData, error: dailyError } = await supabase
         .from('daily_statistics')
         .select('date, admissions, discharges, total_patients')
-        .in('date', last7Days)
+        .in('date', dateRange)
         .order('date', { ascending: true });
 
       if (dailyError) throw dailyError;
 
-      const stats: DailyStats[] = last7Days.map(date => {
+      const stats: DailyStats[] = dateRange.map(date => {
         const dayData = dailyData?.find(d => d.date === date);
         return {
           date: format(new Date(date), 'dd/MM', { locale: ptBR }),
@@ -161,6 +221,118 @@ export const NirDashboardModule = () => {
       console.error('Error loading dashboard data:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const exportToCSV = () => {
+    try {
+      const headers = ['Setor', 'Ocupados', 'Total', 'Disponíveis', 'Taxa (%)', 'Status'];
+      const rows = sectorOccupancy.map(sector => [
+        sector.name,
+        sector.occupied.toString(),
+        sector.total.toString(),
+        (sector.total - sector.occupied).toString(),
+        sector.rate.toString(),
+        sector.rate >= 90 ? 'Crítico' : sector.rate >= 70 ? 'Atenção' : 'Normal'
+      ]);
+
+      const csvContent = [
+        `Relatório NIR - ${format(startDate, 'dd/MM/yyyy', { locale: ptBR })}${!isSameDay(startDate, endDate) ? ` a ${format(endDate, 'dd/MM/yyyy', { locale: ptBR })}` : ''}`,
+        '',
+        `Total de Leitos: ${occupancyStats.totalBeds}`,
+        `Leitos Ocupados: ${occupancyStats.occupiedBeds}`,
+        `Leitos Disponíveis: ${occupancyStats.availableBeds}`,
+        `Taxa de Ocupação: ${occupancyStats.occupancyRate}%`,
+        `Internações no período: ${todayAdmissions}`,
+        `Altas no período: ${todayDischarges}`,
+        '',
+        headers.join(','),
+        ...rows.map(row => row.join(','))
+      ].join('\n');
+
+      const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `relatorio-nir-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      link.click();
+
+      toast({
+        title: "Exportado!",
+        description: "Relatório CSV exportado com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao exportar CSV.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const exportToPDF = () => {
+    try {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+
+      // Header
+      doc.setFontSize(18);
+      doc.text('Relatório NIR - Dashboard de Regulação', pageWidth / 2, 20, { align: 'center' });
+      
+      doc.setFontSize(12);
+      const dateText = isSameDay(startDate, endDate) 
+        ? format(startDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
+        : `${format(startDate, 'dd/MM/yyyy', { locale: ptBR })} a ${format(endDate, 'dd/MM/yyyy', { locale: ptBR })}`;
+      doc.text(dateText, pageWidth / 2, 28, { align: 'center' });
+
+      // KPIs
+      doc.setFontSize(14);
+      doc.text('Indicadores Gerais', 14, 45);
+      
+      doc.setFontSize(11);
+      doc.text(`Total de Leitos: ${occupancyStats.totalBeds}`, 14, 55);
+      doc.text(`Leitos Ocupados: ${occupancyStats.occupiedBeds}`, 14, 62);
+      doc.text(`Leitos Disponíveis: ${occupancyStats.availableBeds}`, 14, 69);
+      doc.text(`Taxa de Ocupação: ${occupancyStats.occupancyRate}%`, 14, 76);
+      doc.text(`Internações no período: ${todayAdmissions}`, 105, 55);
+      doc.text(`Altas no período: ${todayDischarges}`, 105, 62);
+
+      // Table
+      doc.setFontSize(14);
+      doc.text('Ocupação por Setor', 14, 92);
+
+      autoTable(doc, {
+        startY: 98,
+        head: [['Setor', 'Ocupados', 'Total', 'Disponíveis', 'Taxa (%)', 'Status']],
+        body: sectorOccupancy.map(sector => [
+          sector.name,
+          sector.occupied,
+          sector.total,
+          sector.total - sector.occupied,
+          `${sector.rate}%`,
+          sector.rate >= 90 ? 'Crítico' : sector.rate >= 70 ? 'Atenção' : 'Normal'
+        ]),
+        theme: 'striped',
+        headStyles: { fillColor: [41, 128, 185] },
+      });
+
+      // Footer
+      const finalY = (doc as any).lastAutoTable.finalY || 150;
+      doc.setFontSize(9);
+      doc.setTextColor(128);
+      doc.text(`Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`, 14, finalY + 15);
+
+      doc.save(`relatorio-nir-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+
+      toast({
+        title: "Exportado!",
+        description: "Relatório PDF exportado com sucesso.",
+      });
+    } catch (error) {
+      toast({
+        title: "Erro",
+        description: "Erro ao exportar PDF.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -199,15 +371,93 @@ export const NirDashboardModule = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Ambulance className="h-6 w-6 text-primary" />
-          Dashboard de Regulação - NIR
-        </h2>
-        <p className="text-muted-foreground">
-          Núcleo Interno de Regulação - Gestão de Fluxo Hospitalar
-        </p>
+      {/* Header with Filters and Export */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Ambulance className="h-6 w-6 text-primary" />
+            Dashboard de Regulação - NIR
+          </h2>
+          <p className="text-muted-foreground">
+            Núcleo Interno de Regulação - Gestão de Fluxo Hospitalar
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Date Preset Buttons */}
+          <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
+            <Button
+              variant={datePreset === 'today' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => handleDatePresetChange('today')}
+            >
+              Hoje
+            </Button>
+            <Button
+              variant={datePreset === 'week' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => handleDatePresetChange('week')}
+            >
+              Semana
+            </Button>
+            <Button
+              variant={datePreset === 'month' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => handleDatePresetChange('month')}
+            >
+              Mês
+            </Button>
+          </div>
+
+          {/* Custom Date Picker */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Filter className="h-4 w-4" />
+                {isSameDay(startDate, endDate) 
+                  ? format(startDate, 'dd/MM/yyyy', { locale: ptBR })
+                  : `${format(startDate, 'dd/MM', { locale: ptBR })} - ${format(endDate, 'dd/MM', { locale: ptBR })}`
+                }
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="end">
+              <Calendar
+                mode="range"
+                selected={{ from: startDate, to: endDate }}
+                onSelect={(range) => {
+                  if (range?.from) {
+                    setStartDate(range.from);
+                    setEndDate(range.to || range.from);
+                    setDatePreset('custom');
+                  }
+                }}
+                initialFocus
+                locale={ptBR}
+                className={cn("p-3 pointer-events-auto")}
+              />
+            </PopoverContent>
+          </Popover>
+
+          {/* Export Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-2">
+                <Download className="h-4 w-4" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={exportToCSV} className="gap-2">
+                <FileSpreadsheet className="h-4 w-4" />
+                Exportar CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={exportToPDF} className="gap-2">
+                <FileText className="h-4 w-4" />
+                Exportar PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
       {isLoading ? (
@@ -285,7 +535,7 @@ export const NirDashboardModule = () => {
                   <div>
                     <p className="text-sm text-muted-foreground flex items-center gap-2">
                       <CalendarDays className="h-4 w-4" />
-                      Internações Hoje
+                      Internações {datePreset === 'today' ? 'Hoje' : 'no Período'}
                     </p>
                     <p className="text-4xl font-bold text-success">{todayAdmissions}</p>
                   </div>
@@ -302,7 +552,7 @@ export const NirDashboardModule = () => {
                   <div>
                     <p className="text-sm text-muted-foreground flex items-center gap-2">
                       <CalendarDays className="h-4 w-4" />
-                      Altas Hoje
+                      Altas {datePreset === 'today' ? 'Hoje' : 'no Período'}
                     </p>
                     <p className="text-4xl font-bold text-info">{todayDischarges}</p>
                   </div>
