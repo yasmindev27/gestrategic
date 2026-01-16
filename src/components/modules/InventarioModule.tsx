@@ -54,7 +54,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface InventarioModuleProps {
-  setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'laboratorio';
+  setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'laboratorio' | 'nir';
 }
 
 interface Produto {
@@ -90,6 +90,7 @@ const setorLabels: Record<string, string> = {
   manutencao: "Manutenção",
   engenharia_clinica: "Engenharia Clínica",
   laboratorio: "Laboratório",
+  nir: "NIR",
 };
 
 export const InventarioModule = ({ setor }: InventarioModuleProps) => {

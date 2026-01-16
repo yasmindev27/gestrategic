@@ -59,6 +59,7 @@ export const setorLabels: Record<string, string> = {
   ti: "TI",
   manutencao: "Manutenção",
   engenharia_clinica: "Engenharia Clínica",
+  nir: "NIR",
 };
 
 export const prioridadeColors: Record<string, string> = {

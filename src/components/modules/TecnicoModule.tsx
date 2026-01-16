@@ -8,13 +8,14 @@ import { ChamadosModule } from "./ChamadosModule";
 import { InventarioModule } from "./InventarioModule";
 
 interface TecnicoModuleProps {
-  setor: 'ti' | 'manutencao' | 'engenharia_clinica';
+  setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'nir';
 }
 
 const setorLabels: Record<string, string> = {
   ti: "TI",
   manutencao: "Manutenção",
   engenharia_clinica: "Engenharia Clínica",
+  nir: "NIR",
 };
 
 export const TecnicoModule = ({ setor }: TecnicoModuleProps) => {
