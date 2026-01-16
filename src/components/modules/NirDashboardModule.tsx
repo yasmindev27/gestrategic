@@ -113,6 +113,117 @@ export const NirDashboardModule = () => {
 
   const hasAccess = isAdmin || isNir;
 
+  const loadBedData = useCallback(async () => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { data: bedRecords, error: bedError } = await supabase
+      .from('bed_records')
+      .select('bed_id, sector, patient_name, data_alta, data_internacao')
+      .eq('shift_date', today);
+
+    if (bedError) throw bedError;
+
+    let totalBeds = 0;
+    SECTORS.forEach(sector => {
+      totalBeds += sector.beds.length;
+    });
+
+    const occupiedBeds = bedRecords?.filter(r => r.patient_name && !r.data_alta).length || 0;
+    const availableBeds = totalBeds - occupiedBeds;
+    const occupancyRate = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
+
+    setOccupancyStats({
+      totalBeds,
+      occupiedBeds,
+      availableBeds,
+      occupancyRate
+    });
+
+    const sectorStats: SectorOccupancy[] = SECTORS.map(sector => {
+      const sectorBeds = sector.beds.length;
+      const sectorOccupied = bedRecords?.filter(
+        r => r.sector === sector.id && r.patient_name && !r.data_alta
+      ).length || 0;
+      
+      return {
+        name: sector.name,
+        occupied: sectorOccupied,
+        total: sectorBeds,
+        rate: sectorBeds > 0 ? Math.round((sectorOccupied / sectorBeds) * 100) : 0
+      };
+    });
+    setSectorOccupancy(sectorStats);
+
+    const startDateStr = format(startDate, 'yyyy-MM-dd');
+    const endDateStr = format(endDate, 'yyyy-MM-dd');
+    
+    const todayAdm = bedRecords?.filter(r => {
+      if (!r.data_internacao) return false;
+      return r.data_internacao >= startDateStr && r.data_internacao <= endDateStr;
+    }).length || 0;
+    
+    const todayDis = bedRecords?.filter(r => {
+      if (!r.data_alta) return false;
+      const altaDate = r.data_alta.split('T')[0];
+      return altaDate >= startDateStr && altaDate <= endDateStr;
+    }).length || 0;
+    
+    setTodayAdmissions(todayAdm);
+    setTodayDischarges(todayDis);
+
+    const daysToShow = isSameDay(startDate, endDate) ? 7 : Math.min(30, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
+    const baseDate = isSameDay(startDate, endDate) ? new Date() : endDate;
+    
+    const dateRange = Array.from({ length: daysToShow }, (_, i) => {
+      const date = subDays(baseDate, daysToShow - 1 - i);
+      return format(date, 'yyyy-MM-dd');
+    });
+
+    const { data: dailyData, error: dailyError } = await supabase
+      .from('daily_statistics')
+      .select('date, admissions, discharges, total_patients')
+      .in('date', dateRange)
+      .order('date', { ascending: true });
+
+    if (dailyError) throw dailyError;
+
+    const stats: DailyStats[] = dateRange.map(date => {
+      const dayData = dailyData?.find(d => d.date === date);
+      return {
+        date: format(new Date(date), 'dd/MM', { locale: ptBR }),
+        admissions: dayData?.admissions || 0,
+        discharges: dayData?.discharges || 0,
+        total: dayData?.total_patients || 0
+      };
+    });
+    setDailyStats(stats);
+  }, [startDate, endDate]);
+
+  const loadSusFacilData = useCallback(async () => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    const { data: susFacilData, error: susFacilError } = await supabase
+      .from('regulacao_sus_facil')
+      .select('tipo, status, prioridade, data_resposta');
+
+    if (susFacilError) throw susFacilError;
+
+    const entradasPendentes = susFacilData?.filter(s => s.tipo === 'entrada' && s.status === 'pendente').length || 0;
+    const saidasPendentes = susFacilData?.filter(s => s.tipo === 'saida' && s.status === 'pendente').length || 0;
+    const efetivadosHoje = susFacilData?.filter(s => 
+      s.status === 'efetivada' && 
+      s.data_resposta?.startsWith(today)
+    ).length || 0;
+    const urgentes = susFacilData?.filter(s => s.prioridade === 'urgente' && s.status === 'pendente').length || 0;
+
+    setSusFacilStats({
+      entradasPendentes,
+      saidasPendentes,
+      efetivadosHoje,
+      urgentes
+    });
+  }, []);
+
   const loadDashboardData = useCallback(async () => {
     if (!hasAccess) return;
     
@@ -128,15 +239,13 @@ export const NirDashboardModule = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [hasAccess, startDate, endDate]);
+  }, [hasAccess, loadBedData, loadSusFacilData]);
 
-  // Initial load and date change effect
   useEffect(() => {
     if (!hasAccess || isLoadingRole) return;
     loadDashboardData();
   }, [hasAccess, isLoadingRole, loadDashboardData]);
 
-  // Real-time subscription for bed_records
   useEffect(() => {
     if (!hasAccess || isLoadingRole) return;
 
@@ -196,126 +305,8 @@ export const NirDashboardModule = () => {
         setEndDate(endOfMonth(today));
         break;
       case 'custom':
-        // Keep current dates for custom
         break;
     }
-  };
-
-  const loadBedData = async () => {
-    const today = new Date().toISOString().split('T')[0];
-    
-    // Load bed records for today
-    const { data: bedRecords, error: bedError } = await supabase
-      .from('bed_records')
-      .select('bed_id, sector, patient_name, data_alta, data_internacao')
-      .eq('shift_date', today);
-
-    if (bedError) throw bedError;
-
-    // Calculate total beds from SECTORS config
-    let totalBeds = 0;
-    SECTORS.forEach(sector => {
-      totalBeds += sector.beds.length;
-    });
-
-    // Calculate occupied beds
-    const occupiedBeds = bedRecords?.filter(r => r.patient_name && !r.data_alta).length || 0;
-    const availableBeds = totalBeds - occupiedBeds;
-    const occupancyRate = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
-
-    setOccupancyStats({
-      totalBeds,
-      occupiedBeds,
-      availableBeds,
-      occupancyRate
-    });
-
-    // Calculate sector occupancy
-    const sectorStats: SectorOccupancy[] = SECTORS.map(sector => {
-      const sectorBeds = sector.beds.length;
-      const sectorOccupied = bedRecords?.filter(
-        r => r.sector === sector.id && r.patient_name && !r.data_alta
-      ).length || 0;
-      
-      return {
-        name: sector.name,
-        occupied: sectorOccupied,
-        total: sectorBeds,
-        rate: sectorBeds > 0 ? Math.round((sectorOccupied / sectorBeds) * 100) : 0
-      };
-    });
-    setSectorOccupancy(sectorStats);
-
-    // Calculate today's admissions and discharges based on selected date range
-    const startDateStr = format(startDate, 'yyyy-MM-dd');
-    const endDateStr = format(endDate, 'yyyy-MM-dd');
-    
-    const todayAdm = bedRecords?.filter(r => {
-      if (!r.data_internacao) return false;
-      return r.data_internacao >= startDateStr && r.data_internacao <= endDateStr;
-    }).length || 0;
-    
-    const todayDis = bedRecords?.filter(r => {
-      if (!r.data_alta) return false;
-      const altaDate = r.data_alta.split('T')[0];
-      return altaDate >= startDateStr && altaDate <= endDateStr;
-    }).length || 0;
-    
-    setTodayAdmissions(todayAdm);
-    setTodayDischarges(todayDis);
-
-    // Load daily statistics for the selected period or last 7 days
-    const daysToShow = isSameDay(startDate, endDate) ? 7 : Math.min(30, Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1);
-    const baseDate = isSameDay(startDate, endDate) ? new Date() : endDate;
-    
-    const dateRange = Array.from({ length: daysToShow }, (_, i) => {
-      const date = subDays(baseDate, daysToShow - 1 - i);
-      return format(date, 'yyyy-MM-dd');
-    });
-
-    const { data: dailyData, error: dailyError } = await supabase
-      .from('daily_statistics')
-      .select('date, admissions, discharges, total_patients')
-      .in('date', dateRange)
-      .order('date', { ascending: true });
-
-    if (dailyError) throw dailyError;
-
-    const stats: DailyStats[] = dateRange.map(date => {
-      const dayData = dailyData?.find(d => d.date === date);
-      return {
-        date: format(new Date(date), 'dd/MM', { locale: ptBR }),
-        admissions: dayData?.admissions || 0,
-        discharges: dayData?.discharges || 0,
-        total: dayData?.total_patients || 0
-      };
-    });
-    setDailyStats(stats);
-  };
-
-  const loadSusFacilData = async () => {
-    const today = new Date().toISOString().split('T')[0];
-    
-    const { data: susFacilData, error: susFacilError } = await supabase
-      .from('regulacao_sus_facil')
-      .select('tipo, status, prioridade, data_resposta');
-
-    if (susFacilError) throw susFacilError;
-
-    const entradasPendentes = susFacilData?.filter(s => s.tipo === 'entrada' && s.status === 'pendente').length || 0;
-    const saidasPendentes = susFacilData?.filter(s => s.tipo === 'saida' && s.status === 'pendente').length || 0;
-    const efetivadosHoje = susFacilData?.filter(s => 
-      s.status === 'efetivada' && 
-      s.data_resposta?.startsWith(today)
-    ).length || 0;
-    const urgentes = susFacilData?.filter(s => s.prioridade === 'urgente' && s.status === 'pendente').length || 0;
-
-    setSusFacilStats({
-      entradasPendentes,
-      saidasPendentes,
-      efetivadosHoje,
-      urgentes
-    });
   };
 
   const exportToCSV = () => {
@@ -368,7 +359,6 @@ export const NirDashboardModule = () => {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
 
-      // Header
       doc.setFontSize(18);
       doc.text('Relatório NIR - Dashboard de Regulação', pageWidth / 2, 20, { align: 'center' });
       
@@ -378,7 +368,6 @@ export const NirDashboardModule = () => {
         : `${format(startDate, 'dd/MM/yyyy', { locale: ptBR })} a ${format(endDate, 'dd/MM/yyyy', { locale: ptBR })}`;
       doc.text(dateText, pageWidth / 2, 28, { align: 'center' });
 
-      // KPIs
       doc.setFontSize(14);
       doc.text('Indicadores Gerais', 14, 45);
       
@@ -390,7 +379,6 @@ export const NirDashboardModule = () => {
       doc.text(`Internações no período: ${todayAdmissions}`, 105, 55);
       doc.text(`Altas no período: ${todayDischarges}`, 105, 62);
 
-      // Table
       doc.setFontSize(14);
       doc.text('Ocupação por Setor', 14, 92);
 
@@ -409,7 +397,6 @@ export const NirDashboardModule = () => {
         headStyles: { fillColor: [41, 128, 185] },
       });
 
-      // Footer
       const finalY = (doc as any).lastAutoTable.finalY || 150;
       doc.setFontSize(9);
       doc.setTextColor(128);
@@ -465,7 +452,6 @@ export const NirDashboardModule = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Filters and Export */}
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
           <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
@@ -477,7 +463,7 @@ export const NirDashboardModule = () => {
               Núcleo Interno de Regulação - Gestão de Fluxo Hospitalar
             </p>
             <Badge variant="outline" className="gap-1 text-xs">
-              <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
               Tempo real
             </Badge>
             <span className="text-xs text-muted-foreground">
@@ -487,7 +473,6 @@ export const NirDashboardModule = () => {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          {/* Refresh Button */}
           <Button
             variant="outline"
             size="sm"
@@ -499,7 +484,6 @@ export const NirDashboardModule = () => {
             Atualizar
           </Button>
 
-          {/* Date Preset Buttons */}
           <div className="flex items-center gap-1 p-1 bg-muted rounded-lg">
             <Button
               variant={datePreset === 'today' ? 'default' : 'ghost'}
@@ -524,7 +508,6 @@ export const NirDashboardModule = () => {
             </Button>
           </div>
 
-          {/* Custom Date Picker */}
           <Popover>
             <PopoverTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
@@ -553,7 +536,6 @@ export const NirDashboardModule = () => {
             </PopoverContent>
           </Popover>
 
-          {/* Export Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
@@ -581,13 +563,12 @@ export const NirDashboardModule = () => {
         </div>
       ) : (
         <>
-          {/* SUS Fácil KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Card className="border-l-4 border-l-success">
+            <Card className="border-l-4 border-l-green-500">
               <CardContent className="pt-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-success/10">
-                    <ArrowDownRight className="h-5 w-5 text-success" />
+                  <div className="p-2 rounded-lg bg-green-500/10">
+                    <ArrowDownRight className="h-5 w-5 text-green-500" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Entradas Pendentes</p>
@@ -597,11 +578,11 @@ export const NirDashboardModule = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-info">
+            <Card className="border-l-4 border-l-blue-500">
               <CardContent className="pt-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-info/10">
-                    <ArrowUpRight className="h-5 w-5 text-info" />
+                  <div className="p-2 rounded-lg bg-blue-500/10">
+                    <ArrowUpRight className="h-5 w-5 text-blue-500" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Saídas Pendentes</p>
@@ -625,11 +606,11 @@ export const NirDashboardModule = () => {
               </CardContent>
             </Card>
 
-            <Card className="border-l-4 border-l-warning">
+            <Card className="border-l-4 border-l-amber-500">
               <CardContent className="pt-4">
                 <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-warning/10">
-                    <AlertTriangle className="h-5 w-5 text-warning" />
+                  <div className="p-2 rounded-lg bg-amber-500/10">
+                    <AlertTriangle className="h-5 w-5 text-amber-500" />
                   </div>
                   <div>
                     <p className="text-sm text-muted-foreground">Urgentes</p>
@@ -640,7 +621,6 @@ export const NirDashboardModule = () => {
             </Card>
           </div>
 
-          {/* Bed KPI Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <Card>
               <CardContent className="pt-6">
@@ -661,10 +641,10 @@ export const NirDashboardModule = () => {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm text-muted-foreground">Leitos Ocupados</p>
-                    <p className="text-3xl font-bold text-success">{occupancyStats.occupiedBeds}</p>
+                    <p className="text-3xl font-bold text-green-600">{occupancyStats.occupiedBeds}</p>
                   </div>
-                  <div className="p-3 rounded-xl bg-success/10">
-                    <Users className="h-6 w-6 text-success" />
+                  <div className="p-3 rounded-xl bg-green-500/10">
+                    <Users className="h-6 w-6 text-green-600" />
                   </div>
                 </div>
               </CardContent>
@@ -701,9 +681,8 @@ export const NirDashboardModule = () => {
             </Card>
           </div>
 
-          {/* Today's Flow */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card className="border-success/30">
+            <Card className="border-green-500/30">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -711,16 +690,16 @@ export const NirDashboardModule = () => {
                       <CalendarDays className="h-4 w-4" />
                       Internações {datePreset === 'today' ? 'Hoje' : 'no Período'}
                     </p>
-                    <p className="text-4xl font-bold text-success">{todayAdmissions}</p>
+                    <p className="text-4xl font-bold text-green-600">{todayAdmissions}</p>
                   </div>
-                  <div className="p-4 rounded-xl bg-success/10">
-                    <ArrowUpRight className="h-8 w-8 text-success" />
+                  <div className="p-4 rounded-xl bg-green-500/10">
+                    <ArrowUpRight className="h-8 w-8 text-green-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-info/30">
+            <Card className="border-blue-500/30">
               <CardContent className="pt-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -728,19 +707,17 @@ export const NirDashboardModule = () => {
                       <CalendarDays className="h-4 w-4" />
                       Altas {datePreset === 'today' ? 'Hoje' : 'no Período'}
                     </p>
-                    <p className="text-4xl font-bold text-info">{todayDischarges}</p>
+                    <p className="text-4xl font-bold text-blue-600">{todayDischarges}</p>
                   </div>
-                  <div className="p-4 rounded-xl bg-info/10">
-                    <ArrowDownRight className="h-8 w-8 text-info" />
+                  <div className="p-4 rounded-xl bg-blue-500/10">
+                    <ArrowDownRight className="h-8 w-8 text-blue-600" />
                   </div>
                 </div>
               </CardContent>
             </Card>
           </div>
 
-          {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Sector Occupancy */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -761,7 +738,7 @@ export const NirDashboardModule = () => {
                         tick={{ fontSize: 12 }}
                       />
                       <Tooltip 
-                        formatter={(value: number, name: string) => [
+                        formatter={(value: number) => [
                           `${value}%`,
                           'Ocupação'
                         ]}
@@ -778,7 +755,6 @@ export const NirDashboardModule = () => {
               </CardContent>
             </Card>
 
-            {/* Occupancy Distribution Pie */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -812,7 +788,6 @@ export const NirDashboardModule = () => {
             </Card>
           </div>
 
-          {/* Weekly Trend */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -859,7 +834,6 @@ export const NirDashboardModule = () => {
             </CardContent>
           </Card>
 
-          {/* Sector Details Table */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -884,7 +858,7 @@ export const NirDashboardModule = () => {
                     {sectorOccupancy.map((sector) => (
                       <tr key={sector.name} className="border-b last:border-0 hover:bg-muted/50">
                         <td className="py-3 px-4 font-medium">{sector.name}</td>
-                        <td className="text-center py-3 px-4 text-success font-semibold">{sector.occupied}</td>
+                        <td className="text-center py-3 px-4 text-green-600 font-semibold">{sector.occupied}</td>
                         <td className="text-center py-3 px-4">{sector.total}</td>
                         <td className="text-center py-3 px-4">{sector.total - sector.occupied}</td>
                         <td className="text-center py-3 px-4">
