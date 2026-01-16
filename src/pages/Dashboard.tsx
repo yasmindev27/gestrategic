@@ -18,6 +18,7 @@ import { RestauranteModule } from "@/components/modules/RestauranteModule";
 import { MapaLeitosModule } from "@/components/modules/MapaLeitosModule";
 import { NirModule } from "@/components/modules/NirModule";
 import { RecepcaoModule } from "@/components/modules/RecepcaoModule";
+import { RHDPModule } from "@/components/modules/RHDPModule";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -122,6 +123,9 @@ const Dashboard = () => {
 
           {/* Módulo Recepção */}
           {activeSection === "recepcao" && <RecepcaoModule />}
+
+          {/* Módulo RH/DP */}
+          {activeSection === "rhdp" && <RHDPModule />}
         </div>
       </main>
     </div>
