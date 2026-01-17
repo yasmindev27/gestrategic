@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -33,6 +34,59 @@ serve(async (req) => {
   }
 
   try {
+    // Verificar autenticação
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      console.error("Requisição sem header de autorização");
+      return new Response(
+        JSON.stringify({ error: "Não autorizado" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseClient = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabaseClient.auth.getUser();
+    if (authError || !user) {
+      console.error("Usuário não autenticado:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: "Usuário não autenticado" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Usuário autenticado: ${user.id}`);
+
+    // Verificar se o usuário tem role admin ou gestor
+    const { data: roleData, error: roleError } = await supabaseClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .single();
+
+    if (roleError || !roleData) {
+      console.error("Erro ao buscar role do usuário:", roleError?.message);
+      return new Response(
+        JSON.stringify({ error: "Acesso negado - usuário sem role definida" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const allowedRoles = ['admin', 'gestor'];
+    if (!allowedRoles.includes(roleData.role)) {
+      console.error(`Usuário ${user.id} tentou acessar relatório sem permissão. Role: ${roleData.role}`);
+      return new Response(
+        JSON.stringify({ error: "Acesso negado - apenas administradores e gestores podem gerar relatórios" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Usuário ${user.id} com role ${roleData.role} autorizado a gerar relatório`);
+
     const { dados }: { dados: ChamadoData } = await req.json();
     
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");

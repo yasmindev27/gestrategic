@@ -29,6 +29,20 @@ import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
+// Função para sanitização de HTML - previne XSS
+const escapeHtml = (text: string | null | undefined): string => {
+  if (text == null) return "";
+  const div = document.createElement('div');
+  div.textContent = String(text);
+  return div.innerHTML;
+};
+
+// Função para sanitizar objetos JSON
+const escapeJson = (obj: unknown): string => {
+  if (obj == null) return "-";
+  return escapeHtml(JSON.stringify(obj));
+};
+
 interface LogEntry {
   id: string;
   user_id: string | null;
@@ -241,11 +255,11 @@ export const LogsAuditoriaModule = () => {
           <tbody>
             ${filteredLogs.map(log => `
               <tr>
-                <td>${format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss")}</td>
-                <td>${log.user_name || "Sistema"}</td>
-                <td>${formatModulo(log.modulo)}</td>
-                <td><span class="badge ${log.acao}">${acaoLabels[log.acao]?.label || log.acao}</span></td>
-                <td>${log.detalhes ? JSON.stringify(log.detalhes) : "-"}</td>
+                <td>${escapeHtml(format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss"))}</td>
+                <td>${escapeHtml(log.user_name || "Sistema")}</td>
+                <td>${escapeHtml(formatModulo(log.modulo))}</td>
+                <td><span class="badge ${escapeHtml(log.acao)}">${escapeHtml(acaoLabels[log.acao]?.label || log.acao)}</span></td>
+                <td>${escapeJson(log.detalhes)}</td>
               </tr>
             `).join("")}
           </tbody>
