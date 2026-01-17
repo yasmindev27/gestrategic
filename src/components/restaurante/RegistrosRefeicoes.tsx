@@ -193,7 +193,7 @@ export const RegistrosRefeicoes = () => {
     });
   };
 
-  const totemUrl = `${window.location.origin}/totem-refeicoes`;
+  const totemUrl = new URL("/totem", window.location.origin).toString();
 
   return (
     <div className="space-y-4">
