@@ -230,9 +230,11 @@ const Sidebar = ({
           onClick={() => onSectionChange("dashboard")} 
           className="flex items-center gap-3 w-full text-left hover:opacity-80 transition-opacity"
         >
-          <div className="p-2 bg-primary rounded-xl flex-shrink-0">
-            <Activity className="h-6 w-6 text-primary-foreground" />
-          </div>
+          <img 
+            src="/assets/logo-upa-24h.png" 
+            alt="UPA 24h" 
+            className="h-12 w-auto flex-shrink-0"
+          />
           {!isCollapsed && <div className="overflow-hidden">
               <h1 className="font-bold text-lg text-foreground truncate">UPA Sistema</h1>
               <p className="text-xs text-muted-foreground">Tecnologia em Saúde</p>
