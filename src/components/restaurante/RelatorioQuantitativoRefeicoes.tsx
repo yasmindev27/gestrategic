@@ -465,7 +465,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.text(`Período: ${format(parseISO(dataInicio), "dd/MM/yyyy")} a ${format(parseISO(dataFim), "dd/MM/yyyy")}`, 14, 23);
-    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 29);
+    doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}`, 14, 29);
 
     // Dashboard - KPIs
     doc.setFontSize(12);

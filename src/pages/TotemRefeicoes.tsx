@@ -100,11 +100,13 @@ const hashCPF = async (cpf: string): Promise<string> => {
   return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 };
 
-// Determinar tipo de refeição com base no horário
+// Determinar tipo de refeição com base no horário (fuso de Brasília)
 const determinarTipoRefeicao = (): TipoRefeicao => {
+  // Usar horário de Brasília (America/Sao_Paulo)
   const now = new Date();
-  const horas = now.getHours();
-  const minutos = now.getMinutes();
+  const brasiliaTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const horas = brasiliaTime.getHours();
+  const minutos = brasiliaTime.getMinutes();
   const tempoTotal = horas * 60 + minutos;
   
   // 06:30 às 08:30 → Café da manhã
@@ -245,11 +247,19 @@ const TotemRefeicoes = () => {
     
     setIsRegistrando(true);
     try {
+      // Obter data e hora no fuso de Brasília
+      const now = new Date();
+      const brasiliaTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+      const dataRegistro = `${brasiliaTime.getFullYear()}-${String(brasiliaTime.getMonth() + 1).padStart(2, "0")}-${String(brasiliaTime.getDate()).padStart(2, "0")}`;
+      const horaRegistro = `${String(brasiliaTime.getHours()).padStart(2, "0")}:${String(brasiliaTime.getMinutes()).padStart(2, "0")}:${String(brasiliaTime.getSeconds()).padStart(2, "0")}`;
+      
       const { error } = await supabase.from("refeicoes_registros").insert({
         tipo_pessoa: "colaborador",
         colaborador_user_id: colaborador.user_id,
         colaborador_nome: colaborador.full_name,
         tipo_refeicao: tipoRefeicao,
+        data_registro: dataRegistro,
+        hora_registro: horaRegistro,
       });
       
       if (error) throw error;
@@ -346,11 +356,19 @@ const TotemRefeicoes = () => {
         nomeVisitante = visitanteNome.trim();
       }
       
+      // Obter data e hora no fuso de Brasília
+      const now = new Date();
+      const brasiliaTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+      const dataRegistro = `${brasiliaTime.getFullYear()}-${String(brasiliaTime.getMonth() + 1).padStart(2, "0")}-${String(brasiliaTime.getDate()).padStart(2, "0")}`;
+      const horaRegistro = `${String(brasiliaTime.getHours()).padStart(2, "0")}:${String(brasiliaTime.getMinutes()).padStart(2, "0")}:${String(brasiliaTime.getSeconds()).padStart(2, "0")}`;
+      
       const { error } = await supabase.from("refeicoes_registros").insert({
         tipo_pessoa: "visitante",
         colaborador_nome: nomeVisitante,
         visitante_cpf_hash: cpfHash,
         tipo_refeicao: tipoRefeicao,
+        data_registro: dataRegistro,
+        hora_registro: horaRegistro,
       });
       
       if (error) throw error;
