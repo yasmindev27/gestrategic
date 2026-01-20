@@ -255,9 +255,7 @@ Tecnologia em Saúde </span>
                 <Network className="w-10 h-10 text-[#2d7dd2]" />
               </div>
               <h3 className="text-xl font-semibold text-foreground">Integração & Fluxo de Dados</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Conectamos seu HIS/PACS com eficiência e rapidez para operação fluida.
-              </p>
+              <p className="text-muted-foreground leading-relaxed">Conectamos HIS e PACS com automação setorial, eliminando falhas manuais e acelerando a operação com dados centralizados e confiáveis.</p>
             </div>
           </div>
         </div>
