@@ -2,202 +2,336 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
-import { 
-  LayoutDashboard, 
-  Users, 
-  Settings, 
-  HelpCircle, 
-  Activity, 
-  LogOut, 
-  ChevronLeft, 
-  ChevronRight,
-  FileOutput, 
-  ClipboardX, 
-  Receipt, 
-  Shield,
-  Monitor,
-  Wrench,
-  Stethoscope,
-  Ticket,
-  FlaskConical,
-  Calendar,
-  ScrollText,
-  UtensilsCrossed,
-  Ambulance,
-  FileText,
-  UserCog,
-} from "lucide-react";
+import { LayoutDashboard, Users, Settings, HelpCircle, Activity, LogOut, ChevronLeft, ChevronRight, FileOutput, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, Ticket, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
-
 interface SidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
 }
-
-const bottomItems = [
-  { icon: Settings, label: "Configurações", id: "configuracoes" },
-  { icon: HelpCircle, label: "Ajuda", id: "ajuda" },
-];
+const bottomItems = [{
+  icon: Settings,
+  label: "Configurações",
+  id: "configuracoes"
+}, {
+  icon: HelpCircle,
+  label: "Ajuda",
+  id: "ajuda"
+}];
 const Sidebar = ({
   activeSection,
   onSectionChange
 }: SidebarProps) => {
   const navigate = useNavigate();
-  const { toast } = useToast();
-  const { role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isTecnico, isRecepcao, isClassificacao, isNir, isFaturamento, isRHDP } = useUserRole();
+  const {
+    toast
+  } = useToast();
+  const {
+    role,
+    isAdmin,
+    isGestor,
+    isTI,
+    isManutencao,
+    isEngenhariaCinica,
+    isLaboratorio,
+    isTecnico,
+    isRecepcao,
+    isClassificacao,
+    isNir,
+    isFaturamento,
+    isRHDP
+  } = useUserRole();
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
   const [isCollapsed, setIsCollapsed] = useState(false);
 
   // Menu items baseado no perfil do usuário conforme escopo técnico
   const getMenuItems = () => {
-    const items: { icon: typeof LayoutDashboard; label: string; id: string }[] = [];
+    const items: {
+      icon: typeof LayoutDashboard;
+      label: string;
+      id: string;
+    }[] = [];
 
     // ADMINISTRADOR - acesso total
     if (isAdmin) {
-      items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
-        { icon: Ambulance, label: "Mapa de Leitos", id: "mapa-leitos" },
-        { icon: Receipt, label: "Faturamento", id: "faturamento" },
-        { icon: ClipboardX, label: "Controle de Fichas", id: "controle-fichas" },
-        { icon: Monitor, label: "TI", id: "tecnico-ti" },
-        { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao" },
-        { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" },
-        { icon: Ambulance, label: "NIR", id: "nir" },
-        { icon: FlaskConical, label: "Laboratório", id: "laboratorio" },
-        { icon: UserCog, label: "RH/DP", id: "rhdp" },
-        { icon: Calendar, label: "Agenda", id: "agenda" },
-        { icon: Users, label: "Equipe", id: "equipe" },
-        { icon: ScrollText, label: "Logs", id: "logs" },
-        { icon: Shield, label: "Administração", id: "admin" },
-      );
+      items.push({
+        icon: LayoutDashboard,
+        label: "Dashboard",
+        id: "dashboard"
+      }, {
+        icon: Ticket,
+        label: "Abrir Chamado",
+        id: "abrir-chamado"
+      }, {
+        icon: Ambulance,
+        label: "Mapa de Leitos",
+        id: "mapa-leitos"
+      }, {
+        icon: Receipt,
+        label: "Faturamento",
+        id: "faturamento"
+      }, {
+        icon: ClipboardX,
+        label: "Controle de Fichas",
+        id: "controle-fichas"
+      }, {
+        icon: Monitor,
+        label: "TI",
+        id: "tecnico-ti"
+      }, {
+        icon: Wrench,
+        label: "Manutenção",
+        id: "tecnico-manutencao"
+      }, {
+        icon: Stethoscope,
+        label: "Eng. Clínica",
+        id: "tecnico-engenharia"
+      }, {
+        icon: Ambulance,
+        label: "NIR",
+        id: "nir"
+      }, {
+        icon: FlaskConical,
+        label: "Laboratório",
+        id: "laboratorio"
+      }, {
+        icon: UserCog,
+        label: "RH/DP",
+        id: "rhdp"
+      }, {
+        icon: Calendar,
+        label: "Agenda",
+        id: "agenda"
+      }, {
+        icon: Users,
+        label: "Equipe",
+        id: "equipe"
+      }, {
+        icon: ScrollText,
+        label: "Logs",
+        id: "logs"
+      }, {
+        icon: Shield,
+        label: "Administração",
+        id: "admin"
+      });
       return items;
     }
 
     // GESTOR - Agenda própria + Agenda colaboradores + Atribuir tarefas
     if (isGestor) {
-      items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Calendar, label: "Agenda", id: "agenda" },
-        { icon: Users, label: "Equipe", id: "equipe" },
-      );
+      items.push({
+        icon: LayoutDashboard,
+        label: "Dashboard",
+        id: "dashboard"
+      }, {
+        icon: Calendar,
+        label: "Agenda",
+        id: "agenda"
+      }, {
+        icon: Users,
+        label: "Equipe",
+        id: "equipe"
+      });
       return items;
     }
 
     // RECEPÇÃO - Módulo próprio com Controle de Fichas interno
     if (isRecepcao) {
-      items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: ClipboardX, label: "Recepção", id: "recepcao" },
-        { icon: Receipt, label: "Faturamento", id: "faturamento" },
-        { icon: Calendar, label: "Agenda", id: "agenda" },
-      );
+      items.push({
+        icon: LayoutDashboard,
+        label: "Dashboard",
+        id: "dashboard"
+      }, {
+        icon: ClipboardX,
+        label: "Recepção",
+        id: "recepcao"
+      }, {
+        icon: Receipt,
+        label: "Faturamento",
+        id: "faturamento"
+      }, {
+        icon: Calendar,
+        label: "Agenda",
+        id: "agenda"
+      });
       return items;
     }
 
     // CLASSIFICAÇÃO - Lista saída prontuários (validar existência)
     if (isClassificacao) {
-      items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Receipt, label: "Faturamento", id: "faturamento" },
-        { icon: Calendar, label: "Agenda", id: "agenda" },
-      );
+      items.push({
+        icon: LayoutDashboard,
+        label: "Dashboard",
+        id: "dashboard"
+      }, {
+        icon: Receipt,
+        label: "Faturamento",
+        id: "faturamento"
+      }, {
+        icon: Calendar,
+        label: "Agenda",
+        id: "agenda"
+      });
       return items;
     }
 
     // NIR - Regulação Hospitalar (não é técnico)
     if (isNir) {
-      items.push(
-        { icon: Ambulance, label: "NIR", id: "nir" },
-        { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
-        { icon: Receipt, label: "Faturamento", id: "faturamento" },
-        { icon: Calendar, label: "Agenda", id: "agenda" },
-      );
+      items.push({
+        icon: Ambulance,
+        label: "NIR",
+        id: "nir"
+      }, {
+        icon: Ticket,
+        label: "Abrir Chamado",
+        id: "abrir-chamado"
+      }, {
+        icon: Receipt,
+        label: "Faturamento",
+        id: "faturamento"
+      }, {
+        icon: Calendar,
+        label: "Agenda",
+        id: "agenda"
+      });
       return items;
     }
 
     // FATURAMENTO - Lista prontuários + Prontuários faltantes + Avaliação
     if (isFaturamento) {
-      items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Receipt, label: "Faturamento", id: "faturamento" },
-        { icon: Calendar, label: "Agenda", id: "agenda" },
-      );
+      items.push({
+        icon: LayoutDashboard,
+        label: "Dashboard",
+        id: "dashboard"
+      }, {
+        icon: Receipt,
+        label: "Faturamento",
+        id: "faturamento"
+      }, {
+        icon: Calendar,
+        label: "Agenda",
+        id: "agenda"
+      });
       return items;
     }
 
     // TÉCNICOS - apenas seus módulos específicos
     if (isTI) {
-      items.push(
-        { icon: Monitor, label: "TI", id: "tecnico-ti" },
-        { icon: Calendar, label: "Agenda", id: "agenda" },
-      );
+      items.push({
+        icon: Monitor,
+        label: "TI",
+        id: "tecnico-ti"
+      }, {
+        icon: Calendar,
+        label: "Agenda",
+        id: "agenda"
+      });
       return items;
     }
-
     if (isManutencao) {
-      items.push(
-        { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao" },
-        { icon: Calendar, label: "Agenda", id: "agenda" },
-      );
+      items.push({
+        icon: Wrench,
+        label: "Manutenção",
+        id: "tecnico-manutencao"
+      }, {
+        icon: Calendar,
+        label: "Agenda",
+        id: "agenda"
+      });
       return items;
     }
-
     if (isEngenhariaCinica) {
-      items.push(
-        { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" },
-        { icon: Calendar, label: "Agenda", id: "agenda" },
-      );
+      items.push({
+        icon: Stethoscope,
+        label: "Eng. Clínica",
+        id: "tecnico-engenharia"
+      }, {
+        icon: Calendar,
+        label: "Agenda",
+        id: "agenda"
+      });
       return items;
     }
-
     if (isLaboratorio) {
-      items.push(
-        { icon: FlaskConical, label: "Laboratório", id: "laboratorio" },
-        { icon: Calendar, label: "Agenda", id: "agenda" },
-      );
+      items.push({
+        icon: FlaskConical,
+        label: "Laboratório",
+        id: "laboratorio"
+      }, {
+        icon: Calendar,
+        label: "Agenda",
+        id: "agenda"
+      });
       return items;
     }
 
     // RH/DP - Banco de Horas + Central de Atestados
     if (isRHDP) {
-      items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: UserCog, label: "RH/DP", id: "rhdp" },
-        { icon: Calendar, label: "Agenda", id: "agenda" },
-      );
+      items.push({
+        icon: LayoutDashboard,
+        label: "Dashboard",
+        id: "dashboard"
+      }, {
+        icon: UserCog,
+        label: "RH/DP",
+        id: "rhdp"
+      }, {
+        icon: Calendar,
+        label: "Agenda",
+        id: "agenda"
+      });
       return items;
     }
 
     // FUNCIONÁRIO padrão - apenas Dashboard, Chamado, Agenda e Restaurante
-    items.push(
-      { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-      { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
-      { icon: Calendar, label: "Agenda", id: "agenda" },
-      { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante" },
-    );
-
+    items.push({
+      icon: LayoutDashboard,
+      label: "Dashboard",
+      id: "dashboard"
+    }, {
+      icon: Ticket,
+      label: "Abrir Chamado",
+      id: "abrir-chamado"
+    }, {
+      icon: Calendar,
+      label: "Agenda",
+      id: "agenda"
+    }, {
+      icon: UtensilsCrossed,
+      label: "Restaurante",
+      id: "restaurante"
+    });
     return items;
   };
 
   // Adicionar Restaurante a todos os menus
-  const addRestauranteToMenu = (items: { icon: typeof LayoutDashboard; label: string; id: string }[]) => {
+  const addRestauranteToMenu = (items: {
+    icon: typeof LayoutDashboard;
+    label: string;
+    id: string;
+  }[]) => {
     if (!items.some(item => item.id === "restaurante")) {
-      items.push({ icon: UtensilsCrossed, label: "Restaurante", id: "restaurante" });
+      items.push({
+        icon: UtensilsCrossed,
+        label: "Restaurante",
+        id: "restaurante"
+      });
     }
     return items;
   };
-
   const menuItems = addRestauranteToMenu(getMenuItems());
-
   useEffect(() => {
     const fetchUserData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const {
+        data: {
+          user
+        }
+      } = await supabase.auth.getUser();
       if (user) {
         setUserEmail(user.email || "");
         const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Usuário";
@@ -206,9 +340,10 @@ const Sidebar = ({
     };
     fetchUserData();
   }, []);
-
   const handleLogout = async () => {
-    const { error } = await supabase.auth.signOut();
+    const {
+      error
+    } = await supabase.auth.signOut();
     if (error) {
       toast({
         title: "Erro",
@@ -219,24 +354,16 @@ const Sidebar = ({
       navigate("/");
     }
   };
-
   const getInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
   return <aside className={cn("bg-card border-r border-border h-screen flex flex-col sticky top-0 transition-all duration-300", isCollapsed ? "w-20" : "w-64")}>
       {/* Logo & Brand */}
       <div className="p-4 border-b border-border">
-        <button 
-          onClick={() => onSectionChange("dashboard")} 
-          className="flex items-center gap-3 w-full text-left hover:opacity-80 transition-opacity"
-        >
-          <img 
-            src="/assets/logo-upa-24h.png" 
-            alt="UPA 24h" 
-            className="h-12 w-auto flex-shrink-0"
-          />
+        <button onClick={() => onSectionChange("dashboard")} className="flex items-center gap-3 w-full text-left hover:opacity-80 transition-opacity">
+          <img src="/assets/logo-upa-24h.png" alt="UPA 24h" className="h-12 w-auto flex-shrink-0" />
           {!isCollapsed && <div className="overflow-hidden">
-              <h1 className="font-bold text-lg text-foreground truncate">UPA Sistema</h1>
+              <h1 className="font-bold text-lg text-foreground truncate">​Gestrategic</h1>
               <p className="text-xs text-muted-foreground">Tecnologia em Saúde</p>
             </div>}
         </button>
