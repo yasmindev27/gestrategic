@@ -52,8 +52,7 @@ const LandingPage = () => {
             {/* CTA Button */}
             <div className="flex items-center gap-4">
               <Button 
-                variant="outline" 
-                className="hidden sm:flex border-white/30 text-white bg-transparent hover:bg-white/10 hover:border-white transition-colors rounded-full px-6" 
+                className="hidden sm:flex bg-[#2d7dd2] hover:bg-[#2570c2] text-white rounded-full px-6 shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30" 
                 onClick={handleLogin}
               >
                 Área do Cliente
@@ -84,8 +83,7 @@ const LandingPage = () => {
                   </a>
                 ))}
                 <Button 
-                  variant="outline" 
-                  className="mt-2 border-white/30 text-white bg-transparent hover:bg-white/10 w-full" 
+                  className="mt-2 bg-[#2d7dd2] hover:bg-[#2570c2] text-white w-full rounded-full shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30" 
                   onClick={handleLogin}
                 >
                   Área do Cliente
@@ -130,8 +128,7 @@ const LandingPage = () => {
                   Conheça nossas Soluções
                 </Button>
                 <Button 
-                  variant="outline" 
-                  className="border-white/40 text-white bg-transparent hover:bg-white/10 hover:border-white rounded-full px-8 py-6 text-base font-medium transition-all"
+                  className="bg-[#2d7dd2] hover:bg-[#2570c2] text-white rounded-full px-8 py-6 text-base font-medium shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30"
                 >
                   Agendar Consultoria
                 </Button>
