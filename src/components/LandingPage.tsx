@@ -80,7 +80,7 @@ const LandingPage = () => {
                 </Button>
                 <Button 
                   variant="outline" 
-                  className="border-header-foreground/30 text-header-foreground hover:bg-header-foreground/10 rounded-full px-6 transition-colors"
+                  className="border-white/50 text-white bg-transparent hover:bg-white/10 hover:border-white rounded-full px-6 transition-colors"
                 >
                   Agendar Consultoria
                 </Button>
