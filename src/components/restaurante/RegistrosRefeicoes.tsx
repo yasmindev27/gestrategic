@@ -193,7 +193,7 @@ export const RegistrosRefeicoes = () => {
     });
   };
 
-  const totemUrl = new URL("/totem", window.location.origin).toString();
+  const totemUrl = "https://gestrategic.com/totem";
 
   return (
     <div className="space-y-4">
