@@ -28,12 +28,12 @@ const LandingPage = () => {
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
             <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded bg-white/10 flex items-center justify-center">
-                  <Building2 className="w-5 h-5 text-white" />
-                </div>
-                <span className="font-semibold text-lg tracking-tight">gestrategic.com</span>
-              </div>
+              <img 
+                src={logoGestrategic} 
+                alt="Gestrategic" 
+                className="h-10 w-auto rounded-md"
+              />
+              <span className="font-semibold text-lg tracking-tight">gestrategic.com</span>
             </div>
 
             {/* Desktop Navigation */}
@@ -309,9 +309,11 @@ const LandingPage = () => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="flex flex-col items-center justify-center gap-5">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center">
-                <Building2 className="w-6 h-6 text-white/80" />
-              </div>
+              <img 
+                src={logoGestrategic} 
+                alt="Gestrategic" 
+                className="h-12 w-auto rounded-lg"
+              />
             </div>
             <p className="text-sm text-center text-white/50">
               © 2026 GESTRATEGIC — Todos os direitos reservados.
