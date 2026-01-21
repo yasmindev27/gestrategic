@@ -832,6 +832,147 @@ export type Database = {
         }
         Relationships: []
       }
+      formulario_campos: {
+        Row: {
+          created_at: string
+          formulario_id: string
+          id: string
+          label: string
+          obrigatorio: boolean | null
+          opcoes: string[] | null
+          ordem: number
+          tipo: string
+        }
+        Insert: {
+          created_at?: string
+          formulario_id: string
+          id?: string
+          label: string
+          obrigatorio?: boolean | null
+          opcoes?: string[] | null
+          ordem?: number
+          tipo: string
+        }
+        Update: {
+          created_at?: string
+          formulario_id?: string
+          id?: string
+          label?: string
+          obrigatorio?: boolean | null
+          opcoes?: string[] | null
+          ordem?: number
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formulario_campos_formulario_id_fkey"
+            columns: ["formulario_id"]
+            isOneToOne: false
+            referencedRelation: "formularios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formulario_permissoes: {
+        Row: {
+          created_at: string
+          formulario_id: string
+          id: string
+          tipo_permissao: string
+          valor: string | null
+        }
+        Insert: {
+          created_at?: string
+          formulario_id: string
+          id?: string
+          tipo_permissao: string
+          valor?: string | null
+        }
+        Update: {
+          created_at?: string
+          formulario_id?: string
+          id?: string
+          tipo_permissao?: string
+          valor?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formulario_permissoes_formulario_id_fkey"
+            columns: ["formulario_id"]
+            isOneToOne: false
+            referencedRelation: "formularios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formulario_respostas: {
+        Row: {
+          created_at: string
+          formulario_id: string
+          id: string
+          respondido_em: string
+          respondido_por: string | null
+          respostas: Json
+        }
+        Insert: {
+          created_at?: string
+          formulario_id: string
+          id?: string
+          respondido_em?: string
+          respondido_por?: string | null
+          respostas?: Json
+        }
+        Update: {
+          created_at?: string
+          formulario_id?: string
+          id?: string
+          respondido_em?: string
+          respondido_por?: string | null
+          respostas?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "formulario_respostas_formulario_id_fkey"
+            columns: ["formulario_id"]
+            isOneToOne: false
+            referencedRelation: "formularios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      formularios: {
+        Row: {
+          created_at: string
+          criado_por: string | null
+          descricao: string | null
+          id: string
+          prazo: string | null
+          status: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          prazo?: string | null
+          status?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          prazo?: string | null
+          status?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       gestor_cargos: {
         Row: {
           cargo_id: string
@@ -1545,6 +1686,10 @@ export type Database = {
       }
       is_agenda_recipient: {
         Args: { _item_id: string; _user_id: string }
+        Returns: boolean
+      }
+      pode_ver_formulario: {
+        Args: { _formulario_id: string; _user_id: string }
         Returns: boolean
       }
     }
