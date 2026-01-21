@@ -1,10 +1,11 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, FileText, ShieldX } from "lucide-react";
+import { Clock, FileText, ShieldX, ClipboardList } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { BancoHorasSection } from "@/components/rhdp/BancoHorasSection";
 import { CentralAtestadosSection } from "@/components/rhdp/CentralAtestadosSection";
+import { FormulariosSection } from "@/components/rhdp/FormulariosSection";
 
 export const RHDPModule = () => {
   const { isAdmin, hasRole, isLoading } = useUserRole();
@@ -46,7 +47,7 @@ export const RHDPModule = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="banco-horas" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 Banco de Horas
@@ -54,6 +55,10 @@ export const RHDPModule = () => {
               <TabsTrigger value="atestados" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
                 Central de Atestados
+              </TabsTrigger>
+              <TabsTrigger value="formularios" className="flex items-center gap-2">
+                <ClipboardList className="h-4 w-4" />
+                Formulários
               </TabsTrigger>
             </TabsList>
 
@@ -63,6 +68,10 @@ export const RHDPModule = () => {
 
             <TabsContent value="atestados" className="mt-6">
               <CentralAtestadosSection />
+            </TabsContent>
+
+            <TabsContent value="formularios" className="mt-6">
+              <FormulariosSection />
             </TabsContent>
           </Tabs>
         </CardContent>
