@@ -144,6 +144,8 @@ const TotemRefeicoes = () => {
   
   const tipoRefeicaoAtual = determinarTipoRefeicao();
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const visitanteNomeRef = useRef<HTMLInputElement>(null);
+  const visitanteCPFRef = useRef<HTMLInputElement>(null);
   
   // Tipos de refeição disponíveis para seleção (exclui fora_horario)
   const tiposRefeicaoDisponiveis: TipoRefeicao[] = ["cafe", "almoco", "lanche", "jantar"];
@@ -668,28 +670,46 @@ const TotemRefeicoes = () => {
             <div className="space-y-2">
               <Label htmlFor="visitante-nome">Nome Completo *</Label>
               <Input
+                ref={visitanteNomeRef}
                 id="visitante-nome"
                 value={visitanteNome}
                 onChange={(e) => setVisitanteNome(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    visitanteCPFRef.current?.focus();
+                  }
+                }}
                 placeholder="Digite seu nome completo"
                 className="h-12"
                 autoComplete="off"
+                inputMode="text"
+                enterKeyHint="next"
               />
             </div>
             
             <div className="space-y-2">
               <Label htmlFor="visitante-cpf">CPF *</Label>
               <Input
+                ref={visitanteCPFRef}
                 id="visitante-cpf"
                 value={visitanteCPF}
                 onChange={(e) => {
                   setVisitanteCPF(mascaraCPF(e.target.value));
                   setCpfValido(true);
                 }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    registrarRefeicaoVisitante();
+                  }
+                }}
                 placeholder="000.000.000-00"
                 className={`h-12 ${!cpfValido ? "border-red-500" : ""}`}
                 maxLength={14}
                 autoComplete="off"
+                inputMode="numeric"
+                enterKeyHint="done"
               />
               {!cpfValido && (
                 <p className="text-sm text-red-500">CPF inválido</p>
