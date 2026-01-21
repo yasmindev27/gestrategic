@@ -564,11 +564,17 @@ const TotemRefeicoes = () => {
               <Input
                 ref={searchInputRef}
                 type="text"
+                inputMode="text"
+                enterKeyHint="search"
                 placeholder="Digite seu nome para buscar..."
                 value={busca}
                 onChange={(e) => setBusca(e.target.value)}
+                onClick={() => searchInputRef.current?.focus()}
+                onTouchStart={() => searchInputRef.current?.focus()}
                 className="pl-12 h-14 text-lg"
                 autoComplete="off"
+                autoFocus
+                readOnly={false}
               />
             </div>
           </CardContent>
