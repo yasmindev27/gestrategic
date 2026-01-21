@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { 
   Users, ClipboardList, AlertTriangle, Calendar, Ticket, 
   FileText, CheckCircle2, Clock, Wrench, BarChart3, 
@@ -44,30 +44,33 @@ const colorClasses = {
   destructive: "bg-destructive/10 text-destructive",
 };
 
-const StatCard = ({ title, value, description, icon: Icon, color, trend, loading }: StatCardProps) => (
-  <Card className="shadow-sm hover:shadow-md transition-all border-border">
-    <CardContent className="p-4">
-      <div className="flex items-center justify-between">
-        <div className="flex-1">
-          <p className="text-sm text-muted-foreground">{title}</p>
-          {loading ? (
-            <Skeleton className="h-8 w-16 mt-1" />
-          ) : (
-            <p className="text-2xl font-bold text-foreground mt-1">{value}</p>
-          )}
-          {description && (
-            <p className={`text-xs mt-1 ${trend === "up" ? "text-success" : trend === "down" ? "text-destructive" : "text-muted-foreground"}`}>
-              {description}
-            </p>
-          )}
+const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
+  ({ title, value, description, icon: Icon, color, trend, loading }, ref) => (
+    <Card ref={ref} className="shadow-sm hover:shadow-md transition-all border-border">
+      <CardContent className="p-4">
+        <div className="flex items-center justify-between">
+          <div className="flex-1">
+            <p className="text-sm text-muted-foreground">{title}</p>
+            {loading ? (
+              <Skeleton className="h-8 w-16 mt-1" />
+            ) : (
+              <p className="text-2xl font-bold text-foreground mt-1">{value}</p>
+            )}
+            {description && (
+              <p className={`text-xs mt-1 ${trend === "up" ? "text-success" : trend === "down" ? "text-destructive" : "text-muted-foreground"}`}>
+                {description}
+              </p>
+            )}
+          </div>
+          <div className={`p-3 rounded-xl ${colorClasses[color]}`}>
+            <Icon className="h-6 w-6" />
+          </div>
         </div>
-        <div className={`p-3 rounded-xl ${colorClasses[color]}`}>
-          <Icon className="h-6 w-6" />
-        </div>
-      </div>
-    </CardContent>
-  </Card>
+      </CardContent>
+    </Card>
+  )
 );
+StatCard.displayName = "StatCard";
 
 const DashboardPersonalizado = () => {
   const [stats, setStats] = useState<DashboardStats>({
