@@ -56,7 +56,7 @@ interface SaidaProntuario {
 }
 
 export const SaidaProntuariosModule = () => {
-  const { isRecepcao, isClassificacao, isNir, isAdmin, userId, role, isLoading: isLoadingRole } = useUserRole();
+  const { isRecepcao, isClassificacao, isNir, isAdmin, isFaturamento, userId, role, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
   const { toast } = useToast();
   
@@ -75,7 +75,7 @@ export const SaidaProntuariosModule = () => {
   const [observacao, setObservacao] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const canAccess = isRecepcao || isClassificacao || isNir || isAdmin;
+  const canAccess = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
   const canInsert = isRecepcao || isClassificacao || isNir || isAdmin;
   const canValidateClassificacao = isClassificacao || isAdmin;
   const canValidateNir = isNir || isAdmin;
