@@ -33,6 +33,7 @@ import {
   Loader2,
   ClipboardCheck
 } from "lucide-react";
+import { PdfPatientCounter } from "./PdfPatientCounter";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -324,10 +325,12 @@ export const SaidaProntuariosModule = () => {
           <h2 className="text-2xl font-bold text-foreground">Lista de Saída de Prontuários</h2>
           <p className="text-muted-foreground">Controle de fluxo entre setores</p>
         </div>
-        {canInsert && (
-          <Dialog open={newProntuarioOpen} onOpenChange={setNewProntuarioOpen}>
-            <DialogTrigger asChild>
-              <Button>
+        <div className="flex gap-2">
+          <PdfPatientCounter />
+          {canInsert && (
+            <Dialog open={newProntuarioOpen} onOpenChange={setNewProntuarioOpen}>
+              <DialogTrigger asChild>
+                <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 Registrar Saída
               </Button>
@@ -377,7 +380,8 @@ export const SaidaProntuariosModule = () => {
               </DialogFooter>
             </DialogContent>
           </Dialog>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Search */}
