@@ -33,6 +33,7 @@ import {
   UserPlus,
   FileDown,
   FileSpreadsheet,
+  Upload,
 } from "lucide-react";
 import { format } from "date-fns";
 import * as XLSX from "xlsx";
@@ -64,6 +65,9 @@ export const ColaboradoresManager = () => {
   // Delete confirmation
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  
+  // Import state
+  const [isImporting, setIsImporting] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -288,6 +292,100 @@ export const ColaboradoresManager = () => {
     toast({ title: "Sucesso", description: "Arquivo PDF exportado!" });
   };
 
+  // Importar Excel
+  const handleImportExcel = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: "array" });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json<Record<string, string>>(worksheet);
+
+          if (jsonData.length === 0) {
+            toast({
+              title: "Arquivo vazio",
+              description: "A planilha não contém dados para importar.",
+              variant: "destructive",
+            });
+            setIsImporting(false);
+            return;
+          }
+
+          // Mapear colunas possíveis
+          const colaboradoresParaInserir = jsonData.map((row) => {
+            const nome = row["Nome"] || row["NOME"] || row["nome"] || row["Colaborador"] || row["COLABORADOR"] || "";
+            const matricula = row["Matrícula"] || row["MATRÍCULA"] || row["matricula"] || row["Matricula"] || row["MATRICULA"] || "";
+            const setor = row["Setor"] || row["SETOR"] || row["setor"] || "";
+            const cargo = row["Cargo"] || row["CARGO"] || row["cargo"] || row["Função"] || row["FUNÇÃO"] || row["funcao"] || "";
+            
+            return {
+              nome: String(nome).trim(),
+              matricula: matricula ? String(matricula).trim() : null,
+              setor: setor ? String(setor).trim() : null,
+              cargo: cargo ? String(cargo).trim() : null,
+              ativo: true,
+              created_by: user?.id,
+            };
+          }).filter(c => c.nome); // Remove linhas sem nome
+
+          if (colaboradoresParaInserir.length === 0) {
+            toast({
+              title: "Erro de formato",
+              description: "Nenhum nome encontrado. Verifique se há uma coluna 'Nome' na planilha.",
+              variant: "destructive",
+            });
+            setIsImporting(false);
+            return;
+          }
+
+          // Inserir em lote
+          const { error } = await supabase
+            .from("colaboradores_restaurante")
+            .insert(colaboradoresParaInserir);
+
+          if (error) throw error;
+
+          toast({
+            title: "Importação concluída!",
+            description: `${colaboradoresParaInserir.length} colaborador(es) importado(s) com sucesso.`,
+          });
+          
+          fetchColaboradores();
+        } catch (parseError) {
+          console.error("Erro ao processar arquivo:", parseError);
+          toast({
+            title: "Erro na importação",
+            description: "Não foi possível processar o arquivo. Verifique o formato.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsImporting(false);
+          // Limpar o input para permitir reimportar o mesmo arquivo
+          event.target.value = "";
+        }
+      };
+      
+      reader.readAsArrayBuffer(file);
+    } catch (error) {
+      console.error("Erro ao importar:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível importar os colaboradores.",
+        variant: "destructive",
+      });
+      setIsImporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -310,7 +408,7 @@ export const ColaboradoresManager = () => {
                 Gerencie os colaboradores que aparecem no totem de refeições
               </CardDescription>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" onClick={exportExcel}>
                 <FileSpreadsheet className="h-4 w-4 mr-1" />
                 Excel
@@ -319,6 +417,26 @@ export const ColaboradoresManager = () => {
                 <FileDown className="h-4 w-4 mr-1" />
                 PDF
               </Button>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                disabled={isImporting}
+                onClick={() => document.getElementById("import-excel-input")?.click()}
+              >
+                {isImporting ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Upload className="h-4 w-4 mr-1" />
+                )}
+                Importar
+              </Button>
+              <input
+                id="import-excel-input"
+                type="file"
+                accept=".xlsx,.xls"
+                onChange={handleImportExcel}
+                className="hidden"
+              />
               <Button onClick={() => handleOpenDialog()}>
                 <UserPlus className="h-4 w-4 mr-1" />
                 Novo
