@@ -32,8 +32,8 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 interface Colaborador {
-  user_id: string;
-  full_name: string;
+  id: string;
+  nome: string;
   setor: string | null;
   cargo: string | null;
 }
@@ -167,11 +167,12 @@ const TotemRefeicoes = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // Buscar colaboradores
+        // Buscar colaboradores do restaurante (tabela específica)
         const { data: colaboradoresData, error: colaboradoresError } = await supabase
-          .from("profiles")
-          .select("user_id, full_name, setor, cargo")
-          .order("full_name");
+          .from("colaboradores_restaurante")
+          .select("id, nome, setor, cargo")
+          .eq("ativo", true)
+          .order("nome");
         
         if (colaboradoresError) throw colaboradoresError;
         setColaboradores(colaboradoresData || []);
@@ -226,7 +227,7 @@ const TotemRefeicoes = () => {
 
   // Filtrar colaboradores pela busca
   const colaboradoresFiltrados = colaboradores.filter(c =>
-    c.full_name.toLowerCase().includes(busca.toLowerCase())
+    c.nome.toLowerCase().includes(busca.toLowerCase())
   );
 
   // Handler quando clica em um colaborador
@@ -257,8 +258,8 @@ const TotemRefeicoes = () => {
       
       const { error } = await supabase.from("refeicoes_registros").insert({
         tipo_pessoa: "colaborador",
-        colaborador_user_id: colaborador.user_id,
-        colaborador_nome: colaborador.full_name,
+        colaborador_user_id: null, // Colaboradores do restaurante não têm user_id
+        colaborador_nome: colaborador.nome,
         tipo_refeicao: tipoRefeicao,
         data_registro: dataRegistro,
         hora_registro: horaRegistro,
@@ -266,7 +267,7 @@ const TotemRefeicoes = () => {
       
       if (error) throw error;
       
-      setUltimoRegistro({ nome: colaborador.full_name, tipo: tipoRefeicao });
+      setUltimoRegistro({ nome: colaborador.nome, tipo: tipoRefeicao });
       setShowSucesso(true);
       setBusca("");
       setShowSelecionarRefeicaoModal(false);
@@ -605,7 +606,7 @@ const TotemRefeicoes = () => {
                 <div className="divide-y">
                   {colaboradoresFiltrados.map((colaborador) => (
                     <button
-                      key={colaborador.user_id}
+                      key={colaborador.id}
                       onClick={() => handleClickColaborador(colaborador)}
                       disabled={isRegistrando}
                       className="w-full p-4 text-left hover:bg-primary/5 active:bg-primary/10 transition-colors flex items-center gap-4 disabled:opacity-50"
@@ -614,7 +615,7 @@ const TotemRefeicoes = () => {
                         <User className="h-6 w-6 text-primary" />
                       </div>
                       <div className="flex-1">
-                        <p className="font-medium text-lg">{colaborador.full_name}</p>
+                        <p className="font-medium text-lg">{colaborador.nome}</p>
                         {(colaborador.setor || colaborador.cargo) && (
                           <p className="text-sm text-muted-foreground">
                             {[colaborador.cargo, colaborador.setor].filter(Boolean).join(" • ")}
@@ -768,9 +769,9 @@ const TotemRefeicoes = () => {
               Registro Fora de Horário
             </DialogTitle>
             <DialogDescription>
-              {colaboradorPendente && (
-                <span className="font-medium text-foreground">{colaboradorPendente.full_name}</span>
-              )}, selecione o tipo de refeição:
+            {colaboradorPendente && (
+              <span className="font-medium text-foreground">{colaboradorPendente.nome}</span>
+            )}, selecione o tipo de refeição:
             </DialogDescription>
           </DialogHeader>
           

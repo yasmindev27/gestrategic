@@ -61,6 +61,7 @@ import {
 } from "lucide-react";
 import { RegistrosRefeicoes } from "@/components/restaurante/RegistrosRefeicoes";
 import { RelatorioQuantitativoRefeicoes } from "@/components/restaurante/RelatorioQuantitativoRefeicoes";
+import { ColaboradoresManager } from "@/components/restaurante/ColaboradoresManager";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, addDays, startOfMonth, endOfMonth } from "date-fns";
@@ -1278,6 +1279,11 @@ export const RestauranteModule = () => {
                   <span className="hidden sm:inline">Cardápios</span>
                   <span className="sm:hidden">Cardápio</span>
                 </TabsTrigger>
+                <TabsTrigger value="colaboradores" className="flex items-center gap-2 flex-1 min-w-fit">
+                  <Users className="h-4 w-4" />
+                  <span className="hidden sm:inline">Colaboradores</span>
+                  <span className="sm:hidden">Colab.</span>
+                </TabsTrigger>
               </TabsList>
 
               {/* Sub-tab: Quantitativo Diário */}
@@ -1701,6 +1707,11 @@ export const RestauranteModule = () => {
                     )}
                   </CardContent>
                 </Card>
+              </TabsContent>
+
+              {/* Sub-tab: Colaboradores */}
+              <TabsContent value="colaboradores" className="mt-4">
+                <ColaboradoresManager />
               </TabsContent>
             </Tabs>
           </TabsContent>

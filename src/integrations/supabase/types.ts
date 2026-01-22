@@ -712,6 +712,42 @@ export type Database = {
           },
         ]
       }
+      colaboradores_restaurante: {
+        Row: {
+          ativo: boolean
+          cargo: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          matricula: string | null
+          nome: string
+          setor: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cargo?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          matricula?: string | null
+          nome: string
+          setor?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cargo?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          matricula?: string | null
+          nome?: string
+          setor?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       daily_statistics: {
         Row: {
           admissions: number | null
