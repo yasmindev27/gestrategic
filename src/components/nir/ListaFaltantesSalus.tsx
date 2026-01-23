@@ -102,10 +102,9 @@ export function ListaFaltantesSalus() {
   const hasActiveFilters = searchTerm || dateFrom || dateTo;
 
   const getExportData = () => {
-    const headers = ['Nome do Paciente', 'Nº Prontuário', 'Data de Saída', 'Status'];
+    const headers = ['Nome do Paciente', 'Data de Saída', 'Status'];
     const rows = filteredFaltantes.map((item) => [
       item.paciente_nome || '-',
-      item.numero_prontuario,
       item.registrado_recepcao_em
         ? format(new Date(item.registrado_recepcao_em), "dd/MM/yyyy HH:mm")
         : '-',
@@ -291,7 +290,6 @@ export function ListaFaltantesSalus() {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome do Paciente</TableHead>
-                <TableHead>Nº Prontuário</TableHead>
                 <TableHead>Data de Saída</TableHead>
                 <TableHead>Status</TableHead>
               </TableRow>
@@ -299,7 +297,7 @@ export function ListaFaltantesSalus() {
             <TableBody>
               {filteredFaltantes.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={3} className="text-center text-muted-foreground py-8">
                     Nenhum registro encontrado com os filtros aplicados
                   </TableCell>
                 </TableRow>
@@ -308,9 +306,6 @@ export function ListaFaltantesSalus() {
                   <TableRow key={item.id}>
                     <TableCell className="font-medium">
                       {item.paciente_nome || '-'}
-                    </TableCell>
-                    <TableCell className="font-mono text-sm">
-                      {item.numero_prontuario}
                     </TableCell>
                     <TableCell>
                       {item.registrado_recepcao_em ? (
