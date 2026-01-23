@@ -43,9 +43,10 @@ import {
   Calendar,
   Users,
   Filter,
-  X
+  X,
+  XCircle
 } from "lucide-react";
-import { PdfPatientCounter } from "./PdfPatientCounter";
+import { PdfPatientCounter, type AnalysisResult, type PatientResult } from "./PdfPatientCounter";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -85,6 +86,7 @@ export const SaidaProntuariosModule = () => {
   const [dataFim, setDataFim] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [showFilters, setShowFilters] = useState(false);
+  const [salusAnalysis, setSalusAnalysis] = useState<AnalysisResult | null>(null);
   
   // Form states
   const [pacienteNome, setPacienteNome] = useState("");
@@ -348,6 +350,49 @@ export const SaidaProntuariosModule = () => {
 
   const hasActiveFilters = searchTerm || dataInicio || dataFim || statusFilter !== "todos";
 
+  // Check if a record is missing from Salus analysis
+  const isMissingFromSalus = (saida: SaidaProntuario): boolean => {
+    if (!salusAnalysis || !salusAnalysis.success) return false;
+    
+    const normalizeText = (text: string) => 
+      text.toLowerCase().trim()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/\s+/g, " ");
+    
+    const normalizeProntuario = (p: string) => 
+      p.replace(/\D/g, "");
+    
+    // Find matching patient in Salus analysis that is marked as "faltando"
+    return salusAnalysis.pacientes.some(p => {
+      if (p.status !== 'faltando') return false;
+      
+      // Check by prontuario number if available
+      if (p.prontuario && saida.numero_prontuario) {
+        const pdfPront = normalizeProntuario(p.prontuario);
+        const saidaPront = normalizeProntuario(saida.numero_prontuario);
+        if (pdfPront && saidaPront && pdfPront === saidaPront) {
+          return true;
+        }
+      }
+      
+      // Check by name
+      if (p.nome && saida.paciente_nome) {
+        const pdfNome = normalizeText(p.nome);
+        const saidaNome = normalizeText(saida.paciente_nome);
+        if (pdfNome === saidaNome || pdfNome.includes(saidaNome) || saidaNome.includes(pdfNome)) {
+          return true;
+        }
+      }
+      
+      return false;
+    });
+  };
+
+  // Get missing patients from Salus that are NOT in the system at all
+  const getMissingPatientsNotInSystem = () => {
+    if (!salusAnalysis || !salusAnalysis.success) return [];
+    return salusAnalysis.pacientes.filter(p => p.status === 'faltando');
+  };
   const handleExportCSV = () => {
     if (filteredSaidas.length === 0) {
       toast({
@@ -412,7 +457,7 @@ export const SaidaProntuariosModule = () => {
           <p className="text-muted-foreground">Controle de fluxo entre setores</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <PdfPatientCounter />
+          <PdfPatientCounter onAnalysisComplete={setSalusAnalysis} />
           <Button variant="outline" onClick={handleExportCSV}>
             <Download className="h-4 w-4 mr-2" />
             Exportar
@@ -581,6 +626,50 @@ export const SaidaProntuariosModule = () => {
         </CardContent>
       </Card>
 
+      {/* Missing from Salus Alert */}
+      {salusAnalysis && salusAnalysis.success && salusAnalysis.faltando > 0 && (
+        <Card className="bg-destructive/5 border-destructive/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="h-5 w-5" />
+              Pacientes Faltando (Lista Salus)
+            </CardTitle>
+            <CardDescription>
+              {salusAnalysis.faltando} paciente(s) do PDF Salus não encontrado(s) no sistema
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead>Nº Prontuário</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {getMissingPatientsNotInSystem().map((patient, index) => (
+                    <TableRow key={index} className="bg-destructive/5">
+                      <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
+                      <TableCell className="font-medium">{patient.nome}</TableCell>
+                      <TableCell>{patient.prontuario || "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant="destructive" className="flex items-center gap-1 w-fit">
+                          <XCircle className="h-3 w-3" />
+                          Não cadastrado
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Table */}
       <Card>
         <CardHeader>
@@ -618,43 +707,58 @@ export const SaidaProntuariosModule = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredSaidas.map((saida) => (
-                    <TableRow key={saida.id}>
-                      <TableCell className="font-medium">{saida.paciente_nome || "-"}</TableCell>
-                      <TableCell>
-                        {saida.nascimento_mae 
-                          ? format(new Date(saida.nascimento_mae), "dd/MM/yyyy", { locale: ptBR })
-                          : "-"}
-                      </TableCell>
-                      <TableCell>{saida.numero_prontuario}</TableCell>
-                      <TableCell>{getStatusBadge(saida.status)}</TableCell>
-                      <TableCell>
-                        {saida.registrado_recepcao_em 
-                          ? format(new Date(saida.registrado_recepcao_em), "dd/MM/yy HH:mm", { locale: ptBR })
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          {saida.validado_classificacao_em 
-                            ? format(new Date(saida.validado_classificacao_em), "dd/MM/yy HH:mm", { locale: ptBR })
+                  {filteredSaidas.map((saida) => {
+                    const missingFromSalus = isMissingFromSalus(saida);
+                    return (
+                      <TableRow 
+                        key={saida.id}
+                        className={missingFromSalus ? "bg-destructive/10 border-l-4 border-l-destructive" : ""}
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {saida.paciente_nome || "-"}
+                            {missingFromSalus && (
+                              <Badge variant="destructive" className="text-xs">
+                                Falta Salus
+                              </Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {saida.nascimento_mae 
+                            ? format(new Date(saida.nascimento_mae), "dd/MM/yyyy", { locale: ptBR })
                             : "-"}
-                          {saida.existe_fisicamente !== null && (
-                            <span className={`text-xs ${saida.existe_fisicamente ? "text-success" : "text-destructive"}`}>
-                              {saida.existe_fisicamente ? "✓ Existe" : "✗ Não existe"}
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {saida.conferido_nir_em 
-                          ? format(new Date(saida.conferido_nir_em), "dd/MM/yy HH:mm", { locale: ptBR })
-                          : "-"}
-                      </TableCell>
-                      <TableCell>
-                        {getActionButton(saida)}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                        </TableCell>
+                        <TableCell>{saida.numero_prontuario}</TableCell>
+                        <TableCell>{getStatusBadge(saida.status)}</TableCell>
+                        <TableCell>
+                          {saida.registrado_recepcao_em 
+                            ? format(new Date(saida.registrado_recepcao_em), "dd/MM/yy HH:mm", { locale: ptBR })
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-col">
+                            {saida.validado_classificacao_em 
+                              ? format(new Date(saida.validado_classificacao_em), "dd/MM/yy HH:mm", { locale: ptBR })
+                              : "-"}
+                            {saida.existe_fisicamente !== null && (
+                              <span className={`text-xs ${saida.existe_fisicamente ? "text-success" : "text-destructive"}`}>
+                                {saida.existe_fisicamente ? "✓ Existe" : "✗ Não existe"}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {saida.conferido_nir_em 
+                            ? format(new Date(saida.conferido_nir_em), "dd/MM/yy HH:mm", { locale: ptBR })
+                            : "-"}
+                        </TableCell>
+                        <TableCell>
+                          {getActionButton(saida)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>
