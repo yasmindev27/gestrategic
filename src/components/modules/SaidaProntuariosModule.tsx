@@ -93,6 +93,7 @@ export const SaidaProntuariosModule = () => {
   const { toast } = useToast();
   
   const [saidas, setSaidas] = useState<SaidaProntuario[]>([]);
+  const [faltantesSalus, setFaltantesSalus] = useState<SaidaProntuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [newProntuarioOpen, setNewProntuarioOpen] = useState(false);
@@ -105,6 +106,11 @@ export const SaidaProntuariosModule = () => {
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   const [showFilters, setShowFilters] = useState(false);
   const [salusAnalysis, setSalusAnalysis] = useState<AnalysisResult | null>(null);
+  
+  // Filters for faltantes section
+  const [faltantesSearchTerm, setFaltantesSearchTerm] = useState("");
+  const [faltantesDataInicio, setFaltantesDataInicio] = useState("");
+  const [faltantesDataFim, setFaltantesDataFim] = useState("");
   
   // Form states
   const [pacienteNome, setPacienteNome] = useState("");
@@ -129,13 +135,25 @@ export const SaidaProntuariosModule = () => {
   const fetchSaidas = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
+      // Fetch regular saidas (excluding Salus imports)
+      const { data: regularData, error: regularError } = await supabase
         .from("saida_prontuarios")
         .select("*")
+        .not('observacao_classificacao', 'ilike', '%Importado via Salus%')
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
-      setSaidas(data || []);
+      if (regularError) throw regularError;
+      setSaidas(regularData || []);
+
+      // Fetch Salus imports separately
+      const { data: salusData, error: salusError } = await supabase
+        .from("saida_prontuarios")
+        .select("*")
+        .ilike('observacao_classificacao', '%Importado via Salus%')
+        .order("created_at", { ascending: false });
+
+      if (salusError) throw salusError;
+      setFaltantesSalus(salusData || []);
     } catch (error) {
       console.error("Error fetching saidas:", error);
       toast({
@@ -406,10 +424,79 @@ export const SaidaProntuariosModule = () => {
     });
   };
 
-  // Get missing patients from Salus that are NOT in the system at all
-  const getMissingPatientsNotInSystem = () => {
-    if (!salusAnalysis || !salusAnalysis.success) return [];
-    return salusAnalysis.pacientes.filter(p => p.status === 'faltando');
+  // Get filtered faltantes from database
+  const filteredFaltantesSalus = faltantesSalus.filter(s => {
+    const matchesSearch = 
+      !faltantesSearchTerm ||
+      s.numero_prontuario.toLowerCase().includes(faltantesSearchTerm.toLowerCase()) ||
+      (s.paciente_nome && s.paciente_nome.toLowerCase().includes(faltantesSearchTerm.toLowerCase()));
+
+    let matchesDate = true;
+    if (faltantesDataInicio || faltantesDataFim) {
+      const recordDate = new Date(s.created_at);
+      if (faltantesDataInicio) {
+        const startDate = new Date(faltantesDataInicio);
+        startDate.setHours(0, 0, 0, 0);
+        matchesDate = matchesDate && recordDate >= startDate;
+      }
+      if (faltantesDataFim) {
+        const endDate = new Date(faltantesDataFim);
+        endDate.setHours(23, 59, 59, 999);
+        matchesDate = matchesDate && recordDate <= endDate;
+      }
+    }
+
+    return matchesSearch && matchesDate;
+  });
+
+  const clearFaltantesFilters = () => {
+    setFaltantesSearchTerm("");
+    setFaltantesDataInicio("");
+    setFaltantesDataFim("");
+  };
+
+  const hasFaltantesActiveFilters = faltantesSearchTerm || faltantesDataInicio || faltantesDataFim;
+
+  const getFaltantesExportData = () => {
+    const headers = ['Paciente', 'Nº Prontuário', 'Data de Registro', 'Status'];
+    const rows = filteredFaltantesSalus.map(s => [
+      s.paciente_nome || '-',
+      s.numero_prontuario,
+      s.created_at ? format(new Date(s.created_at), "dd/MM/yyyy HH:mm") : '-',
+      'Falta prontuário físico',
+    ]);
+    return { headers, rows };
+  };
+
+  const handleExportFaltantesCSV = () => {
+    if (filteredFaltantesSalus.length === 0) return;
+    const { headers, rows } = getFaltantesExportData();
+    exportToCSV({
+      title: 'Prontuários Faltantes - Salus',
+      headers,
+      rows,
+      fileName: 'prontuarios_faltantes_salus',
+    });
+    toast({
+      title: "Exportado!",
+      description: `${filteredFaltantesSalus.length} registro(s) exportado(s) para CSV.`,
+    });
+  };
+
+  const handleExportFaltantesPDF = () => {
+    if (filteredFaltantesSalus.length === 0) return;
+    const { headers, rows } = getFaltantesExportData();
+    exportToPDF({
+      title: 'Prontuários Faltantes - Salus',
+      headers,
+      rows,
+      fileName: 'prontuarios_faltantes_salus',
+      orientation: 'portrait',
+    });
+    toast({
+      title: "Exportado!",
+      description: `${filteredFaltantesSalus.length} registro(s) exportado(s) para PDF.`,
+    });
   };
 
   const getExportData = () => {
@@ -504,7 +591,7 @@ export const SaidaProntuariosModule = () => {
           <p className="text-muted-foreground">Controle de fluxo entre setores</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <PdfPatientCounter onAnalysisComplete={setSalusAnalysis} />
+          <PdfPatientCounter onAnalysisComplete={setSalusAnalysis} onLaunchComplete={fetchSaidas} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="outline">
@@ -783,68 +870,140 @@ export const SaidaProntuariosModule = () => {
         </CardContent>
       </Card>
 
-      {/* Missing from Salus Alert - Always visible */}
+      {/* Prontuários Faltantes - Importados via Salus */}
       <Card className="bg-destructive/5 border-destructive/30">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
               <CardTitle className="flex items-center gap-2 text-destructive">
                 <AlertCircle className="h-5 w-5" />
-                Prontuários Faltantes (Análise Salus)
+                Prontuários Faltantes (Importados Salus)
               </CardTitle>
               <CardDescription>
-                {salusAnalysis && salusAnalysis.success && salusAnalysis.faltando > 0
-                  ? `${salusAnalysis.faltando} paciente(s) do PDF Salus não encontrado(s) no sistema`
-                  : "Nenhum paciente faltando - faça uma análise de PDF para verificar discrepâncias"
+                {faltantesSalus.length > 0
+                  ? `${faltantesSalus.length} prontuário(s) importado(s) do Salus aguardando localização física`
+                  : "Nenhum prontuário faltante - utilize o botão 'Importar PDF' e 'Lançar Faltando' para registrar discrepâncias"
                 }
               </CardDescription>
             </div>
-            {salusAnalysis && salusAnalysis.success && (
-              <Badge variant="destructive" className="w-fit">
-                {salusAnalysis.faltando} faltando
-              </Badge>
-            )}
+            <Badge variant="destructive" className="w-fit">
+              {filteredFaltantesSalus.length} de {faltantesSalus.length} registro(s)
+            </Badge>
           </div>
         </CardHeader>
-        <CardContent>
-          {!salusAnalysis || !salusAnalysis.success ? (
+        <CardContent className="space-y-4">
+          {faltantesSalus.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>Utilize o botão "Analisar PDF" acima para verificar discrepâncias entre o Salus e o sistema.</p>
-            </div>
-          ) : getMissingPatientsNotInSystem().length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              <Check className="h-8 w-8 mx-auto mb-2 text-success" />
-              <p className="text-success font-medium">Todos os pacientes do PDF Salus foram encontrados no sistema!</p>
+              <p>Utilize o botão "Importar PDF" acima para analisar discrepâncias.</p>
+              <p className="text-sm mt-1">Depois clique em "Lançar Faltando" para registrar os prontuários ausentes.</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Nº Prontuário</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {getMissingPatientsNotInSystem().map((patient, index) => (
-                    <TableRow key={index} className="bg-destructive/5">
-                      <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
-                      <TableCell className="font-medium">{patient.nome}</TableCell>
-                      <TableCell>{patient.prontuario || "-"}</TableCell>
-                      <TableCell>
-                        <Badge variant="destructive" className="flex items-center gap-1 w-fit">
-                          <XCircle className="h-3 w-3" />
-                          Não cadastrado
-                        </Badge>
-                      </TableCell>
+            <>
+              {/* Search and Filters */}
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por paciente ou prontuário..."
+                    value={faltantesSearchTerm}
+                    onChange={(e) => setFaltantesSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="date"
+                        value={faltantesDataInicio}
+                        onChange={(e) => setFaltantesDataInicio(e.target.value)}
+                        className="pl-10 w-40"
+                        placeholder="De"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="date"
+                        value={faltantesDataFim}
+                        onChange={(e) => setFaltantesDataFim(e.target.value)}
+                        className="pl-10 w-40"
+                        placeholder="Até"
+                      />
+                    </div>
+                  </div>
+                  {hasFaltantesActiveFilters && (
+                    <Button variant="ghost" size="sm" onClick={clearFaltantesFilters}>
+                      <X className="h-4 w-4 mr-1" />
+                      Limpar
+                    </Button>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Download className="h-4 w-4 mr-2" />
+                        Exportar
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleExportFaltantesCSV}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Exportar CSV
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleExportFaltantesPDF}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Exportar PDF
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto rounded-md border bg-background">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">#</TableHead>
+                      <TableHead>Paciente</TableHead>
+                      <TableHead>Nº Prontuário</TableHead>
+                      <TableHead>Data de Registro</TableHead>
+                      <TableHead>Status</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredFaltantesSalus.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                          Nenhum registro encontrado com os filtros aplicados
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredFaltantesSalus.map((item, index) => (
+                        <TableRow key={item.id} className="bg-destructive/5">
+                          <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
+                          <TableCell className="font-medium">{item.paciente_nome || '-'}</TableCell>
+                          <TableCell className="font-mono text-sm">{item.numero_prontuario}</TableCell>
+                          <TableCell>
+                            {item.registrado_recepcao_em
+                              ? format(new Date(item.registrado_recepcao_em), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                              : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="destructive" className="flex items-center gap-1 w-fit">
+                              <XCircle className="h-3 w-3" />
+                              Falta prontuário físico
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
