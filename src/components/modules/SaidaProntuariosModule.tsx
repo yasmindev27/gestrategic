@@ -136,10 +136,11 @@ export const SaidaProntuariosModule = () => {
     setIsLoading(true);
     try {
       // Fetch regular saidas (excluding Salus imports)
+      // Need to use OR filter: observacao_classificacao is null OR does not contain 'Importado via Salus'
       const { data: regularData, error: regularError } = await supabase
         .from("saida_prontuarios")
         .select("*")
-        .not('observacao_classificacao', 'ilike', '%Importado via Salus%')
+        .or('observacao_classificacao.is.null,observacao_classificacao.not.ilike.%Importado via Salus%')
         .order("created_at", { ascending: false });
 
       if (regularError) throw regularError;
