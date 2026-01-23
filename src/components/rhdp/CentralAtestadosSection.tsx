@@ -128,8 +128,9 @@ export const CentralAtestadosSection = () => {
       return null;
     }
 
-    const { data } = supabase.storage.from("atestados").getPublicUrl(filePath);
-    return data.publicUrl;
+    // Store just the file path - signed URLs will be generated when viewing
+    // This follows LGPD best practices for sensitive medical documents
+    return filePath;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -409,8 +410,49 @@ export const CentralAtestadosSection = () => {
     }
   };
 
-  const viewFile = (url: string) => {
-    window.open(url, "_blank");
+  const viewFile = async (filePathOrUrl: string) => {
+    // Check if it's already a full URL (legacy data) or just a file path
+    if (filePathOrUrl.startsWith("http")) {
+      // Legacy: extract file path from URL for signed URL generation
+      const urlParts = filePathOrUrl.split("/atestados/");
+      const filePath = urlParts.length > 1 ? urlParts[1].split("?")[0] : null;
+      
+      if (filePath) {
+        const { data, error } = await supabase.storage
+          .from("atestados")
+          .createSignedUrl(filePath, 3600); // 1 hour expiry
+        
+        if (error) {
+          console.error("Erro ao gerar URL assinada:", error);
+          toast({
+            title: "Erro",
+            description: "Não foi possível acessar o arquivo.",
+            variant: "destructive",
+          });
+          return;
+        }
+        window.open(data.signedUrl, "_blank");
+      } else {
+        // Fallback for old URLs that can't be parsed
+        window.open(filePathOrUrl, "_blank");
+      }
+    } else {
+      // New format: file path stored directly
+      const { data, error } = await supabase.storage
+        .from("atestados")
+        .createSignedUrl(filePathOrUrl, 3600); // 1 hour expiry for LGPD compliance
+      
+      if (error) {
+        console.error("Erro ao gerar URL assinada:", error);
+        toast({
+          title: "Erro",
+          description: "Não foi possível acessar o arquivo.",
+          variant: "destructive",
+        });
+        return;
+      }
+      window.open(data.signedUrl, "_blank");
+    }
   };
 
   return (
