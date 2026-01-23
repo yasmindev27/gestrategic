@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Ambulance, LayoutDashboard, BedDouble, ExternalLink, FileUp } from "lucide-react";
+import { Ambulance, LayoutDashboard, BedDouble, ExternalLink } from "lucide-react";
 import { NirDashboardModule } from "./NirDashboardModule";
 import { MapaLeitosModule } from "./MapaLeitosModule";
-import { SalusImportModule } from "@/components/nir/SalusImportModule";
+import { SalusImportModule, ListaFaltantesSalus } from "@/components/nir";
 import logoSusFacil from "@/assets/logo-susfacil.png";
 
 type NirView = "menu" | "dashboard" | "mapa-leitos";
@@ -110,6 +110,9 @@ export const NirModule = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Lista de Prontuários Faltantes - Salus */}
+      <ListaFaltantesSalus />
     </div>
   );
 };
