@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Ambulance, LayoutDashboard, BedDouble, ExternalLink } from "lucide-react";
+import { Ambulance, LayoutDashboard, BedDouble, ExternalLink, FileUp } from "lucide-react";
 import { NirDashboardModule } from "./NirDashboardModule";
 import { MapaLeitosModule } from "./MapaLeitosModule";
+import { SalusImportModule } from "@/components/nir/SalusImportModule";
 import logoSusFacil from "@/assets/logo-susfacil.png";
 
 type NirView = "menu" | "dashboard" | "mapa-leitos";
@@ -36,12 +37,15 @@ export const NirModule = () => {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <Ambulance className="h-6 w-6 text-primary" />
-          Núcleo Interno de Regulação
-        </h2>
-        <p className="text-muted-foreground">Gestão de leitos e regulação hospitalar</p>
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <Ambulance className="h-6 w-6 text-primary" />
+            Núcleo Interno de Regulação
+          </h2>
+          <p className="text-muted-foreground">Gestão de leitos e regulação hospitalar</p>
+        </div>
+        <SalusImportModule />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
