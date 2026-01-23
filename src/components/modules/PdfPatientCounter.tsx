@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { FileUp, FileText, Users, Loader2, X, AlertCircle, Download, CheckCircle, XCircle } from 'lucide-react';
+import { FileUp, FileText, Users, Loader2, X, AlertCircle, Download, CheckCircle, XCircle, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -22,6 +22,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { exportToCSV, exportToPDF } from '@/lib/export-utils';
+import { useUserRole } from '@/hooks/useUserRole';
 
 export interface PatientResult {
   nome: string;
@@ -48,12 +49,14 @@ interface PdfPatientCounterProps {
 export function PdfPatientCounter({ onAnalysisComplete }: PdfPatientCounterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLaunching, setIsLaunching] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('todos');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+  const { userId } = useUserRole();
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -154,6 +157,48 @@ export function PdfPatientCounter({ onAnalysisComplete }: PdfPatientCounterProps
       title: 'Exportado!',
       description: `${faltando.length} paciente(s) faltando exportado(s) para PDF.`,
     });
+  };
+
+  const handleLaunchMissing = async () => {
+    if (!result || result.faltando === 0 || !userId) return;
+
+    setIsLaunching(true);
+    try {
+      const faltando = result.pacientes.filter(p => p.status === 'faltando');
+      
+      // Insert all missing patients
+      const inserts = faltando.map(p => ({
+        paciente_nome: p.nome,
+        numero_prontuario: p.prontuario || `SALUS-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
+        registrado_recepcao_por: userId,
+        registrado_recepcao_em: new Date().toISOString(),
+        status: 'pendente',
+        observacao_classificacao: 'Falta prontuário físico - Importado via Salus',
+      }));
+
+      const { error: insertError } = await supabase
+        .from('saida_prontuarios')
+        .insert(inserts);
+
+      if (insertError) throw insertError;
+
+      toast({
+        title: 'Lançamento concluído!',
+        description: `${faltando.length} paciente(s) faltante(s) foram adicionados à lista de prontuários faltantes.`,
+      });
+
+      // Close dialog and reset
+      handleClose();
+    } catch (err) {
+      console.error('Error launching missing:', err);
+      toast({
+        title: 'Erro',
+        description: 'Erro ao lançar pacientes faltantes.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLaunching(false);
+    }
   };
 
   const handleReset = () => {
@@ -352,35 +397,54 @@ export function PdfPatientCounter({ onAnalysisComplete }: PdfPatientCounterProps
         </div>
 
         <DialogFooter className="flex justify-between gap-2 flex-wrap">
-          {result && result.faltando > 0 && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="destructive">
-                  <Download className="h-4 w-4 mr-2" />
-                  Exportar Faltando ({result.faltando})
+          <div className="flex gap-2 flex-wrap">
+            {result && result.faltando > 0 && (
+              <>
+                <Button 
+                  variant="default" 
+                  onClick={handleLaunchMissing}
+                  disabled={isLaunching}
+                  className="bg-destructive hover:bg-destructive/90"
+                >
+                  {isLaunching ? (
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4 mr-2" />
+                  )}
+                  Lançar Faltando ({result.faltando})
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start">
-                <DropdownMenuItem onClick={handleExportMissingCSV}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Exportar CSV
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExportMissingPDF}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Exportar PDF
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
-          {result && (
-            <Button variant="ghost" onClick={handleReset}>
-              <X className="h-4 w-4 mr-2" />
-              Nova Análise
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline">
+                      <Download className="h-4 w-4 mr-2" />
+                      Exportar
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={handleExportMissingCSV}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Exportar CSV
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={handleExportMissingPDF}>
+                      <FileText className="h-4 w-4 mr-2" />
+                      Exportar PDF
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {result && (
+              <Button variant="ghost" onClick={handleReset}>
+                <X className="h-4 w-4 mr-2" />
+                Nova Análise
+              </Button>
+            )}
+            <Button variant="outline" onClick={handleClose}>
+              Fechar
             </Button>
-          )}
-          <Button variant="outline" onClick={handleClose}>
-            Fechar
-          </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
