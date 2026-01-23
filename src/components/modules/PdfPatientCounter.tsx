@@ -44,9 +44,10 @@ export interface AnalysisResult {
 
 interface PdfPatientCounterProps {
   onAnalysisComplete?: (result: AnalysisResult | null) => void;
+  onLaunchComplete?: () => void;
 }
 
-export function PdfPatientCounter({ onAnalysisComplete }: PdfPatientCounterProps) {
+export function PdfPatientCounter({ onAnalysisComplete, onLaunchComplete }: PdfPatientCounterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isLaunching, setIsLaunching] = useState(false);
@@ -186,6 +187,9 @@ export function PdfPatientCounter({ onAnalysisComplete }: PdfPatientCounterProps
         title: 'Lançamento concluído!',
         description: `${faltando.length} paciente(s) faltante(s) foram adicionados à lista de prontuários faltantes.`,
       });
+
+      // Notify parent to refresh data
+      onLaunchComplete?.();
 
       // Close dialog and reset
       handleClose();
