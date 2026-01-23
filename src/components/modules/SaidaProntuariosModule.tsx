@@ -24,6 +24,13 @@ import {
   DialogTrigger,
   DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   FileOutput, 
   Plus, 
@@ -31,7 +38,12 @@ import {
   Check,
   AlertCircle,
   Loader2,
-  ClipboardCheck
+  ClipboardCheck,
+  Download,
+  Calendar,
+  Users,
+  Filter,
+  X
 } from "lucide-react";
 import { PdfPatientCounter } from "./PdfPatientCounter";
 import { useToast } from "@/hooks/use-toast";
@@ -67,6 +79,12 @@ export const SaidaProntuariosModule = () => {
   const [newProntuarioOpen, setNewProntuarioOpen] = useState(false);
   const [validarOpen, setValidarOpen] = useState(false);
   const [selectedSaida, setSelectedSaida] = useState<SaidaProntuario | null>(null);
+  
+  // Filter states
+  const [dataInicio, setDataInicio] = useState("");
+  const [dataFim, setDataFim] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [showFilters, setShowFilters] = useState(false);
   
   // Form states
   const [pacienteNome, setPacienteNome] = useState("");
@@ -292,10 +310,78 @@ export const SaidaProntuariosModule = () => {
     return null;
   };
 
-  const filteredSaidas = saidas.filter(
-    s => s.numero_prontuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         (s.paciente_nome && s.paciente_nome.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // Apply all filters
+  const filteredSaidas = saidas.filter(s => {
+    // Text search
+    const matchesSearch = 
+      s.numero_prontuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (s.paciente_nome && s.paciente_nome.toLowerCase().includes(searchTerm.toLowerCase()));
+
+    // Date filter
+    let matchesDate = true;
+    if (dataInicio || dataFim) {
+      const recordDate = new Date(s.created_at);
+      if (dataInicio) {
+        const startDate = new Date(dataInicio);
+        startDate.setHours(0, 0, 0, 0);
+        matchesDate = matchesDate && recordDate >= startDate;
+      }
+      if (dataFim) {
+        const endDate = new Date(dataFim);
+        endDate.setHours(23, 59, 59, 999);
+        matchesDate = matchesDate && recordDate <= endDate;
+      }
+    }
+
+    // Status filter
+    const matchesStatus = statusFilter === "todos" || s.status === statusFilter;
+
+    return matchesSearch && matchesDate && matchesStatus;
+  });
+
+  const clearFilters = () => {
+    setSearchTerm("");
+    setDataInicio("");
+    setDataFim("");
+    setStatusFilter("todos");
+  };
+
+  const hasActiveFilters = searchTerm || dataInicio || dataFim || statusFilter !== "todos";
+
+  const handleExportCSV = () => {
+    if (filteredSaidas.length === 0) {
+      toast({
+        title: "Aviso",
+        description: "Não há dados para exportar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const csvContent = [
+      'Paciente,Data Nasc.,Nº Prontuário,Status,Recepção,Classificação,NIR',
+      ...filteredSaidas.map(s => [
+        `"${s.paciente_nome || '-'}"`,
+        s.nascimento_mae ? format(new Date(s.nascimento_mae), "dd/MM/yyyy") : '-',
+        s.numero_prontuario,
+        s.status,
+        s.registrado_recepcao_em ? format(new Date(s.registrado_recepcao_em), "dd/MM/yy HH:mm") : '-',
+        s.validado_classificacao_em ? format(new Date(s.validado_classificacao_em), "dd/MM/yy HH:mm") : '-',
+        s.conferido_nir_em ? format(new Date(s.conferido_nir_em), "dd/MM/yy HH:mm") : '-',
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `saida_prontuarios_${format(new Date(), "yyyy-MM-dd")}.csv`;
+    link.click();
+
+    toast({
+      title: "Exportado!",
+      description: `${filteredSaidas.length} registro(s) exportado(s) para CSV.`,
+    });
+  };
 
   if (isLoadingRole) {
     return (
@@ -320,81 +406,177 @@ export const SaidaProntuariosModule = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h2 className="text-2xl font-bold text-foreground">Lista de Saída de Prontuários</h2>
           <p className="text-muted-foreground">Controle de fluxo entre setores</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <PdfPatientCounter />
+          <Button variant="outline" onClick={handleExportCSV}>
+            <Download className="h-4 w-4 mr-2" />
+            Exportar
+          </Button>
           {canInsert && (
             <Dialog open={newProntuarioOpen} onOpenChange={setNewProntuarioOpen}>
               <DialogTrigger asChild>
                 <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Registrar Saída
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Registrar Saída de Prontuário</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-4">
-                <div>
-                  <label className="text-sm font-medium">Paciente <span className="text-destructive">*</span></label>
-                  <Input
-                    value={pacienteNome}
-                    onChange={(e) => setPacienteNome(e.target.value)}
-                    placeholder="Nome completo do paciente"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Data de Nascimento</label>
-                  <Input
-                    type="date"
-                    value={nascimentoMae}
-                    onChange={(e) => setNascimentoMae(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Número do Prontuário <span className="text-destructive">*</span></label>
-                  <Input
-                    value={numeroProntuario}
-                    onChange={(e) => setNumeroProntuario(e.target.value)}
-                    placeholder="Digite o número do prontuário"
-                  />
-                </div>
-              </div>
-              <DialogFooter>
-                <Button 
-                  onClick={handleAddSaida} 
-                  disabled={!pacienteNome.trim() || !numeroProntuario.trim() || isSubmitting}
-                >
-                  {isSubmitting ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  ) : (
-                    <FileOutput className="h-4 w-4 mr-2" />
-                  )}
-                  Registrar
+                  <Plus className="h-4 w-4 mr-2" />
+                  Registrar Saída
                 </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Registrar Saída de Prontuário</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 pt-4">
+                  <div>
+                    <label className="text-sm font-medium">Paciente <span className="text-destructive">*</span></label>
+                    <Input
+                      value={pacienteNome}
+                      onChange={(e) => setPacienteNome(e.target.value)}
+                      placeholder="Nome completo do paciente"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Data de Nascimento</label>
+                    <Input
+                      type="date"
+                      value={nascimentoMae}
+                      onChange={(e) => setNascimentoMae(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium">Número do Prontuário <span className="text-destructive">*</span></label>
+                    <Input
+                      value={numeroProntuario}
+                      onChange={(e) => setNumeroProntuario(e.target.value)}
+                      placeholder="Digite o número do prontuário"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button 
+                    onClick={handleAddSaida} 
+                    disabled={!pacienteNome.trim() || !numeroProntuario.trim() || isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <FileOutput className="h-4 w-4 mr-2" />
+                    )}
+                    Registrar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           )}
         </div>
       </div>
 
-      {/* Search */}
+      {/* Search and Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Buscar por paciente ou número do prontuário..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
-            />
+          <div className="space-y-4">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Buscar por paciente ou número do prontuário..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button 
+                variant={showFilters ? "secondary" : "outline"} 
+                onClick={() => setShowFilters(!showFilters)}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                Filtros
+                {hasActiveFilters && (
+                  <Badge className="ml-2 bg-primary text-primary-foreground" variant="secondary">
+                    {[searchTerm, dataInicio, dataFim, statusFilter !== "todos"].filter(Boolean).length}
+                  </Badge>
+                )}
+              </Button>
+            </div>
+
+            {showFilters && (
+              <div className="flex flex-col md:flex-row gap-4 p-4 bg-muted/50 rounded-lg">
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-1 block">Data Início</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="date"
+                      value={dataInicio}
+                      onChange={(e) => setDataInicio(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-1 block">Data Fim</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="date"
+                      value={dataFim}
+                      onChange={(e) => setDataFim(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <label className="text-sm font-medium mb-1 block">Status</label>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Todos" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
+                      <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
+                      <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
+                      <SelectItem value="em_avaliacao">Em Avaliação</SelectItem>
+                      <SelectItem value="concluido">Concluído</SelectItem>
+                      <SelectItem value="pendente">Pendente</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                {hasActiveFilters && (
+                  <div className="flex items-end">
+                    <Button variant="ghost" size="sm" onClick={clearFilters}>
+                      <X className="h-4 w-4 mr-1" />
+                      Limpar
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Total Counter */}
+      <Card className="bg-primary/5 border-primary/20">
+        <CardContent className="py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-primary/10">
+                <Users className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Total de Registros</p>
+                <p className="text-2xl font-bold text-primary">{filteredSaidas.length}</p>
+              </div>
+            </div>
+            {hasActiveFilters && (
+              <div className="text-sm text-muted-foreground">
+                de {saidas.length} registros totais
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -407,6 +589,7 @@ export const SaidaProntuariosModule = () => {
             {role === "recepcao" && "Registre a saída inicial dos prontuários físicos."}
             {role === "classificacao" && "Valide se os prontuários registrados existem fisicamente."}
             {role === "nir" && "Confira e valide os registros da Classificação."}
+            {isFaturamento && "Visualização dos prontuários em fluxo."}
             {isAdmin && "Visualização completa de todos os fluxos."}
           </CardDescription>
         </CardHeader>
@@ -420,59 +603,61 @@ export const SaidaProntuariosModule = () => {
               Nenhum prontuário encontrado.
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Paciente</TableHead>
-                  <TableHead>Data Nasc.</TableHead>
-                  <TableHead>Nº Prontuário</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Recepção</TableHead>
-                  <TableHead>Classificação</TableHead>
-                  <TableHead>NIR</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredSaidas.map((saida) => (
-                  <TableRow key={saida.id}>
-                    <TableCell className="font-medium">{saida.paciente_nome || "-"}</TableCell>
-                    <TableCell>
-                      {saida.nascimento_mae 
-                        ? format(new Date(saida.nascimento_mae), "dd/MM/yyyy", { locale: ptBR })
-                        : "-"}
-                    </TableCell>
-                    <TableCell>{saida.numero_prontuario}</TableCell>
-                    <TableCell>{getStatusBadge(saida.status)}</TableCell>
-                    <TableCell>
-                      {saida.registrado_recepcao_em 
-                        ? format(new Date(saida.registrado_recepcao_em), "dd/MM/yy HH:mm", { locale: ptBR })
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col">
-                        {saida.validado_classificacao_em 
-                          ? format(new Date(saida.validado_classificacao_em), "dd/MM/yy HH:mm", { locale: ptBR })
-                          : "-"}
-                        {saida.existe_fisicamente !== null && (
-                          <span className={`text-xs ${saida.existe_fisicamente ? "text-success" : "text-destructive"}`}>
-                            {saida.existe_fisicamente ? "✓ Existe" : "✗ Não existe"}
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {saida.conferido_nir_em 
-                        ? format(new Date(saida.conferido_nir_em), "dd/MM/yy HH:mm", { locale: ptBR })
-                        : "-"}
-                    </TableCell>
-                    <TableCell>
-                      {getActionButton(saida)}
-                    </TableCell>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead>Data Nasc.</TableHead>
+                    <TableHead>Nº Prontuário</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Recepção</TableHead>
+                    <TableHead>Classificação</TableHead>
+                    <TableHead>NIR</TableHead>
+                    <TableHead>Ações</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredSaidas.map((saida) => (
+                    <TableRow key={saida.id}>
+                      <TableCell className="font-medium">{saida.paciente_nome || "-"}</TableCell>
+                      <TableCell>
+                        {saida.nascimento_mae 
+                          ? format(new Date(saida.nascimento_mae), "dd/MM/yyyy", { locale: ptBR })
+                          : "-"}
+                      </TableCell>
+                      <TableCell>{saida.numero_prontuario}</TableCell>
+                      <TableCell>{getStatusBadge(saida.status)}</TableCell>
+                      <TableCell>
+                        {saida.registrado_recepcao_em 
+                          ? format(new Date(saida.registrado_recepcao_em), "dd/MM/yy HH:mm", { locale: ptBR })
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          {saida.validado_classificacao_em 
+                            ? format(new Date(saida.validado_classificacao_em), "dd/MM/yy HH:mm", { locale: ptBR })
+                            : "-"}
+                          {saida.existe_fisicamente !== null && (
+                            <span className={`text-xs ${saida.existe_fisicamente ? "text-success" : "text-destructive"}`}>
+                              {saida.existe_fisicamente ? "✓ Existe" : "✗ Não existe"}
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {saida.conferido_nir_em 
+                          ? format(new Date(saida.conferido_nir_em), "dd/MM/yy HH:mm", { locale: ptBR })
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {getActionButton(saida)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           )}
         </CardContent>
       </Card>

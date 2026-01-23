@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { FileUp, FileText, Users, Loader2, X, AlertCircle } from 'lucide-react';
+import { FileUp, FileText, Users, Loader2, X, AlertCircle, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -13,10 +13,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Configure PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface PatientInfo {
   name: string;
@@ -29,25 +25,9 @@ export function PdfPatientCounter() {
   const [patients, setPatients] = useState<PatientInfo[]>([]);
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [rawText, setRawText] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-
-  const extractTextFromPdf = async (file: File): Promise<string> => {
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-    let fullText = '';
-
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const textContent = await page.getTextContent();
-      const pageText = textContent.items
-        .map((item: any) => item.str)
-        .join(' ');
-      fullText += pageText + '\n';
-    }
-
-    return fullText;
-  };
 
   const extractPatients = (text: string): PatientInfo[] => {
     const lines = text.split('\n');
@@ -55,7 +35,6 @@ export function PdfPatientCounter() {
     const processedNames = new Set<string>();
 
     // Patterns to identify patient names
-    // Looking for lines that contain "Paciente:" or similar patterns
     const patientPatterns = [
       /paciente[:\s]+([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇa-záéíóúâêîôûãõç\s]+)/gi,
       /nome[:\s]+([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇa-záéíóúâêîôûãõç\s]+)/gi,
@@ -67,7 +46,6 @@ export function PdfPatientCounter() {
         for (const match of matches) {
           const name = match[1]?.trim();
           if (name && name.length > 3 && !processedNames.has(name.toLowerCase())) {
-            // Filter out common non-name words
             const excludeWords = ['data', 'hora', 'setor', 'leito', 'cid', 'prontuario', 'registro', 'idade', 'sexo'];
             const isValidName = !excludeWords.some(word => 
               name.toLowerCase().includes(word)
@@ -85,9 +63,8 @@ export function PdfPatientCounter() {
       });
     });
 
-    // If no patterns matched, try to find table-like structure
+    // Fallback: Look for capitalized names in lines
     if (patients.length === 0) {
-      // Look for capitalized names in lines (typical of patient lists)
       const nameRegex = /([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ\s]{5,50})/g;
       
       lines.forEach((line, index) => {
@@ -115,11 +92,13 @@ export function PdfPatientCounter() {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    if (file.type !== 'application/pdf') {
-      setError('Por favor, selecione um arquivo PDF.');
+    // Accept both PDF and TXT files
+    const validTypes = ['application/pdf', 'text/plain'];
+    if (!validTypes.includes(file.type) && !file.name.endsWith('.txt')) {
+      setError('Por favor, selecione um arquivo PDF ou TXT.');
       toast({
         title: 'Erro',
-        description: 'O arquivo deve ser um PDF.',
+        description: 'O arquivo deve ser PDF ou TXT.',
         variant: 'destructive',
       });
       return;
@@ -129,43 +108,76 @@ export function PdfPatientCounter() {
     setError(null);
     setFileName(file.name);
     setPatients([]);
+    setRawText('');
 
     try {
-      const text = await extractTextFromPdf(file);
+      let text = '';
+      
+      if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
+        // Read TXT file directly
+        text = await file.text();
+      } else {
+        // For PDF, we'll inform the user to convert first
+        setError('Para arquivos PDF, por favor copie o conteúdo e cole em um arquivo TXT, ou exporte como texto primeiro.');
+        setIsProcessing(false);
+        return;
+      }
+
+      setRawText(text);
       const extractedPatients = extractPatients(text);
       
       setPatients(extractedPatients);
       
       if (extractedPatients.length === 0) {
-        setError('Nenhum paciente encontrado no PDF. Verifique se o arquivo contém uma coluna "Paciente" ou "Nome".');
+        setError('Nenhum paciente encontrado. Verifique se o arquivo contém uma coluna "Paciente" ou "Nome".');
       } else {
         toast({
-          title: 'PDF processado!',
+          title: 'Arquivo processado!',
           description: `${extractedPatients.length} paciente(s) encontrado(s).`,
         });
       }
     } catch (err) {
-      console.error('Error processing PDF:', err);
-      setError('Erro ao processar o PDF. Verifique se o arquivo está correto.');
+      console.error('Error processing file:', err);
+      setError('Erro ao processar o arquivo. Verifique se o arquivo está correto.');
       toast({
         title: 'Erro',
-        description: 'Erro ao processar o PDF.',
+        description: 'Erro ao processar o arquivo.',
         variant: 'destructive',
       });
     } finally {
       setIsProcessing(false);
     }
 
-    // Reset file input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const handleExportPatients = () => {
+    if (patients.length === 0) return;
+
+    const csvContent = [
+      'Número,Nome do Paciente',
+      ...patients.map((p, i) => `${i + 1},"${p.name}"`)
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `pacientes_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+
+    toast({
+      title: 'Exportado!',
+      description: `${patients.length} paciente(s) exportado(s) para CSV.`,
+    });
   };
 
   const handleReset = () => {
     setPatients([]);
     setFileName('');
     setError(null);
+    setRawText('');
   };
 
   const handleClose = () => {
@@ -181,14 +193,14 @@ export function PdfPatientCounter() {
       <DialogTrigger asChild>
         <Button variant="outline">
           <FileUp className="h-4 w-4 mr-2" />
-          Importar PDF
+          Importar
         </Button>
       </DialogTrigger>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            Contagem de Pacientes - PDF
+            Contagem de Pacientes - Importar Arquivo
           </DialogTitle>
         </DialogHeader>
 
@@ -198,24 +210,24 @@ export function PdfPatientCounter() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf"
+              accept=".txt,.csv"
               onChange={handleFileChange}
               className="hidden"
-              id="pdf-upload"
+              id="file-upload"
             />
             <label
-              htmlFor="pdf-upload"
+              htmlFor="file-upload"
               className="flex flex-col items-center justify-center cursor-pointer w-full"
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="h-10 w-10 text-primary animate-spin mb-2" />
-                  <p className="text-sm text-muted-foreground">Processando PDF...</p>
+                  <p className="text-sm text-muted-foreground">Processando arquivo...</p>
                 </>
               ) : (
                 <>
                   <FileUp className="h-10 w-10 text-muted-foreground mb-2" />
-                  <p className="text-sm font-medium">Clique para selecionar um arquivo PDF</p>
+                  <p className="text-sm font-medium">Clique para selecionar um arquivo TXT</p>
                   <p className="text-xs text-muted-foreground mt-1">
                     O sistema irá extrair automaticamente os nomes da coluna "Paciente"
                   </p>
@@ -256,10 +268,7 @@ export function PdfPatientCounter() {
                         key={index}
                         className="flex items-center justify-between p-2 rounded-md bg-muted/50"
                       >
-                        <span className="text-sm font-medium">{patient.name}</span>
-                        <Badge variant="outline" className="text-xs">
-                          Linha {patient.lineNumber}
-                        </Badge>
+                        <span className="text-sm font-medium">{index + 1}. {patient.name}</span>
                       </div>
                     ))}
                   </div>
@@ -269,12 +278,18 @@ export function PdfPatientCounter() {
           )}
         </div>
 
-        <DialogFooter className="flex justify-between">
+        <DialogFooter className="flex justify-between gap-2">
           {patients.length > 0 && (
-            <Button variant="ghost" onClick={handleReset}>
-              <X className="h-4 w-4 mr-2" />
-              Limpar
-            </Button>
+            <>
+              <Button variant="outline" onClick={handleExportPatients}>
+                <Download className="h-4 w-4 mr-2" />
+                Exportar CSV
+              </Button>
+              <Button variant="ghost" onClick={handleReset}>
+                <X className="h-4 w-4 mr-2" />
+                Limpar
+              </Button>
+            </>
           )}
           <Button variant="outline" onClick={handleClose}>
             Fechar
