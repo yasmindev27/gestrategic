@@ -687,50 +687,6 @@ export const SaidaProntuariosModule = () => {
         </CardContent>
       </Card>
 
-      {/* Missing from Salus Alert */}
-      {salusAnalysis && salusAnalysis.success && salusAnalysis.faltando > 0 && (
-        <Card className="bg-destructive/5 border-destructive/30">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-destructive">
-              <AlertCircle className="h-5 w-5" />
-              Pacientes Faltando (Lista Salus)
-            </CardTitle>
-            <CardDescription>
-              {salusAnalysis.faltando} paciente(s) do PDF Salus não encontrado(s) no sistema
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">#</TableHead>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Nº Prontuário</TableHead>
-                    <TableHead>Status</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {getMissingPatientsNotInSystem().map((patient, index) => (
-                    <TableRow key={index} className="bg-destructive/5">
-                      <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
-                      <TableCell className="font-medium">{patient.nome}</TableCell>
-                      <TableCell>{patient.prontuario || "-"}</TableCell>
-                      <TableCell>
-                        <Badge variant="destructive" className="flex items-center gap-1 w-fit">
-                          <XCircle className="h-3 w-3" />
-                          Não cadastrado
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Table */}
       <Card>
         <CardHeader>
@@ -820,6 +776,72 @@ export const SaidaProntuariosModule = () => {
                       </TableRow>
                     );
                   })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Missing from Salus Alert - Always visible */}
+      <Card className="bg-destructive/5 border-destructive/30">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-destructive">
+                <AlertCircle className="h-5 w-5" />
+                Prontuários Faltantes (Análise Salus)
+              </CardTitle>
+              <CardDescription>
+                {salusAnalysis && salusAnalysis.success && salusAnalysis.faltando > 0
+                  ? `${salusAnalysis.faltando} paciente(s) do PDF Salus não encontrado(s) no sistema`
+                  : "Nenhum paciente faltando - faça uma análise de PDF para verificar discrepâncias"
+                }
+              </CardDescription>
+            </div>
+            {salusAnalysis && salusAnalysis.success && (
+              <Badge variant="destructive" className="w-fit">
+                {salusAnalysis.faltando} faltando
+              </Badge>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          {!salusAnalysis || !salusAnalysis.success ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>Utilize o botão "Analisar PDF" acima para verificar discrepâncias entre o Salus e o sistema.</p>
+            </div>
+          ) : getMissingPatientsNotInSystem().length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <Check className="h-8 w-8 mx-auto mb-2 text-success" />
+              <p className="text-success font-medium">Todos os pacientes do PDF Salus foram encontrados no sistema!</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-12">#</TableHead>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead>Nº Prontuário</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {getMissingPatientsNotInSystem().map((patient, index) => (
+                    <TableRow key={index} className="bg-destructive/5">
+                      <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
+                      <TableCell className="font-medium">{patient.nome}</TableCell>
+                      <TableCell>{patient.prontuario || "-"}</TableCell>
+                      <TableCell>
+                        <Badge variant="destructive" className="flex items-center gap-1 w-fit">
+                          <XCircle className="h-3 w-3" />
+                          Não cadastrado
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>

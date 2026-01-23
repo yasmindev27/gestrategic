@@ -135,19 +135,7 @@ export function ListaFaltantesSalus() {
     });
   };
 
-  if (loading && faltantes.length === 0) {
-    return (
-      <Card className="border-destructive/20 bg-destructive/5">
-        <CardContent className="py-8 text-center text-muted-foreground">
-          Carregando lista de faltantes...
-        </CardContent>
-      </Card>
-    );
-  }
-
-  if (faltantes.length === 0) {
-    return null; // Don't show anything if no missing records
-  }
+  const isEmpty = faltantes.length === 0;
 
   return (
     <Card className="border-destructive/30 bg-destructive/5">
@@ -170,7 +158,19 @@ export function ListaFaltantesSalus() {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* Search and Filters */}
+        {loading ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Carregando lista de faltantes...
+          </div>
+        ) : isEmpty ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <FileWarning className="h-8 w-8 mx-auto mb-2 opacity-50" />
+            <p>Nenhum prontuário faltante registrado.</p>
+            <p className="text-sm mt-1">Utilize a ferramenta "Importar Salus" para processar novos PDFs.</p>
+          </div>
+        ) : (
+          <>
+            {/* Search and Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -333,6 +333,8 @@ export function ListaFaltantesSalus() {
             </TableBody>
           </Table>
         </div>
+          </>
+        )}
       </CardContent>
     </Card>
   );
