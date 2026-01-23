@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 
-interface PatientResult {
+export interface PatientResult {
   nome: string;
   prontuario: string | null;
   linha: number;
@@ -24,7 +24,7 @@ interface PatientResult {
   status: 'encontrado' | 'faltando';
 }
 
-interface AnalysisResult {
+export interface AnalysisResult {
   success: boolean;
   totalPdf: number;
   totalSistema: number;
@@ -34,7 +34,11 @@ interface AnalysisResult {
   error?: string;
 }
 
-export function PdfPatientCounter() {
+interface PdfPatientCounterProps {
+  onAnalysisComplete?: (result: AnalysisResult | null) => void;
+}
+
+export function PdfPatientCounter({ onAnalysisComplete }: PdfPatientCounterProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
@@ -82,7 +86,9 @@ export function PdfPatientCounter() {
         throw new Error(data.error || 'Erro ao analisar PDF');
       }
 
-      setResult(data as AnalysisResult);
+      const analysisResult = data as AnalysisResult;
+      setResult(analysisResult);
+      onAnalysisComplete?.(analysisResult);
       
       toast({
         title: 'Análise concluída!',
@@ -133,6 +139,7 @@ export function PdfPatientCounter() {
     setFileName('');
     setError(null);
     setActiveTab('todos');
+    onAnalysisComplete?.(null);
   };
 
   const handleClose = () => {
