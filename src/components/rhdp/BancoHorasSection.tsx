@@ -10,10 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Plus, Search, Clock, TrendingUp, TrendingDown, Download, Upload, Filter } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, Search, Clock, TrendingUp, TrendingDown, Download, Upload, Filter, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
+import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 
 interface BancoHora {
   id: string;
@@ -178,8 +180,56 @@ export const BancoHorasSection = () => {
     .filter(r => r.tipo === "debito")
     .reduce((sum, r) => sum + Number(r.horas), 0);
 
-  // Exportar para Excel
-  const handleExport = () => {
+  // Get export data
+  const getExportData = () => {
+    const headers = ["Colaborador", "Data", "Tipo", "Horas", "Motivo", "Observação", "Saldo Atual"];
+    const rows = filteredRegistros.map(r => [
+      r.funcionario_nome,
+      format(new Date(r.data), "dd/MM/yyyy"),
+      r.tipo === "credito" ? "Crédito" : "Débito",
+      Number(r.horas).toFixed(1),
+      r.motivo || "",
+      r.observacao || "",
+      calcularSaldo(r.funcionario_user_id).toFixed(1) + "h",
+    ]);
+    return { headers, rows };
+  };
+
+  // Exportar para CSV
+  const handleExportCSV = () => {
+    const { headers, rows } = getExportData();
+    exportToCSV({
+      title: 'Banco de Horas',
+      headers,
+      rows,
+      fileName: 'banco_horas',
+    });
+
+    toast({
+      title: "Exportado",
+      description: "Arquivo CSV exportado com sucesso.",
+    });
+  };
+
+  // Exportar para PDF
+  const handleExportPDF = () => {
+    const { headers, rows } = getExportData();
+    exportToPDF({
+      title: 'Banco de Horas',
+      headers,
+      rows,
+      fileName: 'banco_horas',
+      orientation: 'landscape',
+    });
+
+    toast({
+      title: "Exportado",
+      description: "Arquivo PDF exportado com sucesso.",
+    });
+  };
+
+  // Exportar para Excel (XLSX original)
+  const handleExportExcel = () => {
     const dataToExport = filteredRegistros.map(r => ({
       "Colaborador": r.funcionario_nome,
       "Data": format(new Date(r.data), "dd/MM/yyyy"),
@@ -355,10 +405,28 @@ export const BancoHorasSection = () => {
           </div>
 
           <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportCSV}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Exportar CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPDF}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Exportar PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportExcel}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Exportar Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             <input
               type="file"

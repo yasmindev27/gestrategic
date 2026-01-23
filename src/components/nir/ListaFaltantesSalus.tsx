@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileWarning, Search, Download, Calendar, Filter, X } from 'lucide-react';
+import { FileWarning, Search, Download, FileText, Calendar, Filter, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -8,9 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { exportToCSV, exportToPDF } from '@/lib/export-utils';
 
 interface ProntuarioFaltante {
   id: string;
@@ -99,7 +101,7 @@ export function ListaFaltantesSalus() {
 
   const hasActiveFilters = searchTerm || dateFrom || dateTo;
 
-  const handleExportCSV = () => {
+  const getExportData = () => {
     const headers = ['Nome do Paciente', 'Nº Prontuário', 'Data de Saída', 'Status'];
     const rows = filteredFaltantes.map((item) => [
       item.paciente_nome || '-',
@@ -109,15 +111,28 @@ export function ListaFaltantesSalus() {
         : '-',
       'Falta prontuário físico',
     ]);
+    return { headers, rows };
+  };
 
-    const csvContent = [headers.join(';'), ...rows.map((r) => r.join(';'))].join('\n');
-    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `prontuarios_faltantes_salus_${format(new Date(), 'yyyy-MM-dd')}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
+  const handleExportCSV = () => {
+    const { headers, rows } = getExportData();
+    exportToCSV({
+      title: 'Prontuários Faltantes - Salus',
+      headers,
+      rows,
+      fileName: 'prontuarios_faltantes_salus',
+    });
+  };
+
+  const handleExportPDF = () => {
+    const { headers, rows } = getExportData();
+    exportToPDF({
+      title: 'Prontuários Faltantes - Salus',
+      headers,
+      rows,
+      fileName: 'prontuarios_faltantes_salus',
+      orientation: 'portrait',
+    });
   };
 
   if (loading && faltantes.length === 0) {
@@ -215,10 +230,24 @@ export function ListaFaltantesSalus() {
                 </div>
               </PopoverContent>
             </Popover>
-            <Button variant="outline" onClick={handleExportCSV} className="gap-2">
-              <Download className="h-4 w-4" />
-              Exportar CSV
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportCSV}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Exportar CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPDF}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Exportar PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
 

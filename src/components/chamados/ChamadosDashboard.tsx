@@ -19,6 +19,7 @@ import {
   AtendenteProdutividade,
   SLA_HORAS,
 } from "./types";
+import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 
 export const ChamadosDashboard = () => {
   const { role } = useUserRole();
@@ -235,56 +236,64 @@ export const ChamadosDashboard = () => {
     return Array.from(uniqueAtendentes.entries()).map(([id, nome]) => ({ id, nome }));
   }, [chamados]);
 
+  // Export data preparation
+  const getExportData = useCallback(() => {
+    const headers = [
+      "Número",
+      "Título",
+      "Categoria",
+      "Prioridade",
+      "Status",
+      "Solicitante",
+      "Setor",
+      "Data Abertura",
+      "Data Resolução",
+    ];
+    
+    const rows = filteredChamados.map((c) => [
+      c.numero_chamado,
+      c.titulo,
+      c.categoria,
+      c.prioridade,
+      c.status,
+      c.solicitante_nome,
+      c.solicitante_setor || "",
+      format(parseISO(c.data_abertura), "dd/MM/yyyy HH:mm"),
+      c.data_resolucao ? format(parseISO(c.data_resolucao), "dd/MM/yyyy HH:mm") : "",
+    ]);
+    
+    return { headers, rows };
+  }, [filteredChamados]);
+
   // Export PDF
   const handleExportPDF = useCallback(() => {
-    toast({
-      title: "Exportando PDF",
-      description: "O download do PDF será iniciado em breve...",
+    const { headers, rows } = getExportData();
+    exportToPDF({
+      title: 'Relatório de Chamados',
+      headers,
+      rows,
+      fileName: 'chamados',
+      orientation: 'landscape',
     });
     
-    // Criar uma versão printable e acionar window.print()
-    setTimeout(() => {
-      window.print();
-    }, 500);
-  }, [toast]);
+    toast({
+      title: "Exportado!",
+      description: "Arquivo PDF gerado com sucesso.",
+    });
+  }, [getExportData, toast]);
 
-  // Export Excel
+  // Export CSV/Excel
   const handleExportExcel = useCallback(() => {
     setIsExporting(true);
     
     try {
-      // Criar CSV com dados
-      const headers = [
-        "Número",
-        "Título",
-        "Categoria",
-        "Prioridade",
-        "Status",
-        "Solicitante",
-        "Setor",
-        "Data Abertura",
-        "Data Resolução",
-      ];
-      
-      const rows = filteredChamados.map((c) => [
-        c.numero_chamado,
-        `"${c.titulo.replace(/"/g, '""')}"`,
-        c.categoria,
-        c.prioridade,
-        c.status,
-        c.solicitante_nome,
-        c.solicitante_setor || "",
-        format(parseISO(c.data_abertura), "dd/MM/yyyy HH:mm"),
-        c.data_resolucao ? format(parseISO(c.data_resolucao), "dd/MM/yyyy HH:mm") : "",
-      ]);
-
-      const csvContent = [headers.join(";"), ...rows.map((r) => r.join(";"))].join("\n");
-      
-      const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
-      const link = document.createElement("a");
-      link.href = URL.createObjectURL(blob);
-      link.download = `chamados_${format(new Date(), "yyyy-MM-dd")}.csv`;
-      link.click();
+      const { headers, rows } = getExportData();
+      exportToCSV({
+        title: 'Relatório de Chamados',
+        headers,
+        rows,
+        fileName: 'chamados',
+      });
 
       toast({
         title: "Exportado!",
@@ -299,7 +308,7 @@ export const ChamadosDashboard = () => {
     } finally {
       setIsExporting(false);
     }
-  }, [filteredChamados, toast]);
+  }, [getExportData, toast]);
 
   // Generate AI Report
   const handleGerarRelatorioIA = useCallback(async () => {

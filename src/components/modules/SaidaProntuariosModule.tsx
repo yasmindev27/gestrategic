@@ -40,16 +40,34 @@ import {
   Loader2,
   ClipboardCheck,
   Download,
+  FileText,
   Calendar,
   Users,
   Filter,
   X,
   XCircle
 } from "lucide-react";
-import { PdfPatientCounter, type AnalysisResult, type PatientResult } from "./PdfPatientCounter";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { PdfPatientCounter } from "./PdfPatientCounter";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { exportToCSV, exportToPDF } from "@/lib/export-utils";
+
+interface AnalysisResult {
+  success: boolean;
+  totalPdf: number;
+  totalSistema: number;
+  encontrados: number;
+  faltando: number;
+  pacientes: { nome: string; prontuario: string | null; status: 'encontrado' | 'faltando' }[];
+  error?: string;
+}
 
 interface SaidaProntuario {
   id: string;
@@ -393,6 +411,21 @@ export const SaidaProntuariosModule = () => {
     if (!salusAnalysis || !salusAnalysis.success) return [];
     return salusAnalysis.pacientes.filter(p => p.status === 'faltando');
   };
+
+  const getExportData = () => {
+    const headers = ['Paciente', 'Data Nasc.', 'Nº Prontuário', 'Status', 'Recepção', 'Classificação', 'NIR'];
+    const rows = filteredSaidas.map(s => [
+      s.paciente_nome || '-',
+      s.nascimento_mae ? format(new Date(s.nascimento_mae), "dd/MM/yyyy") : '-',
+      s.numero_prontuario,
+      s.status,
+      s.registrado_recepcao_em ? format(new Date(s.registrado_recepcao_em), "dd/MM/yy HH:mm") : '-',
+      s.validado_classificacao_em ? format(new Date(s.validado_classificacao_em), "dd/MM/yy HH:mm") : '-',
+      s.conferido_nir_em ? format(new Date(s.conferido_nir_em), "dd/MM/yy HH:mm") : '-',
+    ]);
+    return { headers, rows };
+  };
+
   const handleExportCSV = () => {
     if (filteredSaidas.length === 0) {
       toast({
@@ -403,28 +436,42 @@ export const SaidaProntuariosModule = () => {
       return;
     }
 
-    const csvContent = [
-      'Paciente,Data Nasc.,Nº Prontuário,Status,Recepção,Classificação,NIR',
-      ...filteredSaidas.map(s => [
-        `"${s.paciente_nome || '-'}"`,
-        s.nascimento_mae ? format(new Date(s.nascimento_mae), "dd/MM/yyyy") : '-',
-        s.numero_prontuario,
-        s.status,
-        s.registrado_recepcao_em ? format(new Date(s.registrado_recepcao_em), "dd/MM/yy HH:mm") : '-',
-        s.validado_classificacao_em ? format(new Date(s.validado_classificacao_em), "dd/MM/yy HH:mm") : '-',
-        s.conferido_nir_em ? format(new Date(s.conferido_nir_em), "dd/MM/yy HH:mm") : '-',
-      ].join(','))
-    ].join('\n');
-
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `saida_prontuarios_${format(new Date(), "yyyy-MM-dd")}.csv`;
-    link.click();
+    const { headers, rows } = getExportData();
+    exportToCSV({
+      title: 'Saída de Prontuários',
+      headers,
+      rows,
+      fileName: 'saida_prontuarios',
+    });
 
     toast({
       title: "Exportado!",
       description: `${filteredSaidas.length} registro(s) exportado(s) para CSV.`,
+    });
+  };
+
+  const handleExportPDF = () => {
+    if (filteredSaidas.length === 0) {
+      toast({
+        title: "Aviso",
+        description: "Não há dados para exportar.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const { headers, rows } = getExportData();
+    exportToPDF({
+      title: 'Saída de Prontuários',
+      headers,
+      rows,
+      fileName: 'saida_prontuarios',
+      orientation: 'landscape',
+    });
+
+    toast({
+      title: "Exportado!",
+      description: `${filteredSaidas.length} registro(s) exportado(s) para PDF.`,
     });
   };
 
@@ -458,10 +505,24 @@ export const SaidaProntuariosModule = () => {
         </div>
         <div className="flex flex-wrap gap-2">
           <PdfPatientCounter onAnalysisComplete={setSalusAnalysis} />
-          <Button variant="outline" onClick={handleExportCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            Exportar
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline">
+                <Download className="h-4 w-4 mr-2" />
+                Exportar
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={handleExportCSV}>
+                <FileText className="h-4 w-4 mr-2" />
+                Exportar CSV
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={handleExportPDF}>
+                <FileText className="h-4 w-4 mr-2" />
+                Exportar PDF
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
           {canInsert && (
             <Dialog open={newProntuarioOpen} onOpenChange={setNewProntuarioOpen}>
               <DialogTrigger asChild>

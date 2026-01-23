@@ -10,10 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Plus, Search, FileText, Calendar, Download, Upload, Filter, Paperclip, Eye } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
+import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 
 interface Atestado {
   id: string;
@@ -235,8 +237,58 @@ export const CentralAtestadosSection = () => {
     }
   };
 
+  // Get export data
+  const getExportData = () => {
+    const headers = ["Colaborador", "Tipo", "Data Início", "Data Fim", "Dias", "CID", "Médico", "CRM", "Observação"];
+    const rows = filteredAtestados.map(a => [
+      a.funcionario_nome,
+      a.tipo === "medico" ? "Atestado Médico" : a.tipo === "acompanhante" ? "Acompanhante" : "Declaração",
+      format(new Date(a.data_inicio), "dd/MM/yyyy"),
+      format(new Date(a.data_fim), "dd/MM/yyyy"),
+      a.dias_afastamento,
+      a.cid || "",
+      a.medico_nome || "",
+      a.crm || "",
+      a.observacao || "",
+    ]);
+    return { headers, rows };
+  };
+
   // Exportar para Excel
-  const handleExport = () => {
+  const handleExportCSV = () => {
+    const { headers, rows } = getExportData();
+    exportToCSV({
+      title: 'Central de Atestados',
+      headers,
+      rows,
+      fileName: 'atestados',
+    });
+
+    toast({
+      title: "Exportado",
+      description: "Arquivo CSV exportado com sucesso.",
+    });
+  };
+
+  // Exportar para PDF
+  const handleExportPDF = () => {
+    const { headers, rows } = getExportData();
+    exportToPDF({
+      title: 'Central de Atestados',
+      headers,
+      rows,
+      fileName: 'atestados',
+      orientation: 'landscape',
+    });
+
+    toast({
+      title: "Exportado",
+      description: "Arquivo PDF exportado com sucesso.",
+    });
+  };
+
+  // Exportar para Excel (XLSX original)
+  const handleExportExcel = () => {
     const dataToExport = filteredAtestados.map(a => ({
       "Colaborador": a.funcionario_nome,
       "Tipo": a.tipo === "medico" ? "Atestado Médico" : a.tipo === "acompanhante" ? "Acompanhante" : "Declaração",
@@ -419,10 +471,28 @@ export const CentralAtestadosSection = () => {
           </div>
 
           <div className="flex gap-2 flex-wrap">
-            <Button variant="outline" onClick={handleExport}>
-              <Download className="h-4 w-4 mr-2" />
-              Exportar
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleExportCSV}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Exportar CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportPDF}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Exportar PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportExcel}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Exportar Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             
             <input
               type="file"
