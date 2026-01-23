@@ -9,12 +9,19 @@ import {
   DialogTrigger,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { exportToCSV, exportToPDF } from '@/lib/export-utils';
 
 export interface PatientResult {
   nome: string;
@@ -112,25 +119,40 @@ export function PdfPatientCounter({ onAnalysisComplete }: PdfPatientCounterProps
     }
   };
 
-  const handleExportMissing = () => {
+  const handleExportMissingCSV = () => {
     if (!result || result.faltando === 0) return;
 
     const faltando = result.pacientes.filter(p => p.status === 'faltando');
     
-    const csvContent = [
-      'Nº,Nome do Paciente,Prontuário',
-      ...faltando.map((p, i) => `${i + 1},"${p.nome}","${p.prontuario || '-'}"`)
-    ].join('\n');
-
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `pacientes_faltando_${new Date().toISOString().split('T')[0]}.csv`;
-    link.click();
+    exportToCSV({
+      title: 'Pacientes Faltando no Sistema',
+      headers: ['Nº', 'Nome do Paciente', 'Prontuário'],
+      rows: faltando.map((p, i) => [i + 1, p.nome, p.prontuario || '-']),
+      fileName: 'pacientes_faltando',
+    });
 
     toast({
       title: 'Exportado!',
       description: `${faltando.length} paciente(s) faltando exportado(s) para CSV.`,
+    });
+  };
+
+  const handleExportMissingPDF = () => {
+    if (!result || result.faltando === 0) return;
+
+    const faltando = result.pacientes.filter(p => p.status === 'faltando');
+    
+    exportToPDF({
+      title: 'Pacientes Faltando no Sistema',
+      headers: ['Nº', 'Nome do Paciente', 'Prontuário'],
+      rows: faltando.map((p, i) => [i + 1, p.nome, p.prontuario || '-']),
+      fileName: 'pacientes_faltando',
+      orientation: 'portrait',
+    });
+
+    toast({
+      title: 'Exportado!',
+      description: `${faltando.length} paciente(s) faltando exportado(s) para PDF.`,
     });
   };
 
@@ -331,10 +353,24 @@ export function PdfPatientCounter({ onAnalysisComplete }: PdfPatientCounterProps
 
         <DialogFooter className="flex justify-between gap-2 flex-wrap">
           {result && result.faltando > 0 && (
-            <Button variant="destructive" onClick={handleExportMissing}>
-              <Download className="h-4 w-4 mr-2" />
-              Exportar Faltando ({result.faltando})
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="destructive">
+                  <Download className="h-4 w-4 mr-2" />
+                  Exportar Faltando ({result.faltando})
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={handleExportMissingCSV}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Exportar CSV
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportMissingPDF}>
+                  <FileText className="h-4 w-4 mr-2" />
+                  Exportar PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           )}
           {result && (
             <Button variant="ghost" onClick={handleReset}>
