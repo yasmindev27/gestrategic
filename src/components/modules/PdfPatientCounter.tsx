@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { FileUp, FileText, Users, Loader2, X, AlertCircle, Download } from 'lucide-react';
+import { FileUp, FileText, Users, Loader2, X, AlertCircle, Download, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -12,93 +12,48 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
-interface PatientInfo {
-  name: string;
-  lineNumber: number;
+interface PatientResult {
+  nome: string;
+  prontuario: string | null;
+  linha: number;
+  existeNoSistema: boolean;
+  status: 'encontrado' | 'faltando';
+}
+
+interface AnalysisResult {
+  success: boolean;
+  totalPdf: number;
+  totalSistema: number;
+  encontrados: number;
+  faltando: number;
+  pacientes: PatientResult[];
+  error?: string;
 }
 
 export function PdfPatientCounter() {
   const [isOpen, setIsOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [patients, setPatients] = useState<PatientInfo[]>([]);
+  const [result, setResult] = useState<AnalysisResult | null>(null);
   const [fileName, setFileName] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [rawText, setRawText] = useState('');
+  const [activeTab, setActiveTab] = useState('todos');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-
-  const extractPatients = (text: string): PatientInfo[] => {
-    const lines = text.split('\n');
-    const patients: PatientInfo[] = [];
-    const processedNames = new Set<string>();
-
-    // Patterns to identify patient names
-    const patientPatterns = [
-      /paciente[:\s]+([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇa-záéíóúâêîôûãõç\s]+)/gi,
-      /nome[:\s]+([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇa-záéíóúâêîôûãõç\s]+)/gi,
-    ];
-
-    lines.forEach((line, index) => {
-      patientPatterns.forEach(pattern => {
-        const matches = line.matchAll(pattern);
-        for (const match of matches) {
-          const name = match[1]?.trim();
-          if (name && name.length > 3 && !processedNames.has(name.toLowerCase())) {
-            const excludeWords = ['data', 'hora', 'setor', 'leito', 'cid', 'prontuario', 'registro', 'idade', 'sexo'];
-            const isValidName = !excludeWords.some(word => 
-              name.toLowerCase().includes(word)
-            );
-            
-            if (isValidName) {
-              processedNames.add(name.toLowerCase());
-              patients.push({
-                name: name,
-                lineNumber: index + 1
-              });
-            }
-          }
-        }
-      });
-    });
-
-    // Fallback: Look for capitalized names in lines
-    if (patients.length === 0) {
-      const nameRegex = /([A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ][A-ZÁÉÍÓÚÂÊÎÔÛÃÕÇ\s]{5,50})/g;
-      
-      lines.forEach((line, index) => {
-        const matches = line.matchAll(nameRegex);
-        for (const match of matches) {
-          const potentialName = match[1]?.trim();
-          if (potentialName && potentialName.split(' ').length >= 2) {
-            const normalizedName = potentialName.toLowerCase();
-            if (!processedNames.has(normalizedName)) {
-              processedNames.add(normalizedName);
-              patients.push({
-                name: potentialName,
-                lineNumber: index + 1
-              });
-            }
-          }
-        }
-      });
-    }
-
-    return patients;
-  };
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    // Accept both PDF and TXT files
-    const validTypes = ['application/pdf', 'text/plain'];
-    if (!validTypes.includes(file.type) && !file.name.endsWith('.txt')) {
-      setError('Por favor, selecione um arquivo PDF ou TXT.');
+    // Accept PDF files
+    if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
+      setError('Por favor, selecione um arquivo PDF.');
       toast({
         title: 'Erro',
-        description: 'O arquivo deve ser PDF ou TXT.',
+        description: 'O arquivo deve ser PDF.',
         variant: 'destructive',
       });
       return;
@@ -107,41 +62,39 @@ export function PdfPatientCounter() {
     setIsProcessing(true);
     setError(null);
     setFileName(file.name);
-    setPatients([]);
-    setRawText('');
+    setResult(null);
 
     try {
-      let text = '';
-      
-      if (file.type === 'text/plain' || file.name.endsWith('.txt')) {
-        // Read TXT file directly
-        text = await file.text();
-      } else {
-        // For PDF, we'll inform the user to convert first
-        setError('Para arquivos PDF, por favor copie o conteúdo e cole em um arquivo TXT, ou exporte como texto primeiro.');
-        setIsProcessing(false);
-        return;
+      // Create FormData with the file
+      const formData = new FormData();
+      formData.append('file', file);
+
+      // Call the edge function
+      const { data, error: fnError } = await supabase.functions.invoke('processar-pdf-salus', {
+        body: formData,
+      });
+
+      if (fnError) {
+        throw new Error(fnError.message || 'Erro ao processar PDF');
       }
 
-      setRawText(text);
-      const extractedPatients = extractPatients(text);
-      
-      setPatients(extractedPatients);
-      
-      if (extractedPatients.length === 0) {
-        setError('Nenhum paciente encontrado. Verifique se o arquivo contém uma coluna "Paciente" ou "Nome".');
-      } else {
-        toast({
-          title: 'Arquivo processado!',
-          description: `${extractedPatients.length} paciente(s) encontrado(s).`,
-        });
+      if (!data.success) {
+        throw new Error(data.error || 'Erro ao analisar PDF');
       }
+
+      setResult(data as AnalysisResult);
+      
+      toast({
+        title: 'Análise concluída!',
+        description: `${data.totalPdf} paciente(s) no PDF. ${data.faltando} faltando no sistema.`,
+      });
     } catch (err) {
       console.error('Error processing file:', err);
-      setError('Erro ao processar o arquivo. Verifique se o arquivo está correto.');
+      const errorMessage = err instanceof Error ? err.message : 'Erro ao processar o arquivo';
+      setError(errorMessage);
       toast({
         title: 'Erro',
-        description: 'Erro ao processar o arquivo.',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -153,36 +106,50 @@ export function PdfPatientCounter() {
     }
   };
 
-  const handleExportPatients = () => {
-    if (patients.length === 0) return;
+  const handleExportMissing = () => {
+    if (!result || result.faltando === 0) return;
 
+    const faltando = result.pacientes.filter(p => p.status === 'faltando');
+    
     const csvContent = [
-      'Número,Nome do Paciente',
-      ...patients.map((p, i) => `${i + 1},"${p.name}"`)
+      'Nº,Nome do Paciente,Prontuário',
+      ...faltando.map((p, i) => `${i + 1},"${p.nome}","${p.prontuario || '-'}"`)
     ].join('\n');
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `pacientes_${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `pacientes_faltando_${new Date().toISOString().split('T')[0]}.csv`;
     link.click();
 
     toast({
       title: 'Exportado!',
-      description: `${patients.length} paciente(s) exportado(s) para CSV.`,
+      description: `${faltando.length} paciente(s) faltando exportado(s) para CSV.`,
     });
   };
 
   const handleReset = () => {
-    setPatients([]);
+    setResult(null);
     setFileName('');
     setError(null);
-    setRawText('');
+    setActiveTab('todos');
   };
 
   const handleClose = () => {
     setIsOpen(false);
     handleReset();
+  };
+
+  const getFilteredPatients = () => {
+    if (!result) return [];
+    switch (activeTab) {
+      case 'faltando':
+        return result.pacientes.filter(p => p.status === 'faltando');
+      case 'encontrados':
+        return result.pacientes.filter(p => p.status === 'encontrado');
+      default:
+        return result.pacientes;
+    }
   };
 
   return (
@@ -193,14 +160,14 @@ export function PdfPatientCounter() {
       <DialogTrigger asChild>
         <Button variant="outline">
           <FileUp className="h-4 w-4 mr-2" />
-          Importar
+          Importar PDF
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="max-w-3xl max-h-[90vh]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-primary" />
-            Contagem de Pacientes - Importar Arquivo
+            Importar Lista do Salus - Análise de Pacientes
           </DialogTitle>
         </DialogHeader>
 
@@ -210,26 +177,28 @@ export function PdfPatientCounter() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".txt,.csv"
+              accept=".pdf,application/pdf"
               onChange={handleFileChange}
               className="hidden"
-              id="file-upload"
+              id="pdf-upload"
+              disabled={isProcessing}
             />
             <label
-              htmlFor="file-upload"
-              className="flex flex-col items-center justify-center cursor-pointer w-full"
+              htmlFor="pdf-upload"
+              className={`flex flex-col items-center justify-center cursor-pointer w-full ${isProcessing ? 'pointer-events-none' : ''}`}
             >
               {isProcessing ? (
                 <>
                   <Loader2 className="h-10 w-10 text-primary animate-spin mb-2" />
-                  <p className="text-sm text-muted-foreground">Processando arquivo...</p>
+                  <p className="text-sm text-muted-foreground">Processando PDF via IA...</p>
+                  <p className="text-xs text-muted-foreground mt-1">Isso pode levar alguns segundos</p>
                 </>
               ) : (
                 <>
                   <FileUp className="h-10 w-10 text-muted-foreground mb-2" />
-                  <p className="text-sm font-medium">Clique para selecionar um arquivo TXT</p>
+                  <p className="text-sm font-medium">Clique para selecionar o PDF do Salus</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    O sistema irá extrair automaticamente os nomes da coluna "Paciente"
+                    O sistema irá extrair os pacientes e comparar com os registros existentes
                   </p>
                 </>
               )}
@@ -244,52 +213,127 @@ export function PdfPatientCounter() {
             </div>
           )}
 
-          {/* Results */}
-          {fileName && patients.length > 0 && (
-            <Card>
-              <CardContent className="pt-4">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm text-muted-foreground truncate max-w-[200px]">
-                      {fileName}
-                    </span>
-                  </div>
-                  <Badge className="bg-primary text-primary-foreground">
-                    <Users className="h-3 w-3 mr-1" />
-                    {patients.length} paciente(s)
-                  </Badge>
-                </div>
+          {/* Results Summary */}
+          {result && result.success && (
+            <>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <Card className="bg-muted/50">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-2xl font-bold text-foreground">{result.totalPdf}</p>
+                    <p className="text-xs text-muted-foreground">Total no PDF</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-muted/50">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-2xl font-bold text-foreground">{result.totalSistema}</p>
+                    <p className="text-xs text-muted-foreground">No Sistema</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-success/10">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-2xl font-bold text-success">{result.encontrados}</p>
+                    <p className="text-xs text-muted-foreground">Encontrados</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-destructive/10">
+                  <CardContent className="p-4 text-center">
+                    <p className="text-2xl font-bold text-destructive">{result.faltando}</p>
+                    <p className="text-xs text-muted-foreground">Faltando</p>
+                  </CardContent>
+                </Card>
+              </div>
 
-                <ScrollArea className="h-[250px] pr-4">
-                  <div className="space-y-2">
-                    {patients.map((patient, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between p-2 rounded-md bg-muted/50"
-                      >
-                        <span className="text-sm font-medium">{index + 1}. {patient.name}</span>
+              {/* Tabs for filtering */}
+              <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList className="grid w-full grid-cols-3">
+                  <TabsTrigger value="todos">
+                    Todos ({result.totalPdf})
+                  </TabsTrigger>
+                  <TabsTrigger value="faltando" className="text-destructive data-[state=active]:text-destructive">
+                    Faltando ({result.faltando})
+                  </TabsTrigger>
+                  <TabsTrigger value="encontrados" className="text-success data-[state=active]:text-success">
+                    Encontrados ({result.encontrados})
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value={activeTab} className="mt-4">
+                  <Card>
+                    <CardContent className="pt-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <FileText className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm text-muted-foreground truncate max-w-[200px]">
+                            {fileName}
+                          </span>
+                        </div>
+                        <Badge variant="secondary">
+                          <Users className="h-3 w-3 mr-1" />
+                          {getFilteredPatients().length} paciente(s)
+                        </Badge>
                       </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
+
+                      <ScrollArea className="h-[250px] pr-4">
+                        <div className="space-y-2">
+                          {getFilteredPatients().map((patient, index) => (
+                            <div
+                              key={index}
+                              className={`flex items-center justify-between p-3 rounded-md ${
+                                patient.status === 'faltando' 
+                                  ? 'bg-destructive/10 border border-destructive/20' 
+                                  : 'bg-success/10 border border-success/20'
+                              }`}
+                            >
+                              <div className="flex-1">
+                                <span className="text-sm font-medium">{index + 1}. {patient.nome}</span>
+                                {patient.prontuario && (
+                                  <span className="text-xs text-muted-foreground ml-2">
+                                    (Prontuário: {patient.prontuario})
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {patient.status === 'faltando' ? (
+                                  <Badge variant="destructive" className="flex items-center gap-1">
+                                    <XCircle className="h-3 w-3" />
+                                    Faltando
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-success text-success-foreground flex items-center gap-1">
+                                    <CheckCircle className="h-3 w-3" />
+                                    OK
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {getFilteredPatients().length === 0 && (
+                            <div className="text-center py-8 text-muted-foreground">
+                              Nenhum paciente nesta categoria
+                            </div>
+                          )}
+                        </div>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                </TabsContent>
+              </Tabs>
+            </>
           )}
         </div>
 
-        <DialogFooter className="flex justify-between gap-2">
-          {patients.length > 0 && (
-            <>
-              <Button variant="outline" onClick={handleExportPatients}>
-                <Download className="h-4 w-4 mr-2" />
-                Exportar CSV
-              </Button>
-              <Button variant="ghost" onClick={handleReset}>
-                <X className="h-4 w-4 mr-2" />
-                Limpar
-              </Button>
-            </>
+        <DialogFooter className="flex justify-between gap-2 flex-wrap">
+          {result && result.faltando > 0 && (
+            <Button variant="destructive" onClick={handleExportMissing}>
+              <Download className="h-4 w-4 mr-2" />
+              Exportar Faltando ({result.faltando})
+            </Button>
+          )}
+          {result && (
+            <Button variant="ghost" onClick={handleReset}>
+              <X className="h-4 w-4 mr-2" />
+              Nova Análise
+            </Button>
           )}
           <Button variant="outline" onClick={handleClose}>
             Fechar

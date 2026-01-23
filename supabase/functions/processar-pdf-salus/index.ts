@@ -1,0 +1,208 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+interface PatientInfo {
+  nome: string;
+  prontuario?: string;
+  linha?: number;
+}
+
+interface ExistingRecord {
+  numero_prontuario: string;
+  paciente_nome: string | null;
+}
+
+Deno.serve(async (req) => {
+  // Handle CORS preflight
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const formData = await req.formData();
+    const file = formData.get('file') as File;
+    
+    if (!file) {
+      return new Response(
+        JSON.stringify({ error: 'Nenhum arquivo enviado' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Processando arquivo: ${file.name}, tipo: ${file.type}, tamanho: ${file.size}`);
+
+    // Convert file to base64
+    const arrayBuffer = await file.arrayBuffer();
+    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+    // Use Lovable AI to extract patient data from the PDF
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      throw new Error('LOVABLE_API_KEY não configurada');
+    }
+
+    console.log('Enviando PDF para análise via IA...');
+
+    const aiResponse = await fetch('https://api.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'system',
+            content: `Você é um especialista em extrair dados de documentos médicos. Sua tarefa é analisar o documento PDF e extrair a lista de pacientes.
+
+INSTRUÇÕES:
+1. Identifique todos os nomes de pacientes no documento
+2. Para cada paciente, tente identificar também o número do prontuário se disponível
+3. Retorne APENAS um JSON válido no seguinte formato, sem nenhum texto adicional:
+
+{"pacientes": [{"nome": "NOME COMPLETO DO PACIENTE", "prontuario": "número ou null"}]}
+
+REGRAS:
+- Nomes devem estar em MAIÚSCULAS
+- Ignore cabeçalhos, rodapés e textos que não são nomes de pacientes
+- Se não encontrar pacientes, retorne: {"pacientes": []}
+- Retorne SOMENTE o JSON, sem explicações ou markdown`
+          },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'file',
+                file: {
+                  filename: file.name,
+                  file_data: `data:${file.type};base64,${base64}`
+                }
+              },
+              {
+                type: 'text',
+                text: 'Extraia a lista de pacientes deste documento PDF do sistema Salus. Retorne apenas o JSON com os dados.'
+              }
+            ]
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 4000,
+      }),
+    });
+
+    if (!aiResponse.ok) {
+      const errorText = await aiResponse.text();
+      console.error('Erro na API Lovable:', errorText);
+      throw new Error(`Erro ao processar com IA: ${aiResponse.status}`);
+    }
+
+    const aiData = await aiResponse.json();
+    const content = aiData.choices?.[0]?.message?.content || '';
+    
+    console.log('Resposta da IA recebida, parseando JSON...');
+
+    // Parse the JSON response
+    let pacientes: PatientInfo[] = [];
+    try {
+      // Try to extract JSON from the response
+      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        pacientes = parsed.pacientes || [];
+      }
+    } catch (parseError) {
+      console.error('Erro ao parsear resposta da IA:', parseError);
+      console.log('Conteúdo recebido:', content);
+    }
+
+    console.log(`Encontrados ${pacientes.length} pacientes no PDF`);
+
+    // Fetch existing records from database
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const { data: existingRecords, error: dbError } = await supabase
+      .from('saida_prontuarios')
+      .select('numero_prontuario, paciente_nome');
+
+    if (dbError) {
+      console.error('Erro ao buscar registros existentes:', dbError);
+      throw dbError;
+    }
+
+    console.log(`Encontrados ${existingRecords?.length || 0} registros existentes no sistema`);
+
+    // Compare and find missing patients
+    const existingNomes = new Set(
+      (existingRecords || [])
+        .filter(r => r.paciente_nome)
+        .map(r => normalizeString(r.paciente_nome!))
+    );
+    
+    const existingProntuarios = new Set(
+      (existingRecords || [])
+        .map(r => normalizeString(r.numero_prontuario))
+    );
+
+    const resultado = pacientes.map((paciente, index) => {
+      const nomeNormalizado = normalizeString(paciente.nome);
+      const prontuarioNormalizado = paciente.prontuario ? normalizeString(paciente.prontuario) : null;
+      
+      // Check if patient exists by name or prontuario
+      const existeNoSistema = existingNomes.has(nomeNormalizado) || 
+        (prontuarioNormalizado && existingProntuarios.has(prontuarioNormalizado));
+      
+      return {
+        nome: paciente.nome,
+        prontuario: paciente.prontuario || null,
+        linha: index + 1,
+        existeNoSistema,
+        status: existeNoSistema ? 'encontrado' : 'faltando'
+      };
+    });
+
+    const faltando = resultado.filter(r => r.status === 'faltando');
+    const encontrados = resultado.filter(r => r.status === 'encontrado');
+
+    console.log(`Análise concluída: ${encontrados.length} encontrados, ${faltando.length} faltando`);
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        totalPdf: pacientes.length,
+        totalSistema: existingRecords?.length || 0,
+        encontrados: encontrados.length,
+        faltando: faltando.length,
+        pacientes: resultado,
+        listaPdf: pacientes,
+      }),
+      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+
+  } catch (error: unknown) {
+    console.error('Erro ao processar PDF:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Erro ao processar arquivo';
+    return new Response(
+      JSON.stringify({ 
+        error: errorMessage,
+        success: false 
+      }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  }
+});
+
+function normalizeString(str: string): string {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '')
+    .trim();
+}
