@@ -47,7 +47,8 @@ import {
   X,
   XCircle,
   Pencil,
-  Save
+  Save,
+  FileStack
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -87,6 +88,7 @@ interface SaidaProntuario {
   conferido_nir_em: string | null;
   conferido_nir_por: string | null;
   observacao_nir: string | null;
+  is_folha_avulsa: boolean | null;
   created_at: string;
 }
 
@@ -96,10 +98,12 @@ export const SaidaProntuariosModule = () => {
   const { toast } = useToast();
   
   const [saidas, setSaidas] = useState<SaidaProntuario[]>([]);
+  const [folhasAvulsas, setFolhasAvulsas] = useState<SaidaProntuario[]>([]);
   const [faltantesSalus, setFaltantesSalus] = useState<SaidaProntuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [newProntuarioOpen, setNewProntuarioOpen] = useState(false);
+  const [newFolhaAvulsaOpen, setNewFolhaAvulsaOpen] = useState(false);
   const [validarOpen, setValidarOpen] = useState(false);
   const [selectedSaida, setSelectedSaida] = useState<SaidaProntuario | null>(null);
   
@@ -115,6 +119,11 @@ export const SaidaProntuariosModule = () => {
   const [faltantesDataInicio, setFaltantesDataInicio] = useState("");
   const [faltantesDataFim, setFaltantesDataFim] = useState("");
   
+  // Filters for folhas avulsas section
+  const [folhasSearchTerm, setFolhasSearchTerm] = useState("");
+  const [folhasDataInicio, setFolhasDataInicio] = useState("");
+  const [folhasDataFim, setFolhasDataFim] = useState("");
+  
   // Form states
   const [pacienteNome, setPacienteNome] = useState("");
   const [nascimentoMae, setNascimentoMae] = useState("");
@@ -122,6 +131,12 @@ export const SaidaProntuariosModule = () => {
   const [existeFisicamente, setExisteFisicamente] = useState(true);
   const [observacao, setObservacao] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Folha Avulsa form states
+  const [folhaAvulsaPaciente, setFolhaAvulsaPaciente] = useState("");
+  const [folhaAvulsaNascimento, setFolhaAvulsaNascimento] = useState("");
+  const [folhaAvulsaDataAtendimento, setFolhaAvulsaDataAtendimento] = useState("");
+  const [folhaAvulsaObservacao, setFolhaAvulsaObservacao] = useState("");
   
   // Edit states (admin only)
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -145,16 +160,31 @@ export const SaidaProntuariosModule = () => {
   const fetchSaidas = async () => {
     setIsLoading(true);
     try {
-      // Fetch regular saidas (excluding Salus imports)
-      // Need to use OR filter: observacao_classificacao is null OR does not contain 'Importado via Salus'
+      // Fetch regular saidas (excluding Salus imports and folhas avulsas)
       const { data: regularData, error: regularError } = await supabase
         .from("saida_prontuarios")
         .select("*")
+        .or('is_folha_avulsa.is.null,is_folha_avulsa.eq.false')
         .or('observacao_classificacao.is.null,observacao_classificacao.not.ilike.%Importado via Salus%')
         .order("created_at", { ascending: false });
 
       if (regularError) throw regularError;
-      setSaidas(regularData || []);
+      // Filter out folhas avulsas and Salus imports from regular saidas
+      const regular = (regularData || []).filter(s => 
+        !s.is_folha_avulsa && 
+        (!s.observacao_classificacao || !s.observacao_classificacao.toLowerCase().includes('importado via salus'))
+      );
+      setSaidas(regular);
+
+      // Fetch folhas avulsas
+      const { data: folhasData, error: folhasError } = await supabase
+        .from("saida_prontuarios")
+        .select("*")
+        .eq('is_folha_avulsa', true)
+        .order("created_at", { ascending: false });
+
+      if (folhasError) throw folhasError;
+      setFolhasAvulsas(folhasData || []);
 
       // Fetch Salus imports separately
       const { data: salusData, error: salusError } = await supabase
@@ -215,6 +245,54 @@ export const SaidaProntuariosModule = () => {
       toast({
         title: "Erro",
         description: "Erro ao registrar saída.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleAddFolhaAvulsa = async () => {
+    if (!folhaAvulsaPaciente.trim() || !folhaAvulsaDataAtendimento || !userId) return;
+    
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("saida_prontuarios")
+        .insert({
+          paciente_nome: folhaAvulsaPaciente.trim(),
+          nascimento_mae: folhaAvulsaNascimento || null,
+          data_atendimento: folhaAvulsaDataAtendimento,
+          registrado_recepcao_por: userId,
+          registrado_recepcao_em: new Date().toISOString(),
+          status: "aguardando_classificacao",
+          is_folha_avulsa: true,
+          observacao_classificacao: folhaAvulsaObservacao || null,
+        });
+
+      if (error) throw error;
+
+      await logAction("registrar_folha_avulsa", "saida_prontuarios", { 
+        paciente: folhaAvulsaPaciente,
+        data_atendimento: folhaAvulsaDataAtendimento 
+      });
+
+      toast({
+        title: "Sucesso",
+        description: "Folha avulsa registrada!",
+      });
+
+      setNewFolhaAvulsaOpen(false);
+      setFolhaAvulsaPaciente("");
+      setFolhaAvulsaNascimento("");
+      setFolhaAvulsaDataAtendimento("");
+      setFolhaAvulsaObservacao("");
+      fetchSaidas();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao registrar folha avulsa.",
         variant: "destructive",
       });
     } finally {
@@ -531,6 +609,81 @@ export const SaidaProntuariosModule = () => {
 
   const hasFaltantesActiveFilters = faltantesSearchTerm || faltantesDataInicio || faltantesDataFim;
 
+  // Filters for folhas avulsas
+  const filteredFolhasAvulsas = folhasAvulsas.filter(s => {
+    const matchesSearch = 
+      !folhasSearchTerm ||
+      (s.paciente_nome && s.paciente_nome.toLowerCase().includes(folhasSearchTerm.toLowerCase()));
+
+    let matchesDate = true;
+    if (folhasDataInicio || folhasDataFim) {
+      const recordDate = new Date(s.created_at);
+      if (folhasDataInicio) {
+        const startDate = new Date(folhasDataInicio);
+        startDate.setHours(0, 0, 0, 0);
+        matchesDate = matchesDate && recordDate >= startDate;
+      }
+      if (folhasDataFim) {
+        const endDate = new Date(folhasDataFim);
+        endDate.setHours(23, 59, 59, 999);
+        matchesDate = matchesDate && recordDate <= endDate;
+      }
+    }
+
+    return matchesSearch && matchesDate;
+  });
+
+  const clearFolhasFilters = () => {
+    setFolhasSearchTerm("");
+    setFolhasDataInicio("");
+    setFolhasDataFim("");
+  };
+
+  const hasFolhasActiveFilters = folhasSearchTerm || folhasDataInicio || folhasDataFim;
+
+  const getFolhasExportData = () => {
+    const headers = ['Paciente', 'Data Nascimento', 'Data Atendimento', 'Status', 'Observação'];
+    const rows = filteredFolhasAvulsas.map(s => [
+      s.paciente_nome || '-',
+      s.nascimento_mae ? format(new Date(s.nascimento_mae + "T12:00:00"), "dd/MM/yyyy") : '-',
+      s.data_atendimento ? format(new Date(s.data_atendimento + "T12:00:00"), "dd/MM/yyyy") : '-',
+      'Folha Avulsa',
+      s.observacao_classificacao || '-',
+    ]);
+    return { headers, rows };
+  };
+
+  const handleExportFolhasCSV = () => {
+    if (filteredFolhasAvulsas.length === 0) return;
+    const { headers, rows } = getFolhasExportData();
+    exportToCSV({
+      title: 'Folhas Avulsas',
+      headers,
+      rows,
+      fileName: 'folhas_avulsas',
+    });
+    toast({
+      title: "Exportado!",
+      description: `${filteredFolhasAvulsas.length} registro(s) exportado(s) para CSV.`,
+    });
+  };
+
+  const handleExportFolhasPDF = () => {
+    if (filteredFolhasAvulsas.length === 0) return;
+    const { headers, rows } = getFolhasExportData();
+    exportToPDF({
+      title: 'Folhas Avulsas',
+      headers,
+      rows,
+      fileName: 'folhas_avulsas',
+      orientation: 'portrait',
+    });
+    toast({
+      title: "Exportado!",
+      description: `${filteredFolhasAvulsas.length} registro(s) exportado(s) para PDF.`,
+    });
+  };
+
   const getFaltantesExportData = () => {
     const headers = ['Paciente', 'Data Nascimento', 'Data Atendimento', 'Status'];
     const rows = filteredFaltantesSalus.map(s => [
@@ -685,66 +838,145 @@ export const SaidaProntuariosModule = () => {
             </DropdownMenuContent>
           </DropdownMenu>
           {canInsert && (
-            <Dialog open={newProntuarioOpen} onOpenChange={setNewProntuarioOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Registrar Saída
-                </Button>
-              </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Registrar Saída de Prontuário</DialogTitle>
-                </DialogHeader>
-                <div 
-                  className="space-y-4 pt-4"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && pacienteNome.trim() && dataAtendimento && !isSubmitting) {
-                      e.preventDefault();
-                      handleAddSaida();
-                    }
-                  }}
-                >
-                  <div>
-                    <label className="text-sm font-medium">Paciente <span className="text-destructive">*</span></label>
-                    <Input
-                      value={pacienteNome}
-                      onChange={(e) => setPacienteNome(e.target.value)}
-                      placeholder="Nome completo do paciente"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Data de Nascimento</label>
-                    <Input
-                      type="date"
-                      value={nascimentoMae}
-                      onChange={(e) => setNascimentoMae(e.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Data de Atendimento <span className="text-destructive">*</span></label>
-                    <Input
-                      type="date"
-                      value={dataAtendimento}
-                      onChange={(e) => setDataAtendimento(e.target.value)}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button 
-                    onClick={handleAddSaida} 
-                    disabled={!pacienteNome.trim() || !dataAtendimento || isSubmitting}
-                  >
-                    {isSubmitting ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <FileOutput className="h-4 w-4 mr-2" />
-                    )}
-                    Registrar
+            <>
+              <Dialog open={newProntuarioOpen} onOpenChange={setNewProntuarioOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Registrar Saída
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Registrar Saída de Prontuário</DialogTitle>
+                  </DialogHeader>
+                  <div 
+                    className="space-y-4 pt-4"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && pacienteNome.trim() && dataAtendimento && !isSubmitting) {
+                        e.preventDefault();
+                        handleAddSaida();
+                      }
+                    }}
+                  >
+                    <div>
+                      <label className="text-sm font-medium">Paciente <span className="text-destructive">*</span></label>
+                      <Input
+                        value={pacienteNome}
+                        onChange={(e) => setPacienteNome(e.target.value)}
+                        placeholder="Nome completo do paciente"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Data de Nascimento</label>
+                      <Input
+                        type="date"
+                        value={nascimentoMae}
+                        onChange={(e) => setNascimentoMae(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Data de Atendimento <span className="text-destructive">*</span></label>
+                      <Input
+                        type="date"
+                        value={dataAtendimento}
+                        onChange={(e) => setDataAtendimento(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button 
+                      onClick={handleAddSaida} 
+                      disabled={!pacienteNome.trim() || !dataAtendimento || isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <FileOutput className="h-4 w-4 mr-2" />
+                      )}
+                      Registrar
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              <Dialog open={newFolhaAvulsaOpen} onOpenChange={setNewFolhaAvulsaOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" className="border-warning text-warning hover:bg-warning/10">
+                    <FileStack className="h-4 w-4 mr-2" />
+                    Folha Avulsa
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle className="flex items-center gap-2">
+                      <FileStack className="h-5 w-5 text-warning" />
+                      Registrar Folha Avulsa
+                    </DialogTitle>
+                  </DialogHeader>
+                  <p className="text-sm text-muted-foreground">
+                    Folhas que fazem parte de um prontuário mas foram enviadas de forma avulsa (incompletas).
+                  </p>
+                  <div 
+                    className="space-y-4 pt-2"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && folhaAvulsaPaciente.trim() && folhaAvulsaDataAtendimento && !isSubmitting) {
+                        e.preventDefault();
+                        handleAddFolhaAvulsa();
+                      }
+                    }}
+                  >
+                    <div>
+                      <label className="text-sm font-medium">Paciente <span className="text-destructive">*</span></label>
+                      <Input
+                        value={folhaAvulsaPaciente}
+                        onChange={(e) => setFolhaAvulsaPaciente(e.target.value)}
+                        placeholder="Nome completo do paciente"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Data de Nascimento</label>
+                      <Input
+                        type="date"
+                        value={folhaAvulsaNascimento}
+                        onChange={(e) => setFolhaAvulsaNascimento(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Data de Atendimento <span className="text-destructive">*</span></label>
+                      <Input
+                        type="date"
+                        value={folhaAvulsaDataAtendimento}
+                        onChange={(e) => setFolhaAvulsaDataAtendimento(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Observação</label>
+                      <Textarea
+                        value={folhaAvulsaObservacao}
+                        onChange={(e) => setFolhaAvulsaObservacao(e.target.value)}
+                        placeholder="Descrição do conteúdo da folha avulsa..."
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button 
+                      onClick={handleAddFolhaAvulsa} 
+                      disabled={!folhaAvulsaPaciente.trim() || !folhaAvulsaDataAtendimento || isSubmitting}
+                      className="bg-warning text-warning-foreground hover:bg-warning/90"
+                    >
+                      {isSubmitting ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <FileStack className="h-4 w-4 mr-2" />
+                      )}
+                      Registrar
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </>
           )}
         </div>
       </div>
@@ -952,6 +1184,152 @@ export const SaidaProntuariosModule = () => {
                 </TableBody>
               </Table>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Folhas Avulsas */}
+      <Card className="bg-warning/5 border-warning/30">
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-warning">
+                <FileStack className="h-5 w-5" />
+                Folhas Avulsas
+              </CardTitle>
+              <CardDescription>
+                {folhasAvulsas.length > 0
+                  ? `${folhasAvulsas.length} folha(s) avulsa(s) registrada(s) - prontuários incompletos enviados de forma avulsa`
+                  : "Nenhuma folha avulsa registrada - utilize o botão 'Folha Avulsa' para registrar"
+                }
+              </CardDescription>
+            </div>
+            <Badge className="w-fit bg-warning text-warning-foreground">
+              {filteredFolhasAvulsas.length} de {folhasAvulsas.length} registro(s)
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {folhasAvulsas.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <FileStack className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p>Nenhuma folha avulsa registrada.</p>
+              <p className="text-sm mt-1">Utilize o botão "Folha Avulsa" acima para registrar.</p>
+            </div>
+          ) : (
+            <>
+              {/* Search and Filters */}
+              <div className="flex flex-col md:flex-row gap-3">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Buscar por nome do paciente..."
+                    value={folhasSearchTerm}
+                    onChange={(e) => setFolhasSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="date"
+                        value={folhasDataInicio}
+                        onChange={(e) => setFolhasDataInicio(e.target.value)}
+                        className="pl-10 w-40"
+                        placeholder="De"
+                      />
+                    </div>
+                    <div className="relative">
+                      <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <Input
+                        type="date"
+                        value={folhasDataFim}
+                        onChange={(e) => setFolhasDataFim(e.target.value)}
+                        className="pl-10 w-40"
+                        placeholder="Até"
+                      />
+                    </div>
+                  </div>
+                  {hasFolhasActiveFilters && (
+                    <Button variant="ghost" size="sm" onClick={clearFolhasFilters}>
+                      <X className="h-4 w-4 mr-1" />
+                      Limpar
+                    </Button>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Download className="h-4 w-4 mr-2" />
+                        Exportar
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleExportFolhasCSV}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Exportar CSV
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleExportFolhasPDF}>
+                        <FileText className="h-4 w-4 mr-2" />
+                        Exportar PDF
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+
+              {/* Table */}
+              <div className="overflow-x-auto rounded-md border bg-background">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-12">#</TableHead>
+                      <TableHead>Paciente</TableHead>
+                      <TableHead>Data Nasc.</TableHead>
+                      <TableHead>Data Atendimento</TableHead>
+                      <TableHead>Observação</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredFolhasAvulsas.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                          Nenhum registro encontrado com os filtros aplicados
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredFolhasAvulsas.map((item, index) => (
+                        <TableRow key={item.id} className="bg-warning/5">
+                          <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
+                          <TableCell className="font-medium">{item.paciente_nome || '-'}</TableCell>
+                          <TableCell>
+                            {item.nascimento_mae
+                              ? format(new Date(item.nascimento_mae + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
+                              : '-'}
+                          </TableCell>
+                          <TableCell>
+                            {item.data_atendimento
+                              ? format(new Date(item.data_atendimento + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
+                              : '-'}
+                          </TableCell>
+                          <TableCell className="max-w-[200px] truncate" title={item.observacao_classificacao || ''}>
+                            {item.observacao_classificacao || '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className="flex items-center gap-1 w-fit bg-warning text-warning-foreground">
+                              <FileStack className="h-3 w-3" />
+                              Folha Avulsa
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

@@ -1556,6 +1556,7 @@ export type Database = {
           data_atendimento: string | null
           existe_fisicamente: boolean | null
           id: string
+          is_folha_avulsa: boolean | null
           nascimento_mae: string | null
           numero_prontuario: string | null
           observacao_classificacao: string | null
@@ -1576,6 +1577,7 @@ export type Database = {
           data_atendimento?: string | null
           existe_fisicamente?: boolean | null
           id?: string
+          is_folha_avulsa?: boolean | null
           nascimento_mae?: string | null
           numero_prontuario?: string | null
           observacao_classificacao?: string | null
@@ -1596,6 +1598,7 @@ export type Database = {
           data_atendimento?: string | null
           existe_fisicamente?: boolean | null
           id?: string
+          is_folha_avulsa?: boolean | null
           nascimento_mae?: string | null
           numero_prontuario?: string | null
           observacao_classificacao?: string | null
