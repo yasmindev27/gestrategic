@@ -625,7 +625,15 @@ export const SaidaProntuariosModule = () => {
                 <DialogHeader>
                   <DialogTitle>Registrar Saída de Prontuário</DialogTitle>
                 </DialogHeader>
-                <div className="space-y-4 pt-4">
+                <div 
+                  className="space-y-4 pt-4"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && pacienteNome.trim() && dataAtendimento && !isSubmitting) {
+                      e.preventDefault();
+                      handleAddSaida();
+                    }
+                  }}
+                >
                   <div>
                     <label className="text-sm font-medium">Paciente <span className="text-destructive">*</span></label>
                     <Input
