@@ -58,6 +58,9 @@ interface SaidaProntuario {
   id: string;
   prontuario_id: string | null;
   numero_prontuario: string;
+  paciente_nome: string | null;
+  nascimento_mae: string | null;
+  data_atendimento: string | null;
   status: string;
   registrado_recepcao_em: string | null;
   validado_classificacao_em: string | null;
@@ -559,7 +562,8 @@ export const FaturamentoModule = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Nº Prontuário</TableHead>
+                  <TableHead>Paciente</TableHead>
+                  <TableHead>Data Nasc.</TableHead>
                   <TableHead>Status Fluxo</TableHead>
                   <TableHead>Recepção</TableHead>
                   <TableHead>Classificação</TableHead>
@@ -573,7 +577,12 @@ export const FaturamentoModule = () => {
                   const avaliacao = avaliacoes.find(a => a.numero_prontuario === saida.numero_prontuario && a.is_finalizada);
                   return (
                     <TableRow key={saida.id}>
-                      <TableCell className="font-medium">{saida.numero_prontuario}</TableCell>
+                      <TableCell className="font-medium">{saida.paciente_nome || "-"}</TableCell>
+                      <TableCell>
+                        {saida.nascimento_mae 
+                          ? format(new Date(saida.nascimento_mae + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
+                          : "-"}
+                      </TableCell>
                       <TableCell>{getStatusBadge(saida.status)}</TableCell>
                       <TableCell>
                         {saida.registrado_recepcao_em 
