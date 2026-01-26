@@ -712,6 +712,156 @@ export type Database = {
           },
         ]
       }
+      chat_conversas: {
+        Row: {
+          created_at: string
+          criado_por: string
+          descricao: string | null
+          id: string
+          nome: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          criado_por: string
+          descricao?: string | null
+          id?: string
+          nome: string
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          criado_por?: string
+          descricao?: string | null
+          id?: string
+          nome?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      chat_mensagens: {
+        Row: {
+          arquivo_url: string | null
+          conteudo: string
+          conversa_id: string
+          created_at: string
+          editado: boolean | null
+          excluido: boolean | null
+          id: string
+          remetente_id: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          arquivo_url?: string | null
+          conteudo: string
+          conversa_id: string
+          created_at?: string
+          editado?: boolean | null
+          excluido?: boolean | null
+          id?: string
+          remetente_id: string
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          arquivo_url?: string | null
+          conteudo?: string
+          conversa_id?: string
+          created_at?: string
+          editado?: boolean | null
+          excluido?: boolean | null
+          id?: string
+          remetente_id?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_mensagens_conversa_id_fkey"
+            columns: ["conversa_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_moderacao_logs: {
+        Row: {
+          acao_tomada: string
+          conteudo_original: string | null
+          created_at: string
+          detalhes: Json | null
+          id: string
+          mensagem_id: string | null
+          tipo_violacao: string
+          user_id: string
+        }
+        Insert: {
+          acao_tomada: string
+          conteudo_original?: string | null
+          created_at?: string
+          detalhes?: Json | null
+          id?: string
+          mensagem_id?: string | null
+          tipo_violacao: string
+          user_id: string
+        }
+        Update: {
+          acao_tomada?: string
+          conteudo_original?: string | null
+          created_at?: string
+          detalhes?: Json | null
+          id?: string
+          mensagem_id?: string | null
+          tipo_violacao?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_moderacao_logs_mensagem_id_fkey"
+            columns: ["mensagem_id"]
+            isOneToOne: false
+            referencedRelation: "chat_mensagens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      chat_participantes: {
+        Row: {
+          adicionado_por: string | null
+          conversa_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          adicionado_por?: string | null
+          conversa_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          adicionado_por?: string | null
+          conversa_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_participantes_conversa_id_fkey"
+            columns: ["conversa_id"]
+            isOneToOne: false
+            referencedRelation: "chat_conversas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       colaboradores_restaurante: {
         Row: {
           ativo: boolean
@@ -1680,6 +1830,10 @@ export type Database = {
       }
       is_agenda_recipient: {
         Args: { _item_id: string; _user_id: string }
+        Returns: boolean
+      }
+      is_chat_participant: {
+        Args: { _conversa_id: string; _user_id: string }
         Returns: boolean
       }
       pode_ver_formulario: {
