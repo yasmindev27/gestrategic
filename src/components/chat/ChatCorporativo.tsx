@@ -29,7 +29,8 @@ import {
   Paperclip,
   FileText,
   Image,
-  AlertTriangle
+  AlertTriangle,
+  Pencil
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -80,6 +81,8 @@ export const ChatCorporativo = () => {
   const [privateChatDialogOpen, setPrivateChatDialogOpen] = useState(false);
   const [membrosDialogOpen, setMembrosDialogOpen] = useState(false);
   const [deleteConversaDialogOpen, setDeleteConversaDialogOpen] = useState(false);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [novoNomeCanal, setNovoNomeCanal] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [enviando, setEnviando] = useState(false);
@@ -637,6 +640,28 @@ export const ChatCorporativo = () => {
     }
   };
 
+  // Renomear canal (admin only)
+  const renomearCanal = async () => {
+    if (!isAdmin || !conversaSelecionada || !novoNomeCanal.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from("chat_conversas")
+        .update({ nome: novoNomeCanal.trim() })
+        .eq("id", conversaSelecionada);
+
+      if (error) throw error;
+
+      toast({ title: "Canal renomeado", description: `Canal renomeado para "${novoNomeCanal}"` });
+      setNovoNomeCanal("");
+      setRenameDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["chat-conversas"] });
+    } catch (error) {
+      console.error("Erro ao renomear canal:", error);
+      toast({ title: "Erro", description: "Não foi possível renomear o canal", variant: "destructive" });
+    }
+  };
+
   const conversasFiltradas = conversas.filter(c => 
     c.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -926,6 +951,48 @@ export const ChatCorporativo = () => {
                           <Button onClick={adicionarMembros} disabled={selectedUsers.length === 0}>
                             <UserPlus className="h-4 w-4 mr-2" />
                             Adicionar ({selectedUsers.length})
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+
+                  {/* Renomear canal (admin only) */}
+                  {isAdmin && conversaSelecionada !== CANAL_GERAL_ID && (
+                    <Dialog open={renameDialogOpen} onOpenChange={(open) => {
+                      setRenameDialogOpen(open);
+                      if (open && conversaAtual) {
+                        setNovoNomeCanal(conversaAtual.nome);
+                      }
+                    }}>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon" title="Renomear Canal">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Renomear Canal</DialogTitle>
+                          <DialogDescription>
+                            Digite o novo nome para o canal
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="py-4">
+                          <Input
+                            value={novoNomeCanal}
+                            onChange={(e) => setNovoNomeCanal(e.target.value)}
+                            placeholder="Novo nome do canal"
+                            onKeyDown={(e) => {
+                              if (e.key === "Enter" && novoNomeCanal.trim()) {
+                                renomearCanal();
+                              }
+                            }}
+                          />
+                        </div>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setRenameDialogOpen(false)}>Cancelar</Button>
+                          <Button onClick={renomearCanal} disabled={!novoNomeCanal.trim()}>
+                            Renomear
                           </Button>
                         </DialogFooter>
                       </DialogContent>
