@@ -461,11 +461,11 @@ export const SaidaProntuariosModule = () => {
   const hasFaltantesActiveFilters = faltantesSearchTerm || faltantesDataInicio || faltantesDataFim;
 
   const getFaltantesExportData = () => {
-    const headers = ['Paciente', 'Nº Prontuário', 'Data de Registro', 'Status'];
+    const headers = ['Paciente', 'Data Nascimento', 'Data Atendimento', 'Status'];
     const rows = filteredFaltantesSalus.map(s => [
       s.paciente_nome || '-',
-      s.numero_prontuario,
-      s.created_at ? format(new Date(s.created_at), "dd/MM/yyyy HH:mm") : '-',
+      s.nascimento_mae ? format(new Date(s.nascimento_mae + "T12:00:00"), "dd/MM/yyyy") : '-',
+      s.data_atendimento ? format(new Date(s.data_atendimento + "T12:00:00"), "dd/MM/yyyy") : '-',
       'Falta prontuário físico',
     ]);
     return { headers, rows };
@@ -833,12 +833,12 @@ export const SaidaProntuariosModule = () => {
                         </TableCell>
                         <TableCell>
                           {saida.nascimento_mae 
-                            ? format(new Date(saida.nascimento_mae), "dd/MM/yyyy", { locale: ptBR })
+                            ? format(new Date(saida.nascimento_mae + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
                             : "-"}
                         </TableCell>
                         <TableCell>
                           {saida.data_atendimento 
-                            ? format(new Date(saida.data_atendimento), "dd/MM/yyyy", { locale: ptBR })
+                            ? format(new Date(saida.data_atendimento + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
                             : "-"}
                         </TableCell>
                         <TableCell>{getStatusBadge(saida.status)}</TableCell>
@@ -975,8 +975,8 @@ export const SaidaProntuariosModule = () => {
                     <TableRow>
                       <TableHead className="w-12">#</TableHead>
                       <TableHead>Paciente</TableHead>
-                      <TableHead>Nº Prontuário</TableHead>
-                      <TableHead>Data de Registro</TableHead>
+                      <TableHead>Data Nasc.</TableHead>
+                      <TableHead>Data Atendimento</TableHead>
                       <TableHead>Status</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -992,10 +992,14 @@ export const SaidaProntuariosModule = () => {
                         <TableRow key={item.id} className="bg-destructive/5">
                           <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
                           <TableCell className="font-medium">{item.paciente_nome || '-'}</TableCell>
-                          <TableCell className="font-mono text-sm">{item.numero_prontuario}</TableCell>
                           <TableCell>
-                            {item.registrado_recepcao_em
-                              ? format(new Date(item.registrado_recepcao_em), "dd/MM/yyyy HH:mm", { locale: ptBR })
+                            {item.nascimento_mae
+                              ? format(new Date(item.nascimento_mae + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
+                              : '-'}
+                          </TableCell>
+                          <TableCell>
+                            {item.data_atendimento
+                              ? format(new Date(item.data_atendimento + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
                               : '-'}
                           </TableCell>
                           <TableCell>
@@ -1027,8 +1031,28 @@ export const SaidaProntuariosModule = () => {
           </DialogHeader>
           <div className="space-y-4 pt-4">
             <div>
-              <label className="text-sm font-medium">Número do Prontuário</label>
-              <Input value={selectedSaida?.numero_prontuario || ""} disabled />
+              <label className="text-sm font-medium">Nome do Paciente</label>
+              <Input value={selectedSaida?.paciente_nome || "-"} disabled />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Data de Nascimento</label>
+              <Input 
+                value={selectedSaida?.nascimento_mae 
+                  ? format(new Date(selectedSaida.nascimento_mae + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
+                  : "-"
+                } 
+                disabled 
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Data de Atendimento</label>
+              <Input 
+                value={selectedSaida?.data_atendimento 
+                  ? format(new Date(selectedSaida.data_atendimento + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
+                  : "-"
+                } 
+                disabled 
+              />
             </div>
             
             {selectedSaida?.status === "aguardando_classificacao" && (
