@@ -202,12 +202,16 @@ const Sidebar = ({
       return items;
     }
 
-    // FATURAMENTO - Lista prontuários + Prontuários faltantes + Avaliação
+    // FATURAMENTO - Lista prontuários + Prontuários faltantes + Avaliação + Abrir chamado
     if (isFaturamento) {
       items.push({
         icon: LayoutDashboard,
         label: "Dashboard",
         id: "dashboard"
+      }, {
+        icon: Ticket,
+        label: "Abrir Chamado",
+        id: "abrir-chamado"
       }, {
         icon: Receipt,
         label: "Faturamento",
