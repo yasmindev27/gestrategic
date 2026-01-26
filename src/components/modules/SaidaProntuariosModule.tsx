@@ -115,7 +115,7 @@ export const SaidaProntuariosModule = () => {
   // Form states
   const [pacienteNome, setPacienteNome] = useState("");
   const [nascimentoMae, setNascimentoMae] = useState("");
-  const [numeroProntuario, setNumeroProntuario] = useState("");
+  const [dataAtendimento, setDataAtendimento] = useState("");
   const [existeFisicamente, setExisteFisicamente] = useState(true);
   const [observacao, setObservacao] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -168,7 +168,7 @@ export const SaidaProntuariosModule = () => {
   };
 
   const handleAddSaida = async () => {
-    if (!pacienteNome.trim() || !numeroProntuario.trim() || !userId) return;
+    if (!pacienteNome.trim() || !dataAtendimento || !userId) return;
     
     setIsSubmitting(true);
     try {
@@ -177,7 +177,8 @@ export const SaidaProntuariosModule = () => {
         .insert({
           paciente_nome: pacienteNome.trim(),
           nascimento_mae: nascimentoMae || null,
-          numero_prontuario: numeroProntuario.trim(),
+          data_atendimento: dataAtendimento,
+          numero_prontuario: `ATD-${dataAtendimento}`, // Gera um identificador automático
           registrado_recepcao_por: userId,
           registrado_recepcao_em: new Date().toISOString(),
           status: "aguardando_classificacao",
@@ -187,7 +188,7 @@ export const SaidaProntuariosModule = () => {
 
       await logAction("registrar_saida", "saida_prontuarios", { 
         paciente: pacienteNome,
-        prontuario: numeroProntuario 
+        data_atendimento: dataAtendimento 
       });
 
       toast({
@@ -198,7 +199,7 @@ export const SaidaProntuariosModule = () => {
       setNewProntuarioOpen(false);
       setPacienteNome("");
       setNascimentoMae("");
-      setNumeroProntuario("");
+      setDataAtendimento("");
       fetchSaidas();
     } catch (error) {
       console.error("Error:", error);
@@ -641,18 +642,18 @@ export const SaidaProntuariosModule = () => {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Número do Prontuário <span className="text-destructive">*</span></label>
+                    <label className="text-sm font-medium">Data de Atendimento <span className="text-destructive">*</span></label>
                     <Input
-                      value={numeroProntuario}
-                      onChange={(e) => setNumeroProntuario(e.target.value)}
-                      placeholder="Digite o número do prontuário"
+                      type="date"
+                      value={dataAtendimento}
+                      onChange={(e) => setDataAtendimento(e.target.value)}
                     />
                   </div>
                 </div>
                 <DialogFooter>
                   <Button 
                     onClick={handleAddSaida} 
-                    disabled={!pacienteNome.trim() || !numeroProntuario.trim() || isSubmitting}
+                    disabled={!pacienteNome.trim() || !dataAtendimento || isSubmitting}
                   >
                     {isSubmitting ? (
                       <Loader2 className="h-4 w-4 mr-2 animate-spin" />

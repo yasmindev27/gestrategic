@@ -1374,6 +1374,7 @@ export type Database = {
           conferido_nir_em: string | null
           conferido_nir_por: string | null
           created_at: string
+          data_atendimento: string | null
           existe_fisicamente: boolean | null
           id: string
           nascimento_mae: string | null
@@ -1393,6 +1394,7 @@ export type Database = {
           conferido_nir_em?: string | null
           conferido_nir_por?: string | null
           created_at?: string
+          data_atendimento?: string | null
           existe_fisicamente?: boolean | null
           id?: string
           nascimento_mae?: string | null
@@ -1412,6 +1414,7 @@ export type Database = {
           conferido_nir_em?: string | null
           conferido_nir_por?: string | null
           created_at?: string
+          data_atendimento?: string | null
           existe_fisicamente?: boolean | null
           id?: string
           nascimento_mae?: string | null
