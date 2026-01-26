@@ -1065,10 +1065,11 @@ export const SaidaProntuariosModule = () => {
         </CardContent>
       </Card>
 
-      {/* Total Counter */}
-      <Card className="bg-primary/5 border-primary/20">
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Total de Registros */}
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-primary/10">
                 <Users className="h-5 w-5 text-primary" />
@@ -1076,16 +1077,44 @@ export const SaidaProntuariosModule = () => {
               <div>
                 <p className="text-sm text-muted-foreground">Total de Registros</p>
                 <p className="text-2xl font-bold text-primary">{filteredSaidas.length}</p>
+                {hasActiveFilters && (
+                  <p className="text-xs text-muted-foreground">de {saidas.length} totais</p>
+                )}
               </div>
             </div>
-            {hasActiveFilters && (
-              <div className="text-sm text-muted-foreground">
-                de {saidas.length} registros totais
+          </CardContent>
+        </Card>
+
+        {/* Folhas Avulsas */}
+        <Card className="bg-warning/5 border-warning/20">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-warning/10">
+                <FileStack className="h-5 w-5 text-warning" />
               </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              <div>
+                <p className="text-sm text-muted-foreground">Folhas Avulsas</p>
+                <p className="text-2xl font-bold text-warning">{folhasAvulsas.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Prontuários Faltantes */}
+        <Card className="bg-destructive/5 border-destructive/20">
+          <CardContent className="py-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-full bg-destructive/10">
+                <AlertCircle className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Prontuários Faltantes</p>
+                <p className="text-2xl font-bold text-destructive">{faltantesSalus.length}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Table */}
       <Card>
