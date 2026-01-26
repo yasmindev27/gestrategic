@@ -1068,7 +1068,10 @@ export const SaidaProntuariosModule = () => {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Total de Registros */}
-        <Card className="bg-primary/5 border-primary/20">
+        <Card 
+          className="bg-primary/5 border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors"
+          onClick={() => document.getElementById('prontuarios-fluxo')?.scrollIntoView({ behavior: 'smooth' })}
+        >
           <CardContent className="py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-primary/10">
@@ -1086,7 +1089,10 @@ export const SaidaProntuariosModule = () => {
         </Card>
 
         {/* Folhas Avulsas */}
-        <Card className="bg-warning/5 border-warning/20">
+        <Card 
+          className="bg-warning/5 border-warning/20 cursor-pointer hover:bg-warning/10 transition-colors"
+          onClick={() => document.getElementById('folhas-avulsas')?.scrollIntoView({ behavior: 'smooth' })}
+        >
           <CardContent className="py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-warning/10">
@@ -1101,7 +1107,10 @@ export const SaidaProntuariosModule = () => {
         </Card>
 
         {/* Prontuários Faltantes */}
-        <Card className="bg-destructive/5 border-destructive/20">
+        <Card 
+          className="bg-destructive/5 border-destructive/20 cursor-pointer hover:bg-destructive/10 transition-colors"
+          onClick={() => document.getElementById('prontuarios-faltantes')?.scrollIntoView({ behavior: 'smooth' })}
+        >
           <CardContent className="py-4">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-full bg-destructive/10">
@@ -1117,7 +1126,7 @@ export const SaidaProntuariosModule = () => {
       </div>
 
       {/* Table */}
-      <Card>
+      <Card id="prontuarios-fluxo">
         <CardHeader>
           <CardTitle>Prontuários em Fluxo</CardTitle>
           <CardDescription>
@@ -1217,7 +1226,7 @@ export const SaidaProntuariosModule = () => {
       </Card>
 
       {/* Folhas Avulsas */}
-      <Card className="bg-warning/5 border-warning/30">
+      <Card id="folhas-avulsas" className="bg-warning/5 border-warning/30">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
@@ -1376,7 +1385,7 @@ export const SaidaProntuariosModule = () => {
       </Card>
 
       {/* Prontuários Faltantes - Importados via Salus */}
-      <Card className="bg-destructive/5 border-destructive/30">
+      <Card id="prontuarios-faltantes" className="bg-destructive/5 border-destructive/30">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-4">
             <div>
