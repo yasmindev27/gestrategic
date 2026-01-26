@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Users, Settings, HelpCircle, Activity, LogOut, ChevronLeft, ChevronRight, FileOutput, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, Ticket, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog } from "lucide-react";
+import { LayoutDashboard, Users, Settings, HelpCircle, Activity, LogOut, ChevronLeft, ChevronRight, FileOutput, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, Ticket, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog, MessageSquare } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -341,12 +341,21 @@ const Sidebar = ({
     return items;
   };
 
-  // Adicionar Restaurante a todos os menus
-  const addRestauranteToMenu = (items: {
+  // Adicionar Restaurante e Chat a todos os menus
+  const addCommonMenuItems = (items: {
     icon: typeof LayoutDashboard;
     label: string;
     id: string;
   }[]) => {
+    // Adicionar Chat Corporativo
+    if (!items.some(item => item.id === "chat")) {
+      items.push({
+        icon: MessageSquare,
+        label: "Chat",
+        id: "chat"
+      });
+    }
+    // Adicionar Restaurante
     if (!items.some(item => item.id === "restaurante")) {
       items.push({
         icon: UtensilsCrossed,
@@ -356,7 +365,7 @@ const Sidebar = ({
     }
     return items;
   };
-  const menuItems = addRestauranteToMenu(getMenuItems());
+  const menuItems = addCommonMenuItems(getMenuItems());
   useEffect(() => {
     const fetchUserData = async () => {
       const {

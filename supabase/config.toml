@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.processar-pdf-salus]
 verify_jwt = false
+
+[functions.moderar-mensagem]
+verify_jwt = false
