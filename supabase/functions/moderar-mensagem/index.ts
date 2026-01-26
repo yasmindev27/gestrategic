@@ -6,36 +6,71 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Lista de palavras ofensivas em português (expandir conforme necessário)
+// Lista expandida de palavras ofensivas em português
 const palavrasOfensivas = [
   // Insultos gerais
   'idiota', 'imbecil', 'otário', 'babaca', 'cretino', 'estúpido', 'burro',
-  'retardado', 'débil', 'mongoloide', 'vagabundo', 'lixo', 'verme',
-  // Palavrões
-  'porra', 'merda', 'caralho', 'buceta', 'cu', 'foder', 'fodido', 'puta',
-  'putaria', 'viado', 'bicha', 'bosta', 'cacete', 'corno', 'arrombado',
+  'retardado', 'débil', 'mongoloide', 'vagabundo', 'lixo', 'verme', 'anta',
+  'jumento', 'energúmeno', 'panaca', 'pateta', 'tonto', 'bobo', 'tapado',
+  
+  // Palavrões e vulgaridades
+  'porra', 'merda', 'caralho', 'buceta', 'cu', 'foder', 'fodido', 'foda',
+  'putaria', 'bosta', 'cacete', 'corno', 'arrombado', 'desgraçado',
+  'filho da puta', 'filha da puta', 'fdp', 'pqp', 'vsf', 'tnc', 'vtnc',
+  'cabeça de pica', 'pau no cu', 'vai se foder', 'vai tomar no cu',
+  'porra', 'porr4', 'p0rra', 'merd4', 'c4ralho', 'buc3ta',
+  
+  // Termos de cunho sexual/prostituição
+  'puta', 'prostituta', 'prostituto', 'piranha', 'vadia', 'vagabunda',
+  'galinha', 'quenga', 'rapariga', 'meretriz', 'michê', 'garota de programa',
+  'safada', 'safado', 'devassa', 'devasso', 'promíscua', 'promíscuo',
+  'put4', 'v4dia', 'prost1tuta',
+  
+  // Ofensas homofóbicas
+  'viado', 'bicha', 'boiola', 'veado', 'fresco', 'baitola', 'afeminado',
+  'sapatão', 'sapata', 'fancha', 'maricona', 'maricas', 'gay' + ' nojento',
+  'v1ado', 'b1cha',
+  
   // Ofensas raciais/discriminatórias
-  'macaco', 'crioulo', 'neguinho', 'preto sujo', 'amarelo',
-  // Assédio
-  'gostosa', 'delícia', 'safada', 'piranha', 'vadia', 'vagabunda',
-  // Ameaças
-  'matar', 'morrer', 'acabar com você', 'te pego', 'vou te',
+  'macaco', 'crioulo', 'neguinho', 'preto sujo', 'amarelo', 'japa',
+  'branquelo', 'nordestino sujo', 'paraíba', 'baiano burro',
+  
+  // Assédio sexual
+  'gostosa', 'gostoso', 'delícia', 'tesão', 'tesuda', 'tesudo',
+  'rabuda', 'rabudo', 'peituda', 'bunduda', 'cavalona',
+  
+  // Ameaças e violência
+  'matar', 'morrer', 'acabar com você', 'te pego', 'vou te pegar',
+  'vou te matar', 'te arrebento', 'te acabo', 'te quebro',
+  'porrada', 'soco', 'tiro', 'facada', 'esfaquear',
+  
+  // Crimes
+  'crime', 'roubar', 'matar', 'assassinar', 'estuprar', 'sequestrar',
+  'traficar', 'traficante', 'bandido', 'criminoso', 'ladrão',
+  'assaltar', 'assaltante', 'furtar',
 ];
 
 // Padrões suspeitos para conteúdo adulto/criminoso
 const padroesSuspeitos = [
   /nud[e|ez]/i,
   /porn[o|ô]/i,
-  /sex[o|ual]/i,
-  /drogas?/i,
+  /sex[o|ual]\s*(explicito|oral|anal)/i,
+  /drogas?\s*(pesadas?|ilicitas?)/i,
   /tráfico/i,
-  /arma/i,
+  /arma\s*de\s*fogo/i,
   /roubo/i,
   /assassin/i,
   /estupro/i,
   /pedofil/i,
-  /menor/i,
-  /criança/i,
+  /menor\s*de\s*idade/i,
+  /criança.*sex/i,
+  /xvideos/i,
+  /xhamster/i,
+  /pornhub/i,
+  /onlyfans/i,
+  /nude.*foto/i,
+  /foto.*nude/i,
+  /pack.*nude/i,
 ];
 
 interface ModerationResult {
@@ -45,42 +80,90 @@ interface ModerationResult {
   details: string;
 }
 
+function normalizeText(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .replace(/[0-9]/g, (match) => {
+      // Substituir números por letras parecidas (l33t speak)
+      const map: Record<string, string> = {
+        '0': 'o', '1': 'i', '3': 'e', '4': 'a', '5': 's', '7': 't', '8': 'b'
+      };
+      return map[match] || match;
+    })
+    .replace(/[@]/g, 'a')
+    .replace(/[$]/g, 's');
+}
+
 function moderarTexto(texto: string): ModerationResult {
-  const textoLower = texto.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const textoNormalizado = normalizeText(texto);
+  const textoOriginalLower = texto.toLowerCase();
   const violations: string[] = [];
   let severity: 'none' | 'low' | 'medium' | 'high' = 'none';
 
+  console.log(`Texto original: "${texto}"`);
+  console.log(`Texto normalizado: "${textoNormalizado}"`);
+
   // Verificar palavras ofensivas
   for (const palavra of palavrasOfensivas) {
-    const palavraNorm = palavra.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-    if (textoLower.includes(palavraNorm)) {
-      violations.push(`Palavra ofensiva detectada: "${palavra}"`);
+    const palavraNorm = normalizeText(palavra);
+    
+    // Verificar no texto normalizado
+    if (textoNormalizado.includes(palavraNorm)) {
+      violations.push(`Termo inadequado detectado`);
       severity = severity === 'none' ? 'medium' : 'high';
+      console.log(`Palavra bloqueada encontrada: "${palavra}"`);
+      break; // Uma violação é suficiente para bloquear
+    }
+    
+    // Verificar correspondência exata de palavra
+    const regex = new RegExp(`\\b${palavraNorm}\\b`, 'i');
+    if (regex.test(textoNormalizado)) {
+      violations.push(`Termo inadequado detectado`);
+      severity = severity === 'none' ? 'medium' : 'high';
+      console.log(`Palavra bloqueada (regex): "${palavra}"`);
+      break;
     }
   }
 
   // Verificar padrões suspeitos
-  for (const padrao of padroesSuspeitos) {
-    if (padrao.test(texto)) {
-      violations.push(`Conteúdo potencialmente inadequado detectado`);
-      severity = 'high';
-    }
-  }
-
-  // Verificar tentativas de burlar filtros (caracteres especiais entre letras)
-  const textoSemEspacos = texto.replace(/[^a-zA-Z]/g, '').toLowerCase();
-  for (const palavra of palavrasOfensivas) {
-    const palavraSemEspacos = palavra.replace(/[^a-zA-Z]/g, '').toLowerCase();
-    if (textoSemEspacos.includes(palavraSemEspacos) && textoSemEspacos.length > 3) {
-      if (!violations.some(v => v.includes(palavra))) {
-        violations.push(`Tentativa de burlar filtro detectada`);
+  if (violations.length === 0) {
+    for (const padrao of padroesSuspeitos) {
+      if (padrao.test(texto) || padrao.test(textoNormalizado)) {
+        violations.push(`Conteúdo potencialmente inadequado detectado`);
         severity = 'high';
+        console.log(`Padrão suspeito encontrado: ${padrao}`);
+        break;
       }
     }
   }
 
+  // Verificar tentativas de burlar filtros (caracteres especiais entre letras)
+  if (violations.length === 0) {
+    const textoSemEspacos = texto.replace(/[^a-zA-ZÀ-ÿ]/g, '').toLowerCase();
+    const textoSemEspacosNorm = normalizeText(textoSemEspacos);
+    
+    for (const palavra of palavrasOfensivas) {
+      if (palavra.length < 4) continue; // Ignorar palavras muito curtas
+      
+      const palavraSemEspacos = palavra.replace(/[^a-zA-ZÀ-ÿ]/g, '').toLowerCase();
+      const palavraSemEspacosNorm = normalizeText(palavraSemEspacos);
+      
+      if (textoSemEspacosNorm.includes(palavraSemEspacosNorm)) {
+        violations.push(`Tentativa de burlar filtro detectada`);
+        severity = 'high';
+        console.log(`Tentativa de burlar com: "${palavra}"`);
+        break;
+      }
+    }
+  }
+
+  const isApproved = violations.length === 0;
+  console.log(`Resultado: ${isApproved ? 'APROVADO' : 'BLOQUEADO'} - Violations: ${violations.length}`);
+
   return {
-    isApproved: violations.length === 0,
+    isApproved,
     violations,
     severity,
     details: violations.length > 0 
@@ -126,17 +209,18 @@ serve(async (req) => {
     const { conteudo, tipo, conversa_id } = await req.json();
 
     console.log(`Moderando mensagem de ${user.id} na conversa ${conversa_id}`);
+    console.log(`Conteúdo: "${conteudo}"`);
 
     // Para texto, usar moderação local
     if (tipo === 'texto') {
       const resultado = moderarTexto(conteudo);
       
       if (!resultado.isApproved) {
-        // Registrar log de moderação
-        await supabase.from('chat_moderacao_logs').insert({
+        // Registrar log de moderação usando service role
+        const { error: logError } = await supabase.from('chat_moderacao_logs').insert({
           user_id: user.id,
           tipo_violacao: resultado.violations.join('; '),
-          conteudo_original: conteudo.substring(0, 500), // Limitar tamanho
+          conteudo_original: conteudo.substring(0, 500),
           acao_tomada: 'bloqueado',
           detalhes: {
             severity: resultado.severity,
@@ -144,7 +228,11 @@ serve(async (req) => {
           }
         });
 
-        console.log(`Mensagem bloqueada: ${resultado.details}`);
+        if (logError) {
+          console.error('Erro ao registrar log de moderação:', logError);
+        }
+
+        console.log(`Mensagem BLOQUEADA: ${resultado.details}`);
 
         return new Response(
           JSON.stringify({
@@ -178,16 +266,16 @@ serve(async (req) => {
         );
       }
 
+      console.log(`Mensagem APROVADA e inserida: ${mensagem.id}`);
+
       return new Response(
         JSON.stringify({ approved: true, mensagem }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Para imagens, bloquear por padrão (implementar análise de imagem futuramente)
+    // Para imagens, bloquear por padrão
     if (tipo === 'imagem') {
-      // Por segurança, imagens passam por moderação adicional
-      // Aqui seria integrado um serviço de análise de imagem como Google Vision AI
       return new Response(
         JSON.stringify({
           approved: false,

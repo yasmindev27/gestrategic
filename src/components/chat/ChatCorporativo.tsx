@@ -8,8 +8,8 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
 import { 
   Send, 
@@ -20,7 +20,10 @@ import {
   Loader2,
   Hash,
   Search,
-  Shield
+  Shield,
+  UserPlus,
+  Settings,
+  X
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -49,7 +52,12 @@ interface Participante {
   id: string;
   user_id: string;
   conversa_id: string;
-  nome?: string;
+  full_name?: string;
+}
+
+interface Usuario {
+  user_id: string;
+  full_name: string;
 }
 
 const CANAL_GERAL_ID = "00000000-0000-0000-0000-000000000001";
@@ -61,10 +69,15 @@ export const ChatCorporativo = () => {
   const [novaConversaNome, setNovaConversaNome] = useState("");
   const [novaConversaDescricao, setNovaConversaDescricao] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [membrosDialogOpen, setMembrosDialogOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [enviando, setEnviando] = useState(false);
+  const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionSearch, setMentionSearch] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   // Buscar usuário atual
@@ -91,7 +104,6 @@ export const ChatCorporativo = () => {
     const joinCanalGeral = async () => {
       if (!userId) return;
       
-      // Verificar se já é participante
       const { data: existente } = await supabase
         .from("chat_participantes")
         .select("id")
@@ -108,6 +120,20 @@ export const ChatCorporativo = () => {
     };
     joinCanalGeral();
   }, [userId]);
+
+  // Buscar todos os usuários para adicionar membros
+  const { data: todosUsuarios = [] } = useQuery({
+    queryKey: ["todos-usuarios"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .order("full_name");
+      
+      if (error) throw error;
+      return data as Usuario[];
+    },
+  });
 
   // Buscar conversas do usuário
   const { data: conversas = [], isLoading: loadingConversas } = useQuery({
@@ -136,6 +162,36 @@ export const ChatCorporativo = () => {
     enabled: !!userId,
   });
 
+  // Buscar participantes da conversa selecionada
+  const { data: participantes = [] } = useQuery({
+    queryKey: ["chat-participantes", conversaSelecionada],
+    queryFn: async () => {
+      if (!conversaSelecionada) return [];
+
+      const { data, error } = await supabase
+        .from("chat_participantes")
+        .select("id, user_id, conversa_id")
+        .eq("conversa_id", conversaSelecionada);
+
+      if (error) throw error;
+
+      // Buscar nomes dos participantes
+      const userIds = data.map(p => p.user_id);
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", userIds);
+
+      const profileMap = new Map(profiles?.map(p => [p.user_id, p.full_name]) || []);
+
+      return data.map(p => ({
+        ...p,
+        full_name: profileMap.get(p.user_id) || "Usuário"
+      })) as Participante[];
+    },
+    enabled: !!conversaSelecionada,
+  });
+
   // Buscar mensagens da conversa selecionada
   const { data: mensagens = [], isLoading: loadingMensagens } = useQuery({
     queryKey: ["chat-mensagens", conversaSelecionada],
@@ -151,7 +207,6 @@ export const ChatCorporativo = () => {
 
       if (error) throw error;
 
-      // Buscar nomes dos remetentes
       const remetenteIds = [...new Set((data as Mensagem[]).map(m => m.remetente_id))];
       const { data: profiles } = await supabase
         .from("profiles")
@@ -166,7 +221,7 @@ export const ChatCorporativo = () => {
       }));
     },
     enabled: !!conversaSelecionada,
-    refetchInterval: 3000, // Polling a cada 3 segundos
+    refetchInterval: 3000,
   });
 
   // Realtime para mensagens
@@ -198,6 +253,41 @@ export const ChatCorporativo = () => {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensagens]);
+
+  // Detectar @ para menções
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNovaMensagem(value);
+
+    // Verificar se o último caractere é @ ou se há uma menção em progresso
+    const lastAtIndex = value.lastIndexOf('@');
+    if (lastAtIndex !== -1) {
+      const afterAt = value.substring(lastAtIndex + 1);
+      if (!afterAt.includes(' ')) {
+        setShowMentions(true);
+        setMentionSearch(afterAt.toLowerCase());
+        return;
+      }
+    }
+    setShowMentions(false);
+    setMentionSearch("");
+  };
+
+  // Inserir menção
+  const insertMention = (name: string, isAll: boolean = false) => {
+    const lastAtIndex = novaMensagem.lastIndexOf('@');
+    const beforeAt = novaMensagem.substring(0, lastAtIndex);
+    const mention = isAll ? "@todos" : `@${name}`;
+    setNovaMensagem(beforeAt + mention + " ");
+    setShowMentions(false);
+    setMentionSearch("");
+    inputRef.current?.focus();
+  };
+
+  // Usuários filtrados para menção
+  const usuariosFiltrados = participantes.filter(p => 
+    p.full_name?.toLowerCase().includes(mentionSearch)
+  );
 
   // Enviar mensagem com moderação
   const enviarMensagem = async () => {
@@ -262,6 +352,21 @@ export const ChatCorporativo = () => {
         user_id: userId
       });
 
+      // Adicionar membros selecionados
+      if (selectedUsers.length > 0) {
+        const membrosParaAdicionar = selectedUsers
+          .filter(uid => uid !== userId)
+          .map(uid => ({
+            conversa_id: conversa.id,
+            user_id: uid,
+            adicionado_por: userId
+          }));
+
+        if (membrosParaAdicionar.length > 0) {
+          await supabase.from("chat_participantes").insert(membrosParaAdicionar);
+        }
+      }
+
       toast({
         title: "Canal criado",
         description: `O canal "${novaConversaNome}" foi criado com sucesso`,
@@ -269,6 +374,7 @@ export const ChatCorporativo = () => {
 
       setNovaConversaNome("");
       setNovaConversaDescricao("");
+      setSelectedUsers([]);
       setDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ["chat-conversas"] });
     } catch (error) {
@@ -281,11 +387,88 @@ export const ChatCorporativo = () => {
     }
   };
 
+  // Adicionar membros à conversa existente
+  const adicionarMembros = async () => {
+    if (!conversaSelecionada || selectedUsers.length === 0 || !userId) return;
+
+    try {
+      const participantesAtuais = participantes.map(p => p.user_id);
+      const novosMembros = selectedUsers
+        .filter(uid => !participantesAtuais.includes(uid))
+        .map(uid => ({
+          conversa_id: conversaSelecionada,
+          user_id: uid,
+          adicionado_por: userId
+        }));
+
+      if (novosMembros.length > 0) {
+        const { error } = await supabase.from("chat_participantes").insert(novosMembros);
+        if (error) throw error;
+
+        toast({
+          title: "Membros adicionados",
+          description: `${novosMembros.length} membro(s) adicionado(s) ao canal`,
+        });
+
+        queryClient.invalidateQueries({ queryKey: ["chat-participantes", conversaSelecionada] });
+      }
+
+      setSelectedUsers([]);
+      setMembrosDialogOpen(false);
+    } catch (error) {
+      console.error("Erro ao adicionar membros:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível adicionar os membros",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Remover membro
+  const removerMembro = async (participanteId: string, participanteUserId: string) => {
+    if (!conversaSelecionada) return;
+    
+    // Não permitir remover a si mesmo
+    if (participanteUserId === userId) {
+      toast({
+        title: "Ação não permitida",
+        description: "Você não pode se remover do canal",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("chat_participantes")
+        .delete()
+        .eq("id", participanteId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Membro removido",
+        description: "O membro foi removido do canal",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["chat-participantes", conversaSelecionada] });
+    } catch (error) {
+      console.error("Erro ao remover membro:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível remover o membro",
+        variant: "destructive",
+      });
+    }
+  };
+
   const conversasFiltradas = conversas.filter(c => 
     c.nome.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const conversaAtual = conversas.find(c => c.id === conversaSelecionada);
+  const isCreator = conversaAtual?.criado_por === userId;
 
   const getInitials = (name: string) => {
     return name
@@ -294,6 +477,21 @@ export const ChatCorporativo = () => {
       .slice(0, 2)
       .join("")
       .toUpperCase();
+  };
+
+  // Renderizar conteúdo com menções destacadas
+  const renderMensagemComMencoes = (conteudo: string) => {
+    const parts = conteudo.split(/(@\w+)/g);
+    return parts.map((part, index) => {
+      if (part.startsWith('@')) {
+        return (
+          <span key={index} className="bg-primary/20 text-primary font-medium rounded px-1">
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
   };
 
   return (
@@ -312,9 +510,12 @@ export const ChatCorporativo = () => {
                   <Plus className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>Novo Canal</DialogTitle>
+                  <DialogDescription>
+                    Crie um novo canal e adicione membros
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4 py-4">
                   <div>
@@ -332,6 +533,39 @@ export const ChatCorporativo = () => {
                       onChange={(e) => setNovaConversaDescricao(e.target.value)}
                       placeholder="Sobre o que é este canal?"
                     />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">Adicionar Membros</label>
+                    <ScrollArea className="h-48 border rounded-md p-2">
+                      {todosUsuarios.filter(u => u.user_id !== userId).map((usuario) => (
+                        <div 
+                          key={usuario.user_id} 
+                          className="flex items-center gap-2 py-2 hover:bg-muted rounded px-2"
+                        >
+                          <Checkbox
+                            checked={selectedUsers.includes(usuario.user_id)}
+                            onCheckedChange={(checked) => {
+                              if (checked) {
+                                setSelectedUsers([...selectedUsers, usuario.user_id]);
+                              } else {
+                                setSelectedUsers(selectedUsers.filter(id => id !== usuario.user_id));
+                              }
+                            }}
+                          />
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-xs">
+                              {getInitials(usuario.full_name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm">{usuario.full_name}</span>
+                        </div>
+                      ))}
+                    </ScrollArea>
+                    {selectedUsers.length > 0 && (
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {selectedUsers.length} membro(s) selecionado(s)
+                      </p>
+                    )}
                   </div>
                 </div>
                 <DialogFooter>
@@ -413,10 +647,113 @@ export const ChatCorporativo = () => {
                     </p>
                   )}
                 </div>
-                <Badge variant="outline" className="gap-1">
-                  <Shield className="h-3 w-3" />
-                  Moderado
-                </Badge>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="gap-1">
+                    <Users className="h-3 w-3" />
+                    {participantes.length}
+                  </Badge>
+                  <Badge variant="outline" className="gap-1">
+                    <Shield className="h-3 w-3" />
+                    Moderado
+                  </Badge>
+                  {/* Botão de gerenciar membros */}
+                  <Dialog open={membrosDialogOpen} onOpenChange={setMembrosDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button variant="ghost" size="icon" title="Gerenciar Membros">
+                        <Settings className="h-4 w-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Gerenciar Membros</DialogTitle>
+                        <DialogDescription>
+                          Adicione ou remova membros do canal
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        {/* Lista de membros atuais */}
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">
+                            Membros Atuais ({participantes.length})
+                          </label>
+                          <ScrollArea className="h-32 border rounded-md">
+                            {participantes.map((p) => (
+                              <div 
+                                key={p.id} 
+                                className="flex items-center justify-between py-2 px-3 hover:bg-muted"
+                              >
+                                <div className="flex items-center gap-2">
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarFallback className="text-xs">
+                                      {getInitials(p.full_name || "U")}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-sm">
+                                    {p.full_name}
+                                    {p.user_id === userId && " (você)"}
+                                  </span>
+                                </div>
+                                {isCreator && p.user_id !== userId && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() => removerMembro(p.id, p.user_id)}
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </Button>
+                                )}
+                              </div>
+                            ))}
+                          </ScrollArea>
+                        </div>
+
+                        {/* Adicionar novos membros */}
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">
+                            Adicionar Novos Membros
+                          </label>
+                          <ScrollArea className="h-40 border rounded-md p-2">
+                            {todosUsuarios
+                              .filter(u => !participantes.some(p => p.user_id === u.user_id))
+                              .map((usuario) => (
+                                <div 
+                                  key={usuario.user_id} 
+                                  className="flex items-center gap-2 py-2 hover:bg-muted rounded px-2"
+                                >
+                                  <Checkbox
+                                    checked={selectedUsers.includes(usuario.user_id)}
+                                    onCheckedChange={(checked) => {
+                                      if (checked) {
+                                        setSelectedUsers([...selectedUsers, usuario.user_id]);
+                                      } else {
+                                        setSelectedUsers(selectedUsers.filter(id => id !== usuario.user_id));
+                                      }
+                                    }}
+                                  />
+                                  <Avatar className="h-6 w-6">
+                                    <AvatarFallback className="text-xs">
+                                      {getInitials(usuario.full_name)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <span className="text-sm">{usuario.full_name}</span>
+                                </div>
+                              ))}
+                          </ScrollArea>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button 
+                          onClick={adicionarMembros} 
+                          disabled={selectedUsers.length === 0}
+                        >
+                          <UserPlus className="h-4 w-4 mr-2" />
+                          Adicionar ({selectedUsers.length})
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
               </div>
             </CardHeader>
             <Separator />
@@ -472,7 +809,7 @@ export const ChatCorporativo = () => {
                               }`}
                             >
                               <p className="text-sm whitespace-pre-wrap break-words">
-                                {msg.conteudo}
+                                {renderMensagemComMencoes(msg.conteudo)}
                               </p>
                             </div>
                           </div>
@@ -485,16 +822,56 @@ export const ChatCorporativo = () => {
               </ScrollArea>
             </CardContent>
             <Separator />
-            <div className="p-4">
+            <div className="p-4 relative">
+              {/* Dropdown de menções */}
+              {showMentions && (
+                <div className="absolute bottom-full left-4 right-4 mb-2 bg-card border rounded-lg shadow-lg max-h-48 overflow-auto z-10">
+                  <button
+                    className="w-full text-left px-3 py-2 hover:bg-muted flex items-center gap-2"
+                    onClick={() => insertMention("todos", true)}
+                  >
+                    <Users className="h-4 w-4" />
+                    <span className="font-medium">@todos</span>
+                    <span className="text-xs text-muted-foreground">
+                      Mencionar todos os membros
+                    </span>
+                  </button>
+                  <Separator />
+                  {usuariosFiltrados.map((p) => (
+                    <button
+                      key={p.user_id}
+                      className="w-full text-left px-3 py-2 hover:bg-muted flex items-center gap-2"
+                      onClick={() => insertMention(p.full_name || "Usuário")}
+                    >
+                      <Avatar className="h-5 w-5">
+                        <AvatarFallback className="text-xs">
+                          {getInitials(p.full_name || "U")}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>{p.full_name}</span>
+                    </button>
+                  ))}
+                  {usuariosFiltrados.length === 0 && mentionSearch && (
+                    <p className="text-sm text-muted-foreground px-3 py-2">
+                      Nenhum membro encontrado
+                    </p>
+                  )}
+                </div>
+              )}
+              
               <div className="flex gap-2">
                 <Input
+                  ref={inputRef}
                   value={novaMensagem}
-                  onChange={(e) => setNovaMensagem(e.target.value)}
-                  placeholder="Digite sua mensagem..."
+                  onChange={handleInputChange}
+                  placeholder="Digite sua mensagem... (use @ para mencionar)"
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
+                    if (e.key === "Enter" && !e.shiftKey && !showMentions) {
                       e.preventDefault();
                       enviarMensagem();
+                    }
+                    if (e.key === "Escape") {
+                      setShowMentions(false);
                     }
                   }}
                   disabled={enviando}
@@ -510,7 +887,7 @@ export const ChatCorporativo = () => {
               <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
                 <AlertTriangle className="h-3 w-3" />
                 <span>
-                  Mensagens são moderadas automaticamente. Conteúdo ofensivo, discriminatório ou inadequado será bloqueado.
+                  Mensagens são moderadas automaticamente. Conteúdo ofensivo será bloqueado.
                 </span>
               </div>
             </div>
@@ -530,7 +907,7 @@ export const ChatCorporativo = () => {
               <ul className="text-xs mt-2 space-y-1">
                 <li>• Mantenha o respeito e profissionalismo</li>
                 <li>• Não envie conteúdo ofensivo ou discriminatório</li>
-                <li>• Imagens inadequadas são proibidas</li>
+                <li>• Use @nome ou @todos para mencionar pessoas</li>
                 <li>• Violações serão registradas e reportadas</li>
               </ul>
             </div>
