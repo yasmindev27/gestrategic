@@ -56,16 +56,12 @@ const Sidebar = ({
       id: string;
     }[] = [];
 
-    // ADMINISTRADOR - acesso total
+    // ADMINISTRADOR - acesso total (sem abrir chamado)
     if (isAdmin) {
       items.push({
         icon: LayoutDashboard,
         label: "Dashboard",
         id: "dashboard"
-      }, {
-        icon: Ticket,
-        label: "Abrir Chamado",
-        id: "abrir-chamado"
       }, {
         icon: Ambulance,
         label: "Mapa de Leitos",
@@ -129,6 +125,10 @@ const Sidebar = ({
         label: "Dashboard",
         id: "dashboard"
       }, {
+        icon: Ticket,
+        label: "Abrir Chamado",
+        id: "abrir-chamado"
+      }, {
         icon: Calendar,
         label: "Agenda",
         id: "agenda"
@@ -146,6 +146,10 @@ const Sidebar = ({
         icon: LayoutDashboard,
         label: "Dashboard",
         id: "dashboard"
+      }, {
+        icon: Ticket,
+        label: "Abrir Chamado",
+        id: "abrir-chamado"
       }, {
         icon: ClipboardX,
         label: "Recepção",
@@ -168,6 +172,10 @@ const Sidebar = ({
         icon: LayoutDashboard,
         label: "Dashboard",
         id: "dashboard"
+      }, {
+        icon: Ticket,
+        label: "Abrir Chamado",
+        id: "abrir-chamado"
       }, {
         icon: Receipt,
         label: "Faturamento",
@@ -231,6 +239,10 @@ const Sidebar = ({
         label: "TI",
         id: "tecnico-ti"
       }, {
+        icon: Ticket,
+        label: "Abrir Chamado",
+        id: "abrir-chamado"
+      }, {
         icon: Calendar,
         label: "Agenda",
         id: "agenda"
@@ -242,6 +254,10 @@ const Sidebar = ({
         icon: Wrench,
         label: "Manutenção",
         id: "tecnico-manutencao"
+      }, {
+        icon: Ticket,
+        label: "Abrir Chamado",
+        id: "abrir-chamado"
       }, {
         icon: Calendar,
         label: "Agenda",
@@ -255,6 +271,10 @@ const Sidebar = ({
         label: "Eng. Clínica",
         id: "tecnico-engenharia"
       }, {
+        icon: Ticket,
+        label: "Abrir Chamado",
+        id: "abrir-chamado"
+      }, {
         icon: Calendar,
         label: "Agenda",
         id: "agenda"
@@ -266,6 +286,10 @@ const Sidebar = ({
         icon: FlaskConical,
         label: "Laboratório",
         id: "laboratorio"
+      }, {
+        icon: Ticket,
+        label: "Abrir Chamado",
+        id: "abrir-chamado"
       }, {
         icon: Calendar,
         label: "Agenda",
@@ -280,6 +304,10 @@ const Sidebar = ({
         icon: LayoutDashboard,
         label: "Dashboard",
         id: "dashboard"
+      }, {
+        icon: Ticket,
+        label: "Abrir Chamado",
+        id: "abrir-chamado"
       }, {
         icon: UserCog,
         label: "RH/DP",
