@@ -42,6 +42,7 @@ interface Conversa {
   tipo: string;
   criado_por: string;
   created_at: string;
+  nomeExibicao?: string; // Nome a ser exibido (para chats privados)
 }
 
 interface Mensagem {
@@ -173,7 +174,43 @@ export const ChatCorporativo = () => {
         .order("updated_at", { ascending: false });
 
       if (error) throw error;
-      return data as Conversa[];
+
+      // Para chats privados, buscar o nome do outro participante
+      const conversasComNome = await Promise.all(
+        (data as Conversa[]).map(async (conversa) => {
+          if (conversa.tipo === "privado") {
+            // Buscar todos os participantes desta conversa
+            const { data: participantesConversa } = await supabase
+              .from("chat_participantes")
+              .select("user_id")
+              .eq("conversa_id", conversa.id);
+
+            if (participantesConversa) {
+              // Encontrar o outro usuário (não o atual)
+              const outroUserId = participantesConversa.find(p => p.user_id !== userId)?.user_id;
+              
+              if (outroUserId) {
+                // Buscar o nome do outro usuário
+                const { data: outroProfile } = await supabase
+                  .from("profiles")
+                  .select("full_name")
+                  .eq("user_id", outroUserId)
+                  .single();
+
+                if (outroProfile) {
+                  return {
+                    ...conversa,
+                    nomeExibicao: outroProfile.full_name
+                  };
+                }
+              }
+            }
+          }
+          return { ...conversa, nomeExibicao: conversa.nome };
+        })
+      );
+
+      return conversasComNome;
     },
     enabled: !!userId,
   });
@@ -840,7 +877,7 @@ export const ChatCorporativo = () => {
                       ) : (
                         <Hash className="h-4 w-4" />
                       )}
-                      <span className="font-medium truncate">{conversa.nome}</span>
+                      <span className="font-medium truncate">{conversa.nomeExibicao || conversa.nome}</span>
                     </div>
                     {conversa.descricao && (
                       <p className={`text-xs truncate mt-1 ${
@@ -868,7 +905,7 @@ export const ChatCorporativo = () => {
                 <div>
                   <CardTitle className="text-lg flex items-center gap-2">
                     {conversaAtual?.tipo === "privado" ? <User className="h-5 w-5" /> : <Hash className="h-5 w-5" />}
-                    {conversaAtual?.nome}
+                    {conversaAtual?.nomeExibicao || conversaAtual?.nome}
                   </CardTitle>
                   {conversaAtual?.descricao && (
                     <p className="text-sm text-muted-foreground">{conversaAtual.descricao}</p>
