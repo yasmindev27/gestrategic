@@ -30,7 +30,9 @@ import {
   FileText,
   Image,
   AlertTriangle,
-  Pencil
+  Pencil,
+  Check,
+  CheckCheck
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -55,6 +57,8 @@ interface Mensagem {
   created_at: string;
   excluido: boolean;
   remetente_nome?: string;
+  lido?: boolean; // Se foi lido por pelo menos uma pessoa
+  lidoPorTodos?: boolean; // Se foi lido por todos (para chats privados)
 }
 
 interface Participante {
@@ -267,13 +271,94 @@ export const ChatCorporativo = () => {
 
       const profileMap = new Map(profiles?.map(p => [p.user_id, p.full_name]) || []);
 
-      return (data as Mensagem[]).map(m => ({
-        ...m,
-        remetente_nome: profileMap.get(m.remetente_id) || "Usuário"
-      }));
+      // Buscar leituras de todas as mensagens
+      const mensagemIds = (data as Mensagem[]).map(m => m.id);
+      const { data: leituras } = await supabase
+        .from("chat_mensagens_lidas")
+        .select("mensagem_id, user_id")
+        .in("mensagem_id", mensagemIds);
+
+      // Buscar quantidade de participantes na conversa (excluindo o remetente)
+      const { data: participantesConversa } = await supabase
+        .from("chat_participantes")
+        .select("user_id")
+        .eq("conversa_id", conversaSelecionada);
+
+      const totalParticipantes = participantesConversa?.length || 0;
+      const leiturasPorMensagem = new Map<string, string[]>();
+      
+      leituras?.forEach(l => {
+        const current = leiturasPorMensagem.get(l.mensagem_id) || [];
+        current.push(l.user_id);
+        leiturasPorMensagem.set(l.mensagem_id, current);
+      });
+
+      return (data as Mensagem[]).map(m => {
+        const leiturasMsg = leiturasPorMensagem.get(m.id) || [];
+        // Lido = pelo menos uma pessoa além do remetente leu
+        const lido = leiturasMsg.some(uid => uid !== m.remetente_id);
+        // Lido por todos = todas as outras pessoas (excluindo remetente) leram
+        const outrosParticipantes = totalParticipantes - 1; // -1 para excluir o remetente
+        const lidoPorTodos = outrosParticipantes > 0 && leiturasMsg.filter(uid => uid !== m.remetente_id).length >= outrosParticipantes;
+
+        return {
+          ...m,
+          remetente_nome: profileMap.get(m.remetente_id) || "Usuário",
+          lido,
+          lidoPorTodos
+        };
+      });
     },
     enabled: !!conversaSelecionada,
   });
+
+  // Marcar mensagens como lidas ao visualizar
+  useEffect(() => {
+    const marcarComoLidas = async () => {
+      if (!conversaSelecionada || !userId || mensagens.length === 0) return;
+
+      // Filtrar mensagens que não são do próprio usuário e ainda não foram lidas por ele
+      const mensagensParaMarcar = mensagens.filter(m => m.remetente_id !== userId);
+      
+      if (mensagensParaMarcar.length === 0) return;
+
+      // Inserir leituras (ignorar duplicatas)
+      for (const msg of mensagensParaMarcar) {
+        await supabase
+          .from("chat_mensagens_lidas")
+          .upsert(
+            { mensagem_id: msg.id, user_id: userId },
+            { onConflict: 'mensagem_id,user_id', ignoreDuplicates: true }
+          );
+      }
+    };
+
+    marcarComoLidas();
+  }, [conversaSelecionada, userId, mensagens.length]);
+
+  // Realtime para leituras
+  useEffect(() => {
+    if (!conversaSelecionada) return;
+
+    const leiturasChannel = supabase
+      .channel(`chat-leituras-${conversaSelecionada}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_mensagens_lidas'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["chat-mensagens", conversaSelecionada] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(leiturasChannel);
+    };
+  }, [conversaSelecionada, queryClient]);
 
   // Realtime para conversas (detectar exclusões e atualizações)
   useEffect(() => {
@@ -1155,12 +1240,33 @@ export const ChatCorporativo = () => {
                                 </p>
                               )}
                               
+                              {/* Indicador de leitura para mensagens próprias */}
+                              {isOwn && (
+                                <span className={`absolute -bottom-0.5 -right-5 ${
+                                  msg.lidoPorTodos 
+                                    ? "text-blue-500" 
+                                    : msg.lido 
+                                      ? "text-muted-foreground" 
+                                      : "text-muted-foreground/50"
+                                }`} title={msg.lidoPorTodos ? "Lido por todos" : msg.lido ? "Lido" : "Enviado"}>
+                                  {msg.lidoPorTodos ? (
+                                    <CheckCheck className="h-4 w-4" />
+                                  ) : msg.lido ? (
+                                    <CheckCheck className="h-4 w-4" />
+                                  ) : (
+                                    <Check className="h-4 w-4" />
+                                  )}
+                                </span>
+                              )}
+                              
                               {/* Botão excluir para admin */}
                               {isAdmin && (
                                 <Button
                                   variant="ghost"
                                   size="icon"
-                                  className="h-5 w-5 absolute -right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-destructive"
+                                  className={`h-5 w-5 absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-destructive ${
+                                    isOwn ? "-left-6" : "-right-6"
+                                  }`}
                                   onClick={() => excluirMensagem(msg.id)}
                                 >
                                   <Trash2 className="h-3 w-3" />

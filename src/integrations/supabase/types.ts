@@ -789,6 +789,35 @@ export type Database = {
           },
         ]
       }
+      chat_mensagens_lidas: {
+        Row: {
+          id: string
+          lido_em: string
+          mensagem_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          lido_em?: string
+          mensagem_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          lido_em?: string
+          mensagem_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chat_mensagens_lidas_mensagem_id_fkey"
+            columns: ["mensagem_id"]
+            isOneToOne: false
+            referencedRelation: "chat_mensagens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chat_moderacao_logs: {
         Row: {
           acao_tomada: string
