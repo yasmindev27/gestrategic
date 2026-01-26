@@ -902,7 +902,7 @@ export const SaidaProntuariosModule = () => {
 
               <Dialog open={newFolhaAvulsaOpen} onOpenChange={setNewFolhaAvulsaOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="border-warning text-warning hover:bg-warning/10">
+                  <Button variant="secondary">
                     <FileStack className="h-4 w-4 mr-2" />
                     Folha Avulsa
                   </Button>
@@ -935,7 +935,7 @@ export const SaidaProntuariosModule = () => {
                       />
                     </div>
                     <div>
-                      <label className="text-sm font-medium">Data de Nascimento</label>
+                      <label className="text-sm font-medium">Data de Nascimento <span className="text-muted-foreground text-xs">(opcional)</span></label>
                       <Input
                         type="date"
                         value={folhaAvulsaNascimento}
@@ -964,7 +964,6 @@ export const SaidaProntuariosModule = () => {
                     <Button 
                       onClick={handleAddFolhaAvulsa} 
                       disabled={!folhaAvulsaPaciente.trim() || !folhaAvulsaDataAtendimento || isSubmitting}
-                      className="bg-warning text-warning-foreground hover:bg-warning/90"
                     >
                       {isSubmitting ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
