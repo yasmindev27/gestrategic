@@ -74,6 +74,7 @@ interface SaidaProntuario {
   numero_prontuario: string;
   paciente_nome: string | null;
   nascimento_mae: string | null;
+  data_atendimento: string | null;
   status: string;
   registrado_recepcao_em: string | null;
   registrado_recepcao_por: string | null;
@@ -502,11 +503,11 @@ export const SaidaProntuariosModule = () => {
   };
 
   const getExportData = () => {
-    const headers = ['Paciente', 'Data Nasc.', 'Nº Prontuário', 'Status', 'Recepção', 'Classificação', 'NIR'];
+    const headers = ['Paciente', 'Data Nasc.', 'Data Atendimento', 'Status', 'Recepção', 'Classificação', 'NIR'];
     const rows = filteredSaidas.map(s => [
       s.paciente_nome || '-',
       s.nascimento_mae ? format(new Date(s.nascimento_mae), "dd/MM/yyyy") : '-',
-      s.numero_prontuario,
+      s.data_atendimento ? format(new Date(s.data_atendimento), "dd/MM/yyyy") : '-',
       s.status,
       s.registrado_recepcao_em ? format(new Date(s.registrado_recepcao_em), "dd/MM/yy HH:mm") : '-',
       s.validado_classificacao_em ? format(new Date(s.validado_classificacao_em), "dd/MM/yy HH:mm") : '-',
@@ -804,7 +805,7 @@ export const SaidaProntuariosModule = () => {
                   <TableRow>
                     <TableHead>Paciente</TableHead>
                     <TableHead>Data Nasc.</TableHead>
-                    <TableHead>Nº Prontuário</TableHead>
+                    <TableHead>Data Atendimento</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Recepção</TableHead>
                     <TableHead>Classificação</TableHead>
@@ -835,7 +836,11 @@ export const SaidaProntuariosModule = () => {
                             ? format(new Date(saida.nascimento_mae), "dd/MM/yyyy", { locale: ptBR })
                             : "-"}
                         </TableCell>
-                        <TableCell>{saida.numero_prontuario}</TableCell>
+                        <TableCell>
+                          {saida.data_atendimento 
+                            ? format(new Date(saida.data_atendimento), "dd/MM/yyyy", { locale: ptBR })
+                            : "-"}
+                        </TableCell>
                         <TableCell>{getStatusBadge(saida.status)}</TableCell>
                         <TableCell>
                           {saida.registrado_recepcao_em 
