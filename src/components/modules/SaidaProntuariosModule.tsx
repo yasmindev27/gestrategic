@@ -1289,12 +1289,13 @@ export const SaidaProntuariosModule = () => {
                       <TableHead>Data Atendimento</TableHead>
                       <TableHead>Observação</TableHead>
                       <TableHead>Status</TableHead>
+                      {isAdmin && <TableHead>Ações</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredFolhasAvulsas.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={isAdmin ? 7 : 6} className="text-center text-muted-foreground py-8">
                           Nenhum registro encontrado com os filtros aplicados
                         </TableCell>
                       </TableRow>
@@ -1322,6 +1323,18 @@ export const SaidaProntuariosModule = () => {
                               Folha Avulsa
                             </Badge>
                           </TableCell>
+                          {isAdmin && (
+                            <TableCell>
+                              <Button 
+                                size="sm" 
+                                variant="ghost"
+                                onClick={() => handleOpenEdit(item)}
+                                title="Editar folha avulsa"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))
                     )}
