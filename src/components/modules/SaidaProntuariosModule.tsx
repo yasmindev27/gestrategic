@@ -45,7 +45,9 @@ import {
   Users,
   Filter,
   X,
-  XCircle
+  XCircle,
+  Pencil,
+  Save
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -120,6 +122,13 @@ export const SaidaProntuariosModule = () => {
   const [existeFisicamente, setExisteFisicamente] = useState(true);
   const [observacao, setObservacao] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Edit states (admin only)
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingSaida, setEditingSaida] = useState<SaidaProntuario | null>(null);
+  const [editPacienteNome, setEditPacienteNome] = useState("");
+  const [editNascimentoMae, setEditNascimentoMae] = useState("");
+  const [editDataAtendimento, setEditDataAtendimento] = useState("");
 
   const canAccess = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
   const canInsert = isRecepcao || isClassificacao || isNir || isAdmin;
@@ -301,6 +310,58 @@ export const SaidaProntuariosModule = () => {
     }
   };
 
+  // Open edit dialog (admin only)
+  const handleOpenEdit = (saida: SaidaProntuario) => {
+    setEditingSaida(saida);
+    setEditPacienteNome(saida.paciente_nome || "");
+    setEditNascimentoMae(saida.nascimento_mae || "");
+    setEditDataAtendimento(saida.data_atendimento || "");
+    setEditDialogOpen(true);
+  };
+
+  // Save edit (admin only)
+  const handleSaveEdit = async () => {
+    if (!editingSaida || !editPacienteNome.trim() || !editDataAtendimento) return;
+    
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("saida_prontuarios")
+        .update({
+          paciente_nome: editPacienteNome.trim(),
+          nascimento_mae: editNascimentoMae || null,
+          data_atendimento: editDataAtendimento,
+        })
+        .eq("id", editingSaida.id);
+
+      if (error) throw error;
+
+      await logAction("editar_prontuario", "saida_prontuarios", { 
+        id: editingSaida.id,
+        paciente: editPacienteNome.trim(),
+        data_atendimento: editDataAtendimento
+      });
+
+      toast({
+        title: "Sucesso",
+        description: "Registro atualizado com sucesso!",
+      });
+
+      setEditDialogOpen(false);
+      setEditingSaida(null);
+      fetchSaidas();
+    } catch (error) {
+      console.error("Error updating:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao atualizar registro.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
       aguardando_classificacao: { label: "Aguardando Classificação", className: "bg-warning text-warning-foreground" },
@@ -316,9 +377,27 @@ export const SaidaProntuariosModule = () => {
   };
 
   const getActionButton = (saida: SaidaProntuario) => {
-    if (canValidateClassificacao && saida.status === "aguardando_classificacao") {
-      return (
+    const buttons = [];
+    
+    // Edit button for admin
+    if (isAdmin) {
+      buttons.push(
         <Button 
+          key="edit"
+          size="sm" 
+          variant="ghost"
+          onClick={() => handleOpenEdit(saida)}
+          title="Editar registro"
+        >
+          <Pencil className="h-4 w-4" />
+        </Button>
+      );
+    }
+    
+    if (canValidateClassificacao && saida.status === "aguardando_classificacao") {
+      buttons.push(
+        <Button 
+          key="validar"
           size="sm" 
           variant="outline"
           onClick={() => {
@@ -333,8 +412,9 @@ export const SaidaProntuariosModule = () => {
     }
     
     if (canValidateNir && saida.status === "aguardando_nir") {
-      return (
+      buttons.push(
         <Button 
+          key="conferir"
           size="sm" 
           variant="outline"
           onClick={() => {
@@ -348,7 +428,9 @@ export const SaidaProntuariosModule = () => {
       );
     }
 
-    return null;
+    if (buttons.length === 0) return null;
+    
+    return <div className="flex gap-1">{buttons}</div>;
   };
 
   // Apply all filters
@@ -1099,6 +1181,65 @@ export const SaidaProntuariosModule = () => {
                 <Check className="h-4 w-4 mr-2" />
               )}
               Confirmar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Dialog (Admin Only) */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Registro de Prontuário</DialogTitle>
+          </DialogHeader>
+          <div 
+            className="space-y-4 pt-4"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && editPacienteNome.trim() && editDataAtendimento && !isSubmitting) {
+                e.preventDefault();
+                handleSaveEdit();
+              }
+            }}
+          >
+            <div>
+              <label className="text-sm font-medium">Paciente <span className="text-destructive">*</span></label>
+              <Input
+                value={editPacienteNome}
+                onChange={(e) => setEditPacienteNome(e.target.value)}
+                placeholder="Nome completo do paciente"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Data de Nascimento</label>
+              <Input
+                type="date"
+                value={editNascimentoMae}
+                onChange={(e) => setEditNascimentoMae(e.target.value)}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Data de Atendimento <span className="text-destructive">*</span></label>
+              <Input
+                type="date"
+                value={editDataAtendimento}
+                onChange={(e) => setEditDataAtendimento(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleSaveEdit} 
+              disabled={!editPacienteNome.trim() || !editDataAtendimento || isSubmitting}
+            >
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Save className="h-4 w-4 mr-2" />
+              )}
+              Salvar
             </Button>
           </DialogFooter>
         </DialogContent>
