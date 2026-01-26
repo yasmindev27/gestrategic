@@ -1557,7 +1557,7 @@ export type Database = {
           existe_fisicamente: boolean | null
           id: string
           nascimento_mae: string | null
-          numero_prontuario: string
+          numero_prontuario: string | null
           observacao_classificacao: string | null
           observacao_nir: string | null
           paciente_nome: string | null
@@ -1577,7 +1577,7 @@ export type Database = {
           existe_fisicamente?: boolean | null
           id?: string
           nascimento_mae?: string | null
-          numero_prontuario: string
+          numero_prontuario?: string | null
           observacao_classificacao?: string | null
           observacao_nir?: string | null
           paciente_nome?: string | null
@@ -1597,7 +1597,7 @@ export type Database = {
           existe_fisicamente?: boolean | null
           id?: string
           nascimento_mae?: string | null
-          numero_prontuario?: string
+          numero_prontuario?: string | null
           observacao_classificacao?: string | null
           observacao_nir?: string | null
           paciente_nome?: string | null

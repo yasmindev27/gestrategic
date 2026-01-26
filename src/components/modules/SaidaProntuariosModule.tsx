@@ -73,7 +73,7 @@ interface AnalysisResult {
 
 interface SaidaProntuario {
   id: string;
-  numero_prontuario: string;
+  numero_prontuario: string | null;
   paciente_nome: string | null;
   nascimento_mae: string | null;
   data_atendimento: string | null;
@@ -188,7 +188,6 @@ export const SaidaProntuariosModule = () => {
           paciente_nome: pacienteNome.trim(),
           nascimento_mae: nascimentoMae || null,
           data_atendimento: dataAtendimento,
-          numero_prontuario: `ATD-${dataAtendimento}`, // Gera um identificador automático
           registrado_recepcao_por: userId,
           registrado_recepcao_em: new Date().toISOString(),
           status: "aguardando_classificacao",
@@ -242,7 +241,8 @@ export const SaidaProntuariosModule = () => {
       if (error) throw error;
 
       await logAction("validar_classificacao", "saida_prontuarios", { 
-        prontuario: selectedSaida.numero_prontuario,
+        id: selectedSaida.id,
+        paciente: selectedSaida.paciente_nome,
         existe: existeFisicamente
       });
 
@@ -286,7 +286,8 @@ export const SaidaProntuariosModule = () => {
       if (error) throw error;
 
       await logAction("validar_nir", "saida_prontuarios", { 
-        prontuario: selectedSaida.numero_prontuario
+        id: selectedSaida.id,
+        paciente: selectedSaida.paciente_nome
       });
 
       toast({
@@ -435,9 +436,9 @@ export const SaidaProntuariosModule = () => {
 
   // Apply all filters
   const filteredSaidas = saidas.filter(s => {
-    // Text search
+    // Text search - only by patient name now
     const matchesSearch = 
-      s.numero_prontuario.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      !searchTerm ||
       (s.paciente_nome && s.paciente_nome.toLowerCase().includes(searchTerm.toLowerCase()));
 
     // Date filter
@@ -480,23 +481,11 @@ export const SaidaProntuariosModule = () => {
         .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
         .replace(/\s+/g, " ");
     
-    const normalizeProntuario = (p: string) => 
-      p.replace(/\D/g, "");
-    
     // Find matching patient in Salus analysis that is marked as "faltando"
     return salusAnalysis.pacientes.some(p => {
       if (p.status !== 'faltando') return false;
       
-      // Check by prontuario number if available
-      if (p.prontuario && saida.numero_prontuario) {
-        const pdfPront = normalizeProntuario(p.prontuario);
-        const saidaPront = normalizeProntuario(saida.numero_prontuario);
-        if (pdfPront && saidaPront && pdfPront === saidaPront) {
-          return true;
-        }
-      }
-      
-      // Check by name
+      // Check by name only (numero_prontuario no longer used)
       if (p.nome && saida.paciente_nome) {
         const pdfNome = normalizeText(p.nome);
         const saidaNome = normalizeText(saida.paciente_nome);
@@ -511,9 +500,9 @@ export const SaidaProntuariosModule = () => {
 
   // Get filtered faltantes from database
   const filteredFaltantesSalus = faltantesSalus.filter(s => {
+    // Text search - only by patient name now
     const matchesSearch = 
       !faltantesSearchTerm ||
-      s.numero_prontuario.toLowerCase().includes(faltantesSearchTerm.toLowerCase()) ||
       (s.paciente_nome && s.paciente_nome.toLowerCase().includes(faltantesSearchTerm.toLowerCase()));
 
     let matchesDate = true;
@@ -768,7 +757,7 @@ export const SaidaProntuariosModule = () => {
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Buscar por paciente ou número do prontuário..."
+                  placeholder="Buscar por nome do paciente..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -1002,7 +991,7 @@ export const SaidaProntuariosModule = () => {
                 <div className="relative flex-1">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Buscar por paciente ou prontuário..."
+                    placeholder="Buscar por nome do paciente..."
                     value={faltantesSearchTerm}
                     onChange={(e) => setFaltantesSearchTerm(e.target.value)}
                     className="pl-10"
