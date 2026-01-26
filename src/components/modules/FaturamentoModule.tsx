@@ -418,7 +418,7 @@ export const FaturamentoModule = () => {
   };
 
   const filteredSaidas = getListaAtual().filter(
-    s => s.numero_prontuario.toLowerCase().includes(searchTerm.toLowerCase())
+    s => (s.paciente_nome || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleViewAvaliacao = (numeroProntuario: string) => {
@@ -526,7 +526,7 @@ export const FaturamentoModule = () => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar por número do prontuário..."
+              placeholder="Buscar por nome do paciente..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-10"
