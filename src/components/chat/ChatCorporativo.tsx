@@ -275,6 +275,37 @@ export const ChatCorporativo = () => {
     enabled: !!conversaSelecionada,
   });
 
+  // Realtime para conversas (detectar exclusões e atualizações)
+  useEffect(() => {
+    if (!userId) return;
+
+    const conversasChannel = supabase
+      .channel('chat-conversas-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'chat_conversas'
+        },
+        (payload) => {
+          // Se uma conversa foi excluída, atualizar a lista
+          if (payload.eventType === 'DELETE') {
+            // Se a conversa excluída era a selecionada, desmarcar
+            if (conversaSelecionada === payload.old.id) {
+              setConversaSelecionada(null);
+            }
+          }
+          queryClient.invalidateQueries({ queryKey: ["chat-conversas", userId] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(conversasChannel);
+    };
+  }, [userId, conversaSelecionada, queryClient]);
+
   // Realtime para mensagens
   useEffect(() => {
     if (!conversaSelecionada) return;
