@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,19 +11,25 @@ import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 import { 
   Send, 
   MessageSquare, 
   Users, 
   Plus, 
-  AlertTriangle,
   Loader2,
   Hash,
   Search,
   Shield,
   UserPlus,
   Settings,
-  X
+  X,
+  Trash2,
+  User,
+  Paperclip,
+  FileText,
+  Image,
+  AlertTriangle
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -43,6 +49,7 @@ interface Mensagem {
   remetente_id: string;
   conteudo: string;
   tipo: string;
+  arquivo_url?: string | null;
   created_at: string;
   excluido: boolean;
   remetente_nome?: string;
@@ -63,21 +70,27 @@ interface Usuario {
 const CANAL_GERAL_ID = "00000000-0000-0000-0000-000000000001";
 
 export const ChatCorporativo = () => {
+  const { isAdmin } = useUserRole();
   const [conversaSelecionada, setConversaSelecionada] = useState<string | null>(null);
   const [novaMensagem, setNovaMensagem] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [novaConversaNome, setNovaConversaNome] = useState("");
   const [novaConversaDescricao, setNovaConversaDescricao] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [privateChatDialogOpen, setPrivateChatDialogOpen] = useState(false);
   const [membrosDialogOpen, setMembrosDialogOpen] = useState(false);
+  const [deleteConversaDialogOpen, setDeleteConversaDialogOpen] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>("");
   const [enviando, setEnviando] = useState(false);
   const [selectedUsers, setSelectedUsers] = useState<string[]>([]);
+  const [selectedPrivateUser, setSelectedPrivateUser] = useState<string | null>(null);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionSearch, setMentionSearch] = useState("");
+  const [uploadingFile, setUploadingFile] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const queryClient = useQueryClient();
 
   // Buscar usuário atual
@@ -121,7 +134,7 @@ export const ChatCorporativo = () => {
     joinCanalGeral();
   }, [userId]);
 
-  // Buscar todos os usuários para adicionar membros
+  // Buscar todos os usuários
   const { data: todosUsuarios = [] } = useQuery({
     queryKey: ["todos-usuarios"],
     queryFn: async () => {
@@ -154,7 +167,7 @@ export const ChatCorporativo = () => {
         .from("chat_conversas")
         .select("*")
         .in("id", conversaIds)
-        .order("created_at", { ascending: false });
+        .order("updated_at", { ascending: false });
 
       if (error) throw error;
       return data as Conversa[];
@@ -175,7 +188,6 @@ export const ChatCorporativo = () => {
 
       if (error) throw error;
 
-      // Buscar nomes dos participantes
       const userIds = data.map(p => p.user_id);
       const { data: profiles } = await supabase
         .from("profiles")
@@ -221,7 +233,6 @@ export const ChatCorporativo = () => {
       }));
     },
     enabled: !!conversaSelecionada,
-    refetchInterval: 3000,
   });
 
   // Realtime para mensagens
@@ -233,7 +244,7 @@ export const ChatCorporativo = () => {
       .on(
         'postgres_changes',
         {
-          event: 'INSERT',
+          event: '*',
           schema: 'public',
           table: 'chat_mensagens',
           filter: `conversa_id=eq.${conversaSelecionada}`
@@ -254,12 +265,10 @@ export const ChatCorporativo = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [mensagens]);
 
-  // Detectar @ para menções
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setNovaMensagem(value);
 
-    // Verificar se o último caractere é @ ou se há uma menção em progresso
     const lastAtIndex = value.lastIndexOf('@');
     if (lastAtIndex !== -1) {
       const afterAt = value.substring(lastAtIndex + 1);
@@ -273,7 +282,6 @@ export const ChatCorporativo = () => {
     setMentionSearch("");
   };
 
-  // Inserir menção
   const insertMention = (name: string, isAll: boolean = false) => {
     const lastAtIndex = novaMensagem.lastIndexOf('@');
     const beforeAt = novaMensagem.substring(0, lastAtIndex);
@@ -284,13 +292,12 @@ export const ChatCorporativo = () => {
     inputRef.current?.focus();
   };
 
-  // Usuários filtrados para menção
   const usuariosFiltrados = participantes.filter(p => 
     p.full_name?.toLowerCase().includes(mentionSearch)
   );
 
-  // Enviar mensagem com moderação
-  const enviarMensagem = async () => {
+  // Enviar mensagem
+  const enviarMensagem = useCallback(async () => {
     if (!novaMensagem.trim() || !conversaSelecionada || !userId || enviando) return;
 
     setEnviando(true);
@@ -326,9 +333,94 @@ export const ChatCorporativo = () => {
     } finally {
       setEnviando(false);
     }
+  }, [novaMensagem, conversaSelecionada, userId, enviando, queryClient]);
+
+  // Upload e envio de arquivo
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !conversaSelecionada || !userId) return;
+
+    // Validar tamanho (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "Arquivo muito grande",
+        description: "O tamanho máximo permitido é 10MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingFile(true);
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userId}/${Date.now()}.${fileExt}`;
+      
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('chat-anexos')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        // Se bucket não existe, criar
+        if (uploadError.message.includes('not found')) {
+          toast({
+            title: "Configuração necessária",
+            description: "O bucket de anexos precisa ser configurado pelo administrador",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw uploadError;
+      }
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('chat-anexos')
+        .getPublicUrl(fileName);
+
+      // Enviar mensagem com arquivo
+      const { data, error } = await supabase.functions.invoke("moderar-mensagem", {
+        body: {
+          conteudo: file.name,
+          tipo: "arquivo",
+          conversa_id: conversaSelecionada,
+          arquivo_url: publicUrl
+        }
+      });
+
+      if (error) throw error;
+
+      if (!data.approved) {
+        // Deletar arquivo se rejeitado
+        await supabase.storage.from('chat-anexos').remove([fileName]);
+        toast({
+          title: "Arquivo bloqueado",
+          description: data.reason,
+          variant: "destructive",
+        });
+        return;
+      }
+
+      toast({
+        title: "Arquivo enviado",
+        description: "Arquivo anexado com sucesso",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["chat-mensagens", conversaSelecionada] });
+    } catch (error) {
+      console.error("Erro ao enviar arquivo:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível enviar o arquivo",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingFile(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
-  // Criar nova conversa
+  // Criar canal de grupo
   const criarConversa = async () => {
     if (!novaConversaNome.trim() || !userId) return;
 
@@ -346,13 +438,11 @@ export const ChatCorporativo = () => {
 
       if (error) throw error;
 
-      // Adicionar criador como participante
       await supabase.from("chat_participantes").insert({
         conversa_id: conversa.id,
         user_id: userId
       });
 
-      // Adicionar membros selecionados
       if (selectedUsers.length > 0) {
         const membrosParaAdicionar = selectedUsers
           .filter(uid => uid !== userId)
@@ -367,10 +457,7 @@ export const ChatCorporativo = () => {
         }
       }
 
-      toast({
-        title: "Canal criado",
-        description: `O canal "${novaConversaNome}" foi criado com sucesso`,
-      });
+      toast({ title: "Canal criado", description: `O canal "${novaConversaNome}" foi criado` });
 
       setNovaConversaNome("");
       setNovaConversaDescricao("");
@@ -379,15 +466,82 @@ export const ChatCorporativo = () => {
       queryClient.invalidateQueries({ queryKey: ["chat-conversas"] });
     } catch (error) {
       console.error("Erro ao criar conversa:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível criar o canal",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Não foi possível criar o canal", variant: "destructive" });
     }
   };
 
-  // Adicionar membros à conversa existente
+  // Criar chat privado
+  const criarChatPrivado = async () => {
+    if (!selectedPrivateUser || !userId) return;
+
+    try {
+      // Verificar se já existe chat privado com esse usuário
+      const { data: minhasConversas } = await supabase
+        .from("chat_participantes")
+        .select("conversa_id")
+        .eq("user_id", userId);
+
+      if (minhasConversas) {
+        for (const conv of minhasConversas) {
+          const { data: outroParticipante } = await supabase
+            .from("chat_participantes")
+            .select("user_id")
+            .eq("conversa_id", conv.conversa_id)
+            .eq("user_id", selectedPrivateUser)
+            .single();
+
+          if (outroParticipante) {
+            const { data: conversaExistente } = await supabase
+              .from("chat_conversas")
+              .select("*")
+              .eq("id", conv.conversa_id)
+              .eq("tipo", "privado")
+              .single();
+
+            if (conversaExistente) {
+              toast({ title: "Chat já existe", description: "Abrindo conversa existente" });
+              setConversaSelecionada(conversaExistente.id);
+              setPrivateChatDialogOpen(false);
+              setSelectedPrivateUser(null);
+              return;
+            }
+          }
+        }
+      }
+
+      const outroUsuario = todosUsuarios.find(u => u.user_id === selectedPrivateUser);
+      const nomeConversa = `Chat com ${outroUsuario?.full_name || 'Usuário'}`;
+
+      const { data: conversa, error } = await supabase
+        .from("chat_conversas")
+        .insert({
+          nome: nomeConversa,
+          tipo: "privado",
+          criado_por: userId
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      await supabase.from("chat_participantes").insert([
+        { conversa_id: conversa.id, user_id: userId },
+        { conversa_id: conversa.id, user_id: selectedPrivateUser, adicionado_por: userId }
+      ]);
+
+      toast({ title: "Chat privado criado", description: `Conversa com ${outroUsuario?.full_name} iniciada` });
+
+      setSelectedPrivateUser(null);
+      setPrivateChatDialogOpen(false);
+      setConversaSelecionada(conversa.id);
+      queryClient.invalidateQueries({ queryKey: ["chat-conversas"] });
+    } catch (error) {
+      console.error("Erro ao criar chat privado:", error);
+      toast({ title: "Erro", description: "Não foi possível criar o chat privado", variant: "destructive" });
+    }
+  };
+
+  // Adicionar membros
   const adicionarMembros = async () => {
     if (!conversaSelecionada || selectedUsers.length === 0 || !userId) return;
 
@@ -405,11 +559,7 @@ export const ChatCorporativo = () => {
         const { error } = await supabase.from("chat_participantes").insert(novosMembros);
         if (error) throw error;
 
-        toast({
-          title: "Membros adicionados",
-          description: `${novosMembros.length} membro(s) adicionado(s) ao canal`,
-        });
-
+        toast({ title: "Membros adicionados", description: `${novosMembros.length} membro(s) adicionado(s)` });
         queryClient.invalidateQueries({ queryKey: ["chat-participantes", conversaSelecionada] });
       }
 
@@ -417,11 +567,7 @@ export const ChatCorporativo = () => {
       setMembrosDialogOpen(false);
     } catch (error) {
       console.error("Erro ao adicionar membros:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível adicionar os membros",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Não foi possível adicionar os membros", variant: "destructive" });
     }
   };
 
@@ -429,37 +575,65 @@ export const ChatCorporativo = () => {
   const removerMembro = async (participanteId: string, participanteUserId: string) => {
     if (!conversaSelecionada) return;
     
-    // Não permitir remover a si mesmo
-    if (participanteUserId === userId) {
-      toast({
-        title: "Ação não permitida",
-        description: "Você não pode se remover do canal",
-        variant: "destructive",
-      });
+    if (participanteUserId === userId && !isAdmin) {
+      toast({ title: "Ação não permitida", description: "Você não pode se remover do canal", variant: "destructive" });
       return;
     }
 
     try {
-      const { error } = await supabase
-        .from("chat_participantes")
-        .delete()
-        .eq("id", participanteId);
-
+      const { error } = await supabase.from("chat_participantes").delete().eq("id", participanteId);
       if (error) throw error;
 
-      toast({
-        title: "Membro removido",
-        description: "O membro foi removido do canal",
-      });
-
+      toast({ title: "Membro removido" });
       queryClient.invalidateQueries({ queryKey: ["chat-participantes", conversaSelecionada] });
     } catch (error) {
       console.error("Erro ao remover membro:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível remover o membro",
-        variant: "destructive",
-      });
+      toast({ title: "Erro", description: "Não foi possível remover o membro", variant: "destructive" });
+    }
+  };
+
+  // Excluir mensagem (admin only)
+  const excluirMensagem = async (mensagemId: string) => {
+    if (!isAdmin) return;
+
+    try {
+      const { error } = await supabase
+        .from("chat_mensagens")
+        .update({ excluido: true })
+        .eq("id", mensagemId);
+
+      if (error) throw error;
+
+      toast({ title: "Mensagem excluída" });
+      queryClient.invalidateQueries({ queryKey: ["chat-mensagens", conversaSelecionada] });
+    } catch (error) {
+      console.error("Erro ao excluir mensagem:", error);
+      toast({ title: "Erro", description: "Não foi possível excluir a mensagem", variant: "destructive" });
+    }
+  };
+
+  // Excluir conversa (admin only)
+  const excluirConversa = async () => {
+    if (!isAdmin || !conversaSelecionada) return;
+
+    try {
+      // Primeiro excluir mensagens
+      await supabase.from("chat_mensagens").delete().eq("conversa_id", conversaSelecionada);
+      
+      // Depois participantes
+      await supabase.from("chat_participantes").delete().eq("conversa_id", conversaSelecionada);
+      
+      // Por fim a conversa
+      const { error } = await supabase.from("chat_conversas").delete().eq("id", conversaSelecionada);
+      if (error) throw error;
+
+      toast({ title: "Conversa excluída" });
+      setConversaSelecionada(null);
+      setDeleteConversaDialogOpen(false);
+      queryClient.invalidateQueries({ queryKey: ["chat-conversas"] });
+    } catch (error) {
+      console.error("Erro ao excluir conversa:", error);
+      toast({ title: "Erro", description: "Não foi possível excluir a conversa", variant: "destructive" });
     }
   };
 
@@ -469,17 +643,12 @@ export const ChatCorporativo = () => {
 
   const conversaAtual = conversas.find(c => c.id === conversaSelecionada);
   const isCreator = conversaAtual?.criado_por === userId;
+  const canManage = isCreator || isAdmin;
 
   const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map(n => n[0])
-      .slice(0, 2)
-      .join("")
-      .toUpperCase();
+    return name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
   };
 
-  // Renderizar conteúdo com menções destacadas
   const renderMensagemComMencoes = (conteudo: string) => {
     const parts = conteudo.split(/(@\w+)/g);
     return parts.map((part, index) => {
@@ -494,6 +663,14 @@ export const ChatCorporativo = () => {
     });
   };
 
+  const getFileIcon = (url: string) => {
+    const ext = url.split('.').pop()?.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext || '')) {
+      return <Image className="h-4 w-4" />;
+    }
+    return <FileText className="h-4 w-4" />;
+  };
+
   return (
     <div className="flex h-[calc(100vh-200px)] gap-4">
       {/* Lista de Conversas */}
@@ -502,84 +679,109 @@ export const ChatCorporativo = () => {
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <MessageSquare className="h-5 w-5" />
-              Chat Corporativo
+              Chat
             </CardTitle>
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-              <DialogTrigger asChild>
-                <Button variant="ghost" size="icon">
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Novo Canal</DialogTitle>
-                  <DialogDescription>
-                    Crie um novo canal e adicione membros
-                  </DialogDescription>
-                </DialogHeader>
-                <div className="space-y-4 py-4">
-                  <div>
-                    <label className="text-sm font-medium">Nome do Canal</label>
-                    <Input
-                      value={novaConversaNome}
-                      onChange={(e) => setNovaConversaNome(e.target.value)}
-                      placeholder="Ex: Projetos, Marketing..."
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium">Descrição (opcional)</label>
-                    <Input
-                      value={novaConversaDescricao}
-                      onChange={(e) => setNovaConversaDescricao(e.target.value)}
-                      placeholder="Sobre o que é este canal?"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">Adicionar Membros</label>
-                    <ScrollArea className="h-48 border rounded-md p-2">
-                      {todosUsuarios.filter(u => u.user_id !== userId).map((usuario) => (
-                        <div 
-                          key={usuario.user_id} 
-                          className="flex items-center gap-2 py-2 hover:bg-muted rounded px-2"
-                        >
-                          <Checkbox
-                            checked={selectedUsers.includes(usuario.user_id)}
-                            onCheckedChange={(checked) => {
-                              if (checked) {
-                                setSelectedUsers([...selectedUsers, usuario.user_id]);
-                              } else {
-                                setSelectedUsers(selectedUsers.filter(id => id !== usuario.user_id));
-                              }
-                            }}
-                          />
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-xs">
-                              {getInitials(usuario.full_name)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm">{usuario.full_name}</span>
-                        </div>
-                      ))}
-                    </ScrollArea>
-                    {selectedUsers.length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {selectedUsers.length} membro(s) selecionado(s)
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button onClick={criarConversa} disabled={!novaConversaNome.trim()}>
-                    Criar Canal
+            <div className="flex gap-1">
+              {/* Novo Chat Privado */}
+              <Dialog open={privateChatDialogOpen} onOpenChange={setPrivateChatDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" title="Novo Chat Privado">
+                    <User className="h-4 w-4" />
                   </Button>
-                </DialogFooter>
-              </DialogContent>
-            </Dialog>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Novo Chat Privado</DialogTitle>
+                    <DialogDescription>Selecione um usuário para iniciar uma conversa</DialogDescription>
+                  </DialogHeader>
+                  <ScrollArea className="h-64 border rounded-md p-2">
+                    {todosUsuarios.filter(u => u.user_id !== userId).map((usuario) => (
+                      <button
+                        key={usuario.user_id}
+                        onClick={() => setSelectedPrivateUser(usuario.user_id)}
+                        className={`w-full text-left flex items-center gap-2 p-2 rounded-md transition-colors ${
+                          selectedPrivateUser === usuario.user_id ? "bg-primary text-primary-foreground" : "hover:bg-muted"
+                        }`}
+                      >
+                        <Avatar className="h-8 w-8">
+                          <AvatarFallback className="text-xs">{getInitials(usuario.full_name)}</AvatarFallback>
+                        </Avatar>
+                        <span>{usuario.full_name}</span>
+                      </button>
+                    ))}
+                  </ScrollArea>
+                  <DialogFooter>
+                    <Button onClick={criarChatPrivado} disabled={!selectedPrivateUser}>
+                      Iniciar Conversa
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+
+              {/* Novo Canal */}
+              <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="ghost" size="icon" title="Novo Canal">
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Novo Canal</DialogTitle>
+                    <DialogDescription>Crie um canal e adicione membros</DialogDescription>
+                  </DialogHeader>
+                  <div className="space-y-4 py-4">
+                    <div>
+                      <label className="text-sm font-medium">Nome do Canal</label>
+                      <Input
+                        value={novaConversaNome}
+                        onChange={(e) => setNovaConversaNome(e.target.value)}
+                        placeholder="Ex: Projetos, Marketing..."
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Descrição (opcional)</label>
+                      <Input
+                        value={novaConversaDescricao}
+                        onChange={(e) => setNovaConversaDescricao(e.target.value)}
+                        placeholder="Sobre o que é este canal?"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium mb-2 block">Adicionar Membros</label>
+                      <ScrollArea className="h-48 border rounded-md p-2">
+                        {todosUsuarios.filter(u => u.user_id !== userId).map((usuario) => (
+                          <div key={usuario.user_id} className="flex items-center gap-2 py-2 hover:bg-muted rounded px-2">
+                            <Checkbox
+                              checked={selectedUsers.includes(usuario.user_id)}
+                              onCheckedChange={(checked) => {
+                                if (checked) {
+                                  setSelectedUsers([...selectedUsers, usuario.user_id]);
+                                } else {
+                                  setSelectedUsers(selectedUsers.filter(id => id !== usuario.user_id));
+                                }
+                              }}
+                            />
+                            <Avatar className="h-6 w-6">
+                              <AvatarFallback className="text-xs">{getInitials(usuario.full_name)}</AvatarFallback>
+                            </Avatar>
+                            <span className="text-sm">{usuario.full_name}</span>
+                          </div>
+                        ))}
+                      </ScrollArea>
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button onClick={criarConversa} disabled={!novaConversaNome.trim()}>Criar Canal</Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
+            </div>
           </div>
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Buscar canais..."
+              placeholder="Buscar..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               className="pl-8"
@@ -595,9 +797,7 @@ export const ChatCorporativo = () => {
                   <Loader2 className="h-5 w-5 animate-spin" />
                 </div>
               ) : conversasFiltradas.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  Nenhum canal encontrado
-                </p>
+                <p className="text-sm text-muted-foreground text-center py-4">Nenhuma conversa</p>
               ) : (
                 conversasFiltradas.map((conversa) => (
                   <button
@@ -610,7 +810,11 @@ export const ChatCorporativo = () => {
                     }`}
                   >
                     <div className="flex items-center gap-2">
-                      <Hash className="h-4 w-4" />
+                      {conversa.tipo === "privado" ? (
+                        <User className="h-4 w-4" />
+                      ) : (
+                        <Hash className="h-4 w-4" />
+                      )}
                       <span className="font-medium truncate">{conversa.nome}</span>
                     </div>
                     {conversa.descricao && (
@@ -638,13 +842,11 @@ export const ChatCorporativo = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="text-lg flex items-center gap-2">
-                    <Hash className="h-5 w-5" />
+                    {conversaAtual?.tipo === "privado" ? <User className="h-5 w-5" /> : <Hash className="h-5 w-5" />}
                     {conversaAtual?.nome}
                   </CardTitle>
                   {conversaAtual?.descricao && (
-                    <p className="text-sm text-muted-foreground">
-                      {conversaAtual.descricao}
-                    </p>
+                    <p className="text-sm text-muted-foreground">{conversaAtual.descricao}</p>
                   )}
                 </div>
                 <div className="flex items-center gap-2">
@@ -656,103 +858,105 @@ export const ChatCorporativo = () => {
                     <Shield className="h-3 w-3" />
                     Moderado
                   </Badge>
-                  {/* Botão de gerenciar membros */}
-                  <Dialog open={membrosDialogOpen} onOpenChange={setMembrosDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button variant="ghost" size="icon" title="Gerenciar Membros">
-                        <Settings className="h-4 w-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Gerenciar Membros</DialogTitle>
-                        <DialogDescription>
-                          Adicione ou remova membros do canal
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="space-y-4 py-4">
-                        {/* Lista de membros atuais */}
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">
-                            Membros Atuais ({participantes.length})
-                          </label>
-                          <ScrollArea className="h-32 border rounded-md">
-                            {participantes.map((p) => (
-                              <div 
-                                key={p.id} 
-                                className="flex items-center justify-between py-2 px-3 hover:bg-muted"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <Avatar className="h-6 w-6">
-                                    <AvatarFallback className="text-xs">
-                                      {getInitials(p.full_name || "U")}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <span className="text-sm">
-                                    {p.full_name}
-                                    {p.user_id === userId && " (você)"}
-                                  </span>
-                                </div>
-                                {isCreator && p.user_id !== userId && (
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-6 w-6"
-                                    onClick={() => removerMembro(p.id, p.user_id)}
-                                  >
-                                    <X className="h-3 w-3" />
-                                  </Button>
-                                )}
-                              </div>
-                            ))}
-                          </ScrollArea>
-                        </div>
-
-                        {/* Adicionar novos membros */}
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">
-                            Adicionar Novos Membros
-                          </label>
-                          <ScrollArea className="h-40 border rounded-md p-2">
-                            {todosUsuarios
-                              .filter(u => !participantes.some(p => p.user_id === u.user_id))
-                              .map((usuario) => (
-                                <div 
-                                  key={usuario.user_id} 
-                                  className="flex items-center gap-2 py-2 hover:bg-muted rounded px-2"
-                                >
-                                  <Checkbox
-                                    checked={selectedUsers.includes(usuario.user_id)}
-                                    onCheckedChange={(checked) => {
-                                      if (checked) {
-                                        setSelectedUsers([...selectedUsers, usuario.user_id]);
-                                      } else {
-                                        setSelectedUsers(selectedUsers.filter(id => id !== usuario.user_id));
-                                      }
-                                    }}
-                                  />
-                                  <Avatar className="h-6 w-6">
-                                    <AvatarFallback className="text-xs">
-                                      {getInitials(usuario.full_name)}
-                                    </AvatarFallback>
-                                  </Avatar>
-                                  <span className="text-sm">{usuario.full_name}</span>
+                  
+                  {/* Gerenciar membros (apenas para canais de grupo) */}
+                  {conversaAtual?.tipo === "grupo" && (
+                    <Dialog open={membrosDialogOpen} onOpenChange={setMembrosDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon" title="Gerenciar Membros">
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Gerenciar Membros</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Membros Atuais ({participantes.length})</label>
+                            <ScrollArea className="h-32 border rounded-md">
+                              {participantes.map((p) => (
+                                <div key={p.id} className="flex items-center justify-between py-2 px-3 hover:bg-muted">
+                                  <div className="flex items-center gap-2">
+                                    <Avatar className="h-6 w-6">
+                                      <AvatarFallback className="text-xs">{getInitials(p.full_name || "U")}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-sm">
+                                      {p.full_name}
+                                      {p.user_id === userId && " (você)"}
+                                    </span>
+                                  </div>
+                                  {canManage && p.user_id !== userId && (
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => removerMembro(p.id, p.user_id)}>
+                                      <X className="h-3 w-3" />
+                                    </Button>
+                                  )}
                                 </div>
                               ))}
-                          </ScrollArea>
+                            </ScrollArea>
+                          </div>
+
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">Adicionar Novos Membros</label>
+                            <ScrollArea className="h-40 border rounded-md p-2">
+                              {todosUsuarios
+                                .filter(u => !participantes.some(p => p.user_id === u.user_id))
+                                .map((usuario) => (
+                                  <div key={usuario.user_id} className="flex items-center gap-2 py-2 hover:bg-muted rounded px-2">
+                                    <Checkbox
+                                      checked={selectedUsers.includes(usuario.user_id)}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          setSelectedUsers([...selectedUsers, usuario.user_id]);
+                                        } else {
+                                          setSelectedUsers(selectedUsers.filter(id => id !== usuario.user_id));
+                                        }
+                                      }}
+                                    />
+                                    <Avatar className="h-6 w-6">
+                                      <AvatarFallback className="text-xs">{getInitials(usuario.full_name)}</AvatarFallback>
+                                    </Avatar>
+                                    <span className="text-sm">{usuario.full_name}</span>
+                                  </div>
+                                ))}
+                            </ScrollArea>
+                          </div>
                         </div>
-                      </div>
-                      <DialogFooter>
-                        <Button 
-                          onClick={adicionarMembros} 
-                          disabled={selectedUsers.length === 0}
-                        >
-                          <UserPlus className="h-4 w-4 mr-2" />
-                          Adicionar ({selectedUsers.length})
+                        <DialogFooter>
+                          <Button onClick={adicionarMembros} disabled={selectedUsers.length === 0}>
+                            <UserPlus className="h-4 w-4 mr-2" />
+                            Adicionar ({selectedUsers.length})
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  )}
+
+                  {/* Excluir conversa (admin only) */}
+                  {isAdmin && conversaSelecionada !== CANAL_GERAL_ID && (
+                    <Dialog open={deleteConversaDialogOpen} onOpenChange={setDeleteConversaDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button variant="ghost" size="icon" title="Excluir Conversa" className="text-destructive">
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle className="flex items-center gap-2">
+                            <AlertTriangle className="h-5 w-5 text-destructive" />
+                            Excluir Conversa
+                          </DialogTitle>
+                          <DialogDescription>
+                            Esta ação não pode ser desfeita. Todas as mensagens serão excluídas permanentemente.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <DialogFooter>
+                          <Button variant="outline" onClick={() => setDeleteConversaDialogOpen(false)}>Cancelar</Button>
+                          <Button variant="destructive" onClick={excluirConversa}>Excluir</Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                  )}
                 </div>
               </div>
             </CardHeader>
@@ -773,14 +977,10 @@ export const ChatCorporativo = () => {
                   <div className="space-y-4">
                     {mensagens.map((msg, index) => {
                       const isOwn = msg.remetente_id === userId;
-                      const showAvatar = index === 0 || 
-                        mensagens[index - 1].remetente_id !== msg.remetente_id;
+                      const showAvatar = index === 0 || mensagens[index - 1].remetente_id !== msg.remetente_id;
                       
                       return (
-                        <div
-                          key={msg.id}
-                          className={`flex gap-3 ${isOwn ? "flex-row-reverse" : ""}`}
-                        >
+                        <div key={msg.id} className={`flex gap-3 group ${isOwn ? "flex-row-reverse" : ""}`}>
                           {showAvatar ? (
                             <Avatar className="h-8 w-8">
                               <AvatarFallback className={isOwn ? "bg-primary text-primary-foreground" : ""}>
@@ -801,16 +1001,36 @@ export const ChatCorporativo = () => {
                                 </span>
                               </div>
                             )}
-                            <div
-                              className={`rounded-lg px-3 py-2 max-w-md ${
-                                isOwn
-                                  ? "bg-primary text-primary-foreground"
-                                  : "bg-muted"
-                              }`}
-                            >
-                              <p className="text-sm whitespace-pre-wrap break-words">
-                                {renderMensagemComMencoes(msg.conteudo)}
-                              </p>
+                            <div className={`rounded-lg px-3 py-2 max-w-md relative ${
+                              isOwn ? "bg-primary text-primary-foreground" : "bg-muted"
+                            }`}>
+                              {msg.tipo === "arquivo" && msg.arquivo_url ? (
+                                <a 
+                                  href={msg.arquivo_url} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-2 hover:underline"
+                                >
+                                  {getFileIcon(msg.arquivo_url)}
+                                  <span className="text-sm">{msg.conteudo}</span>
+                                </a>
+                              ) : (
+                                <p className="text-sm whitespace-pre-wrap break-words">
+                                  {renderMensagemComMencoes(msg.conteudo)}
+                                </p>
+                              )}
+                              
+                              {/* Botão excluir para admin */}
+                              {isAdmin && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 absolute -right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 text-destructive"
+                                  onClick={() => excluirMensagem(msg.id)}
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </Button>
+                              )}
                             </div>
                           </div>
                         </div>
@@ -832,9 +1052,7 @@ export const ChatCorporativo = () => {
                   >
                     <Users className="h-4 w-4" />
                     <span className="font-medium">@todos</span>
-                    <span className="text-xs text-muted-foreground">
-                      Mencionar todos os membros
-                    </span>
+                    <span className="text-xs text-muted-foreground">Mencionar todos</span>
                   </button>
                   <Separator />
                   {usuariosFiltrados.map((p) => (
@@ -844,22 +1062,31 @@ export const ChatCorporativo = () => {
                       onClick={() => insertMention(p.full_name || "Usuário")}
                     >
                       <Avatar className="h-5 w-5">
-                        <AvatarFallback className="text-xs">
-                          {getInitials(p.full_name || "U")}
-                        </AvatarFallback>
+                        <AvatarFallback className="text-xs">{getInitials(p.full_name || "U")}</AvatarFallback>
                       </Avatar>
                       <span>{p.full_name}</span>
                     </button>
                   ))}
-                  {usuariosFiltrados.length === 0 && mentionSearch && (
-                    <p className="text-sm text-muted-foreground px-3 py-2">
-                      Nenhum membro encontrado
-                    </p>
-                  )}
                 </div>
               )}
               
               <div className="flex gap-2">
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileUpload}
+                  className="hidden"
+                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.jpg,.jpeg,.png,.gif,.webp"
+                />
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploadingFile}
+                  title="Anexar arquivo"
+                >
+                  {uploadingFile ? <Loader2 className="h-4 w-4 animate-spin" /> : <Paperclip className="h-4 w-4" />}
+                </Button>
                 <Input
                   ref={inputRef}
                   value={novaMensagem}
@@ -876,40 +1103,18 @@ export const ChatCorporativo = () => {
                   }}
                   disabled={enviando}
                 />
-                <Button onClick={enviarMensagem} disabled={enviando || !novaMensagem.trim()}>
-                  {enviando ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
+                <Button onClick={enviarMensagem} disabled={!novaMensagem.trim() || enviando}>
+                  {enviando ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 </Button>
-              </div>
-              <div className="flex items-center gap-2 mt-2 text-xs text-muted-foreground">
-                <AlertTriangle className="h-3 w-3" />
-                <span>
-                  Mensagens são moderadas automaticamente. Conteúdo ofensivo será bloqueado.
-                </span>
               </div>
             </div>
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center h-full text-muted-foreground">
-            <MessageSquare className="h-16 w-16 mb-4" />
-            <h3 className="text-lg font-medium">Chat Corporativo</h3>
-            <p className="text-sm text-center max-w-sm mt-2">
-              Selecione um canal à esquerda para começar a conversar com seus colegas
-            </p>
-            <div className="mt-4 p-4 bg-muted rounded-lg max-w-sm">
-              <h4 className="font-medium flex items-center gap-2">
-                <Shield className="h-4 w-4" />
-                Regras de Uso
-              </h4>
-              <ul className="text-xs mt-2 space-y-1">
-                <li>• Mantenha o respeito e profissionalismo</li>
-                <li>• Não envie conteúdo ofensivo ou discriminatório</li>
-                <li>• Use @nome ou @todos para mencionar pessoas</li>
-                <li>• Violações serão registradas e reportadas</li>
-              </ul>
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <div className="text-center">
+              <MessageSquare className="h-16 w-16 mx-auto mb-4 opacity-50" />
+              <p className="text-lg font-medium">Selecione uma conversa</p>
+              <p className="text-sm">Escolha um canal ou inicie um chat privado</p>
             </div>
           </div>
         )}

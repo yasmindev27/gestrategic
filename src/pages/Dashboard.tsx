@@ -20,6 +20,7 @@ import { NirModule } from "@/components/modules/NirModule";
 import { RecepcaoModule } from "@/components/modules/RecepcaoModule";
 import { RHDPModule } from "@/components/modules/RHDPModule";
 import { ChatModule } from "@/components/modules/ChatModule";
+import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -131,6 +132,9 @@ const Dashboard = () => {
           {/* Chat Corporativo */}
           {activeSection === "chat" && <ChatModule />}
         </div>
+
+        {/* Botão flutuante do chat (visível em todas as páginas exceto no próprio chat) */}
+        {activeSection !== "chat" && <FloatingChatButton currentModule={activeSection} />}
       </main>
     </div>
   );
