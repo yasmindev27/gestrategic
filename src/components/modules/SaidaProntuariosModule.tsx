@@ -146,7 +146,7 @@ export const SaidaProntuariosModule = () => {
   const [editDataAtendimento, setEditDataAtendimento] = useState("");
 
   const canAccess = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
-  const canInsert = isRecepcao || isClassificacao || isNir || isAdmin;
+  const canInsert = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
   const canValidateClassificacao = isClassificacao || isAdmin;
   const canValidateNir = isNir || isAdmin;
 
