@@ -1127,7 +1127,7 @@ export const SaidaProntuariosModule = () => {
             <div>
               <label className="text-sm font-medium">Data de Nascimento</label>
               <Input 
-                value={selectedSaida?.nascimento_mae 
+                value={selectedSaida && selectedSaida.nascimento_mae 
                   ? format(new Date(selectedSaida.nascimento_mae + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
                   : "-"
                 } 
@@ -1137,7 +1137,7 @@ export const SaidaProntuariosModule = () => {
             <div>
               <label className="text-sm font-medium">Data de Atendimento</label>
               <Input 
-                value={selectedSaida?.data_atendimento 
+                value={selectedSaida && selectedSaida.data_atendimento 
                   ? format(new Date(selectedSaida.data_atendimento + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
                   : "-"
                 } 
