@@ -60,7 +60,11 @@ const tipoRefeicaoInfo: Record<string, { label: string; icon: React.ReactNode; c
   fora_horario: { label: "Fora de Horário", icon: <Clock className="h-4 w-4" />, cor: "bg-gray-100 text-gray-700" },
 };
 
-export const RegistrosRefeicoes = () => {
+interface RegistrosRefeicoesProps {
+  isAdmin?: boolean;
+}
+
+export const RegistrosRefeicoes = ({ isAdmin = false }: RegistrosRefeicoesProps) => {
   const { toast } = useToast();
   const [registros, setRegistros] = useState<RegistroRefeicao[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -210,12 +214,14 @@ export const RegistrosRefeicoes = () => {
                 Visualize e exporte os registros do totem de refeições
               </CardDescription>
             </div>
-            <Button variant="outline" asChild>
-              <a href={totemUrl} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="h-4 w-4 mr-2" />
-                Abrir Totem
-              </a>
-            </Button>
+            {isAdmin && (
+              <Button variant="outline" asChild>
+                <a href={totemUrl} target="_blank" rel="noopener noreferrer">
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Abrir Totem
+                </a>
+              </Button>
+            )}
           </div>
         </CardHeader>
       </Card>
