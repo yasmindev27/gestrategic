@@ -256,6 +256,43 @@ const TotemRefeicoes = () => {
       const dataRegistro = `${brasiliaTime.getFullYear()}-${String(brasiliaTime.getMonth() + 1).padStart(2, "0")}-${String(brasiliaTime.getDate()).padStart(2, "0")}`;
       const horaRegistro = `${String(brasiliaTime.getHours()).padStart(2, "0")}:${String(brasiliaTime.getMinutes()).padStart(2, "0")}:${String(brasiliaTime.getSeconds()).padStart(2, "0")}`;
       
+      // Verificar se já existe um registro para este colaborador, nesta data e tipo de refeição
+      const { data: registroExistente, error: checkError } = await supabase
+        .from("refeicoes_registros")
+        .select("id")
+        .eq("colaborador_nome", colaborador.nome)
+        .eq("tipo_pessoa", "colaborador")
+        .eq("tipo_refeicao", tipoRefeicao)
+        .eq("data_registro", dataRegistro)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.error("Erro ao verificar duplicidade:", checkError);
+      }
+      
+      // Se já existe registro, gravar tentativa de duplicidade e mostrar aviso
+      if (registroExistente) {
+        await supabase.from("tentativas_duplicidade_refeicoes").insert({
+          tipo_pessoa: "colaborador",
+          colaborador_nome: colaborador.nome,
+          tipo_refeicao: tipoRefeicao,
+          data_tentativa: dataRegistro,
+          hora_tentativa: horaRegistro,
+          registro_original_id: registroExistente.id,
+        });
+        
+        toast({
+          title: "⚠️ Refeição já registrada",
+          description: `${colaborador.nome} já registrou ${tipoRefeicaoInfo[tipoRefeicao].label} hoje.`,
+          variant: "destructive",
+        });
+        
+        setBusca("");
+        setShowSelecionarRefeicaoModal(false);
+        setColaboradorPendente(null);
+        return;
+      }
+      
       const { error } = await supabase.from("refeicoes_registros").insert({
         tipo_pessoa: "colaborador",
         colaborador_user_id: null, // Colaboradores do restaurante não têm user_id
@@ -364,6 +401,45 @@ const TotemRefeicoes = () => {
       const brasiliaTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
       const dataRegistro = `${brasiliaTime.getFullYear()}-${String(brasiliaTime.getMonth() + 1).padStart(2, "0")}-${String(brasiliaTime.getDate()).padStart(2, "0")}`;
       const horaRegistro = `${String(brasiliaTime.getHours()).padStart(2, "0")}:${String(brasiliaTime.getMinutes()).padStart(2, "0")}:${String(brasiliaTime.getSeconds()).padStart(2, "0")}`;
+      
+      // Verificar se já existe um registro para este visitante (por CPF hash), nesta data e tipo de refeição
+      const { data: registroExistente, error: checkError } = await supabase
+        .from("refeicoes_registros")
+        .select("id")
+        .eq("visitante_cpf_hash", cpfHash)
+        .eq("tipo_pessoa", "visitante")
+        .eq("tipo_refeicao", tipoRefeicao)
+        .eq("data_registro", dataRegistro)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.error("Erro ao verificar duplicidade:", checkError);
+      }
+      
+      // Se já existe registro, gravar tentativa de duplicidade e mostrar aviso
+      if (registroExistente) {
+        await supabase.from("tentativas_duplicidade_refeicoes").insert({
+          tipo_pessoa: "visitante",
+          colaborador_nome: nomeVisitante,
+          visitante_cpf_hash: cpfHash,
+          tipo_refeicao: tipoRefeicao,
+          data_tentativa: dataRegistro,
+          hora_tentativa: horaRegistro,
+          registro_original_id: registroExistente.id,
+        });
+        
+        toast({
+          title: "⚠️ Refeição já registrada",
+          description: `${nomeVisitante} já registrou ${tipoRefeicaoInfo[tipoRefeicao].label} hoje.`,
+          variant: "destructive",
+        });
+        
+        setShowVisitanteModal(false);
+        setShowSelecionarRefeicaoVisitanteModal(false);
+        setVisitantePendente(null);
+        resetVisitanteForm();
+        return;
+      }
       
       const { error } = await supabase.from("refeicoes_registros").insert({
         tipo_pessoa: "visitante",
