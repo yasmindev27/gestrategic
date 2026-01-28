@@ -86,7 +86,7 @@ interface DailyQuantitativo {
 }
 
 const tipoRefeicaoLabels: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
-  cafe: { label: "Café", icon: <Coffee className="h-4 w-4" />, color: "bg-amber-500" },
+  cafe: { label: "Café da Manhã", icon: <Coffee className="h-4 w-4" />, color: "bg-amber-500" },
   almoco: { label: "Almoço", icon: <Sun className="h-4 w-4" />, color: "bg-orange-500" },
   lanche: { label: "Café da Tarde", icon: <Cookie className="h-4 w-4" />, color: "bg-pink-500" },
   jantar: { label: "Jantar", icon: <Moon className="h-4 w-4" />, color: "bg-indigo-500" },
@@ -622,7 +622,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
       ]],
       body: [
         ["Cafe Litro", `${totaisGerais.cafeLitro.toFixed(1)} L`, formatCurrency(valoresRefeicoes.cafe_litro || 0), formatCurrency(valoresFinanceiros.cafeLitro)],
-        ["Cafe", String(totaisGerais.cafe + totaisDietas.dietasCafe), formatCurrency(valoresRefeicoes.cafe || 0), formatCurrency(valoresFinanceiros.cafe)],
+        ["Café da Manhã", String(totaisGerais.cafe + totaisDietas.dietasCafe), formatCurrency(valoresRefeicoes.cafe || 0), formatCurrency(valoresFinanceiros.cafe)],
         ["Almoco", String(totaisGerais.almoco + totaisDietas.dietasAlmoco), formatCurrency(valoresRefeicoes.almoco || 0), formatCurrency(valoresFinanceiros.almoco)],
         ["Café da Tarde", String(totaisGerais.lanche + totaisDietas.dietasLanche), formatCurrency(valoresRefeicoes.lanche || 0), formatCurrency(valoresFinanceiros.lanche)],
         ["Jantar", String(totaisGerais.jantar + totaisDietas.dietasJantar), formatCurrency(valoresRefeicoes.jantar || 0), formatCurrency(valoresFinanceiros.jantar)],
@@ -692,12 +692,12 @@ export const RelatorioQuantitativoRefeicoes = () => {
         ],
         [
           { content: "Cafe Litro", styles: { halign: "center", fillColor: [147, 197, 253] as [number, number, number], textColor: [30, 58, 138], fontStyle: "bold" } },
-          { content: "Cafe", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
+          { content: "Café Manhã", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
           { content: "Almoco", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
           { content: "Café Tarde", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
           { content: "Jantar", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
           { content: "Subtotal", styles: { halign: "center", fillColor: [147, 197, 253] as [number, number, number], textColor: [30, 58, 138], fontStyle: "bold" } },
-          { content: "Cafe", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
+          { content: "Café Manhã", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
           { content: "Almoco", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
           { content: "Café Tarde", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
           { content: "Jantar", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
@@ -826,7 +826,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                       {[
                         { key: "cafe_litro", label: "Café Litro (L)", icon: <Droplets className="h-4 w-4" /> },
-                        { key: "cafe", label: "Café (un)", icon: <Coffee className="h-4 w-4" /> },
+                        { key: "cafe", label: "Café da Manhã (un)", icon: <Coffee className="h-4 w-4" /> },
                         { key: "almoco", label: "Almoço (un)", icon: <Sun className="h-4 w-4" /> },
                         { key: "lanche", label: "Café da Tarde (un)", icon: <Cookie className="h-4 w-4" /> },
                         { key: "jantar", label: "Jantar (un)", icon: <Moon className="h-4 w-4" /> },
