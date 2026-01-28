@@ -418,35 +418,14 @@ export const RelatorioQuantitativoRefeicoes = () => {
     cafeLitro: quantitativos.reduce((acc, q) => acc + q.cafeLitro, 0),
   };
 
-  // Calcular dietas por tipo (conta solicitações únicas, não por dia)
-  const calcularDietasPorTipo = () => {
-    let dietasCafe = 0;
-    let dietasAlmoco = 0;
-    let dietasLanche = 0;
-    let dietasJantar = 0;
-
-    solicitacoesDieta.forEach(d => {
-      const horarios = (d.horarios_refeicoes && d.horarios_refeicoes.length > 0) 
-        ? d.horarios_refeicoes 
-        : ["cafe", "almoco", "lanche", "jantar"];
-      const multiplicador = d.tem_acompanhante ? 2 : 1;
-
-      if (horarios.includes("cafe")) dietasCafe += multiplicador;
-      if (horarios.includes("almoco")) dietasAlmoco += multiplicador;
-      if (horarios.includes("lanche")) dietasLanche += multiplicador;
-      if (horarios.includes("jantar")) dietasJantar += multiplicador;
-    });
-
-    return {
-      dietasCafe,
-      dietasAlmoco,
-      dietasLanche,
-      dietasJantar,
-      totalDietas: dietasCafe + dietasAlmoco + dietasLanche + dietasJantar,
-    };
+  // Calcular dietas somando os quantitativos diários (reflete o período filtrado)
+  const totaisDietas = {
+    dietasCafe: quantitativos.reduce((acc, q) => acc + q.dietasCafe, 0),
+    dietasAlmoco: quantitativos.reduce((acc, q) => acc + q.dietasAlmoco, 0),
+    dietasLanche: quantitativos.reduce((acc, q) => acc + q.dietasLanche, 0),
+    dietasJantar: quantitativos.reduce((acc, q) => acc + q.dietasJantar, 0),
+    totalDietas: quantitativos.reduce((acc, q) => acc + q.totalDietas, 0),
   };
-
-  const totaisDietas = calcularDietasPorTipo();
 
   // Totais combinados para uso na interface
   const totaisGeraisCombinados = {
