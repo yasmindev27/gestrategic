@@ -405,7 +405,7 @@ export const ColaboradoresManager = () => {
                 Colaboradores da UPA
               </CardTitle>
               <CardDescription>
-                Gerencie os colaboradores que aparecem no totem de refeições
+                Funcionários CLT, Externos e PJ
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
