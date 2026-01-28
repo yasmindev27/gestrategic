@@ -895,7 +895,7 @@ export const RestauranteModule = () => {
         {canManage && <>
               <TabsTrigger value="dashboard" className="flex items-center gap-2">
                 <BarChart3 className="h-4 w-4" />
-                Dashboard
+                Dashboard Dietas
               </TabsTrigger>
               <TabsTrigger value="gerenciar" className="flex items-center gap-2">
                 <ClipboardList className="h-4 w-4" />
