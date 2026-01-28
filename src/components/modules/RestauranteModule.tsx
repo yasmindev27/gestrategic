@@ -83,7 +83,7 @@ const tipoRefeicaoLabels: Record<string, {
     icon: <Sun className="h-4 w-4" />
   },
   lanche: {
-    label: "Lanche",
+    label: "Café da Tarde",
     icon: <Cookie className="h-4 w-4" />
   },
   jantar: {
