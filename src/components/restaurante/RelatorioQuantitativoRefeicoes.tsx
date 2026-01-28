@@ -373,6 +373,40 @@ export const RelatorioQuantitativoRefeicoes = () => {
     fetchData();
   }, [dataInicio, dataFim]);
 
+  // Função para determinar o tipo de refeição por horário
+  const determinarTipoRefeicaoPorHorario = (hora: string): string => {
+    const [hh] = hora.split(":").map(Number);
+    if (hh >= 6 && hh < 10) return "cafe";
+    if (hh >= 10 && hh < 15) return "almoco";
+    if (hh >= 15 && hh < 18) return "lanche";
+    if (hh >= 18 && hh <= 23) return "jantar";
+    // Para madrugada (00-05), considerar como jantar do dia anterior
+    return "jantar";
+  };
+
+  // Calcular distribuição de "fora de horário" por tipo de refeição real (para custos)
+  const calcularForaHorarioPorTipo = () => {
+    const foraHorarioRegistros = registrosRefeicoes.filter(r => r.tipo_refeicao === "fora_horario");
+    let foraHorarioCafe = 0;
+    let foraHorarioAlmoco = 0;
+    let foraHorarioLanche = 0;
+    let foraHorarioJantar = 0;
+
+    foraHorarioRegistros.forEach(r => {
+      const tipo = determinarTipoRefeicaoPorHorario(r.hora_registro);
+      switch (tipo) {
+        case "cafe": foraHorarioCafe++; break;
+        case "almoco": foraHorarioAlmoco++; break;
+        case "lanche": foraHorarioLanche++; break;
+        case "jantar": foraHorarioJantar++; break;
+      }
+    });
+
+    return { foraHorarioCafe, foraHorarioAlmoco, foraHorarioLanche, foraHorarioJantar };
+  };
+
+  const foraHorarioDistribuido = calcularForaHorarioPorTipo();
+
   // Calcular totais gerais (registros do totem)
   const totaisGerais = {
     cafe: quantitativos.reduce((acc, q) => acc + q.cafe, 0),
@@ -421,13 +455,13 @@ export const RelatorioQuantitativoRefeicoes = () => {
     totalGeral: totaisGerais.totalRefeicoes + totaisDietas.totalDietas,
   };
 
-  // Calcular valores financeiros totais
+  // Calcular valores financeiros totais (incluindo fora de horário distribuído por tipo)
   const valoresFinanceiros = {
     cafeLitro: totaisGerais.cafeLitro * (valoresRefeicoes.cafe_litro || 0),
-    cafe: (totaisGerais.cafe + totaisDietas.dietasCafe) * (valoresRefeicoes.cafe || 0),
-    almoco: (totaisGerais.almoco + totaisDietas.dietasAlmoco) * (valoresRefeicoes.almoco || 0),
-    lanche: (totaisGerais.lanche + totaisDietas.dietasLanche) * (valoresRefeicoes.lanche || 0),
-    jantar: (totaisGerais.jantar + totaisDietas.dietasJantar) * (valoresRefeicoes.jantar || 0),
+    cafe: (totaisGerais.cafe + totaisDietas.dietasCafe + foraHorarioDistribuido.foraHorarioCafe) * (valoresRefeicoes.cafe || 0),
+    almoco: (totaisGerais.almoco + totaisDietas.dietasAlmoco + foraHorarioDistribuido.foraHorarioAlmoco) * (valoresRefeicoes.almoco || 0),
+    lanche: (totaisGerais.lanche + totaisDietas.dietasLanche + foraHorarioDistribuido.foraHorarioLanche) * (valoresRefeicoes.lanche || 0),
+    jantar: (totaisGerais.jantar + totaisDietas.dietasJantar + foraHorarioDistribuido.foraHorarioJantar) * (valoresRefeicoes.jantar || 0),
     get total() {
       return this.cafeLitro + this.cafe + this.almoco + this.lanche + this.jantar;
     }
