@@ -93,7 +93,11 @@ const tipoRefeicaoLabels: Record<string, { label: string; icon: React.ReactNode;
   fora_horario: { label: "Fora Horário", icon: <Clock className="h-4 w-4" />, color: "bg-gray-500" },
 };
 
-export const RelatorioQuantitativoRefeicoes = () => {
+interface RelatorioQuantitativoRefeicoesProps {
+  isAdmin?: boolean;
+}
+
+export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQuantitativoRefeicoesProps) => {
   const { toast } = useToast();
   const [dataInicio, setDataInicio] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
   const [dataFim, setDataFim] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
@@ -776,14 +780,16 @@ export const RelatorioQuantitativoRefeicoes = () => {
                 className="w-[140px]"
               />
               <div className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => setShowValoresConfig(!showValoresConfig)}
-                >
-                  <Settings className="h-4 w-4 mr-1" />
-                  Valores
-                </Button>
+                {isAdmin && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowValoresConfig(!showValoresConfig)}
+                  >
+                    <Settings className="h-4 w-4 mr-1" />
+                    Valores
+                  </Button>
+                )}
                 <Button
                   size="sm"
                   variant="outline"
@@ -813,8 +819,8 @@ export const RelatorioQuantitativoRefeicoes = () => {
             </div>
           ) : (
             <>
-              {/* Configuração de Valores */}
-              {showValoresConfig && (
+              {/* Configuração de Valores - apenas Admin */}
+              {isAdmin && showValoresConfig && (
                 <Card className="mb-6 border-2 border-dashed border-primary/30">
                   <CardHeader className="pb-2">
                     <CardTitle className="text-sm flex items-center gap-2">
@@ -868,7 +874,8 @@ export const RelatorioQuantitativoRefeicoes = () => {
                 </Card>
               )}
 
-              {/* Resumo Financeiro */}
+              {/* Resumo Financeiro - apenas Admin */}
+              {isAdmin && (
               <div className="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
                 <div className="flex items-center gap-2 mb-3">
                   <DollarSign className="h-5 w-5 text-emerald-600" />
@@ -913,6 +920,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
                   </div>
                 </div>
               </div>
+              )}
 
               {/* KPIs Resumo Geral */}
               <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
