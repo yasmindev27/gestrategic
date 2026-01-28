@@ -347,7 +347,7 @@ export const RegistrosRefeicoes = () => {
           </CardHeader>
           <CardContent className="space-y-1">
             <div className="flex justify-between text-xs">
-              <span className="flex items-center gap-1"><Coffee className="h-3 w-3" /> Café</span>
+              <span className="flex items-center gap-1"><Coffee className="h-3 w-3" /> Café da Manhã</span>
               <span>{stats.cafe}</span>
             </div>
             <div className="flex justify-between text-xs">
@@ -355,7 +355,7 @@ export const RegistrosRefeicoes = () => {
               <span>{stats.almoco}</span>
             </div>
             <div className="flex justify-between text-xs">
-              <span className="flex items-center gap-1"><Cookie className="h-3 w-3" /> Lanche</span>
+              <span className="flex items-center gap-1"><Cookie className="h-3 w-3" /> Café da Tarde</span>
               <span>{stats.lanche}</span>
             </div>
             <div className="flex justify-between text-xs">
