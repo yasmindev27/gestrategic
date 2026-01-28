@@ -373,7 +373,7 @@ export const RelatorioQuantitativoRefeicoes = () => {
     fetchData();
   }, [dataInicio, dataFim]);
 
-  // Calcular totais gerais
+  // Calcular totais gerais (registros do totem)
   const totaisGerais = {
     cafe: quantitativos.reduce((acc, q) => acc + q.cafe, 0),
     almoco: quantitativos.reduce((acc, q) => acc + q.almoco, 0),
@@ -381,22 +381,53 @@ export const RelatorioQuantitativoRefeicoes = () => {
     jantar: quantitativos.reduce((acc, q) => acc + q.jantar, 0),
     foraHorario: quantitativos.reduce((acc, q) => acc + q.foraHorario, 0),
     totalRefeicoes: quantitativos.reduce((acc, q) => acc + q.totalRefeicoes, 0),
-    dietasCafe: quantitativos.reduce((acc, q) => acc + q.dietasCafe, 0),
-    dietasAlmoco: quantitativos.reduce((acc, q) => acc + q.dietasAlmoco, 0),
-    dietasLanche: quantitativos.reduce((acc, q) => acc + q.dietasLanche, 0),
-    dietasJantar: quantitativos.reduce((acc, q) => acc + q.dietasJantar, 0),
-    totalDietas: quantitativos.reduce((acc, q) => acc + q.totalDietas, 0),
-    totalGeral: quantitativos.reduce((acc, q) => acc + q.totalGeral, 0),
     cafeLitro: quantitativos.reduce((acc, q) => acc + q.cafeLitro, 0),
+  };
+
+  // Calcular dietas por tipo (conta solicitações únicas, não por dia)
+  const calcularDietasPorTipo = () => {
+    let dietasCafe = 0;
+    let dietasAlmoco = 0;
+    let dietasLanche = 0;
+    let dietasJantar = 0;
+
+    solicitacoesDieta.forEach(d => {
+      const horarios = (d.horarios_refeicoes && d.horarios_refeicoes.length > 0) 
+        ? d.horarios_refeicoes 
+        : ["cafe", "almoco", "lanche", "jantar"];
+      const multiplicador = d.tem_acompanhante ? 2 : 1;
+
+      if (horarios.includes("cafe")) dietasCafe += multiplicador;
+      if (horarios.includes("almoco")) dietasAlmoco += multiplicador;
+      if (horarios.includes("lanche")) dietasLanche += multiplicador;
+      if (horarios.includes("jantar")) dietasJantar += multiplicador;
+    });
+
+    return {
+      dietasCafe,
+      dietasAlmoco,
+      dietasLanche,
+      dietasJantar,
+      totalDietas: dietasCafe + dietasAlmoco + dietasLanche + dietasJantar,
+    };
+  };
+
+  const totaisDietas = calcularDietasPorTipo();
+
+  // Totais combinados para uso na interface
+  const totaisGeraisCombinados = {
+    ...totaisGerais,
+    ...totaisDietas,
+    totalGeral: totaisGerais.totalRefeicoes + totaisDietas.totalDietas,
   };
 
   // Calcular valores financeiros totais
   const valoresFinanceiros = {
     cafeLitro: totaisGerais.cafeLitro * (valoresRefeicoes.cafe_litro || 0),
-    cafe: (totaisGerais.cafe + totaisGerais.dietasCafe) * (valoresRefeicoes.cafe || 0),
-    almoco: (totaisGerais.almoco + totaisGerais.dietasAlmoco) * (valoresRefeicoes.almoco || 0),
-    lanche: (totaisGerais.lanche + totaisGerais.dietasLanche) * (valoresRefeicoes.lanche || 0),
-    jantar: (totaisGerais.jantar + totaisGerais.dietasJantar) * (valoresRefeicoes.jantar || 0),
+    cafe: (totaisGerais.cafe + totaisDietas.dietasCafe) * (valoresRefeicoes.cafe || 0),
+    almoco: (totaisGerais.almoco + totaisDietas.dietasAlmoco) * (valoresRefeicoes.almoco || 0),
+    lanche: (totaisGerais.lanche + totaisDietas.dietasLanche) * (valoresRefeicoes.lanche || 0),
+    jantar: (totaisGerais.jantar + totaisDietas.dietasJantar) * (valoresRefeicoes.jantar || 0),
     get total() {
       return this.cafeLitro + this.cafe + this.almoco + this.lanche + this.jantar;
     }
@@ -432,12 +463,12 @@ export const RelatorioQuantitativoRefeicoes = () => {
       "Jantar (Totem)": totaisGerais.jantar,
       "Fora Horário (Totem)": totaisGerais.foraHorario,
       "Total Totem": totaisGerais.totalRefeicoes,
-      "Café (Dietas)": totaisGerais.dietasCafe,
-      "Almoço (Dietas)": totaisGerais.dietasAlmoco,
-      "Lanche (Dietas)": totaisGerais.dietasLanche,
-      "Jantar (Dietas)": totaisGerais.dietasJantar,
-      "Total Dietas": totaisGerais.totalDietas,
-      "TOTAL GERAL": totaisGerais.totalGeral,
+      "Café (Dietas)": totaisDietas.dietasCafe,
+      "Almoço (Dietas)": totaisDietas.dietasAlmoco,
+      "Lanche (Dietas)": totaisDietas.dietasLanche,
+      "Jantar (Dietas)": totaisDietas.dietasJantar,
+      "Total Dietas": totaisDietas.totalDietas,
+      "TOTAL GERAL": totaisGeraisCombinados.totalGeral,
     });
 
     const ws = XLSX.utils.json_to_sheet(data);
@@ -490,10 +521,10 @@ export const RelatorioQuantitativoRefeicoes = () => {
     doc.text("Total Cafe", 18, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(String(totaisGerais.cafe + totaisGerais.dietasCafe), 18, cardStartY + 14);
+    doc.text(String(totaisGerais.cafe + totaisDietas.dietasCafe), 18, cardStartY + 14);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Totem: ${totaisGerais.cafe} | Dietas: ${totaisGerais.dietasCafe}`, 18, cardStartY + 19);
+    doc.text(`Totem: ${totaisGerais.cafe} | Dietas: ${totaisDietas.dietasCafe}`, 18, cardStartY + 19);
 
     // Card Almoço (Orange)
     doc.setFillColor(255, 237, 213);
@@ -505,10 +536,10 @@ export const RelatorioQuantitativoRefeicoes = () => {
     doc.text("Total Almoco", 18 + cardWidth + cardGap, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(String(totaisGerais.almoco + totaisGerais.dietasAlmoco), 18 + cardWidth + cardGap, cardStartY + 14);
+    doc.text(String(totaisGerais.almoco + totaisDietas.dietasAlmoco), 18 + cardWidth + cardGap, cardStartY + 14);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Totem: ${totaisGerais.almoco} | Dietas: ${totaisGerais.dietasAlmoco}`, 18 + cardWidth + cardGap, cardStartY + 19);
+    doc.text(`Totem: ${totaisGerais.almoco} | Dietas: ${totaisDietas.dietasAlmoco}`, 18 + cardWidth + cardGap, cardStartY + 19);
 
     // Card Lanche (Pink)
     doc.setFillColor(252, 231, 243);
@@ -520,10 +551,10 @@ export const RelatorioQuantitativoRefeicoes = () => {
     doc.text("Total Lanche", 18 + (cardWidth + cardGap) * 2, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(String(totaisGerais.lanche + totaisGerais.dietasLanche), 18 + (cardWidth + cardGap) * 2, cardStartY + 14);
+    doc.text(String(totaisGerais.lanche + totaisDietas.dietasLanche), 18 + (cardWidth + cardGap) * 2, cardStartY + 14);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Totem: ${totaisGerais.lanche} | Dietas: ${totaisGerais.dietasLanche}`, 18 + (cardWidth + cardGap) * 2, cardStartY + 19);
+    doc.text(`Totem: ${totaisGerais.lanche} | Dietas: ${totaisDietas.dietasLanche}`, 18 + (cardWidth + cardGap) * 2, cardStartY + 19);
 
     // Card Jantar (Indigo)
     doc.setFillColor(224, 231, 255);
@@ -535,10 +566,10 @@ export const RelatorioQuantitativoRefeicoes = () => {
     doc.text("Total Jantar", 18 + (cardWidth + cardGap) * 3, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(String(totaisGerais.jantar + totaisGerais.dietasJantar), 18 + (cardWidth + cardGap) * 3, cardStartY + 14);
+    doc.text(String(totaisGerais.jantar + totaisDietas.dietasJantar), 18 + (cardWidth + cardGap) * 3, cardStartY + 14);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Totem: ${totaisGerais.jantar} | Dietas: ${totaisGerais.dietasJantar}`, 18 + (cardWidth + cardGap) * 3, cardStartY + 19);
+    doc.text(`Totem: ${totaisGerais.jantar} | Dietas: ${totaisDietas.dietasJantar}`, 18 + (cardWidth + cardGap) * 3, cardStartY + 19);
 
     // Card Total Geral (Emerald)
     doc.setFillColor(209, 250, 229);
@@ -550,10 +581,10 @@ export const RelatorioQuantitativoRefeicoes = () => {
     doc.text("Total Geral", 18 + (cardWidth + cardGap) * 4, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(String(totaisGerais.totalGeral), 18 + (cardWidth + cardGap) * 4, cardStartY + 14);
+    doc.text(String(totaisGeraisCombinados.totalGeral), 18 + (cardWidth + cardGap) * 4, cardStartY + 14);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Totem: ${totaisGerais.totalRefeicoes} | Dietas: ${totaisGerais.totalDietas}`, 18 + (cardWidth + cardGap) * 4, cardStartY + 19);
+    doc.text(`Totem: ${totaisGerais.totalRefeicoes} | Dietas: ${totaisDietas.totalDietas}`, 18 + (cardWidth + cardGap) * 4, cardStartY + 19);
 
     // Reset text color
     doc.setTextColor(0, 0, 0);
@@ -578,10 +609,10 @@ export const RelatorioQuantitativoRefeicoes = () => {
       ]],
       body: [
         ["Cafe Litro", `${totaisGerais.cafeLitro.toFixed(1)} L`, formatCurrency(valoresRefeicoes.cafe_litro || 0), formatCurrency(valoresFinanceiros.cafeLitro)],
-        ["Cafe", String(totaisGerais.cafe + totaisGerais.dietasCafe), formatCurrency(valoresRefeicoes.cafe || 0), formatCurrency(valoresFinanceiros.cafe)],
-        ["Almoco", String(totaisGerais.almoco + totaisGerais.dietasAlmoco), formatCurrency(valoresRefeicoes.almoco || 0), formatCurrency(valoresFinanceiros.almoco)],
-        ["Lanche", String(totaisGerais.lanche + totaisGerais.dietasLanche), formatCurrency(valoresRefeicoes.lanche || 0), formatCurrency(valoresFinanceiros.lanche)],
-        ["Jantar", String(totaisGerais.jantar + totaisGerais.dietasJantar), formatCurrency(valoresRefeicoes.jantar || 0), formatCurrency(valoresFinanceiros.jantar)],
+        ["Cafe", String(totaisGerais.cafe + totaisDietas.dietasCafe), formatCurrency(valoresRefeicoes.cafe || 0), formatCurrency(valoresFinanceiros.cafe)],
+        ["Almoco", String(totaisGerais.almoco + totaisDietas.dietasAlmoco), formatCurrency(valoresRefeicoes.almoco || 0), formatCurrency(valoresFinanceiros.almoco)],
+        ["Lanche", String(totaisGerais.lanche + totaisDietas.dietasLanche), formatCurrency(valoresRefeicoes.lanche || 0), formatCurrency(valoresFinanceiros.lanche)],
+        ["Jantar", String(totaisGerais.jantar + totaisDietas.dietasJantar), formatCurrency(valoresRefeicoes.jantar || 0), formatCurrency(valoresFinanceiros.jantar)],
       ],
       foot: [[
         { content: "TOTAL GERAL", colSpan: 3, styles: { halign: "right", fillColor: [209, 213, 219] as [number, number, number], fontStyle: "bold" } },
@@ -629,12 +660,12 @@ export const RelatorioQuantitativoRefeicoes = () => {
       totaisGerais.lanche,
       totaisGerais.jantar,
       totaisGerais.totalRefeicoes,
-      totaisGerais.dietasCafe,
-      totaisGerais.dietasAlmoco,
-      totaisGerais.dietasLanche,
-      totaisGerais.dietasJantar,
-      totaisGerais.totalDietas,
-      totaisGerais.totalGeral,
+      totaisDietas.dietasCafe,
+      totaisDietas.dietasAlmoco,
+      totaisDietas.dietasLanche,
+      totaisDietas.dietasJantar,
+      totaisDietas.totalDietas,
+      totaisGeraisCombinados.totalGeral,
     ]);
 
     autoTable(doc, {
@@ -683,12 +714,12 @@ export const RelatorioQuantitativoRefeicoes = () => {
         { content: String(totaisGerais.lanche), styles: { halign: "center", fillColor: azulClaro as [number, number, number], fontStyle: "bold", textColor: [30, 64, 175] } },
         { content: String(totaisGerais.jantar), styles: { halign: "center", fillColor: azulClaro as [number, number, number], fontStyle: "bold", textColor: [30, 64, 175] } },
         { content: String(totaisGerais.totalRefeicoes), styles: { halign: "center", fillColor: azulTotem as [number, number, number], fontStyle: "bold", textColor: 255 } },
-        { content: String(totaisGerais.dietasCafe), styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
-        { content: String(totaisGerais.dietasAlmoco), styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
-        { content: String(totaisGerais.dietasLanche), styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
-        { content: String(totaisGerais.dietasJantar), styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
-        { content: String(totaisGerais.totalDietas), styles: { halign: "center", fillColor: laranjaDeita as [number, number, number], fontStyle: "bold", textColor: 255 } },
-        { content: String(totaisGerais.totalGeral), styles: { halign: "center", fillColor: verdeTotal as [number, number, number], fontStyle: "bold", textColor: 255 } },
+        { content: String(totaisDietas.dietasCafe), styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
+        { content: String(totaisDietas.dietasAlmoco), styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
+        { content: String(totaisDietas.dietasLanche), styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
+        { content: String(totaisDietas.dietasJantar), styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
+        { content: String(totaisDietas.totalDietas), styles: { halign: "center", fillColor: laranjaDeita as [number, number, number], fontStyle: "bold", textColor: 255 } },
+        { content: String(totaisGeraisCombinados.totalGeral), styles: { halign: "center", fillColor: verdeTotal as [number, number, number], fontStyle: "bold", textColor: 255 } },
       ]],
       styles: { fontSize: 7, cellPadding: 2 },
       headStyles: { fontSize: 7 },
@@ -878,10 +909,10 @@ export const RelatorioQuantitativoRefeicoes = () => {
                     <p className="text-sm text-muted-foreground">Total Café</p>
                   </div>
                   <p className="text-2xl font-bold text-amber-700">
-                    {totaisGerais.cafe + totaisGerais.dietasCafe}
+                    {totaisGerais.cafe + totaisDietas.dietasCafe}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Totem: {totaisGerais.cafe} | Dietas: {totaisGerais.dietasCafe}
+                    Totem: {totaisGerais.cafe} | Dietas: {totaisDietas.dietasCafe}
                   </p>
                 </div>
                 <div className="p-4 bg-orange-50 rounded-lg border-l-4 border-orange-500">
@@ -890,10 +921,10 @@ export const RelatorioQuantitativoRefeicoes = () => {
                     <p className="text-sm text-muted-foreground">Total Almoço</p>
                   </div>
                   <p className="text-2xl font-bold text-orange-700">
-                    {totaisGerais.almoco + totaisGerais.dietasAlmoco}
+                    {totaisGerais.almoco + totaisDietas.dietasAlmoco}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Totem: {totaisGerais.almoco} | Dietas: {totaisGerais.dietasAlmoco}
+                    Totem: {totaisGerais.almoco} | Dietas: {totaisDietas.dietasAlmoco}
                   </p>
                 </div>
                 <div className="p-4 bg-pink-50 rounded-lg border-l-4 border-pink-500">
@@ -902,10 +933,10 @@ export const RelatorioQuantitativoRefeicoes = () => {
                     <p className="text-sm text-muted-foreground">Total Lanche</p>
                   </div>
                   <p className="text-2xl font-bold text-pink-700">
-                    {totaisGerais.lanche + totaisGerais.dietasLanche}
+                    {totaisGerais.lanche + totaisDietas.dietasLanche}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Totem: {totaisGerais.lanche} | Dietas: {totaisGerais.dietasLanche}
+                    Totem: {totaisGerais.lanche} | Dietas: {totaisDietas.dietasLanche}
                   </p>
                 </div>
                 <div className="p-4 bg-indigo-50 rounded-lg border-l-4 border-indigo-500">
@@ -914,10 +945,10 @@ export const RelatorioQuantitativoRefeicoes = () => {
                     <p className="text-sm text-muted-foreground">Total Jantar</p>
                   </div>
                   <p className="text-2xl font-bold text-indigo-700">
-                    {totaisGerais.jantar + totaisGerais.dietasJantar}
+                    {totaisGerais.jantar + totaisDietas.dietasJantar}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Totem: {totaisGerais.jantar} | Dietas: {totaisGerais.dietasJantar}
+                    Totem: {totaisGerais.jantar} | Dietas: {totaisDietas.dietasJantar}
                   </p>
                 </div>
                 {totaisGerais.foraHorario > 0 && (
@@ -940,10 +971,10 @@ export const RelatorioQuantitativoRefeicoes = () => {
                     <p className="text-sm text-muted-foreground">Total Geral</p>
                   </div>
                   <p className="text-2xl font-bold text-primary">
-                    {totaisGerais.totalGeral}
+                    {totaisGeraisCombinados.totalGeral}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Totem: {totaisGerais.totalRefeicoes} | Dietas: {totaisGerais.totalDietas}
+                    Totem: {totaisGerais.totalRefeicoes} | Dietas: {totaisDietas.totalDietas}
                   </p>
                 </div>
               </div>
@@ -1106,15 +1137,15 @@ export const RelatorioQuantitativoRefeicoes = () => {
                         <TableCell className="text-center border-r bg-blue-500 text-white">
                           {totaisGerais.totalRefeicoes}
                         </TableCell>
-                        <TableCell className="text-center bg-orange-100 text-orange-800">{totaisGerais.dietasCafe}</TableCell>
-                        <TableCell className="text-center bg-orange-100 text-orange-800">{totaisGerais.dietasAlmoco}</TableCell>
-                        <TableCell className="text-center bg-orange-100 text-orange-800">{totaisGerais.dietasLanche}</TableCell>
-                        <TableCell className="text-center bg-orange-100 text-orange-800">{totaisGerais.dietasJantar}</TableCell>
+                        <TableCell className="text-center bg-orange-100 text-orange-800">{totaisDietas.dietasCafe}</TableCell>
+                        <TableCell className="text-center bg-orange-100 text-orange-800">{totaisDietas.dietasAlmoco}</TableCell>
+                        <TableCell className="text-center bg-orange-100 text-orange-800">{totaisDietas.dietasLanche}</TableCell>
+                        <TableCell className="text-center bg-orange-100 text-orange-800">{totaisDietas.dietasJantar}</TableCell>
                         <TableCell className="text-center border-r bg-orange-500 text-white">
-                          {totaisGerais.totalDietas}
+                          {totaisDietas.totalDietas}
                         </TableCell>
                         <TableCell className="text-center bg-emerald-600 text-white">
-                          {totaisGerais.totalGeral}
+                          {totaisGeraisCombinados.totalGeral}
                         </TableCell>
                       </TableRow>
                     </TableBody>
