@@ -1407,7 +1407,7 @@ export const RestauranteModule = () => {
 
               {/* Sub-tab: Registros do Totem */}
               <TabsContent value="totem" className="mt-4">
-                <RegistrosRefeicoes />
+                <RegistrosRefeicoes isAdmin={isAdmin} />
               </TabsContent>
 
               {/* Sub-tab: Cardápios */}
