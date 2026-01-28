@@ -8,9 +8,10 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UtensilsCrossed, Calendar, CalendarDays, Salad, Loader2, Plus, Coffee, Sun, Cookie, Moon, Clock, CheckCircle2, XCircle, AlertCircle, BarChart3, FileDown, FileSpreadsheet, Filter, ClipboardList, TrendingUp, Search, Users, AlertTriangle } from "lucide-react";
+import { UtensilsCrossed, Calendar, CalendarDays, Salad, Loader2, Plus, Coffee, Sun, Cookie, Moon, Clock, CheckCircle2, XCircle, AlertCircle, BarChart3, FileDown, FileSpreadsheet, Filter, ClipboardList, TrendingUp, Search, Users, AlertTriangle, Pencil, Trash2 } from "lucide-react";
 import { RegistrosRefeicoes } from "@/components/restaurante/RegistrosRefeicoes";
 import { RelatorioQuantitativoRefeicoes } from "@/components/restaurante/RelatorioQuantitativoRefeicoes";
 import { ColaboradoresManager } from "@/components/restaurante/ColaboradoresManager";
@@ -185,6 +186,22 @@ export const RestauranteModule = () => {
 
   // Minhas Solicitações - Filtros (aba Dietas)
   const [minhasDietasFiltro, setMinhasDietasFiltro] = useState<"todos" | "dia" | "semana" | "mes">("todos");
+
+  // Admin edit/delete dieta states
+  const [editDietaDialogOpen, setEditDietaDialogOpen] = useState(false);
+  const [deleteDietaDialogOpen, setDeleteDietaDialogOpen] = useState(false);
+  const [selectedDieta, setSelectedDieta] = useState<SolicitacaoDieta | null>(null);
+  const [editDietaFormData, setEditDietaFormData] = useState({
+    paciente_nome: "",
+    quarto_leito: "",
+    tem_acompanhante: false,
+    tipo_dieta: "",
+    restricoes_alimentares: "",
+    horarios_refeicoes: [] as string[],
+    data_inicio: "",
+    data_fim: "",
+  });
+  const [isDietaSubmitting, setIsDietaSubmitting] = useState(false);
   useEffect(() => {
     // Só busca dados quando o role terminou de carregar
     if (!isLoadingRole) {
@@ -384,6 +401,96 @@ export const RestauranteModule = () => {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  // Admin functions for diet edit/delete
+  const handleEditDietaClick = (dieta: SolicitacaoDieta) => {
+    setSelectedDieta(dieta);
+    setEditDietaFormData({
+      paciente_nome: dieta.paciente_nome || "",
+      quarto_leito: dieta.quarto_leito || "",
+      tem_acompanhante: dieta.tem_acompanhante || false,
+      tipo_dieta: dieta.tipo_dieta,
+      restricoes_alimentares: dieta.restricoes_alimentares || "",
+      horarios_refeicoes: dieta.horarios_refeicoes || ["cafe", "almoco", "lanche", "jantar"],
+      data_inicio: dieta.data_inicio,
+      data_fim: dieta.data_fim || "",
+    });
+    setEditDietaDialogOpen(true);
+  };
+
+  const handleDeleteDietaClick = (dieta: SolicitacaoDieta) => {
+    setSelectedDieta(dieta);
+    setDeleteDietaDialogOpen(true);
+  };
+
+  const handleUpdateDieta = async () => {
+    if (!selectedDieta) return;
+    
+    setIsDietaSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("solicitacoes_dieta")
+        .update({
+          paciente_nome: editDietaFormData.paciente_nome || null,
+          quarto_leito: editDietaFormData.quarto_leito || null,
+          tem_acompanhante: editDietaFormData.tem_acompanhante,
+          tipo_dieta: editDietaFormData.tipo_dieta,
+          restricoes_alimentares: editDietaFormData.restricoes_alimentares || null,
+          horarios_refeicoes: editDietaFormData.horarios_refeicoes,
+          data_inicio: editDietaFormData.data_inicio,
+          data_fim: editDietaFormData.data_fim || null,
+        })
+        .eq("id", selectedDieta.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Dieta atualizada com sucesso.",
+      });
+      setEditDietaDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      console.error("Erro ao atualizar dieta:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar a dieta.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDietaSubmitting(false);
+    }
+  };
+
+  const handleDeleteDieta = async () => {
+    if (!selectedDieta) return;
+    
+    setIsDietaSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("solicitacoes_dieta")
+        .delete()
+        .eq("id", selectedDieta.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Dieta excluída com sucesso.",
+      });
+      setDeleteDietaDialogOpen(false);
+      fetchData();
+    } catch (error) {
+      console.error("Erro ao excluir dieta:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir a dieta.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDietaSubmitting(false);
     }
   };
   const handleSubmitCardapio = async () => {
@@ -1351,6 +1458,7 @@ export const RestauranteModule = () => {
                                 <TableHead>Quarto/Leito</TableHead>
                                 <TableHead>Período</TableHead>
                                 <TableHead>Solicitante</TableHead>
+                                {isAdmin && <TableHead className="w-[100px]">Ações</TableHead>}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
@@ -1396,6 +1504,29 @@ export const RestauranteModule = () => {
                                   <TableCell>
                                     <span className="text-sm text-muted-foreground">{s.solicitante_nome}</span>
                                   </TableCell>
+                                  {isAdmin && (
+                                    <TableCell>
+                                      <div className="flex gap-1">
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => handleEditDietaClick(s)}
+                                          title="Editar"
+                                        >
+                                          <Pencil className="h-4 w-4" />
+                                        </Button>
+                                        <Button
+                                          variant="ghost"
+                                          size="icon"
+                                          onClick={() => handleDeleteDietaClick(s)}
+                                          title="Excluir"
+                                          className="text-destructive hover:text-destructive"
+                                        >
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </div>
+                                    </TableCell>
+                                  )}
                                 </TableRow>)}
                             </TableBody>
                           </Table>
@@ -1691,5 +1822,79 @@ export const RestauranteModule = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de Edição de Dieta */}
+      <Dialog open={editDietaDialogOpen} onOpenChange={setEditDietaDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Editar Dieta</DialogTitle>
+            <DialogDescription>Altere os dados da dieta.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4 max-h-[60vh] overflow-y-auto">
+            <div className="space-y-2">
+              <Label>Paciente</Label>
+              <Input value={editDietaFormData.paciente_nome} onChange={e => setEditDietaFormData({...editDietaFormData, paciente_nome: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <Label>Quarto/Leito</Label>
+              <Input value={editDietaFormData.quarto_leito} onChange={e => setEditDietaFormData({...editDietaFormData, quarto_leito: e.target.value})} />
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo de Dieta</Label>
+              <Select value={editDietaFormData.tipo_dieta} onValueChange={value => setEditDietaFormData({...editDietaFormData, tipo_dieta: value})}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {Object.entries(tipoDietaLabels).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input type="checkbox" id="edit_tem_acompanhante" checked={editDietaFormData.tem_acompanhante} onChange={e => setEditDietaFormData({...editDietaFormData, tem_acompanhante: e.target.checked})} className="h-4 w-4 rounded border-gray-300" />
+              <Label htmlFor="edit_tem_acompanhante">Tem acompanhante</Label>
+            </div>
+            <div className="space-y-2">
+              <Label>Restrições Alimentares</Label>
+              <Textarea value={editDietaFormData.restricoes_alimentares} onChange={e => setEditDietaFormData({...editDietaFormData, restricoes_alimentares: e.target.value})} rows={2} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Data Início</Label>
+                <Input type="date" value={editDietaFormData.data_inicio} onChange={e => setEditDietaFormData({...editDietaFormData, data_inicio: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Data Fim</Label>
+                <Input type="date" value={editDietaFormData.data_fim} onChange={e => setEditDietaFormData({...editDietaFormData, data_fim: e.target.value})} />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDietaDialogOpen(false)}>Cancelar</Button>
+            <Button onClick={handleUpdateDieta} disabled={isDietaSubmitting}>
+              {isDietaSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Confirmação de Exclusão de Dieta */}
+      <AlertDialog open={deleteDietaDialogOpen} onOpenChange={setDeleteDietaDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a dieta de <strong>{selectedDieta?.paciente_nome || "N/A"}</strong>?
+              <br />Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteDieta} className="bg-destructive text-destructive-foreground hover:bg-destructive/90" disabled={isDietaSubmitting}>
+              {isDietaSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>;
 };

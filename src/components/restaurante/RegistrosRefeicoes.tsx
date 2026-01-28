@@ -21,6 +21,24 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   UtensilsCrossed,
   Loader2,
   Filter,
@@ -34,6 +52,8 @@ import {
   User,
   Users,
   ExternalLink,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth } from "date-fns";
@@ -75,6 +95,19 @@ export const RegistrosRefeicoes = ({ isAdmin = false }: RegistrosRefeicoesProps)
   const [filtroTipoRefeicao, setFiltroTipoRefeicao] = useState<string>("todos");
   const [filtroTipoPessoa, setFiltroTipoPessoa] = useState<string>("todos");
   const [buscaNome, setBuscaNome] = useState("");
+
+  // Admin edit/delete states
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedRegistro, setSelectedRegistro] = useState<RegistroRefeicao | null>(null);
+  const [editFormData, setEditFormData] = useState({
+    colaborador_nome: "",
+    tipo_pessoa: "",
+    tipo_refeicao: "",
+    data_registro: "",
+    hora_registro: "",
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Estatísticas
   const stats = {
@@ -128,6 +161,90 @@ export const RegistrosRefeicoes = ({ isAdmin = false }: RegistrosRefeicoesProps)
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Admin functions for edit/delete
+  const handleEditClick = (registro: RegistroRefeicao) => {
+    setSelectedRegistro(registro);
+    setEditFormData({
+      colaborador_nome: registro.colaborador_nome,
+      tipo_pessoa: registro.tipo_pessoa,
+      tipo_refeicao: registro.tipo_refeicao,
+      data_registro: registro.data_registro,
+      hora_registro: registro.hora_registro,
+    });
+    setEditDialogOpen(true);
+  };
+
+  const handleDeleteClick = (registro: RegistroRefeicao) => {
+    setSelectedRegistro(registro);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleUpdateRegistro = async () => {
+    if (!selectedRegistro) return;
+    
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("refeicoes_registros")
+        .update({
+          colaborador_nome: editFormData.colaborador_nome,
+          tipo_pessoa: editFormData.tipo_pessoa,
+          tipo_refeicao: editFormData.tipo_refeicao,
+          data_registro: editFormData.data_registro,
+          hora_registro: editFormData.hora_registro,
+        })
+        .eq("id", selectedRegistro.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Registro atualizado com sucesso.",
+      });
+      setEditDialogOpen(false);
+      fetchRegistros();
+    } catch (error) {
+      console.error("Erro ao atualizar registro:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível atualizar o registro.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDeleteRegistro = async () => {
+    if (!selectedRegistro) return;
+    
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("refeicoes_registros")
+        .delete()
+        .eq("id", selectedRegistro.id);
+
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso",
+        description: "Registro excluído com sucesso.",
+      });
+      setDeleteDialogOpen(false);
+      fetchRegistros();
+    } catch (error) {
+      console.error("Erro ao excluir registro:", error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o registro.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -402,6 +519,7 @@ export const RegistrosRefeicoes = ({ isAdmin = false }: RegistrosRefeicoesProps)
                   <TableHead>Data</TableHead>
                   <TableHead>Hora</TableHead>
                   <TableHead>Refeição</TableHead>
+                  {isAdmin && <TableHead className="w-[100px]">Ações</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -427,6 +545,29 @@ export const RegistrosRefeicoes = ({ isAdmin = false }: RegistrosRefeicoesProps)
                         <span className="ml-1">{tipoRefeicaoInfo[registro.tipo_refeicao]?.label}</span>
                       </Badge>
                     </TableCell>
+                    {isAdmin && (
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEditClick(registro)}
+                            title="Editar"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteClick(registro)}
+                            title="Excluir"
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -434,6 +575,113 @@ export const RegistrosRefeicoes = ({ isAdmin = false }: RegistrosRefeicoesProps)
           )}
         </CardContent>
       </Card>
+
+      {/* Dialog de Edição */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Registro de Refeição</DialogTitle>
+            <DialogDescription>
+              Altere os dados do registro de refeição.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>Nome</Label>
+              <Input
+                value={editFormData.colaborador_nome}
+                onChange={(e) => setEditFormData({ ...editFormData, colaborador_nome: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo de Pessoa</Label>
+              <Select
+                value={editFormData.tipo_pessoa}
+                onValueChange={(value) => setEditFormData({ ...editFormData, tipo_pessoa: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="colaborador">Colaborador</SelectItem>
+                  <SelectItem value="visitante">Visitante</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo de Refeição</Label>
+              <Select
+                value={editFormData.tipo_refeicao}
+                onValueChange={(value) => setEditFormData({ ...editFormData, tipo_refeicao: value })}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cafe">Café da Manhã</SelectItem>
+                  <SelectItem value="almoco">Almoço</SelectItem>
+                  <SelectItem value="lanche">Café da Tarde</SelectItem>
+                  <SelectItem value="jantar">Jantar</SelectItem>
+                  <SelectItem value="fora_horario">Fora de Horário</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Data</Label>
+                <Input
+                  type="date"
+                  value={editFormData.data_registro}
+                  onChange={(e) => setEditFormData({ ...editFormData, data_registro: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Hora</Label>
+                <Input
+                  type="time"
+                  value={editFormData.hora_registro}
+                  onChange={(e) => setEditFormData({ ...editFormData, hora_registro: e.target.value })}
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleUpdateRegistro} disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de Confirmação de Exclusão */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o registro de refeição de{" "}
+              <strong>{selectedRegistro?.colaborador_nome}</strong>?
+              <br />
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteRegistro}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
