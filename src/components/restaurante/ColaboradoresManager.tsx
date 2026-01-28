@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 import { 
   Plus, 
   Pencil, 
@@ -52,6 +53,7 @@ interface ColaboradorRestaurante {
 
 export const ColaboradoresManager = () => {
   const { toast } = useToast();
+  const { isAdmin } = useUserRole();
   const [colaboradores, setColaboradores] = useState<ColaboradorRestaurante[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [pesquisa, setPesquisa] = useState("");
@@ -417,30 +419,34 @@ export const ColaboradoresManager = () => {
                 <FileDown className="h-4 w-4 mr-1" />
                 PDF
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                disabled={isImporting}
-                onClick={() => document.getElementById("import-excel-input")?.click()}
-              >
-                {isImporting ? (
-                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4 mr-1" />
-                )}
-                Importar
-              </Button>
-              <input
-                id="import-excel-input"
-                type="file"
-                accept=".xlsx,.xls"
-                onChange={handleImportExcel}
-                className="hidden"
-              />
-              <Button onClick={() => handleOpenDialog()}>
-                <UserPlus className="h-4 w-4 mr-1" />
-                Novo
-              </Button>
+              {isAdmin && (
+                <>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    disabled={isImporting}
+                    onClick={() => document.getElementById("import-excel-input")?.click()}
+                  >
+                    {isImporting ? (
+                      <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4 mr-1" />
+                    )}
+                    Importar
+                  </Button>
+                  <input
+                    id="import-excel-input"
+                    type="file"
+                    accept=".xlsx,.xls"
+                    onChange={handleImportExcel}
+                    className="hidden"
+                  />
+                  <Button onClick={() => handleOpenDialog()}>
+                    <UserPlus className="h-4 w-4 mr-1" />
+                    Novo
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -513,32 +519,34 @@ export const ColaboradoresManager = () => {
                       <TableCell>
                         <Badge 
                           variant={colaborador.ativo ? "default" : "secondary"}
-                          className="cursor-pointer"
-                          onClick={() => toggleAtivo(colaborador.id, colaborador.ativo)}
+                          className={isAdmin ? "cursor-pointer" : ""}
+                          onClick={isAdmin ? () => toggleAtivo(colaborador.id, colaborador.ativo) : undefined}
                         >
                           {colaborador.ativo ? "Ativo" : "Inativo"}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <div className="flex gap-1">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleOpenDialog(colaborador)}
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setDeletingId(colaborador.id);
-                              setDeleteDialogOpen(true);
-                            }}
-                          >
-                            <Trash2 className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
+                        {isAdmin && (
+                          <div className="flex gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleOpenDialog(colaborador)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setDeletingId(colaborador.id);
+                                setDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        )}
                       </TableCell>
                     </TableRow>
                   ))
