@@ -402,7 +402,7 @@ export const ColaboradoresManager = () => {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Colaboradores do Restaurante
+                Colaboradores da UPA
               </CardTitle>
               <CardDescription>
                 Gerencie os colaboradores que aparecem no totem de refeições
