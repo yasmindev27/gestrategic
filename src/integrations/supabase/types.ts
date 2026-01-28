@@ -1748,6 +1748,50 @@ export type Database = {
         }
         Relationships: []
       }
+      tentativas_duplicidade_refeicoes: {
+        Row: {
+          colaborador_nome: string
+          created_at: string
+          data_tentativa: string
+          hora_tentativa: string
+          id: string
+          registro_original_id: string | null
+          tipo_pessoa: string
+          tipo_refeicao: string
+          visitante_cpf_hash: string | null
+        }
+        Insert: {
+          colaborador_nome: string
+          created_at?: string
+          data_tentativa: string
+          hora_tentativa: string
+          id?: string
+          registro_original_id?: string | null
+          tipo_pessoa: string
+          tipo_refeicao: string
+          visitante_cpf_hash?: string | null
+        }
+        Update: {
+          colaborador_nome?: string
+          created_at?: string
+          data_tentativa?: string
+          hora_tentativa?: string
+          id?: string
+          registro_original_id?: string | null
+          tipo_pessoa?: string
+          tipo_refeicao?: string
+          visitante_cpf_hash?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tentativas_duplicidade_refeicoes_registro_original_id_fkey"
+            columns: ["registro_original_id"]
+            isOneToOne: false
+            referencedRelation: "refeicoes_registros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string

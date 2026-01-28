@@ -10,10 +10,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UtensilsCrossed, Calendar, CalendarDays, Salad, Loader2, Plus, Coffee, Sun, Cookie, Moon, Clock, CheckCircle2, XCircle, AlertCircle, BarChart3, FileDown, FileSpreadsheet, Filter, ClipboardList, TrendingUp, Search, Users } from "lucide-react";
+import { UtensilsCrossed, Calendar, CalendarDays, Salad, Loader2, Plus, Coffee, Sun, Cookie, Moon, Clock, CheckCircle2, XCircle, AlertCircle, BarChart3, FileDown, FileSpreadsheet, Filter, ClipboardList, TrendingUp, Search, Users, AlertTriangle } from "lucide-react";
 import { RegistrosRefeicoes } from "@/components/restaurante/RegistrosRefeicoes";
 import { RelatorioQuantitativoRefeicoes } from "@/components/restaurante/RelatorioQuantitativoRefeicoes";
 import { ColaboradoresManager } from "@/components/restaurante/ColaboradoresManager";
+import { TentativasDuplicidade } from "@/components/restaurante/TentativasDuplicidade";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, addDays, startOfMonth, endOfMonth } from "date-fns";
@@ -1127,6 +1128,13 @@ export const RestauranteModule = () => {
                   <span className="hidden sm:inline">Colaboradores UPA </span>
                   <span className="sm:hidden">Colab.</span>
                 </TabsTrigger>
+                {isAdmin && (
+                  <TabsTrigger value="duplicidades" className="flex items-center gap-2 flex-1 min-w-fit">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="hidden sm:inline">Duplicidades</span>
+                    <span className="sm:hidden">Duplic.</span>
+                  </TabsTrigger>
+                )}
               </TabsList>
 
               {/* Sub-tab: Quantitativo Diário */}
@@ -1455,6 +1463,13 @@ export const RestauranteModule = () => {
               <TabsContent value="colaboradores" className="mt-4">
                 <ColaboradoresManager />
               </TabsContent>
+
+              {/* Sub-tab: Tentativas de Duplicidade (apenas Admin) */}
+              {isAdmin && (
+                <TabsContent value="duplicidades" className="mt-4">
+                  <TentativasDuplicidade />
+                </TabsContent>
+              )}
             </Tabs>
           </TabsContent>}
       </Tabs>
