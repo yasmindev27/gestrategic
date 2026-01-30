@@ -606,50 +606,54 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
     // Reset text color
     doc.setTextColor(0, 0, 0);
 
-    // Seção de Valores Financeiros
-    const financeiroY = cardStartY + cardHeight + 8;
-    doc.setFontSize(11);
-    doc.setFont("helvetica", "bold");
-    doc.text("Resumo Financeiro do Periodo", 14, financeiroY);
+    // Seção de Valores Financeiros (apenas para admin)
+    let finalY = cardStartY + cardHeight + 8;
 
-    // Tabela de valores financeiros
-    const formatCurrency = (value: number) => 
-      new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+    if (isAdmin) {
+      const financeiroY = cardStartY + cardHeight + 8;
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "bold");
+      doc.text("Resumo Financeiro do Periodo", 14, financeiroY);
 
-    autoTable(doc, {
-      startY: financeiroY + 3,
-      head: [[
-        { content: "Tipo de Refeicao", styles: { halign: "center", fillColor: [59, 130, 246] as [number, number, number], textColor: 255 } },
-        { content: "Qtd Total", styles: { halign: "center", fillColor: [59, 130, 246] as [number, number, number], textColor: 255 } },
-        { content: "Valor Unitario", styles: { halign: "center", fillColor: [59, 130, 246] as [number, number, number], textColor: 255 } },
-        { content: "Valor Total", styles: { halign: "center", fillColor: [5, 150, 105] as [number, number, number], textColor: 255 } },
-      ]],
-      body: [
-        ["Cafe Litro", `${totaisGerais.cafeLitro.toFixed(1)} L`, formatCurrency(valoresRefeicoes.cafe_litro || 0), formatCurrency(valoresFinanceiros.cafeLitro)],
-        ["Café da Manhã", String(totaisGerais.cafe + totaisDietas.dietasCafe), formatCurrency(valoresRefeicoes.cafe || 0), formatCurrency(valoresFinanceiros.cafe)],
-        ["Almoco", String(totaisGerais.almoco + totaisDietas.dietasAlmoco), formatCurrency(valoresRefeicoes.almoco || 0), formatCurrency(valoresFinanceiros.almoco)],
-        ["Café da Tarde", String(totaisGerais.lanche + totaisDietas.dietasLanche), formatCurrency(valoresRefeicoes.lanche || 0), formatCurrency(valoresFinanceiros.lanche)],
-        ["Jantar", String(totaisGerais.jantar + totaisDietas.dietasJantar), formatCurrency(valoresRefeicoes.jantar || 0), formatCurrency(valoresFinanceiros.jantar)],
-      ],
-      foot: [[
-        { content: "TOTAL GERAL", colSpan: 3, styles: { halign: "right", fillColor: [209, 213, 219] as [number, number, number], fontStyle: "bold" } },
-        { content: formatCurrency(valoresFinanceiros.total), styles: { halign: "center", fillColor: [5, 150, 105] as [number, number, number], fontStyle: "bold", textColor: 255 } },
-      ]],
-      styles: { fontSize: 8, cellPadding: 2 },
-      headStyles: { fontSize: 8 },
-      footStyles: { fontSize: 9 },
-      columnStyles: {
-        0: { halign: "left" },
-        1: { halign: "center" },
-        2: { halign: "center" },
-        3: { halign: "center" },
-      },
-      tableWidth: 140,
-      margin: { left: 14 },
-    });
+      // Tabela de valores financeiros
+      const formatCurrency = (value: number) => 
+        new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
-    // Obter posição Y após a tabela financeira
-    const finalY = (doc as any).lastAutoTable.finalY + 8;
+      autoTable(doc, {
+        startY: financeiroY + 3,
+        head: [[
+          { content: "Tipo de Refeicao", styles: { halign: "center", fillColor: [59, 130, 246] as [number, number, number], textColor: 255 } },
+          { content: "Qtd Total", styles: { halign: "center", fillColor: [59, 130, 246] as [number, number, number], textColor: 255 } },
+          { content: "Valor Unitario", styles: { halign: "center", fillColor: [59, 130, 246] as [number, number, number], textColor: 255 } },
+          { content: "Valor Total", styles: { halign: "center", fillColor: [5, 150, 105] as [number, number, number], textColor: 255 } },
+        ]],
+        body: [
+          ["Cafe Litro", `${totaisGerais.cafeLitro.toFixed(1)} L`, formatCurrency(valoresRefeicoes.cafe_litro || 0), formatCurrency(valoresFinanceiros.cafeLitro)],
+          ["Café da Manhã", String(totaisGerais.cafe + totaisDietas.dietasCafe), formatCurrency(valoresRefeicoes.cafe || 0), formatCurrency(valoresFinanceiros.cafe)],
+          ["Almoco", String(totaisGerais.almoco + totaisDietas.dietasAlmoco), formatCurrency(valoresRefeicoes.almoco || 0), formatCurrency(valoresFinanceiros.almoco)],
+          ["Café da Tarde", String(totaisGerais.lanche + totaisDietas.dietasLanche), formatCurrency(valoresRefeicoes.lanche || 0), formatCurrency(valoresFinanceiros.lanche)],
+          ["Jantar", String(totaisGerais.jantar + totaisDietas.dietasJantar), formatCurrency(valoresRefeicoes.jantar || 0), formatCurrency(valoresFinanceiros.jantar)],
+        ],
+        foot: [[
+          { content: "TOTAL GERAL", colSpan: 3, styles: { halign: "right", fillColor: [209, 213, 219] as [number, number, number], fontStyle: "bold" } },
+          { content: formatCurrency(valoresFinanceiros.total), styles: { halign: "center", fillColor: [5, 150, 105] as [number, number, number], fontStyle: "bold", textColor: 255 } },
+        ]],
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fontSize: 8 },
+        footStyles: { fontSize: 9 },
+        columnStyles: {
+          0: { halign: "left" },
+          1: { halign: "center" },
+          2: { halign: "center" },
+          3: { halign: "center" },
+        },
+        tableWidth: 140,
+        margin: { left: 14 },
+      });
+
+      // Obter posição Y após a tabela financeira
+      finalY = (doc as any).lastAutoTable.finalY + 8;
+    }
 
     // Tabela principal com cores
     const tableBody = quantitativos.map(q => [
