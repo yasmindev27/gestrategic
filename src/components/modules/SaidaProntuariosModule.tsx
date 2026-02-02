@@ -519,19 +519,22 @@ export const SaidaProntuariosModule = () => {
       !searchTerm ||
       (s.paciente_nome && s.paciente_nome.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    // Date filter
+    // Date filter - now uses data_atendimento instead of created_at
     let matchesDate = true;
     if (dataInicio || dataFim) {
-      const recordDate = new Date(s.created_at);
-      if (dataInicio) {
-        const startDate = new Date(dataInicio);
-        startDate.setHours(0, 0, 0, 0);
-        matchesDate = matchesDate && recordDate >= startDate;
-      }
-      if (dataFim) {
-        const endDate = new Date(dataFim);
-        endDate.setHours(23, 59, 59, 999);
-        matchesDate = matchesDate && recordDate <= endDate;
+      if (s.data_atendimento) {
+        const recordDate = new Date(s.data_atendimento + "T12:00:00");
+        if (dataInicio) {
+          const startDate = new Date(dataInicio + "T00:00:00");
+          matchesDate = matchesDate && recordDate >= startDate;
+        }
+        if (dataFim) {
+          const endDate = new Date(dataFim + "T23:59:59");
+          matchesDate = matchesDate && recordDate <= endDate;
+        }
+      } else {
+        // If no data_atendimento, exclude from filtered results when date filter is active
+        matchesDate = false;
       }
     }
 
@@ -585,16 +588,18 @@ export const SaidaProntuariosModule = () => {
 
     let matchesDate = true;
     if (faltantesDataInicio || faltantesDataFim) {
-      const recordDate = new Date(s.created_at);
-      if (faltantesDataInicio) {
-        const startDate = new Date(faltantesDataInicio);
-        startDate.setHours(0, 0, 0, 0);
-        matchesDate = matchesDate && recordDate >= startDate;
-      }
-      if (faltantesDataFim) {
-        const endDate = new Date(faltantesDataFim);
-        endDate.setHours(23, 59, 59, 999);
-        matchesDate = matchesDate && recordDate <= endDate;
+      if (s.data_atendimento) {
+        const recordDate = new Date(s.data_atendimento + "T12:00:00");
+        if (faltantesDataInicio) {
+          const startDate = new Date(faltantesDataInicio + "T00:00:00");
+          matchesDate = matchesDate && recordDate >= startDate;
+        }
+        if (faltantesDataFim) {
+          const endDate = new Date(faltantesDataFim + "T23:59:59");
+          matchesDate = matchesDate && recordDate <= endDate;
+        }
+      } else {
+        matchesDate = false;
       }
     }
 
@@ -617,16 +622,18 @@ export const SaidaProntuariosModule = () => {
 
     let matchesDate = true;
     if (folhasDataInicio || folhasDataFim) {
-      const recordDate = new Date(s.created_at);
-      if (folhasDataInicio) {
-        const startDate = new Date(folhasDataInicio);
-        startDate.setHours(0, 0, 0, 0);
-        matchesDate = matchesDate && recordDate >= startDate;
-      }
-      if (folhasDataFim) {
-        const endDate = new Date(folhasDataFim);
-        endDate.setHours(23, 59, 59, 999);
-        matchesDate = matchesDate && recordDate <= endDate;
+      if (s.data_atendimento) {
+        const recordDate = new Date(s.data_atendimento + "T12:00:00");
+        if (folhasDataInicio) {
+          const startDate = new Date(folhasDataInicio + "T00:00:00");
+          matchesDate = matchesDate && recordDate >= startDate;
+        }
+        if (folhasDataFim) {
+          const endDate = new Date(folhasDataFim + "T23:59:59");
+          matchesDate = matchesDate && recordDate <= endDate;
+        }
+      } else {
+        matchesDate = false;
       }
     }
 

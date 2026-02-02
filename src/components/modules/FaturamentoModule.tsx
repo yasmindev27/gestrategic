@@ -403,8 +403,8 @@ export const FaturamentoModule = () => {
     );
   };
 
-  const isProntuarioAvaliado = (numeroProntuario: string) => {
-    return avaliacoes.some(a => a.numero_prontuario === numeroProntuario && a.is_finalizada);
+  const isProntuarioAvaliado = (saidaId: string) => {
+    return avaliacoes.some(a => a.saida_prontuario_id === saidaId && a.is_finalizada);
   };
 
   const getListaAtual = () => {
@@ -414,7 +414,7 @@ export const FaturamentoModule = () => {
       case "faltantes":
         return prontuariosFaltantes;
       case "avaliados":
-        return saidas.filter(s => isProntuarioAvaliado(s.numero_prontuario));
+        return saidas.filter(s => isProntuarioAvaliado(s.id));
       default:
         return saidas;
     }
@@ -424,8 +424,8 @@ export const FaturamentoModule = () => {
     s => (s.paciente_nome || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleViewAvaliacao = (numeroProntuario: string) => {
-    const avaliacao = avaliacoes.find(a => a.numero_prontuario === numeroProntuario && a.is_finalizada);
+  const handleViewAvaliacao = (saidaId: string) => {
+    const avaliacao = avaliacoes.find(a => a.saida_prontuario_id === saidaId && a.is_finalizada);
     if (avaliacao) {
       setSelectedAvaliacao(avaliacao);
       setViewDialogOpen(true);
@@ -610,7 +610,7 @@ export const FaturamentoModule = () => {
                           <Button 
                             size="sm" 
                             variant="outline"
-                            onClick={() => handleViewAvaliacao(saida.numero_prontuario)}
+                            onClick={() => handleViewAvaliacao(saida.id)}
                           >
                             <Eye className="h-4 w-4 mr-1" />
                             Visualizar
