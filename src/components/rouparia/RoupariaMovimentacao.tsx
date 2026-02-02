@@ -30,7 +30,9 @@ import {
   RotateCcw,
   Loader2,
   Package,
-  AlertTriangle
+  AlertTriangle,
+  User,
+  Zap
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -60,6 +62,8 @@ interface Movimentacao {
   setor_origem: string | null;
   observacao: string | null;
   registrado_por_nome: string;
+  responsavel_retirada: string | null;
+  responsavel_devolucao: string | null;
   created_at: string;
   rouparia_itens: {
     codigo_barras: string;
@@ -86,6 +90,14 @@ const TIPO_LABELS: Record<string, { label: string; color: string; icon: React.Re
   devolucao: { label: "Devolução", color: "bg-amber-500/10 text-amber-600 border-amber-200", icon: <RotateCcw className="w-4 h-4" /> },
 };
 
+// Mapeia o próximo tipo automático baseado no último movimento
+const PROXIMO_TIPO: Record<string, string> = {
+  entrada: "saida",
+  saida: "devolucao",
+  devolucao: "entrada",
+  descarte: "entrada",
+};
+
 export function RoupariaMovimentacao() {
   const { toast } = useToast();
   const barcodeInputRef = useRef<HTMLInputElement>(null);
@@ -94,11 +106,15 @@ export function RoupariaMovimentacao() {
   const [isSearching, setIsSearching] = useState(false);
   const [codigoBarras, setCodigoBarras] = useState("");
   const [tipoMovimentacao, setTipoMovimentacao] = useState<string>("entrada");
+  const [modoAutomatico, setModoAutomatico] = useState(true);
   const [quantidade, setQuantidade] = useState(1);
   const [setorDestino, setSetorDestino] = useState("");
   const [setorOrigem, setSetorOrigem] = useState("");
   const [observacao, setObservacao] = useState("");
+  const [responsavelRetirada, setResponsavelRetirada] = useState("");
+  const [responsavelDevolucao, setResponsavelDevolucao] = useState("");
   const [itemEncontrado, setItemEncontrado] = useState<Item | null>(null);
+  const [ultimaMovimentacao, setUltimaMovimentacao] = useState<string | null>(null);
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
   const [userName, setUserName] = useState("");
 
@@ -145,16 +161,19 @@ export function RoupariaMovimentacao() {
     fetchMovimentacoes();
   }, [fetchMovimentacoes]);
 
-  // Buscar item quando código de barras mudar
+  // Buscar item e última movimentação quando código de barras mudar
   useEffect(() => {
     const searchItem = async () => {
       if (!debouncedCodigo || debouncedCodigo.length < 3) {
         setItemEncontrado(null);
+        setUltimaMovimentacao(null);
         return;
       }
 
       setIsSearching(true);
-      const { data, error } = await supabase
+      
+      // Buscar item
+      const { data: itemData, error: itemError } = await supabase
         .from("rouparia_itens")
         .select(`
           *,
@@ -164,17 +183,37 @@ export function RoupariaMovimentacao() {
         .eq("ativo", true)
         .single();
 
-      setIsSearching(false);
+      if (!itemError && itemData) {
+        setItemEncontrado(itemData as unknown as Item);
+        
+        // Buscar última movimentação deste item para sugerir o tipo automaticamente
+        const { data: ultimaMov } = await supabase
+          .from("rouparia_movimentacoes")
+          .select("tipo_movimentacao")
+          .eq("item_id", itemData.id)
+          .order("created_at", { ascending: false })
+          .limit(1)
+          .single();
 
-      if (!error && data) {
-        setItemEncontrado(data as unknown as Item);
+        if (ultimaMov && modoAutomatico) {
+          const ultimoTipo = ultimaMov.tipo_movimentacao;
+          setUltimaMovimentacao(ultimoTipo);
+          // Sugerir o próximo tipo baseado no último
+          const proximoTipo = PROXIMO_TIPO[ultimoTipo] || "entrada";
+          setTipoMovimentacao(proximoTipo);
+        } else {
+          setUltimaMovimentacao(null);
+        }
       } else {
         setItemEncontrado(null);
+        setUltimaMovimentacao(null);
       }
+
+      setIsSearching(false);
     };
 
     searchItem();
-  }, [debouncedCodigo]);
+  }, [debouncedCodigo, modoAutomatico]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -220,6 +259,27 @@ export function RoupariaMovimentacao() {
       return;
     }
 
+    // Validar campos obrigatórios
+    if (tipoMovimentacao === "saida" && !responsavelRetirada.trim()) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Informe quem está retirando o item",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
+    if (tipoMovimentacao === "devolucao" && !responsavelDevolucao.trim()) {
+      toast({
+        title: "Campo obrigatório",
+        description: "Informe quem está devolvendo o item",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return;
+    }
+
     const { error } = await supabase
       .from("rouparia_movimentacoes")
       .insert({
@@ -233,6 +293,8 @@ export function RoupariaMovimentacao() {
         observacao: observacao || null,
         registrado_por: user.id,
         registrado_por_nome: userName,
+        responsavel_retirada: tipoMovimentacao === "saida" ? responsavelRetirada.trim() : null,
+        responsavel_devolucao: tipoMovimentacao === "devolucao" ? responsavelDevolucao.trim() : null,
       });
 
     setIsLoading(false);
@@ -257,7 +319,10 @@ export function RoupariaMovimentacao() {
     setSetorDestino("");
     setSetorOrigem("");
     setObservacao("");
+    setResponsavelRetirada("");
+    setResponsavelDevolucao("");
     setItemEncontrado(null);
+    setUltimaMovimentacao(null);
     fetchMovimentacoes();
     
     // Focar no campo de código de barras
@@ -276,21 +341,55 @@ export function RoupariaMovimentacao() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Modo Automático Toggle */}
+            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
+              <div className="flex items-center gap-2">
+                <Zap className={`h-4 w-4 ${modoAutomatico ? "text-primary" : "text-muted-foreground"}`} />
+                <div>
+                  <p className="text-sm font-medium">Modo Inteligente</p>
+                  <p className="text-xs text-muted-foreground">
+                    Detecta automaticamente entrada/saída/devolução
+                  </p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant={modoAutomatico ? "default" : "outline"}
+                size="sm"
+                onClick={() => setModoAutomatico(!modoAutomatico)}
+              >
+                {modoAutomatico ? "Ativo" : "Inativo"}
+              </Button>
+            </div>
+
             {/* Tipo de Movimentação */}
-            <div className="grid grid-cols-4 gap-2">
-              {Object.entries(TIPO_LABELS).map(([key, { label, icon }]) => (
-                <Button
-                  key={key}
-                  type="button"
-                  variant={tipoMovimentacao === key ? "default" : "outline"}
-                  size="sm"
-                  className="flex items-center gap-1"
-                  onClick={() => setTipoMovimentacao(key)}
-                >
-                  {icon}
-                  <span className="hidden sm:inline">{label}</span>
-                </Button>
-              ))}
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2">
+                Tipo de Movimentação
+                {ultimaMovimentacao && modoAutomatico && (
+                  <Badge variant="outline" className="text-xs">
+                    Última: {TIPO_LABELS[ultimaMovimentacao]?.label}
+                  </Badge>
+                )}
+              </Label>
+              <div className="grid grid-cols-4 gap-2">
+                {Object.entries(TIPO_LABELS).map(([key, { label, icon }]) => (
+                  <Button
+                    key={key}
+                    type="button"
+                    variant={tipoMovimentacao === key ? "default" : "outline"}
+                    size="sm"
+                    className="flex items-center gap-1"
+                    onClick={() => {
+                      setTipoMovimentacao(key);
+                      if (modoAutomatico) setModoAutomatico(false);
+                    }}
+                  >
+                    {icon}
+                    <span className="hidden sm:inline">{label}</span>
+                  </Button>
+                ))}
+              </div>
             </div>
 
             {/* Código de Barras */}
@@ -355,42 +454,72 @@ export function RoupariaMovimentacao() {
               />
             </div>
 
-            {/* Setor Destino (para saída) */}
+            {/* Setor Destino e Responsável pela Retirada (para saída) */}
             {tipoMovimentacao === "saida" && (
-              <div className="space-y-2">
-                <Label htmlFor="setor-destino">Setor Destino</Label>
-                <Select value={setorDestino} onValueChange={setSetorDestino}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o setor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SETORES.map((setor) => (
-                      <SelectItem key={setor} value={setor}>
-                        {setor}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="responsavel-retirada" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Quem está retirando? *
+                  </Label>
+                  <Input
+                    id="responsavel-retirada"
+                    value={responsavelRetirada}
+                    onChange={(e) => setResponsavelRetirada(e.target.value)}
+                    placeholder="Nome de quem está retirando o item"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="setor-destino">Setor Destino</Label>
+                  <Select value={setorDestino} onValueChange={setSetorDestino}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o setor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SETORES.map((setor) => (
+                        <SelectItem key={setor} value={setor}>
+                          {setor}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
             )}
 
-            {/* Setor Origem (para devolução) */}
+            {/* Setor Origem e Responsável pela Devolução (para devolução) */}
             {tipoMovimentacao === "devolucao" && (
-              <div className="space-y-2">
-                <Label htmlFor="setor-origem">Setor de Origem</Label>
-                <Select value={setorOrigem} onValueChange={setSetorOrigem}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o setor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SETORES.map((setor) => (
-                      <SelectItem key={setor} value={setor}>
-                        {setor}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <>
+                <div className="space-y-2">
+                  <Label htmlFor="responsavel-devolucao" className="flex items-center gap-2">
+                    <User className="h-4 w-4" />
+                    Quem está devolvendo? *
+                  </Label>
+                  <Input
+                    id="responsavel-devolucao"
+                    value={responsavelDevolucao}
+                    onChange={(e) => setResponsavelDevolucao(e.target.value)}
+                    placeholder="Nome de quem está devolvendo o item"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="setor-origem">Setor de Origem</Label>
+                  <Select value={setorOrigem} onValueChange={setSetorOrigem}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o setor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {SETORES.map((setor) => (
+                        <SelectItem key={setor} value={setor}>
+                          {setor}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </>
             )}
 
             {/* Observação */}
@@ -436,19 +565,21 @@ export function RoupariaMovimentacao() {
                   <TableHead>Item</TableHead>
                   <TableHead>Tipo</TableHead>
                   <TableHead className="text-center">Qtd</TableHead>
+                  <TableHead>Responsável</TableHead>
                   <TableHead>Hora</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {movimentacoes.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground py-8">
+                    <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                       Nenhuma movimentação registrada
                     </TableCell>
                   </TableRow>
                 ) : (
                   movimentacoes.map((mov) => {
                     const tipoInfo = TIPO_LABELS[mov.tipo_movimentacao];
+                    const responsavel = mov.responsavel_retirada || mov.responsavel_devolucao || mov.registrado_por_nome;
                     return (
                       <TableRow key={mov.id}>
                         <TableCell>
@@ -469,6 +600,16 @@ export function RoupariaMovimentacao() {
                         </TableCell>
                         <TableCell className="text-center font-medium">
                           {mov.quantidade}
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <p className="font-medium">{responsavel}</p>
+                            {(mov.responsavel_retirada || mov.responsavel_devolucao) && (
+                              <p className="text-xs text-muted-foreground">
+                                por {mov.registrado_por_nome}
+                              </p>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-sm text-muted-foreground">
                           {format(new Date(mov.created_at), "HH:mm", { locale: ptBR })}

@@ -1630,6 +1630,8 @@ export type Database = {
           quantidade_nova: number
           registrado_por: string
           registrado_por_nome: string
+          responsavel_devolucao: string | null
+          responsavel_retirada: string | null
           setor_destino: string | null
           setor_origem: string | null
           tipo_movimentacao: string
@@ -1644,6 +1646,8 @@ export type Database = {
           quantidade_nova: number
           registrado_por: string
           registrado_por_nome: string
+          responsavel_devolucao?: string | null
+          responsavel_retirada?: string | null
           setor_destino?: string | null
           setor_origem?: string | null
           tipo_movimentacao: string
@@ -1658,6 +1662,8 @@ export type Database = {
           quantidade_nova?: number
           registrado_por?: string
           registrado_por_nome?: string
+          responsavel_devolucao?: string | null
+          responsavel_retirada?: string | null
           setor_destino?: string | null
           setor_origem?: string | null
           tipo_movimentacao?: string
