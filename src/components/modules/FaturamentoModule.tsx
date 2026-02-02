@@ -70,6 +70,7 @@ interface SaidaProntuario {
 
 interface Avaliacao {
   id: string;
+  saida_prontuario_id: string | null;
   numero_prontuario: string | null;
   paciente_nome: string | null;
   unidade_setor: string | null;
@@ -210,13 +211,13 @@ export const FaturamentoModule = () => {
       setSaidas(saidasData || []);
       setAvaliacoes(avaliacoesData || []);
       
-      // Filter faltantes - those without completed evaluation
-      const avaliadosIds = (avaliacoesData || [])
+      // Filter faltantes - those without completed evaluation (using saida_prontuario_id)
+      const avaliadosSaidaIds = (avaliacoesData || [])
         .filter(a => a.is_finalizada)
-        .map(a => a.numero_prontuario);
+        .map(a => a.saida_prontuario_id);
       
       setProntuariosFaltantes(
-        (saidasData || []).filter(s => !avaliadosIds.includes(s.numero_prontuario))
+        (saidasData || []).filter(s => !avaliadosSaidaIds.includes(s.id))
       );
     } catch (error) {
       console.error("Error fetching data:", error);
@@ -576,7 +577,7 @@ export const FaturamentoModule = () => {
               </TableHeader>
               <TableBody>
                 {filteredSaidas.map((saida) => {
-                  const avaliacao = avaliacoes.find(a => a.numero_prontuario === saida.numero_prontuario && a.is_finalizada);
+                  const avaliacao = avaliacoes.find(a => a.saida_prontuario_id === saida.id && a.is_finalizada);
                   return (
                     <TableRow key={saida.id}>
                       <TableCell className="font-medium">{saida.paciente_nome || "-"}</TableCell>
