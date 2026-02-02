@@ -960,6 +960,57 @@ export type Database = {
         }
         Relationships: []
       }
+      epis_seguranca: {
+        Row: {
+          ca_numero: string | null
+          created_at: string
+          data_entrega: string
+          data_validade: string | null
+          id: string
+          observacao: string | null
+          quantidade: number
+          registrado_por: string
+          registrado_por_nome: string
+          status: string
+          tipo_epi: string
+          updated_at: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          ca_numero?: string | null
+          created_at?: string
+          data_entrega: string
+          data_validade?: string | null
+          id?: string
+          observacao?: string | null
+          quantidade?: number
+          registrado_por: string
+          registrado_por_nome: string
+          status?: string
+          tipo_epi: string
+          updated_at?: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Update: {
+          ca_numero?: string | null
+          created_at?: string
+          data_entrega?: string
+          data_validade?: string | null
+          id?: string
+          observacao?: string | null
+          quantidade?: number
+          registrado_por?: string
+          registrado_por_nome?: string
+          status?: string
+          tipo_epi?: string
+          updated_at?: string
+          usuario_id?: string
+          usuario_nome?: string
+        }
+        Relationships: []
+      }
       escalas_laboratorio: {
         Row: {
           ano: number
@@ -1287,6 +1338,62 @@ export type Database = {
           },
         ]
       }
+      notificacoes_seguranca: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          prioridade: string
+          resolvido_em: string | null
+          resolvido_por: string | null
+          resolvido_por_nome: string | null
+          responsavel_notificado: string | null
+          ronda_id: string | null
+          setor: string
+          status: string
+          tipo_notificacao: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          id?: string
+          prioridade?: string
+          resolvido_em?: string | null
+          resolvido_por?: string | null
+          resolvido_por_nome?: string | null
+          responsavel_notificado?: string | null
+          ronda_id?: string | null
+          setor: string
+          status?: string
+          tipo_notificacao: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          prioridade?: string
+          resolvido_em?: string | null
+          resolvido_por?: string | null
+          resolvido_por_nome?: string | null
+          responsavel_notificado?: string | null
+          ronda_id?: string | null
+          setor?: string
+          status?: string
+          tipo_notificacao?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificacoes_seguranca_ronda_id_fkey"
+            columns: ["ronda_id"]
+            isOneToOne: false
+            referencedRelation: "rondas_seguranca"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       produtos: {
         Row: {
           ativo: boolean | null
@@ -1545,6 +1652,48 @@ export type Database = {
           tipo?: string
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      rondas_seguranca: {
+        Row: {
+          checklist: Json
+          created_at: string
+          data_ronda: string
+          hora_ronda: string
+          id: string
+          observacoes: string | null
+          responsavel_id: string
+          responsavel_nome: string
+          setor: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          checklist?: Json
+          created_at?: string
+          data_ronda?: string
+          hora_ronda?: string
+          id?: string
+          observacoes?: string | null
+          responsavel_id: string
+          responsavel_nome: string
+          setor: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          checklist?: Json
+          created_at?: string
+          data_ronda?: string
+          hora_ronda?: string
+          id?: string
+          observacoes?: string | null
+          responsavel_id?: string
+          responsavel_nome?: string
+          setor?: string
+          status?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1922,6 +2071,57 @@ export type Database = {
           },
         ]
       }
+      uniformes_seguranca: {
+        Row: {
+          created_at: string
+          data_devolucao: string | null
+          data_entrega: string
+          id: string
+          observacao: string | null
+          quantidade: number
+          registrado_por: string
+          registrado_por_nome: string
+          status: string
+          tamanho: string
+          tipo_uniforme: string
+          updated_at: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          created_at?: string
+          data_devolucao?: string | null
+          data_entrega: string
+          id?: string
+          observacao?: string | null
+          quantidade?: number
+          registrado_por: string
+          registrado_por_nome: string
+          status?: string
+          tamanho: string
+          tipo_uniforme: string
+          updated_at?: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Update: {
+          created_at?: string
+          data_devolucao?: string | null
+          data_entrega?: string
+          id?: string
+          observacao?: string | null
+          quantidade?: number
+          registrado_por?: string
+          registrado_por_nome?: string
+          status?: string
+          tamanho?: string
+          tipo_uniforme?: string
+          updated_at?: string
+          usuario_id?: string
+          usuario_nome?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
@@ -1937,6 +2137,60 @@ export type Database = {
           id?: string
           role?: Database["public"]["Enums"]["app_role"]
           user_id?: string
+        }
+        Relationships: []
+      }
+      vacinas_seguranca: {
+        Row: {
+          created_at: string
+          data_aplicacao: string
+          data_proxima_dose: string | null
+          dose: string | null
+          id: string
+          local_aplicacao: string | null
+          lote: string | null
+          observacao: string | null
+          registrado_por: string
+          registrado_por_nome: string
+          status: string
+          tipo_vacina: string
+          updated_at: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          created_at?: string
+          data_aplicacao: string
+          data_proxima_dose?: string | null
+          dose?: string | null
+          id?: string
+          local_aplicacao?: string | null
+          lote?: string | null
+          observacao?: string | null
+          registrado_por: string
+          registrado_por_nome: string
+          status?: string
+          tipo_vacina: string
+          updated_at?: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Update: {
+          created_at?: string
+          data_aplicacao?: string
+          data_proxima_dose?: string | null
+          dose?: string | null
+          id?: string
+          local_aplicacao?: string | null
+          lote?: string | null
+          observacao?: string | null
+          registrado_por?: string
+          registrado_por_nome?: string
+          status?: string
+          tipo_vacina?: string
+          updated_at?: string
+          usuario_id?: string
+          usuario_nome?: string
         }
         Relationships: []
       }

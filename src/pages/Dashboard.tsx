@@ -21,6 +21,7 @@ import { RecepcaoModule } from "@/components/modules/RecepcaoModule";
 import { RHDPModule } from "@/components/modules/RHDPModule";
 import { ChatModule } from "@/components/modules/ChatModule";
 import { RoupariaModule } from "@/components/modules/RoupariaModule";
+import { SegurancaTrabalhoModule } from "@/components/modules/SegurancaTrabalhoModule";
 import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -132,6 +133,9 @@ const Dashboard = () => {
 
           {/* Módulo Rouparia */}
           {activeSection === "rouparia" && <RoupariaModule />}
+
+          {/* Módulo Segurança do Trabalho */}
+          {activeSection === "seguranca-trabalho" && <SegurancaTrabalhoModule />}
 
           {/* Chat Corporativo */}
           {activeSection === "chat" && <ChatModule />}
