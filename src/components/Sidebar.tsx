@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Users, Settings, HelpCircle, Activity, LogOut, ChevronLeft, ChevronRight, FileOutput, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, Ticket, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog, MessageSquare, Shirt, HardHat } from "lucide-react";
+import { LayoutDashboard, Users, Settings, HelpCircle, Activity, LogOut, ChevronLeft, ChevronRight, FileOutput, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, Ticket, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog, MessageSquare, Shirt, HardHat, Heart } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -110,6 +110,10 @@ const Sidebar = ({
         icon: HardHat,
         label: "Seg. Trabalho",
         id: "seguranca-trabalho"
+      }, {
+        icon: Heart,
+        label: "Assist. Social",
+        id: "assistencia-social"
       }, {
         icon: Users,
         label: "Equipe",
