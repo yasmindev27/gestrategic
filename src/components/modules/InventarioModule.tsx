@@ -41,9 +41,7 @@ import {
   Package, 
   Plus, 
   Minus, 
-  Search,
   AlertCircle,
-  Loader2,
   ArrowUpCircle,
   ArrowDownCircle,
   BarChart3,
@@ -52,6 +50,11 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
+import { StatCard } from "@/components/ui/stat-card";
+import { SearchInput } from "@/components/ui/search-input";
+import { LoadingState, LoadingSpinner } from "@/components/ui/loading-state";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface InventarioModuleProps {
   setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'laboratorio' | 'nir';
@@ -321,11 +324,7 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
   ).length;
 
   if (isLoadingRole) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
+    return <LoadingState message="Carregando permissões..." />;
   }
 
   if (!hasAccess) {
@@ -343,58 +342,33 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Inventário - {setorLabels[setor]}</h2>
-          <p className="text-muted-foreground">Controle de estoque e movimentações</p>
-        </div>
-        <Button onClick={() => setAddProductDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Produto
-        </Button>
-      </div>
+      <SectionHeader 
+        title={`Inventário - ${setorLabels[setor]}`}
+        description="Controle de estoque e movimentações"
+      >
+        <ActionButton type="add" label="Novo Produto" onClick={() => setAddProductDialog(true)} />
+      </SectionHeader>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <Package className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{totalProdutos}</p>
-                <p className="text-sm text-muted-foreground">Produtos cadastrados</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-yellow-500/10 rounded-lg">
-                <AlertCircle className="h-6 w-6 text-yellow-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{produtosBaixoEstoque}</p>
-                <p className="text-sm text-muted-foreground">Estoque baixo</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-500/10 rounded-lg">
-                <History className="h-6 w-6 text-green-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{movimentacoes.length}</p>
-                <p className="text-sm text-muted-foreground">Movimentações recentes</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Produtos cadastrados"
+          value={totalProdutos}
+          icon={Package}
+          variant="primary"
+        />
+        <StatCard
+          title="Estoque baixo"
+          value={produtosBaixoEstoque}
+          icon={AlertCircle}
+          variant="warning"
+        />
+        <StatCard
+          title="Movimentações recentes"
+          value={movimentacoes.length}
+          icon={History}
+          variant="success"
+        />
       </div>
 
       <Tabs defaultValue="produtos">
@@ -416,15 +390,11 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
         <TabsContent value="produtos" className="space-y-4 mt-4">
           <Card>
             <CardContent className="pt-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar por nome ou código..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
+              <SearchInput
+                value={searchTerm}
+                onChange={setSearchTerm}
+                placeholder="Buscar por nome ou código..."
+              />
             </CardContent>
           </Card>
 
@@ -434,13 +404,14 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
             </CardHeader>
             <CardContent>
               {isLoading ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div>
+                <LoadingState message="Carregando produtos..." />
               ) : filteredProdutos.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Nenhum produto encontrado.
-                </div>
+                <EmptyState
+                  icon={Package}
+                  title="Nenhum produto encontrado"
+                  description="Cadastre produtos para começar a gerenciar o estoque"
+                  action={{ label: "Novo Produto", onClick: () => setAddProductDialog(true) }}
+                />
               ) : (
                 <Table>
                   <TableHeader>
@@ -698,7 +669,7 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
               Cancelar
             </Button>
             <Button onClick={handleAddProduct} disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSubmitting && <LoadingSpinner className="mr-2" />}
               Cadastrar
             </Button>
           </DialogFooter>
@@ -754,7 +725,7 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
               disabled={isSubmitting}
               variant={movimentacaoTipo === 'entrada' ? 'default' : 'destructive'}
             >
-              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              {isSubmitting && <LoadingSpinner className="mr-2" />}
               {movimentacaoTipo === 'entrada' ? (
                 <><ArrowUpCircle className="h-4 w-4 mr-2" />Registrar Entrada</>
               ) : (

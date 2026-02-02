@@ -40,10 +40,6 @@ import {
 } from "@/components/ui/alert-dialog";
 import {
   UtensilsCrossed,
-  Loader2,
-  Filter,
-  FileSpreadsheet,
-  FileDown,
   Coffee,
   Sun,
   Cookie,
@@ -52,8 +48,6 @@ import {
   User,
   Users,
   ExternalLink,
-  Pencil,
-  Trash2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth } from "date-fns";
@@ -61,6 +55,14 @@ import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
+import { ExportDropdown } from "@/components/ui/export-dropdown";
+import { StatCard } from "@/components/ui/stat-card";
+import { DateRangeFilter } from "@/components/ui/date-range-filter";
+import { SearchInput } from "@/components/ui/search-input";
+import { LoadingState, LoadingSpinner } from "@/components/ui/loading-state";
+import { EmptyState } from "@/components/ui/empty-state";
+import { TableActions } from "@/components/ui/action-buttons";
+import { Loader2, Pencil, Trash2 } from "lucide-react";
 
 interface RegistroRefeicao {
   id: string;
@@ -347,27 +349,13 @@ export const RegistrosRefeicoes = ({ isAdmin = false }: RegistrosRefeicoesProps)
       <Card>
         <CardContent className="pt-4">
           <div className="flex flex-wrap items-end gap-4">
-            <div className="flex items-center gap-2">
-              <Filter className="h-4 w-4 text-muted-foreground" />
-              <div className="space-y-1">
-                <Label className="text-xs">Data Início</Label>
-                <Input
-                  type="date"
-                  value={dataInicio}
-                  onChange={(e) => setDataInicio(e.target.value)}
-                  className="w-[140px]"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label className="text-xs">Data Fim</Label>
-                <Input
-                  type="date"
-                  value={dataFim}
-                  onChange={(e) => setDataFim(e.target.value)}
-                  className="w-[140px]"
-                />
-              </div>
-            </div>
+            <DateRangeFilter
+              startDate={dataInicio}
+              endDate={dataFim}
+              onStartDateChange={setDataInicio}
+              onEndDateChange={setDataFim}
+              showPresets={false}
+            />
             
             <div className="space-y-1">
               <Label className="text-xs">Tipo de Refeição</Label>
@@ -402,24 +390,19 @@ export const RegistrosRefeicoes = ({ isAdmin = false }: RegistrosRefeicoesProps)
             
             <div className="space-y-1">
               <Label className="text-xs">Buscar Nome</Label>
-              <Input
-                type="text"
-                placeholder="Digite o nome..."
+              <SearchInput
                 value={buscaNome}
-                onChange={(e) => setBuscaNome(e.target.value)}
+                onChange={setBuscaNome}
+                placeholder="Digite o nome..."
                 className="w-[180px]"
               />
             </div>
             
-            <div className="flex gap-2 ml-auto">
-              <Button variant="outline" size="sm" onClick={exportToExcel}>
-                <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Excel
-              </Button>
-              <Button variant="outline" size="sm" onClick={exportToPDF}>
-                <FileDown className="h-4 w-4 mr-2" />
-                PDF
-              </Button>
+            <div className="ml-auto">
+              <ExportDropdown
+                onExportExcel={exportToExcel}
+                onExportPDF={exportToPDF}
+              />
             </div>
           </div>
         </CardContent>
@@ -427,43 +410,25 @@ export const RegistrosRefeicoes = ({ isAdmin = false }: RegistrosRefeicoesProps)
 
       {/* KPIs */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardDescription>Total de Registros</CardDescription>
-            <CardTitle className="text-3xl">{stats.total}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">No período selecionado</p>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-blue-500">
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-1">
-              <User className="h-4 w-4 text-blue-500" />
-              Colaboradores
-            </CardDescription>
-            <CardTitle className="text-3xl text-blue-600">{stats.colaboradores}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
-              {stats.total > 0 ? ((stats.colaboradores / stats.total) * 100).toFixed(1) : 0}% do total
-            </p>
-          </CardContent>
-        </Card>
-        <Card className="border-l-4 border-l-purple-500">
-          <CardHeader className="pb-2">
-            <CardDescription className="flex items-center gap-1">
-              <Users className="h-4 w-4 text-purple-500" />
-              Visitantes
-            </CardDescription>
-            <CardTitle className="text-3xl text-purple-600">{stats.visitantes}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">
-              {stats.total > 0 ? ((stats.visitantes / stats.total) * 100).toFixed(1) : 0}% do total
-            </p>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total de Registros"
+          value={stats.total}
+          description="No período selecionado"
+        />
+        <StatCard
+          title="Colaboradores"
+          value={stats.colaboradores}
+          icon={User}
+          variant="info"
+          description={`${stats.total > 0 ? ((stats.colaboradores / stats.total) * 100).toFixed(1) : 0}% do total`}
+        />
+        <StatCard
+          title="Visitantes"
+          value={stats.visitantes}
+          icon={Users}
+          variant="primary"
+          description={`${stats.total > 0 ? ((stats.visitantes / stats.total) * 100).toFixed(1) : 0}% do total`}
+        />
         <Card>
           <CardHeader className="pb-2">
             <CardDescription>Por Refeição</CardDescription>
