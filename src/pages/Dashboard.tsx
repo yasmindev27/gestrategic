@@ -23,6 +23,7 @@ import { ChatModule } from "@/components/modules/ChatModule";
 import { RoupariaModule } from "@/components/modules/RoupariaModule";
 import { SegurancaTrabalhoModule } from "@/components/modules/SegurancaTrabalhoModule";
 import { AssistenciaSocialModule } from "@/components/modules/AssistenciaSocialModule";
+import { QualidadeModule } from "@/components/modules/QualidadeModule";
 import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -140,6 +141,9 @@ const Dashboard = () => {
 
           {/* Módulo Assistência Social */}
           {activeSection === "assistencia-social" && <AssistenciaSocialModule />}
+
+          {/* Módulo Qualidade/NSP */}
+          {activeSection === "qualidade" && <QualidadeModule />}
 
           {/* Chat Corporativo */}
           {activeSection === "chat" && <ChatModule />}
