@@ -138,6 +138,9 @@ export function RoupariaMovimentacao() {
           .single();
         if (profile) {
           setUserName(profile.full_name);
+          // Pré-selecionar o usuário logado como responsável
+          setResponsavelRetirada(profile.full_name);
+          setResponsavelDevolucao(profile.full_name);
         }
       }
 
