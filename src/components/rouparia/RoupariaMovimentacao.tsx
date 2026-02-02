@@ -52,6 +52,11 @@ interface Item {
   rouparia_categorias: Categoria;
 }
 
+interface Usuario {
+  user_id: string;
+  full_name: string;
+}
+
 interface Movimentacao {
   id: string;
   tipo_movimentacao: string;
@@ -117,12 +122,13 @@ export function RoupariaMovimentacao() {
   const [ultimaMovimentacao, setUltimaMovimentacao] = useState<string | null>(null);
   const [movimentacoes, setMovimentacoes] = useState<Movimentacao[]>([]);
   const [userName, setUserName] = useState("");
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
 
   const debouncedCodigo = useDebounce(codigoBarras, 300);
 
-  // Buscar nome do usuário
+  // Buscar nome do usuário e lista de usuários
   useEffect(() => {
-    const fetchUserName = async () => {
+    const fetchData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         const { data: profile } = await supabase
@@ -134,8 +140,18 @@ export function RoupariaMovimentacao() {
           setUserName(profile.full_name);
         }
       }
+
+      // Buscar todos os usuários para o seletor
+      const { data: allProfiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .order("full_name");
+      
+      if (allProfiles) {
+        setUsuarios(allProfiles);
+      }
     };
-    fetchUserName();
+    fetchData();
   }, []);
 
   // Buscar movimentações recentes
@@ -462,13 +478,18 @@ export function RoupariaMovimentacao() {
                     <User className="h-4 w-4" />
                     Quem está retirando? *
                   </Label>
-                  <Input
-                    id="responsavel-retirada"
-                    value={responsavelRetirada}
-                    onChange={(e) => setResponsavelRetirada(e.target.value)}
-                    placeholder="Nome de quem está retirando o item"
-                    required
-                  />
+                  <Select value={responsavelRetirada} onValueChange={setResponsavelRetirada}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o usuário" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {usuarios.map((usuario) => (
+                        <SelectItem key={usuario.user_id} value={usuario.full_name}>
+                          {usuario.full_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="setor-destino">Setor Destino</Label>
@@ -496,13 +517,18 @@ export function RoupariaMovimentacao() {
                     <User className="h-4 w-4" />
                     Quem está devolvendo? *
                   </Label>
-                  <Input
-                    id="responsavel-devolucao"
-                    value={responsavelDevolucao}
-                    onChange={(e) => setResponsavelDevolucao(e.target.value)}
-                    placeholder="Nome de quem está devolvendo o item"
-                    required
-                  />
+                  <Select value={responsavelDevolucao} onValueChange={setResponsavelDevolucao}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o usuário" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {usuarios.map((usuario) => (
+                        <SelectItem key={usuario.user_id} value={usuario.full_name}>
+                          {usuario.full_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="setor-origem">Setor de Origem</Label>
