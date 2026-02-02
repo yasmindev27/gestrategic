@@ -10,8 +10,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, HardHat, Trash2, Edit, AlertTriangle } from "lucide-react";
+import { HardHat, AlertTriangle } from "lucide-react";
 import { format, differenceInDays } from "date-fns";
+import { ActionButton, TableActions } from "@/components/ui/action-buttons";
+import { LoadingState } from "@/components/ui/loading-state";
+import { EmptyState } from "@/components/ui/empty-state";
+import { StatusBadge, mapStatusToType, getStatusLabel } from "@/components/ui/status-badge";
 
 interface EPI {
   id: string;
@@ -223,29 +227,17 @@ export function EPIsControl() {
   };
 
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      em_uso: "default",
-      devolvido: "secondary",
-      vencido: "destructive",
-      danificado: "outline"
-    };
-    const labels: Record<string, string> = {
-      em_uso: "Em Uso",
-      devolvido: "Devolvido",
-      vencido: "Vencido",
-      danificado: "Danificado"
-    };
-    return <Badge variant={variants[status] || "default"}>{labels[status] || status}</Badge>;
+    return <StatusBadge status={mapStatusToType(status)} label={getStatusLabel(status)} showIcon={false} />;
   };
 
   const getValidadeBadge = (dataValidade: string | null) => {
     if (!dataValidade) return null;
     const dias = differenceInDays(new Date(dataValidade), new Date());
     if (dias < 0) {
-      return <Badge variant="destructive" className="ml-2">Vencido</Badge>;
+      return <StatusBadge status="error" label="Vencido" className="ml-2" />;
     }
     if (dias <= 30) {
-      return <Badge variant="outline" className="ml-2 border-yellow-500 text-yellow-600">
+      return <Badge variant="outline" className="ml-2 border-warning text-warning">
         <AlertTriangle className="h-3 w-3 mr-1" />
         {dias}d
       </Badge>;
@@ -254,7 +246,7 @@ export function EPIsControl() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center p-8">Carregando...</div>;
+    return <LoadingState message="Carregando EPIs..." />;
   }
 
   return (
@@ -269,10 +261,7 @@ export function EPIsControl() {
           if (!open) resetForm();
         }}>
           <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Registro
-            </Button>
+            <ActionButton type="add" label="Novo Registro" size="sm" />
           </DialogTrigger>
           <DialogContent className="max-w-lg">
             <DialogHeader>
@@ -399,9 +388,11 @@ export function EPIsControl() {
       </CardHeader>
       <CardContent>
         {epis.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            Nenhum EPI registrado.
-          </div>
+          <EmptyState
+            icon={HardHat}
+            title="Nenhum EPI registrado"
+            description="Registre a entrega de EPIs aos colaboradores"
+          />
         ) : (
           <div className="overflow-x-auto">
             <Table>
@@ -431,14 +422,10 @@ export function EPIsControl() {
                     </TableCell>
                     <TableCell>{getStatusBadge(epi.status)}</TableCell>
                     <TableCell>
-                      <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => handleEdit(epi)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={() => handleDelete(epi.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
+                      <TableActions
+                        onEdit={() => handleEdit(epi)}
+                        onDelete={() => handleDelete(epi.id)}
+                      />
                     </TableCell>
                   </TableRow>
                 ))}

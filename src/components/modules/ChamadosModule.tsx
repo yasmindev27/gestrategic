@@ -40,23 +40,27 @@ import {
 import { 
   Ticket, 
   Plus, 
-  Search,
-  Loader2,
   BarChart3,
   Clock,
   CheckCircle2,
   AlertTriangle,
-  XCircle,
-  MessageSquare,
   Eye,
   LayoutDashboard,
   Package,
   Minus,
+  Search,
+  Loader2,
+  MessageSquare,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { ChamadosDashboard } from "@/components/chamados";
+import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
+import { StatCard } from "@/components/ui/stat-card";
+import { SearchInput } from "@/components/ui/search-input";
+import { LoadingState, LoadingSpinner } from "@/components/ui/loading-state";
+import { EmptyState } from "@/components/ui/empty-state";
 
 interface ChamadosModuleProps {
   setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'nir';
@@ -507,71 +511,39 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-foreground">Chamados - {setorLabels[setor]}</h2>
-          <p className="text-muted-foreground">Central de atendimento e suporte</p>
-        </div>
-        <Button onClick={() => setCreateDialog(true)}>
-          <Plus className="h-4 w-4 mr-2" />
-          Novo Chamado
-        </Button>
-      </div>
+      <SectionHeader 
+        title={`Chamados - ${setorLabels[setor]}`}
+        description="Central de atendimento e suporte"
+      >
+        <ActionButton type="add" label="Novo Chamado" onClick={() => setCreateDialog(true)} />
+      </SectionHeader>
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <Ticket className="h-6 w-6 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-sm text-muted-foreground">Total de chamados</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-500/10 rounded-lg">
-                <Clock className="h-6 w-6 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.abertos}</p>
-                <p className="text-sm text-muted-foreground">Abertos</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-yellow-500/10 rounded-lg">
-                <AlertTriangle className="h-6 w-6 text-yellow-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.emAndamento}</p>
-                <p className="text-sm text-muted-foreground">Em andamento</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-500/10 rounded-lg">
-                <CheckCircle2 className="h-6 w-6 text-green-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{stats.resolvidos}</p>
-                <p className="text-sm text-muted-foreground">Resolvidos</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="Total de chamados"
+          value={stats.total}
+          icon={Ticket}
+          variant="primary"
+        />
+        <StatCard
+          title="Abertos"
+          value={stats.abertos}
+          icon={Clock}
+          variant="info"
+        />
+        <StatCard
+          title="Em andamento"
+          value={stats.emAndamento}
+          icon={AlertTriangle}
+          variant="warning"
+        />
+        <StatCard
+          title="Resolvidos"
+          value={stats.resolvidos}
+          icon={CheckCircle2}
+          variant="success"
+        />
       </div>
 
       <Tabs defaultValue="chamados">
