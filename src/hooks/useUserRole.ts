@@ -122,6 +122,8 @@ export const useUserRole = () => {
   const isRestaurante = state.roles.includes("restaurante");
   const isRHDP = state.roles.includes("rh_dp");
   const isAssistenciaSocial = state.roles.includes("assistencia_social");
+  const isQualidade = state.roles.includes("qualidade");
+  const isNSP = state.roles.includes("nsp");
   const isTecnico = isTI || isManutencao || isEngenhariaCinica || isLaboratorio;
 
   // Permissões específicas por módulo
@@ -152,6 +154,8 @@ export const useUserRole = () => {
     isRestaurante,
     isRHDP,
     isAssistenciaSocial,
+    isQualidade,
+    isNSP,
     isTecnico,
     // Permissões de módulo
     canAccessSaidaProntuarios,

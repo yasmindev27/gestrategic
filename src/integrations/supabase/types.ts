@@ -14,6 +14,128 @@ export type Database = {
   }
   public: {
     Tables: {
+      achados_auditoria: {
+        Row: {
+          auditoria_id: string
+          created_at: string
+          descricao: string
+          evidencia: string | null
+          gravidade: string | null
+          id: string
+          registrado_por: string
+          registrado_por_nome: string
+          requisito_referencia: string | null
+          status: string
+          tipo_achado: string
+          updated_at: string
+        }
+        Insert: {
+          auditoria_id: string
+          created_at?: string
+          descricao: string
+          evidencia?: string | null
+          gravidade?: string | null
+          id?: string
+          registrado_por: string
+          registrado_por_nome: string
+          requisito_referencia?: string | null
+          status?: string
+          tipo_achado: string
+          updated_at?: string
+        }
+        Update: {
+          auditoria_id?: string
+          created_at?: string
+          descricao?: string
+          evidencia?: string | null
+          gravidade?: string | null
+          id?: string
+          registrado_por?: string
+          registrado_por_nome?: string
+          requisito_referencia?: string | null
+          status?: string
+          tipo_achado?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "achados_auditoria_auditoria_id_fkey"
+            columns: ["auditoria_id"]
+            isOneToOne: false
+            referencedRelation: "auditorias_qualidade"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      acoes_incidentes: {
+        Row: {
+          analise_id: string | null
+          created_at: string
+          data_conclusao: string | null
+          descricao: string
+          id: string
+          incidente_id: string
+          observacoes: string | null
+          prazo: string
+          registrado_por: string
+          registrado_por_nome: string
+          responsavel_id: string | null
+          responsavel_nome: string
+          status: string
+          tipo_acao: string
+          updated_at: string
+        }
+        Insert: {
+          analise_id?: string | null
+          created_at?: string
+          data_conclusao?: string | null
+          descricao: string
+          id?: string
+          incidente_id: string
+          observacoes?: string | null
+          prazo: string
+          registrado_por: string
+          registrado_por_nome: string
+          responsavel_id?: string | null
+          responsavel_nome: string
+          status?: string
+          tipo_acao: string
+          updated_at?: string
+        }
+        Update: {
+          analise_id?: string | null
+          created_at?: string
+          data_conclusao?: string | null
+          descricao?: string
+          id?: string
+          incidente_id?: string
+          observacoes?: string | null
+          prazo?: string
+          registrado_por?: string
+          registrado_por_nome?: string
+          responsavel_id?: string | null
+          responsavel_nome?: string
+          status?: string
+          tipo_acao?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "acoes_incidentes_analise_id_fkey"
+            columns: ["analise_id"]
+            isOneToOne: false
+            referencedRelation: "analises_incidentes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "acoes_incidentes_incidente_id_fkey"
+            columns: ["incidente_id"]
+            isOneToOne: false
+            referencedRelation: "incidentes_nsp"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agenda_destinatarios: {
         Row: {
           agenda_item_id: string
@@ -93,6 +215,56 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: []
+      }
+      analises_incidentes: {
+        Row: {
+          analisado_por: string
+          analisado_por_nome: string
+          causas_identificadas: string | null
+          created_at: string
+          data_analise: string
+          descricao_analise: string
+          fatores_contribuintes: string | null
+          id: string
+          incidente_id: string
+          tipo_analise: string
+          updated_at: string
+        }
+        Insert: {
+          analisado_por: string
+          analisado_por_nome: string
+          causas_identificadas?: string | null
+          created_at?: string
+          data_analise?: string
+          descricao_analise: string
+          fatores_contribuintes?: string | null
+          id?: string
+          incidente_id: string
+          tipo_analise: string
+          updated_at?: string
+        }
+        Update: {
+          analisado_por?: string
+          analisado_por_nome?: string
+          causas_identificadas?: string | null
+          created_at?: string
+          data_analise?: string
+          descricao_analise?: string
+          fatores_contribuintes?: string | null
+          id?: string
+          incidente_id?: string
+          tipo_analise?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "analises_incidentes_incidente_id_fkey"
+            columns: ["incidente_id"]
+            isOneToOne: false
+            referencedRelation: "incidentes_nsp"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       assistencia_social_atendimentos: {
         Row: {
@@ -355,6 +527,57 @@ export type Database = {
           updated_at?: string
           validado_em?: string | null
           validado_por?: string | null
+        }
+        Relationships: []
+      }
+      auditorias_qualidade: {
+        Row: {
+          auditor: string
+          created_at: string
+          created_by: string
+          created_by_nome: string
+          data_auditoria: string
+          escopo: string | null
+          id: string
+          observacoes: string | null
+          resultado: string | null
+          setor_auditado: string
+          status: string
+          tipo_auditoria: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          auditor: string
+          created_at?: string
+          created_by: string
+          created_by_nome: string
+          data_auditoria: string
+          escopo?: string | null
+          id?: string
+          observacoes?: string | null
+          resultado?: string | null
+          setor_auditado: string
+          status?: string
+          tipo_auditoria: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          auditor?: string
+          created_at?: string
+          created_by?: string
+          created_by_nome?: string
+          data_auditoria?: string
+          escopo?: string | null
+          id?: string
+          observacoes?: string | null
+          resultado?: string | null
+          setor_auditado?: string
+          status?: string
+          tipo_auditoria?: string
+          titulo?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -1459,6 +1682,69 @@ export type Database = {
           },
         ]
       }
+      incidentes_nsp: {
+        Row: {
+          classificacao_risco: string
+          created_at: string
+          data_ocorrencia: string
+          descricao: string
+          id: string
+          local_ocorrencia: string
+          notificacao_anonima: boolean | null
+          notificador_id: string | null
+          notificador_nome: string | null
+          numero_notificacao: string
+          observacoes: string | null
+          paciente_envolvido: boolean | null
+          paciente_nome: string | null
+          paciente_prontuario: string | null
+          setor: string
+          status: string
+          tipo_incidente: string
+          updated_at: string
+        }
+        Insert: {
+          classificacao_risco: string
+          created_at?: string
+          data_ocorrencia: string
+          descricao: string
+          id?: string
+          local_ocorrencia: string
+          notificacao_anonima?: boolean | null
+          notificador_id?: string | null
+          notificador_nome?: string | null
+          numero_notificacao: string
+          observacoes?: string | null
+          paciente_envolvido?: boolean | null
+          paciente_nome?: string | null
+          paciente_prontuario?: string | null
+          setor: string
+          status?: string
+          tipo_incidente: string
+          updated_at?: string
+        }
+        Update: {
+          classificacao_risco?: string
+          created_at?: string
+          data_ocorrencia?: string
+          descricao?: string
+          id?: string
+          local_ocorrencia?: string
+          notificacao_anonima?: boolean | null
+          notificador_id?: string | null
+          notificador_nome?: string | null
+          numero_notificacao?: string
+          observacoes?: string | null
+          paciente_envolvido?: boolean | null
+          paciente_nome?: string | null
+          paciente_prontuario?: string | null
+          setor?: string
+          status?: string
+          tipo_incidente?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       logs_acesso: {
         Row: {
           acao: string
@@ -1591,6 +1877,62 @@ export type Database = {
             columns: ["ronda_id"]
             isOneToOne: false
             referencedRelation: "rondas_seguranca"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      planos_acao_auditoria: {
+        Row: {
+          achado_id: string
+          created_at: string
+          data_conclusao: string | null
+          descricao: string
+          eficacia_verificada: boolean | null
+          id: string
+          observacoes: string | null
+          prazo: string
+          registrado_por: string
+          registrado_por_nome: string
+          responsavel_nome: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          achado_id: string
+          created_at?: string
+          data_conclusao?: string | null
+          descricao: string
+          eficacia_verificada?: boolean | null
+          id?: string
+          observacoes?: string | null
+          prazo: string
+          registrado_por: string
+          registrado_por_nome: string
+          responsavel_nome: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          achado_id?: string
+          created_at?: string
+          data_conclusao?: string | null
+          descricao?: string
+          eficacia_verificada?: boolean | null
+          id?: string
+          observacoes?: string | null
+          prazo?: string
+          registrado_por?: string
+          registrado_por_nome?: string
+          responsavel_nome?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "planos_acao_auditoria_achado_id_fkey"
+            columns: ["achado_id"]
+            isOneToOne: false
+            referencedRelation: "achados_auditoria"
             referencedColumns: ["id"]
           },
         ]
@@ -2518,6 +2860,8 @@ export type Database = {
         | "restaurante"
         | "rh_dp"
         | "assistencia_social"
+        | "qualidade"
+        | "nsp"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2660,6 +3004,8 @@ export const Constants = {
         "restaurante",
         "rh_dp",
         "assistencia_social",
+        "qualidade",
+        "nsp",
       ],
     },
   },
