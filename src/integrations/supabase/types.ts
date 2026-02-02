@@ -581,6 +581,81 @@ export type Database = {
         }
         Relationships: []
       }
+      auditorias_seguranca_paciente: {
+        Row: {
+          apresentou_queda: boolean | null
+          auditor_id: string
+          auditor_nome: string
+          created_at: string | null
+          data_auditoria: string
+          grau_lpp: string | null
+          id: string
+          mes_avaliacao: string | null
+          notificacao_aberta: string | null
+          numero_prontuario: string | null
+          observacoes: string | null
+          paciente_iniciais: string | null
+          paciente_ra: string | null
+          possui_lpp: boolean | null
+          profissional_auditado: string | null
+          respostas: Json
+          satisfacao_geral: number | null
+          score_risco: string | null
+          setor: string
+          tipo: string
+          unidade_atendimento: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          apresentou_queda?: boolean | null
+          auditor_id: string
+          auditor_nome: string
+          created_at?: string | null
+          data_auditoria: string
+          grau_lpp?: string | null
+          id?: string
+          mes_avaliacao?: string | null
+          notificacao_aberta?: string | null
+          numero_prontuario?: string | null
+          observacoes?: string | null
+          paciente_iniciais?: string | null
+          paciente_ra?: string | null
+          possui_lpp?: boolean | null
+          profissional_auditado?: string | null
+          respostas?: Json
+          satisfacao_geral?: number | null
+          score_risco?: string | null
+          setor: string
+          tipo: string
+          unidade_atendimento?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          apresentou_queda?: boolean | null
+          auditor_id?: string
+          auditor_nome?: string
+          created_at?: string | null
+          data_auditoria?: string
+          grau_lpp?: string | null
+          id?: string
+          mes_avaliacao?: string | null
+          notificacao_aberta?: string | null
+          numero_prontuario?: string | null
+          observacoes?: string | null
+          paciente_iniciais?: string | null
+          paciente_ra?: string | null
+          possui_lpp?: boolean | null
+          profissional_auditado?: string | null
+          respostas?: Json
+          satisfacao_geral?: number | null
+          score_risco?: string | null
+          setor?: string
+          tipo?: string
+          unidade_atendimento?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       avaliacoes_historico: {
         Row: {
           acao: string

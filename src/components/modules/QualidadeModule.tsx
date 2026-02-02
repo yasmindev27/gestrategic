@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { AlertTriangle, ClipboardCheck, BarChart3, FileText, Plus, Eye, Pencil, ShieldX, TrendingUp, AlertCircle, CheckCircle2, Clock, Target } from "lucide-react";
+import { AlertTriangle, ClipboardCheck, BarChart3, FileText, Plus, Eye, Pencil, ShieldX, TrendingUp, AlertCircle, CheckCircle2, Clock, Target, Stethoscope } from "lucide-react";
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
 import { StatCard } from "@/components/ui/stat-card";
 import { SearchInput } from "@/components/ui/search-input";
@@ -24,6 +24,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, mapStatusToType } from "@/components/ui/status-badge";
 import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
+import { AuditoriasSegurancaPaciente } from "@/components/qualidade";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -505,10 +506,14 @@ export const QualidadeModule = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="incidentes">Incidentes</TabsTrigger>
           <TabsTrigger value="acoes">Ações</TabsTrigger>
-          <TabsTrigger value="auditorias">Auditorias</TabsTrigger>
+          <TabsTrigger value="auditorias">Auditorias Gerais</TabsTrigger>
+          <TabsTrigger value="auditorias-seguranca" className="gap-1">
+            <Stethoscope className="h-4 w-4" />
+            Seg. Paciente
+          </TabsTrigger>
           <TabsTrigger value="indicadores">Indicadores</TabsTrigger>
         </TabsList>
 
@@ -723,6 +728,11 @@ export const QualidadeModule = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* Auditorias de Segurança do Paciente Tab */}
+        <TabsContent value="auditorias-seguranca" className="space-y-4">
+          <AuditoriasSegurancaPaciente currentUser={currentUser} />
         </TabsContent>
 
         {/* Indicadores Tab */}
