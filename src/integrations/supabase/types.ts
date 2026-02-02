@@ -222,7 +222,7 @@ export type Database = {
           paciente_internado: string | null
           paciente_internado_obs: string | null
           paciente_nome: string | null
-          prontuario_id: string
+          prontuario_id: string | null
           resultado_final: string | null
           saida_prontuario_id: string | null
           status: string
@@ -252,7 +252,7 @@ export type Database = {
           paciente_internado?: string | null
           paciente_internado_obs?: string | null
           paciente_nome?: string | null
-          prontuario_id: string
+          prontuario_id?: string | null
           resultado_final?: string | null
           saida_prontuario_id?: string | null
           status?: string
@@ -282,7 +282,7 @@ export type Database = {
           paciente_internado?: string | null
           paciente_internado_obs?: string | null
           paciente_nome?: string | null
-          prontuario_id?: string
+          prontuario_id?: string | null
           resultado_final?: string | null
           saida_prontuario_id?: string | null
           status?: string

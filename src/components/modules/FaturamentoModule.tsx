@@ -257,7 +257,7 @@ export const FaturamentoModule = () => {
       // Get or create prontuario
       let prontuarioId: string | null = selectedProntuario.prontuario_id;
       
-      if (!prontuarioId) {
+      if (!prontuarioId && selectedProntuario.numero_prontuario) {
         const { data: existingProntuario } = await supabase
           .from("prontuarios")
           .select("id, paciente_nome")
@@ -271,7 +271,7 @@ export const FaturamentoModule = () => {
             .from("prontuarios")
             .insert({
               numero_prontuario: selectedProntuario.numero_prontuario,
-              paciente_nome: "A identificar",
+              paciente_nome: selectedProntuario.paciente_nome || "A identificar",
               created_by: userId,
             })
             .select("id")
@@ -311,14 +311,16 @@ export const FaturamentoModule = () => {
 
       if (avaliacaoError) throw avaliacaoError;
 
-      // Update prontuario status based on resultado_final
-      const newStatus = formData.resultado_final === "completo" ? "ativo" : 
-                       formData.resultado_final === "incompleto" ? "faltante" : "ativo";
-      
-      await supabase
-        .from("prontuarios")
-        .update({ status: newStatus })
-        .eq("id", prontuarioId);
+      // Update prontuario status based on resultado_final (only if prontuario exists)
+      if (prontuarioId) {
+        const newStatus = formData.resultado_final === "completo" ? "ativo" : 
+                         formData.resultado_final === "incompleto" ? "faltante" : "ativo";
+        
+        await supabase
+          .from("prontuarios")
+          .update({ status: newStatus })
+          .eq("id", prontuarioId);
+      }
 
       // Update saida_prontuarios status
       await supabase
