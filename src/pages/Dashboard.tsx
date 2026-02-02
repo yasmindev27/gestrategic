@@ -20,6 +20,7 @@ import { NirModule } from "@/components/modules/NirModule";
 import { RecepcaoModule } from "@/components/modules/RecepcaoModule";
 import { RHDPModule } from "@/components/modules/RHDPModule";
 import { ChatModule } from "@/components/modules/ChatModule";
+import { RoupariaModule } from "@/components/modules/RoupariaModule";
 import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -128,6 +129,9 @@ const Dashboard = () => {
 
           {/* Módulo RH/DP */}
           {activeSection === "rhdp" && <RHDPModule />}
+
+          {/* Módulo Rouparia */}
+          {activeSection === "rouparia" && <RoupariaModule />}
 
           {/* Chat Corporativo */}
           {activeSection === "chat" && <ChatModule />}

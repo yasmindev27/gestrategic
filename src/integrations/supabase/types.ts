@@ -1548,6 +1548,130 @@ export type Database = {
         }
         Relationships: []
       }
+      rouparia_categorias: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          descricao: string | null
+          estoque_minimo: number | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          estoque_minimo?: number | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          descricao?: string | null
+          estoque_minimo?: number | null
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rouparia_itens: {
+        Row: {
+          ativo: boolean | null
+          categoria_id: string
+          codigo_barras: string
+          created_at: string
+          descricao: string | null
+          id: string
+          quantidade_atual: number
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria_id: string
+          codigo_barras: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          quantidade_atual?: number
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria_id?: string
+          codigo_barras?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          quantidade_atual?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rouparia_itens_categoria_id_fkey"
+            columns: ["categoria_id"]
+            isOneToOne: false
+            referencedRelation: "rouparia_categorias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      rouparia_movimentacoes: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string
+          observacao: string | null
+          quantidade: number
+          quantidade_anterior: number
+          quantidade_nova: number
+          registrado_por: string
+          registrado_por_nome: string
+          setor_destino: string | null
+          setor_origem: string | null
+          tipo_movimentacao: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id: string
+          observacao?: string | null
+          quantidade: number
+          quantidade_anterior: number
+          quantidade_nova: number
+          registrado_por: string
+          registrado_por_nome: string
+          setor_destino?: string | null
+          setor_origem?: string | null
+          tipo_movimentacao: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string
+          observacao?: string | null
+          quantidade?: number
+          quantidade_anterior?: number
+          quantidade_nova?: number
+          registrado_por?: string
+          registrado_por_nome?: string
+          setor_destino?: string | null
+          setor_origem?: string | null
+          tipo_movimentacao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rouparia_movimentacoes_item_id_fkey"
+            columns: ["item_id"]
+            isOneToOne: false
+            referencedRelation: "rouparia_itens"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saida_prontuarios: {
         Row: {
           conferido_nir_em: string | null
