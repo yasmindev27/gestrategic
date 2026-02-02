@@ -1,6 +1,8 @@
+/* Optimized font loading with font-display: swap for better performance */
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -236,5 +238,61 @@ Design System para Sistema Hospitalar - GESTRATEGIC:
 
   .icon-container-info {
     @apply bg-info/10 text-info;
+  }
+}
+
+/* Performance optimizations */
+@layer utilities {
+  /* Reduce motion for accessibility */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  /* Smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Optimize text rendering */
+  .optimize-legibility {
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Focus visible for accessibility */
+  .focus-visible-ring {
+    @apply focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2;
+  }
+
+  /* Skip to content link for screen readers */
+  .skip-link {
+    @apply absolute left-[-9999px] top-auto z-[9999] w-auto overflow-hidden bg-primary px-4 py-2 text-primary-foreground;
+  }
+
+  .skip-link:focus {
+    @apply left-0 top-0;
+  }
+
+  /* Improve touch targets for mobile */
+  .touch-target {
+    @apply min-h-[44px] min-w-[44px];
+  }
+
+  /* Loading skeleton animation */
+  .skeleton-pulse {
+    @apply animate-pulse bg-muted;
+  }
+
+  /* Content visibility for performance */
+  .content-visibility-auto {
+    content-visibility: auto;
   }
 }
