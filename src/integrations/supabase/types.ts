@@ -94,6 +94,207 @@ export type Database = {
         }
         Relationships: []
       }
+      assistencia_social_atendimentos: {
+        Row: {
+          created_at: string
+          data_atendimento: string
+          descricao: string
+          id: string
+          motivo: string
+          observacoes: string | null
+          paciente_id: string
+          profissional_id: string
+          profissional_nome: string
+          status: string
+          tipo_atendimento: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_atendimento?: string
+          descricao: string
+          id?: string
+          motivo: string
+          observacoes?: string | null
+          paciente_id: string
+          profissional_id: string
+          profissional_nome: string
+          status?: string
+          tipo_atendimento: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_atendimento?: string
+          descricao?: string
+          id?: string
+          motivo?: string
+          observacoes?: string | null
+          paciente_id?: string
+          profissional_id?: string
+          profissional_nome?: string
+          status?: string
+          tipo_atendimento?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistencia_social_atendimentos_paciente_id_fkey"
+            columns: ["paciente_id"]
+            isOneToOne: false
+            referencedRelation: "assistencia_social_pacientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistencia_social_documentos: {
+        Row: {
+          arquivo_url: string
+          atendimento_id: string
+          created_at: string
+          id: string
+          nome_arquivo: string
+          tamanho_bytes: number | null
+          tipo_documento: string
+          uploaded_by: string
+          uploaded_by_nome: string
+        }
+        Insert: {
+          arquivo_url: string
+          atendimento_id: string
+          created_at?: string
+          id?: string
+          nome_arquivo: string
+          tamanho_bytes?: number | null
+          tipo_documento: string
+          uploaded_by: string
+          uploaded_by_nome: string
+        }
+        Update: {
+          arquivo_url?: string
+          atendimento_id?: string
+          created_at?: string
+          id?: string
+          nome_arquivo?: string
+          tamanho_bytes?: number | null
+          tipo_documento?: string
+          uploaded_by?: string
+          uploaded_by_nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistencia_social_documentos_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "assistencia_social_atendimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistencia_social_encaminhamentos: {
+        Row: {
+          atendimento_id: string
+          created_at: string
+          data_encaminhamento: string
+          data_retorno: string | null
+          destino: string | null
+          id: string
+          motivo: string
+          observacoes: string | null
+          registrado_por: string
+          registrado_por_nome: string
+          status: string
+          tipo_encaminhamento: string
+          updated_at: string
+        }
+        Insert: {
+          atendimento_id: string
+          created_at?: string
+          data_encaminhamento?: string
+          data_retorno?: string | null
+          destino?: string | null
+          id?: string
+          motivo: string
+          observacoes?: string | null
+          registrado_por: string
+          registrado_por_nome: string
+          status?: string
+          tipo_encaminhamento: string
+          updated_at?: string
+        }
+        Update: {
+          atendimento_id?: string
+          created_at?: string
+          data_encaminhamento?: string
+          data_retorno?: string | null
+          destino?: string | null
+          id?: string
+          motivo?: string
+          observacoes?: string | null
+          registrado_por?: string
+          registrado_por_nome?: string
+          status?: string
+          tipo_encaminhamento?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assistencia_social_encaminhamentos_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "assistencia_social_atendimentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      assistencia_social_pacientes: {
+        Row: {
+          cns: string | null
+          cpf: string | null
+          created_at: string
+          created_by: string | null
+          data_nascimento: string | null
+          endereco: string | null
+          id: string
+          nome_completo: string
+          numero_prontuario: string | null
+          observacoes: string | null
+          setor_atendimento: string
+          telefone: string | null
+          updated_at: string
+        }
+        Insert: {
+          cns?: string | null
+          cpf?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_nascimento?: string | null
+          endereco?: string | null
+          id?: string
+          nome_completo: string
+          numero_prontuario?: string | null
+          observacoes?: string | null
+          setor_atendimento: string
+          telefone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cns?: string | null
+          cpf?: string | null
+          created_at?: string
+          created_by?: string | null
+          data_nascimento?: string | null
+          endereco?: string | null
+          id?: string
+          nome_completo?: string
+          numero_prontuario?: string | null
+          observacoes?: string | null
+          setor_atendimento?: string
+          telefone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       atestados: {
         Row: {
           arquivo_url: string | null
@@ -2316,6 +2517,7 @@ export type Database = {
         | "laboratorio"
         | "restaurante"
         | "rh_dp"
+        | "assistencia_social"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2457,6 +2659,7 @@ export const Constants = {
         "laboratorio",
         "restaurante",
         "rh_dp",
+        "assistencia_social",
       ],
     },
   },
