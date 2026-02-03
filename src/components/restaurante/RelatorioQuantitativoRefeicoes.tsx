@@ -200,15 +200,20 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
 
 
   const processarQuantitativos = (refeicoes: RegistroRefeicao[], dietas: SolicitacaoDieta[], cafeLitro: CafeLitroDiario[]) => {
+    // Garantir parsing correto das datas do filtro
+    const startDate = parseISO(dataInicio);
+    const endDate = parseISO(dataFim);
+    
+    // Criar lista de dias APENAS no período selecionado
     const diasNoPeriodo = eachDayOfInterval({
-      start: parseISO(dataInicio),
-      end: parseISO(dataFim),
+      start: startDate,
+      end: endDate,
     });
 
     const resultado: DailyQuantitativo[] = diasNoPeriodo.map(dia => {
       const dataStr = format(dia, "yyyy-MM-dd");
 
-      // Contar refeições do totem para cada tipo
+      // Contar refeições do totem para cada tipo - filtrando explicitamente pela data
       const refeicoesNoDia = refeicoes.filter(r => r.data_registro === dataStr);
       const cafe = refeicoesNoDia.filter(r => r.tipo_refeicao === "cafe").length;
       const almoco = refeicoesNoDia.filter(r => r.tipo_refeicao === "almoco").length;
@@ -216,7 +221,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       const jantar = refeicoesNoDia.filter(r => r.tipo_refeicao === "jantar").length;
       const foraHorario = refeicoesNoDia.filter(r => r.tipo_refeicao === "fora_horario").length;
 
-      // Contar dietas ativas no dia para cada refeição
+      // Contar dietas ativas SOMENTE para este dia específico
       const dietasAtivasNoDia = dietas.filter(d => {
         const inicio = d.data_inicio;
         const fim = d.data_fim || "9999-12-31";
@@ -233,7 +238,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
         const horarios = (d.horarios_refeicoes && d.horarios_refeicoes.length > 0) 
           ? d.horarios_refeicoes 
           : ["cafe", "almoco", "lanche", "jantar"];
-        const multiplicador = d.tem_acompanhante ? 2 : 1; // Se tem acompanhante, conta 2
+        const multiplicador = d.tem_acompanhante ? 2 : 1;
 
         if (horarios.includes("cafe")) dietasCafe += multiplicador;
         if (horarios.includes("almoco")) dietasAlmoco += multiplicador;
@@ -245,7 +250,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       const totalDietas = dietasCafe + dietasAlmoco + dietasLanche + dietasJantar;
       const totalGeral = totalRefeicoes + totalDietas;
 
-      // Buscar café litro do dia
+      // Buscar café litro do dia específico
       const cafeLitroDoDia = cafeLitro.find(cl => cl.data === dataStr);
       const cafeLitroQtd = cafeLitroDoDia ? Number(cafeLitroDoDia.quantidade_litros) : 0;
 
@@ -267,7 +272,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       };
     });
 
-    // Remover dias sem nenhum registro
+    // Remover dias sem nenhum registro (manter apenas dias com dados)
     const resultadoFiltrado = resultado.filter(r => r.totalGeral > 0 || r.cafeLitro > 0);
     setQuantitativos(resultadoFiltrado);
   };
