@@ -153,6 +153,11 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  
+  // Filtros de período
+  const [filterDay, setFilterDay] = useState<string>("");
+  const [filterMonth, setFilterMonth] = useState<string>("");
+  const [filterYear, setFilterYear] = useState<string>("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   
   const [createDialog, setCreateDialog] = useState(false);
@@ -510,12 +515,21 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
     return { status: 'ok', label: 'No prazo', color: 'bg-green-500 text-white' };
   };
 
-  const filteredChamados = chamados.filter(c => {
-    const matchesSearch = c.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      c.numero_chamado.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === "todos" || c.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredChamados = useMemo(() => {
+    return chamados.filter(c => {
+      const matchesSearch = c.titulo.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        c.numero_chamado.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesStatus = statusFilter === "todos" || c.status === statusFilter;
+      
+      // Filtro por período (dia, mês, ano)
+      const dataAbertura = new Date(c.data_abertura);
+      const matchesDay = !filterDay || dataAbertura.getDate() === parseInt(filterDay);
+      const matchesMonth = !filterMonth || (dataAbertura.getMonth() + 1) === parseInt(filterMonth);
+      const matchesYear = !filterYear || dataAbertura.getFullYear() === parseInt(filterYear);
+      
+      return matchesSearch && matchesStatus && matchesDay && matchesMonth && matchesYear;
+    });
+  }, [chamados, searchTerm, statusFilter, filterDay, filterMonth, filterYear]);
 
   const stats = {
     total: chamados.length,
@@ -695,29 +709,109 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
         <TabsContent value="chamados" className="space-y-4 mt-4">
           <Card>
             <CardContent className="pt-6">
-              <div className="flex gap-4">
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Buscar por título ou número..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
+              <div className="flex flex-col gap-4">
+                <div className="flex gap-4">
+                  <div className="relative flex-1">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar por título ou número..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Filtrar por status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="aberto">Abertos</SelectItem>
+                      <SelectItem value="em_andamento">Em Andamento</SelectItem>
+                      <SelectItem value="pendente">Pendentes</SelectItem>
+                      <SelectItem value="resolvido">Resolvidos</SelectItem>
+                      <SelectItem value="cancelado">Cancelados</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-48">
-                    <SelectValue placeholder="Filtrar por status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    <SelectItem value="aberto">Abertos</SelectItem>
-                    <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                    <SelectItem value="pendente">Pendentes</SelectItem>
-                    <SelectItem value="resolvido">Resolvidos</SelectItem>
-                    <SelectItem value="cancelado">Cancelados</SelectItem>
-                  </SelectContent>
-                </Select>
+                
+                {/* Filtros por período */}
+                <div className="flex gap-4 items-end flex-wrap">
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-xs text-muted-foreground">Dia</Label>
+                    <Select value={filterDay} onValueChange={setFilterDay}>
+                      <SelectTrigger className="w-24">
+                        <SelectValue placeholder="Dia" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Todos</SelectItem>
+                        {Array.from({ length: 31 }, (_, i) => (
+                          <SelectItem key={i + 1} value={String(i + 1)}>
+                            {String(i + 1).padStart(2, '0')}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-xs text-muted-foreground">Mês</Label>
+                    <Select value={filterMonth} onValueChange={setFilterMonth}>
+                      <SelectTrigger className="w-32">
+                        <SelectValue placeholder="Mês" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Todos</SelectItem>
+                        <SelectItem value="1">Janeiro</SelectItem>
+                        <SelectItem value="2">Fevereiro</SelectItem>
+                        <SelectItem value="3">Março</SelectItem>
+                        <SelectItem value="4">Abril</SelectItem>
+                        <SelectItem value="5">Maio</SelectItem>
+                        <SelectItem value="6">Junho</SelectItem>
+                        <SelectItem value="7">Julho</SelectItem>
+                        <SelectItem value="8">Agosto</SelectItem>
+                        <SelectItem value="9">Setembro</SelectItem>
+                        <SelectItem value="10">Outubro</SelectItem>
+                        <SelectItem value="11">Novembro</SelectItem>
+                        <SelectItem value="12">Dezembro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="flex flex-col gap-1">
+                    <Label className="text-xs text-muted-foreground">Ano</Label>
+                    <Select value={filterYear} onValueChange={setFilterYear}>
+                      <SelectTrigger className="w-28">
+                        <SelectValue placeholder="Ano" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="">Todos</SelectItem>
+                        {Array.from({ length: 5 }, (_, i) => {
+                          const year = new Date().getFullYear() - i;
+                          return (
+                            <SelectItem key={year} value={String(year)}>
+                              {year}
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  {(filterDay || filterMonth || filterYear) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setFilterDay("");
+                        setFilterMonth("");
+                        setFilterYear("");
+                      }}
+                    >
+                      Limpar filtros
+                    </Button>
+                  )}
+                </div>
               </div>
             </CardContent>
           </Card>
