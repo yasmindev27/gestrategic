@@ -118,6 +118,8 @@ const Dashboard = () => {
           
           {activeSection === "tecnico-manutencao" && <TecnicoModule setor="manutencao" />}
           
+          {activeSection === "tecnico-engenharia" && <TecnicoModule setor="engenharia_clinica" />}
+          
           {/* Módulo NIR */}
           {(activeSection === "nir" || activeSection === "dashboard-nir") && <NirModule />}
 
