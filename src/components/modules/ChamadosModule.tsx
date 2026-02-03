@@ -52,6 +52,8 @@ import {
   Loader2,
   MessageSquare,
   FileText,
+  Upload,
+  FileSpreadsheet,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInHours, parseISO, subDays } from "date-fns";
@@ -63,6 +65,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { LoadingState, LoadingSpinner } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import { exportToPDF } from "@/lib/export-utils";
+import * as XLSX from "xlsx";
 
 interface ChamadosModuleProps {
   setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'nir';
@@ -185,10 +188,10 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
   });
   const [isAddingMaterial, setIsAddingMaterial] = useState(false);
 
-  // Estados para relatório IA
-  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  const [relatorioIA, setRelatorioIA] = useState("");
-  const [showRelatorioDialog, setShowRelatorioDialog] = useState(false);
+  // Estados para importação
+  const [showImportDialog, setShowImportDialog] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
+  const [importPreview, setImportPreview] = useState<Array<Record<string, string>>>([]);
 
   const isResponsavel = role === 'admin' || role === setor;
 
@@ -538,106 +541,120 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
     resolvidos: chamados.filter(c => c.status === 'resolvido').length,
   };
 
-  // Gerar relatório com IA
-  const handleGerarRelatorioIA = useCallback(async () => {
-    setIsGeneratingReport(true);
-    setShowRelatorioDialog(true);
-    setRelatorioIA("");
+  // Importar chamados de Excel
+  const handleFileImport = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsImporting(true);
+    setImportPreview([]);
 
     try {
-      const resolvidos = chamados.filter(c => c.status === "resolvido" && c.data_resolucao);
-      
-      // Calcular tempo médio de resolução
-      let tempoMedioResolucao = 0;
-      if (resolvidos.length > 0) {
-        const tempos = resolvidos.map((c) =>
-          differenceInHours(parseISO(c.data_resolucao!), parseISO(c.data_abertura))
-        );
-        tempoMedioResolucao = tempos.reduce((a, b) => a + b, 0) / tempos.length;
-      }
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[sheetName];
+          const jsonData = XLSX.utils.sheet_to_json<Record<string, string>>(worksheet, { header: 0 });
+          
+          if (jsonData.length === 0) {
+            toast({
+              title: "Erro",
+              description: "Arquivo vazio ou formato inválido.",
+              variant: "destructive",
+            });
+            setIsImporting(false);
+            return;
+          }
 
-      // Calcular SLA
-      let dentroDeSLA = 0;
-      resolvidos.forEach((c) => {
-        const horasResolucao = differenceInHours(
-          parseISO(c.data_resolucao!),
-          parseISO(c.data_abertura)
-        );
-        const slaHoras = SLA_HORAS[c.prioridade] || 24;
-        if (horasResolucao <= slaHoras) {
-          dentroDeSLA++;
+          setImportPreview(jsonData);
+          setShowImportDialog(true);
+        } catch (err) {
+          console.error("Error parsing file:", err);
+          toast({
+            title: "Erro",
+            description: "Erro ao processar o arquivo.",
+            variant: "destructive",
+          });
+        } finally {
+          setIsImporting(false);
         }
-      });
-      const percentualSLA = resolvidos.length > 0 
-        ? (dentroDeSLA / resolvidos.length) * 100 
-        : 0;
-
-      const porPrioridade: Record<string, number> = {};
-      chamados.forEach((c) => {
-        porPrioridade[c.prioridade] = (porPrioridade[c.prioridade] || 0) + 1;
-      });
-
-      const dados = {
-        total: chamados.length,
-        abertos: chamados.filter((c) => c.status === "aberto").length,
-        emAndamento: chamados.filter((c) => c.status === "em_andamento").length,
-        resolvidos: resolvidos.length,
-        cancelados: chamados.filter((c) => c.status === "cancelado").length,
-        porCategoria: { [setor]: chamados.length },
-        porPrioridade,
-        tempoMedioResolucao,
-        percentualSLA,
-        taxaReabertura: 0,
-        produtividadeEquipe: [],
-        periodo: {
-          inicio: format(subDays(new Date(), 30), "dd/MM/yyyy"),
-          fim: format(new Date(), "dd/MM/yyyy"),
-        },
-        setor: setorLabels[setor],
       };
-
-      const response = await supabase.functions.invoke("gerar-relatorio-chamados", {
-        body: { dados },
-      });
-
-      if (response.error) throw response.error;
-      
-      setRelatorioIA(response.data?.relatorio || "Erro ao gerar relatório.");
-      await logAction("gerar_relatorio_ia", `chamados_${setor}`);
+      reader.readAsArrayBuffer(file);
     } catch (error) {
       console.error("Error:", error);
       toast({
         title: "Erro",
-        description: "Erro ao gerar relatório com IA.",
+        description: "Erro ao importar arquivo.",
         variant: "destructive",
       });
-      setShowRelatorioDialog(false);
-    } finally {
-      setIsGeneratingReport(false);
+      setIsImporting(false);
     }
-  }, [chamados, setor, SLA_HORAS, logAction, toast]);
 
-  // Export relatório PDF
-  const handleExportRelatorioPDF = useCallback(() => {
-    if (!relatorioIA) return;
-    
-    const lines = relatorioIA.split("\n").filter(line => line.trim());
-    const headers = ["Conteúdo"];
-    const rows = lines.map(line => [line.replace(/^[#\-*•\d.]+\s*/, "")]);
-    
-    exportToPDF({
-      title: `Relatório de Chamados - ${setorLabels[setor]}`,
-      headers,
-      rows,
-      fileName: `relatorio-chamados-${setor}`,
-      orientation: 'portrait',
-    });
-    
-    toast({
-      title: "Exportado!",
-      description: "PDF do relatório gerado com sucesso.",
-    });
-  }, [relatorioIA, setor, toast]);
+    // Reset file input
+    event.target.value = '';
+  }, [toast]);
+
+  // Confirmar importação
+  const handleConfirmImport = async () => {
+    if (importPreview.length === 0) return;
+
+    setIsImporting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const chamadosToInsert = importPreview.map((row, index) => {
+        // Mapear colunas do Excel para campos do banco
+        const prioridadeRaw = (row['PRIORIDADE DO CHAMADO'] || row['PRIORIDADE'] || 'media').toString().toLowerCase();
+        const prioridade = ['baixa', 'media', 'alta', 'urgente'].includes(prioridadeRaw) 
+          ? prioridadeRaw 
+          : prioridadeRaw === 'médio' || prioridadeRaw === 'medio' ? 'media' : 'media';
+        
+        const statusRaw = (row['SITUAÇÃO'] || row['STATUS'] || 'resolvido').toString().toLowerCase();
+        const status = statusRaw.includes('conclu') || statusRaw.includes('resolvido') ? 'resolvido' : 'aberto';
+
+        return {
+          numero_chamado: `CH-${setor.toUpperCase()}-IMP-${Date.now()}-${index}`,
+          titulo: row['DESCRIÇÃO DO CHAMADO'] || row['DESCRICAO'] || row['TITULO'] || `Chamado importado ${index + 1}`,
+          descricao: row['DESCRIÇÃO DO CHAMADO'] || row['DESCRICAO'] || row['TITULO'] || 'Chamado importado',
+          categoria: setor,
+          prioridade,
+          status,
+          solicitante_id: user?.id || '00000000-0000-0000-0000-000000000000',
+          solicitante_nome: row['NOME DO SOLICITANTE'] || row['SOLICITANTE'] || 'Importado',
+          solicitante_setor: row['SETOR'] || null,
+          data_abertura: new Date().toISOString(),
+          data_resolucao: status === 'resolvido' ? new Date().toISOString() : null,
+          solucao: status === 'resolvido' ? 'Chamado importado como resolvido' : null,
+        };
+      });
+
+      const { error } = await supabase.from("chamados").insert(chamadosToInsert);
+      if (error) throw error;
+
+      toast({
+        title: "Sucesso!",
+        description: `${chamadosToInsert.length} chamados importados com sucesso.`,
+      });
+
+      await logAction("importar_chamados", `chamados_${setor}`, { quantidade: chamadosToInsert.length });
+      
+      setShowImportDialog(false);
+      setImportPreview([]);
+      fetchChamados();
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao importar chamados.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsImporting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -646,18 +663,23 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
         description="Central de atendimento e suporte"
       >
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handleGerarRelatorioIA}
-            disabled={isGeneratingReport || chamados.length === 0}
-          >
-            {isGeneratingReport ? (
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            ) : (
-              <FileText className="h-4 w-4 mr-2" />
-            )}
-            Gerar Relatório IA
-          </Button>
+          <div className="relative">
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={handleFileImport}
+              className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+              disabled={isImporting}
+            />
+            <Button variant="outline" disabled={isImporting}>
+              {isImporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4 mr-2" />
+              )}
+              Importar
+            </Button>
+          </div>
           <ActionButton type="add" label="Novo Chamado" onClick={() => setCreateDialog(true)} />
         </div>
       </SectionHeader>
@@ -1264,14 +1286,64 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog de Relatório IA */}
-      <RelatorioIADialog
-        open={showRelatorioDialog}
-        onOpenChange={setShowRelatorioDialog}
-        relatorio={relatorioIA}
-        isLoading={isGeneratingReport}
-        onExportPDF={handleExportRelatorioPDF}
-      />
+      {/* Dialog de Importação */}
+      <Dialog open={showImportDialog} onOpenChange={setShowImportDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5" />
+              Importar Chamados
+            </DialogTitle>
+            <DialogDescription>
+              Revise os dados antes de importar. {importPreview.length} registros encontrados.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex-1 overflow-auto">
+            {importPreview.length > 0 && (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    {Object.keys(importPreview[0]).slice(0, 5).map((key) => (
+                      <TableHead key={key} className="text-xs">{key}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {importPreview.slice(0, 10).map((row, i) => (
+                    <TableRow key={i}>
+                      {Object.values(row).slice(0, 5).map((val, j) => (
+                        <TableCell key={j} className="text-xs max-w-[200px] truncate">
+                          {String(val || '-')}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+            {importPreview.length > 10 && (
+              <p className="text-sm text-muted-foreground mt-2 text-center">
+                ... e mais {importPreview.length - 10} registros
+              </p>
+            )}
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowImportDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleConfirmImport} disabled={isImporting}>
+              {isImporting ? (
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              ) : (
+                <Upload className="h-4 w-4 mr-2" />
+              )}
+              Importar {importPreview.length} chamados
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
