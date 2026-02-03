@@ -58,9 +58,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { PdfPatientCounter } from "./PdfPatientCounter";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
 import { exportToCSV, exportToPDF } from "@/lib/export-utils";
+import { safeFormatDate } from "@/lib/brasilia-time";
 
 interface AnalysisResult {
   success: boolean;
@@ -686,8 +685,8 @@ export const SaidaProntuariosModule = () => {
     const headers = ['Paciente', 'Data Nascimento', 'Data Atendimento', 'Status', 'Observação'];
     const rows = filteredFolhasAvulsas.map(s => [
       s.paciente_nome || '-',
-      s.nascimento_mae ? format(new Date(s.nascimento_mae + "T12:00:00"), "dd/MM/yyyy") : '-',
-      s.data_atendimento ? format(new Date(s.data_atendimento + "T12:00:00"), "dd/MM/yyyy") : '-',
+      safeFormatDate(s.nascimento_mae, "dd/MM/yyyy"),
+      safeFormatDate(s.data_atendimento, "dd/MM/yyyy"),
       'Folha Avulsa',
       s.observacao_classificacao || '-',
     ]);
@@ -729,8 +728,8 @@ export const SaidaProntuariosModule = () => {
     const headers = ['Paciente', 'Data Nascimento', 'Data Atendimento', 'Status'];
     const rows = filteredFaltantesSalus.map(s => [
       s.paciente_nome || '-',
-      s.nascimento_mae ? format(new Date(s.nascimento_mae + "T12:00:00"), "dd/MM/yyyy") : '-',
-      s.data_atendimento ? format(new Date(s.data_atendimento + "T12:00:00"), "dd/MM/yyyy") : '-',
+      safeFormatDate(s.nascimento_mae, "dd/MM/yyyy"),
+      safeFormatDate(s.data_atendimento, "dd/MM/yyyy"),
       'Falta prontuário físico',
     ]);
     return { headers, rows };
@@ -771,12 +770,12 @@ export const SaidaProntuariosModule = () => {
     const headers = ['Paciente', 'Data Nasc.', 'Data Atendimento', 'Status', 'Recepção', 'Classificação', 'NIR'];
     const rows = filteredSaidas.map(s => [
       s.paciente_nome || '-',
-      s.nascimento_mae ? format(new Date(s.nascimento_mae), "dd/MM/yyyy") : '-',
-      s.data_atendimento ? format(new Date(s.data_atendimento), "dd/MM/yyyy") : '-',
+      safeFormatDate(s.nascimento_mae, "dd/MM/yyyy"),
+      safeFormatDate(s.data_atendimento, "dd/MM/yyyy"),
       s.status,
-      s.registrado_recepcao_em ? format(new Date(s.registrado_recepcao_em), "dd/MM/yy HH:mm") : '-',
-      s.validado_classificacao_em ? format(new Date(s.validado_classificacao_em), "dd/MM/yy HH:mm") : '-',
-      s.conferido_nir_em ? format(new Date(s.conferido_nir_em), "dd/MM/yy HH:mm") : '-',
+      safeFormatDate(s.registrado_recepcao_em, "dd/MM/yy HH:mm"),
+      safeFormatDate(s.validado_classificacao_em, "dd/MM/yy HH:mm"),
+      safeFormatDate(s.conferido_nir_em, "dd/MM/yy HH:mm"),
     ]);
     return { headers, rows };
   };
@@ -1221,26 +1220,18 @@ export const SaidaProntuariosModule = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {saida.nascimento_mae 
-                            ? format(new Date(saida.nascimento_mae + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
-                            : "-"}
+                          {safeFormatDate(saida.nascimento_mae, "dd/MM/yyyy")}
                         </TableCell>
                         <TableCell>
-                          {saida.data_atendimento 
-                            ? format(new Date(saida.data_atendimento + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
-                            : "-"}
+                          {safeFormatDate(saida.data_atendimento, "dd/MM/yyyy")}
                         </TableCell>
                         <TableCell>{getStatusBadge(saida.status)}</TableCell>
                         <TableCell>
-                          {saida.registrado_recepcao_em 
-                            ? format(new Date(saida.registrado_recepcao_em), "dd/MM/yy HH:mm", { locale: ptBR })
-                            : "-"}
+                          {safeFormatDate(saida.registrado_recepcao_em, "dd/MM/yy HH:mm")}
                         </TableCell>
                         <TableCell>
                           <div className="flex flex-col">
-                            {saida.validado_classificacao_em 
-                              ? format(new Date(saida.validado_classificacao_em), "dd/MM/yy HH:mm", { locale: ptBR })
-                              : "-"}
+                            {safeFormatDate(saida.validado_classificacao_em, "dd/MM/yy HH:mm")}
                             {saida.existe_fisicamente !== null && (
                               <span className={`text-xs ${saida.existe_fisicamente ? "text-success" : "text-destructive"}`}>
                                 {saida.existe_fisicamente ? "✓ Existe" : "✗ Não existe"}
@@ -1249,9 +1240,7 @@ export const SaidaProntuariosModule = () => {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {saida.conferido_nir_em 
-                            ? format(new Date(saida.conferido_nir_em), "dd/MM/yy HH:mm", { locale: ptBR })
-                            : "-"}
+                          {safeFormatDate(saida.conferido_nir_em, "dd/MM/yy HH:mm")}
                         </TableCell>
                         <TableCell>
                           {getActionButton(saida)}
@@ -1384,14 +1373,10 @@ export const SaidaProntuariosModule = () => {
                           <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
                           <TableCell className="font-medium">{item.paciente_nome || '-'}</TableCell>
                           <TableCell>
-                            {item.nascimento_mae
-                              ? format(new Date(item.nascimento_mae + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
-                              : '-'}
+                            {safeFormatDate(item.nascimento_mae, "dd/MM/yyyy")}
                           </TableCell>
                           <TableCell>
-                            {item.data_atendimento
-                              ? format(new Date(item.data_atendimento + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
-                              : '-'}
+                            {safeFormatDate(item.data_atendimento, "dd/MM/yyyy")}
                           </TableCell>
                           <TableCell className="max-w-[200px] truncate" title={item.observacao_classificacao || ''}>
                             {item.observacao_classificacao || '-'}
@@ -1541,14 +1526,10 @@ export const SaidaProntuariosModule = () => {
                           <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
                           <TableCell className="font-medium">{item.paciente_nome || '-'}</TableCell>
                           <TableCell>
-                            {item.nascimento_mae
-                              ? format(new Date(item.nascimento_mae + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
-                              : '-'}
+                            {safeFormatDate(item.nascimento_mae, "dd/MM/yyyy")}
                           </TableCell>
                           <TableCell>
-                            {item.data_atendimento
-                              ? format(new Date(item.data_atendimento + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
-                              : '-'}
+                            {safeFormatDate(item.data_atendimento, "dd/MM/yyyy")}
                           </TableCell>
                           <TableCell>
                             <Badge variant="destructive" className="flex items-center gap-1 w-fit">
@@ -1585,20 +1566,14 @@ export const SaidaProntuariosModule = () => {
             <div>
               <label className="text-sm font-medium">Data de Nascimento</label>
               <Input 
-                value={selectedSaida && selectedSaida.nascimento_mae 
-                  ? format(new Date(selectedSaida.nascimento_mae + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
-                  : "-"
-                } 
+                value={safeFormatDate(selectedSaida?.nascimento_mae, "dd/MM/yyyy")} 
                 disabled 
               />
             </div>
             <div>
               <label className="text-sm font-medium">Data de Atendimento</label>
               <Input 
-                value={selectedSaida && selectedSaida.data_atendimento 
-                  ? format(new Date(selectedSaida.data_atendimento + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
-                  : "-"
-                } 
+                value={safeFormatDate(selectedSaida?.data_atendimento, "dd/MM/yyyy")} 
                 disabled 
               />
             </div>

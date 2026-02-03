@@ -51,13 +51,12 @@ import {
   Eye
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import { safeFormatDate } from "@/lib/brasilia-time";
 
 interface SaidaProntuario {
   id: string;
   prontuario_id: string | null;
-  numero_prontuario: string;
+  numero_prontuario: string | null;
   paciente_nome: string | null;
   nascimento_mae: string | null;
   data_atendimento: string | null;
@@ -582,25 +581,17 @@ export const FaturamentoModule = () => {
                     <TableRow key={saida.id}>
                       <TableCell className="font-medium">{saida.paciente_nome || "-"}</TableCell>
                       <TableCell>
-                        {saida.nascimento_mae 
-                          ? format(new Date(saida.nascimento_mae + "T12:00:00"), "dd/MM/yyyy", { locale: ptBR })
-                          : "-"}
+                        {safeFormatDate(saida.nascimento_mae, "dd/MM/yyyy")}
                       </TableCell>
                       <TableCell>{getStatusBadge(saida.status)}</TableCell>
                       <TableCell>
-                        {saida.registrado_recepcao_em 
-                          ? format(new Date(saida.registrado_recepcao_em), "dd/MM/yy HH:mm", { locale: ptBR })
-                          : "-"}
+                        {safeFormatDate(saida.registrado_recepcao_em, "dd/MM/yy HH:mm")}
                       </TableCell>
                       <TableCell>
-                        {saida.validado_classificacao_em 
-                          ? format(new Date(saida.validado_classificacao_em), "dd/MM/yy HH:mm", { locale: ptBR })
-                          : "-"}
+                        {safeFormatDate(saida.validado_classificacao_em, "dd/MM/yy HH:mm")}
                       </TableCell>
                       <TableCell>
-                        {saida.conferido_nir_em 
-                          ? format(new Date(saida.conferido_nir_em), "dd/MM/yy HH:mm", { locale: ptBR })
-                          : "-"}
+                        {safeFormatDate(saida.conferido_nir_em, "dd/MM/yy HH:mm")}
                       </TableCell>
                       <TableCell>
                         {avaliacao ? getResultadoBadge(avaliacao.resultado_final) : "-"}
@@ -649,12 +640,12 @@ export const FaturamentoModule = () => {
               {/* Header Info */}
               <div className="grid grid-cols-2 gap-4 p-4 bg-primary/5 rounded-lg border">
                 <div>
-                  <Label className="text-xs text-muted-foreground">Número do Prontuário</Label>
-                  <Input value={selectedProntuario?.numero_prontuario || ""} disabled className="mt-1 font-mono font-bold" />
+                  <Label className="text-xs text-muted-foreground">Nome do Paciente</Label>
+                  <Input value={selectedProntuario?.paciente_nome || "-"} disabled className="mt-1 font-bold" />
                 </div>
                 <div>
                   <Label className="text-xs text-muted-foreground">Data/Hora da Avaliação</Label>
-                  <Input value={format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })} disabled className="mt-1" />
+                  <Input value={safeFormatDate(new Date().toISOString(), "dd/MM/yyyy HH:mm")} disabled className="mt-1" />
                 </div>
               </div>
 
@@ -810,15 +801,13 @@ export const FaturamentoModule = () => {
                 {/* Header */}
                 <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
                   <div>
-                    <p className="text-xs text-muted-foreground">Prontuário</p>
-                    <p className="font-bold">{selectedAvaliacao.numero_prontuario}</p>
+                    <p className="text-xs text-muted-foreground">Paciente</p>
+                    <p className="font-bold">{selectedAvaliacao.paciente_nome || selectedAvaliacao.numero_prontuario || "-"}</p>
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Data da Avaliação</p>
                     <p className="font-medium">
-                      {selectedAvaliacao.data_conclusao 
-                        ? format(new Date(selectedAvaliacao.data_conclusao), "dd/MM/yyyy HH:mm", { locale: ptBR })
-                        : "-"}
+                      {safeFormatDate(selectedAvaliacao.data_conclusao, "dd/MM/yyyy HH:mm")}
                     </p>
                   </div>
                 </div>
