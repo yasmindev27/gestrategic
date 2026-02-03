@@ -155,9 +155,9 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
   const [searchTerm, setSearchTerm] = useState("");
   
   // Filtros de período
-  const [filterDay, setFilterDay] = useState<string>("");
-  const [filterMonth, setFilterMonth] = useState<string>("");
-  const [filterYear, setFilterYear] = useState<string>("");
+  const [filterDay, setFilterDay] = useState<string>("todos");
+  const [filterMonth, setFilterMonth] = useState<string>("todos");
+  const [filterYear, setFilterYear] = useState<string>("todos");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
   
   const [createDialog, setCreateDialog] = useState(false);
@@ -523,9 +523,9 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
       
       // Filtro por período (dia, mês, ano)
       const dataAbertura = new Date(c.data_abertura);
-      const matchesDay = !filterDay || dataAbertura.getDate() === parseInt(filterDay);
-      const matchesMonth = !filterMonth || (dataAbertura.getMonth() + 1) === parseInt(filterMonth);
-      const matchesYear = !filterYear || dataAbertura.getFullYear() === parseInt(filterYear);
+      const matchesDay = filterDay === "todos" || dataAbertura.getDate() === parseInt(filterDay);
+      const matchesMonth = filterMonth === "todos" || (dataAbertura.getMonth() + 1) === parseInt(filterMonth);
+      const matchesYear = filterYear === "todos" || dataAbertura.getFullYear() === parseInt(filterYear);
       
       return matchesSearch && matchesStatus && matchesDay && matchesMonth && matchesYear;
     });
@@ -744,7 +744,7 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
                         <SelectValue placeholder="Dia" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todos</SelectItem>
+                        <SelectItem value="todos">Todos</SelectItem>
                         {Array.from({ length: 31 }, (_, i) => (
                           <SelectItem key={i + 1} value={String(i + 1)}>
                             {String(i + 1).padStart(2, '0')}
@@ -761,7 +761,7 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
                         <SelectValue placeholder="Mês" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todos</SelectItem>
+                        <SelectItem value="todos">Todos</SelectItem>
                         <SelectItem value="1">Janeiro</SelectItem>
                         <SelectItem value="2">Fevereiro</SelectItem>
                         <SelectItem value="3">Março</SelectItem>
@@ -785,7 +785,7 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
                         <SelectValue placeholder="Ano" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">Todos</SelectItem>
+                        <SelectItem value="todos">Todos</SelectItem>
                         {Array.from({ length: 5 }, (_, i) => {
                           const year = new Date().getFullYear() - i;
                           return (
@@ -798,14 +798,14 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
                     </Select>
                   </div>
                   
-                  {(filterDay || filterMonth || filterYear) && (
+                  {(filterDay !== "todos" || filterMonth !== "todos" || filterYear !== "todos") && (
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => {
-                        setFilterDay("");
-                        setFilterMonth("");
-                        setFilterYear("");
+                        setFilterDay("todos");
+                        setFilterMonth("todos");
+                        setFilterYear("todos");
                       }}
                     >
                       Limpar filtros
