@@ -164,18 +164,39 @@ export const SaidaProntuariosModule = () => {
   const fetchSaidas = async () => {
     setIsLoading(true);
     try {
-      // Fetch all data first, then filter in memory for accurate counts
-      // This handles NULL values properly which Supabase .not() and .or() struggle with
-      const { data: allData, error: allError } = await supabase
+      // Get total count first (bypasses 1000 row limit)
+      const { count: totalCount, error: countError } = await supabase
         .from("saida_prontuarios")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (allError) throw allError;
-
-      const allRecords = allData || [];
+        .select("*", { count: 'exact', head: true });
+      
+      if (countError) throw countError;
+      
+      // Paginated fetch to get ALL records (Supabase default limit is 1000)
+      const allRecords: SaidaProntuario[] = [];
+      const pageSize = 1000;
+      let page = 0;
+      let hasMore = true;
+      
+      while (hasMore) {
+        const { data: pageData, error: pageError } = await supabase
+          .from("saida_prontuarios")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
+        
+        if (pageError) throw pageError;
+        
+        if (pageData && pageData.length > 0) {
+          allRecords.push(...pageData);
+          hasMore = pageData.length === pageSize;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
       
       // Filter records in memory for accurate categorization
+      // This handles NULL values properly which Supabase .not() and .or() struggle with
       const regular = allRecords.filter(s => 
         !s.is_folha_avulsa && 
         (!s.observacao_classificacao || !s.observacao_classificacao.toLowerCase().includes('importado via salus'))
@@ -194,7 +215,6 @@ export const SaidaProntuariosModule = () => {
 
       // Set data
       setSaidas(regular);
-
       setFolhasAvulsas(folhas);
       setFaltantesSalus(salusImports);
     } catch (error) {
