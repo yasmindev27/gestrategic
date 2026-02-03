@@ -191,33 +191,74 @@ export const FaturamentoModule = () => {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Fetch saidas
-      const { data: saidasData, error: saidasError } = await supabase
-        .from("saida_prontuarios")
-        .select("*")
-        .order("created_at", { ascending: false });
+      // Supabase has a default limit of 1000 rows per request.
+      // For this module we need the full dataset to correctly compute "Lista Geral" and "Faltantes".
+      const pageSize = 1000;
 
-      if (saidasError) throw saidasError;
+      const fetchAllSaidas = async (): Promise<SaidaProntuario[]> => {
+        const all: SaidaProntuario[] = [];
+        let from = 0;
 
-      // Fetch avaliacoes
-      const { data: avaliacoesData, error: avaliacoesError } = await supabase
-        .from("avaliacoes_prontuarios")
-        .select("*")
-        .order("data_inicio", { ascending: false });
+        while (true) {
+          const { data, error } = await supabase
+            .from("saida_prontuarios")
+            .select("*")
+            .order("created_at", { ascending: false })
+            .order("id", { ascending: false })
+            .range(from, from + pageSize - 1);
 
-      if (avaliacoesError) throw avaliacoesError;
+          if (error) throw error;
 
-      setSaidas(saidasData || []);
-      setAvaliacoes(avaliacoesData || []);
-      
+          const rows = (data || []) as SaidaProntuario[];
+          all.push(...rows);
+
+          if (rows.length < pageSize) break;
+          from += pageSize;
+        }
+
+        return all;
+      };
+
+      const fetchAllAvaliacoes = async (): Promise<Avaliacao[]> => {
+        const all: Avaliacao[] = [];
+        let from = 0;
+
+        while (true) {
+          const { data, error } = await supabase
+            .from("avaliacoes_prontuarios")
+            .select("*")
+            .order("data_inicio", { ascending: false })
+            .order("id", { ascending: false })
+            .range(from, from + pageSize - 1);
+
+          if (error) throw error;
+
+          const rows = (data || []) as Avaliacao[];
+          all.push(...rows);
+
+          if (rows.length < pageSize) break;
+          from += pageSize;
+        }
+
+        return all;
+      };
+
+      const [saidasData, avaliacoesData] = await Promise.all([
+        fetchAllSaidas(),
+        fetchAllAvaliacoes(),
+      ]);
+
+      setSaidas(saidasData);
+      setAvaliacoes(avaliacoesData);
+
       // Filter faltantes - those without completed evaluation (using saida_prontuario_id)
-      const avaliadosSaidaIds = (avaliacoesData || [])
-        .filter(a => a.is_finalizada)
-        .map(a => a.saida_prontuario_id);
-      
-      setProntuariosFaltantes(
-        (saidasData || []).filter(s => !avaliadosSaidaIds.includes(s.id))
+      const avaliadosSaidaIdSet = new Set(
+        avaliacoesData
+          .filter((a) => a.is_finalizada && !!a.saida_prontuario_id)
+          .map((a) => a.saida_prontuario_id as string)
       );
+
+      setProntuariosFaltantes(saidasData.filter((s) => !avaliadosSaidaIdSet.has(s.id)));
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
