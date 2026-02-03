@@ -101,6 +101,11 @@ export const SaidaProntuariosModule = () => {
   const [folhasAvulsas, setFolhasAvulsas] = useState<SaidaProntuario[]>([]);
   const [faltantesSalus, setFaltantesSalus] = useState<SaidaProntuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Contagens reais (independente do limite de 1000 linhas)
+  const [totalSaidasCount, setTotalSaidasCount] = useState(0);
+  const [totalFolhasCount, setTotalFolhasCount] = useState(0);
+  const [totalFaltantesCount, setTotalFaltantesCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [newProntuarioOpen, setNewProntuarioOpen] = useState(false);
   const [newFolhaAvulsaOpen, setNewFolhaAvulsaOpen] = useState(false);
@@ -160,13 +165,40 @@ export const SaidaProntuariosModule = () => {
   const fetchSaidas = async () => {
     setIsLoading(true);
     try {
-      // Fetch regular saidas (excluding Salus imports and folhas avulsas)
+      // Fetch counts first (bypasses 1000 row limit)
+      const [regularCountResult, folhasCountResult, salusCountResult] = await Promise.all([
+        // Count for regular saidas
+        supabase
+          .from("saida_prontuarios")
+          .select("id", { count: 'exact', head: true })
+          .or('is_folha_avulsa.is.null,is_folha_avulsa.eq.false')
+          .not('observacao_classificacao', 'ilike', '%Importado via Salus%'),
+        
+        // Count for folhas avulsas
+        supabase
+          .from("saida_prontuarios")
+          .select("id", { count: 'exact', head: true })
+          .eq('is_folha_avulsa', true),
+        
+        // Count for Salus imports
+        supabase
+          .from("saida_prontuarios")
+          .select("id", { count: 'exact', head: true })
+          .ilike('observacao_classificacao', '%Importado via Salus%'),
+      ]);
+      
+      setTotalSaidasCount(regularCountResult.count || 0);
+      setTotalFolhasCount(folhasCountResult.count || 0);
+      setTotalFaltantesCount(salusCountResult.count || 0);
+
+      // Fetch regular saidas (excluding Salus imports and folhas avulsas) - increased limit
       const { data: regularData, error: regularError } = await supabase
         .from("saida_prontuarios")
         .select("*")
         .or('is_folha_avulsa.is.null,is_folha_avulsa.eq.false')
         .or('observacao_classificacao.is.null,observacao_classificacao.not.ilike.%Importado via Salus%')
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(10000);
 
       if (regularError) throw regularError;
       // Filter out folhas avulsas and Salus imports from regular saidas
@@ -176,22 +208,24 @@ export const SaidaProntuariosModule = () => {
       );
       setSaidas(regular);
 
-      // Fetch folhas avulsas
+      // Fetch folhas avulsas with increased limit
       const { data: folhasData, error: folhasError } = await supabase
         .from("saida_prontuarios")
         .select("*")
         .eq('is_folha_avulsa', true)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(10000);
 
       if (folhasError) throw folhasError;
       setFolhasAvulsas(folhasData || []);
 
-      // Fetch Salus imports separately
+      // Fetch Salus imports separately with increased limit
       const { data: salusData, error: salusError } = await supabase
         .from("saida_prontuarios")
         .select("*")
         .ilike('observacao_classificacao', '%Importado via Salus%')
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(10000);
 
       if (salusError) throw salusError;
       setFaltantesSalus(salusData || []);
@@ -1086,9 +1120,9 @@ export const SaidaProntuariosModule = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Total de Registros</p>
-                <p className="text-2xl font-bold text-primary">{filteredSaidas.length}</p>
+                <p className="text-2xl font-bold text-primary">{hasActiveFilters ? filteredSaidas.length : totalSaidasCount}</p>
                 {hasActiveFilters && (
-                  <p className="text-xs text-muted-foreground">de {saidas.length} totais</p>
+                  <p className="text-xs text-muted-foreground">de {totalSaidasCount} totais</p>
                 )}
               </div>
             </div>
@@ -1107,7 +1141,7 @@ export const SaidaProntuariosModule = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Folhas Avulsas</p>
-                <p className="text-2xl font-bold text-warning">{folhasAvulsas.length}</p>
+                <p className="text-2xl font-bold text-warning">{totalFolhasCount}</p>
               </div>
             </div>
           </CardContent>
@@ -1125,7 +1159,7 @@ export const SaidaProntuariosModule = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Prontuários Faltantes</p>
-                <p className="text-2xl font-bold text-destructive">{faltantesSalus.length}</p>
+                <p className="text-2xl font-bold text-destructive">{totalFaltantesCount}</p>
               </div>
             </div>
           </CardContent>
