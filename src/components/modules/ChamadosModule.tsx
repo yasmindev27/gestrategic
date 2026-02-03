@@ -615,25 +615,58 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
       
       const chamadosToInsert = importPreview.map((row, index) => {
         // Mapear colunas do Excel para campos do banco
-        const prioridadeRaw = (row['PRIORIDADE DO CHAMADO'] || row['PRIORIDADE'] || 'media').toString().toLowerCase();
-        const prioridade = ['baixa', 'media', 'alta', 'urgente'].includes(prioridadeRaw) 
-          ? prioridadeRaw 
-          : prioridadeRaw === 'médio' || prioridadeRaw === 'medio' ? 'media' : 'media';
+        // Suporta múltiplos formatos de planilha (TI e Manutenção)
+        const prioridadeRaw = (
+          row['PRIORIDADE DO CHAMADO'] || 
+          row['PRIORIDADE DO C'] || 
+          row['PRIORIDADE'] || 
+          'media'
+        ).toString().toLowerCase().trim();
+        
+        let prioridade = 'media';
+        if (prioridadeRaw === 'baixo' || prioridadeRaw === 'baixa') prioridade = 'baixa';
+        else if (prioridadeRaw === 'alto' || prioridadeRaw === 'alta') prioridade = 'alta';
+        else if (prioridadeRaw === 'urgente') prioridade = 'urgente';
+        else if (prioridadeRaw === 'médio' || prioridadeRaw === 'medio' || prioridadeRaw === 'média' || prioridadeRaw === 'media') prioridade = 'media';
         
         const statusRaw = (row['SITUAÇÃO'] || row['STATUS'] || 'resolvido').toString().toLowerCase();
         const status = statusRaw.includes('conclu') || statusRaw.includes('resolvido') ? 'resolvido' : 'aberto';
 
+        // Tentar extrair data de abertura
+        let dataAbertura = new Date().toISOString();
+        const dataRaw = row['Hora de início'] || row['DATA'] || row['DATA ABERTURA'];
+        if (dataRaw) {
+          try {
+            // Formato DD/MM/YY HH:MM ou similar
+            const dateMatch = dataRaw.toString().match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+            if (dateMatch) {
+              const day = parseInt(dateMatch[1]);
+              const month = parseInt(dateMatch[2]) - 1;
+              let year = parseInt(dateMatch[3]);
+              if (year < 100) year += 2000;
+              dataAbertura = new Date(year, month, day).toISOString();
+            }
+          } catch {
+            // Mantém data atual se falhar
+          }
+        }
+
+        const descricao = row['DESCRIÇÃO DO CHAMADO'] || row['DESCRICAO'] || row['TITULO'] || `Chamado importado ${index + 1}`;
+        const solicitante = row['NOME DO SOLICITANTE'] || row['NOME DO SOLICI'] || row['SOLICITANTE'] || 'Importado';
+        const setorOrigem = row['SETOR'] || row['SETOR:'] || null;
+        const contatoRetorno = row['ONDE DESEJA RECEBER O RETORNO DO CHAMADO?'] || row['CONTATO'] || null;
+
         return {
           numero_chamado: `CH-${setor.toUpperCase()}-IMP-${Date.now()}-${index}`,
-          titulo: row['DESCRIÇÃO DO CHAMADO'] || row['DESCRICAO'] || row['TITULO'] || `Chamado importado ${index + 1}`,
-          descricao: row['DESCRIÇÃO DO CHAMADO'] || row['DESCRICAO'] || row['TITULO'] || 'Chamado importado',
+          titulo: descricao.length > 100 ? descricao.substring(0, 100) : descricao,
+          descricao: contatoRetorno ? `${descricao}\n\nContato para retorno: ${contatoRetorno}` : descricao,
           categoria: setor,
           prioridade,
           status,
           solicitante_id: user?.id || '00000000-0000-0000-0000-000000000000',
-          solicitante_nome: row['NOME DO SOLICITANTE'] || row['SOLICITANTE'] || 'Importado',
-          solicitante_setor: row['SETOR'] || null,
-          data_abertura: new Date().toISOString(),
+          solicitante_nome: solicitante,
+          solicitante_setor: setorOrigem,
+          data_abertura: dataAbertura,
           data_resolucao: status === 'resolvido' ? new Date().toISOString() : null,
           solucao: status === 'resolvido' ? 'Chamado importado como resolvido' : null,
         };
