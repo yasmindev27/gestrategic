@@ -64,3 +64,48 @@ export const formatBrasiliaDateTime = (formatStr: "dd/MM/yyyy HH:mm" | "HH:mm" =
   }
   return `${day}/${month}/${year} ${hours}:${minutes}`;
 };
+
+/**
+ * Formata uma data de forma defensiva, retornando fallback se inválida
+ */
+export const safeFormatDate = (
+  dateString: string | null | undefined,
+  formatPattern: string = "dd/MM/yyyy",
+  fallback: string = "-"
+): string => {
+  if (!dateString) return fallback;
+  
+  try {
+    // Valida o formato da string
+    const dateRegex = /^\d{4}-\d{2}-\d{2}/;
+    if (!dateRegex.test(dateString)) return fallback;
+    
+    // Adiciona horário para evitar problemas de fuso
+    const dateWithTime = dateString.includes("T") ? dateString : `${dateString}T12:00:00`;
+    const date = new Date(dateWithTime);
+    
+    // Verifica se a data é válida
+    if (isNaN(date.getTime())) return fallback;
+    
+    const day = date.getDate().toString().padStart(2, "0");
+    const month = (date.getMonth() + 1).toString().padStart(2, "0");
+    const year = date.getFullYear();
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    
+    switch (formatPattern) {
+      case "dd/MM/yyyy":
+        return `${day}/${month}/${year}`;
+      case "dd/MM/yy":
+        return `${day}/${month}/${year.toString().slice(-2)}`;
+      case "dd/MM/yyyy HH:mm":
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
+      case "dd/MM/yy HH:mm":
+        return `${day}/${month}/${year.toString().slice(-2)} ${hours}:${minutes}`;
+      default:
+        return `${day}/${month}/${year}`;
+    }
+  } catch {
+    return fallback;
+  }
+};
