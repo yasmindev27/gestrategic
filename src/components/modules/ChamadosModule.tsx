@@ -54,6 +54,7 @@ import {
   FileText,
   Upload,
   FileSpreadsheet,
+  CalendarIcon,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInHours, parseISO, subDays, isAfter, isBefore, startOfDay, endOfDay } from "date-fns";
@@ -68,7 +69,6 @@ import { exportToPDF } from "@/lib/export-utils";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { cn } from "@/lib/utils";
-import { CalendarIcon } from "lucide-react";
 import * as XLSX from "xlsx";
 
 interface ChamadosModuleProps {
