@@ -164,70 +164,39 @@ export const SaidaProntuariosModule = () => {
   const fetchSaidas = async () => {
     setIsLoading(true);
     try {
-      // Fetch counts first (bypasses 1000 row limit)
-      const [regularCountResult, folhasCountResult, salusCountResult] = await Promise.all([
-        // Count for regular saidas
-        supabase
-          .from("saida_prontuarios")
-          .select("id", { count: 'exact', head: true })
-          .or('is_folha_avulsa.is.null,is_folha_avulsa.eq.false')
-          .not('observacao_classificacao', 'ilike', '%Importado via Salus%'),
-        
-        // Count for folhas avulsas
-        supabase
-          .from("saida_prontuarios")
-          .select("id", { count: 'exact', head: true })
-          .eq('is_folha_avulsa', true),
-        
-        // Count for Salus imports
-        supabase
-          .from("saida_prontuarios")
-          .select("id", { count: 'exact', head: true })
-          .ilike('observacao_classificacao', '%Importado via Salus%'),
-      ]);
-      
-      setTotalSaidasCount(regularCountResult.count || 0);
-      setTotalFolhasCount(folhasCountResult.count || 0);
-      setTotalFaltantesCount(salusCountResult.count || 0);
-
-      // Fetch regular saidas (excluding Salus imports and folhas avulsas) - increased limit
-      const { data: regularData, error: regularError } = await supabase
+      // Fetch all data first, then filter in memory for accurate counts
+      // This handles NULL values properly which Supabase .not() and .or() struggle with
+      const { data: allData, error: allError } = await supabase
         .from("saida_prontuarios")
         .select("*")
-        .or('is_folha_avulsa.is.null,is_folha_avulsa.eq.false')
-        .or('observacao_classificacao.is.null,observacao_classificacao.not.ilike.%Importado via Salus%')
-        .order("created_at", { ascending: false })
-        .limit(10000);
+        .order("created_at", { ascending: false });
 
-      if (regularError) throw regularError;
-      // Filter out folhas avulsas and Salus imports from regular saidas
-      const regular = (regularData || []).filter(s => 
+      if (allError) throw allError;
+
+      const allRecords = allData || [];
+      
+      // Filter records in memory for accurate categorization
+      const regular = allRecords.filter(s => 
         !s.is_folha_avulsa && 
         (!s.observacao_classificacao || !s.observacao_classificacao.toLowerCase().includes('importado via salus'))
       );
+      
+      const folhas = allRecords.filter(s => s.is_folha_avulsa === true);
+      
+      const salusImports = allRecords.filter(s => 
+        s.observacao_classificacao?.toLowerCase().includes('importado via salus')
+      );
+
+      // Set counts from filtered data (accurate counts)
+      setTotalSaidasCount(regular.length);
+      setTotalFolhasCount(folhas.length);
+      setTotalFaltantesCount(salusImports.length);
+
+      // Set data
       setSaidas(regular);
 
-      // Fetch folhas avulsas with increased limit
-      const { data: folhasData, error: folhasError } = await supabase
-        .from("saida_prontuarios")
-        .select("*")
-        .eq('is_folha_avulsa', true)
-        .order("created_at", { ascending: false })
-        .limit(10000);
-
-      if (folhasError) throw folhasError;
-      setFolhasAvulsas(folhasData || []);
-
-      // Fetch Salus imports separately with increased limit
-      const { data: salusData, error: salusError } = await supabase
-        .from("saida_prontuarios")
-        .select("*")
-        .ilike('observacao_classificacao', '%Importado via Salus%')
-        .order("created_at", { ascending: false })
-        .limit(10000);
-
-      if (salusError) throw salusError;
-      setFaltantesSalus(salusData || []);
+      setFolhasAvulsas(folhas);
+      setFaltantesSalus(salusImports);
     } catch (error) {
       console.error("Error fetching saidas:", error);
       toast({
