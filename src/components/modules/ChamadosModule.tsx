@@ -615,10 +615,12 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
       
       const chamadosToInsert = importPreview.map((row, index) => {
         // Mapear colunas do Excel para campos do banco
-        // Suporta múltiplos formatos de planilha (TI e Manutenção)
+        // Suporta múltiplos formatos de planilha (TI, Manutenção e Engenharia Clínica)
         const prioridadeRaw = (
           row['PRIORIDADE DO CHAMADO'] || 
           row['PRIORIDADE DO C'] || 
+          row['ORIDADE DO CHAM'] ||
+          row['ORIDADE DO CHAMADO'] ||
           row['PRIORIDADE'] || 
           'media'
         ).toString().toLowerCase().trim();
@@ -629,12 +631,25 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
         else if (prioridadeRaw === 'urgente') prioridade = 'urgente';
         else if (prioridadeRaw === 'médio' || prioridadeRaw === 'medio' || prioridadeRaw === 'média' || prioridadeRaw === 'media') prioridade = 'media';
         
-        const statusRaw = (row['SITUAÇÃO'] || row['STATUS'] || 'resolvido').toString().toLowerCase();
-        const status = statusRaw.includes('conclu') || statusRaw.includes('resolvido') ? 'resolvido' : 'aberto';
+        // Status - suporta múltiplos formatos
+        const statusRaw = (
+          row['SITUAÇÃO'] || 
+          row['STATUS'] || 
+          row['Status do chamado'] ||
+          row['STATUS DO CHAMADO'] ||
+          'resolvido'
+        ).toString().toLowerCase();
+        
+        let status = 'aberto';
+        if (statusRaw.includes('conclu') || statusRaw.includes('resolvido')) {
+          status = 'resolvido';
+        } else if (statusRaw.includes('andamento') || statusRaw.includes('em_andamento')) {
+          status = 'em_andamento';
+        }
 
-        // Tentar extrair data de abertura
+        // Tentar extrair data de abertura - suporta múltiplos formatos
         let dataAbertura = new Date().toISOString();
-        const dataRaw = row['Hora de início'] || row['DATA'] || row['DATA ABERTURA'];
+        const dataRaw = row['Hora de início'] || row['DATA'] || row['DATA ABERTURA'] || Object.values(row)[0];
         if (dataRaw) {
           try {
             // Formato DD/MM/YY HH:MM ou similar
@@ -652,14 +667,24 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
         }
 
         const descricao = row['DESCRIÇÃO DO CHAMADO'] || row['DESCRICAO'] || row['TITULO'] || `Chamado importado ${index + 1}`;
-        const solicitante = row['NOME DO SOLICITANTE'] || row['NOME DO SOLICI'] || row['SOLICITANTE'] || 'Importado';
+        const solicitante = row['NOME DO SOLICITANTE'] || row['NOME DO SOLICI'] || row['NOME DO SOLICITA'] || row['SOLICITANTE'] || 'Importado';
         const setorOrigem = row['SETOR'] || row['SETOR:'] || null;
         const contatoRetorno = row['ONDE DESEJA RECEBER O RETORNO DO CHAMADO?'] || row['CONTATO'] || null;
+        const tipoChamado = row['TIPO DE CHAMADO'] || row['TIPO'] || null;
+
+        // Montar descrição completa incluindo tipo de chamado se disponível
+        let descricaoCompleta = descricao;
+        if (tipoChamado) {
+          descricaoCompleta = `[${tipoChamado}] ${descricao}`;
+        }
+        if (contatoRetorno) {
+          descricaoCompleta += `\n\nContato para retorno: ${contatoRetorno}`;
+        }
 
         return {
           numero_chamado: `CH-${setor.toUpperCase()}-IMP-${Date.now()}-${index}`,
           titulo: descricao.length > 100 ? descricao.substring(0, 100) : descricao,
-          descricao: contatoRetorno ? `${descricao}\n\nContato para retorno: ${contatoRetorno}` : descricao,
+          descricao: descricaoCompleta,
           categoria: setor,
           prioridade,
           status,
