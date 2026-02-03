@@ -24,6 +24,7 @@ import { RoupariaModule } from "@/components/modules/RoupariaModule";
 import { SegurancaTrabalhoModule } from "@/components/modules/SegurancaTrabalhoModule";
 import { AssistenciaSocialModule } from "@/components/modules/AssistenciaSocialModule";
 import { QualidadeModule } from "@/components/modules/QualidadeModule";
+import { ChamadosDashboard } from "@/components/chamados/ChamadosDashboard";
 import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -112,6 +113,9 @@ const Dashboard = () => {
           {activeSection === "admin" && <AdminModule />}
 
           {activeSection === "logs" && <LogsAuditoriaModule />}
+
+          {/* Dashboard de Chamados (Admin) */}
+          {activeSection === "chamados" && <ChamadosDashboard />}
 
           {/* Módulos dos Técnicos */}
           {activeSection === "tecnico-ti" && <TecnicoModule setor="ti" />}
