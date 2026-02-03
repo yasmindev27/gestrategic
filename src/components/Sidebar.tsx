@@ -75,6 +75,10 @@ const Sidebar = ({
         label: "Controle de Fichas",
         id: "controle-fichas"
       }, {
+        icon: Ticket,
+        label: "Chamados",
+        id: "chamados"
+      }, {
         icon: Monitor,
         label: "TI",
         id: "tecnico-ti"
