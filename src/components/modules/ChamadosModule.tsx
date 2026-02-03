@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
@@ -51,16 +51,18 @@ import {
   Search,
   Loader2,
   MessageSquare,
+  FileText,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, differenceInHours, parseISO, subDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { ChamadosDashboard } from "@/components/chamados";
+import { ChamadosDashboard, RelatorioIADialog } from "@/components/chamados";
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
 import { StatCard } from "@/components/ui/stat-card";
 import { SearchInput } from "@/components/ui/search-input";
 import { LoadingState, LoadingSpinner } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
+import { exportToPDF } from "@/lib/export-utils";
 
 interface ChamadosModuleProps {
   setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'nir';
@@ -178,7 +180,20 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
   });
   const [isAddingMaterial, setIsAddingMaterial] = useState(false);
 
+  // Estados para relatório IA
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [relatorioIA, setRelatorioIA] = useState("");
+  const [showRelatorioDialog, setShowRelatorioDialog] = useState(false);
+
   const isResponsavel = role === 'admin' || role === setor;
+
+  // SLA configuration
+  const SLA_HORAS: Record<string, number> = {
+    urgente: 2,
+    alta: 4,
+    media: 8,
+    baixa: 24,
+  };
 
   useEffect(() => {
     fetchChamados();
@@ -509,13 +524,128 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
     resolvidos: chamados.filter(c => c.status === 'resolvido').length,
   };
 
+  // Gerar relatório com IA
+  const handleGerarRelatorioIA = useCallback(async () => {
+    setIsGeneratingReport(true);
+    setShowRelatorioDialog(true);
+    setRelatorioIA("");
+
+    try {
+      const resolvidos = chamados.filter(c => c.status === "resolvido" && c.data_resolucao);
+      
+      // Calcular tempo médio de resolução
+      let tempoMedioResolucao = 0;
+      if (resolvidos.length > 0) {
+        const tempos = resolvidos.map((c) =>
+          differenceInHours(parseISO(c.data_resolucao!), parseISO(c.data_abertura))
+        );
+        tempoMedioResolucao = tempos.reduce((a, b) => a + b, 0) / tempos.length;
+      }
+
+      // Calcular SLA
+      let dentroDeSLA = 0;
+      resolvidos.forEach((c) => {
+        const horasResolucao = differenceInHours(
+          parseISO(c.data_resolucao!),
+          parseISO(c.data_abertura)
+        );
+        const slaHoras = SLA_HORAS[c.prioridade] || 24;
+        if (horasResolucao <= slaHoras) {
+          dentroDeSLA++;
+        }
+      });
+      const percentualSLA = resolvidos.length > 0 
+        ? (dentroDeSLA / resolvidos.length) * 100 
+        : 0;
+
+      const porPrioridade: Record<string, number> = {};
+      chamados.forEach((c) => {
+        porPrioridade[c.prioridade] = (porPrioridade[c.prioridade] || 0) + 1;
+      });
+
+      const dados = {
+        total: chamados.length,
+        abertos: chamados.filter((c) => c.status === "aberto").length,
+        emAndamento: chamados.filter((c) => c.status === "em_andamento").length,
+        resolvidos: resolvidos.length,
+        cancelados: chamados.filter((c) => c.status === "cancelado").length,
+        porCategoria: { [setor]: chamados.length },
+        porPrioridade,
+        tempoMedioResolucao,
+        percentualSLA,
+        taxaReabertura: 0,
+        produtividadeEquipe: [],
+        periodo: {
+          inicio: format(subDays(new Date(), 30), "dd/MM/yyyy"),
+          fim: format(new Date(), "dd/MM/yyyy"),
+        },
+        setor: setorLabels[setor],
+      };
+
+      const response = await supabase.functions.invoke("gerar-relatorio-chamados", {
+        body: { dados },
+      });
+
+      if (response.error) throw response.error;
+      
+      setRelatorioIA(response.data?.relatorio || "Erro ao gerar relatório.");
+      await logAction("gerar_relatorio_ia", `chamados_${setor}`);
+    } catch (error) {
+      console.error("Error:", error);
+      toast({
+        title: "Erro",
+        description: "Erro ao gerar relatório com IA.",
+        variant: "destructive",
+      });
+      setShowRelatorioDialog(false);
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  }, [chamados, setor, SLA_HORAS, logAction, toast]);
+
+  // Export relatório PDF
+  const handleExportRelatorioPDF = useCallback(() => {
+    if (!relatorioIA) return;
+    
+    const lines = relatorioIA.split("\n").filter(line => line.trim());
+    const headers = ["Conteúdo"];
+    const rows = lines.map(line => [line.replace(/^[#\-*•\d.]+\s*/, "")]);
+    
+    exportToPDF({
+      title: `Relatório de Chamados - ${setorLabels[setor]}`,
+      headers,
+      rows,
+      fileName: `relatorio-chamados-${setor}`,
+      orientation: 'portrait',
+    });
+    
+    toast({
+      title: "Exportado!",
+      description: "PDF do relatório gerado com sucesso.",
+    });
+  }, [relatorioIA, setor, toast]);
+
   return (
     <div className="space-y-6">
       <SectionHeader 
         title={`Chamados - ${setorLabels[setor]}`}
         description="Central de atendimento e suporte"
       >
-        <ActionButton type="add" label="Novo Chamado" onClick={() => setCreateDialog(true)} />
+        <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleGerarRelatorioIA}
+            disabled={isGeneratingReport || chamados.length === 0}
+          >
+            {isGeneratingReport ? (
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <FileText className="h-4 w-4 mr-2" />
+            )}
+            Gerar Relatório IA
+          </Button>
+          <ActionButton type="add" label="Novo Chamado" onClick={() => setCreateDialog(true)} />
+        </div>
       </SectionHeader>
 
       {/* Stats */}
@@ -1039,6 +1169,15 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de Relatório IA */}
+      <RelatorioIADialog
+        open={showRelatorioDialog}
+        onOpenChange={setShowRelatorioDialog}
+        relatorio={relatorioIA}
+        isLoading={isGeneratingReport}
+        onExportPDF={handleExportRelatorioPDF}
+      />
     </div>
   );
 };
