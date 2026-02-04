@@ -3,7 +3,6 @@ import {
   Stethoscope, 
   BarChart3, 
   ExternalLink, 
-  FileUp, 
   Activity,
   Link2,
   Settings
@@ -21,8 +20,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { SalusImportModule } from "@/components/nir/SalusImportModule";
-import SalusPanels from "@/components/SalusPanels";
 
 const SalusModule = () => {
   const { toast } = useToast();
@@ -70,13 +67,13 @@ const SalusModule = () => {
             Sistema Salus
           </h1>
           <p className="module-subtitle">
-            Acesse o sistema Salus, dashboards e ferramentas de importação
+            Acesse o sistema Salus e dashboards
           </p>
         </div>
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Acessar Salus */}
         <Card className="card-hover cursor-pointer" onClick={() => openExternalLink("https://novaserrana.sistemasalus.com.br/")}>
           <CardHeader className="pb-3">
@@ -193,28 +190,35 @@ const SalusModule = () => {
             )}
           </CardContent>
         </Card>
-
-        {/* Importar Lista Salus */}
-        <Card className="card-hover">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <div className="p-2 bg-success/10 rounded-lg">
-                <FileUp className="h-5 w-5 text-success" />
-              </div>
-              Importar Lista
-            </CardTitle>
-            <CardDescription>
-              Importar pacientes do PDF do Salus
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <SalusImportModule />
-          </CardContent>
-        </Card>
       </div>
 
-      {/* Painéis Salus */}
-      <SalusPanels />
+      {/* Visão Geral da Unidade */}
+      <Card className="shadow-sm border-border">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg font-semibold flex items-center gap-2 text-foreground">
+            <div className="p-1.5 bg-info/10 rounded-lg">
+              <Activity className="h-4 w-4 text-info" />
+            </div>
+            Painéis Salus
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Button
+            variant="outline"
+            className="w-full h-auto p-4 flex items-center gap-4 justify-start transition-all border-border hover:bg-info hover:text-info-foreground hover:border-info"
+            onClick={() => openExternalLink("https://dashboard-appolus.streamlit.app/#painel-entrada-por-classificacao")}
+          >
+            <div className="p-2 rounded-lg bg-info/10 text-info">
+              <Activity className="h-5 w-5" />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="font-semibold text-foreground">Visão Geral da Unidade</p>
+              <p className="text-xs text-muted-foreground font-normal">Panorama completo do funcionamento da unidade</p>
+            </div>
+            <ExternalLink className="h-4 w-4 text-muted-foreground" />
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 };
