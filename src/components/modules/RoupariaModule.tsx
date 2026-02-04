@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shirt, ArrowUpDown, Package, BarChart3 } from "lucide-react";
@@ -7,11 +7,22 @@ import { RoupariaEstoque } from "@/components/rouparia/RoupariaEstoque";
 import { RoupariaCategorias } from "@/components/rouparia/RoupariaCategorias";
 import { RoupariaRelatorios } from "@/components/rouparia/RoupariaRelatorios";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useLogAccess } from "@/hooks/useLogAccess";
 
 export function RoupariaModule() {
   const [activeTab, setActiveTab] = useState("movimentacao");
   const { isAdmin, isGestor } = useUserRole();
+  const { logAction } = useLogAccess();
   const canManage = isAdmin || isGestor;
+
+  useEffect(() => {
+    logAction("acesso_modulo", "rouparia");
+  }, [logAction]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    logAction("navegacao_aba", "rouparia", { aba: value });
+  };
 
   return (
     <div className="space-y-6">
@@ -30,7 +41,7 @@ export function RoupariaModule() {
           </div>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <Tabs value={activeTab} onValueChange={handleTabChange}>
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="movimentacao" className="flex items-center gap-2">
                 <ArrowUpDown className="h-4 w-4" />

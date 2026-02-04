@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useLogAccess } from "@/hooks/useLogAccess";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, Calendar, Package } from "lucide-react";
@@ -8,7 +9,17 @@ import { EscalaLaboratorioModule } from "./EscalaLaboratorioModule";
 
 export const LaboratorioModule = () => {
   const { isAdmin, isLaboratorio, isLoading } = useUserRole();
+  const { logAction } = useLogAccess();
   const [activeTab, setActiveTab] = useState("escala");
+  
+  useEffect(() => {
+    logAction("acesso_modulo", "laboratorio");
+  }, [logAction]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    logAction("navegacao_aba", "laboratorio", { aba: value });
+  };
   
   const hasAccess = isAdmin || isLaboratorio;
 
@@ -46,7 +57,7 @@ export const LaboratorioModule = () => {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="grid w-full grid-cols-2 max-w-md">
           <TabsTrigger value="escala" className="flex items-center gap-2">
             <Calendar className="h-4 w-4" />
