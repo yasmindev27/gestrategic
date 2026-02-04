@@ -1727,6 +1727,44 @@ export type Database = {
         }
         Relationships: []
       }
+      ferramentas_modulo: {
+        Row: {
+          codigo: string
+          created_at: string | null
+          descricao: string | null
+          id: string
+          modulo_id: string | null
+          nome: string
+          ordem: number | null
+        }
+        Insert: {
+          codigo: string
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          modulo_id?: string | null
+          nome: string
+          ordem?: number | null
+        }
+        Update: {
+          codigo?: string
+          created_at?: string | null
+          descricao?: string | null
+          id?: string
+          modulo_id?: string | null
+          nome?: string
+          ordem?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ferramentas_modulo_modulo_id_fkey"
+            columns: ["modulo_id"]
+            isOneToOne: false
+            referencedRelation: "modulos_sistema"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       formulario_campos: {
         Row: {
           created_at: string
@@ -2025,6 +2063,75 @@ export type Database = {
         }
         Relationships: []
       }
+      logs_permissoes: {
+        Row: {
+          acao: string
+          created_at: string | null
+          dados_anteriores: Json | null
+          dados_novos: Json | null
+          entidade_id: string | null
+          entidade_tipo: string | null
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          acao: string
+          created_at?: string | null
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          entidade_id?: string | null
+          entidade_tipo?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          acao?: string
+          created_at?: string | null
+          dados_anteriores?: Json | null
+          dados_novos?: Json | null
+          entidade_id?: string | null
+          entidade_tipo?: string | null
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      modulos_sistema: {
+        Row: {
+          ativo: boolean | null
+          categoria: string | null
+          codigo: string
+          created_at: string | null
+          descricao: string | null
+          icone: string | null
+          id: string
+          nome: string
+          ordem: number | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          categoria?: string | null
+          codigo: string
+          created_at?: string | null
+          descricao?: string | null
+          icone?: string | null
+          id?: string
+          nome: string
+          ordem?: number | null
+        }
+        Update: {
+          ativo?: boolean | null
+          categoria?: string | null
+          codigo?: string
+          created_at?: string | null
+          descricao?: string | null
+          icone?: string | null
+          id?: string
+          nome?: string
+          ordem?: number | null
+        }
+        Relationships: []
+      }
       movimentacoes_estoque: {
         Row: {
           created_at: string
@@ -2127,6 +2234,138 @@ export type Database = {
             columns: ["ronda_id"]
             isOneToOne: false
             referencedRelation: "rondas_seguranca"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      perfis_sistema: {
+        Row: {
+          ativo: boolean | null
+          cor: string | null
+          created_at: string | null
+          created_by: string | null
+          descricao: string | null
+          icone: string | null
+          id: string
+          is_master: boolean | null
+          is_sistema: boolean | null
+          nome: string
+          ordem: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          ativo?: boolean | null
+          cor?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          icone?: string | null
+          id?: string
+          is_master?: boolean | null
+          is_sistema?: boolean | null
+          nome: string
+          ordem?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          ativo?: boolean | null
+          cor?: string | null
+          created_at?: string | null
+          created_by?: string | null
+          descricao?: string | null
+          icone?: string | null
+          id?: string
+          is_master?: boolean | null
+          is_sistema?: boolean | null
+          nome?: string
+          ordem?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      permissoes_ferramenta: {
+        Row: {
+          created_at: string | null
+          ferramenta_id: string | null
+          id: string
+          perfil_id: string | null
+          permitido: boolean | null
+        }
+        Insert: {
+          created_at?: string | null
+          ferramenta_id?: string | null
+          id?: string
+          perfil_id?: string | null
+          permitido?: boolean | null
+        }
+        Update: {
+          created_at?: string | null
+          ferramenta_id?: string | null
+          id?: string
+          perfil_id?: string | null
+          permitido?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permissoes_ferramenta_ferramenta_id_fkey"
+            columns: ["ferramenta_id"]
+            isOneToOne: false
+            referencedRelation: "ferramentas_modulo"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "permissoes_ferramenta_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis_sistema"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      permissoes_perfil: {
+        Row: {
+          comportamento_sem_acesso: string | null
+          created_at: string | null
+          id: string
+          modulo_id: string | null
+          perfil_id: string | null
+          pode_acessar: boolean | null
+          pode_visualizar: boolean | null
+          updated_at: string | null
+        }
+        Insert: {
+          comportamento_sem_acesso?: string | null
+          created_at?: string | null
+          id?: string
+          modulo_id?: string | null
+          perfil_id?: string | null
+          pode_acessar?: boolean | null
+          pode_visualizar?: boolean | null
+          updated_at?: string | null
+        }
+        Update: {
+          comportamento_sem_acesso?: string | null
+          created_at?: string | null
+          id?: string
+          modulo_id?: string | null
+          perfil_id?: string | null
+          pode_acessar?: boolean | null
+          pode_visualizar?: boolean | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "permissoes_perfil_modulo_id_fkey"
+            columns: ["modulo_id"]
+            isOneToOne: false
+            referencedRelation: "modulos_sistema"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "permissoes_perfil_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis_sistema"
             referencedColumns: ["id"]
           },
         ]
@@ -2933,6 +3172,38 @@ export type Database = {
         }
         Relationships: []
       }
+      usuario_perfil: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          id: string
+          perfil_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          perfil_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          id?: string
+          perfil_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "usuario_perfil_perfil_id_fkey"
+            columns: ["perfil_id"]
+            isOneToOne: false
+            referencedRelation: "perfis_sistema"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       vacinas_seguranca: {
         Row: {
           created_at: string
@@ -3089,8 +3360,21 @@ export type Database = {
         Args: { _conversa_id: string; _user_id: string }
         Returns: boolean
       }
+      obter_permissoes_usuario: { Args: { _user_id: string }; Returns: Json }
       pode_ver_formulario: {
         Args: { _formulario_id: string; _user_id: string }
+        Returns: boolean
+      }
+      usuario_pode_acessar_modulo: {
+        Args: { _modulo_codigo: string; _user_id: string }
+        Returns: Json
+      }
+      usuario_pode_usar_ferramenta: {
+        Args: {
+          _ferramenta_codigo: string
+          _modulo_codigo: string
+          _user_id: string
+        }
         Returns: boolean
       }
     }
