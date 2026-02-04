@@ -311,6 +311,10 @@ export const AbrirChamadoModule = () => {
     resolvidos: meusChamados.filter(c => c.status === 'resolvido').length,
   };
 
+  const handleAbrirChamado = () => {
+    window.open("https://suporte.santacasachavantes.org/index.php", "_blank");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -318,7 +322,7 @@ export const AbrirChamadoModule = () => {
           <h2 className="text-2xl font-bold text-foreground">Central de Chamados</h2>
           <p className="text-muted-foreground">Abra chamados para TI, Manutenção ou Engenharia Clínica</p>
         </div>
-        <Button onClick={() => setCreateDialog(true)} size="lg">
+        <Button onClick={handleAbrirChamado} size="lg">
           <Plus className="h-5 w-5 mr-2" />
           Abrir Novo Chamado
         </Button>
@@ -394,7 +398,7 @@ export const AbrirChamadoModule = () => {
               <p>Você ainda não abriu nenhum chamado.</p>
               <Button 
                 variant="link" 
-                onClick={() => setCreateDialog(true)}
+                onClick={handleAbrirChamado}
                 className="mt-2"
               >
                 Abrir primeiro chamado
