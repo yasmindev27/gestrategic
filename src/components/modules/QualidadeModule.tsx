@@ -24,7 +24,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, mapStatusToType } from "@/components/ui/status-badge";
 import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
-import { AuditoriasSegurancaPaciente } from "@/components/qualidade";
+import { AuditoriasSegurancaPaciente, DashboardConformidade } from "@/components/qualidade";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -123,7 +123,7 @@ const setoresHospitalares = [
 export const QualidadeModule = () => {
   const { logAction } = useLogAccess();
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("incidentes");
+  const [activeTab, setActiveTab] = useState("conformidade");
   
   // Data states
   const [incidentes, setIncidentes] = useState<Incidente[]>([]);
@@ -507,6 +507,10 @@ export const QualidadeModule = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="conformidade" className="gap-1">
+            <TrendingUp className="h-4 w-4" />
+            Conformidade
+          </TabsTrigger>
           <TabsTrigger value="incidentes">Incidentes</TabsTrigger>
           <TabsTrigger value="acoes">Ações</TabsTrigger>
           <TabsTrigger value="auditorias">Auditorias Gerais</TabsTrigger>
@@ -516,6 +520,11 @@ export const QualidadeModule = () => {
           </TabsTrigger>
           <TabsTrigger value="indicadores">Indicadores</TabsTrigger>
         </TabsList>
+
+        {/* Dashboard de Conformidade */}
+        <TabsContent value="conformidade" className="mt-4">
+          <DashboardConformidade />
+        </TabsContent>
 
         {/* Incidentes Tab */}
         <TabsContent value="incidentes" className="space-y-4">

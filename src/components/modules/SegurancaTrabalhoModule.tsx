@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shirt, HardHat, Syringe, ClipboardCheck, Bell } from "lucide-react";
 import {
@@ -8,9 +8,20 @@ import {
   RondasControl,
   NotificacoesControl
 } from "@/components/seguranca-trabalho";
+import { useLogAccess } from "@/hooks/useLogAccess";
 
 export function SegurancaTrabalhoModule() {
   const [activeTab, setActiveTab] = useState("uniformes");
+  const { logAction } = useLogAccess();
+
+  useEffect(() => {
+    logAction("acesso_modulo", "seguranca_trabalho");
+  }, [logAction]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    logAction("navegacao_aba", "seguranca_trabalho", { aba: value });
+  };
 
   return (
     <div className="space-y-6">
@@ -21,7 +32,7 @@ export function SegurancaTrabalhoModule() {
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
         <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="uniformes" className="flex items-center gap-2">
             <Shirt className="h-4 w-4" />
