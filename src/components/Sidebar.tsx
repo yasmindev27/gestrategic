@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Users, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, Ticket, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog, Shirt, HardHat, Heart, AlertTriangle, Syringe, ExternalLink, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Users, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog, Shirt, HardHat, Heart, AlertTriangle, Syringe, ExternalLink, MessageSquare } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -187,10 +187,6 @@ const Sidebar = ({
         label: "Dashboard",
         id: "dashboard"
       }, {
-        icon: Ticket,
-        label: "Abrir Chamado",
-        id: "abrir-chamado"
-      }, {
         icon: Calendar,
         label: "Agenda",
         id: "agenda"
@@ -208,10 +204,6 @@ const Sidebar = ({
         icon: LayoutDashboard,
         label: "Dashboard",
         id: "dashboard"
-      }, {
-        icon: Ticket,
-        label: "Abrir Chamado",
-        id: "abrir-chamado"
       }, {
         icon: ClipboardX,
         label: "Recepção",
@@ -235,10 +227,6 @@ const Sidebar = ({
         label: "Dashboard",
         id: "dashboard"
       }, {
-        icon: Ticket,
-        label: "Abrir Chamado",
-        id: "abrir-chamado"
-      }, {
         icon: Receipt,
         label: "Faturamento",
         id: "faturamento"
@@ -257,10 +245,6 @@ const Sidebar = ({
         label: "NIR",
         id: "nir"
       }, {
-        icon: Ticket,
-        label: "Abrir Chamado",
-        id: "abrir-chamado"
-      }, {
         icon: Receipt,
         label: "Faturamento",
         id: "faturamento"
@@ -272,16 +256,12 @@ const Sidebar = ({
       return items;
     }
 
-    // FATURAMENTO - Lista prontuários + Prontuários faltantes + Avaliação + Abrir chamado
+    // FATURAMENTO - Lista prontuários + Prontuários faltantes + Avaliação
     if (isFaturamento) {
       items.push({
         icon: LayoutDashboard,
         label: "Dashboard",
         id: "dashboard"
-      }, {
-        icon: Ticket,
-        label: "Abrir Chamado",
-        id: "abrir-chamado"
       }, {
         icon: Receipt,
         label: "Faturamento",
@@ -301,10 +281,6 @@ const Sidebar = ({
         label: "TI",
         id: "tecnico-ti"
       }, {
-        icon: Ticket,
-        label: "Abrir Chamado",
-        id: "abrir-chamado"
-      }, {
         icon: Calendar,
         label: "Agenda",
         id: "agenda"
@@ -316,10 +292,6 @@ const Sidebar = ({
         icon: Wrench,
         label: "Manutenção",
         id: "tecnico-manutencao"
-      }, {
-        icon: Ticket,
-        label: "Abrir Chamado",
-        id: "abrir-chamado"
       }, {
         icon: Calendar,
         label: "Agenda",
@@ -333,10 +305,6 @@ const Sidebar = ({
         label: "Eng. Clínica",
         id: "tecnico-engenharia"
       }, {
-        icon: Ticket,
-        label: "Abrir Chamado",
-        id: "abrir-chamado"
-      }, {
         icon: Calendar,
         label: "Agenda",
         id: "agenda"
@@ -348,10 +316,6 @@ const Sidebar = ({
         icon: FlaskConical,
         label: "Laboratório",
         id: "laboratorio"
-      }, {
-        icon: Ticket,
-        label: "Abrir Chamado",
-        id: "abrir-chamado"
       }, {
         icon: Calendar,
         label: "Agenda",
@@ -367,10 +331,6 @@ const Sidebar = ({
         label: "Dashboard",
         id: "dashboard"
       }, {
-        icon: Ticket,
-        label: "Abrir Chamado",
-        id: "abrir-chamado"
-      }, {
         icon: UserCog,
         label: "RH/DP",
         id: "rhdp"
@@ -382,15 +342,11 @@ const Sidebar = ({
       return items;
     }
 
-    // FUNCIONÁRIO padrão - apenas Dashboard, Chamado, Agenda e Restaurante
+    // FUNCIONÁRIO padrão - apenas Dashboard, Agenda e Restaurante
     items.push({
       icon: LayoutDashboard,
       label: "Dashboard",
       id: "dashboard"
-    }, {
-      icon: Ticket,
-      label: "Abrir Chamado",
-      id: "abrir-chamado"
     }, {
       icon: Calendar,
       label: "Agenda",
