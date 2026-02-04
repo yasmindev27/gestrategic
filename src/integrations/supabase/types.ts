@@ -1497,6 +1497,7 @@ export type Database = {
           observacoes: string | null
           profissional_id: string
           profissional_nome: string
+          profissional_saude_id: string | null
           setor: string
           status: string
           tipo_plantao: string
@@ -1512,6 +1513,7 @@ export type Database = {
           observacoes?: string | null
           profissional_id: string
           profissional_nome: string
+          profissional_saude_id?: string | null
           setor: string
           status?: string
           tipo_plantao: string
@@ -1527,12 +1529,21 @@ export type Database = {
           observacoes?: string | null
           profissional_id?: string
           profissional_nome?: string
+          profissional_saude_id?: string | null
           setor?: string
           status?: string
           tipo_plantao?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "enfermagem_escalas_profissional_saude_id_fkey"
+            columns: ["profissional_saude_id"]
+            isOneToOne: false
+            referencedRelation: "profissionais_saude"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       enfermagem_trocas: {
         Row: {
@@ -1726,6 +1737,59 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      escalas_medicos: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_plantao: string
+          hora_fim: string
+          hora_inicio: string
+          id: string
+          observacoes: string | null
+          profissional_id: string
+          setor: string
+          status: string
+          tipo_plantao: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_plantao: string
+          hora_fim: string
+          hora_inicio: string
+          id?: string
+          observacoes?: string | null
+          profissional_id: string
+          setor: string
+          status?: string
+          tipo_plantao?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_plantao?: string
+          hora_fim?: string
+          hora_inicio?: string
+          id?: string
+          observacoes?: string | null
+          profissional_id?: string
+          setor?: string
+          status?: string
+          tipo_plantao?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escalas_medicos_profissional_id_fkey"
+            columns: ["profissional_id"]
+            isOneToOne: false
+            referencedRelation: "profissionais_saude"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       ferramentas_modulo: {
         Row: {
@@ -2519,6 +2583,54 @@ export type Database = {
         }
         Relationships: []
       }
+      profissionais_saude: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          email: string | null
+          especialidade: string | null
+          id: string
+          nome: string
+          observacoes: string | null
+          registro_profissional: string | null
+          status: string
+          telefone: string | null
+          tipo: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          especialidade?: string | null
+          id?: string
+          nome: string
+          observacoes?: string | null
+          registro_profissional?: string | null
+          status?: string
+          telefone?: string | null
+          tipo: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          especialidade?: string | null
+          id?: string
+          nome?: string
+          observacoes?: string | null
+          registro_profissional?: string | null
+          status?: string
+          telefone?: string | null
+          tipo?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       prontuarios: {
         Row: {
           created_at: string
@@ -3287,7 +3399,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      escala_dia_view: {
+        Row: {
+          data_plantao: string | null
+          de_plantao_agora: boolean | null
+          especialidade: string | null
+          hora_fim: string | null
+          hora_inicio: string | null
+          id: string | null
+          nome: string | null
+          observacoes: string | null
+          registro_profissional: string | null
+          setor: string | null
+          status: string | null
+          tipo_plantao: string | null
+          tipo_profissional: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       gestor_gerencia_usuario: {

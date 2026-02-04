@@ -79,6 +79,11 @@ const Sidebar = ({
           id: "mapa-leitos"
         },
         {
+          icon: Stethoscope,
+          label: "Médicos",
+          id: "medicos"
+        },
+        {
           icon: Syringe,
           label: "Enfermagem",
           id: "enfermagem"
@@ -109,6 +114,11 @@ const Sidebar = ({
           icon: UserCog,
           label: "RH/DP",
           id: "rhdp"
+        },
+        {
+          icon: Users,
+          label: "Profissionais",
+          id: "profissionais-saude"
         },
         {
           icon: ClipboardX,

@@ -38,9 +38,18 @@ interface Profile {
   setor: string | null;
 }
 
+interface ProfissionalSaude {
+  id: string;
+  nome: string;
+  user_id: string | null;
+  especialidade: string | null;
+}
+
 export function NovaEscalaDialog({ open, onOpenChange, selectedDate, creatorId }: NovaEscalaDialogProps) {
   const criarEscala = useCriarEscala();
-  const [profissionais, setProfissionais] = useState<Profile[]>([]);
+  const [profissionaisSaude, setProfissionaisSaude] = useState<ProfissionalSaude[]>([]);
+  const [profissionaisProfiles, setProfissionaisProfiles] = useState<Profile[]>([]);
+  const [usarCadastroRH, setUsarCadastroRH] = useState(true);
   const [setores, setSetores] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -65,14 +74,28 @@ export function NovaEscalaDialog({ open, onOpenChange, selectedDate, creatorId }
     async function loadData() {
       setLoading(true);
       try {
-        // Carregar profissionais
-        const { data: profiles } = await supabase
-          .from('profiles')
-          .select('user_id, full_name, setor')
-          .order('full_name');
+        // Carregar profissionais de saúde do RH (tipo enfermagem)
+        const { data: profSaude } = await supabase
+          .from('profissionais_saude')
+          .select('id, nome, user_id, especialidade')
+          .eq('tipo', 'enfermagem')
+          .eq('status', 'ativo')
+          .order('nome');
 
-        if (profiles) {
-          setProfissionais(profiles);
+        if (profSaude && profSaude.length > 0) {
+          setProfissionaisSaude(profSaude);
+          setUsarCadastroRH(true);
+        } else {
+          // Fallback: carregar do profiles se não houver cadastro no RH
+          const { data: profiles } = await supabase
+            .from('profiles')
+            .select('user_id, full_name, setor')
+            .order('full_name');
+
+          if (profiles) {
+            setProfissionaisProfiles(profiles);
+          }
+          setUsarCadastroRH(false);
         }
 
         // Carregar setores
@@ -126,14 +149,24 @@ export function NovaEscalaDialog({ open, onOpenChange, selectedDate, creatorId }
     }));
   };
 
-  const handleProfissionalChange = (userId: string) => {
-    const prof = profissionais.find(p => p.user_id === userId);
-    setForm(prev => ({
-      ...prev,
-      profissional_id: userId,
-      profissional_nome: prof?.full_name || '',
-      setor: prof?.setor || prev.setor,
-    }));
+  const handleProfissionalChange = (value: string) => {
+    if (usarCadastroRH) {
+      const prof = profissionaisSaude.find(p => p.id === value);
+      setForm(prev => ({
+        ...prev,
+        profissional_id: prof?.user_id || value, // Usar user_id se vinculado
+        profissional_nome: prof?.nome || '',
+        setor: prev.setor,
+      }));
+    } else {
+      const prof = profissionaisProfiles.find(p => p.user_id === value);
+      setForm(prev => ({
+        ...prev,
+        profissional_id: value,
+        profissional_nome: prof?.full_name || '',
+        setor: prof?.setor || prev.setor,
+      }));
+    }
   };
 
   const handleSubmit = () => {
@@ -186,20 +219,36 @@ export function NovaEscalaDialog({ open, onOpenChange, selectedDate, creatorId }
           <div className="grid gap-2">
             <Label htmlFor="profissional">Profissional</Label>
             <Select
-              value={form.profissional_id}
+              value={usarCadastroRH 
+                ? profissionaisSaude.find(p => p.user_id === form.profissional_id || p.id === form.profissional_id)?.id || ''
+                : form.profissional_id
+              }
               onValueChange={handleProfissionalChange}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o profissional" />
               </SelectTrigger>
               <SelectContent>
-                {profissionais.map(prof => (
-                  <SelectItem key={prof.user_id} value={prof.user_id}>
-                    {prof.full_name}
-                  </SelectItem>
-                ))}
+                {usarCadastroRH ? (
+                  profissionaisSaude.map(prof => (
+                    <SelectItem key={prof.id} value={prof.id}>
+                      {prof.nome} {prof.especialidade && `(${prof.especialidade})`}
+                    </SelectItem>
+                  ))
+                ) : (
+                  profissionaisProfiles.map(prof => (
+                    <SelectItem key={prof.user_id} value={prof.user_id}>
+                      {prof.full_name}
+                    </SelectItem>
+                  ))
+                )}
               </SelectContent>
             </Select>
+            {usarCadastroRH && profissionaisSaude.length === 0 && (
+              <p className="text-xs text-muted-foreground">
+                Nenhum profissional de enfermagem cadastrado no RH.
+              </p>
+            )}
           </div>
 
           <div className="grid gap-2">
