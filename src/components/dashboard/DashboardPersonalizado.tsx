@@ -200,22 +200,6 @@ const DashboardPersonalizado = () => {
     if (isAdmin) {
       cards.push(
         {
-          title: "Chamados Abertos",
-          value: stats.chamadosAbertos,
-          description: `${stats.chamadosHoje} abertos hoje`,
-          icon: Ticket,
-          color: "warning",
-          loading,
-        },
-        {
-          title: "Chamados Resolvidos",
-          value: stats.chamadosResolvidos,
-          description: "Total resolvidos",
-          icon: CheckCircle2,
-          color: "success",
-          loading,
-        },
-        {
           title: "Logs do Sistema",
           value: stats.logsHoje,
           description: "Ações registradas hoje",
