@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { useUserRole } from "@/hooks/useUserRole";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Ticket, Package, Plus } from "lucide-react";
-import { ChamadosModule } from "./ChamadosModule";
+import { AlertCircle, Ticket, Package, ExternalLink } from "lucide-react";
 import { InventarioModule } from "./InventarioModule";
 
 interface TecnicoModuleProps {
@@ -24,6 +23,10 @@ export const TecnicoModule = ({ setor }: TecnicoModuleProps) => {
   
   // Técnicos só podem acessar seu próprio setor ou se for admin
   const hasAccess = isAdmin || role === setor;
+
+  const handleAbrirChamados = () => {
+    window.open("https://suporte.santacasachavantes.org/index.php", "_blank");
+  };
 
   if (isLoading) {
     return (
@@ -72,7 +75,27 @@ export const TecnicoModule = ({ setor }: TecnicoModuleProps) => {
         </TabsList>
 
         <TabsContent value="chamados" className="mt-6">
-          <ChamadosModule setor={setor} />
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Ticket className="h-5 w-5" />
+                Sistema de Chamados
+              </CardTitle>
+              <CardDescription>
+                Acesse o portal de suporte para gerenciar chamados de {setorLabels[setor]}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-muted-foreground">
+                O gerenciamento de chamados é realizado através do portal de suporte externo.
+                Clique no botão abaixo para acessar o sistema.
+              </p>
+              <Button onClick={handleAbrirChamados} size="lg" className="gap-2">
+                <ExternalLink className="h-5 w-5" />
+                Acessar Portal de Suporte
+              </Button>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         <TabsContent value="inventario" className="mt-6">
