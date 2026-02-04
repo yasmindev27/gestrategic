@@ -1,4 +1,4 @@
-import { ShieldCheck, Clock, Network, Menu, X } from "lucide-react";
+import { ShieldCheck, Clock, Network, Menu, X, FileText, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import logoGestrategic from "@/assets/logo-gestrategic.jpg";
@@ -63,6 +63,14 @@ const LandingPage = () => {
     { label: "Contato", href: "#contato" },
   ];
 
+  const handleDocumentosInteract = useCallback(() => {
+    window.open(
+      "https://santacasachavantes.interact.com.br/sa/custom/webdocuments/anonymous/list.jsp?unit=%2334",
+      "_blank",
+      "noopener,noreferrer"
+    );
+  }, []);
+
   const features = [
     {
       icon: ShieldCheck,
@@ -119,8 +127,18 @@ const LandingPage = () => {
                 ))}
               </nav>
 
-              {/* CTA Button */}
-              <div className="flex items-center gap-4">
+              {/* CTA Buttons */}
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  className="hidden sm:flex border-white/30 text-white hover:bg-white/10 hover:text-white rounded-full px-4 transition-all focus:ring-2 focus:ring-white/50"
+                  onClick={handleDocumentosInteract}
+                  aria-label="Acessar Documentos Interact"
+                >
+                  <FileText className="w-4 h-4 mr-2" />
+                  Documentos
+                  <ExternalLink className="w-3 h-3 ml-1 opacity-70" />
+                </Button>
                 <Button
                   className="hidden sm:flex bg-[#2d7dd2] hover:bg-[#2570c2] text-white rounded-full px-6 shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30 focus:ring-2 focus:ring-white/50"
                   onClick={handleLogin}
@@ -161,6 +179,18 @@ const LandingPage = () => {
                       {link.label}
                     </a>
                   ))}
+                  <Button
+                    variant="outline"
+                    className="mt-2 border-white/30 text-white hover:bg-white/10 hover:text-white w-full rounded-full transition-all flex items-center justify-center gap-2"
+                    onClick={() => {
+                      closeMobileMenu();
+                      handleDocumentosInteract();
+                    }}
+                  >
+                    <FileText className="w-4 h-4" />
+                    Documentos Interact
+                    <ExternalLink className="w-3 h-3 opacity-70" />
+                  </Button>
                   <Button
                     className="mt-2 bg-[#2d7dd2] hover:bg-[#2570c2] text-white w-full rounded-full shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30"
                     onClick={handleLogin}
