@@ -71,6 +71,7 @@ import { Database } from "@/integrations/supabase/types";
 import { CargosManager } from "@/components/admin/CargosManager";
 import { SetoresManager } from "@/components/admin/SetoresManager";
 import { GestoresVinculacao } from "@/components/admin/GestoresVinculacao";
+import { PermissoesManager } from "@/components/admin/PermissoesManager";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -557,6 +558,10 @@ export const AdminModule = () => {
             <Users className="h-4 w-4 mr-2" />
             Usuários
           </TabsTrigger>
+          <TabsTrigger value="permissoes">
+            <Shield className="h-4 w-4 mr-2" />
+            Permissões
+          </TabsTrigger>
           <TabsTrigger value="cargos">
             <Briefcase className="h-4 w-4 mr-2" />
             Cargos
@@ -684,6 +689,10 @@ export const AdminModule = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="permissoes" className="space-y-4 mt-4">
+          <PermissoesManager />
         </TabsContent>
 
         <TabsContent value="cargos" className="space-y-4 mt-4">
