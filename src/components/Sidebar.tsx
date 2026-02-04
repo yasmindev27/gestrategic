@@ -165,11 +165,6 @@ const Sidebar = ({
           id: "agenda"
         },
         {
-          icon: Users,
-          label: "Equipe",
-          id: "equipe"
-        },
-        {
           icon: ScrollText,
           label: "Logs",
           id: "logs"
