@@ -1459,6 +1459,181 @@ export type Database = {
         }
         Relationships: []
       }
+      enfermagem_configuracoes: {
+        Row: {
+          chave: string
+          created_at: string
+          descricao: string | null
+          id: string
+          updated_at: string
+          valor: string
+        }
+        Insert: {
+          chave: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          valor: string
+        }
+        Update: {
+          chave?: string
+          created_at?: string
+          descricao?: string | null
+          id?: string
+          updated_at?: string
+          valor?: string
+        }
+        Relationships: []
+      }
+      enfermagem_escalas: {
+        Row: {
+          created_at: string
+          created_by: string
+          data_plantao: string
+          hora_fim: string
+          hora_inicio: string
+          id: string
+          observacoes: string | null
+          profissional_id: string
+          profissional_nome: string
+          setor: string
+          status: string
+          tipo_plantao: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          data_plantao: string
+          hora_fim: string
+          hora_inicio: string
+          id?: string
+          observacoes?: string | null
+          profissional_id: string
+          profissional_nome: string
+          setor: string
+          status?: string
+          tipo_plantao: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          data_plantao?: string
+          hora_fim?: string
+          hora_inicio?: string
+          id?: string
+          observacoes?: string | null
+          profissional_id?: string
+          profissional_nome?: string
+          setor?: string
+          status?: string
+          tipo_plantao?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      enfermagem_trocas: {
+        Row: {
+          aceitante_id: string | null
+          aceitante_nome: string | null
+          aprovador_id: string | null
+          aprovador_nome: string | null
+          created_at: string
+          data_aprovacao: string | null
+          escala_id: string
+          id: string
+          justificativa_rejeicao: string | null
+          motivo_oferta: string | null
+          ofertante_id: string
+          ofertante_nome: string
+          requer_aprovacao: boolean
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          aceitante_id?: string | null
+          aceitante_nome?: string | null
+          aprovador_id?: string | null
+          aprovador_nome?: string | null
+          created_at?: string
+          data_aprovacao?: string | null
+          escala_id: string
+          id?: string
+          justificativa_rejeicao?: string | null
+          motivo_oferta?: string | null
+          ofertante_id: string
+          ofertante_nome: string
+          requer_aprovacao?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          aceitante_id?: string | null
+          aceitante_nome?: string | null
+          aprovador_id?: string | null
+          aprovador_nome?: string | null
+          created_at?: string
+          data_aprovacao?: string | null
+          escala_id?: string
+          id?: string
+          justificativa_rejeicao?: string | null
+          motivo_oferta?: string | null
+          ofertante_id?: string
+          ofertante_nome?: string
+          requer_aprovacao?: boolean
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enfermagem_trocas_escala_id_fkey"
+            columns: ["escala_id"]
+            isOneToOne: false
+            referencedRelation: "enfermagem_escalas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      enfermagem_trocas_historico: {
+        Row: {
+          acao: string
+          created_at: string
+          detalhes: Json | null
+          executado_por: string
+          executado_por_nome: string
+          id: string
+          troca_id: string
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          detalhes?: Json | null
+          executado_por: string
+          executado_por_nome: string
+          id?: string
+          troca_id: string
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          detalhes?: Json | null
+          executado_por?: string
+          executado_por_nome?: string
+          id?: string
+          troca_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "enfermagem_trocas_historico_troca_id_fkey"
+            columns: ["troca_id"]
+            isOneToOne: false
+            referencedRelation: "enfermagem_trocas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       epis_seguranca: {
         Row: {
           ca_numero: string | null
