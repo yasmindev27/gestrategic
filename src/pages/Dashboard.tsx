@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
@@ -27,6 +27,9 @@ import { QualidadeModule } from "@/components/modules/QualidadeModule";
 import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
+
+// Lazy load do módulo de enfermagem
+const EnfermagemModule = lazy(() => import("@/components/modules/EnfermagemModule"));
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -146,6 +149,13 @@ const Dashboard = () => {
 
           {/* Módulo Qualidade/NSP */}
           {activeSection === "qualidade" && <QualidadeModule />}
+
+          {/* Módulo Enfermagem */}
+          {activeSection === "enfermagem" && (
+            <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+              <EnfermagemModule />
+            </Suspense>
+          )}
 
           {/* Chat Corporativo */}
           {activeSection === "chat" && <ChatModule />}
