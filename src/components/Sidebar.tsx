@@ -118,6 +118,12 @@ const Sidebar = ({
           category: "apoio"
         },
         {
+          icon: AlertTriangle,
+          label: "Incidentes",
+          id: "gestao-incidentes",
+          category: "apoio"
+        },
+        {
           icon: HardHat,
           label: "Seg. Trabalho",
           id: "seguranca-trabalho",
