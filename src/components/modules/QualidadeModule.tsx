@@ -667,16 +667,7 @@ export const QualidadeModule = () => {
                           />
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex gap-1 justify-end items-center">
-                            <AnalisarIncidenteIA 
-                              incidente={{
-                                descricao: i.descricao,
-                                setor: i.setor,
-                                categoria_operacional: undefined,
-                                paciente_envolvido: i.paciente_envolvido,
-                              }}
-                              buttonVariant="icon"
-                            />
+                          <div className="flex gap-1 justify-end">
                             <Button size="icon" variant="ghost" onClick={() => {
                               setSelectedIncidente(i);
                               setDetalhesDialog(true);
@@ -1026,6 +1017,33 @@ export const QualidadeModule = () => {
             <DialogTitle>Registrar Análise</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4">
+            {/* Info do incidente selecionado */}
+            {selectedIncidente && (
+              <Card className="bg-muted/50">
+                <CardContent className="pt-3 pb-3">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium">{selectedIncidente.numero_notificacao}</p>
+                      <p className="text-xs text-muted-foreground truncate">{selectedIncidente.descricao.substring(0, 100)}...</p>
+                    </div>
+                    <AnalisarIncidenteIA 
+                      incidente={{
+                        descricao: selectedIncidente.descricao,
+                        setor: selectedIncidente.setor,
+                        paciente_envolvido: selectedIncidente.paciente_envolvido,
+                      }}
+                      onClassificacaoSelecionada={(tipo) => {
+                        setAnaliseForm(prev => ({
+                          ...prev,
+                          tipo_analise: "causa_raiz",
+                        }));
+                      }}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            
             <div>
               <Label>Tipo de Análise *</Label>
               <Select value={analiseForm.tipo_analise} onValueChange={v => setAnaliseForm({...analiseForm, tipo_analise: v})}>
