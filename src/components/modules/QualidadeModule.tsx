@@ -1028,6 +1028,7 @@ export const QualidadeModule = () => {
                     </div>
                     <AnalisarIncidenteIA 
                       incidente={{
+                        id: selectedIncidente.id,
                         descricao: selectedIncidente.descricao,
                         setor: selectedIncidente.setor,
                         paciente_envolvido: selectedIncidente.paciente_envolvido,
@@ -1036,6 +1037,19 @@ export const QualidadeModule = () => {
                         setAnaliseForm(prev => ({
                           ...prev,
                           tipo_analise: "causa_raiz",
+                        }));
+                      }}
+                      onUtilizarSugestao={(analise) => {
+                        setAnaliseForm(prev => ({
+                          ...prev,
+                          tipo_analise: "causa_raiz",
+                          descricao_analise: analise.resumo_tecnico,
+                          causas_identificadas: analise.causas_provaveis
+                            .map(c => `[${c.categoria}] ${c.descricao} (${c.probabilidade})`)
+                            .join("\n"),
+                          fatores_contribuintes: analise.causas_provaveis
+                            .map(c => c.categoria)
+                            .join(", "),
                         }));
                       }}
                     />

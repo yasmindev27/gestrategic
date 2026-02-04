@@ -3,13 +3,14 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, AlertTriangle, Lightbulb, Target, Loader2, CheckCircle2, Clock } from "lucide-react";
+import { Brain, AlertTriangle, Lightbulb, Target, Loader2, CheckCircle2, Clock, Save, Wand2 } from "lucide-react";
 
 interface IncidenteData {
+  id?: string;
   descricao: string;
   setor: string;
   categoria_operacional?: string;
@@ -41,6 +42,7 @@ interface AnaliseResult {
 interface AnalisarIncidenteIAProps {
   incidente: IncidenteData;
   onClassificacaoSelecionada?: (tipo: string) => void;
+  onUtilizarSugestao?: (analise: AnaliseResult) => void;
   disabled?: boolean;
   buttonVariant?: "default" | "icon";
 }
@@ -67,9 +69,16 @@ const PRIORIDADE_COLORS: Record<string, string> = {
   medio_prazo: "bg-blue-500",
 };
 
-export function AnalisarIncidenteIA({ incidente, onClassificacaoSelecionada, disabled, buttonVariant = "default" }: AnalisarIncidenteIAProps) {
+export function AnalisarIncidenteIA({ 
+  incidente, 
+  onClassificacaoSelecionada, 
+  onUtilizarSugestao,
+  disabled, 
+  buttonVariant = "default" 
+}: AnalisarIncidenteIAProps) {
   const { toast } = useToast();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [analise, setAnalise] = useState<AnaliseResult | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -111,13 +120,110 @@ export function AnalisarIncidenteIA({ incidente, onClassificacaoSelecionada, dis
     }
   };
 
-  const handleAplicarClassificacao = () => {
-    if (analise?.classificacao_sugerida?.tipo) {
-      onClassificacaoSelecionada?.(analise.classificacao_sugerida.tipo);
+  const handleUtilizarSugestao = () => {
+    if (analise) {
+      onUtilizarSugestao?.(analise);
+      if (analise.classificacao_sugerida?.tipo) {
+        onClassificacaoSelecionada?.(analise.classificacao_sugerida.tipo);
+      }
       toast({
-        title: "Classificação aplicada",
-        description: `Tipo alterado para: ${analise.classificacao_sugerida.label}`,
+        title: "Sugestão aplicada",
+        description: "Os dados da análise foram preenchidos no formulário",
       });
+      setIsOpen(false);
+    }
+  };
+
+  const handleSalvarAnalise = async () => {
+    if (!analise || !incidente.id) {
+      toast({
+        title: "Erro",
+        description: "Não é possível salvar sem um incidente selecionado",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const { data: userData } = await supabase.auth.getUser();
+      const userId = userData?.user?.id;
+      const userEmail = userData?.user?.email || "Sistema IA";
+
+      // Salvar análise
+      const { data: analiseData, error: analiseError } = await supabase
+        .from("analises_incidentes")
+        .insert({
+          incidente_id: incidente.id,
+          tipo_analise: "causa_raiz",
+          descricao_analise: analise.resumo_tecnico,
+          causas_identificadas: analise.causas_provaveis
+            .map((c) => `[${c.categoria}] ${c.descricao} (${c.probabilidade})`)
+            .join("\n"),
+          fatores_contribuintes: analise.causas_provaveis
+            .map((c) => CATEGORIA_LABELS[c.categoria] || c.categoria)
+            .join(", "),
+          analisado_por: userId || "",
+          analisado_por_nome: `${userEmail} (via IA)`,
+        })
+        .select()
+        .single();
+
+      if (analiseError) throw analiseError;
+
+      // Salvar ações sugeridas
+      if (analise.plano_acao.length > 0) {
+        const acoesParaInserir = analise.plano_acao.map((acao) => {
+          const prazoMap: Record<string, number> = {
+            imediata: 1,
+            curto_prazo: 7,
+            medio_prazo: 30,
+          };
+          const diasPrazo = prazoMap[acao.prioridade] || 7;
+          const dataPrazo = new Date();
+          dataPrazo.setDate(dataPrazo.getDate() + diasPrazo);
+
+          return {
+            incidente_id: incidente.id,
+            analise_id: analiseData.id,
+            descricao: acao.acao,
+            tipo_acao: acao.prioridade === "imediata" ? "corretiva" : "preventiva",
+            responsavel_nome: acao.responsavel_sugerido,
+            prazo: dataPrazo.toISOString().split("T")[0],
+            status: "pendente",
+            registrado_por: userId || "",
+            registrado_por_nome: `${userEmail} (via IA)`,
+          };
+        });
+
+        const { error: acoesError } = await supabase
+          .from("acoes_incidentes")
+          .insert(acoesParaInserir);
+
+        if (acoesError) throw acoesError;
+      }
+
+      // Atualizar status do incidente
+      await supabase
+        .from("incidentes_nsp")
+        .update({ status: "em_analise" })
+        .eq("id", incidente.id);
+
+      toast({
+        title: "Análise salva com sucesso!",
+        description: `Análise e ${analise.plano_acao.length} ações foram registradas`,
+      });
+      setIsOpen(false);
+    } catch (error) {
+      console.error("Erro ao salvar análise:", error);
+      toast({
+        title: "Erro ao salvar",
+        description: error instanceof Error ? error.message : "Não foi possível salvar a análise",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -161,7 +267,7 @@ export function AnalisarIncidenteIA({ incidente, onClassificacaoSelecionada, dis
       )}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh]">
+        <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Brain className="h-5 w-5 text-primary" />
@@ -169,7 +275,7 @@ export function AnalisarIncidenteIA({ incidente, onClassificacaoSelecionada, dis
             </DialogTitle>
           </DialogHeader>
 
-          <ScrollArea className="max-h-[70vh] pr-4">
+          <ScrollArea className="flex-1 max-h-[60vh] pr-4">
             {analise && (
               <div className="space-y-6">
                 {/* Resumo Técnico */}
@@ -199,11 +305,6 @@ export function AnalisarIncidenteIA({ incidente, onClassificacaoSelecionada, dis
                             </p>
                           </div>
                         </div>
-                        {onClassificacaoSelecionada && (
-                          <Button size="sm" onClick={handleAplicarClassificacao}>
-                            Aplicar
-                          </Button>
-                        )}
                       </div>
                       <Separator className="my-3" />
                       <p className="text-sm text-muted-foreground">
@@ -304,6 +405,43 @@ export function AnalisarIncidenteIA({ incidente, onClassificacaoSelecionada, dis
               </div>
             )}
           </ScrollArea>
+
+          {/* Botões de Ação */}
+          {analise && (
+            <DialogFooter className="flex-shrink-0 pt-4 border-t gap-2 sm:gap-2">
+              {onUtilizarSugestao && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleUtilizarSugestao}
+                  className="gap-2"
+                >
+                  <Wand2 className="h-4 w-4" />
+                  Utilizar Sugestão
+                </Button>
+              )}
+              {incidente.id && (
+                <Button
+                  type="button"
+                  onClick={handleSalvarAnalise}
+                  disabled={isSaving}
+                  className="gap-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4" />
+                      Salvar Análise
+                    </>
+                  )}
+                </Button>
+              )}
+            </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
     </>
