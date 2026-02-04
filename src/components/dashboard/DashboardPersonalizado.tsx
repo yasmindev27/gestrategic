@@ -278,18 +278,6 @@ const DashboardPersonalizado = () => {
       );
     }
 
-    // Funcionário comum - apenas seus chamados
-    if (!isAdmin && !isGestor && !isTecnico && !isFaturamento && !isRecepcao && !isClassificacao && !isNir && !isLaboratorio) {
-      cards.push({
-        title: "Meus Chamados",
-        value: stats.chamadosAbertos,
-        description: "Abertos por você",
-        icon: Ticket,
-        color: "primary",
-        loading,
-      });
-    }
-
     return cards;
   };
 
