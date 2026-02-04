@@ -319,12 +319,12 @@ export const AbrirChamadoModule = () => {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Central de Chamados</h2>
-          <p className="text-muted-foreground">Abra chamados para TI, Manutenção ou Engenharia Clínica</p>
+          <h2 className="text-2xl font-bold text-foreground">Central de Chamados - GLPI</h2>
+          <p className="text-muted-foreground">Abra chamados para TI, Manutenção ou Engenharia Clínica no GLPI</p>
         </div>
         <Button onClick={handleAbrirChamado} size="lg">
           <Plus className="h-5 w-5 mr-2" />
-          Abrir Novo Chamado
+          Abrir Chamado no GLPI
         </Button>
       </div>
 
