@@ -42,6 +42,7 @@ interface AnalisarIncidenteIAProps {
   incidente: IncidenteData;
   onClassificacaoSelecionada?: (tipo: string) => void;
   disabled?: boolean;
+  buttonVariant?: "default" | "icon";
 }
 
 const CATEGORIA_LABELS: Record<string, string> = {
@@ -66,7 +67,7 @@ const PRIORIDADE_COLORS: Record<string, string> = {
   medio_prazo: "bg-blue-500",
 };
 
-export function AnalisarIncidenteIA({ incidente, onClassificacaoSelecionada, disabled }: AnalisarIncidenteIAProps) {
+export function AnalisarIncidenteIA({ incidente, onClassificacaoSelecionada, disabled, buttonVariant = "default" }: AnalisarIncidenteIAProps) {
   const { toast } = useToast();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analise, setAnalise] = useState<AnaliseResult | null>(null);
@@ -122,25 +123,42 @@ export function AnalisarIncidenteIA({ incidente, onClassificacaoSelecionada, dis
 
   return (
     <>
-      <Button
-        type="button"
-        variant="outline"
-        onClick={handleAnalisar}
-        disabled={disabled || isAnalyzing || !incidente.descricao}
-        className="gap-2"
-      >
-        {isAnalyzing ? (
-          <>
+      {buttonVariant === "icon" ? (
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon"
+          onClick={handleAnalisar}
+          disabled={disabled || isAnalyzing || !incidente.descricao}
+          title="Sugerir Análise com IA"
+        >
+          {isAnalyzing ? (
             <Loader2 className="h-4 w-4 animate-spin" />
-            Analisando...
-          </>
-        ) : (
-          <>
-            <Brain className="h-4 w-4" />
-            Analisar com IA
-          </>
-        )}
-      </Button>
+          ) : (
+            <Brain className="h-4 w-4 text-primary" />
+          )}
+        </Button>
+      ) : (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleAnalisar}
+          disabled={disabled || isAnalyzing || !incidente.descricao}
+          className="gap-2"
+        >
+          {isAnalyzing ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Analisando...
+            </>
+          ) : (
+            <>
+              <Brain className="h-4 w-4" />
+              Analisar com IA
+            </>
+          )}
+        </Button>
+      )}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh]">

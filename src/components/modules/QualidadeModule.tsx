@@ -25,7 +25,7 @@ import { StatusBadge, mapStatusToType } from "@/components/ui/status-badge";
 import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import { AuditoriasSegurancaPaciente, DashboardConformidade } from "@/components/qualidade";
-import { RiscosOperacionaisChart, DashboardIAIncidentes, ReportarIncidenteRapido } from "@/components/gestao-incidentes";
+import { RiscosOperacionaisChart, DashboardIAIncidentes, ReportarIncidenteRapido, AnalisarIncidenteIA } from "@/components/gestao-incidentes";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -667,7 +667,16 @@ export const QualidadeModule = () => {
                           />
                         </TableCell>
                         <TableCell className="text-right">
-                          <div className="flex gap-1 justify-end">
+                          <div className="flex gap-1 justify-end items-center">
+                            <AnalisarIncidenteIA 
+                              incidente={{
+                                descricao: i.descricao,
+                                setor: i.setor,
+                                categoria_operacional: undefined,
+                                paciente_envolvido: i.paciente_envolvido,
+                              }}
+                              buttonVariant="icon"
+                            />
                             <Button size="icon" variant="ghost" onClick={() => {
                               setSelectedIncidente(i);
                               setDetalhesDialog(true);
