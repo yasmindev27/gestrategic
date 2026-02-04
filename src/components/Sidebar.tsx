@@ -58,83 +58,112 @@ const Sidebar = ({
 
     // ADMINISTRADOR - acesso total (sem abrir chamado)
     if (isAdmin) {
-      items.push({
-        icon: LayoutDashboard,
-        label: "Dashboard",
-        id: "dashboard"
-      }, {
-        icon: Ambulance,
-        label: "Mapa de Leitos",
-        id: "mapa-leitos"
-      }, {
-        icon: Receipt,
-        label: "Faturamento",
-        id: "faturamento"
-      }, {
-        icon: ClipboardX,
-        label: "Controle de Fichas",
-        id: "controle-fichas"
-      }, {
-        icon: Monitor,
-        label: "TI",
-        id: "tecnico-ti"
-      }, {
-        icon: Wrench,
-        label: "Manutenção",
-        id: "tecnico-manutencao"
-      }, {
-        icon: Stethoscope,
-        label: "Eng. Clínica",
-        id: "tecnico-engenharia"
-      }, {
-        icon: Ambulance,
-        label: "NIR",
-        id: "nir"
-      }, {
-        icon: FlaskConical,
-        label: "Laboratório",
-        id: "laboratorio"
-      }, {
-        icon: UserCog,
-        label: "RH/DP",
-        id: "rhdp"
-      }, {
-        icon: Calendar,
-        label: "Agenda",
-        id: "agenda"
-      }, {
-        icon: Shirt,
-        label: "Rouparia",
-        id: "rouparia"
-      }, {
-        icon: HardHat,
-        label: "Seg. Trabalho",
-        id: "seguranca-trabalho"
-      }, {
-        icon: Heart,
-        label: "Assist. Social",
-        id: "assistencia-social"
-      }, {
-        icon: AlertTriangle,
-        label: "Qualidade/NSP",
-        id: "qualidade"
-      }, {
-        icon: Syringe,
-        label: "Enfermagem",
-        id: "enfermagem"
-      }, {
-        icon: Users,
-        label: "Equipe",
-        id: "equipe"
-      }, {
-        icon: ScrollText,
-        label: "Logs",
-        id: "logs"
-      }, {
-        icon: Shield,
-        label: "Administração",
-        id: "admin"
-      });
+      items.push(
+        // === DASHBOARD ===
+        {
+          icon: LayoutDashboard,
+          label: "Dashboard",
+          id: "dashboard"
+        },
+        
+        // === ASSISTENCIAIS ===
+        {
+          icon: Ambulance,
+          label: "NIR",
+          id: "nir"
+        },
+        {
+          icon: Ambulance,
+          label: "Mapa de Leitos",
+          id: "mapa-leitos"
+        },
+        {
+          icon: Syringe,
+          label: "Enfermagem",
+          id: "enfermagem"
+        },
+        {
+          icon: FlaskConical,
+          label: "Laboratório",
+          id: "laboratorio"
+        },
+        {
+          icon: Heart,
+          label: "Assist. Social",
+          id: "assistencia-social"
+        },
+        {
+          icon: AlertTriangle,
+          label: "Qualidade/NSP",
+          id: "qualidade"
+        },
+        
+        // === ADMINISTRATIVOS ===
+        {
+          icon: Receipt,
+          label: "Faturamento",
+          id: "faturamento"
+        },
+        {
+          icon: UserCog,
+          label: "RH/DP",
+          id: "rhdp"
+        },
+        {
+          icon: ClipboardX,
+          label: "Controle de Fichas",
+          id: "controle-fichas"
+        },
+        {
+          icon: Shirt,
+          label: "Rouparia",
+          id: "rouparia"
+        },
+        {
+          icon: HardHat,
+          label: "Seg. Trabalho",
+          id: "seguranca-trabalho"
+        },
+        
+        // === SUPORTE TÉCNICO ===
+        {
+          icon: Monitor,
+          label: "TI",
+          id: "tecnico-ti"
+        },
+        {
+          icon: Wrench,
+          label: "Manutenção",
+          id: "tecnico-manutencao"
+        },
+        {
+          icon: Stethoscope,
+          label: "Eng. Clínica",
+          id: "tecnico-engenharia"
+        },
+        
+        // === UTILIDADES ===
+        {
+          icon: Calendar,
+          label: "Agenda",
+          id: "agenda"
+        },
+        {
+          icon: Users,
+          label: "Equipe",
+          id: "equipe"
+        },
+        {
+          icon: ScrollText,
+          label: "Logs",
+          id: "logs"
+        },
+        {
+          icon: Shield,
+          label: "Administração",
+          id: "admin"
+        }
+      );
       return items;
     }
 
