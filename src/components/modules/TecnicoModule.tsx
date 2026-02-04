@@ -87,8 +87,7 @@ export const TecnicoModule = ({ setor }: TecnicoModuleProps) => {
             </CardHeader>
             <CardContent className="space-y-4">
               <p className="text-muted-foreground">
-                O gerenciamento de chamados é realizado através do GLPI (Gestão Livre de Parque de Informática).
-                Clique no botão abaixo para acessar o sistema.
+                O gerenciamento de chamados é realizado através do GLPI. Clique no botão abaixo para acessar o sistema.
               </p>
               <Button onClick={handleAbrirChamados} size="lg" className="gap-2">
                 <ExternalLink className="h-5 w-5" />
