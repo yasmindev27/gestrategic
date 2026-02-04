@@ -9,17 +9,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { useLogAccess } from "@/hooks/useLogAccess";
-import { AlertTriangle, Send, Shield, Clock } from "lucide-react";
-import { format } from "date-fns";
+import { AlertTriangle, Send, Shield } from "lucide-react";
+import { AnalisarIncidenteIA } from "./AnalisarIncidenteIA";
 
 interface ReportarIncidenteRapidoProps {
   onIncidenteRegistrado?: () => void;
 }
 
 const tiposIncidente = [
-  { value: "quase_erro", label: "Quase Erro (Near Miss)", icon: "⚠️", desc: "Evento que poderia ter causado dano" },
-  { value: "incidente_sem_dano", label: "Incidente sem Dano", icon: "🔶", desc: "Ocorreu mas não causou dano" },
-  { value: "evento_adverso", label: "Evento Adverso", icon: "🔴", desc: "Evento que causou dano ao paciente" },
+  { value: "circunstancia_notificavel", label: "Circunstância Notificável", icon: "📋", desc: "Situação com potencial de dano" },
+  { value: "quase_erro", label: "Quase Erro (Near Miss)", icon: "⚠️", desc: "Erro aconteceu, mas não atingiu o paciente" },
+  { value: "incidente_sem_dano", label: "Incidente sem Dano", icon: "🔶", desc: "Atingiu o paciente, mas não causou lesão" },
+  { value: "evento_adverso", label: "Evento Adverso", icon: "🔴", desc: "Resultou em dano ao paciente" },
 ];
 
 const classificacoesRisco = [
@@ -290,13 +291,31 @@ export function ReportarIncidenteRapido({ onIncidenteRegistrado }: ReportarIncid
 
         {/* Descrição */}
         <div className="space-y-2">
-          <Label>Descrição do Ocorrido *</Label>
+          <div className="flex items-center justify-between">
+            <Label>Descrição do Ocorrido *</Label>
+            <AnalisarIncidenteIA
+              incidente={{
+                descricao: form.descricao,
+                setor: form.setor,
+                categoria_operacional: form.categoria_operacional,
+                paciente_envolvido: form.paciente_envolvido,
+                equipamento_nome: form.equipamento_nome,
+              }}
+              onClassificacaoSelecionada={(tipo) => setForm({ ...form, tipo_incidente: tipo })}
+              disabled={!form.descricao || form.descricao.length < 20}
+            />
+          </div>
           <Textarea
             value={form.descricao}
             onChange={(e) => setForm({ ...form, descricao: e.target.value })}
             placeholder="Descreva detalhadamente o que aconteceu, quando e quais as circunstâncias..."
             rows={4}
           />
+          {form.descricao && form.descricao.length >= 20 && (
+            <p className="text-xs text-muted-foreground">
+              💡 Clique em "Analisar com IA" para obter classificação e sugestões automáticas
+            </p>
+          )}
         </div>
 
         {/* Opções */}

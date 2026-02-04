@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { AlertTriangle, BarChart3, ClipboardList, Plus } from "lucide-react";
+import { AlertTriangle, BarChart3, ClipboardList, Plus, Brain } from "lucide-react";
 import { useLogAccess } from "@/hooks/useLogAccess";
-import { ReportarIncidenteRapido, RiscosOperacionaisChart, IncidentesList } from "@/components/gestao-incidentes";
+import { ReportarIncidenteRapido, RiscosOperacionaisChart, IncidentesList, DashboardIAIncidentes } from "@/components/gestao-incidentes";
 
 export function GestaoIncidentesModule() {
   const { logAction } = useLogAccess();
@@ -38,7 +38,7 @@ export function GestaoIncidentesModule() {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="grid w-full grid-cols-3 lg:w-auto lg:inline-grid">
+        <TabsList className="grid w-full grid-cols-4 lg:w-auto lg:inline-grid">
           <TabsTrigger value="reportar" className="gap-2">
             <Plus className="h-4 w-4" />
             <span className="hidden sm:inline">Reportar</span>
@@ -46,6 +46,10 @@ export function GestaoIncidentesModule() {
           <TabsTrigger value="dashboard" className="gap-2">
             <BarChart3 className="h-4 w-4" />
             <span className="hidden sm:inline">Dashboard</span>
+          </TabsTrigger>
+          <TabsTrigger value="ia" className="gap-2">
+            <Brain className="h-4 w-4" />
+            <span className="hidden sm:inline">Análise IA</span>
           </TabsTrigger>
           <TabsTrigger value="incidentes" className="gap-2">
             <ClipboardList className="h-4 w-4" />
@@ -106,6 +110,11 @@ export function GestaoIncidentesModule() {
         {/* Tab: Dashboard de Riscos */}
         <TabsContent value="dashboard" className="mt-6">
           <RiscosOperacionaisChart />
+        </TabsContent>
+
+        {/* Tab: Análise IA */}
+        <TabsContent value="ia" className="mt-6">
+          <DashboardIAIncidentes />
         </TabsContent>
 
         {/* Tab: Lista de Incidentes */}
