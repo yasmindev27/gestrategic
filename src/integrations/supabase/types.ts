@@ -2036,6 +2036,7 @@ export type Database = {
       }
       incidentes_nsp: {
         Row: {
+          categoria_operacional: string | null
           classificacao_risco: string
           created_at: string
           data_ocorrencia: string
@@ -2051,11 +2052,13 @@ export type Database = {
           paciente_nome: string | null
           paciente_prontuario: string | null
           setor: string
+          setor_origem: string | null
           status: string
           tipo_incidente: string
           updated_at: string
         }
         Insert: {
+          categoria_operacional?: string | null
           classificacao_risco: string
           created_at?: string
           data_ocorrencia: string
@@ -2071,11 +2074,13 @@ export type Database = {
           paciente_nome?: string | null
           paciente_prontuario?: string | null
           setor: string
+          setor_origem?: string | null
           status?: string
           tipo_incidente: string
           updated_at?: string
         }
         Update: {
+          categoria_operacional?: string | null
           classificacao_risco?: string
           created_at?: string
           data_ocorrencia?: string
@@ -2091,6 +2096,7 @@ export type Database = {
           paciente_nome?: string | null
           paciente_prontuario?: string | null
           setor?: string
+          setor_origem?: string | null
           status?: string
           tipo_incidente?: string
           updated_at?: string
@@ -2798,6 +2804,93 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: []
+      }
+      riscos_operacionais: {
+        Row: {
+          acao_tomada: string | null
+          categoria: string
+          chamado_id: string | null
+          created_at: string
+          data_ocorrencia: string
+          data_resolucao: string | null
+          descricao: string
+          equipamento_nome: string | null
+          equipamento_patrimonio: string | null
+          id: string
+          impacto_estimado: string | null
+          incidente_id: string | null
+          registrado_por: string
+          registrado_por_nome: string
+          resolvido_por: string | null
+          resolvido_por_nome: string | null
+          setor_afetado: string | null
+          severidade: string
+          status: string
+          tipo_risco: string
+          updated_at: string
+        }
+        Insert: {
+          acao_tomada?: string | null
+          categoria: string
+          chamado_id?: string | null
+          created_at?: string
+          data_ocorrencia?: string
+          data_resolucao?: string | null
+          descricao: string
+          equipamento_nome?: string | null
+          equipamento_patrimonio?: string | null
+          id?: string
+          impacto_estimado?: string | null
+          incidente_id?: string | null
+          registrado_por: string
+          registrado_por_nome: string
+          resolvido_por?: string | null
+          resolvido_por_nome?: string | null
+          setor_afetado?: string | null
+          severidade?: string
+          status?: string
+          tipo_risco: string
+          updated_at?: string
+        }
+        Update: {
+          acao_tomada?: string | null
+          categoria?: string
+          chamado_id?: string | null
+          created_at?: string
+          data_ocorrencia?: string
+          data_resolucao?: string | null
+          descricao?: string
+          equipamento_nome?: string | null
+          equipamento_patrimonio?: string | null
+          id?: string
+          impacto_estimado?: string | null
+          incidente_id?: string | null
+          registrado_por?: string
+          registrado_por_nome?: string
+          resolvido_por?: string | null
+          resolvido_por_nome?: string | null
+          setor_afetado?: string | null
+          severidade?: string
+          status?: string
+          tipo_risco?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "riscos_operacionais_chamado_id_fkey"
+            columns: ["chamado_id"]
+            isOneToOne: false
+            referencedRelation: "chamados"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "riscos_operacionais_incidente_id_fkey"
+            columns: ["incidente_id"]
+            isOneToOne: false
+            referencedRelation: "incidentes_nsp"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       rondas_seguranca: {
         Row: {
