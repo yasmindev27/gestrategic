@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { AlertTriangle, ClipboardCheck, BarChart3, FileText, Plus, Eye, Pencil, ShieldX, TrendingUp, AlertCircle, CheckCircle2, Clock, Target, Stethoscope } from "lucide-react";
+import { AlertTriangle, ClipboardCheck, BarChart3, FileText, Plus, Eye, Pencil, ShieldX, TrendingUp, AlertCircle, CheckCircle2, Clock, Target, Stethoscope, Brain } from "lucide-react";
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
 import { StatCard } from "@/components/ui/stat-card";
 import { SearchInput } from "@/components/ui/search-input";
@@ -25,6 +25,7 @@ import { StatusBadge, mapStatusToType } from "@/components/ui/status-badge";
 import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import { AuditoriasSegurancaPaciente, DashboardConformidade } from "@/components/qualidade";
+import { RiscosOperacionaisChart, DashboardIAIncidentes, ReportarIncidenteRapido } from "@/components/gestao-incidentes";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -511,9 +512,21 @@ export const QualidadeModule = () => {
             <TrendingUp className="h-4 w-4" />
             Conformidade
           </TabsTrigger>
+          <TabsTrigger value="reportar" className="gap-1">
+            <Plus className="h-4 w-4" />
+            Reportar
+          </TabsTrigger>
           <TabsTrigger value="incidentes">Incidentes</TabsTrigger>
+          <TabsTrigger value="riscos" className="gap-1">
+            <BarChart3 className="h-4 w-4" />
+            Riscos
+          </TabsTrigger>
+          <TabsTrigger value="ia" className="gap-1">
+            <Brain className="h-4 w-4" />
+            Análise IA
+          </TabsTrigger>
           <TabsTrigger value="acoes">Ações</TabsTrigger>
-          <TabsTrigger value="auditorias">Auditorias Gerais</TabsTrigger>
+          <TabsTrigger value="auditorias">Auditorias</TabsTrigger>
           <TabsTrigger value="auditorias-seguranca" className="gap-1">
             <Stethoscope className="h-4 w-4" />
             Seg. Paciente
@@ -524,6 +537,42 @@ export const QualidadeModule = () => {
         {/* Dashboard de Conformidade */}
         <TabsContent value="conformidade" className="mt-4">
           <DashboardConformidade />
+        </TabsContent>
+
+        {/* Tab: Reportar Incidente */}
+        <TabsContent value="reportar" className="mt-4">
+          <div className="grid gap-6 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <ReportarIncidenteRapido onIncidenteRegistrado={() => loadData()} />
+            </div>
+            <div className="space-y-4">
+              <Card>
+                <CardHeader className="pb-3">
+                  <CardTitle className="text-base">Por que reportar?</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-muted-foreground space-y-3">
+                  <p>
+                    <strong>Quase-erros</strong> são eventos que poderiam ter causado dano, 
+                    mas foram interceptados a tempo. Reportá-los ajuda a prevenir incidentes reais.
+                  </p>
+                  <p>
+                    <strong>Cultura justa:</strong> O objetivo não é punir, mas aprender. 
+                    Sua notificação é fundamental para a segurança de todos.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </TabsContent>
+
+        {/* Tab: Riscos Operacionais */}
+        <TabsContent value="riscos" className="mt-4">
+          <RiscosOperacionaisChart />
+        </TabsContent>
+
+        {/* Tab: Análise IA */}
+        <TabsContent value="ia" className="mt-4">
+          <DashboardIAIncidentes />
         </TabsContent>
 
         {/* Incidentes Tab */}

@@ -23,7 +23,7 @@ import { RoupariaModule } from "@/components/modules/RoupariaModule";
 import { SegurancaTrabalhoModule } from "@/components/modules/SegurancaTrabalhoModule";
 import { AssistenciaSocialModule } from "@/components/modules/AssistenciaSocialModule";
 import { QualidadeModule } from "@/components/modules/QualidadeModule";
-import { GestaoIncidentesModule } from "@/components/modules/GestaoIncidentesModule";
+import { ReportarIncidenteDialog } from "@/components/gestao-incidentes";
 import { ProfissionaisSaude } from "@/components/rh";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -146,8 +146,8 @@ const Dashboard = () => {
         return <AssistenciaSocialModule />;
       case "qualidade":
         return <QualidadeModule />;
-      case "gestao-incidentes":
-        return <GestaoIncidentesModule />;
+      case "reportar-incidente":
+        return <ReportarIncidenteDialog onSectionChange={handleSectionChange} />;
       case "enfermagem":
         return (
           <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>

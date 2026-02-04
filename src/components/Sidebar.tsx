@@ -118,12 +118,6 @@ const Sidebar = ({
           category: "apoio"
         },
         {
-          icon: AlertTriangle,
-          label: "Incidentes",
-          id: "gestao-incidentes",
-          category: "apoio"
-        },
-        {
           icon: HardHat,
           label: "Seg. Trabalho",
           id: "seguranca-trabalho",
@@ -414,6 +408,14 @@ const Sidebar = ({
 
   // Adicionar itens comuns a todos os menus
   const addCommonMenuItems = (items: MenuItem[]): MenuItem[] => {
+    // Adicionar Reportar Incidente - para todos (exceto admin que já tem Qualidade completo)
+    if (!isAdmin && !items.some(item => item.id === "reportar-incidente")) {
+      items.push({
+        icon: AlertTriangle,
+        label: "Reportar Incidente",
+        id: "reportar-incidente"
+      });
+    }
     // Adicionar Abrir Chamado (GLPI) - exceto para admin
     if (!isAdmin && !items.some(item => item.id === "abrir-chamado")) {
       items.push({
