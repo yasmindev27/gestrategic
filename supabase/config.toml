@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.moderar-mensagem]
 verify_jwt = false
+
+[functions.analisar-incidente-ia]
+verify_jwt = false
+
+[functions.resumo-semanal-incidentes]
+verify_jwt = false
