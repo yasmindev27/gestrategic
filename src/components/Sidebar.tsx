@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Users, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog, Shirt, HardHat, Heart, AlertTriangle, Syringe, ExternalLink, MessageSquare } from "lucide-react";
+import { LayoutDashboard, Users, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog, Shirt, HardHat, Heart, AlertTriangle, Syringe, ExternalLink, MessageSquare, Ticket } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -359,12 +359,20 @@ const Sidebar = ({
     return items;
   };
 
-  // Adicionar Restaurante e Chat a todos os menus
+  // Adicionar itens comuns a todos os menus
   const addCommonMenuItems = (items: {
     icon: typeof LayoutDashboard;
     label: string;
     id: string;
   }[]) => {
+    // Adicionar Abrir Chamado (GLPI) - exceto para admin
+    if (!isAdmin && !items.some(item => item.id === "abrir-chamado")) {
+      items.push({
+        icon: Ticket,
+        label: "Abrir Chamado",
+        id: "abrir-chamado"
+      });
+    }
     // Adicionar Chat Corporativo
     if (!items.some(item => item.id === "chat")) {
       items.push({
@@ -439,12 +447,16 @@ const Sidebar = ({
           {menuItems.map(item => {
           const Icon = item.icon;
           const isActive = activeSection === item.id;
-          const isExternalLink = item.id === "documentos-interact";
+          const isExternalLink = item.id === "documentos-interact" || item.id === "abrir-chamado";
           
           if (isExternalLink) {
+            const externalUrl = item.id === "abrir-chamado" 
+              ? "https://suporte.santacasachavantes.org/index.php"
+              : "https://santacasachavantes.interact.com.br/sa/custom/webdocuments/anonymous/list.jsp?unit=%2334";
+            
             return <li key={item.id}>
               <a
-                href="https://santacasachavantes.interact.com.br/sa/custom/webdocuments/anonymous/list.jsp?unit=%2334"
+                href={externalUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className={cn(
