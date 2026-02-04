@@ -23,12 +23,14 @@ import { RoupariaModule } from "@/components/modules/RoupariaModule";
 import { SegurancaTrabalhoModule } from "@/components/modules/SegurancaTrabalhoModule";
 import { AssistenciaSocialModule } from "@/components/modules/AssistenciaSocialModule";
 import { QualidadeModule } from "@/components/modules/QualidadeModule";
+import { ProfissionaisSaude } from "@/components/rh";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 
 // Lazy load heavy modules
 const EnfermagemModule = lazy(() => import("@/components/modules/EnfermagemModule"));
 const SalusModule = lazy(() => import("@/components/modules/SalusModule"));
+const MedicosModule = lazy(() => import("@/components/modules/MedicosModule"));
 
 // Memoized module components for performance
 const MemoizedTecnicoModule = memo(TecnicoModule);
@@ -150,12 +152,21 @@ const Dashboard = () => {
         );
       case "chat":
         return <ChatModule />;
+      case "medicos":
+        return (
+          <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <MedicosModule />
+          </Suspense>
+        );
+      case "profissionais-saude":
+        return <ProfissionaisSaude />;
       case "salus":
         return (
           <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
             <SalusModule />
           </Suspense>
         );
+      default:
         return <MemoizedDashboardPersonalizado />;
     }
   };
