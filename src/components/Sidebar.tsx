@@ -69,6 +69,11 @@ const Sidebar = ({
         
         // === ASSISTENCIAIS ===
         {
+          icon: Users,
+          label: "Equipe",
+          id: "equipe"
+        },
+        {
           icon: Ambulance,
           label: "NIR",
           id: "nir"

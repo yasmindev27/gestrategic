@@ -31,6 +31,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 const EnfermagemModule = lazy(() => import("@/components/modules/EnfermagemModule"));
 const SalusModule = lazy(() => import("@/components/modules/SalusModule"));
 const MedicosModule = lazy(() => import("@/components/modules/MedicosModule"));
+const EquipeModule = lazy(() => import("@/components/modules/EquipeModule"));
 
 // Memoized module components for performance
 const MemoizedTecnicoModule = memo(TecnicoModule);
@@ -152,6 +153,12 @@ const Dashboard = () => {
         );
       case "chat":
         return <ChatModule />;
+      case "equipe":
+        return (
+          <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <EquipeModule />
+          </Suspense>
+        );
       case "medicos":
         return (
           <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
