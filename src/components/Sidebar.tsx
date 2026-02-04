@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Users, Settings, HelpCircle, Activity, LogOut, ChevronLeft, ChevronRight, FileOutput, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, Ticket, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog, MessageSquare, Shirt, HardHat, Heart, AlertTriangle, Syringe } from "lucide-react";
+import { LayoutDashboard, Users, Settings, HelpCircle, Activity, LogOut, ChevronLeft, ChevronRight, FileOutput, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, Ticket, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog, MessageSquare, Shirt, HardHat, Heart, AlertTriangle, Syringe, ExternalLink } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -482,6 +482,26 @@ const Sidebar = ({
 
       {/* Bottom Section */}
       <div className="p-3 border-t border-border space-y-2">
+        {/* Documentos Interact - Link Externo */}
+        <a
+          href="https://santacasachavantes.interact.com.br/sa/custom/webdocuments/anonymous/list.jsp?unit=%2334"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(
+            "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors",
+            isCollapsed && "justify-center px-2"
+          )}
+          title={isCollapsed ? "Documentos Interact" : undefined}
+        >
+          <FileText className="h-5 w-5 flex-shrink-0" />
+          {!isCollapsed && (
+            <span className="font-medium text-sm truncate flex items-center gap-1">
+              Documentos Interact
+              <ExternalLink className="h-3 w-3 opacity-60" />
+            </span>
+          )}
+        </a>
+
         {/* Bottom Menu Items */}
         <ul className="space-y-1">
           {bottomItems.map(item => {
