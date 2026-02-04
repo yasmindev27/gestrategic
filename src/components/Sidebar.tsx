@@ -163,6 +163,18 @@ const Sidebar = ({
           icon: Shield,
           label: "Administração",
           id: "admin"
+        },
+        
+        // === INTEGRAÇÕES ===
+        {
+          icon: FileText,
+          label: "Docs Interact",
+          id: "documentos-interact"
+        },
+        {
+          icon: Stethoscope,
+          label: "Sistema Salus",
+          id: "salus"
         }
       );
       return items;
@@ -471,6 +483,31 @@ const Sidebar = ({
           {menuItems.map(item => {
           const Icon = item.icon;
           const isActive = activeSection === item.id;
+          const isExternalLink = item.id === "documentos-interact";
+          
+          if (isExternalLink) {
+            return <li key={item.id}>
+              <a
+                href="https://santacasachavantes.interact.com.br/sa/custom/webdocuments/anonymous/list.jsp?unit=%2334"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn(
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-muted-foreground hover:bg-secondary hover:text-foreground",
+                  isCollapsed && "justify-center px-2"
+                )}
+                title={isCollapsed ? item.label : undefined}
+              >
+                <Icon className="h-5 w-5 flex-shrink-0" />
+                {!isCollapsed && (
+                  <span className="font-medium truncate flex items-center gap-1">
+                    {item.label}
+                    <ExternalLink className="h-3 w-3 opacity-60" />
+                  </span>
+                )}
+              </a>
+            </li>;
+          }
+          
           return <li key={item.id}>
                 <button onClick={() => onSectionChange(item.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all", isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-secondary hover:text-foreground", isCollapsed && "justify-center px-2")} title={isCollapsed ? item.label : undefined}>
                   <Icon className="h-5 w-5 flex-shrink-0" />
@@ -483,44 +520,6 @@ const Sidebar = ({
 
       {/* Bottom Section */}
       <div className="p-3 border-t border-border space-y-2">
-        {/* Documentos Interact - Link Externo */}
-        <a
-          href="https://santacasachavantes.interact.com.br/sa/custom/webdocuments/anonymous/list.jsp?unit=%2334"
-          target="_blank"
-          rel="noopener noreferrer"
-          className={cn(
-            "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors",
-            isCollapsed && "justify-center px-2"
-          )}
-          title={isCollapsed ? "Documentos Interact" : undefined}
-        >
-          <FileText className="h-5 w-5 flex-shrink-0" />
-          {!isCollapsed && (
-            <span className="font-medium text-sm truncate flex items-center gap-1">
-              Documentos Interact
-              <ExternalLink className="h-3 w-3 opacity-60" />
-            </span>
-          )}
-        </a>
-
-        {/* Sistema Salus - Link para módulo interno */}
-        <button
-          onClick={() => onSectionChange("salus")}
-          className={cn(
-            "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
-            activeSection === "salus" 
-              ? "bg-primary text-primary-foreground shadow-sm" 
-              : "text-muted-foreground hover:bg-secondary hover:text-foreground",
-            isCollapsed && "justify-center px-2"
-          )}
-          title={isCollapsed ? "Sistema Salus" : undefined}
-        >
-          <Stethoscope className="h-5 w-5 flex-shrink-0" />
-          {!isCollapsed && (
-            <span className="font-medium text-sm truncate">Sistema Salus</span>
-          )}
-        </button>
-
         {/* Bottom Menu Items */}
         <ul className="space-y-1">
           {bottomItems.map(item => {
