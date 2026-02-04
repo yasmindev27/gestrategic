@@ -1,21 +1,32 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Ambulance, LayoutDashboard, BedDouble, ExternalLink } from "lucide-react";
 import { NirDashboardModule } from "./NirDashboardModule";
 import { MapaLeitosModule } from "./MapaLeitosModule";
 import { SalusImportModule, ListaFaltantesSalus } from "@/components/nir";
+import { useLogAccess } from "@/hooks/useLogAccess";
 import logoSusFacil from "@/assets/logo-susfacil.png";
 
 type NirView = "menu" | "dashboard" | "mapa-leitos";
 
 export const NirModule = () => {
   const [currentView, setCurrentView] = useState<NirView>("menu");
+  const { logAction } = useLogAccess();
+
+  useEffect(() => {
+    logAction("acesso_modulo", "nir");
+  }, [logAction]);
+
+  const handleViewChange = (view: NirView) => {
+    setCurrentView(view);
+    logAction("navegacao_view", "nir", { view });
+  };
 
   if (currentView === "dashboard") {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" onClick={() => setCurrentView("menu")} className="mb-2">
+        <Button variant="ghost" onClick={() => handleViewChange("menu")} className="mb-2">
           ← Voltar ao NIR
         </Button>
         <NirDashboardModule />
@@ -26,7 +37,7 @@ export const NirModule = () => {
   if (currentView === "mapa-leitos") {
     return (
       <div className="space-y-4">
-        <Button variant="ghost" onClick={() => setCurrentView("menu")} className="mb-2">
+        <Button variant="ghost" onClick={() => handleViewChange("menu")} className="mb-2">
           ← Voltar ao NIR
         </Button>
         <MapaLeitosModule />
@@ -51,7 +62,7 @@ export const NirModule = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card 
           className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
-          onClick={() => setCurrentView("dashboard")}
+          onClick={() => handleViewChange("dashboard")}
         >
           <CardHeader className="text-center pb-2">
             <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
@@ -71,7 +82,7 @@ export const NirModule = () => {
 
         <Card 
           className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
-          onClick={() => setCurrentView("mapa-leitos")}
+          onClick={() => handleViewChange("mapa-leitos")}
         >
           <CardHeader className="text-center pb-2">
             <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">

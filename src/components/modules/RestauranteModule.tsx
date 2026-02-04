@@ -18,6 +18,7 @@ import { ColaboradoresManager } from "@/components/restaurante/ColaboradoresMana
 import { TentativasDuplicidade } from "@/components/restaurante/TentativasDuplicidade";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useLogAccess } from "@/hooks/useLogAccess";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, addDays, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
@@ -127,6 +128,7 @@ export const RestauranteModule = () => {
   const {
     toast
   } = useToast();
+  const { logAction } = useLogAccess();
   const {
     isAdmin,
     hasRole,
@@ -136,6 +138,15 @@ export const RestauranteModule = () => {
   const isRestaurante = hasRole("restaurante");
   const canManage = isAdmin || isRestaurante;
   const [activeTab, setActiveTab] = useState("cardapio");
+
+  useEffect(() => {
+    logAction("acesso_modulo", "restaurante");
+  }, [logAction]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    logAction("navegacao_aba", "restaurante", { aba: value });
+  };
   const [cardapioView, setCardapioView] = useState<"dia" | "semana">("dia");
   const [cardapios, setCardapios] = useState<Cardapio[]>([]);
   const [minhasSolicitacoes, setMinhasSolicitacoes] = useState<SolicitacaoDieta[]>([]);

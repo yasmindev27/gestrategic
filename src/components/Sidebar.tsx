@@ -49,13 +49,17 @@ const Sidebar = ({
   const [userEmail, setUserEmail] = useState<string>("");
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  // Definição de categorias de menu
+  type MenuItem = {
+    icon: typeof LayoutDashboard;
+    label: string;
+    id: string;
+    category?: "dashboard" | "assistencial" | "apoio" | "logistica" | "administrativo" | "integracao";
+  };
+
   // Menu items baseado no perfil do usuário conforme escopo técnico
-  const getMenuItems = () => {
-    const items: {
-      icon: typeof LayoutDashboard;
-      label: string;
-      id: string;
-    }[] = [];
+  const getMenuItems = (): MenuItem[] => {
+    const items: MenuItem[] = [];
 
     // ADMINISTRADOR - acesso total (sem abrir chamado)
     if (isAdmin) {
@@ -64,127 +68,160 @@ const Sidebar = ({
         {
           icon: LayoutDashboard,
           label: "Dashboard",
-          id: "dashboard"
+          id: "dashboard",
+          category: "dashboard"
         },
         
         // === ASSISTENCIAIS ===
         {
-          icon: Users,
-          label: "Equipe",
-          id: "equipe"
-        },
-        {
           icon: Ambulance,
           label: "NIR",
-          id: "nir"
+          id: "nir",
+          category: "assistencial"
         },
         {
           icon: Ambulance,
           label: "Mapa de Leitos",
-          id: "mapa-leitos"
+          id: "mapa-leitos",
+          category: "assistencial"
         },
         {
           icon: Stethoscope,
           label: "Médicos",
-          id: "medicos"
+          id: "medicos",
+          category: "assistencial"
         },
         {
           icon: Syringe,
           label: "Enfermagem",
-          id: "enfermagem"
-        },
-        {
-          icon: FlaskConical,
-          label: "Laboratório",
-          id: "laboratorio"
+          id: "enfermagem",
+          category: "assistencial"
         },
         {
           icon: Heart,
           label: "Assist. Social",
-          id: "assistencia-social"
+          id: "assistencia-social",
+          category: "assistencial"
+        },
+        
+        // === APOIO ===
+        {
+          icon: FlaskConical,
+          label: "Laboratório",
+          id: "laboratorio",
+          category: "apoio"
         },
         {
           icon: AlertTriangle,
           label: "Qualidade/NSP",
-          id: "qualidade"
+          id: "qualidade",
+          category: "apoio"
+        },
+        {
+          icon: HardHat,
+          label: "Seg. Trabalho",
+          id: "seguranca-trabalho",
+          category: "apoio"
+        },
+        
+        // === LOGÍSTICA ===
+        {
+          icon: Shirt,
+          label: "Rouparia",
+          id: "rouparia",
+          category: "logistica"
+        },
+        {
+          icon: UtensilsCrossed,
+          label: "Restaurante",
+          id: "restaurante",
+          category: "logistica"
         },
         
         // === ADMINISTRATIVOS ===
         {
           icon: Receipt,
           label: "Faturamento",
-          id: "faturamento"
+          id: "faturamento",
+          category: "administrativo"
         },
         {
           icon: UserCog,
           label: "RH/DP",
-          id: "rhdp"
+          id: "rhdp",
+          category: "administrativo"
+        },
+        {
+          icon: Users,
+          label: "Equipe",
+          id: "equipe",
+          category: "administrativo"
         },
         {
           icon: Users,
           label: "Profissionais",
-          id: "profissionais-saude"
+          id: "profissionais-saude",
+          category: "administrativo"
         },
         {
           icon: ClipboardX,
           label: "Controle de Fichas",
-          id: "controle-fichas"
-        },
-        {
-          icon: Shirt,
-          label: "Rouparia",
-          id: "rouparia"
-        },
-        {
-          icon: HardHat,
-          label: "Seg. Trabalho",
-          id: "seguranca-trabalho"
+          id: "controle-fichas",
+          category: "administrativo"
         },
         
         // === SUPORTE TÉCNICO ===
         {
           icon: Monitor,
           label: "TI",
-          id: "tecnico-ti"
+          id: "tecnico-ti",
+          category: "administrativo"
         },
         {
           icon: Wrench,
           label: "Manutenção",
-          id: "tecnico-manutencao"
+          id: "tecnico-manutencao",
+          category: "administrativo"
         },
         {
           icon: Stethoscope,
           label: "Eng. Clínica",
-          id: "tecnico-engenharia"
+          id: "tecnico-engenharia",
+          category: "administrativo"
         },
         
         // === UTILIDADES ===
         {
           icon: Calendar,
           label: "Agenda",
-          id: "agenda"
+          id: "agenda",
+          category: "administrativo"
         },
         {
           icon: ScrollText,
           label: "Logs",
-          id: "logs"
+          id: "logs",
+          category: "administrativo"
         },
         {
           icon: Shield,
           label: "Administração",
-          id: "admin"
+          id: "admin",
+          category: "administrativo"
         },
         
         // === INTEGRAÇÕES ===
         {
           icon: FileText,
           label: "Docs Interact",
-          id: "documentos-interact"
+          id: "documentos-interact",
+          category: "integracao"
         },
         {
           icon: Stethoscope,
           label: "Sistema Salus",
-          id: "salus"
+          id: "salus",
+          category: "integracao"
         }
       );
       return items;
@@ -370,11 +407,7 @@ const Sidebar = ({
   };
 
   // Adicionar itens comuns a todos os menus
-  const addCommonMenuItems = (items: {
-    icon: typeof LayoutDashboard;
-    label: string;
-    id: string;
-  }[]) => {
+  const addCommonMenuItems = (items: MenuItem[]): MenuItem[] => {
     // Adicionar Abrir Chamado (GLPI) - exceto para admin
     if (!isAdmin && !items.some(item => item.id === "abrir-chamado")) {
       items.push({
@@ -402,6 +435,64 @@ const Sidebar = ({
     return items;
   };
   const menuItems = addCommonMenuItems(getMenuItems());
+
+  // Componente para renderizar item do menu
+  const MenuItemRender = ({ item, activeSection, isCollapsed, onSectionChange }: {
+    item: MenuItem;
+    activeSection: string;
+    isCollapsed: boolean;
+    onSectionChange: (section: string) => void;
+  }) => {
+    const Icon = item.icon;
+    const isActive = activeSection === item.id;
+    const isExternalLink = item.id === "documentos-interact" || item.id === "abrir-chamado";
+    
+    if (isExternalLink) {
+      const externalUrl = item.id === "abrir-chamado" 
+        ? "https://suporte.santacasachavantes.org/index.php"
+        : "https://santacasachavantes.interact.com.br/sa/custom/webdocuments/anonymous/list.jsp?unit=%2334";
+      
+      return (
+        <li>
+          <a
+            href={externalUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={cn(
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-muted-foreground hover:bg-secondary hover:text-foreground",
+              isCollapsed && "justify-center px-2"
+            )}
+            title={isCollapsed ? item.label : undefined}
+          >
+            <Icon className="h-5 w-5 flex-shrink-0" />
+            {!isCollapsed && (
+              <span className="font-medium truncate flex items-center gap-1">
+                {item.label}
+                <ExternalLink className="h-3 w-3 opacity-60" />
+              </span>
+            )}
+          </a>
+        </li>
+      );
+    }
+    
+    return (
+      <li>
+        <button
+          onClick={() => onSectionChange(item.id)}
+          className={cn(
+            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all",
+            isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+            isCollapsed && "justify-center px-2"
+          )}
+          title={isCollapsed ? item.label : undefined}
+        >
+          <Icon className="h-5 w-5 flex-shrink-0" />
+          {!isCollapsed && <span className="font-medium truncate">{item.label}</span>}
+        </button>
+      </li>
+    );
+  };
   useEffect(() => {
     const fetchUserData = async () => {
       const {
@@ -453,47 +544,76 @@ const Sidebar = ({
 
       {/* Navigation */}
       <nav className="flex-1 p-3 overflow-y-auto">
-        <ul className="space-y-1">
-          {menuItems.map(item => {
-          const Icon = item.icon;
-          const isActive = activeSection === item.id;
-          const isExternalLink = item.id === "documentos-interact" || item.id === "abrir-chamado";
-          
-          if (isExternalLink) {
-            const externalUrl = item.id === "abrir-chamado" 
-              ? "https://suporte.santacasachavantes.org/index.php"
-              : "https://santacasachavantes.interact.com.br/sa/custom/webdocuments/anonymous/list.jsp?unit=%2334";
-            
-            return <li key={item.id}>
-              <a
-                href={externalUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-muted-foreground hover:bg-secondary hover:text-foreground",
-                  isCollapsed && "justify-center px-2"
-                )}
-                title={isCollapsed ? item.label : undefined}
-              >
-                <Icon className="h-5 w-5 flex-shrink-0" />
-                {!isCollapsed && (
-                  <span className="font-medium truncate flex items-center gap-1">
-                    {item.label}
-                    <ExternalLink className="h-3 w-3 opacity-60" />
-                  </span>
-                )}
-              </a>
-            </li>;
-          }
-          
-          return <li key={item.id}>
-                <button onClick={() => onSectionChange(item.id)} className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all", isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-secondary hover:text-foreground", isCollapsed && "justify-center px-2")} title={isCollapsed ? item.label : undefined}>
-                  <Icon className="h-5 w-5 flex-shrink-0" />
-                  {!isCollapsed && <span className="font-medium truncate">{item.label}</span>}
-                </button>
-              </li>;
-        })}
-        </ul>
+        {isAdmin && !isCollapsed ? (
+          // Admin com categorias visuais
+          <div className="space-y-4">
+            {/* Dashboard */}
+            <div>
+              <ul className="space-y-1">
+                {menuItems.filter(i => i.category === "dashboard").map(item => (
+                  <MenuItemRender key={item.id} item={item} activeSection={activeSection} isCollapsed={isCollapsed} onSectionChange={onSectionChange} />
+                ))}
+              </ul>
+            </div>
+
+            {/* Assistencial */}
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground px-3 mb-2">Assistencial</p>
+              <ul className="space-y-1">
+                {menuItems.filter(i => i.category === "assistencial").map(item => (
+                  <MenuItemRender key={item.id} item={item} activeSection={activeSection} isCollapsed={isCollapsed} onSectionChange={onSectionChange} />
+                ))}
+              </ul>
+            </div>
+
+            {/* Apoio */}
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground px-3 mb-2">Apoio</p>
+              <ul className="space-y-1">
+                {menuItems.filter(i => i.category === "apoio").map(item => (
+                  <MenuItemRender key={item.id} item={item} activeSection={activeSection} isCollapsed={isCollapsed} onSectionChange={onSectionChange} />
+                ))}
+              </ul>
+            </div>
+
+            {/* Logística */}
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground px-3 mb-2">Logística</p>
+              <ul className="space-y-1">
+                {menuItems.filter(i => i.category === "logistica").map(item => (
+                  <MenuItemRender key={item.id} item={item} activeSection={activeSection} isCollapsed={isCollapsed} onSectionChange={onSectionChange} />
+                ))}
+              </ul>
+            </div>
+
+            {/* Administrativo */}
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground px-3 mb-2">Administrativo</p>
+              <ul className="space-y-1">
+                {menuItems.filter(i => i.category === "administrativo").map(item => (
+                  <MenuItemRender key={item.id} item={item} activeSection={activeSection} isCollapsed={isCollapsed} onSectionChange={onSectionChange} />
+                ))}
+              </ul>
+            </div>
+
+            {/* Integrações */}
+            <div>
+              <p className="text-xs font-semibold uppercase text-muted-foreground px-3 mb-2">Integrações</p>
+              <ul className="space-y-1">
+                {menuItems.filter(i => i.category === "integracao").map(item => (
+                  <MenuItemRender key={item.id} item={item} activeSection={activeSection} isCollapsed={isCollapsed} onSectionChange={onSectionChange} />
+                ))}
+              </ul>
+            </div>
+          </div>
+        ) : (
+          // Não-admin ou colapsado - lista simples
+          <ul className="space-y-1">
+            {menuItems.map(item => (
+              <MenuItemRender key={item.id} item={item} activeSection={activeSection} isCollapsed={isCollapsed} onSectionChange={onSectionChange} />
+            ))}
+          </ul>
+        )}
       </nav>
 
       {/* Bottom Section */}

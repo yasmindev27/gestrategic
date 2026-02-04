@@ -1,15 +1,26 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Clock, FileText, ShieldX, ClipboardList } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useLogAccess } from "@/hooks/useLogAccess";
 import { BancoHorasSection } from "@/components/rhdp/BancoHorasSection";
 import { CentralAtestadosSection } from "@/components/rhdp/CentralAtestadosSection";
 import { FormulariosSection } from "@/components/rhdp/FormulariosSection";
 
 export const RHDPModule = () => {
   const { isAdmin, hasRole, isLoading } = useUserRole();
+  const { logAction } = useLogAccess();
   const [activeTab, setActiveTab] = useState("banco-horas");
+
+  useEffect(() => {
+    logAction("acesso_modulo", "rhdp");
+  }, [logAction]);
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value);
+    logAction("navegacao_aba", "rhdp", { aba: value });
+  };
 
   const isRHDP = hasRole("rh_dp");
   const hasAccess = isAdmin || isRHDP;
@@ -46,7 +57,7 @@ export const RHDPModule = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="banco-horas" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />

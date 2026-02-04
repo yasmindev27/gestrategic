@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { 
@@ -33,6 +33,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
+import { useLogAccess } from "@/hooks/useLogAccess";
 import { Skeleton } from "@/components/ui/skeleton";
 import { format, addDays, subDays, parseISO, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -84,6 +85,11 @@ const statusConfig = {
 
 const MedicosModule = () => {
   const { toast } = useToast();
+  const { logAction } = useLogAccess();
+
+  useEffect(() => {
+    logAction("acesso_modulo", "medicos");
+  }, [logAction]);
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [dialogOpen, setDialogOpen] = useState(false);
