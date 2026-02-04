@@ -1,9 +1,8 @@
-import { useState, useEffect, lazy, Suspense } from "react";
+import { useState, useEffect, lazy, Suspense, useMemo, useCallback, memo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
-import Sidebar from "@/components/Sidebar";
-import GreetingHeader from "@/components/GreetingHeader";
+import DashboardLayout, { PageLoader } from "@/components/layout/DashboardLayout";
 import DashboardPersonalizado from "@/components/dashboard/DashboardPersonalizado";
 import TeamSection from "@/components/TeamSection";
 import { FaturamentoUnificadoModule } from "@/components/modules/FaturamentoUnificadoModule";
@@ -24,50 +23,52 @@ import { RoupariaModule } from "@/components/modules/RoupariaModule";
 import { SegurancaTrabalhoModule } from "@/components/modules/SegurancaTrabalhoModule";
 import { AssistenciaSocialModule } from "@/components/modules/AssistenciaSocialModule";
 import { QualidadeModule } from "@/components/modules/QualidadeModule";
-import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 
-// Lazy load do módulo de enfermagem
+// Lazy load heavy modules
 const EnfermagemModule = lazy(() => import("@/components/modules/EnfermagemModule"));
+
+// Memoized module components for performance
+const MemoizedTecnicoModule = memo(TecnicoModule);
+const MemoizedDashboardPersonalizado = memo(DashboardPersonalizado);
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("");
-  const { isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isNir, isRecepcao, isLoading: isLoadingRole } = useUserRole();
+  const { isNir, isRecepcao, isLoading: isLoadingRole } = useUserRole();
 
   useEffect(() => {
-    // Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (!session) {
-          navigate("/auth");
-        }
-        setIsLoading(false);
-      }
-    );
+    let isMounted = true;
 
-    // THEN check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
+    const handleAuthChange = (session: Session | null) => {
+      if (!isMounted) return;
       setUser(session?.user ?? null);
-      
       if (!session) {
         navigate("/auth");
       }
       setIsLoading(false);
+    };
+
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_, session) => handleAuthChange(session)
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      handleAuthChange(session);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
-  // Define a seção inicial com base no perfil do usuário
+  // Set initial section based on user role
   useEffect(() => {
     if (!isLoadingRole && activeSection === "") {
       if (isNir) {
@@ -80,91 +81,86 @@ const Dashboard = () => {
     }
   }, [isLoadingRole, isNir, isRecepcao, activeSection]);
 
+  // Memoized section change handler
+  const handleSectionChange = useCallback((section: string) => {
+    setActiveSection(section);
+  }, []);
+
+  // Loading state
   if (isLoading || isLoadingRole || activeSection === "") {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (!user) {
     return null;
   }
 
+  // Render active module content
+  const renderContent = () => {
+    switch (activeSection) {
+      case "dashboard":
+        return <MemoizedDashboardPersonalizado />;
+      case "abrir-chamado":
+        return <AbrirChamadoModule />;
+      case "faturamento":
+        return <FaturamentoUnificadoModule />;
+      case "controle-fichas":
+        return <ControleFichasModule />;
+      case "equipe":
+        return <TeamSection />;
+      case "agenda":
+        return <AgendaModule />;
+      case "admin":
+        return <AdminModule />;
+      case "logs":
+        return <LogsAuditoriaModule />;
+      case "tecnico-ti":
+        return <MemoizedTecnicoModule setor="ti" />;
+      case "tecnico-manutencao":
+        return <MemoizedTecnicoModule setor="manutencao" />;
+      case "tecnico-engenharia":
+        return <MemoizedTecnicoModule setor="engenharia_clinica" />;
+      case "nir":
+      case "dashboard-nir":
+        return <NirModule />;
+      case "mapa-leitos":
+        return <MapaLeitosModule />;
+      case "laboratorio":
+        return <LaboratorioModule />;
+      case "restaurante":
+        return <RestauranteModule />;
+      case "recepcao":
+        return <RecepcaoModule />;
+      case "rhdp":
+        return <RHDPModule />;
+      case "rouparia":
+        return <RoupariaModule />;
+      case "seguranca-trabalho":
+        return <SegurancaTrabalhoModule />;
+      case "assistencia-social":
+        return <AssistenciaSocialModule />;
+      case "qualidade":
+        return <QualidadeModule />;
+      case "enfermagem":
+        return (
+          <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <EnfermagemModule />
+          </Suspense>
+        );
+      case "chat":
+        return <ChatModule />;
+      default:
+        return <MemoizedDashboardPersonalizado />;
+    }
+  };
+
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar activeSection={activeSection} onSectionChange={setActiveSection} />
-      
-      <main className="flex-1 p-6 overflow-auto">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <GreetingHeader />
-          
-          {activeSection === "dashboard" && <DashboardPersonalizado />}
-
-          {activeSection === "abrir-chamado" && <AbrirChamadoModule />}
-
-          {activeSection === "faturamento" && <FaturamentoUnificadoModule />}
-
-          {activeSection === "controle-fichas" && <ControleFichasModule />}
-
-          {activeSection === "equipe" && <TeamSection />}
-
-          {activeSection === "agenda" && <AgendaModule />}
-
-          {activeSection === "admin" && <AdminModule />}
-
-          {activeSection === "logs" && <LogsAuditoriaModule />}
-
-          {/* Módulos dos Técnicos */}
-          {activeSection === "tecnico-ti" && <TecnicoModule setor="ti" />}
-          
-          {activeSection === "tecnico-manutencao" && <TecnicoModule setor="manutencao" />}
-          
-          {activeSection === "tecnico-engenharia" && <TecnicoModule setor="engenharia_clinica" />}
-          
-          {/* Módulo NIR */}
-          {(activeSection === "nir" || activeSection === "dashboard-nir") && <NirModule />}
-
-          {activeSection === "mapa-leitos" && <MapaLeitosModule />}
-
-          {activeSection === "laboratorio" && <LaboratorioModule />}
-
-          {activeSection === "restaurante" && <RestauranteModule />}
-
-          {/* Módulo Recepção */}
-          {activeSection === "recepcao" && <RecepcaoModule />}
-
-          {/* Módulo RH/DP */}
-          {activeSection === "rhdp" && <RHDPModule />}
-
-          {/* Módulo Rouparia */}
-          {activeSection === "rouparia" && <RoupariaModule />}
-
-          {/* Módulo Segurança do Trabalho */}
-          {activeSection === "seguranca-trabalho" && <SegurancaTrabalhoModule />}
-
-          {/* Módulo Assistência Social */}
-          {activeSection === "assistencia-social" && <AssistenciaSocialModule />}
-
-          {/* Módulo Qualidade/NSP */}
-          {activeSection === "qualidade" && <QualidadeModule />}
-
-          {/* Módulo Enfermagem */}
-          {activeSection === "enfermagem" && (
-            <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-              <EnfermagemModule />
-            </Suspense>
-          )}
-
-          {/* Chat Corporativo */}
-          {activeSection === "chat" && <ChatModule />}
-        </div>
-
-        {/* Botão flutuante do chat (visível em todas as páginas exceto no próprio chat) */}
-        {activeSection !== "chat" && <FloatingChatButton currentModule={activeSection} />}
-      </main>
-    </div>
+    <DashboardLayout
+      activeSection={activeSection}
+      onSectionChange={handleSectionChange}
+    >
+      {renderContent()}
+    </DashboardLayout>
   );
 };
 
