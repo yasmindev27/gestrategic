@@ -28,6 +28,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 
 // Lazy load heavy modules
 const EnfermagemModule = lazy(() => import("@/components/modules/EnfermagemModule"));
+const SalusModule = lazy(() => import("@/components/modules/SalusModule"));
 
 // Memoized module components for performance
 const MemoizedTecnicoModule = memo(TecnicoModule);
@@ -149,7 +150,12 @@ const Dashboard = () => {
         );
       case "chat":
         return <ChatModule />;
-      default:
+      case "salus":
+        return (
+          <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <SalusModule />
+          </Suspense>
+        );
         return <MemoizedDashboardPersonalizado />;
     }
   };

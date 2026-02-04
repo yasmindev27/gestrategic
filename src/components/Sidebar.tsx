@@ -2,19 +2,18 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Users, Settings, HelpCircle, Activity, LogOut, ChevronLeft, ChevronRight, FileOutput, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, Ticket, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog, MessageSquare, Shirt, HardHat, Heart, AlertTriangle, Syringe, ExternalLink, BarChart3, Link2 } from "lucide-react";
+import { LayoutDashboard, Users, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, Ticket, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog, Shirt, HardHat, Heart, AlertTriangle, Syringe, ExternalLink, MessageSquare } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+
 interface SidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
 }
+
 const bottomItems = [{
   icon: Settings,
   label: "Configurações",
@@ -24,14 +23,13 @@ const bottomItems = [{
   label: "Ajuda",
   id: "ajuda"
 }];
+
 const Sidebar = ({
   activeSection,
   onSectionChange
 }: SidebarProps) => {
   const navigate = useNavigate();
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
   const {
     role,
     isAdmin,
@@ -50,38 +48,6 @@ const Sidebar = ({
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const [salusDashboardUrl, setSalusDashboardUrl] = useState<string>("");
-  const [dashboardUrlInput, setDashboardUrlInput] = useState<string>("");
-  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
-
-  // Load saved dashboard URL from localStorage
-  useEffect(() => {
-    const savedUrl = localStorage.getItem("salus_dashboard_url");
-    if (savedUrl) {
-      setSalusDashboardUrl(savedUrl);
-      setDashboardUrlInput(savedUrl);
-    }
-  }, []);
-
-  const handleSaveDashboardUrl = () => {
-    if (dashboardUrlInput.trim()) {
-      localStorage.setItem("salus_dashboard_url", dashboardUrlInput.trim());
-      setSalusDashboardUrl(dashboardUrlInput.trim());
-      setIsPopoverOpen(false);
-      toast({
-        title: "URL salva",
-        description: "URL do dashboard Salus configurada com sucesso.",
-      });
-    }
-  };
-
-  const handleOpenDashboard = () => {
-    if (salusDashboardUrl) {
-      window.open(salusDashboardUrl, "_blank", "noopener,noreferrer");
-    } else {
-      setIsPopoverOpen(true);
-    }
-  };
 
   // Menu items baseado no perfil do usuário conforme escopo técnico
   const getMenuItems = () => {
@@ -537,119 +503,23 @@ const Sidebar = ({
           )}
         </a>
 
-        {/* Sistema Salus Section */}
-        {!isCollapsed && (
-          <div className="space-y-1 pt-2">
-            <p className="px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Sistema Salus
-            </p>
-          </div>
-        )}
-        
-        {/* Acessar Salus */}
-        <a
-          href="https://novaserrana.sistemasalus.com.br/"
-          target="_blank"
-          rel="noopener noreferrer"
+        {/* Sistema Salus - Link para módulo interno */}
+        <button
+          onClick={() => onSectionChange("salus")}
           className={cn(
-            "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors",
+            "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors",
+            activeSection === "salus" 
+              ? "bg-primary text-primary-foreground shadow-sm" 
+              : "text-muted-foreground hover:bg-secondary hover:text-foreground",
             isCollapsed && "justify-center px-2"
           )}
-          title={isCollapsed ? "Acessar Salus" : undefined}
+          title={isCollapsed ? "Sistema Salus" : undefined}
         >
           <Stethoscope className="h-5 w-5 flex-shrink-0" />
           {!isCollapsed && (
-            <span className="font-medium text-sm truncate flex items-center gap-1">
-              Acessar Salus
-              <ExternalLink className="h-3 w-3 opacity-60" />
-            </span>
+            <span className="font-medium text-sm truncate">Sistema Salus</span>
           )}
-        </a>
-
-        {/* Dashboards Salus */}
-        <div className={cn(
-          "w-full flex items-center gap-2",
-          isCollapsed && "justify-center"
-        )}>
-          <button
-            onClick={handleOpenDashboard}
-            className={cn(
-              "flex-1 flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors",
-              isCollapsed && "justify-center px-2"
-            )}
-            title={isCollapsed ? "Dashboards Salus" : undefined}
-          >
-            <BarChart3 className="h-5 w-5 flex-shrink-0" />
-            {!isCollapsed && (
-              <span className="font-medium text-sm truncate flex items-center gap-1">
-                Dashboards Salus
-                {salusDashboardUrl && <ExternalLink className="h-3 w-3 opacity-60" />}
-              </span>
-            )}
-          </button>
-          
-          {!isCollapsed && (
-            <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 flex-shrink-0"
-                  title="Configurar URL do Dashboard"
-                >
-                  <Link2 className="h-4 w-4" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-80" side="right" align="start">
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <Label htmlFor="dashboard-url" className="text-sm font-medium">
-                      URL do Dashboard Salus
-                    </Label>
-                    <p className="text-xs text-muted-foreground">
-                      Insira a URL do dashboard que deseja acessar
-                    </p>
-                  </div>
-                  <Input
-                    id="dashboard-url"
-                    placeholder="https://exemplo.com/dashboard"
-                    value={dashboardUrlInput}
-                    onChange={(e) => setDashboardUrlInput(e.target.value)}
-                    className="text-sm"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      onClick={handleSaveDashboardUrl}
-                      disabled={!dashboardUrlInput.trim()}
-                      className="flex-1"
-                    >
-                      Salvar
-                    </Button>
-                    {salusDashboardUrl && (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          localStorage.removeItem("salus_dashboard_url");
-                          setSalusDashboardUrl("");
-                          setDashboardUrlInput("");
-                          setIsPopoverOpen(false);
-                          toast({
-                            title: "URL removida",
-                            description: "URL do dashboard foi removida.",
-                          });
-                        }}
-                      >
-                        Limpar
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          )}
-        </div>
+        </button>
 
         {/* Bottom Menu Items */}
         <ul className="space-y-1">
