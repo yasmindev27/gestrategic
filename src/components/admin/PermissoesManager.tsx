@@ -38,7 +38,7 @@ export function PermissoesManager() {
   const [novoPerfilNome, setNovoPerfilNome] = useState("");
   const [novoPerfilDescricao, setNovoPerfilDescricao] = useState("");
   const [novoPerfilCor, setNovoPerfilCor] = useState("#6b7280");
-  const [clonarDe, setClonarDe] = useState<string>("");
+  const [clonarDe, setClonarDe] = useState<string>("none");
   
   const { data: perfis, isLoading: loadingPerfis } = usePerfis();
   const { data: modulos, isLoading: loadingModulos } = useModulos();
@@ -115,14 +115,14 @@ export function PermissoesManager() {
       nome: novoPerfilNome,
       descricao: novoPerfilDescricao,
       cor: novoPerfilCor,
-      clonarDe: clonarDe || undefined,
+      clonarDe: clonarDe !== "none" ? clonarDe : undefined,
     });
     
     setNovoPerfilOpen(false);
     setNovoPerfilNome("");
     setNovoPerfilDescricao("");
     setNovoPerfilCor("#6b7280");
-    setClonarDe("");
+    setClonarDe("none");
   };
 
   const isLoading = loadingPerfis || loadingModulos || loadingFerramentas;
@@ -199,7 +199,7 @@ export function PermissoesManager() {
                     <SelectValue placeholder="Nenhum (começar do zero)" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Nenhum (começar do zero)</SelectItem>
+                    <SelectItem value="none">Nenhum (começar do zero)</SelectItem>
                     {perfis?.map((p) => (
                       <SelectItem key={p.id} value={p.id}>
                         <div className="flex items-center gap-2">
