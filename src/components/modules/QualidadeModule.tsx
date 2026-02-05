@@ -15,7 +15,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { AlertTriangle, ClipboardCheck, BarChart3, FileText, Plus, Eye, Pencil, ShieldX, TrendingUp, AlertCircle, CheckCircle2, Clock, Target, Stethoscope, Brain } from "lucide-react";
+import { AlertTriangle, ClipboardCheck, BarChart3, FileText, Plus, Eye, Pencil, ShieldX, TrendingUp, AlertCircle, CheckCircle2, Clock, Target, Stethoscope, Brain, Send, UserCheck } from "lucide-react";
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
 import { StatCard } from "@/components/ui/stat-card";
 import { SearchInput } from "@/components/ui/search-input";
@@ -68,11 +68,18 @@ interface Acao {
   analise_id: string | null;
   tipo_acao: string;
   descricao: string;
+  responsavel_id: string | null;
   responsavel_nome: string;
   prazo: string;
   status: string;
   data_conclusao: string | null;
   observacoes: string | null;
+}
+
+interface Usuario {
+  id: string;
+  user_id: string;
+  full_name: string;
 }
 
 interface Auditoria {
@@ -131,6 +138,7 @@ export const QualidadeModule = () => {
   const [analises, setAnalises] = useState<Analise[]>([]);
   const [acoes, setAcoes] = useState<Acao[]>([]);
   const [auditorias, setAuditorias] = useState<Auditoria[]>([]);
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasPermission, setHasPermission] = useState(false);
   
@@ -147,7 +155,10 @@ export const QualidadeModule = () => {
   const [acaoDialog, setAcaoDialog] = useState(false);
   const [auditoriaDialog, setAuditoriaDialog] = useState(false);
   const [detalhesDialog, setDetalhesDialog] = useState(false);
+  const [encaminharDialog, setEncaminharDialog] = useState(false);
   const [selectedIncidente, setSelectedIncidente] = useState<Incidente | null>(null);
+  const [selectedAcao, setSelectedAcao] = useState<Acao | null>(null);
+  const [novoResponsavel, setNovoResponsavel] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Form data
@@ -228,17 +239,19 @@ export const QualidadeModule = () => {
   };
 
   const loadData = async () => {
-    const [incidentesRes, analisesRes, acoesRes, auditoriasRes] = await Promise.all([
+    const [incidentesRes, analisesRes, acoesRes, auditoriasRes, usuariosRes] = await Promise.all([
       supabase.from("incidentes_nsp").select("*").order("data_ocorrencia", { ascending: false }),
       supabase.from("analises_incidentes").select("*").order("data_analise", { ascending: false }),
       supabase.from("acoes_incidentes").select("*").order("created_at", { ascending: false }),
       supabase.from("auditorias_qualidade").select("*").order("data_auditoria", { ascending: false }),
+      supabase.from("profiles").select("id, user_id, full_name").order("full_name"),
     ]);
 
     if (incidentesRes.data) setIncidentes(incidentesRes.data);
     if (analisesRes.data) setAnalises(analisesRes.data);
     if (acoesRes.data) setAcoes(acoesRes.data);
     if (auditoriasRes.data) setAuditorias(auditoriasRes.data);
+    if (usuariosRes.data) setUsuarios(usuariosRes.data);
   };
 
   const handleCreateIncidente = async () => {
@@ -376,6 +389,43 @@ export const QualidadeModule = () => {
       loadData();
       logAction("Qualidade/NSP", "alteracao_status_incidente", { id, status: novoStatus });
     }
+  };
+
+  const handleEncaminharAcao = async () => {
+    if (!selectedAcao || !novoResponsavel) {
+      toast({ title: "Erro", description: "Selecione um responsável", variant: "destructive" });
+      return;
+    }
+    
+    const usuario = usuarios.find(u => u.user_id === novoResponsavel);
+    if (!usuario) return;
+
+    setIsSubmitting(true);
+    const { error } = await supabase
+      .from("acoes_incidentes")
+      .update({ 
+        responsavel_id: usuario.user_id,
+        responsavel_nome: usuario.full_name 
+      })
+      .eq("id", selectedAcao.id);
+
+    if (error) {
+      toast({ title: "Erro", description: "Falha ao encaminhar ação", variant: "destructive" });
+    } else {
+      toast({ title: "Sucesso", description: `Ação encaminhada para ${usuario.full_name}` });
+      setEncaminharDialog(false);
+      setSelectedAcao(null);
+      setNovoResponsavel("");
+      loadData();
+      logAction("Qualidade/NSP", "encaminhar_acao", { acao_id: selectedAcao.id, novo_responsavel: usuario.full_name });
+    }
+    setIsSubmitting(false);
+  };
+
+  const openEncaminharDialog = (acao: Acao) => {
+    setSelectedAcao(acao);
+    setNovoResponsavel(acao.responsavel_id || "");
+    setEncaminharDialog(true);
   };
 
   const resetIncidenteForm = () => setIncidenteForm({
@@ -716,6 +766,7 @@ export const QualidadeModule = () => {
                       <TableHead>Responsável</TableHead>
                       <TableHead>Prazo</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -731,6 +782,17 @@ export const QualidadeModule = () => {
                         <TableCell>{format(new Date(a.prazo), "dd/MM/yyyy")}</TableCell>
                         <TableCell>
                           <StatusBadge status={mapStatusToType(a.status)} label={a.status} />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => openEncaminharDialog(a)}
+                            className="gap-1"
+                          >
+                            <Send className="h-3 w-3" />
+                            Encaminhar
+                          </Button>
                         </TableCell>
                       </TableRow>
                     ))}
@@ -1349,6 +1411,71 @@ export const QualidadeModule = () => {
             }}>
               <ClipboardCheck className="h-4 w-4 mr-2" />
               Nova Ação
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Encaminhar Ação */}
+      <Dialog open={encaminharDialog} onOpenChange={(open) => {
+        setEncaminharDialog(open);
+        if (!open) {
+          setSelectedAcao(null);
+          setNovoResponsavel("");
+        }
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserCheck className="h-5 w-5" />
+              Encaminhar Ação
+            </DialogTitle>
+          </DialogHeader>
+          {selectedAcao && (
+            <div className="space-y-4">
+              <Card className="bg-muted/50">
+                <CardContent className="pt-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant={selectedAcao.tipo_acao === "corretiva" ? "default" : "secondary"}>
+                        {selectedAcao.tipo_acao === "corretiva" ? "Corretiva" : "Preventiva"}
+                      </Badge>
+                      <StatusBadge status={mapStatusToType(selectedAcao.status)} label={selectedAcao.status} />
+                    </div>
+                    <p className="text-sm">{selectedAcao.descricao}</p>
+                    <div className="text-xs text-muted-foreground">
+                      <span>Prazo: {format(new Date(selectedAcao.prazo), "dd/MM/yyyy")}</span>
+                      {selectedAcao.responsavel_nome && (
+                        <span className="ml-2">• Atual: {selectedAcao.responsavel_nome}</span>
+                      )}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <div>
+                <Label>Selecionar Novo Responsável *</Label>
+                <Select value={novoResponsavel} onValueChange={setNovoResponsavel}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um colaborador..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {usuarios.map(u => (
+                      <SelectItem key={u.user_id} value={u.user_id}>
+                        {u.full_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEncaminharDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleEncaminharAcao} disabled={isSubmitting || !novoResponsavel}>
+              {isSubmitting ? "Encaminhando..." : "Confirmar Encaminhamento"}
             </Button>
           </DialogFooter>
         </DialogContent>
