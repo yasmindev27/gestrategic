@@ -401,24 +401,61 @@ export const QualidadeModule = () => {
     if (!usuario) return;
 
     setIsSubmitting(true);
-    const { error } = await supabase
-      .from("acoes_incidentes")
-      .update({ 
-        responsavel_id: usuario.user_id,
-        responsavel_nome: usuario.full_name 
-      })
-      .eq("id", selectedAcao.id);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
 
-    if (error) {
-      toast({ title: "Erro", description: "Falha ao encaminhar ação", variant: "destructive" });
-    } else {
-      toast({ title: "Sucesso", description: `Ação encaminhada para ${usuario.full_name}` });
+      // Atualizar a ação com o novo responsável
+      const { error: updateError } = await supabase
+        .from("acoes_incidentes")
+        .update({ 
+          responsavel_id: usuario.user_id,
+          responsavel_nome: usuario.full_name 
+        })
+        .eq("id", selectedAcao.id);
+
+      if (updateError) throw updateError;
+
+      // Criar notificação na agenda para o destinatário
+      const { data: agendaItem, error: agendaError } = await supabase
+        .from("agenda_items")
+        .insert({
+          tipo: "tarefa",
+          titulo: `Ação encaminhada: ${selectedAcao.tipo_acao === "corretiva" ? "Corretiva" : "Preventiva"}`,
+          descricao: `Você recebeu uma ação para executar: ${selectedAcao.descricao}\n\nPrazo: ${format(new Date(selectedAcao.prazo), "dd/MM/yyyy")}`,
+          data_inicio: new Date().toISOString(),
+          prioridade: "alta",
+          status: "pendente",
+          criado_por: user.id,
+        })
+        .select()
+        .single();
+
+      if (agendaError) throw agendaError;
+
+      // Associar a notificação ao destinatário
+      const { error: destinatarioError } = await supabase
+        .from("agenda_destinatarios")
+        .insert({
+          agenda_item_id: agendaItem.id,
+          usuario_id: usuario.user_id,
+          visualizado: false,
+        });
+
+      if (destinatarioError) throw destinatarioError;
+
+      toast({ title: "Sucesso", description: `Ação encaminhada para ${usuario.full_name} com notificação` });
       setEncaminharDialog(false);
       setSelectedAcao(null);
       setNovoResponsavel("");
       loadData();
       logAction("Qualidade/NSP", "encaminhar_acao", { acao_id: selectedAcao.id, novo_responsavel: usuario.full_name });
+    } catch (error) {
+      console.error("Erro ao encaminhar ação:", error);
+      toast({ title: "Erro", description: "Falha ao encaminhar ação", variant: "destructive" });
     }
+    
     setIsSubmitting(false);
   };
 
