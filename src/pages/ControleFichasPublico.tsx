@@ -225,11 +225,11 @@ const ControleFichasPublico = () => {
               </DialogHeader>
               <div className="space-y-4 pt-4">
                 <div>
-                  <label className="text-sm font-medium">Seu Nome *</label>
+                  <label className="text-sm font-medium">Nome do Paciente *</label>
                   <Input
                     value={registradoPorNome}
                     onChange={(e) => setRegistradoPorNome(e.target.value)}
-                    placeholder="Nome do Paciente"
+                    placeholder="Digite o nome do paciente"
                   />
                 </div>
                 <div>
