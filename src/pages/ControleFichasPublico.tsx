@@ -113,7 +113,7 @@ const ControleFichasPublico = () => {
           numero_prontuario: numeroProntuario.trim() || null,
           tipo_inconsistencia: tipoInconsistencia,
           descricao: descricao.trim(),
-          registrado_por: registradoPorNome.trim(),
+          paciente_nome: registradoPorNome.trim(),
         });
 
       if (error) throw error;
@@ -150,7 +150,7 @@ const ControleFichasPublico = () => {
         .from("cadastros_inconsistentes")
         .update({
           status: "resolvido",
-          resolvido_por: nomeResponsavel.trim(),
+          resolvido_por_nome: nomeResponsavel.trim(),
           resolvido_em: new Date().toISOString(),
         })
         .eq("id", id);
