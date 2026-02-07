@@ -229,7 +229,7 @@ const ControleFichasPublico = () => {
                   <Input
                     value={registradoPorNome}
                     onChange={(e) => setRegistradoPorNome(e.target.value)}
-                    placeholder="Digite seu nome"
+                    placeholder="Nome do Paciente"
                   />
                 </div>
                 <div>
