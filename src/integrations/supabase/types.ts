@@ -937,10 +937,12 @@ export type Database = {
           descricao: string
           id: string
           numero_prontuario: string | null
+          paciente_nome: string | null
           prontuario_id: string | null
-          registrado_por: string
+          registrado_por: string | null
           resolvido_em: string | null
           resolvido_por: string | null
+          resolvido_por_nome: string | null
           status: string
           tipo_inconsistencia: string
           updated_at: string
@@ -950,10 +952,12 @@ export type Database = {
           descricao: string
           id?: string
           numero_prontuario?: string | null
+          paciente_nome?: string | null
           prontuario_id?: string | null
-          registrado_por: string
+          registrado_por?: string | null
           resolvido_em?: string | null
           resolvido_por?: string | null
+          resolvido_por_nome?: string | null
           status?: string
           tipo_inconsistencia: string
           updated_at?: string
@@ -963,10 +967,12 @@ export type Database = {
           descricao?: string
           id?: string
           numero_prontuario?: string | null
+          paciente_nome?: string | null
           prontuario_id?: string | null
-          registrado_por?: string
+          registrado_por?: string | null
           resolvido_em?: string | null
           resolvido_por?: string | null
+          resolvido_por_nome?: string | null
           status?: string
           tipo_inconsistencia?: string
           updated_at?: string
