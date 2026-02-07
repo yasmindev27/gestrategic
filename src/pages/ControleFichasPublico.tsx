@@ -44,11 +44,13 @@ import { ptBR } from "date-fns/locale";
 interface CadastroInconsistente {
   id: string;
   numero_prontuario: string | null;
+  paciente_nome: string | null;
   tipo_inconsistencia: string;
   descricao: string;
   status: string;
-  registrado_por: string;
+  registrado_por: string | null;
   resolvido_por: string | null;
+  resolvido_por_nome: string | null;
   resolvido_em: string | null;
   created_at: string;
 }
@@ -190,6 +192,7 @@ const ControleFichasPublico = () => {
 
   const filteredInconsistencias = inconsistencias.filter(
     i => (i.numero_prontuario?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
+         (i.paciente_nome?.toLowerCase() || "").includes(searchTerm.toLowerCase()) ||
          i.descricao.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -362,6 +365,7 @@ const ControleFichasPublico = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead>Paciente</TableHead>
                       <TableHead>Prontuário</TableHead>
                       <TableHead>Tipo</TableHead>
                       <TableHead>Descrição</TableHead>
@@ -374,6 +378,9 @@ const ControleFichasPublico = () => {
                     {filteredInconsistencias.map((item) => (
                       <TableRow key={item.id}>
                         <TableCell className="font-medium">
+                          {item.paciente_nome || "-"}
+                        </TableCell>
+                        <TableCell>
                           {item.numero_prontuario || "-"}
                         </TableCell>
                         <TableCell>{getTipoLabel(item.tipo_inconsistencia)}</TableCell>
