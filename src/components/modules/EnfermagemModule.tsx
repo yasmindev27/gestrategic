@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Bug, BarChart3, FlaskConical, Pill, Bell } from 'lucide-react';
+import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Bug, BarChart3, FlaskConical, Pill, Bell, Microscope } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -44,29 +44,26 @@ export default function EnfermagemModule() {
   const [selectedSetor, setSelectedSetor] = useState<string>('todos');
   const [novaEscalaOpen, setNovaEscalaOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-  const [activeTab, setActiveTab] = useState('meus-plantoes');
+  const [mainTab, setMainTab] = useState('operacional');
+  const [operacionalTab, setOperacionalTab] = useState('meus-plantoes');
+  const [scirasTab, setScirasTab] = useState('vigilancia');
 
-  // Registrar acesso ao módulo
   useEffect(() => {
     logAction('acesso', 'enfermagem');
   }, [logAction]);
 
-  // Verificar sessão e obter nome do usuário
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       if (!session) navigate('/auth');
     });
-
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       if (!session) navigate('/auth');
     });
-
     return () => subscription.unsubscribe();
   }, [navigate]);
 
-  // Obter nome do usuário
   useEffect(() => {
     async function loadUserName() {
       if (!userId) return;
@@ -80,7 +77,6 @@ export default function EnfermagemModule() {
     loadUserName();
   }, [userId]);
 
-  // Carregar setores
   useEffect(() => {
     async function loadSetores() {
       const { data } = await supabase
@@ -88,15 +84,11 @@ export default function EnfermagemModule() {
         .select('nome')
         .eq('ativo', true)
         .order('nome');
-
-      if (data) {
-        setSetores(data.map(s => s.nome));
-      }
+      if (data) setSetores(data.map(s => s.nome));
     }
     loadSetores();
   }, []);
 
-  // Queries para contadores
   const { data: trocasDisponiveis = [] } = useTrocasDisponiveis();
   const { data: trocasPendentes = [] } = useTrocasPendentes();
   const { data: minhasEscalas = [] } = useMinhasEscalas(userId || undefined);
@@ -104,16 +96,10 @@ export default function EnfermagemModule() {
   const isGestor = role === 'admin' || role === 'gestor';
   const trocasDisponiveisCount = trocasDisponiveis.filter(t => t.ofertante_id !== userId).length;
 
-  if (roleLoading) {
-    return <LoadingState message="Carregando módulo de enfermagem..." />;
-  }
-
-  if (!session) {
-    return <LoadingState message="Verificando autenticação..." />;
-  }
+  if (roleLoading) return <LoadingState message="Carregando módulo de enfermagem..." />;
+  if (!session) return <LoadingState message="Verificando autenticação..." />;
 
   const handleDayClick = (date: Date, escalas: Escala[]) => {
-    // Pode abrir um modal com detalhes do dia ou similar
     console.log('Dia clicado:', date, escalas);
   };
 
@@ -132,216 +118,215 @@ export default function EnfermagemModule() {
             Módulo de Enfermagem
           </h1>
           <p className="text-muted-foreground">
-            Gestão de escalas, trocas de plantão e SCIRAS/Epidemiologia
+            Gestão operacional de escalas e vigilância epidemiológica SCIRAS
           </p>
         </div>
-
-        {isGestor && (
-          <div className="flex gap-2">
-            <Select value={selectedSetor} onValueChange={setSelectedSetor}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Filtrar por setor" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os setores</SelectItem>
-                {setores.map(setor => (
-                  <SelectItem key={setor} value={setor}>
-                    {setor}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button onClick={() => setNovaEscalaOpen(true)}>
-              <Calendar className="h-4 w-4 mr-2" />
-              Nova Escala
-            </Button>
-          </div>
-        )}
       </div>
 
-      {/* Cards de estatísticas */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('meus-plantoes')}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Meus Plantões</p>
-                <p className="text-2xl font-bold">{minhasEscalas.length}</p>
-              </div>
-              <Calendar className="h-8 w-8 text-primary opacity-80" />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('pega-plantao')}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Disponíveis para Troca</p>
-                <p className="text-2xl font-bold">{trocasDisponiveisCount}</p>
-              </div>
-              <ArrowRightLeft className="h-8 w-8 text-warning opacity-80" />
-            </div>
-            {trocasDisponiveisCount > 0 && (
-              <Badge variant="secondary" className="mt-2 animate-pulse">
-                Plantões disponíveis!
-              </Badge>
-            )}
-          </CardContent>
-        </Card>
-
-        {isGestor && (
-          <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('aprovacoes')}>
-            <CardContent className="p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm text-muted-foreground">Aguardando Aprovação</p>
-                  <p className="text-2xl font-bold">{trocasPendentes.length}</p>
-                </div>
-                <CheckCircle className="h-8 w-8 text-warning opacity-80" />
-              </div>
-              {trocasPendentes.length > 0 && (
-                <Badge variant="destructive" className="mt-2">
-                  Ação necessária
-                </Badge>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setActiveTab('historico')}>
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-muted-foreground">Histórico</p>
-                <p className="text-sm text-muted-foreground">Ver todas as trocas</p>
-              </div>
-              <History className="h-8 w-8 text-muted-foreground opacity-80" />
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Tabs principais */}
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="flex flex-wrap gap-1 h-auto p-1 lg:w-auto lg:inline-flex">
-          <TabsTrigger value="meus-plantoes" className="gap-2">
-            <Calendar className="h-4 w-4" />
-            <span className="hidden sm:inline">Meus Plantões</span>
-            <span className="sm:hidden">Plantões</span>
-          </TabsTrigger>
-          <TabsTrigger value="pega-plantao" className="gap-2">
-            <ArrowRightLeft className="h-4 w-4" />
-            <span className="hidden sm:inline">Pega Plantão</span>
-            <span className="sm:hidden">Trocar</span>
-            {trocasDisponiveisCount > 0 && (
-              <Badge variant="secondary" className="ml-1">
-                {trocasDisponiveisCount}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="calendario" className="gap-2">
+      {/* Tabs de nível superior */}
+      <Tabs value={mainTab} onValueChange={setMainTab}>
+        <TabsList className="h-auto p-1">
+          <TabsTrigger value="operacional" className="gap-2 text-sm px-4 py-2">
             <Users className="h-4 w-4" />
-            <span className="hidden sm:inline">Calendário</span>
-            <span className="sm:hidden">Cal.</span>
+            Gestão Operacional
           </TabsTrigger>
-          {isGestor && (
-            <TabsTrigger value="aprovacoes" className="gap-2">
-              <CheckCircle className="h-4 w-4" />
-              <span className="hidden sm:inline">Aprovações</span>
-              <span className="sm:hidden">Aprovar</span>
-              {trocasPendentes.length > 0 && (
-                <Badge variant="destructive" className="ml-1">
-                  {trocasPendentes.length}
-                </Badge>
-              )}
-            </TabsTrigger>
-          )}
-          <TabsTrigger value="historico" className="gap-2">
-            <History className="h-4 w-4" />
-            <span className="hidden sm:inline">Histórico</span>
-            <span className="sm:hidden">Hist.</span>
-          </TabsTrigger>
-
-          {/* Separador visual SCIRAS */}
-          <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
-
-          <TabsTrigger value="sciras-vigilancia" className="gap-2">
-            <Bug className="h-4 w-4" />
-            <span className="hidden sm:inline">Vigilância IRAS</span>
-            <span className="sm:hidden">IRAS</span>
-          </TabsTrigger>
-          <TabsTrigger value="sciras-indicadores" className="gap-2">
-            <BarChart3 className="h-4 w-4" />
-            <span className="hidden sm:inline">Indicadores</span>
-            <span className="sm:hidden">Ind.</span>
-          </TabsTrigger>
-          <TabsTrigger value="sciras-culturas" className="gap-2">
-            <FlaskConical className="h-4 w-4" />
-            <span className="hidden sm:inline">Culturas</span>
-            <span className="sm:hidden">Cult.</span>
-          </TabsTrigger>
-          <TabsTrigger value="sciras-antimicrobianos" className="gap-2">
-            <Pill className="h-4 w-4" />
-            <span className="hidden sm:inline">Antimicrobianos</span>
-            <span className="sm:hidden">ATM</span>
-          </TabsTrigger>
-          <TabsTrigger value="sciras-notificacoes" className="gap-2">
-            <Bell className="h-4 w-4" />
-            <span className="hidden sm:inline">Epidemiologia</span>
-            <span className="sm:hidden">Epi.</span>
+          <TabsTrigger value="sciras" className="gap-2 text-sm px-4 py-2">
+            <Microscope className="h-4 w-4" />
+            SCIRAS & Epidemiologia
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="meus-plantoes" className="mt-6">
-          <MinhasEscalas userId={userId || ''} userName={userName || ''} />
+        {/* ── Gestão Operacional ── */}
+        <TabsContent value="operacional" className="mt-6 space-y-6">
+          {/* Header de ações do gestor */}
+          {isGestor && (
+            <div className="flex flex-wrap gap-2 justify-end">
+              <Select value={selectedSetor} onValueChange={setSelectedSetor}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Filtrar por setor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os setores</SelectItem>
+                  {setores.map(setor => (
+                    <SelectItem key={setor} value={setor}>{setor}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button onClick={() => setNovaEscalaOpen(true)}>
+                <Calendar className="h-4 w-4 mr-2" />
+                Nova Escala
+              </Button>
+            </div>
+          )}
+
+          {/* Cards de estatísticas */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setOperacionalTab('meus-plantoes')}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Meus Plantões</p>
+                    <p className="text-2xl font-bold">{minhasEscalas.length}</p>
+                  </div>
+                  <Calendar className="h-8 w-8 text-primary opacity-80" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setOperacionalTab('pega-plantao')}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Disponíveis para Troca</p>
+                    <p className="text-2xl font-bold">{trocasDisponiveisCount}</p>
+                  </div>
+                  <ArrowRightLeft className="h-8 w-8 text-warning opacity-80" />
+                </div>
+                {trocasDisponiveisCount > 0 && (
+                  <Badge variant="secondary" className="mt-2 animate-pulse">Plantões disponíveis!</Badge>
+                )}
+              </CardContent>
+            </Card>
+            {isGestor && (
+              <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setOperacionalTab('aprovacoes')}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-muted-foreground">Aguardando Aprovação</p>
+                      <p className="text-2xl font-bold">{trocasPendentes.length}</p>
+                    </div>
+                    <CheckCircle className="h-8 w-8 text-warning opacity-80" />
+                  </div>
+                  {trocasPendentes.length > 0 && (
+                    <Badge variant="destructive" className="mt-2">Ação necessária</Badge>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+            <Card className="cursor-pointer hover:shadow-md transition-shadow" onClick={() => setOperacionalTab('historico')}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground">Histórico</p>
+                    <p className="text-sm text-muted-foreground">Ver todas as trocas</p>
+                  </div>
+                  <History className="h-8 w-8 text-muted-foreground opacity-80" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Sub-tabs operacionais */}
+          <Tabs value={operacionalTab} onValueChange={setOperacionalTab}>
+            <TabsList className="flex flex-wrap gap-1 h-auto p-1">
+              <TabsTrigger value="meus-plantoes" className="gap-2">
+                <Calendar className="h-4 w-4" />
+                <span className="hidden sm:inline">Meus Plantões</span>
+                <span className="sm:hidden">Plantões</span>
+              </TabsTrigger>
+              <TabsTrigger value="pega-plantao" className="gap-2">
+                <ArrowRightLeft className="h-4 w-4" />
+                <span className="hidden sm:inline">Pega Plantão</span>
+                <span className="sm:hidden">Trocar</span>
+                {trocasDisponiveisCount > 0 && (
+                  <Badge variant="secondary" className="ml-1">{trocasDisponiveisCount}</Badge>
+                )}
+              </TabsTrigger>
+              <TabsTrigger value="calendario" className="gap-2">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Calendário</span>
+                <span className="sm:hidden">Cal.</span>
+              </TabsTrigger>
+              {isGestor && (
+                <TabsTrigger value="aprovacoes" className="gap-2">
+                  <CheckCircle className="h-4 w-4" />
+                  <span className="hidden sm:inline">Aprovações</span>
+                  <span className="sm:hidden">Aprovar</span>
+                  {trocasPendentes.length > 0 && (
+                    <Badge variant="destructive" className="ml-1">{trocasPendentes.length}</Badge>
+                  )}
+                </TabsTrigger>
+              )}
+              <TabsTrigger value="historico" className="gap-2">
+                <History className="h-4 w-4" />
+                <span className="hidden sm:inline">Histórico</span>
+                <span className="sm:hidden">Hist.</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="meus-plantoes" className="mt-6">
+              <MinhasEscalas userId={userId || ''} userName={userName || ''} />
+            </TabsContent>
+            <TabsContent value="pega-plantao" className="mt-6">
+              <TrocasDisponiveis userId={userId || ''} userName={userName || ''} />
+            </TabsContent>
+            <TabsContent value="calendario" className="mt-6">
+              <CalendarioEscalas
+                onDayClick={handleDayClick}
+                onAddClick={isGestor ? handleAddClick : undefined}
+                selectedSetor={selectedSetor}
+              />
+            </TabsContent>
+            {isGestor && (
+              <TabsContent value="aprovacoes" className="mt-6">
+                <AprovacaoTrocas userId={userId || ''} userName={userName || ''} />
+              </TabsContent>
+            )}
+            <TabsContent value="historico" className="mt-6">
+              <HistoricoTrocas />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
-        <TabsContent value="pega-plantao" className="mt-6">
-          <TrocasDisponiveis userId={userId || ''} userName={userName || ''} />
-        </TabsContent>
+        {/* ── SCIRAS & Epidemiologia ── */}
+        <TabsContent value="sciras" className="mt-6 space-y-6">
+          <Tabs value={scirasTab} onValueChange={setScirasTab}>
+            <TabsList className="flex flex-wrap gap-1 h-auto p-1">
+              <TabsTrigger value="vigilancia" className="gap-2">
+                <Bug className="h-4 w-4" />
+                <span className="hidden sm:inline">Vigilância IRAS</span>
+                <span className="sm:hidden">IRAS</span>
+              </TabsTrigger>
+              <TabsTrigger value="indicadores" className="gap-2">
+                <BarChart3 className="h-4 w-4" />
+                <span className="hidden sm:inline">Indicadores</span>
+                <span className="sm:hidden">Ind.</span>
+              </TabsTrigger>
+              <TabsTrigger value="culturas" className="gap-2">
+                <FlaskConical className="h-4 w-4" />
+                <span className="hidden sm:inline">Culturas</span>
+                <span className="sm:hidden">Cult.</span>
+              </TabsTrigger>
+              <TabsTrigger value="antimicrobianos" className="gap-2">
+                <Pill className="h-4 w-4" />
+                <span className="hidden sm:inline">Antimicrobianos</span>
+                <span className="sm:hidden">ATM</span>
+              </TabsTrigger>
+              <TabsTrigger value="notificacoes" className="gap-2">
+                <Bell className="h-4 w-4" />
+                <span className="hidden sm:inline">Epidemiologia</span>
+                <span className="sm:hidden">Epi.</span>
+              </TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="calendario" className="mt-6">
-          <CalendarioEscalas 
-            onDayClick={handleDayClick}
-            onAddClick={isGestor ? handleAddClick : undefined}
-            selectedSetor={selectedSetor}
-          />
-        </TabsContent>
-
-        {isGestor && (
-          <TabsContent value="aprovacoes" className="mt-6">
-            <AprovacaoTrocas userId={userId || ''} userName={userName || ''} />
-          </TabsContent>
-        )}
-
-        <TabsContent value="historico" className="mt-6">
-          <HistoricoTrocas />
-        </TabsContent>
-
-        {/* SCIRAS Tabs */}
-        <TabsContent value="sciras-vigilancia" className="mt-6">
-          <VigilanciaIRASComponent userId={userId || ''} userName={userName || ''} />
-        </TabsContent>
-
-        <TabsContent value="sciras-indicadores" className="mt-6">
-          <IndicadoresInfeccao userId={userId || ''} userName={userName || ''} />
-        </TabsContent>
-
-        <TabsContent value="sciras-culturas" className="mt-6">
-          <CulturasMicrobiologicas userId={userId || ''} userName={userName || ''} />
-        </TabsContent>
-
-        <TabsContent value="sciras-antimicrobianos" className="mt-6">
-          <ControleAntimicrobianos userId={userId || ''} userName={userName || ''} />
-        </TabsContent>
-
-        <TabsContent value="sciras-notificacoes" className="mt-6">
-          <NotificacoesEpidemiologicas userId={userId || ''} userName={userName || ''} />
+            <TabsContent value="vigilancia" className="mt-6">
+              <VigilanciaIRASComponent userId={userId || ''} userName={userName || ''} />
+            </TabsContent>
+            <TabsContent value="indicadores" className="mt-6">
+              <IndicadoresInfeccao userId={userId || ''} userName={userName || ''} />
+            </TabsContent>
+            <TabsContent value="culturas" className="mt-6">
+              <CulturasMicrobiologicas userId={userId || ''} userName={userName || ''} />
+            </TabsContent>
+            <TabsContent value="antimicrobianos" className="mt-6">
+              <ControleAntimicrobianos userId={userId || ''} userName={userName || ''} />
+            </TabsContent>
+            <TabsContent value="notificacoes" className="mt-6">
+              <NotificacoesEpidemiologicas userId={userId || ''} userName={userName || ''} />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
       </Tabs>
 
-      {/* Dialog para nova escala */}
       <NovaEscalaDialog
         open={novaEscalaOpen}
         onOpenChange={setNovaEscalaOpen}
