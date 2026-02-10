@@ -13,7 +13,7 @@ import Auth from "./pages/Auth";
 // Lazy load non-critical pages for code splitting
 const Dashboard = lazy(() => import("./pages/Dashboard"));
 const TotemRefeicoes = lazy(() => import("./pages/TotemRefeicoes"));
-const ControleFichasPublico = lazy(() => import("./pages/ControleFichasPublico"));
+// const ControleFichasPublico = lazy(() => import("./pages/ControleFichasPublico"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 // Loading fallback component
@@ -47,7 +47,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/totem" element={<TotemRefeicoes />} />
-            <Route path="/controledefichas" element={<ControleFichasPublico />} />
+            {/* Rota /controledefichas removida - medida provisória desativada */}
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
