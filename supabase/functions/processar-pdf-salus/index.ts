@@ -23,6 +23,50 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // 1. Verify authentication
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: 'Não autorizado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: 'Usuário não autenticado' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 2. Verify user role
+    const supabaseService = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    );
+
+    const { data: roles } = await supabaseService
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id);
+
+    const allowedRoles = ['admin', 'faturamento', 'recepcao', 'nir', 'classificacao'];
+    const hasAccess = roles?.some(r => allowedRoles.includes(r.role));
+    if (!hasAccess) {
+      return new Response(
+        JSON.stringify({ error: 'Acesso negado' }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 3. Process file
     const formData = await req.formData();
     const file = formData.get('file') as File;
     
@@ -109,7 +153,6 @@ REGRAS:
     // Parse the JSON response
     let pacientes: PatientInfo[] = [];
     try {
-      // Try to extract JSON from the response
       const jsonMatch = content.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
@@ -123,11 +166,7 @@ REGRAS:
     console.log(`Encontrados ${pacientes.length} pacientes no PDF`);
 
     // Fetch existing records from database
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    const { data: existingRecords, error: dbError } = await supabase
+    const { data: existingRecords, error: dbError } = await supabaseService
       .from('saida_prontuarios')
       .select('numero_prontuario, paciente_nome');
 
@@ -154,7 +193,6 @@ REGRAS:
       const nomeNormalizado = normalizeString(paciente.nome);
       const prontuarioNormalizado = paciente.prontuario ? normalizeString(paciente.prontuario) : null;
       
-      // Check if patient exists by name or prontuario
       const existeNoSistema = existingNomes.has(nomeNormalizado) || 
         (prontuarioNormalizado && existingProntuarios.has(prontuarioNormalizado));
       
