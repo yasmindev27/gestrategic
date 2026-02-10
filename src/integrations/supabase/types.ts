@@ -3518,6 +3518,15 @@ export type Database = {
       }
     }
     Functions: {
+      buscar_colaborador_totem: {
+        Args: { _matricula: string }
+        Returns: {
+          id: string
+          matricula: string
+          nome: string
+          pode_registrar: boolean
+        }[]
+      }
       gestor_gerencia_usuario: {
         Args: { _gestor_id: string; _usuario_id: string }
         Returns: boolean
