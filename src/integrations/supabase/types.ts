@@ -3144,6 +3144,343 @@ export type Database = {
           },
         ]
       }
+      sciras_antimicrobianos: {
+        Row: {
+          antimicrobiano: string
+          created_at: string
+          cultura_id: string | null
+          data_fim: string | null
+          data_inicio: string
+          dias_uso: number | null
+          dose: string
+          id: string
+          indicacao: string | null
+          justificativa: string | null
+          numero_prontuario: string | null
+          paciente_nome: string
+          prescrito_por: string | null
+          registrado_por: string
+          registrado_por_nome: string
+          setor: string
+          status: string | null
+          updated_at: string
+          via_administracao: string
+        }
+        Insert: {
+          antimicrobiano: string
+          created_at?: string
+          cultura_id?: string | null
+          data_fim?: string | null
+          data_inicio: string
+          dias_uso?: number | null
+          dose: string
+          id?: string
+          indicacao?: string | null
+          justificativa?: string | null
+          numero_prontuario?: string | null
+          paciente_nome: string
+          prescrito_por?: string | null
+          registrado_por: string
+          registrado_por_nome: string
+          setor: string
+          status?: string | null
+          updated_at?: string
+          via_administracao: string
+        }
+        Update: {
+          antimicrobiano?: string
+          created_at?: string
+          cultura_id?: string | null
+          data_fim?: string | null
+          data_inicio?: string
+          dias_uso?: number | null
+          dose?: string
+          id?: string
+          indicacao?: string | null
+          justificativa?: string | null
+          numero_prontuario?: string | null
+          paciente_nome?: string
+          prescrito_por?: string | null
+          registrado_por?: string
+          registrado_por_nome?: string
+          setor?: string
+          status?: string | null
+          updated_at?: string
+          via_administracao?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sciras_antimicrobianos_cultura_id_fkey"
+            columns: ["cultura_id"]
+            isOneToOne: false
+            referencedRelation: "sciras_culturas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sciras_culturas: {
+        Row: {
+          created_at: string
+          data_coleta: string
+          id: string
+          mecanismo_resistencia: string | null
+          microrganismo_isolado: string | null
+          multirresistente: boolean | null
+          numero_prontuario: string | null
+          observacoes: string | null
+          paciente_nome: string
+          perfil_sensibilidade: Json | null
+          registrado_por: string
+          registrado_por_nome: string
+          resultado: string | null
+          setor: string
+          tipo_material: string
+          updated_at: string
+          vigilancia_iras_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          data_coleta: string
+          id?: string
+          mecanismo_resistencia?: string | null
+          microrganismo_isolado?: string | null
+          multirresistente?: boolean | null
+          numero_prontuario?: string | null
+          observacoes?: string | null
+          paciente_nome: string
+          perfil_sensibilidade?: Json | null
+          registrado_por: string
+          registrado_por_nome: string
+          resultado?: string | null
+          setor: string
+          tipo_material: string
+          updated_at?: string
+          vigilancia_iras_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          data_coleta?: string
+          id?: string
+          mecanismo_resistencia?: string | null
+          microrganismo_isolado?: string | null
+          multirresistente?: boolean | null
+          numero_prontuario?: string | null
+          observacoes?: string | null
+          paciente_nome?: string
+          perfil_sensibilidade?: Json | null
+          registrado_por?: string
+          registrado_por_nome?: string
+          resultado?: string | null
+          setor?: string
+          tipo_material?: string
+          updated_at?: string
+          vigilancia_iras_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sciras_culturas_vigilancia_iras_id_fkey"
+            columns: ["vigilancia_iras_id"]
+            isOneToOne: false
+            referencedRelation: "sciras_vigilancia_iras"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sciras_indicadores_diarios: {
+        Row: {
+          created_at: string
+          cvc_dia: number
+          data_registro: string
+          id: string
+          ipcs_novas: number
+          itu_novas: number
+          pacientes_dia: number
+          pav_novas: number
+          registrado_por: string
+          registrado_por_nome: string
+          setor: string
+          svd_dia: number
+          updated_at: string
+          vm_dia: number
+        }
+        Insert: {
+          created_at?: string
+          cvc_dia?: number
+          data_registro: string
+          id?: string
+          ipcs_novas?: number
+          itu_novas?: number
+          pacientes_dia?: number
+          pav_novas?: number
+          registrado_por: string
+          registrado_por_nome: string
+          setor: string
+          svd_dia?: number
+          updated_at?: string
+          vm_dia?: number
+        }
+        Update: {
+          created_at?: string
+          cvc_dia?: number
+          data_registro?: string
+          id?: string
+          ipcs_novas?: number
+          itu_novas?: number
+          pacientes_dia?: number
+          pav_novas?: number
+          registrado_por?: string
+          registrado_por_nome?: string
+          setor?: string
+          svd_dia?: number
+          updated_at?: string
+          vm_dia?: number
+        }
+        Relationships: []
+      }
+      sciras_notificacoes_epidemiologicas: {
+        Row: {
+          created_at: string
+          data_notificacao: string
+          data_notificacao_externa: string | null
+          descricao: string
+          desfecho: string | null
+          doenca_agravo: string
+          id: string
+          medidas_controle: string | null
+          notificado_anvisa: boolean | null
+          notificado_vigilancia_municipal: boolean | null
+          notificador_id: string
+          notificador_nome: string
+          numero_notificacao: string
+          numero_prontuario: string | null
+          paciente_nome: string | null
+          setor: string
+          status: string | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_notificacao?: string
+          data_notificacao_externa?: string | null
+          descricao: string
+          desfecho?: string | null
+          doenca_agravo: string
+          id?: string
+          medidas_controle?: string | null
+          notificado_anvisa?: boolean | null
+          notificado_vigilancia_municipal?: boolean | null
+          notificador_id: string
+          notificador_nome: string
+          numero_notificacao: string
+          numero_prontuario?: string | null
+          paciente_nome?: string | null
+          setor: string
+          status?: string | null
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_notificacao?: string
+          data_notificacao_externa?: string | null
+          descricao?: string
+          desfecho?: string | null
+          doenca_agravo?: string
+          id?: string
+          medidas_controle?: string | null
+          notificado_anvisa?: boolean | null
+          notificado_vigilancia_municipal?: boolean | null
+          notificador_id?: string
+          notificador_nome?: string
+          numero_notificacao?: string
+          numero_prontuario?: string | null
+          paciente_nome?: string | null
+          setor?: string
+          status?: string | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sciras_vigilancia_iras: {
+        Row: {
+          classificacao_gravidade: string | null
+          created_at: string
+          data_infeccao: string
+          data_instalacao_dispositivo: string | null
+          data_internacao: string | null
+          data_nascimento: string | null
+          data_remocao_dispositivo: string | null
+          dispositivo_invasivo: string | null
+          id: string
+          leito: string | null
+          microrganismo: string | null
+          notificador_id: string | null
+          notificador_nome: string | null
+          numero_notificacao: string
+          numero_prontuario: string | null
+          observacoes: string | null
+          paciente_nome: string
+          perfil_resistencia: string | null
+          setor: string
+          sitio_infeccao: string
+          status: string | null
+          tipo_iras: string
+          updated_at: string
+        }
+        Insert: {
+          classificacao_gravidade?: string | null
+          created_at?: string
+          data_infeccao: string
+          data_instalacao_dispositivo?: string | null
+          data_internacao?: string | null
+          data_nascimento?: string | null
+          data_remocao_dispositivo?: string | null
+          dispositivo_invasivo?: string | null
+          id?: string
+          leito?: string | null
+          microrganismo?: string | null
+          notificador_id?: string | null
+          notificador_nome?: string | null
+          numero_notificacao: string
+          numero_prontuario?: string | null
+          observacoes?: string | null
+          paciente_nome: string
+          perfil_resistencia?: string | null
+          setor: string
+          sitio_infeccao: string
+          status?: string | null
+          tipo_iras: string
+          updated_at?: string
+        }
+        Update: {
+          classificacao_gravidade?: string | null
+          created_at?: string
+          data_infeccao?: string
+          data_instalacao_dispositivo?: string | null
+          data_internacao?: string | null
+          data_nascimento?: string | null
+          data_remocao_dispositivo?: string | null
+          dispositivo_invasivo?: string | null
+          id?: string
+          leito?: string | null
+          microrganismo?: string | null
+          notificador_id?: string | null
+          notificador_nome?: string | null
+          numero_notificacao?: string
+          numero_prontuario?: string | null
+          observacoes?: string | null
+          paciente_nome?: string
+          perfil_resistencia?: string | null
+          setor?: string
+          sitio_infeccao?: string
+          status?: string | null
+          tipo_iras?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       setores: {
         Row: {
           ativo: boolean | null
@@ -3634,6 +3971,7 @@ export type Database = {
         | "qualidade"
         | "nsp"
         | "seguranca"
+        | "enfermagem"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -3779,6 +4117,7 @@ export const Constants = {
         "qualidade",
         "nsp",
         "seguranca",
+        "enfermagem",
       ],
     },
   },

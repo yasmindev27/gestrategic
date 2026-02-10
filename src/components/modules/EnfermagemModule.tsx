@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users } from 'lucide-react';
+import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Bug, BarChart3, FlaskConical, Pill, Bell } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,13 @@ import {
   NovaEscalaDialog,
   HistoricoTrocas,
 } from '@/components/enfermagem';
+import {
+  VigilanciaIRASComponent,
+  IndicadoresInfeccao,
+  CulturasMicrobiologicas,
+  ControleAntimicrobianos,
+  NotificacoesEpidemiologicas,
+} from '@/components/sciras';
 import { useTrocasDisponiveis, useTrocasPendentes, useMinhasEscalas } from '@/hooks/useEnfermagem';
 import type { Escala } from '@/components/enfermagem/types';
 
@@ -125,7 +132,7 @@ export default function EnfermagemModule() {
             Módulo de Enfermagem
           </h1>
           <p className="text-muted-foreground">
-            Gestão de escalas e trocas de plantão
+            Gestão de escalas, trocas de plantão e SCIRAS/Epidemiologia
           </p>
         </div>
 
@@ -173,7 +180,7 @@ export default function EnfermagemModule() {
                 <p className="text-sm text-muted-foreground">Disponíveis para Troca</p>
                 <p className="text-2xl font-bold">{trocasDisponiveisCount}</p>
               </div>
-              <ArrowRightLeft className="h-8 w-8 text-yellow-600 opacity-80" />
+              <ArrowRightLeft className="h-8 w-8 text-warning opacity-80" />
             </div>
             {trocasDisponiveisCount > 0 && (
               <Badge variant="secondary" className="mt-2 animate-pulse">
@@ -191,7 +198,7 @@ export default function EnfermagemModule() {
                   <p className="text-sm text-muted-foreground">Aguardando Aprovação</p>
                   <p className="text-2xl font-bold">{trocasPendentes.length}</p>
                 </div>
-                <CheckCircle className="h-8 w-8 text-orange-600 opacity-80" />
+                <CheckCircle className="h-8 w-8 text-warning opacity-80" />
               </div>
               {trocasPendentes.length > 0 && (
                 <Badge variant="destructive" className="mt-2">
@@ -217,7 +224,7 @@ export default function EnfermagemModule() {
 
       {/* Tabs principais */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 lg:w-auto lg:inline-grid">
+        <TabsList className="flex flex-wrap gap-1 h-auto p-1 lg:w-auto lg:inline-flex">
           <TabsTrigger value="meus-plantoes" className="gap-2">
             <Calendar className="h-4 w-4" />
             <span className="hidden sm:inline">Meus Plantões</span>
@@ -255,6 +262,35 @@ export default function EnfermagemModule() {
             <span className="hidden sm:inline">Histórico</span>
             <span className="sm:hidden">Hist.</span>
           </TabsTrigger>
+
+          {/* Separador visual SCIRAS */}
+          <div className="w-px h-6 bg-border mx-1 hidden sm:block" />
+
+          <TabsTrigger value="sciras-vigilancia" className="gap-2">
+            <Bug className="h-4 w-4" />
+            <span className="hidden sm:inline">Vigilância IRAS</span>
+            <span className="sm:hidden">IRAS</span>
+          </TabsTrigger>
+          <TabsTrigger value="sciras-indicadores" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            <span className="hidden sm:inline">Indicadores</span>
+            <span className="sm:hidden">Ind.</span>
+          </TabsTrigger>
+          <TabsTrigger value="sciras-culturas" className="gap-2">
+            <FlaskConical className="h-4 w-4" />
+            <span className="hidden sm:inline">Culturas</span>
+            <span className="sm:hidden">Cult.</span>
+          </TabsTrigger>
+          <TabsTrigger value="sciras-antimicrobianos" className="gap-2">
+            <Pill className="h-4 w-4" />
+            <span className="hidden sm:inline">Antimicrobianos</span>
+            <span className="sm:hidden">ATM</span>
+          </TabsTrigger>
+          <TabsTrigger value="sciras-notificacoes" className="gap-2">
+            <Bell className="h-4 w-4" />
+            <span className="hidden sm:inline">Epidemiologia</span>
+            <span className="sm:hidden">Epi.</span>
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="meus-plantoes" className="mt-6">
@@ -281,6 +317,27 @@ export default function EnfermagemModule() {
 
         <TabsContent value="historico" className="mt-6">
           <HistoricoTrocas />
+        </TabsContent>
+
+        {/* SCIRAS Tabs */}
+        <TabsContent value="sciras-vigilancia" className="mt-6">
+          <VigilanciaIRASComponent userId={userId || ''} userName={userName || ''} />
+        </TabsContent>
+
+        <TabsContent value="sciras-indicadores" className="mt-6">
+          <IndicadoresInfeccao userId={userId || ''} userName={userName || ''} />
+        </TabsContent>
+
+        <TabsContent value="sciras-culturas" className="mt-6">
+          <CulturasMicrobiologicas userId={userId || ''} userName={userName || ''} />
+        </TabsContent>
+
+        <TabsContent value="sciras-antimicrobianos" className="mt-6">
+          <ControleAntimicrobianos userId={userId || ''} userName={userName || ''} />
+        </TabsContent>
+
+        <TabsContent value="sciras-notificacoes" className="mt-6">
+          <NotificacoesEpidemiologicas userId={userId || ''} userName={userName || ''} />
         </TabsContent>
       </Tabs>
 
