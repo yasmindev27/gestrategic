@@ -13,8 +13,47 @@ serve(async (req) => {
 
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Authentication check
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(
+        JSON.stringify({ error: "Não autorizado" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseAuth = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+
+    const { data: { user }, error: authError } = await supabaseAuth.auth.getUser();
+    if (authError || !user) {
+      return new Response(
+        JSON.stringify({ error: "Usuário não autenticado" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Role-based access control
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    const { data: roles } = await supabaseAdmin
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
+
+    const allowedRoles = ["admin", "qualidade", "gestor", "nsp"];
+    const hasAccess = roles?.some((r: { role: string }) => allowedRoles.includes(r.role));
+    if (!hasAccess) {
+      return new Response(
+        JSON.stringify({ error: "Acesso negado. Permissão insuficiente." }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabase = supabaseAdmin;
 
     // Get incidents from last 7 days
     const dataInicio = new Date();
@@ -40,21 +79,12 @@ serve(async (req) => {
     };
 
     incidentes?.forEach((inc) => {
-      // By type
       stats.por_tipo[inc.tipo_incidente] = (stats.por_tipo[inc.tipo_incidente] || 0) + 1;
-      
-      // By sector
       stats.por_setor[inc.setor] = (stats.por_setor[inc.setor] || 0) + 1;
-      
-      // By category
       if (inc.categoria_operacional) {
         stats.por_categoria[inc.categoria_operacional] = (stats.por_categoria[inc.categoria_operacional] || 0) + 1;
       }
-      
-      // By risk
       stats.por_risco[inc.classificacao_risco] = (stats.por_risco[inc.classificacao_risco] || 0) + 1;
-      
-      // Specific counts
       if (inc.tipo_incidente === "quase_erro") stats.quase_erros++;
       if (inc.tipo_incidente === "evento_adverso") stats.eventos_adversos++;
     });
