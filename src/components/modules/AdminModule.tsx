@@ -112,6 +112,7 @@ const roleLabels: Record<AppRole, string> = {
   assistencia_social: "Assistência Social",
   qualidade: "Qualidade",
   nsp: "NSP",
+  seguranca: "Segurança do Trabalho",
 };
 
 // Roles disponíveis para seleção (exclui "funcionario" que é o padrão)
@@ -136,6 +137,7 @@ const roleColors: Record<AppRole, string> = {
   assistencia_social: "bg-rose-500 text-white",
   qualidade: "bg-emerald-600 text-white",
   nsp: "bg-sky-600 text-white",
+  seguranca: "bg-yellow-600 text-white",
 };
 
 export const AdminModule = () => {
