@@ -19,8 +19,8 @@ Design System para Sistema Hospitalar - GESTRATEGIC:
 
 @layer base {
   :root {
-    /* Background & Foreground - Clean white base */
-    --background: 210 20% 98%;
+    /* Background & Foreground - Ice blue base matching landing page */
+    --background: 210 33% 96%;
     --foreground: 210 40% 15%;
 
     /* Cards - Pure white */
