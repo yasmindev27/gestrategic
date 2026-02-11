@@ -19,42 +19,42 @@ Design System para Sistema Hospitalar - GESTRATEGIC:
 
 @layer base {
   :root {
-    /* Background & Foreground */
-    --background: 209 40% 96%;
-    --foreground: 222 47% 11%;
+    /* Background & Foreground - Clean white base */
+    --background: 210 20% 98%;
+    --foreground: 210 40% 15%;
 
-    /* Cards */
-    --card: 210 40% 98%;
-    --card-foreground: 222 47% 11%;
+    /* Cards - Pure white */
+    --card: 0 0% 100%;
+    --card-foreground: 210 40% 15%;
 
     /* Popovers */
-    --popover: 214 31% 91%;
-    --popover-foreground: 222 47% 11%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 40% 15%;
 
-    /* Primary: Azul profissional - transmite confiança e profissionalismo */
-    --primary: 200 98% 39%;
-    --primary-foreground: 204 100% 97%;
+    /* Primary: Hospital Blue - professional trust */
+    --primary: 210 80% 50%;
+    --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Cinza azulado neutro para fundos e separações */
-    --secondary: 215 24% 26%;
-    --secondary-foreground: 210 40% 98%;
+    /* Secondary: Light blue-gray for subtle backgrounds */
+    --secondary: 210 25% 93%;
+    --secondary-foreground: 210 40% 15%;
 
-    /* Muted: Tons suaves */
-    --muted: 215 20% 65%;
-    --muted-foreground: 222 47% 11%;
+    /* Muted */
+    --muted: 210 15% 92%;
+    --muted-foreground: 210 15% 45%;
 
-    /* Accent: Azul mais intenso para destaques */
-    --accent: 210 40% 98%;
-    --accent-foreground: 215 19% 34%;
+    /* Accent */
+    --accent: 210 25% 95%;
+    --accent-foreground: 210 40% 15%;
 
-    /* Destructive: Vermelho para erros */
+    /* Destructive: Red for errors */
     --destructive: 0 72% 50%;
-    --destructive-foreground: 0 85% 97%;
+    --destructive-foreground: 0 0% 100%;
 
     /* Borders & Inputs */
-    --border: 212 26% 83%;
-    --input: 212 26% 83%;
-    --ring: 200 98% 39%;
+    --border: 210 20% 90%;
+    --input: 210 20% 90%;
+    --ring: 210 80% 50%;
 
     /* Radius */
     --radius: 0.5rem;
@@ -63,121 +63,120 @@ Design System para Sistema Hospitalar - GESTRATEGIC:
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
 
-    --success: 142 50% 45%;
+    --success: 152 55% 42%;
     --success-foreground: 0 0% 100%;
 
-    --info: 199 89% 48%;
+    --info: 210 80% 55%;
     --info-foreground: 0 0% 100%;
 
-    /* Header: Azul escuro profissional (harmoniza com logo) */
-    --header: 210 50% 20%;
+    /* Header: Deep navy */
+    --header: 210 55% 15%;
     --header-foreground: 0 0% 100%;
 
     /* Sidebar */
     --sidebar-background: 0 0% 100%;
-    --sidebar-foreground: 222 47% 11%;
-    --sidebar-primary: 200 98% 39%;
-    --sidebar-primary-foreground: 204 100% 97%;
-    --sidebar-accent: 215 24% 26%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 212 26% 83%;
-    --sidebar-ring: 200 98% 39%;
+    --sidebar-foreground: 210 40% 15%;
+    --sidebar-primary: 210 80% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 25% 95%;
+    --sidebar-accent-foreground: 210 40% 15%;
+    --sidebar-border: 210 20% 92%;
+    --sidebar-ring: 210 80% 50%;
 
-    /* Hospital Status Colors for Bed Map */
-    --hospital-green: 142 70% 40%;
-    --hospital-green-light: 142 60% 95%;
+    /* Hospital Status Colors */
+    --hospital-green: 152 55% 42%;
+    --hospital-green-light: 152 40% 95%;
     --hospital-amber: 38 90% 50%;
-    --hospital-amber-light: 38 80% 95%;
-    --chart-1: 198 93% 59%;
-    --chart-2: 213 93% 67%;
-    --chart-3: 215 20% 65%;
-    --chart-4: 215 16% 46%;
-    --chart-5: 215 19% 34%;
-    --sidebar: 210 40% 98%;
+    --hospital-amber-light: 38 70% 95%;
+    --chart-1: 210 80% 55%;
+    --chart-2: 200 75% 60%;
+    --chart-3: 210 15% 60%;
+    --chart-4: 210 15% 45%;
+    --chart-5: 210 20% 30%;
+    --sidebar: 0 0% 100%;
     --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
     --font-serif: 'Lora', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
     --font-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
-    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    --shadow-2xs: 0 1px 2px 0 hsl(210 20% 50% / 0.04);
+    --shadow-xs: 0 1px 3px 0 hsl(210 20% 50% / 0.06);
+    --shadow-sm: 0 1px 3px 0 hsl(210 20% 50% / 0.08), 0 1px 2px -1px hsl(210 20% 50% / 0.06);
+    --shadow: 0 2px 6px 0 hsl(210 20% 50% / 0.08), 0 1px 3px -1px hsl(210 20% 50% / 0.06);
+    --shadow-md: 0 4px 8px 0 hsl(210 20% 50% / 0.08), 0 2px 4px -1px hsl(210 20% 50% / 0.06);
+    --shadow-lg: 0 8px 16px 0 hsl(210 20% 50% / 0.1), 0 4px 8px -2px hsl(210 20% 50% / 0.06);
+    --shadow-xl: 0 16px 32px 0 hsl(210 20% 50% / 0.1), 0 8px 16px -4px hsl(210 20% 50% / 0.06);
+    --shadow-2xl: 0 24px 48px 0 hsl(210 20% 50% / 0.15);
     --tracking-normal: 0em;
     --spacing: 0.25rem;
   }
 
   .dark {
-    --background: 222 47% 11%;
-    --foreground: 210 40% 98%;
+    --background: 210 35% 9%;
+    --foreground: 210 20% 95%;
 
-    --card: 217 32% 17%;
-    --card-foreground: 210 40% 98%;
+    --card: 210 30% 12%;
+    --card-foreground: 210 20% 95%;
 
-    --popover: 215 24% 26%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 210 30% 12%;
+    --popover-foreground: 210 20% 95%;
 
-    --primary: 198 93% 59%;
-    --primary-foreground: 204 80% 15%;
+    --primary: 210 75% 55%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 212 26% 83%;
-    --secondary-foreground: 228 84% 4%;
+    --secondary: 210 20% 18%;
+    --secondary-foreground: 210 20% 90%;
 
-    --muted: 215 16% 46%;
-    --muted-foreground: 210 40% 98%;
+    --muted: 210 15% 20%;
+    --muted-foreground: 210 10% 60%;
 
-    --accent: 228 84% 4%;
-    --accent-foreground: 215 20% 65%;
+    --accent: 210 20% 15%;
+    --accent-foreground: 210 20% 90%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 85% 97%;
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 215 19% 34%;
-    --input: 215 19% 34%;
-    --ring: 198 93% 59%;
+    --border: 210 15% 20%;
+    --input: 210 15% 20%;
+    --ring: 210 75% 55%;
 
-    --warning: 38 92% 55%;
+    --warning: 38 90% 55%;
     --warning-foreground: 0 0% 100%;
 
-    --success: 142 50% 50%;
+    --success: 152 50% 48%;
     --success-foreground: 0 0% 100%;
 
-    --info: 199 89% 55%;
+    --info: 210 75% 58%;
     --info-foreground: 0 0% 100%;
 
-    --header: 210 45% 12%;
-    --header-foreground: 210 20% 95%;
+    --header: 210 40% 8%;
+    --header-foreground: 210 15% 92%;
 
-    --sidebar-background: 210 35% 10%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 198 93% 59%;
-    --sidebar-primary-foreground: 204 80% 15%;
-    --sidebar-accent: 215 20% 65%;
-    --sidebar-accent-foreground: 228 84% 4%;
-    --sidebar-border: 215 19% 34%;
-    --sidebar-ring: 198 93% 59%;
+    --sidebar-background: 210 30% 10%;
+    --sidebar-foreground: 210 20% 92%;
+    --sidebar-primary: 210 75% 55%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 210 20% 18%;
+    --sidebar-accent-foreground: 210 20% 90%;
+    --sidebar-border: 210 15% 20%;
+    --sidebar-ring: 210 75% 55%;
 
-    /* Hospital Status Colors for Bed Map - Dark Mode */
-    --hospital-green: 142 60% 45%;
-    --hospital-green-light: 142 40% 15%;
+    --hospital-green: 152 50% 45%;
+    --hospital-green-light: 152 30% 15%;
     --hospital-amber: 38 85% 55%;
-    --hospital-amber-light: 38 50% 15%;
-    --chart-1: 199 95% 73%;
-    --chart-2: 211 96% 78%;
-    --chart-3: 215 20% 65%;
-    --chart-4: 215 16% 46%;
-    --chart-5: 215 19% 34%;
-    --sidebar: 217 32% 17%;
-    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
-    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
-    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
-    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
-    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
-    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+    --hospital-amber-light: 38 40% 15%;
+    --chart-1: 210 80% 65%;
+    --chart-2: 200 75% 70%;
+    --chart-3: 210 15% 55%;
+    --chart-4: 210 12% 42%;
+    --chart-5: 210 18% 30%;
+    --sidebar: 210 30% 12%;
+    --shadow-2xs: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
+    --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.2);
+    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.3), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
+    --shadow: 0 2px 6px 0 hsl(0 0% 0% / 0.3), 0 1px 3px -1px hsl(0 0% 0% / 0.2);
+    --shadow-md: 0 4px 8px 0 hsl(0 0% 0% / 0.3), 0 2px 4px -1px hsl(0 0% 0% / 0.2);
+    --shadow-lg: 0 8px 16px 0 hsl(0 0% 0% / 0.3), 0 4px 8px -2px hsl(0 0% 0% / 0.2);
+    --shadow-xl: 0 16px 32px 0 hsl(0 0% 0% / 0.3), 0 8px 16px -4px hsl(0 0% 0% / 0.2);
+    --shadow-2xl: 0 24px 48px 0 hsl(0 0% 0% / 0.4);
   }
 }
 

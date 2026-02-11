@@ -52,17 +52,17 @@ const GreetingHeader = () => {
   }, []);
 
   return (
-    <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
+    <div className="bg-card rounded-xl p-5 shadow-sm border border-border/60">
       <div className="flex items-center gap-4">
-        <div className="p-3 bg-primary/10 rounded-xl">
-          <Icon className="h-8 w-8 text-primary" />
+        <div className="p-2.5 bg-primary/8 rounded-lg">
+          <Icon className="h-7 w-7 text-primary" />
         </div>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-foreground">
+          <h1 className="text-xl font-bold text-foreground">
             {greeting.text}, <span className="text-primary">{userName}</span>!
           </h1>
-          <p className="text-muted-foreground">{greeting.description}</p>
-          <p className="text-sm text-muted-foreground mt-1 capitalize">{today}</p>
+          <p className="text-muted-foreground text-sm">{greeting.description}</p>
+          <p className="text-xs text-muted-foreground/70 mt-0.5 capitalize">{today}</p>
         </div>
       </div>
     </div>
