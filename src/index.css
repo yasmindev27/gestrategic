@@ -187,6 +187,9 @@ Design System para Sistema Hospitalar - GESTRATEGIC:
 
   body {
     @apply bg-background text-foreground antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
@@ -194,6 +197,7 @@ Design System para Sistema Hospitalar - GESTRATEGIC:
 @layer base {
   h1, h2, h3, h4, h5, h6 {
     @apply font-semibold tracking-tight;
+    text-rendering: optimizeLegibility;
   }
 }
 
@@ -376,8 +380,51 @@ Design System para Sistema Hospitalar - GESTRATEGIC:
     50% { transform: translateY(-10px); }
   }
 
+  /* Staggered entrance animation */
+  @keyframes slide-up-fade {
+    0% { opacity: 0; transform: translateY(20px); }
+    100% { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-slide-up-fade {
+    animation: slide-up-fade 0.5s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-delay-100 { animation-delay: 0.1s; }
+  .animate-delay-200 { animation-delay: 0.2s; }
+  .animate-delay-300 { animation-delay: 0.3s; }
+  .animate-delay-400 { animation-delay: 0.4s; }
+
+  /* Shimmer effect for premium feel */
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+
+  .shimmer-text {
+    background: linear-gradient(90deg, hsl(210 80% 55%) 0%, hsl(200 90% 70%) 50%, hsl(210 80% 55%) 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s linear infinite;
+  }
+
   /* Content visibility for performance */
   .content-visibility-auto {
     content-visibility: auto;
+  }
+
+  /* Premium glass card */
+  .glass-card {
+    @apply bg-card/80 backdrop-blur-lg border border-border/50;
+    box-shadow: 0 8px 32px hsl(210 20% 50% / 0.08), 
+                0 1px 0 hsl(0 0% 100% / 0.05) inset;
+  }
+
+  /* Input focus glow */
+  .input-glow:focus-within {
+    box-shadow: 0 0 0 3px hsl(210 80% 50% / 0.12);
   }
 }
