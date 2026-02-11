@@ -1,8 +1,11 @@
-import { ShieldCheck, Clock, Network, Menu, X, FileText, ExternalLink } from "lucide-react";
+import { ShieldCheck, Clock, Network, Menu, X, FileText, ExternalLink, ChevronRight, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import logoGestrategic from "@/assets/logo-gestrategic.jpg";
-import { useState, useCallback, memo } from "react";
+import heroImage from "@/assets/hero-hospital-tech.png";
+import logoSusfacil from "@/assets/logo-susfacil.png";
+import logoUpa from "@/assets/logo-upa-24h.png";
+import { useState, useCallback, useEffect, memo } from "react";
 import { SEOHead, OrganizationSchema, HealthcareServiceSchema } from "@/components/ui/seo-head";
 
 // Memoized feature card component for performance
@@ -11,9 +14,9 @@ const FeatureCard = memo(({ icon: Icon, title, description }: {
   title: string;
   description: string;
 }) => (
-  <article className="group text-center space-y-5 p-8 rounded-2xl bg-card border border-border hover:border-[#2d7dd2]/30 hover:shadow-xl hover:shadow-blue-500/5 transition-all duration-300 focus-within:ring-2 focus-within:ring-primary">
-    <div className="mx-auto w-20 h-20 rounded-2xl bg-gradient-to-br from-[#2d7dd2]/10 to-[#5ba3d9]/10 flex items-center justify-center group-hover:scale-110 transition-transform duration-300" aria-hidden="true">
-      <Icon className="w-10 h-10 text-[#2d7dd2]" />
+  <article className="group text-center space-y-5 p-8 rounded-2xl bg-card border border-border hover:border-primary/30 hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 focus-within:ring-2 focus-within:ring-primary">
+    <div className="mx-auto w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center group-hover:scale-110 transition-transform duration-300" aria-hidden="true">
+      <Icon className="w-10 h-10 text-primary" />
     </div>
     <h3 className="text-xl font-semibold text-foreground">{title}</h3>
     <p className="text-muted-foreground leading-relaxed">{description}</p>
@@ -30,7 +33,7 @@ const NavLink = memo(({ href, label, onClick }: {
 }) => (
   <a
     href={href}
-    className="text-sm text-white/80 hover:text-white transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-white/50 rounded px-2 py-1"
+    className="text-sm text-white/70 hover:text-white transition-colors font-medium focus:outline-none focus:ring-2 focus:ring-white/50 rounded px-2 py-1 relative after:absolute after:bottom-0 after:left-1/2 after:-translate-x-1/2 after:w-0 hover:after:w-full after:h-0.5 after:bg-white/60 after:transition-all after:duration-300"
     onClick={onClick}
   >
     {label}
@@ -42,6 +45,13 @@ NavLink.displayName = 'NavLink';
 const LandingPage = () => {
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
 
   const handleLogin = useCallback(() => {
     navigate("/auth");
@@ -101,8 +111,15 @@ const LandingPage = () => {
       <HealthcareServiceSchema />
 
       <div className="min-h-screen bg-background overflow-x-hidden">
-        {/* Header */}
-        <header className="bg-gradient-to-r from-[#1a3a5c] to-[#1e4a6e] text-white sticky top-0 z-50 backdrop-blur-sm" role="banner">
+        {/* Sticky Glassmorphism Header */}
+        <header
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+            scrolled
+              ? "bg-[#1a3a5c]/80 backdrop-blur-xl shadow-lg shadow-black/10 border-b border-white/5"
+              : "bg-gradient-to-r from-[#1a3a5c] to-[#1e4a6e]"
+          }`}
+          role="banner"
+        >
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               {/* Logo */}
@@ -115,13 +132,13 @@ const LandingPage = () => {
                   height={40}
                   loading="eager"
                 />
-                <span className="font-semibold tracking-tight text-xs">
+                <span className="font-semibold tracking-tight text-xs text-white">
                   Gestrategic<br />Tecnologia em Saúde
                 </span>
               </a>
 
               {/* Desktop Navigation */}
-              <nav className="hidden md:flex items-center gap-8" role="navigation" aria-label="Navegação principal">
+              <nav className="hidden md:flex items-center gap-6 lg:gap-8" role="navigation" aria-label="Navegação principal">
                 {navLinks.map((link) => (
                   <NavLink key={link.label} href={link.href} label={link.label} />
                 ))}
@@ -131,25 +148,26 @@ const LandingPage = () => {
               <div className="flex items-center gap-3">
                 <Button
                   variant="outline"
-                  className="hidden sm:flex border-white/30 text-white hover:bg-white/10 hover:text-white rounded-full px-4 transition-all focus:ring-2 focus:ring-white/50"
+                  className="hidden sm:flex border-white/20 text-white/80 hover:bg-white/10 hover:text-white rounded-full px-4 transition-all focus:ring-2 focus:ring-white/50 text-xs"
                   onClick={handleDocumentosInteract}
                   aria-label="Acessar Documentos Interact"
                 >
-                  <FileText className="w-4 h-4 mr-2" />
+                  <FileText className="w-4 h-4 mr-1.5" />
                   Documentos
                   <ExternalLink className="w-3 h-3 ml-1 opacity-70" />
                 </Button>
                 <Button
-                  className="hidden sm:flex bg-[#2d7dd2] hover:bg-[#2570c2] text-white rounded-full px-6 shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30 focus:ring-2 focus:ring-white/50"
+                  className="hidden sm:flex bg-white text-[#1a3a5c] hover:bg-white/90 rounded-full px-6 font-semibold shadow-lg shadow-white/10 transition-all hover:shadow-xl hover:shadow-white/20 hover:scale-[1.02] focus:ring-2 focus:ring-white/50"
                   onClick={handleLogin}
                   aria-label="Acessar área do cliente"
                 >
                   Área do Cliente
+                  <ChevronRight className="w-4 h-4 ml-1" />
                 </Button>
 
                 {/* Mobile menu button */}
                 <button
-                  className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50"
+                  className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 text-white"
                   onClick={toggleMobileMenu}
                   aria-expanded={mobileMenuOpen}
                   aria-controls="mobile-menu"
@@ -192,10 +210,11 @@ const LandingPage = () => {
                     <ExternalLink className="w-3 h-3 opacity-70" />
                   </Button>
                   <Button
-                    className="mt-2 bg-[#2d7dd2] hover:bg-[#2570c2] text-white w-full rounded-full shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30"
+                    className="mt-2 bg-white text-[#1a3a5c] hover:bg-white/90 w-full rounded-full font-semibold shadow-lg transition-all"
                     onClick={handleLogin}
                   >
                     Área do Cliente
+                    <ChevronRight className="w-4 h-4 ml-1" />
                   </Button>
                 </div>
               </nav>
@@ -204,16 +223,16 @@ const LandingPage = () => {
         </header>
 
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-br from-[#1a3a5c] via-[#1e4a6e] to-[#2a5a7e] overflow-hidden min-h-[600px]" aria-labelledby="hero-title">
-          {/* Background Pattern - Subtle grid */}
+        <section className="relative bg-gradient-to-br from-[#0f2b45] via-[#1a3a5c] to-[#1e4a6e] overflow-hidden min-h-[650px] pt-16" aria-labelledby="hero-title">
+          {/* Background Pattern */}
           <div className="absolute inset-0" aria-hidden="true">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,_rgba(59,130,246,0.15)_0%,_transparent_50%)]" />
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,_rgba(59,130,246,0.1)_0%,_transparent_50%)]" />
-            <div className="absolute inset-0 opacity-10">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,_rgba(59,130,246,0.12)_0%,_transparent_50%)]" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_80%_20%,_rgba(45,125,210,0.08)_0%,_transparent_50%)]" />
+            <div className="absolute inset-0 opacity-[0.06]">
               <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <defs>
-                  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.1)" strokeWidth="0.5" />
+                  <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+                    <path d="M 60 0 L 0 0 0 60" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="0.5" />
                   </pattern>
                 </defs>
                 <rect width="100%" height="100%" fill="url(#grid)" />
@@ -227,126 +246,79 @@ const LandingPage = () => {
               <div className="space-y-8 z-10">
                 <h1 id="hero-title" className="text-4xl md:text-5xl lg:text-6xl text-white leading-tight">
                   <span className="font-light italic">Inovação que</span><br />
-                  <span className="font-semibold italic text-[#5ba3d9]">pulsa pela vida.</span>
+                  <span className="font-semibold italic">pulsa pela </span>
+                  <span className="font-bold italic bg-gradient-to-r from-[#22d3ee] to-[#34d399] bg-clip-text text-transparent">vida.</span>
                 </h1>
-                <p className="text-white/70 text-lg max-w-md leading-relaxed">
+                <p className="text-white/80 text-lg md:text-xl max-w-lg leading-relaxed font-medium">
                   Automação inteligente e infraestrutura de TI de alta performance para hospitais, clínicas e centros diagnóstico.
                 </p>
                 <div className="flex flex-wrap gap-4 pt-2">
                   <Button
-                    className="bg-[#2d7dd2] hover:bg-[#2570c2] text-white rounded-full px-8 py-6 text-base font-medium shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30 focus:ring-2 focus:ring-white/50"
+                    className="bg-[#2d7dd2] hover:bg-[#2570c2] text-white rounded-full px-8 py-6 text-base font-semibold shadow-lg shadow-blue-500/25 transition-all hover:shadow-xl hover:shadow-blue-500/35 hover:scale-[1.02] focus:ring-2 focus:ring-white/50"
                     asChild
                   >
                     <a href="#solucoes">Conheça nossas Soluções</a>
                   </Button>
                   <Button
-                    className="bg-[#2d7dd2] hover:bg-[#2570c2] text-white rounded-full px-8 py-6 text-base font-medium shadow-lg shadow-blue-500/20 transition-all hover:shadow-xl hover:shadow-blue-500/30 focus:ring-2 focus:ring-white/50"
+                    variant="outline"
+                    className="border-2 border-white/30 text-white hover:bg-white/10 hover:border-white/50 rounded-full px-8 py-6 text-base font-medium transition-all hover:scale-[1.02] focus:ring-2 focus:ring-white/50 bg-transparent"
                     asChild
                   >
                     <a href="#contato">Agendar Consultoria</a>
                   </Button>
                 </div>
+
+                {/* Social Proof */}
+                <div className="pt-6 border-t border-white/10">
+                  <p className="text-white/40 text-xs uppercase tracking-widest mb-4 font-medium">Empresas que confiam em nós</p>
+                  <div className="flex items-center gap-6 flex-wrap">
+                    <img src={logoUpa} alt="UPA 24h" className="h-8 opacity-50 hover:opacity-80 transition-opacity grayscale hover:grayscale-0" loading="lazy" />
+                    <img src={logoSusfacil} alt="SUS Fácil" className="h-8 opacity-50 hover:opacity-80 transition-opacity grayscale hover:grayscale-0" loading="lazy" />
+                    <div className="flex items-center gap-1.5 text-white/40 hover:text-white/60 transition-colors">
+                      <Lock className="w-3.5 h-3.5" />
+                      <span className="text-xs font-medium">Segurança LGPD Garantida</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              {/* Isometric Hospital Illustration */}
+              {/* Modern Hero Illustration */}
               <div className="hidden lg:flex justify-center items-center relative" aria-hidden="true">
-                <div className="relative w-[400px] h-[400px]">
+                <div className="relative w-[480px] h-[480px]">
                   {/* Glow effect */}
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(59,130,246,0.2)_0%,_transparent_70%)]" />
+                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(34,211,238,0.12)_0%,_transparent_70%)]" />
 
-                  {/* Main Hospital Building - Isometric Style */}
-                  <svg viewBox="0 0 400 400" className="w-full h-full drop-shadow-2xl" role="img" aria-label="Ilustração de hospital">
-                    {/* Base shadow */}
-                    <ellipse cx="200" cy="350" rx="120" ry="30" fill="rgba(0,0,0,0.15)" />
+                  {/* Hero Image */}
+                  <img
+                    src={heroImage}
+                    alt="Hospital inteligente com dashboards tecnológicos"
+                    className="w-full h-full object-contain drop-shadow-2xl"
+                    loading="eager"
+                  />
 
-                    {/* Main building - Back */}
-                    <path d="M160 280 L160 140 L240 100 L320 140 L320 280 L240 320 L160 280Z" fill="url(#buildingGradient1)" stroke="#5ba3d9" strokeWidth="1.5" />
-
-                    {/* Main building - Front left */}
-                    <path d="M80 240 L80 100 L160 60 L160 200 L80 240Z" fill="url(#buildingGradient2)" stroke="#5ba3d9" strokeWidth="1.5" />
-
-                    {/* Main building - Front right */}
-                    <path d="M160 200 L160 60 L240 100 L240 240 L160 200Z" fill="url(#buildingGradient3)" stroke="#5ba3d9" strokeWidth="1.5" />
-
-                    {/* Tower */}
-                    <path d="M180 140 L180 40 L220 60 L220 160 L180 140Z" fill="url(#towerGradient)" stroke="#5ba3d9" strokeWidth="1.5" />
-
-                    {/* Cross on tower */}
-                    <rect x="193" y="70" width="14" height="40" fill="#5ba3d9" rx="2" />
-                    <rect x="187" y="83" width="26" height="14" fill="#5ba3d9" rx="2" />
-
-                    {/* Windows - Front building */}
-                    <rect x="100" y="120" width="20" height="25" fill="rgba(91,163,217,0.4)" rx="2" />
-                    <rect x="130" y="120" width="20" height="25" fill="rgba(91,163,217,0.4)" rx="2" />
-                    <rect x="100" y="160" width="20" height="25" fill="rgba(91,163,217,0.6)" rx="2" />
-                    <rect x="130" y="160" width="20" height="25" fill="rgba(91,163,217,0.6)" rx="2" />
-                    <rect x="100" y="200" width="20" height="25" fill="rgba(91,163,217,0.8)" rx="2" />
-                    <rect x="130" y="200" width="20" height="25" fill="rgba(91,163,217,0.8)" rx="2" />
-
-                    {/* Windows - Right side */}
-                    <rect x="180" y="130" width="18" height="22" fill="rgba(91,163,217,0.5)" rx="2" transform="skewY(15)" />
-                    <rect x="210" y="145" width="18" height="22" fill="rgba(91,163,217,0.5)" rx="2" transform="skewY(15)" />
-                    <rect x="180" y="170" width="18" height="22" fill="rgba(91,163,217,0.6)" rx="2" transform="skewY(15)" />
-                    <rect x="210" y="185" width="18" height="22" fill="rgba(91,163,217,0.6)" rx="2" transform="skewY(15)" />
-
-                    {/* Back building windows */}
-                    <rect x="260" y="180" width="16" height="20" fill="rgba(91,163,217,0.4)" rx="2" />
-                    <rect x="285" y="180" width="16" height="20" fill="rgba(91,163,217,0.4)" rx="2" />
-                    <rect x="260" y="220" width="16" height="20" fill="rgba(91,163,217,0.5)" rx="2" />
-                    <rect x="285" y="220" width="16" height="20" fill="rgba(91,163,217,0.5)" rx="2" />
-                    <rect x="260" y="260" width="16" height="20" fill="rgba(91,163,217,0.6)" rx="2" />
-                    <rect x="285" y="260" width="16" height="20" fill="rgba(91,163,217,0.6)" rx="2" />
-
-                    {/* Entrance */}
-                    <rect x="105" y="230" width="35" height="45" fill="rgba(91,163,217,0.3)" rx="3" />
-                    <path d="M105 275 L140 275 L140 260 Q122.5 255 105 260 Z" fill="rgba(91,163,217,0.5)" />
-
-                    {/* Gradients */}
-                    <defs>
-                      <linearGradient id="buildingGradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#2a5a7e" />
-                        <stop offset="100%" stopColor="#1a3a5c" />
-                      </linearGradient>
-                      <linearGradient id="buildingGradient2" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#3a6a8e" />
-                        <stop offset="100%" stopColor="#2a5a7e" />
-                      </linearGradient>
-                      <linearGradient id="buildingGradient3" x1="100%" y1="0%" x2="0%" y2="100%">
-                        <stop offset="0%" stopColor="#2a5a7e" />
-                        <stop offset="100%" stopColor="#1e4a6e" />
-                      </linearGradient>
-                      <linearGradient id="towerGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#4a7a9e" />
-                        <stop offset="100%" stopColor="#2a5a7e" />
-                      </linearGradient>
-                    </defs>
-                  </svg>
-
-                  {/* Floating elements */}
-                  <div className="absolute top-4 right-4 w-14 h-14 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center animate-pulse shadow-lg">
-                    <ShieldCheck className="w-7 h-7 text-[#5ba3d9]" />
+                  {/* Floating elements with float animation */}
+                  <div className="absolute top-4 right-4 w-14 h-14 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-lg animate-[float_3s_ease-in-out_infinite]">
+                    <ShieldCheck className="w-7 h-7 text-[#22d3ee]" />
                   </div>
-                  <div
-                    className="absolute bottom-16 left-4 w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center animate-pulse shadow-lg"
-                    style={{ animationDelay: "0.5s" }}
-                  >
-                    <Clock className="w-6 h-6 text-[#5ba3d9]" />
+                  <div className="absolute bottom-16 left-4 w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-lg animate-[float_3s_ease-in-out_infinite_0.5s]">
+                    <Clock className="w-6 h-6 text-[#34d399]" />
                   </div>
-                  <div className="absolute top-1/3 right-0 w-10 h-10 rounded-full bg-[#5ba3d9]/20 flex items-center justify-center">
-                    <div className="w-3 h-3 rounded-full bg-[#5ba3d9] animate-ping" />
+                  <div className="absolute top-1/3 right-0 w-10 h-10 rounded-full bg-[#22d3ee]/20 flex items-center justify-center">
+                    <div className="w-3 h-3 rounded-full bg-[#22d3ee] animate-ping" />
                   </div>
-                  <div className="absolute bottom-1/3 left-8 w-8 h-8 rounded-full bg-[#5ba3d9]/10 flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-[#5ba3d9] animate-ping" style={{ animationDelay: "1s" }} />
+                  <div className="absolute bottom-1/3 left-8 w-8 h-8 rounded-full bg-[#34d399]/10 flex items-center justify-center">
+                    <div className="w-2 h-2 rounded-full bg-[#34d399] animate-ping" style={{ animationDelay: "1s" }} />
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Bottom curve */}
+          {/* Organic wave transition */}
           <div className="absolute bottom-0 left-0 right-0" aria-hidden="true">
-            <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full">
-              <path d="M0 60L1440 60L1440 30C1440 30 1200 0 720 0C240 0 0 30 0 30L0 60Z" fill="hsl(var(--background))" />
+            <svg viewBox="0 0 1440 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full" preserveAspectRatio="none">
+              <path d="M0 100L0 60C120 80 240 40 360 35C480 30 600 50 720 55C840 60 960 40 1080 30C1200 20 1320 50 1440 65L1440 100Z" fill="hsl(var(--background))" />
+              <path d="M0 100L0 70C120 85 240 55 360 48C480 42 600 60 720 65C840 70 960 52 1080 42C1200 32 1320 58 1440 72L1440 100Z" fill="hsl(var(--background))" fillOpacity="0.5" />
             </svg>
           </div>
         </section>
@@ -356,7 +328,7 @@ const LandingPage = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
               <h2 id="features-title" className="text-3xl md:text-4xl font-semibold text-foreground mb-4">
-                Por que escolher a <span className="text-[#2d7dd2]">GESTRATEGIC</span>?
+                Por que escolher a <span className="text-primary">GESTRATEGIC</span>?
               </h2>
               <p className="text-muted-foreground max-w-2xl mx-auto text-lg">
                 Soluções completas para a gestão e tecnologia da sua unidade de saúde

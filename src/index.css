@@ -371,6 +371,12 @@ Design System para Sistema Hospitalar - GESTRATEGIC:
     @apply animate-pulse bg-muted;
   }
 
+  /* Float animation for landing page elements */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
   /* Content visibility for performance */
   .content-visibility-auto {
     content-visibility: auto;
