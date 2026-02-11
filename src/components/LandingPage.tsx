@@ -137,37 +137,37 @@ const LandingPage = () => {
                 </span>
               </a>
 
-              {/* Desktop Navigation */}
-              <nav className="hidden md:flex items-center gap-6 lg:gap-8" role="navigation" aria-label="Navegação principal">
+              {/* Desktop Navigation + Actions */}
+              <div className="hidden lg:flex items-center gap-5" role="navigation" aria-label="Navegação principal">
                 {navLinks.map((link) => (
                   <NavLink key={link.label} href={link.href} label={link.label} />
                 ))}
-              </nav>
-
-              {/* CTA Buttons */}
-              <div className="flex items-center gap-3">
-                <Button
-                  variant="outline"
-                  className="hidden sm:flex border-white/20 text-white/80 hover:bg-white/10 hover:text-white rounded-full px-4 transition-all focus:ring-2 focus:ring-white/50 text-xs"
+                <div className="w-px h-5 bg-white/20 mx-1" />
+                <button
                   onClick={handleDocumentosInteract}
+                  className="text-xs text-white/60 hover:text-white transition-colors flex items-center gap-1 focus:outline-none focus:ring-2 focus:ring-white/50 rounded px-1 py-1"
                   aria-label="Acessar Documentos Interact"
                 >
-                  <FileText className="w-4 h-4 mr-1.5" />
-                  Documentos
-                  <ExternalLink className="w-3 h-3 ml-1 opacity-70" />
-                </Button>
+                  <FileText className="w-3.5 h-3.5" />
+                  Docs
+                  <ExternalLink className="w-2.5 h-2.5 opacity-60" />
+                </button>
+              </div>
+
+              {/* CTA Button */}
+              <div className="flex items-center gap-3">
                 <Button
-                  className="hidden sm:flex bg-white text-[#1a3a5c] hover:bg-white/90 rounded-full px-6 font-semibold shadow-lg shadow-white/10 transition-all hover:shadow-xl hover:shadow-white/20 hover:scale-[1.02] focus:ring-2 focus:ring-white/50"
+                  className="hidden sm:flex bg-white text-[#1a3a5c] hover:bg-white/90 rounded-full px-5 py-2 text-sm font-semibold shadow-lg shadow-white/10 transition-all hover:shadow-xl hover:shadow-white/20 hover:scale-[1.02] focus:ring-2 focus:ring-white/50"
                   onClick={handleLogin}
                   aria-label="Acessar área do cliente"
                 >
                   Área do Cliente
-                  <ChevronRight className="w-4 h-4 ml-1" />
+                  <ChevronRight className="w-4 h-4 ml-0.5" />
                 </Button>
 
                 {/* Mobile menu button */}
                 <button
-                  className="md:hidden p-2 rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 text-white"
+                  className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-white/50 text-white"
                   onClick={toggleMobileMenu}
                   aria-expanded={mobileMenuOpen}
                   aria-controls="mobile-menu"
@@ -182,7 +182,7 @@ const LandingPage = () => {
             {mobileMenuOpen && (
               <nav
                 id="mobile-menu"
-                className="md:hidden py-4 border-t border-white/10 animate-fade-in"
+                className="lg:hidden py-4 border-t border-white/10 animate-fade-in"
                 role="navigation"
                 aria-label="Menu mobile"
               >
@@ -223,7 +223,7 @@ const LandingPage = () => {
         </header>
 
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-br from-[#0f2b45] via-[#1a3a5c] to-[#1e4a6e] overflow-hidden min-h-[650px] pt-16" aria-labelledby="hero-title">
+        <section className="relative bg-gradient-to-br from-[#0f2b45] via-[#1a3a5c] to-[#1e4a6e] overflow-hidden pt-16" aria-labelledby="hero-title">
           {/* Background Pattern */}
           <div className="absolute inset-0" aria-hidden="true">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_80%,_rgba(59,130,246,0.12)_0%,_transparent_50%)]" />
@@ -284,41 +284,38 @@ const LandingPage = () => {
 
               {/* Modern Hero Illustration */}
               <div className="hidden lg:flex justify-center items-center relative" aria-hidden="true">
-                <div className="relative w-[480px] h-[480px]">
+                <div className="relative w-full max-w-[500px] aspect-square">
                   {/* Glow effect */}
-                  <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(34,211,238,0.12)_0%,_transparent_70%)]" />
+                  <div className="absolute -inset-8 bg-[radial-gradient(circle_at_center,_rgba(34,211,238,0.15)_0%,_transparent_60%)]" />
 
                   {/* Hero Image */}
                   <img
                     src={heroImage}
                     alt="Hospital inteligente com dashboards tecnológicos"
-                    className="w-full h-full object-contain drop-shadow-2xl"
+                    className="w-full h-full object-contain drop-shadow-[0_0_40px_rgba(34,211,238,0.15)]"
                     loading="eager"
                   />
 
                   {/* Floating elements with float animation */}
-                  <div className="absolute top-4 right-4 w-14 h-14 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-lg animate-[float_3s_ease-in-out_infinite]">
+                  <div className="absolute -top-2 -right-2 w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-xl animate-[float_4s_ease-in-out_infinite]">
                     <ShieldCheck className="w-7 h-7 text-[#22d3ee]" />
                   </div>
-                  <div className="absolute bottom-16 left-4 w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-lg animate-[float_3s_ease-in-out_infinite_0.5s]">
+                  <div className="absolute bottom-12 -left-4 w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md border border-white/10 flex items-center justify-center shadow-xl animate-[float_4s_ease-in-out_infinite_1s]">
                     <Clock className="w-6 h-6 text-[#34d399]" />
                   </div>
-                  <div className="absolute top-1/3 right-0 w-10 h-10 rounded-full bg-[#22d3ee]/20 flex items-center justify-center">
+                  <div className="absolute top-1/4 -right-6 w-10 h-10 rounded-full bg-[#22d3ee]/15 flex items-center justify-center animate-[float_5s_ease-in-out_infinite_2s]">
                     <div className="w-3 h-3 rounded-full bg-[#22d3ee] animate-ping" />
-                  </div>
-                  <div className="absolute bottom-1/3 left-8 w-8 h-8 rounded-full bg-[#34d399]/10 flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-[#34d399] animate-ping" style={{ animationDelay: "1s" }} />
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Organic wave transition */}
-          <div className="absolute bottom-0 left-0 right-0" aria-hidden="true">
-            <svg viewBox="0 0 1440 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full" preserveAspectRatio="none">
-              <path d="M0 100L0 60C120 80 240 40 360 35C480 30 600 50 720 55C840 60 960 40 1080 30C1200 20 1320 50 1440 65L1440 100Z" fill="hsl(var(--background))" />
-              <path d="M0 100L0 70C120 85 240 55 360 48C480 42 600 60 720 65C840 70 960 52 1080 42C1200 32 1320 58 1440 72L1440 100Z" fill="hsl(var(--background))" fillOpacity="0.5" />
+          {/* Smooth gradient transition instead of wave */}
+          <div className="absolute bottom-0 left-0 right-0 h-24" aria-hidden="true">
+            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-[hsl(var(--background))]" />
+            <svg viewBox="0 0 1440 60" fill="none" xmlns="http://www.w3.org/2000/svg" className="absolute bottom-0 w-full" preserveAspectRatio="none">
+              <path d="M0 60L0 35Q360 0 720 20Q1080 40 1440 15L1440 60Z" fill="hsl(var(--background))" />
             </svg>
           </div>
         </section>
