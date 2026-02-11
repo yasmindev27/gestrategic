@@ -110,20 +110,11 @@ const LandingPage = () => {
                   <a
                     key={link.label}
                     href={link.href}
-                    className="text-[13px] text-[#a3c4e0] hover:text-white px-3 py-2 rounded-md hover:bg-white/5 transition-all font-medium"
+                    className="text-sm text-[#a3c4e0] hover:text-white px-3 py-2 rounded-md hover:bg-white/5 transition-all font-semibold"
                   >
                     {link.label}
                   </a>
                 ))}
-                <span className="w-px h-4 bg-white/15 mx-2" />
-                <button
-                  onClick={handleDocumentosInteract}
-                  className="text-[12px] text-[#7eb8e0]/70 hover:text-[#7eb8e0] transition-colors flex items-center gap-1 px-2 py-1"
-                >
-                  <FileText className="w-3 h-3" />
-                  Docs
-                  <ExternalLink className="w-2.5 h-2.5" />
-                </button>
               </nav>
 
               {/* CTA + Mobile */}
@@ -184,7 +175,7 @@ const LandingPage = () => {
         </header>
 
         {/* ═══════════════ HERO ═══════════════ */}
-        <section className="relative bg-[#0d2137] overflow-hidden pt-16" aria-labelledby="hero-title">
+        <section className="relative bg-[#0d2137] overflow-hidden pt-24 sm:pt-28" aria-labelledby="hero-title">
           {/* Subtle background elements */}
           <div className="absolute inset-0" aria-hidden="true">
             <div className="absolute inset-0 bg-gradient-to-b from-[#0d2137] via-[#112d4a] to-[#153656]" />
