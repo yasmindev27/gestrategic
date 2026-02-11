@@ -467,7 +467,7 @@ const Sidebar = ({
             target="_blank"
             rel="noopener noreferrer"
             className={cn(
-              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-muted-foreground hover:bg-secondary hover:text-foreground",
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-[#8baec8] hover:bg-white/5 hover:text-white",
               isCollapsed && "justify-center px-2"
             )}
             title={isCollapsed ? item.label : undefined}
@@ -490,7 +490,7 @@ const Sidebar = ({
           onClick={() => onSectionChange(item.id)}
           className={cn(
             "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm",
-            isActive ? "bg-primary text-primary-foreground shadow-sm font-semibold" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+            isActive ? "bg-[#2d7dd2] text-white shadow-md shadow-[#2d7dd2]/25 font-semibold" : "text-[#8baec8] hover:bg-white/5 hover:text-white",
             isCollapsed && "justify-center px-2"
           )}
           title={isCollapsed ? item.label : undefined}
@@ -533,25 +533,25 @@ const Sidebar = ({
   const getInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
-  return <aside className={cn("bg-card border-r border-border/60 h-screen flex flex-col sticky top-0 transition-all duration-300 shadow-sm", isCollapsed ? "w-20" : "w-64")}>
+  return <aside className={cn("bg-[#0d2137] h-screen flex flex-col sticky top-0 transition-all duration-300 shadow-lg", isCollapsed ? "w-20" : "w-64")}>
       {/* Logo & Brand */}
-      <div className="p-4 border-b border-border/60">
+      <div className="p-4 border-b border-white/10">
         <button onClick={() => onSectionChange("dashboard")} className="flex items-center gap-3 w-full text-left hover:opacity-80 transition-opacity">
           <img src="/assets/logo-upa-24h.png" alt="UPA 24h" className="h-10 w-auto flex-shrink-0" />
           {!isCollapsed && <div className="overflow-hidden">
-              <h1 className="font-bold text-base text-foreground truncate">​Gestrategic</h1>
-              <p className="text-[11px] text-muted-foreground">Tecnologia em Saúde</p>
+              <h1 className="font-bold text-base text-white truncate">Gestrategic</h1>
+              <p className="text-[11px] text-[#7eb8e0]">Tecnologia em Saúde</p>
             </div>}
         </button>
       </div>
 
       {/* Collapse Toggle */}
-      <button onClick={() => setIsCollapsed(!isCollapsed)} className="absolute -right-3 top-16 bg-card border border-border/60 rounded-full p-1 shadow-sm hover:bg-accent transition-colors z-10">
-        {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />}
+      <button onClick={() => setIsCollapsed(!isCollapsed)} className="absolute -right-3 top-16 bg-[#0d2137] border border-[#2d7dd2]/30 rounded-full p-1 shadow-md hover:bg-[#1a3a5c] transition-colors z-10">
+        {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-[#7eb8e0]" /> : <ChevronLeft className="h-3.5 w-3.5 text-[#7eb8e0]" />}
       </button>
 
       {/* Navigation */}
-      <nav className="flex-1 p-3 overflow-y-auto">
+      <nav className="flex-1 p-3 overflow-y-auto scrollbar-thin">
         {isAdmin && !isCollapsed ? (
           // Admin com categorias visuais
           <div className="space-y-4">
@@ -566,7 +566,7 @@ const Sidebar = ({
 
             {/* Assistencial */}
             <div>
-              <p className="text-xs font-semibold uppercase text-muted-foreground px-3 mb-2">Assistencial</p>
+              <p className="text-xs font-semibold uppercase text-[#5a7a9a] px-3 mb-2">Assistencial</p>
               <ul className="space-y-1">
                 {menuItems.filter(i => i.category === "assistencial").map(item => (
                   <MenuItemRender key={item.id} item={item} activeSection={activeSection} isCollapsed={isCollapsed} onSectionChange={onSectionChange} />
@@ -576,7 +576,7 @@ const Sidebar = ({
 
             {/* Apoio */}
             <div>
-              <p className="text-xs font-semibold uppercase text-muted-foreground px-3 mb-2">Apoio</p>
+              <p className="text-xs font-semibold uppercase text-[#5a7a9a] px-3 mb-2">Apoio</p>
               <ul className="space-y-1">
                 {menuItems.filter(i => i.category === "apoio").map(item => (
                   <MenuItemRender key={item.id} item={item} activeSection={activeSection} isCollapsed={isCollapsed} onSectionChange={onSectionChange} />
@@ -586,7 +586,7 @@ const Sidebar = ({
 
             {/* Logística */}
             <div>
-              <p className="text-xs font-semibold uppercase text-muted-foreground px-3 mb-2">Logística</p>
+              <p className="text-xs font-semibold uppercase text-[#5a7a9a] px-3 mb-2">Logística</p>
               <ul className="space-y-1">
                 {menuItems.filter(i => i.category === "logistica").map(item => (
                   <MenuItemRender key={item.id} item={item} activeSection={activeSection} isCollapsed={isCollapsed} onSectionChange={onSectionChange} />
@@ -596,7 +596,7 @@ const Sidebar = ({
 
             {/* Administrativo */}
             <div>
-              <p className="text-xs font-semibold uppercase text-muted-foreground px-3 mb-2">Administrativo</p>
+              <p className="text-xs font-semibold uppercase text-[#5a7a9a] px-3 mb-2">Administrativo</p>
               <ul className="space-y-1">
                 {menuItems.filter(i => i.category === "administrativo").map(item => (
                   <MenuItemRender key={item.id} item={item} activeSection={activeSection} isCollapsed={isCollapsed} onSectionChange={onSectionChange} />
@@ -606,7 +606,7 @@ const Sidebar = ({
 
             {/* Integrações */}
             <div>
-              <p className="text-xs font-semibold uppercase text-muted-foreground px-3 mb-2">Integrações</p>
+              <p className="text-xs font-semibold uppercase text-[#5a7a9a] px-3 mb-2">Integrações</p>
               <ul className="space-y-1">
                 {menuItems.filter(i => i.category === "integracao").map(item => (
                   <MenuItemRender key={item.id} item={item} activeSection={activeSection} isCollapsed={isCollapsed} onSectionChange={onSectionChange} />
@@ -625,13 +625,13 @@ const Sidebar = ({
       </nav>
 
       {/* Bottom Section */}
-      <div className="p-3 border-t border-border/60 space-y-2">
+      <div className="p-3 border-t border-white/10 space-y-2">
         {/* Bottom Menu Items */}
         <ul className="space-y-0.5">
           {bottomItems.map(item => {
           const Icon = item.icon;
           return <li key={item.id}>
-                <button onClick={() => onSectionChange(item.id)} className={cn("w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors text-sm", isCollapsed && "justify-center px-2")} title={isCollapsed ? item.label : undefined}>
+                <button onClick={() => onSectionChange(item.id)} className={cn("w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[#8baec8] hover:bg-white/5 hover:text-white transition-colors text-sm", isCollapsed && "justify-center px-2")} title={isCollapsed ? item.label : undefined}>
                   <Icon className="h-[18px] w-[18px] flex-shrink-0" />
                   {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
                 </button>
@@ -639,22 +639,22 @@ const Sidebar = ({
         })}
         </ul>
 
-        <Separator className="my-2 bg-border/60" />
+        <Separator className="my-2 bg-white/10" />
 
         {/* User Profile & Logout */}
-        <div className={cn("flex items-center gap-3 p-2 rounded-lg bg-accent/50", isCollapsed && "justify-center")}>
+        <div className={cn("flex items-center gap-3 p-2 rounded-lg bg-white/5", isCollapsed && "justify-center")}>
           <Avatar className="h-8 w-8 flex-shrink-0">
-            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
+            <AvatarFallback className="bg-[#2d7dd2]/20 text-[#5ba3d9] text-xs font-semibold">
               {getInitials(userName)}
             </AvatarFallback>
           </Avatar>
           {!isCollapsed && <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">{userName}</p>
-              <p className="text-[11px] text-muted-foreground truncate">{userEmail}</p>
+              <p className="text-sm font-medium text-white truncate">{userName}</p>
+              <p className="text-[11px] text-[#5a7a9a] truncate">{userEmail}</p>
             </div>}
         </div>
 
-        <Button variant="ghost" onClick={handleLogout} className={cn("w-full text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors h-9 text-sm", isCollapsed ? "px-2" : "justify-start")} title={isCollapsed ? "Sair" : undefined}>
+        <Button variant="ghost" onClick={handleLogout} className={cn("w-full text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors h-9 text-sm", isCollapsed ? "px-2" : "justify-start")} title={isCollapsed ? "Sair" : undefined}>
           <LogOut className="h-[18px] w-[18px] flex-shrink-0" />
           {!isCollapsed && <span className="ml-2 font-medium">Sair</span>}
         </Button>
