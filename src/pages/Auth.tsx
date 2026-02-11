@@ -190,12 +190,12 @@ const Auth = () => {
         <CardContent className="pt-4">
           <form onSubmit={handleLogin} className="space-y-4">
             {/* Login Type Selector */}
-            <div className="flex gap-2">
+            <div className="flex gap-2 bg-muted/50 p-1 rounded-lg">
               <Button
                 type="button"
-                variant={loginType === "email" ? "default" : "outline"}
+                variant={loginType === "email" ? "default" : "ghost"}
                 size="sm"
-                className="flex-1"
+                className="flex-1 transition-all duration-200"
                 onClick={() => {
                   setLoginType("email");
                   setLoginIdentifier("");
@@ -205,9 +205,9 @@ const Auth = () => {
               </Button>
               <Button
                 type="button"
-                variant={loginType === "matricula" ? "default" : "outline"}
+                variant={loginType === "matricula" ? "default" : "ghost"}
                 size="sm"
-                className="flex-1"
+                className="flex-1 transition-all duration-200"
                 onClick={() => {
                   setLoginType("matricula");
                   setLoginIdentifier("");
@@ -270,7 +270,7 @@ const Auth = () => {
             </Button>
           </form>
           
-          <p className="text-center text-sm text-muted-foreground mt-6">
+          <p className="text-center text-sm text-foreground/60 mt-6">
             Para obter acesso ao sistema, entre em contato com o administrador.
           </p>
         </CardContent>
