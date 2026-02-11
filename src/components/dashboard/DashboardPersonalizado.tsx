@@ -34,6 +34,7 @@ interface StatCardProps {
   color: "primary" | "success" | "warning" | "info" | "destructive";
   trend?: "up" | "down";
   loading?: boolean;
+  urgent?: boolean;
 }
 
 const colorClasses = {
@@ -45,8 +46,11 @@ const colorClasses = {
 };
 
 const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
-  ({ title, value, description, icon: Icon, color, trend, loading }, ref) => (
-    <Card ref={ref} className="shadow-sm hover:shadow-md transition-all border-border">
+  ({ title, value, description, icon: Icon, color, trend, loading, urgent }, ref) => (
+    <Card ref={ref} className={`shadow-sm hover:shadow-md transition-all border-border relative overflow-hidden ${urgent ? "border-l-4 border-l-warning ring-1 ring-warning/20" : ""}`}>
+      {urgent && (
+        <div className="absolute top-0 right-0 w-0 h-0 border-t-[24px] border-t-warning/80 border-l-[24px] border-l-transparent" />
+      )}
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <div className="flex-1">
@@ -54,7 +58,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
             {loading ? (
               <Skeleton className="h-8 w-16 mt-1" />
             ) : (
-              <p className="text-2xl font-bold text-foreground mt-1">{value}</p>
+              <p className={`text-2xl font-bold mt-1 ${urgent ? "text-warning" : "text-foreground"}`}>{value}</p>
             )}
             {description && (
               <p className={`text-xs mt-1 ${trend === "up" ? "text-success" : trend === "down" ? "text-destructive" : "text-muted-foreground"}`}>
@@ -88,7 +92,8 @@ const DashboardPersonalizado = () => {
     logsHoje: 0,
   });
   const [loading, setLoading] = useState(true);
-  const { 
+  const [periodo, setPeriodo] = useState<"hoje" | "7dias" | "30dias">("hoje");
+  const {
     role, userId, isAdmin, isGestor, isTI, isManutencao, 
     isEngenhariaCinica, isLaboratorio, isFaturamento, 
     isRecepcao, isClassificacao, isNir, isTecnico 
@@ -99,7 +104,20 @@ const DashboardPersonalizado = () => {
     
     setLoading(true);
     try {
-      const hoje = new Date().toISOString().split('T')[0];
+      const hoje = new Date();
+      let dataInicio: string;
+      if (periodo === "7dias") {
+        const d = new Date(hoje);
+        d.setDate(d.getDate() - 7);
+        dataInicio = d.toISOString().split('T')[0];
+      } else if (periodo === "30dias") {
+        const d = new Date(hoje);
+        d.setDate(d.getDate() - 30);
+        dataInicio = d.toISOString().split('T')[0];
+      } else {
+        dataInicio = hoje.toISOString().split('T')[0];
+      }
+      const hojeStr = hoje.toISOString().split('T')[0];
 
       // Fetch chamados stats
       const [chamadosData, tarefasData, prontuariosData, produtosData, escalasData] = await Promise.all([
@@ -123,13 +141,13 @@ const DashboardPersonalizado = () => {
       const chamadosAbertos = chamados.filter(c => c.status === "aberto").length;
       const chamadosPendentes = chamados.filter(c => c.status === "em_andamento").length;
       const chamadosResolvidos = chamados.filter(c => c.status === "resolvido").length;
-      const chamadosHoje = chamados.filter(c => c.data_abertura?.startsWith(hoje)).length;
+      const chamadosHoje = chamados.filter(c => c.data_abertura?.startsWith(hojeStr)).length;
 
       // Agenda items hoje
       const { data: agendaHojeData } = await supabase
         .from("agenda_items")
         .select("id", { count: "exact" })
-        .eq("data_inicio", hoje);
+        .gte("data_inicio", dataInicio);
 
       // Colaboradores sob gestão (para gestores)
       let colaboradoresSobGestao = 0;
@@ -144,7 +162,7 @@ const DashboardPersonalizado = () => {
         const { count } = await supabase
           .from("logs_acesso")
           .select("id", { count: "exact", head: true })
-          .gte("created_at", `${hoje}T00:00:00`);
+          .gte("created_at", `${dataInicio}T00:00:00`);
         logsHoje = count || 0;
       }
 
@@ -180,7 +198,7 @@ const DashboardPersonalizado = () => {
     if (userId) {
       fetchStats();
     }
-  }, [userId, role]);
+  }, [userId, role, periodo]);
 
   // Cards baseados no perfil do usuário
   const getCardsForRole = () => {
@@ -232,6 +250,7 @@ const DashboardPersonalizado = () => {
           icon: Wrench,
           color: "warning",
           loading,
+          urgent: stats.chamadosPendentes > 0,
         },
         {
           title: "Materiais Baixo Estoque",
@@ -240,6 +259,7 @@ const DashboardPersonalizado = () => {
           icon: AlertTriangle,
           color: "destructive",
           loading,
+          urgent: stats.produtosEstoqueBaixo > 0,
         }
       );
     }
@@ -266,6 +286,7 @@ const DashboardPersonalizado = () => {
           icon: FileText,
           color: "warning",
           loading,
+          urgent: stats.prontuariosPendentes > 0,
         },
         {
           title: "Prontuários Concluídos",
@@ -315,15 +336,32 @@ const DashboardPersonalizado = () => {
             </div>
           </div>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={fetchStats}
-          disabled={loading}
-        >
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-          Atualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <div className="flex bg-muted/50 p-0.5 rounded-lg">
+            {([["hoje", "Hoje"], ["7dias", "7 dias"], ["30dias", "30 dias"]] as const).map(([key, label]) => (
+              <button
+                key={key}
+                onClick={() => setPeriodo(key)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
+                  periodo === key
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchStats}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+            Atualizar
+          </Button>
+        </div>
       </div>
 
       {/* Stats Grid */}
