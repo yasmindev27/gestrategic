@@ -8,17 +8,23 @@ import logoUpa from "@/assets/logo-upa-24h.png";
 import { useState, useCallback, useEffect, memo } from "react";
 import { SEOHead, OrganizationSchema, HealthcareServiceSchema } from "@/components/ui/seo-head";
 
-const FeatureCard = memo(({ icon: Icon, title, description }: {
+const FeatureCard = memo(({ icon: Icon, title, description, index }: {
   icon: typeof ShieldCheck;
   title: string;
   description: string;
+  index: number;
 }) => (
-  <article className="group text-center space-y-4 p-8 rounded-2xl bg-white border border-[#e2eaf3] hover:border-[#2d7dd2]/40 hover:shadow-lg hover:shadow-[#2d7dd2]/8 transition-all duration-300">
-    <div className="mx-auto w-16 h-16 rounded-xl bg-[#2d7dd2]/10 flex items-center justify-center group-hover:bg-[#2d7dd2]/15 group-hover:scale-105 transition-all duration-300" aria-hidden="true">
-      <Icon className="w-8 h-8 text-[#2d7dd2]" />
+  <article 
+    className={`group text-center space-y-4 p-8 rounded-2xl bg-white/80 backdrop-blur-sm border border-[#e2eaf3] hover:border-[#2d7dd2]/40 hover:shadow-xl hover:shadow-[#2d7dd2]/10 transition-all duration-500 hover:-translate-y-1 animate-slide-up-fade ${
+      index === 0 ? "animate-delay-100" : index === 1 ? "animate-delay-200" : "animate-delay-300"
+    }`}
+  >
+    <div className="mx-auto w-16 h-16 rounded-2xl bg-gradient-to-br from-[#2d7dd2]/15 to-[#2d7dd2]/5 flex items-center justify-center group-hover:from-[#2d7dd2]/25 group-hover:to-[#2d7dd2]/10 group-hover:scale-110 transition-all duration-500 group-hover:shadow-lg group-hover:shadow-[#2d7dd2]/15" aria-hidden="true">
+      <Icon className="w-7 h-7 text-[#2d7dd2] transition-transform duration-500 group-hover:scale-110" />
     </div>
     <h3 className="text-lg font-bold text-[#1a2e44]">{title}</h3>
     <p className="text-[#5a7a9a] leading-relaxed text-sm">{description}</p>
+    <div className="h-0.5 w-0 mx-auto bg-gradient-to-r from-transparent via-[#2d7dd2]/40 to-transparent group-hover:w-16 transition-all duration-500" />
   </article>
 ));
 
@@ -86,9 +92,9 @@ const LandingPage = () => {
       <div className="min-h-screen bg-white overflow-x-hidden">
         {/* ═══════════════ HEADER ═══════════════ */}
         <header
-          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
             scrolled
-              ? "bg-[#0d2137]/95 backdrop-blur-md shadow-lg"
+              ? "bg-[#0d2137]/95 backdrop-blur-xl shadow-[0_4px_30px_rgba(0,0,0,0.3)] border-b border-white/5"
               : "bg-[#0d2137]"
           }`}
           role="banner"
@@ -197,17 +203,17 @@ const LandingPage = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20 lg:py-24 relative">
             <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
               {/* Left: Copy */}
-              <div className="space-y-6 z-10">
+              <div className="space-y-6 z-10 animate-slide-up-fade">
                 {/* Badge */}
-                <div className="inline-flex items-center gap-2 bg-[#2d7dd2]/15 border border-[#2d7dd2]/25 rounded-full px-4 py-1.5">
-                  <HeartPulse className="w-4 h-4 text-[#5ba3d9]" />
-                  <span className="text-[#7eb8e0] text-xs font-medium">Gestão Hospitalar Inteligente</span>
+                <div className="inline-flex items-center gap-2 bg-[#2d7dd2]/15 border border-[#2d7dd2]/25 rounded-full px-4 py-1.5 backdrop-blur-sm">
+                  <HeartPulse className="w-4 h-4 text-[#5ba3d9] animate-pulse" />
+                  <span className="text-[#7eb8e0] text-xs font-medium tracking-wide">Gestão Hospitalar Inteligente</span>
                 </div>
 
                 <h1 id="hero-title" className="text-3xl sm:text-4xl md:text-5xl lg:text-[3.5rem] text-white leading-[1.15] tracking-tight">
                   <span className="font-light">Inovação que</span><br />
                   <span className="font-bold">pulsa pela </span>
-                  <span className="font-bold text-[#5ba3d9]">vida.</span>
+                  <span className="font-bold shimmer-text">vida.</span>
                 </h1>
 
                 <p className="text-[#8baec8] text-base sm:text-lg max-w-md leading-relaxed">
@@ -216,14 +222,14 @@ const LandingPage = () => {
 
                 <div className="flex flex-wrap gap-3 pt-1">
                   <Button
-                    className="bg-[#2d7dd2] hover:bg-[#2570c2] text-white rounded-lg px-7 h-12 text-sm font-semibold shadow-lg shadow-[#2d7dd2]/25 transition-all hover:shadow-xl hover:shadow-[#2d7dd2]/35 hover:-translate-y-0.5"
+                    className="bg-[#2d7dd2] hover:bg-[#2570c2] text-white rounded-xl px-7 h-12 text-sm font-semibold shadow-lg shadow-[#2d7dd2]/25 transition-all duration-300 hover:shadow-xl hover:shadow-[#2d7dd2]/35 hover:-translate-y-0.5 active:translate-y-0"
                     asChild
                   >
                     <a href="#solucoes">Conheça nossas Soluções</a>
                   </Button>
                   <Button
                     variant="outline"
-                    className="border border-[#3d6d9e]/50 text-[#a3c4e0] hover:bg-[#1a3a5c] hover:text-white hover:border-[#5ba3d9]/50 rounded-lg px-7 h-12 text-sm font-medium transition-all hover:-translate-y-0.5 bg-transparent"
+                    className="border border-[#3d6d9e]/50 text-[#a3c4e0] hover:bg-[#1a3a5c] hover:text-white hover:border-[#5ba3d9]/50 rounded-xl px-7 h-12 text-sm font-medium transition-all duration-300 hover:-translate-y-0.5 active:translate-y-0 bg-transparent backdrop-blur-sm"
                     asChild
                   >
                     <a href="#contato">Agendar Consultoria</a>
@@ -295,22 +301,26 @@ const LandingPage = () => {
 
             <div className="grid md:grid-cols-3 gap-6">
               {features.map((feature, index) => (
-                <FeatureCard key={index} icon={feature.icon} title={feature.title} description={feature.description} />
+                <FeatureCard key={index} icon={feature.icon} title={feature.title} description={feature.description} index={index} />
               ))}
             </div>
           </div>
         </section>
 
         {/* ═══════════════ FOOTER ═══════════════ */}
-        <footer className="bg-[#0d2137] text-[#5a7a9a] py-10" role="contentinfo">
+        <footer className="bg-[#0d2137] text-[#5a7a9a] py-12 border-t border-white/5" role="contentinfo">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex flex-col items-center justify-center gap-4">
-              <a href="#" className="flex items-center gap-3" aria-label="Gestrategic - Voltar ao topo">
-                <img src={logoGestrategic} alt="Gestrategic" className="h-10 w-auto rounded" width={40} height={40} loading="lazy" />
+            <div className="flex flex-col items-center justify-center gap-5">
+              <a href="#" className="flex items-center gap-3 group" aria-label="Gestrategic - Voltar ao topo">
+                <img src={logoGestrategic} alt="Gestrategic" className="h-10 w-auto rounded transition-transform duration-300 group-hover:scale-105" width={40} height={40} loading="lazy" />
               </a>
-              <p className="text-xs text-[#3d5a78] text-center">
-                © {new Date().getFullYear()} GESTRATEGIC — Todos os direitos reservados.
-              </p>
+              <div className="flex items-center gap-2 text-[#3d5a78]">
+                <div className="h-px w-8 bg-gradient-to-r from-transparent to-[#3d5a78]/50" />
+                <p className="text-xs text-center">
+                  © {new Date().getFullYear()} GESTRATEGIC — Todos os direitos reservados.
+                </p>
+                <div className="h-px w-8 bg-gradient-to-l from-transparent to-[#3d5a78]/50" />
+              </div>
             </div>
           </div>
         </footer>

@@ -47,26 +47,33 @@ const colorClasses = {
 
 const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
   ({ title, value, description, icon: Icon, color, trend, loading, urgent }, ref) => (
-    <Card ref={ref} className={`shadow-sm hover:shadow-md transition-all border-border relative overflow-hidden ${urgent ? "border-l-4 border-l-warning ring-1 ring-warning/20" : ""}`}>
+    <Card ref={ref} className={`shadow-sm hover:shadow-lg transition-all duration-300 border-border relative overflow-hidden hover:-translate-y-0.5 group ${urgent ? "border-l-4 border-l-warning ring-1 ring-warning/20" : "hover:border-primary/20"}`}>
       {urgent && (
         <div className="absolute top-0 right-0 w-0 h-0 border-t-[24px] border-t-warning/80 border-l-[24px] border-l-transparent" />
       )}
-      <CardContent className="p-4">
+      {/* Subtle gradient overlay on hover */}
+      <div className={`absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-br ${
+        color === "primary" ? "from-primary/3" : 
+        color === "success" ? "from-success/3" : 
+        color === "warning" ? "from-warning/3" : 
+        color === "info" ? "from-info/3" : "from-destructive/3"
+      } to-transparent pointer-events-none`} />
+      <CardContent className="p-5 relative">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <p className="text-sm text-muted-foreground">{title}</p>
+            <p className="text-sm text-muted-foreground font-medium">{title}</p>
             {loading ? (
-              <Skeleton className="h-8 w-16 mt-1" />
+              <Skeleton className="h-8 w-16 mt-1.5" />
             ) : (
-              <p className={`text-2xl font-bold mt-1 ${urgent ? "text-warning" : "text-foreground"}`}>{value}</p>
+              <p className={`text-2xl font-bold mt-1.5 tracking-tight ${urgent ? "text-warning" : "text-foreground"}`}>{value}</p>
             )}
             {description && (
-              <p className={`text-xs mt-1 ${trend === "up" ? "text-success" : trend === "down" ? "text-destructive" : "text-muted-foreground"}`}>
+              <p className={`text-xs mt-1.5 font-medium ${trend === "up" ? "text-success" : trend === "down" ? "text-destructive" : "text-muted-foreground"}`}>
                 {description}
               </p>
             )}
           </div>
-          <div className={`p-3 rounded-xl ${colorClasses[color]}`}>
+          <div className={`p-3 rounded-xl ${colorClasses[color]} transition-transform duration-300 group-hover:scale-110`}>
             <Icon className="h-6 w-6" />
           </div>
         </div>
@@ -323,29 +330,28 @@ const DashboardPersonalizado = () => {
       {/* Header com perfil */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2 rounded-lg bg-primary/10">
+          <div className="p-2.5 rounded-xl bg-gradient-to-br from-primary/15 to-primary/5 shadow-sm">
             <TrendingUp className="h-5 w-5 text-primary" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold text-foreground">Dashboard Personalizado</h2>
+            <h2 className="text-lg font-bold text-foreground tracking-tight">Dashboard</h2>
             <div className="flex items-center gap-2 mt-0.5">
-              <span className="text-sm text-muted-foreground">Seu perfil:</span>
-              <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20">
+              <Badge variant="outline" className="bg-primary/8 text-primary border-primary/20 text-xs font-medium">
                 {role ? roleLabels[role] || role : "Carregando..."}
               </Badge>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex bg-muted/50 p-0.5 rounded-lg">
+          <div className="flex bg-muted/40 p-0.5 rounded-xl border border-border/50">
             {([["hoje", "Hoje"], ["7dias", "7 dias"], ["30dias", "30 dias"]] as const).map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setPeriodo(key)}
-                className={`px-3 py-1.5 text-xs font-medium rounded-md transition-all duration-200 ${
+                className={`px-3.5 py-1.5 text-xs font-medium rounded-lg transition-all duration-300 ${
                   periodo === key
-                    ? "bg-primary text-primary-foreground shadow-sm"
-                    : "text-muted-foreground hover:text-foreground"
+                    ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
                 }`}
               >
                 {label}
