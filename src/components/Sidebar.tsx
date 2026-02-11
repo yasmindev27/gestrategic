@@ -489,13 +489,13 @@ const Sidebar = ({
         <button
           onClick={() => onSectionChange(item.id)}
           className={cn(
-            "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all",
-            isActive ? "bg-primary text-primary-foreground shadow-sm" : "text-muted-foreground hover:bg-secondary hover:text-foreground",
+            "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm",
+            isActive ? "bg-primary text-primary-foreground shadow-sm font-semibold" : "text-muted-foreground hover:bg-accent hover:text-foreground",
             isCollapsed && "justify-center px-2"
           )}
           title={isCollapsed ? item.label : undefined}
         >
-          <Icon className="h-5 w-5 flex-shrink-0" />
+          <Icon className="h-[18px] w-[18px] flex-shrink-0" />
           {!isCollapsed && <span className="font-medium truncate">{item.label}</span>}
         </button>
       </li>
@@ -533,21 +533,21 @@ const Sidebar = ({
   const getInitials = (name: string) => {
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
-  return <aside className={cn("bg-card border-r border-border h-screen flex flex-col sticky top-0 transition-all duration-300", isCollapsed ? "w-20" : "w-64")}>
+  return <aside className={cn("bg-card border-r border-border/60 h-screen flex flex-col sticky top-0 transition-all duration-300 shadow-sm", isCollapsed ? "w-20" : "w-64")}>
       {/* Logo & Brand */}
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-border/60">
         <button onClick={() => onSectionChange("dashboard")} className="flex items-center gap-3 w-full text-left hover:opacity-80 transition-opacity">
-          <img src="/assets/logo-upa-24h.png" alt="UPA 24h" className="h-12 w-auto flex-shrink-0" />
+          <img src="/assets/logo-upa-24h.png" alt="UPA 24h" className="h-10 w-auto flex-shrink-0" />
           {!isCollapsed && <div className="overflow-hidden">
-              <h1 className="font-bold text-lg text-foreground truncate">​Gestrategic</h1>
-              <p className="text-xs text-muted-foreground">Tecnologia em Saúde</p>
+              <h1 className="font-bold text-base text-foreground truncate">​Gestrategic</h1>
+              <p className="text-[11px] text-muted-foreground">Tecnologia em Saúde</p>
             </div>}
         </button>
       </div>
 
       {/* Collapse Toggle */}
-      <button onClick={() => setIsCollapsed(!isCollapsed)} className="absolute -right-3 top-20 bg-card border border-border rounded-full p-1 shadow-sm hover:bg-secondary transition-colors z-10">
-        {isCollapsed ? <ChevronRight className="h-4 w-4 text-muted-foreground" /> : <ChevronLeft className="h-4 w-4 text-muted-foreground" />}
+      <button onClick={() => setIsCollapsed(!isCollapsed)} className="absolute -right-3 top-16 bg-card border border-border/60 rounded-full p-1 shadow-sm hover:bg-accent transition-colors z-10">
+        {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" /> : <ChevronLeft className="h-3.5 w-3.5 text-muted-foreground" />}
       </button>
 
       {/* Navigation */}
@@ -625,37 +625,37 @@ const Sidebar = ({
       </nav>
 
       {/* Bottom Section */}
-      <div className="p-3 border-t border-border space-y-2">
+      <div className="p-3 border-t border-border/60 space-y-2">
         {/* Bottom Menu Items */}
-        <ul className="space-y-1">
+        <ul className="space-y-0.5">
           {bottomItems.map(item => {
           const Icon = item.icon;
           return <li key={item.id}>
-                <button onClick={() => onSectionChange(item.id)} className={cn("w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors", isCollapsed && "justify-center px-2")} title={isCollapsed ? item.label : undefined}>
-                  <Icon className="h-5 w-5 flex-shrink-0" />
+                <button onClick={() => onSectionChange(item.id)} className={cn("w-full flex items-center gap-3 px-3 py-2 rounded-lg text-muted-foreground hover:bg-accent hover:text-foreground transition-colors text-sm", isCollapsed && "justify-center px-2")} title={isCollapsed ? item.label : undefined}>
+                  <Icon className="h-[18px] w-[18px] flex-shrink-0" />
                   {!isCollapsed && <span className="font-medium text-sm truncate">{item.label}</span>}
                 </button>
               </li>;
         })}
         </ul>
 
-        <Separator className="my-2" />
+        <Separator className="my-2 bg-border/60" />
 
         {/* User Profile & Logout */}
-        <div className={cn("flex items-center gap-3 p-2 rounded-lg bg-secondary/50", isCollapsed && "justify-center")}>
-          <Avatar className="h-9 w-9 flex-shrink-0">
-            <AvatarFallback className="bg-primary/10 text-primary text-sm font-medium">
+        <div className={cn("flex items-center gap-3 p-2 rounded-lg bg-accent/50", isCollapsed && "justify-center")}>
+          <Avatar className="h-8 w-8 flex-shrink-0">
+            <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
               {getInitials(userName)}
             </AvatarFallback>
           </Avatar>
           {!isCollapsed && <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground truncate">{userName}</p>
-              <p className="text-xs text-muted-foreground truncate">{userEmail}</p>
+              <p className="text-[11px] text-muted-foreground truncate">{userEmail}</p>
             </div>}
         </div>
 
-        <Button variant="ghost" onClick={handleLogout} className={cn("w-full text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors", isCollapsed ? "px-2" : "justify-start")} title={isCollapsed ? "Sair" : undefined}>
-          <LogOut className="h-5 w-5 flex-shrink-0" />
+        <Button variant="ghost" onClick={handleLogout} className={cn("w-full text-destructive hover:text-destructive hover:bg-destructive/10 transition-colors h-9 text-sm", isCollapsed ? "px-2" : "justify-start")} title={isCollapsed ? "Sair" : undefined}>
+          <LogOut className="h-[18px] w-[18px] flex-shrink-0" />
           {!isCollapsed && <span className="ml-2 font-medium">Sair</span>}
         </Button>
       </div>
