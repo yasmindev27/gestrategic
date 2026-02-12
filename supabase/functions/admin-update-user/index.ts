@@ -50,7 +50,7 @@ serve(async (req) => {
       );
     }
 
-    const { user_id, full_name, cargo, setor, email, password } = await req.json();
+    const { user_id, full_name, matricula, cargo, setor, email, password } = await req.json();
 
     if (!user_id) {
       return new Response(
@@ -69,6 +69,7 @@ serve(async (req) => {
     // Update profile
     const profileUpdates: Record<string, string> = {};
     if (full_name) profileUpdates.full_name = full_name;
+    if (matricula !== undefined) profileUpdates.matricula = matricula;
     if (cargo !== undefined) profileUpdates.cargo = cargo;
     if (setor !== undefined) profileUpdates.setor = setor;
 

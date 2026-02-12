@@ -80,6 +80,7 @@ interface UserWithRole {
   user_id: string;
   full_name: string;
   email?: string;
+  matricula: string | null;
   cargo: string | null;
   setor: string | null;
   role: AppRole;
@@ -214,7 +215,7 @@ export const AdminModule = () => {
       // Fetch profiles with roles
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
-        .select("id, user_id, full_name, cargo, setor");
+        .select("id, user_id, full_name, matricula, cargo, setor");
 
       if (profilesError) throw profilesError;
 
@@ -231,6 +232,7 @@ export const AdminModule = () => {
           id: profile.id,
           user_id: profile.user_id,
           full_name: profile.full_name,
+          matricula: profile.matricula,
           cargo: profile.cargo,
           setor: profile.setor,
           role: userRole?.role || "funcionario",
@@ -424,9 +426,10 @@ export const AdminModule = () => {
             "Content-Type": "application/json",
             Authorization: `Bearer ${sessionData.session?.access_token}`,
           },
-          body: JSON.stringify({
+           body: JSON.stringify({
             user_id: selectedUser.user_id,
             full_name: formData.full_name || undefined,
+            matricula: formData.matricula || undefined,
             cargo: formData.cargo,
             setor: formData.setor,
             password: formData.password || undefined,
@@ -510,7 +513,7 @@ export const AdminModule = () => {
     setSelectedUser(user);
     setFormData({
       email: "",
-      matricula: "",
+      matricula: user.matricula || "",
       password: "",
       full_name: user.full_name,
       cargo: user.cargo || "",
@@ -1021,6 +1024,15 @@ export const AdminModule = () => {
                 value={formData.full_name}
                 onChange={(e) => setFormData({ ...formData, full_name: e.target.value })}
                 placeholder="Nome completo do usuário"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-matricula">Matrícula</Label>
+              <Input
+                id="edit-matricula"
+                value={formData.matricula}
+                onChange={(e) => setFormData({ ...formData, matricula: e.target.value })}
+                placeholder="Matrícula do usuário"
               />
             </div>
             <div className="space-y-2">
