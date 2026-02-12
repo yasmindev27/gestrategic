@@ -3864,6 +3864,12 @@ export type Database = {
           pode_registrar: boolean
         }[]
       }
+      buscar_usuario_por_matricula: {
+        Args: { _matricula: string }
+        Returns: {
+          user_id: string
+        }[]
+      }
       gestor_gerencia_usuario: {
         Args: { _gestor_id: string; _usuario_id: string }
         Returns: boolean
