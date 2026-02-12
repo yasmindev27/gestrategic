@@ -22,7 +22,7 @@ export type Database = {
           evidencia: string | null
           gravidade: string | null
           id: string
-          registrado_por: string
+          registrado_por: string | null
           registrado_por_nome: string
           requisito_referencia: string | null
           status: string
@@ -36,7 +36,7 @@ export type Database = {
           evidencia?: string | null
           gravidade?: string | null
           id?: string
-          registrado_por: string
+          registrado_por?: string | null
           registrado_por_nome: string
           requisito_referencia?: string | null
           status?: string
@@ -50,7 +50,7 @@ export type Database = {
           evidencia?: string | null
           gravidade?: string | null
           id?: string
-          registrado_por?: string
+          registrado_por?: string | null
           registrado_por_nome?: string
           requisito_referencia?: string | null
           status?: string
@@ -77,7 +77,7 @@ export type Database = {
           incidente_id: string
           observacoes: string | null
           prazo: string
-          registrado_por: string
+          registrado_por: string | null
           registrado_por_nome: string
           responsavel_id: string | null
           responsavel_nome: string
@@ -94,7 +94,7 @@ export type Database = {
           incidente_id: string
           observacoes?: string | null
           prazo: string
-          registrado_por: string
+          registrado_por?: string | null
           registrado_por_nome: string
           responsavel_id?: string | null
           responsavel_nome: string
@@ -111,7 +111,7 @@ export type Database = {
           incidente_id?: string
           observacoes?: string | null
           prazo?: string
-          registrado_por?: string
+          registrado_por?: string | null
           registrado_por_nome?: string
           responsavel_id?: string | null
           responsavel_nome?: string
@@ -218,7 +218,7 @@ export type Database = {
       }
       analises_incidentes: {
         Row: {
-          analisado_por: string
+          analisado_por: string | null
           analisado_por_nome: string
           causas_identificadas: string | null
           created_at: string
@@ -231,7 +231,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          analisado_por: string
+          analisado_por?: string | null
           analisado_por_nome: string
           causas_identificadas?: string | null
           created_at?: string
@@ -244,7 +244,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          analisado_por?: string
+          analisado_por?: string | null
           analisado_por_nome?: string
           causas_identificadas?: string | null
           created_at?: string
@@ -275,7 +275,7 @@ export type Database = {
           motivo: string
           observacoes: string | null
           paciente_id: string
-          profissional_id: string
+          profissional_id: string | null
           profissional_nome: string
           status: string
           tipo_atendimento: string
@@ -289,7 +289,7 @@ export type Database = {
           motivo: string
           observacoes?: string | null
           paciente_id: string
-          profissional_id: string
+          profissional_id?: string | null
           profissional_nome: string
           status?: string
           tipo_atendimento: string
@@ -303,7 +303,7 @@ export type Database = {
           motivo?: string
           observacoes?: string | null
           paciente_id?: string
-          profissional_id?: string
+          profissional_id?: string | null
           profissional_nome?: string
           status?: string
           tipo_atendimento?: string
@@ -328,7 +328,7 @@ export type Database = {
           nome_arquivo: string
           tamanho_bytes: number | null
           tipo_documento: string
-          uploaded_by: string
+          uploaded_by: string | null
           uploaded_by_nome: string
         }
         Insert: {
@@ -339,7 +339,7 @@ export type Database = {
           nome_arquivo: string
           tamanho_bytes?: number | null
           tipo_documento: string
-          uploaded_by: string
+          uploaded_by?: string | null
           uploaded_by_nome: string
         }
         Update: {
@@ -350,7 +350,7 @@ export type Database = {
           nome_arquivo?: string
           tamanho_bytes?: number | null
           tipo_documento?: string
-          uploaded_by?: string
+          uploaded_by?: string | null
           uploaded_by_nome?: string
         }
         Relationships: [
@@ -373,7 +373,7 @@ export type Database = {
           id: string
           motivo: string
           observacoes: string | null
-          registrado_por: string
+          registrado_por: string | null
           registrado_por_nome: string
           status: string
           tipo_encaminhamento: string
@@ -388,7 +388,7 @@ export type Database = {
           id?: string
           motivo: string
           observacoes?: string | null
-          registrado_por: string
+          registrado_por?: string | null
           registrado_por_nome: string
           status?: string
           tipo_encaminhamento: string
@@ -403,7 +403,7 @@ export type Database = {
           id?: string
           motivo?: string
           observacoes?: string | null
-          registrado_por?: string
+          registrado_por?: string | null
           registrado_por_nome?: string
           status?: string
           tipo_encaminhamento?: string
@@ -534,7 +534,7 @@ export type Database = {
         Row: {
           auditor: string
           created_at: string
-          created_by: string
+          created_by: string | null
           created_by_nome: string
           data_auditoria: string
           escopo: string | null
@@ -550,7 +550,7 @@ export type Database = {
         Insert: {
           auditor: string
           created_at?: string
-          created_by: string
+          created_by?: string | null
           created_by_nome: string
           data_auditoria: string
           escopo?: string | null
@@ -566,7 +566,7 @@ export type Database = {
         Update: {
           auditor?: string
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           created_by_nome?: string
           data_auditoria?: string
           escopo?: string | null
@@ -703,7 +703,7 @@ export type Database = {
           acolhimento_triagem_obs: string | null
           atendimento_medico: string | null
           atendimento_medico_obs: string | null
-          avaliador_id: string
+          avaliador_id: string | null
           comentarios_finais: string | null
           created_at: string
           data_conclusao: string | null
@@ -733,7 +733,7 @@ export type Database = {
           acolhimento_triagem_obs?: string | null
           atendimento_medico?: string | null
           atendimento_medico_obs?: string | null
-          avaliador_id: string
+          avaliador_id?: string | null
           comentarios_finais?: string | null
           created_at?: string
           data_conclusao?: string | null
@@ -763,7 +763,7 @@ export type Database = {
           acolhimento_triagem_obs?: string | null
           atendimento_medico?: string | null
           atendimento_medico_obs?: string | null
-          avaliador_id?: string
+          avaliador_id?: string | null
           comentarios_finais?: string | null
           created_at?: string
           data_conclusao?: string | null
@@ -2456,7 +2456,7 @@ export type Database = {
           id: string
           observacoes: string | null
           prazo: string
-          registrado_por: string
+          registrado_por: string | null
           registrado_por_nome: string
           responsavel_nome: string
           status: string
@@ -2471,7 +2471,7 @@ export type Database = {
           id?: string
           observacoes?: string | null
           prazo: string
-          registrado_por: string
+          registrado_por?: string | null
           registrado_por_nome: string
           responsavel_nome: string
           status?: string
@@ -2486,7 +2486,7 @@ export type Database = {
           id?: string
           observacoes?: string | null
           prazo?: string
-          registrado_por?: string
+          registrado_por?: string | null
           registrado_por_nome?: string
           responsavel_nome?: string
           status?: string
