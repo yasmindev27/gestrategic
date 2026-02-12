@@ -109,13 +109,10 @@ const Auth = () => {
     
     // If logging in with matricula, find the associated email
     if (loginType === "matricula") {
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("user_id")
-        .eq("matricula", loginIdentifier)
-        .single();
+      const { data: profiles, error: profileError } = await supabase
+        .rpc("buscar_usuario_por_matricula", { _matricula: loginIdentifier });
 
-      if (profileError || !profile) {
+      if (profileError || !profiles || profiles.length === 0) {
         setIsLoading(false);
         toast({
           title: "Erro",
