@@ -4,7 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { BookOpen, FileText, Video, PlayCircle, CheckCircle2, Clock, Award, ExternalLink } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { BookOpen, FileText, Video, PlayCircle, CheckCircle2, Clock, Award, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Treinamento, Material, Inscricao } from "./types";
 import QuizComponent from "./QuizComponent";
@@ -16,6 +17,8 @@ export default function PortalAluno() {
   const [userSetor, setUserSetor] = useState<string | null>(null);
   const [selectedQuiz, setSelectedQuiz] = useState<string | null>(null);
   const [selectedMateriais, setSelectedMateriais] = useState<string | null>(null);
+  const [viewingUrl, setViewingUrl] = useState<string | null>(null);
+  const [viewingTitle, setViewingTitle] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -60,15 +63,11 @@ export default function PortalAluno() {
     enabled: !!selectedMateriais,
   });
 
-  // Filter trainings by user's sector
+  // Filter trainings by user's sector - now uses exact match against official setores
   const filteredTreinamentos = treinamentos.filter(t => {
     if (!t.setores_alvo || t.setores_alvo.length === 0) return true;
-    const alvoLower = t.setores_alvo.map(s => s.toLowerCase());
-    if (alvoLower.includes("todos") || alvoLower.includes("todos os colaboradores")) return true;
     if (!userSetor) return true;
-    const setorLower = userSetor.toLowerCase();
-    return alvoLower.some(a => setorLower.includes(a) || a.includes(setorLower) ||
-      a.includes("assistencial") || a.includes("administrativo") || a.includes("institucional"));
+    return t.setores_alvo.some(s => s.toLowerCase() === userSetor.toLowerCase());
   });
 
   const enrollMutation = useMutation({
@@ -106,6 +105,20 @@ export default function PortalAluno() {
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["lms-inscricoes-aluno"] }),
   });
+
+  const handleViewMaterial = async (material: Material) => {
+    if (!material.url) return;
+    try {
+      const { data, error } = await supabase.storage
+        .from("lms-materiais")
+        .createSignedUrl(material.url, 3600);
+      if (error) throw error;
+      setViewingTitle(material.titulo);
+      setViewingUrl(data.signedUrl);
+    } catch {
+      toast({ title: "Erro ao abrir material", variant: "destructive" });
+    }
+  };
 
   const getInscricao = (treinamentoId: string) => inscricoes.find(i => i.treinamento_id === treinamentoId);
 
@@ -174,7 +187,6 @@ export default function PortalAluno() {
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      {/* Step 1: Access Material */}
                       <Button
                         variant={materialAcessado ? "outline" : "default"}
                         className="w-full"
@@ -188,7 +200,6 @@ export default function PortalAluno() {
                         {materialAcessado ? "Material Acessado" : "Acessar Material"}
                       </Button>
 
-                      {/* Step 2: Quiz */}
                       <Button
                         variant="default"
                         className="w-full"
@@ -213,7 +224,7 @@ export default function PortalAluno() {
         </div>
       )}
 
-      {/* Material Viewer Dialog */}
+      {/* Internal Material Viewer */}
       {selectedMateriais && (
         <Card className="mt-4">
           <CardHeader>
@@ -228,20 +239,38 @@ export default function PortalAluno() {
             ) : (
               <div className="space-y-3">
                 {materiais.map(m => (
-                  <a key={m.id} href={m.url || "#"} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent transition-colors">
+                  <div key={m.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent transition-colors">
                     {m.tipo === "video" ? <Video className="h-5 w-5 text-red-500" /> : <FileText className="h-5 w-5 text-blue-500" />}
                     <div className="flex-1">
                       <p className="font-medium text-sm">{m.titulo}</p>
                       {m.descricao && <p className="text-xs text-muted-foreground">{m.descricao}</p>}
                     </div>
-                    <ExternalLink className="h-4 w-4 text-muted-foreground" />
-                  </a>
+                    <Button size="sm" variant="outline" onClick={() => handleViewMaterial(m)}>
+                      <Eye className="h-4 w-4 mr-1" /> Visualizar
+                    </Button>
+                  </div>
                 ))}
               </div>
             )}
           </CardContent>
         </Card>
       )}
+
+      {/* Internal viewer dialog */}
+      <Dialog open={!!viewingUrl} onOpenChange={() => setViewingUrl(null)}>
+        <DialogContent className="max-w-4xl h-[80vh]">
+          <DialogHeader><DialogTitle>{viewingTitle}</DialogTitle></DialogHeader>
+          <div className="flex-1 h-full min-h-0">
+            {viewingUrl && (
+              <iframe
+                src={viewingUrl}
+                className="w-full h-[calc(80vh-80px)] rounded-lg border"
+                title={viewingTitle}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
