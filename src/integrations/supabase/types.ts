@@ -2109,6 +2109,276 @@ export type Database = {
         }
         Relationships: []
       }
+      lms_inscricoes: {
+        Row: {
+          created_at: string
+          data_conclusao: string | null
+          id: string
+          material_acessado_em: string | null
+          nota: number | null
+          setor: string | null
+          status: string
+          treinamento_id: string
+          updated_at: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          created_at?: string
+          data_conclusao?: string | null
+          id?: string
+          material_acessado_em?: string | null
+          nota?: number | null
+          setor?: string | null
+          status?: string
+          treinamento_id: string
+          updated_at?: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Update: {
+          created_at?: string
+          data_conclusao?: string | null
+          id?: string
+          material_acessado_em?: string | null
+          nota?: number | null
+          setor?: string | null
+          status?: string
+          treinamento_id?: string
+          updated_at?: string
+          usuario_id?: string
+          usuario_nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_inscricoes_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            isOneToOne: false
+            referencedRelation: "lms_treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_materiais: {
+        Row: {
+          created_at: string
+          criado_por: string | null
+          descricao: string | null
+          id: string
+          ordem: number | null
+          tipo: string
+          titulo: string
+          treinamento_id: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          ordem?: number | null
+          tipo?: string
+          titulo: string
+          treinamento_id: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          ordem?: number | null
+          tipo?: string
+          titulo?: string
+          treinamento_id?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_materiais_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            isOneToOne: false
+            referencedRelation: "lms_treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_quiz_perguntas: {
+        Row: {
+          created_at: string
+          id: string
+          opcao_a: string
+          opcao_b: string
+          opcao_c: string
+          opcao_d: string
+          ordem: number | null
+          pergunta: string
+          resposta_correta: string
+          treinamento_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          opcao_a: string
+          opcao_b: string
+          opcao_c: string
+          opcao_d: string
+          ordem?: number | null
+          pergunta: string
+          resposta_correta: string
+          treinamento_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          opcao_a?: string
+          opcao_b?: string
+          opcao_c?: string
+          opcao_d?: string
+          ordem?: number | null
+          pergunta?: string
+          resposta_correta?: string
+          treinamento_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_quiz_perguntas_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            isOneToOne: false
+            referencedRelation: "lms_treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_tentativas_quiz: {
+        Row: {
+          acertos: number
+          aprovado: boolean
+          created_at: string
+          id: string
+          inscricao_id: string
+          nota: number
+          respostas: Json
+          total_perguntas: number
+          treinamento_id: string
+          usuario_id: string
+        }
+        Insert: {
+          acertos?: number
+          aprovado?: boolean
+          created_at?: string
+          id?: string
+          inscricao_id: string
+          nota?: number
+          respostas?: Json
+          total_perguntas?: number
+          treinamento_id: string
+          usuario_id: string
+        }
+        Update: {
+          acertos?: number
+          aprovado?: boolean
+          created_at?: string
+          id?: string
+          inscricao_id?: string
+          nota?: number
+          respostas?: Json
+          total_perguntas?: number
+          treinamento_id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_tentativas_quiz_inscricao_id_fkey"
+            columns: ["inscricao_id"]
+            isOneToOne: false
+            referencedRelation: "lms_inscricoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lms_tentativas_quiz_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            isOneToOne: false
+            referencedRelation: "lms_treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_treinamentos: {
+        Row: {
+          ano: number | null
+          carga_horaria: string | null
+          competencia: string | null
+          created_at: string
+          criado_por: string | null
+          data_limite: string | null
+          descricao: string | null
+          id: string
+          indicador_competencia: string | null
+          instrutor: string | null
+          mes_planejado: number | null
+          metodo_identificacao: string | null
+          nota_minima_aprovacao: number | null
+          objetivo: string | null
+          publico_alvo: string | null
+          setor_responsavel: string | null
+          setores_alvo: string[] | null
+          status: string
+          tipo_treinamento: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ano?: number | null
+          carga_horaria?: string | null
+          competencia?: string | null
+          created_at?: string
+          criado_por?: string | null
+          data_limite?: string | null
+          descricao?: string | null
+          id?: string
+          indicador_competencia?: string | null
+          instrutor?: string | null
+          mes_planejado?: number | null
+          metodo_identificacao?: string | null
+          nota_minima_aprovacao?: number | null
+          objetivo?: string | null
+          publico_alvo?: string | null
+          setor_responsavel?: string | null
+          setores_alvo?: string[] | null
+          status?: string
+          tipo_treinamento?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          ano?: number | null
+          carga_horaria?: string | null
+          competencia?: string | null
+          created_at?: string
+          criado_por?: string | null
+          data_limite?: string | null
+          descricao?: string | null
+          id?: string
+          indicador_competencia?: string | null
+          instrutor?: string | null
+          mes_planejado?: number | null
+          metodo_identificacao?: string | null
+          nota_minima_aprovacao?: number | null
+          objetivo?: string | null
+          publico_alvo?: string | null
+          setor_responsavel?: string | null
+          setores_alvo?: string[] | null
+          status?: string
+          tipo_treinamento?: string
+          titulo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       logs_acesso: {
         Row: {
           acao: string
