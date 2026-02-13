@@ -25,6 +25,7 @@ import { StatusBadge, mapStatusToType } from "@/components/ui/status-badge";
 import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import { AuditoriasSegurancaPaciente, DashboardConformidade } from "@/components/qualidade";
+import { EditorFormulariosAuditoria } from "@/components/qualidade/EditorFormulariosAuditoria";
 import { RiscosOperacionaisChart, DashboardIAIncidentes, ReportarIncidenteRapido, AnalisarIncidenteIA } from "@/components/gestao-incidentes";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -619,6 +620,10 @@ export const QualidadeModule = () => {
             Seg. Paciente
           </TabsTrigger>
           <TabsTrigger value="indicadores">Indicadores</TabsTrigger>
+          <TabsTrigger value="editor-formularios" className="gap-1">
+            <Pencil className="h-4 w-4" />
+            Editor
+          </TabsTrigger>
         </TabsList>
 
         {/* Dashboard de Conformidade */}
@@ -990,6 +995,11 @@ export const QualidadeModule = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        {/* Editor de Formulários */}
+        <TabsContent value="editor-formularios" className="mt-4">
+          <EditorFormulariosAuditoria />
         </TabsContent>
       </Tabs>
 

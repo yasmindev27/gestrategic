@@ -530,6 +530,121 @@ export type Database = {
         }
         Relationships: []
       }
+      auditoria_formularios_config: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          icone: string | null
+          id: string
+          nome: string
+          ordem: number | null
+          setores: string[] | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          icone?: string | null
+          id?: string
+          nome: string
+          ordem?: number | null
+          setores?: string[] | null
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          icone?: string | null
+          id?: string
+          nome?: string
+          ordem?: number | null
+          setores?: string[] | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      auditoria_perguntas_config: {
+        Row: {
+          ativo: boolean | null
+          codigo: string
+          created_at: string
+          id: string
+          label: string
+          opcoes: string[]
+          ordem: number | null
+          secao_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          codigo: string
+          created_at?: string
+          id?: string
+          label: string
+          opcoes?: string[]
+          ordem?: number | null
+          secao_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          codigo?: string
+          created_at?: string
+          id?: string
+          label?: string
+          opcoes?: string[]
+          ordem?: number | null
+          secao_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auditoria_perguntas_config_secao_id_fkey"
+            columns: ["secao_id"]
+            isOneToOne: false
+            referencedRelation: "auditoria_secoes_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auditoria_secoes_config: {
+        Row: {
+          created_at: string
+          formulario_id: string
+          id: string
+          nome: string
+          ordem: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          formulario_id: string
+          id?: string
+          nome: string
+          ordem?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          formulario_id?: string
+          id?: string
+          nome?: string
+          ordem?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auditoria_secoes_config_formulario_id_fkey"
+            columns: ["formulario_id"]
+            isOneToOne: false
+            referencedRelation: "auditoria_formularios_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auditorias_qualidade: {
         Row: {
           auditor: string
