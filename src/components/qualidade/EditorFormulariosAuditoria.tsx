@@ -409,25 +409,25 @@ export const EditorFormulariosAuditoria = () => {
                     </Button>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {secaoPerguntas.map((p, idx) => (
-                      <div key={p.id} className="flex items-start gap-3 p-3 bg-background border rounded-lg group">
-                        <span className="text-xs text-muted-foreground font-mono mt-1 w-6 shrink-0">{idx + 1}.</span>
+                      <div key={p.id} className="flex items-start gap-3 p-4 bg-background border border-border rounded-lg shadow-sm group hover:shadow-md transition-shadow">
+                        <span className="text-sm font-bold text-primary mt-0.5 w-8 shrink-0">{idx + 1}.</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm leading-relaxed">{p.label}</p>
-                          <div className="flex flex-wrap gap-1 mt-1.5">
+                          <p className="text-sm font-medium leading-relaxed text-foreground">{p.label}</p>
+                          <div className="flex flex-wrap gap-1.5 mt-2">
                             {p.opcoes.map(opt => (
-                              <Badge key={opt} variant="outline" className="text-xs">
+                              <Badge key={opt} className="text-xs bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
                                 {OPCOES_LABELS[opt] || opt}
                               </Badge>
                             ))}
                           </div>
                         </div>
                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditPergunta(p)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditPergunta(p)}>
                             <Pencil className="h-3.5 w-3.5" />
                           </Button>
-                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => {
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => {
                             if (confirm("Excluir esta pergunta?")) deletePergunta(p.id);
                           }}>
                             <Trash2 className="h-3.5 w-3.5" />
