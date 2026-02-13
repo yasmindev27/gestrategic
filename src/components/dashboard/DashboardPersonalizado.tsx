@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { 
   Users, ClipboardList, AlertTriangle, Calendar, Ticket, 
   FileText, CheckCircle2, Clock, Wrench, BarChart3, 
-  Building2, FlaskConical, RefreshCw, TrendingUp
+  Building2, FlaskConical, RefreshCw, TrendingUp, GraduationCap
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,6 +24,7 @@ interface DashboardStats {
   escalasHoje: number;
   colaboradoresSobGestao: number;
   logsHoje: number;
+  capacitacoesPendentes: number;
 }
 
 interface StatCardProps {
@@ -97,6 +98,7 @@ const DashboardPersonalizado = () => {
     escalasHoje: 0,
     colaboradoresSobGestao: 0,
     logsHoje: 0,
+    capacitacoesPendentes: 0,
   });
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState<"hoje" | "7dias" | "30dias">("hoje");
@@ -175,9 +177,18 @@ const DashboardPersonalizado = () => {
         logsHoje = count || 0;
       }
 
-      // Prontuários stats - already counted via head:true queries
+      // Prontuários stats
       const prontuariosPendentes = prontuariosPendentesData.count || 0;
       const prontuariosAvaliados = prontuariosConcluidosData.count || 0;
+
+      // Capacitações pendentes - treinamentos onde o usuário está inscrito mas não está capacitado
+      let capacitacoesPendentes = 0;
+      const { count: capCount } = await supabase
+        .from("lms_inscricoes")
+        .select("id", { count: "exact", head: true })
+        .eq("usuario_id", userId)
+        .neq("status", "capacitado");
+      capacitacoesPendentes = capCount || 0;
 
       setStats({
         chamadosAbertos,
@@ -188,10 +199,11 @@ const DashboardPersonalizado = () => {
         tarefasHoje: agendaHojeData?.length || 0,
         prontuariosPendentes,
         prontuariosAvaliados,
-        produtosEstoqueBaixo: 0, // Removed broken column-to-column comparison
+        produtosEstoqueBaixo: 0,
         escalasHoje: escalasData.count || 0,
         colaboradoresSobGestao,
         logsHoje,
+        capacitacoesPendentes,
       });
     } catch (error) {
       console.error("Erro ao carregar estatísticas:", error);
@@ -218,6 +230,17 @@ const DashboardPersonalizado = () => {
       icon: Calendar,
       color: "info",
       loading,
+    });
+
+    // Capacitações pendentes (universal)
+    cards.push({
+      title: "Capacitações Pendentes",
+      value: stats.capacitacoesPendentes,
+      description: stats.capacitacoesPendentes > 0 ? "Acesse a Área de Aprendizado" : "Tudo em dia!",
+      icon: GraduationCap,
+      color: stats.capacitacoesPendentes > 0 ? "warning" : "success",
+      loading,
+      urgent: stats.capacitacoesPendentes > 0,
     });
 
     // Admin - visão completa do sistema
