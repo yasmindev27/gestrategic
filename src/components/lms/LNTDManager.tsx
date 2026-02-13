@@ -1,17 +1,17 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { BookOpen, Link, Plus, FileText, Video, Pencil, Trash2 } from "lucide-react";
+import { BookOpen, Link, Plus, FileText, Video, Pencil, Trash2, Upload, Eye, Loader2 } from "lucide-react";
 import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { exportToPDF } from "@/lib/export-utils";
 import { Treinamento, Material } from "./types";
@@ -20,8 +20,13 @@ import * as XLSX from "xlsx";
 export default function LNTDManager() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedTreinamento, setSelectedTreinamento] = useState<string | null>(null);
-  const [materialForm, setMaterialForm] = useState({ titulo: "", tipo: "pdf", url: "", descricao: "" });
+  const [materialForm, setMaterialForm] = useState({ titulo: "", tipo: "pdf", descricao: "" });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [viewingUrl, setViewingUrl] = useState<string | null>(null);
+  const [viewingTitle, setViewingTitle] = useState("");
   const [editDialog, setEditDialog] = useState(false);
   const [editForm, setEditForm] = useState({
     id: "",
@@ -52,31 +57,63 @@ export default function LNTDManager() {
     enabled: !!selectedTreinamento,
   });
 
-  const addMaterialMutation = useMutation({
-    mutationFn: async () => {
-      if (!selectedTreinamento) return;
+  const handleUploadMaterial = async () => {
+    if (!selectedTreinamento || !materialForm.titulo || !selectedFile) return;
+    setIsUploading(true);
+    try {
       const { data: { user } } = await supabase.auth.getUser();
-      const { error } = await supabase.from("lms_materiais").insert({
+      if (!user) throw new Error("Não autenticado");
+
+      const fileExt = selectedFile.name.split(".").pop();
+      const filePath = `${user.id}/${selectedTreinamento}/${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("lms-materiais")
+        .upload(filePath, selectedFile);
+      if (uploadError) throw uploadError;
+
+      const { error: dbError } = await supabase.from("lms_materiais").insert({
         treinamento_id: selectedTreinamento,
         titulo: materialForm.titulo,
         tipo: materialForm.tipo,
-        url: materialForm.url,
+        url: filePath,
         descricao: materialForm.descricao,
-        criado_por: user?.id,
+        criado_por: user.id,
       });
-      if (error) throw error;
-    },
-    onSuccess: () => {
+      if (dbError) throw dbError;
+
       queryClient.invalidateQueries({ queryKey: ["lms-materiais"] });
-      toast({ title: "Material adicionado!" });
-      setMaterialForm({ titulo: "", tipo: "pdf", url: "", descricao: "" });
-    },
-    onError: () => toast({ title: "Erro ao adicionar material", variant: "destructive" }),
-  });
+      toast({ title: "Material enviado com sucesso!" });
+      setMaterialForm({ titulo: "", tipo: "pdf", descricao: "" });
+      setSelectedFile(null);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    } catch (err: any) {
+      toast({ title: "Erro ao enviar material", description: err.message, variant: "destructive" });
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  const handleViewMaterial = async (material: Material) => {
+    if (!material.url) return;
+    try {
+      const { data, error } = await supabase.storage
+        .from("lms-materiais")
+        .createSignedUrl(material.url, 3600);
+      if (error) throw error;
+      setViewingTitle(material.titulo);
+      setViewingUrl(data.signedUrl);
+    } catch {
+      toast({ title: "Erro ao abrir material", variant: "destructive" });
+    }
+  };
 
   const deleteMaterialMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("lms_materiais").delete().eq("id", id);
+    mutationFn: async (material: Material) => {
+      if (material.url) {
+        await supabase.storage.from("lms-materiais").remove([material.url]);
+      }
+      const { error } = await supabase.from("lms_materiais").delete().eq("id", material.id);
       if (error) throw error;
     },
     onSuccess: () => {
@@ -148,6 +185,11 @@ export default function LNTDManager() {
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "LNTD");
     XLSX.writeFile(wb, "lntd_treinamentos.xlsx");
+  };
+
+  const getFileIcon = (tipo: string) => {
+    if (tipo === "video") return <Video className="h-5 w-5 text-red-500" />;
+    return <FileText className="h-5 w-5 text-blue-500" />;
   };
 
   return (
@@ -223,6 +265,22 @@ export default function LNTDManager() {
         </DialogContent>
       </Dialog>
 
+      {/* View Material Dialog (internal viewer) */}
+      <Dialog open={!!viewingUrl} onOpenChange={() => setViewingUrl(null)}>
+        <DialogContent className="max-w-4xl h-[80vh]">
+          <DialogHeader><DialogTitle>{viewingTitle}</DialogTitle></DialogHeader>
+          <div className="flex-1 h-full min-h-0">
+            {viewingUrl && (
+              <iframe
+                src={viewingUrl}
+                className="w-full h-[calc(80vh-80px)] rounded-lg border"
+                title={viewingTitle}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {selected && (
         <Card>
           <CardHeader>
@@ -234,13 +292,20 @@ export default function LNTDManager() {
                 {materiais.map(m => (
                   <div key={m.id} className="flex items-center justify-between p-3 border rounded-lg">
                     <div className="flex items-center gap-3">
-                      {m.tipo === "video" ? <Video className="h-5 w-5 text-red-500" /> : <FileText className="h-5 w-5 text-blue-500" />}
+                      {getFileIcon(m.tipo)}
                       <div>
                         <p className="font-medium text-sm">{m.titulo}</p>
-                        {m.url && <a href={m.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">{m.url}</a>}
+                        {m.descricao && <p className="text-xs text-muted-foreground">{m.descricao}</p>}
                       </div>
                     </div>
-                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteMaterialMutation.mutate(m.id)}>Remover</Button>
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="outline" onClick={() => handleViewMaterial(m)}>
+                        <Eye className="h-4 w-4 mr-1" /> Visualizar
+                      </Button>
+                      <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteMaterialMutation.mutate(m)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -249,7 +314,7 @@ export default function LNTDManager() {
             )}
 
             <div className="border-t pt-4 space-y-3">
-              <p className="font-medium text-sm flex items-center gap-2"><Plus className="h-4 w-4" /> Adicionar Material</p>
+              <p className="font-medium text-sm flex items-center gap-2"><Plus className="h-4 w-4" /> Enviar Material</p>
               <div className="grid grid-cols-2 gap-3">
                 <div><Label>Título *</Label><Input value={materialForm.titulo} onChange={e => setMaterialForm(p => ({ ...p, titulo: e.target.value }))} /></div>
                 <div>
@@ -259,14 +324,35 @@ export default function LNTDManager() {
                     <SelectContent>
                       <SelectItem value="pdf">PDF</SelectItem>
                       <SelectItem value="video">Vídeo</SelectItem>
-                      <SelectItem value="link">Link</SelectItem>
+                      <SelectItem value="documento">Documento</SelectItem>
+                      <SelectItem value="apresentacao">Apresentação</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
-              <div><Label>URL do Material</Label><Input value={materialForm.url} onChange={e => setMaterialForm(p => ({ ...p, url: e.target.value }))} placeholder="https://..." /></div>
-              <Button onClick={() => addMaterialMutation.mutate()} disabled={!materialForm.titulo || addMaterialMutation.isPending}>
-                Adicionar Material
+              <div><Label>Descrição (opcional)</Label><Input value={materialForm.descricao} onChange={e => setMaterialForm(p => ({ ...p, descricao: e.target.value }))} placeholder="Breve descrição do material" /></div>
+              <div>
+                <Label>Arquivo *</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <Input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.mp4,.webm"
+                    onChange={e => setSelectedFile(e.target.files?.[0] || null)}
+                  />
+                </div>
+                {selectedFile && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {selectedFile.name} ({(selectedFile.size / 1024 / 1024).toFixed(2)} MB)
+                  </p>
+                )}
+              </div>
+              <Button onClick={handleUploadMaterial} disabled={!materialForm.titulo || !selectedFile || isUploading}>
+                {isUploading ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
+                ) : (
+                  <><Upload className="h-4 w-4 mr-2" /> Enviar Material</>
+                )}
               </Button>
             </div>
           </CardContent>
