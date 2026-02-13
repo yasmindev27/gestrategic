@@ -26,3 +26,6 @@ verify_jwt = false
 
 [functions.resumo-semanal-incidentes]
 verify_jwt = false
+
+[functions.gerar-quiz-ia]
+verify_jwt = false
