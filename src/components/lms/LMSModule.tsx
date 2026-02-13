@@ -32,7 +32,7 @@ export default function LMSModule() {
       <div className="flex items-center gap-3">
         <GraduationCap className="h-7 w-7 text-primary" />
         <div>
-          <h1 className="text-2xl font-bold">LMS — Gestão de Aprendizado</h1>
+          <h1 className="text-2xl font-bold">Área de Aprendizado</h1>
           <p className="text-muted-foreground text-sm">Gerencie treinamentos, avaliações e capacitações</p>
         </div>
       </div>
