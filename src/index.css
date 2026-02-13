@@ -185,6 +185,16 @@ Design System para Sistema Hospitalar - GESTRATEGIC:
     @apply border-border;
   }
 
+  html {
+    font-size: 14px;
+  }
+
+  @media (min-width: 1024px) {
+    html {
+      font-size: 15px;
+    }
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
     text-rendering: optimizeLegibility;
