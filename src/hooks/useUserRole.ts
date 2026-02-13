@@ -1,132 +1,104 @@
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
-interface UserRoleState {
+interface UserRoleData {
   roles: AppRole[];
   primaryRole: AppRole | null;
   userId: string | null;
-  isLoading: boolean;
 }
 
+const resolvePrimaryRole = (roles: AppRole[]): AppRole | null => {
+  if (roles.length === 0) return null;
+  if (roles.includes("admin")) return "admin";
+  if (roles.includes("gestor")) return "gestor";
+  return roles[0];
+};
+
+const fetchUserRoles = async (): Promise<UserRoleData> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
+
+  if (!user) {
+    return { roles: [], primaryRole: null, userId: null };
+  }
+
+  // 1) Try direct read from table (when RLS allows)
+  const { data, error } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id);
+
+  if (!error && data && data.length > 0) {
+    const roles = data.map((r) => r.role);
+    return { roles, primaryRole: resolvePrimaryRole(roles), userId: user.id };
+  }
+
+  // 2) Fallback: use RPC
+  const { data: role, error: rpcError } = await supabase.rpc("get_user_role", { _user_id: user.id });
+
+  if (!rpcError && role) {
+    const roles: AppRole[] = [role];
+    return { roles, primaryRole: resolvePrimaryRole(roles), userId: user.id };
+  }
+
+  if (error) console.error("Error fetching user roles:", error);
+  if (rpcError) console.error("Error fetching user role via RPC:", rpcError);
+  return { roles: [], primaryRole: null, userId: user.id };
+};
+
 export const useUserRole = () => {
-  const [state, setState] = useState<UserRoleState>({
-    roles: [],
-    primaryRole: null,
-    userId: null,
-    isLoading: true,
+  const queryClient = useQueryClient();
+
+  // Invalidate role cache on auth state change (login/logout)
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+      queryClient.invalidateQueries({ queryKey: ["user-role"] });
+    });
+    return () => subscription.unsubscribe();
+  }, [queryClient]);
+
+  const { data, isLoading } = useQuery({
+    queryKey: ["user-role"],
+    queryFn: fetchUserRoles,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
+    refetchOnWindowFocus: false,
+    retry: 1,
   });
 
-  useEffect(() => {
-    let isMounted = true;
-
-    const setLoading = (loading: boolean) => {
-      if (!isMounted) return;
-      setState((prev) => ({ ...prev, isLoading: loading }));
-    };
-
-    const resolvePrimaryRole = (roles: AppRole[]): AppRole | null => {
-      if (roles.length === 0) return null;
-      if (roles.includes("admin")) return "admin";
-      if (roles.includes("gestor")) return "gestor";
-      return roles[0];
-    };
-
-    const fetchRolesForUser = async (userId: string) => {
-      // 1) Try direct read from table (when RLS allows)
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
-
-      if (!error && data && data.length > 0) {
-        const roles = data.map((r) => r.role);
-        const primaryRole = resolvePrimaryRole(roles);
-        if (!isMounted) return;
-        setState({ roles, primaryRole, userId, isLoading: false });
-        return;
-      }
-
-      // 2) Fallback: use RPC (works even when RLS blocks direct reads)
-      const { data: role, error: rpcError } = await supabase.rpc("get_user_role", { _user_id: userId });
-
-      if (!rpcError && role) {
-        const roles: AppRole[] = [role];
-        const primaryRole = resolvePrimaryRole(roles);
-        if (!isMounted) return;
-        setState({ roles, primaryRole, userId, isLoading: false });
-        return;
-      }
-
-      // 3) No roles found / not allowed
-      if (!isMounted) return;
-      if (error) console.error("Error fetching user roles:", error);
-      if (rpcError) console.error("Error fetching user role via RPC:", rpcError);
-      setState((prev) => ({ ...prev, roles: [], primaryRole: null, userId, isLoading: false }));
-    };
-
-    const refresh = async () => {
-      setLoading(true);
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        const user = session?.user ?? null;
-
-        if (!user) {
-          if (!isMounted) return;
-          setState({ roles: [], primaryRole: null, userId: null, isLoading: false });
-          return;
-        }
-
-        await fetchRolesForUser(user.id);
-      } catch (error) {
-        console.error("Error:", error);
-        if (!isMounted) return;
-        setState((prev) => ({ ...prev, isLoading: false }));
-      }
-    };
-
-    // Initial load
-    refresh();
-
-    // Keep in sync on login/logout
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
-      refresh();
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, []);
+  const roles = data?.roles ?? [];
+  const primaryRole = data?.primaryRole ?? null;
+  const userId = data?.userId ?? null;
 
   const hasRole = useCallback((checkRole: AppRole): boolean => {
-    return state.roles.includes(checkRole);
-  }, [state.roles]);
+    return roles.includes(checkRole);
+  }, [roles]);
 
   const hasAnyRole = useCallback((checkRoles: AppRole[]): boolean => {
-    return state.roles.some(r => checkRoles.includes(r));
-  }, [state.roles]);
+    return roles.some(r => checkRoles.includes(r));
+  }, [roles]);
 
-  const isAdmin = state.roles.includes("admin");
-  const isGestor = state.roles.includes("gestor");
-  const isRecepcao = state.roles.includes("recepcao");
-  const isClassificacao = state.roles.includes("classificacao");
-  const isNir = state.roles.includes("nir");
-  const isFaturamento = state.roles.includes("faturamento");
-  const isTI = state.roles.includes("ti");
-  const isManutencao = state.roles.includes("manutencao");
-  const isEngenhariaCinica = state.roles.includes("engenharia_clinica");
-  const isLaboratorio = state.roles.includes("laboratorio");
-  const isRestaurante = state.roles.includes("restaurante");
-  const isRHDP = state.roles.includes("rh_dp");
-  const isAssistenciaSocial = state.roles.includes("assistencia_social");
-  const isQualidade = state.roles.includes("qualidade");
-  const isNSP = state.roles.includes("nsp");
+  const isAdmin = roles.includes("admin");
+  const isGestor = roles.includes("gestor");
+  const isRecepcao = roles.includes("recepcao");
+  const isClassificacao = roles.includes("classificacao");
+  const isNir = roles.includes("nir");
+  const isFaturamento = roles.includes("faturamento");
+  const isTI = roles.includes("ti");
+  const isManutencao = roles.includes("manutencao");
+  const isEngenhariaCinica = roles.includes("engenharia_clinica");
+  const isLaboratorio = roles.includes("laboratorio");
+  const isRestaurante = roles.includes("restaurante");
+  const isRHDP = roles.includes("rh_dp");
+  const isAssistenciaSocial = roles.includes("assistencia_social");
+  const isQualidade = roles.includes("qualidade");
+  const isNSP = roles.includes("nsp");
   const isTecnico = isTI || isManutencao || isEngenhariaCinica || isLaboratorio;
 
-  // Permissões específicas por módulo
   const canAccessSaidaProntuarios = isAdmin || isRecepcao || isClassificacao || isNir || isFaturamento;
   const canAccessControleFichas = isAdmin || isRecepcao;
   const canAccessAvaliacaoProntuarios = isAdmin || isFaturamento;
@@ -135,10 +107,10 @@ export const useUserRole = () => {
   const canViewAgendaColaboradores = isAdmin || isGestor;
 
   return {
-    role: state.primaryRole,
-    roles: state.roles,
-    userId: state.userId,
-    isLoading: state.isLoading,
+    role: primaryRole,
+    roles,
+    userId,
+    isLoading,
     hasRole,
     hasAnyRole,
     isAdmin,
@@ -157,7 +129,6 @@ export const useUserRole = () => {
     isQualidade,
     isNSP,
     isTecnico,
-    // Permissões de módulo
     canAccessSaidaProntuarios,
     canAccessControleFichas,
     canAccessAvaliacaoProntuarios,

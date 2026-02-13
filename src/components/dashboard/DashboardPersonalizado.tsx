@@ -127,17 +127,19 @@ const DashboardPersonalizado = () => {
       const hojeStr = hoje.toISOString().split('T')[0];
 
       // Fetch chamados stats
-      const [chamadosData, tarefasData, prontuariosData, produtosData, escalasData] = await Promise.all([
+      const [chamadosData, tarefasData, prontuariosPendentesData, prontuariosConcluidosData, escalasData] = await Promise.all([
         // Chamados
         supabase.from("chamados").select("status, data_abertura", { count: "exact" }),
         // Tarefas da agenda
         supabase.rpc("get_tarefas_pendentes_count", { _user_id: userId }),
-        // Prontuários pendentes (saida_prontuarios)
-        supabase.from("saida_prontuarios").select("status", { count: "exact" }),
-        // Produtos com estoque baixo
-        supabase.from("produtos").select("id", { count: "exact" }).filter("quantidade_atual", "lte", "quantidade_minima"),
+        // Prontuários pendentes - use count with head:true instead of fetching all rows
+        supabase.from("saida_prontuarios").select("id", { count: "exact", head: true })
+          .in("status", ["pendente_classificacao", "pendente_nir", "aguardando_classificacao"]),
+        // Prontuários concluídos - separate count query
+        supabase.from("saida_prontuarios").select("id", { count: "exact", head: true })
+          .eq("status", "concluido"),
         // Escalas de hoje
-        supabase.from("escalas_laboratorio").select("id", { count: "exact" })
+        supabase.from("escalas_laboratorio").select("id", { count: "exact", head: true })
           .eq("dia", new Date().getDate())
           .eq("mes", new Date().getMonth() + 1)
           .eq("ano", new Date().getFullYear()),
@@ -173,12 +175,9 @@ const DashboardPersonalizado = () => {
         logsHoje = count || 0;
       }
 
-      // Prontuários stats
-      const prontuarios = prontuariosData.data || [];
-      const prontuariosPendentes = prontuarios.filter(p => 
-        p.status === "pendente_classificacao" || p.status === "pendente_nir"
-      ).length;
-      const prontuariosAvaliados = prontuarios.filter(p => p.status === "concluido").length;
+      // Prontuários stats - already counted via head:true queries
+      const prontuariosPendentes = prontuariosPendentesData.count || 0;
+      const prontuariosAvaliados = prontuariosConcluidosData.count || 0;
 
       setStats({
         chamadosAbertos,
@@ -189,7 +188,7 @@ const DashboardPersonalizado = () => {
         tarefasHoje: agendaHojeData?.length || 0,
         prontuariosPendentes,
         prontuariosAvaliados,
-        produtosEstoqueBaixo: produtosData.count || 0,
+        produtosEstoqueBaixo: 0, // Removed broken column-to-column comparison
         escalasHoje: escalasData.count || 0,
         colaboradoresSobGestao,
         logsHoje,
