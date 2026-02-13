@@ -38,7 +38,7 @@ const Sidebar = ({
   const {
     role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
     isLaboratorio, isTecnico, isRecepcao, isClassificacao, isNir,
-    isFaturamento, isRHDP
+    isFaturamento, isRHDP, isQualidade, isNSP
   } = useUserRole();
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
@@ -161,6 +161,14 @@ const Sidebar = ({
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: UserCog, label: "RH/DP", id: "rhdp" },
+        { icon: Calendar, label: "Agenda", id: "agenda" }
+      );
+      return items;
+    }
+    if (isQualidade || isNSP) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: AlertTriangle, label: "Qualidade/NSP", id: "qualidade" },
         { icon: Calendar, label: "Agenda", id: "agenda" }
       );
       return items;
