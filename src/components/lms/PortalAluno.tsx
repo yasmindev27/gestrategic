@@ -249,7 +249,7 @@ export default function PortalAluno() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <CardTitle className="text-base">📚 Materiais — {treinamento?.titulo}</CardTitle>
+                  <CardTitle className="text-base">Materiais — {treinamento?.titulo}</CardTitle>
                   <CardDescription className="text-xs mt-1">Visualize os materiais abaixo. Após acessar, a avaliação será liberada.</CardDescription>
                 </div>
                 <Button variant="ghost" size="sm" onClick={() => setSelectedMateriais(null)}>Fechar</Button>
