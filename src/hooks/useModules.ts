@@ -57,6 +57,7 @@ export const useModules = () => {
     equipe: isAdmin || isGestor,
     chat: true,
     abrirChamado: true,
+    lms: true,
   }), [
     isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
     isLaboratorio, isNir, isRecepcao, isFaturamento, isRHDP,

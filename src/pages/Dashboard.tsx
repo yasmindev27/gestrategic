@@ -25,6 +25,7 @@ import { AssistenciaSocialModule } from "@/components/modules/AssistenciaSocialM
 import { QualidadeModule } from "@/components/modules/QualidadeModule";
 import { ReportarIncidenteDialog } from "@/components/gestao-incidentes";
 import { ProfissionaisSaude } from "@/components/rh";
+import LMSModule from "@/components/lms/LMSModule";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -112,7 +113,11 @@ const Dashboard = () => {
       case "controle-fichas":
         return <ControleFichasModule />;
       case "equipe":
-        return <TeamSection />;
+        return (
+          <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+            <EquipeModule />
+          </Suspense>
+        );
       case "agenda":
         return <AgendaModule />;
       case "admin":
@@ -156,12 +161,6 @@ const Dashboard = () => {
         );
       case "chat":
         return <ChatModule />;
-      case "equipe":
-        return (
-          <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-            <EquipeModule />
-          </Suspense>
-        );
       case "medicos":
         return (
           <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
@@ -170,6 +169,8 @@ const Dashboard = () => {
         );
       case "profissionais-saude":
         return <ProfissionaisSaude />;
+      case "lms":
+        return <LMSModule />;
       case "salus":
         return (
           <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
