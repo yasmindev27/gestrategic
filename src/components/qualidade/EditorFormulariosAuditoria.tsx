@@ -280,6 +280,50 @@ export const EditorFormulariosAuditoria = () => {
 
   // List view
   if (!selectedFormulario) {
+    const formularioDialog = (
+      <Dialog open={editFormularioDialog} onOpenChange={setEditFormularioDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Novo Formulário</DialogTitle>
+            <DialogDescription>Configure o nome, destino e os setores disponíveis</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Nome do Formulário *</Label>
+              <Input
+                value={formularioForm.nome}
+                onChange={e => setFormularioForm(prev => ({ ...prev, nome: e.target.value }))}
+                placeholder="Ex: Checklist de Higienização"
+              />
+            </div>
+            <div>
+              <Label>Destino (onde o formulário aparecerá)</Label>
+              <select
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={formularioForm.destino}
+                onChange={e => setFormularioForm(prev => ({ ...prev, destino: e.target.value }))}
+              >
+                <option value="seg_paciente">Auditorias de Segurança do Paciente</option>
+                <option value="auditoria">Auditorias da Qualidade</option>
+              </select>
+            </div>
+            <div>
+              <Label>Setores (separados por vírgula)</Label>
+              <Input
+                value={formularioForm.setores}
+                onChange={e => setFormularioForm(prev => ({ ...prev, setores: e.target.value }))}
+                placeholder="Internação, Urgência, Laboratório"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditFormularioDialog(false)}>Cancelar</Button>
+            <Button onClick={saveFormulario}><Save className="h-4 w-4 mr-1" /> Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    );
+
     return (
       <div className="space-y-4">
         <p className="text-sm text-muted-foreground">
@@ -313,6 +357,7 @@ export const EditorFormulariosAuditoria = () => {
             );
           })}
         </div>
+        {formularioDialog}
       </div>
     );
   }
