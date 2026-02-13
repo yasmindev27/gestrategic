@@ -411,7 +411,7 @@ export const EditorFormulariosAuditoria = () => {
 
                   <div className="space-y-2">
                     {secaoPerguntas.map((p, idx) => (
-                      <div key={p.id} className="flex items-start gap-3 p-3 bg-muted/50 rounded-lg group">
+                      <div key={p.id} className="flex items-start gap-3 p-3 bg-background border rounded-lg group">
                         <span className="text-xs text-muted-foreground font-mono mt-1 w-6 shrink-0">{idx + 1}.</span>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm leading-relaxed">{p.label}</p>
