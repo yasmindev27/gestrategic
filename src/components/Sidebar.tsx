@@ -79,7 +79,7 @@ const Sidebar = ({
         { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao", category: "administrativo" },
         { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia", category: "administrativo" },
         { icon: Calendar, label: "Agenda", id: "agenda", category: "administrativo" },
-        { icon: GraduationCap, label: "LMS", id: "lms", category: "administrativo" },
+        { icon: GraduationCap, label: "Capacitação", id: "lms", category: "administrativo" },
         { icon: ScrollText, label: "Logs", id: "logs", category: "administrativo" },
         { icon: Shield, label: "Administração", id: "admin", category: "administrativo" },
         { icon: FileText, label: "Docs Interact", id: "documentos-interact", category: "integracao" },
