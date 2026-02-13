@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, Eye, FileText, ClipboardList, CheckCircle, XCircle, MinusCircle, Stethoscope } from "lucide-react";
+import { Plus, Eye, Pencil, FileText, ClipboardList, CheckCircle, XCircle, MinusCircle, Stethoscope } from "lucide-react";
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
 import { SearchInput } from "@/components/ui/search-input";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -250,6 +250,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
   const [novaAuditoriaDialog, setNovaAuditoriaDialog] = useState(false);
   const [detalhesDialog, setDetalhesDialog] = useState(false);
   const [selectedAuditoria, setSelectedAuditoria] = useState<AuditoriaSeguranca | null>(null);
+  const [editingAuditoriaId, setEditingAuditoriaId] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Form state
@@ -316,6 +317,30 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
     setRespostas(prev => ({ ...prev, [itemId]: value }));
   };
 
+  const handleEdit = (auditoria: AuditoriaSeguranca) => {
+    setEditingAuditoriaId(auditoria.id);
+    setTipoSelecionado(auditoria.tipo);
+    setFormData({
+      data_auditoria: auditoria.data_auditoria,
+      setor: auditoria.setor,
+      paciente_iniciais: auditoria.paciente_iniciais || "",
+      paciente_ra: auditoria.paciente_ra || "",
+      numero_prontuario: auditoria.numero_prontuario || "",
+      score_risco: auditoria.score_risco || "",
+      possui_lpp: auditoria.possui_lpp || false,
+      grau_lpp: auditoria.grau_lpp || "",
+      apresentou_queda: auditoria.apresentou_queda || false,
+      notificacao_aberta: auditoria.notificacao_aberta || "",
+      profissional_auditado: auditoria.profissional_auditado || "",
+      mes_avaliacao: auditoria.mes_avaliacao || "",
+      unidade_atendimento: auditoria.unidade_atendimento || "",
+      satisfacao_geral: auditoria.satisfacao_geral || 5,
+      observacoes: auditoria.observacoes || "",
+    });
+    setRespostas(auditoria.respostas as Record<string, string>);
+    setNovaAuditoriaDialog(true);
+  };
+
   const handleSubmit = async () => {
     if (!tipoSelecionado || !formData.setor || !formData.data_auditoria) {
       toast({ title: "Erro", description: "Preencha os campos obrigatórios", variant: "destructive" });
@@ -335,8 +360,8 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
     }
 
     setIsSubmitting(true);
-    
-    const { error } = await supabase.from("auditorias_seguranca_paciente").insert({
+
+    const payload = {
       tipo: tipoSelecionado,
       data_auditoria: formData.data_auditoria,
       setor: formData.setor,
@@ -356,14 +381,29 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       satisfacao_geral: tipoSelecionado === "avaliacao_prontuarios_enfermeiros" ? formData.satisfacao_geral : null,
       respostas,
       observacoes: formData.observacoes || null,
-    });
+    };
+
+    let error;
+    if (editingAuditoriaId) {
+      const result = await supabase
+        .from("auditorias_seguranca_paciente")
+        .update(payload)
+        .eq("id", editingAuditoriaId);
+      error = result.error;
+    } else {
+      const result = await supabase
+        .from("auditorias_seguranca_paciente")
+        .insert(payload);
+      error = result.error;
+    }
 
     if (error) {
-      toast({ title: "Erro", description: "Falha ao registrar auditoria", variant: "destructive" });
+      toast({ title: "Erro", description: "Falha ao salvar auditoria", variant: "destructive" });
     } else {
-      toast({ title: "Sucesso", description: "Auditoria registrada com sucesso" });
+      toast({ title: "Sucesso", description: editingAuditoriaId ? "Auditoria atualizada com sucesso" : "Auditoria registrada com sucesso" });
       setNovaAuditoriaDialog(false);
       setTipoSelecionado(null);
+      setEditingAuditoriaId(null);
       loadAuditorias();
     }
     setIsSubmitting(false);
@@ -825,10 +865,13 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
+                        <Button size="icon" variant="ghost" onClick={() => handleEdit(a)} title="Editar">
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                         <Button size="icon" variant="ghost" onClick={() => {
                           setSelectedAuditoria(a);
                           setDetalhesDialog(true);
-                        }}>
+                        }} title="Visualizar">
                           <Eye className="h-4 w-4" />
                         </Button>
                       </TableCell>
@@ -844,13 +887,13 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       {/* Nova Auditoria Dialog */}
       <Dialog open={novaAuditoriaDialog} onOpenChange={(open) => {
         setNovaAuditoriaDialog(open);
-        if (!open) setTipoSelecionado(null);
+        if (!open) { setTipoSelecionado(null); setEditingAuditoriaId(null); }
       }}>
         <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>
               {tipoSelecionado 
-                ? tiposAuditoria.find(t => t.value === tipoSelecionado)?.label 
+                ? (editingAuditoriaId ? "Editar — " : "") + (tiposAuditoria.find(t => t.value === tipoSelecionado)?.label || "")
                 : "Nova Auditoria de Segurança do Paciente"
               }
             </DialogTitle>
@@ -892,7 +935,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
                   Voltar
                 </Button>
                 <Button onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? "Salvando..." : "Salvar Auditoria"}
+                  {isSubmitting ? "Salvando..." : editingAuditoriaId ? "Atualizar Auditoria" : "Salvar Auditoria"}
                 </Button>
               </DialogFooter>
             </>
