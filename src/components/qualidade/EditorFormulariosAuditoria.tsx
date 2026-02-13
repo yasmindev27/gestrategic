@@ -411,13 +411,13 @@ export const EditorFormulariosAuditoria = () => {
 
                   <div className="space-y-3">
                     {secaoPerguntas.map((p, idx) => (
-                      <div key={p.id} className="flex items-start gap-3 p-4 bg-background border border-border rounded-lg shadow-sm group hover:shadow-md transition-shadow">
-                        <span className="text-sm font-bold text-primary mt-0.5 w-8 shrink-0">{idx + 1}.</span>
+                      <div key={p.id} className="flex items-start gap-3 p-4 bg-white border rounded-lg group">
+                        <span className="text-sm font-semibold text-black mt-0.5 w-8 shrink-0">{idx + 1}.</span>
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium leading-relaxed text-foreground">{p.label}</p>
+                          <p className="text-sm leading-relaxed text-black">{p.label}</p>
                           <div className="flex flex-wrap gap-1.5 mt-2">
                             {p.opcoes.map(opt => (
-                              <Badge key={opt} className="text-xs bg-primary/10 text-primary border-primary/20 hover:bg-primary/20">
+                              <Badge key={opt} variant="outline" className="text-xs text-black border-gray-300 bg-white">
                                 {OPCOES_LABELS[opt] || opt}
                               </Badge>
                             ))}
