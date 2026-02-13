@@ -246,6 +246,12 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [tipoFilter, setTipoFilter] = useState<TipoAuditoria | "todos">("todos");
   
+  // Dynamic config from DB
+  const [dynamicTipos, setDynamicTipos] = useState<{ value: string; label: string; icon: React.ElementType }[]>([]);
+  const [dynamicSetores, setDynamicSetores] = useState<Record<string, string[]>>({});
+  const [dynamicChecklist, setDynamicChecklist] = useState<Record<string, { section: string; items: { id: string; label: string; options: string[] }[] }[]>>({});
+  const [configLoaded, setConfigLoaded] = useState(false);
+
   // Dialog states
   const [novaAuditoriaDialog, setNovaAuditoriaDialog] = useState(false);
   const [detalhesDialog, setDetalhesDialog] = useState(false);
@@ -275,8 +281,58 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
   const [respostas, setRespostas] = useState<Record<string, string>>({});
 
   useEffect(() => {
+    loadConfig();
     loadAuditorias();
   }, []);
+
+  const iconMap: Record<string, React.ElementType> = {
+    FileText, Stethoscope, ClipboardList, CheckCircle,
+  };
+
+  const loadConfig = async () => {
+    const [fRes, sRes, pRes] = await Promise.all([
+      supabase.from("auditoria_formularios_config").select("*").eq("ativo", true).order("ordem"),
+      supabase.from("auditoria_secoes_config").select("*").order("ordem"),
+      supabase.from("auditoria_perguntas_config").select("*").eq("ativo", true).order("ordem"),
+    ]);
+
+    if (fRes.data && sRes.data && pRes.data) {
+      const tipos = fRes.data.map((f: any) => ({
+        value: f.tipo as TipoAuditoria,
+        label: f.nome,
+        icon: iconMap[f.icone] || FileText,
+      }));
+      setDynamicTipos(tipos);
+
+      const setoresMap: Record<string, string[]> = {};
+      fRes.data.forEach((f: any) => { setoresMap[f.tipo] = f.setores || []; });
+      setDynamicSetores(setoresMap);
+
+      const checklistMap: Record<string, { section: string; items: { id: string; label: string; options: string[] }[] }[]> = {};
+      fRes.data.forEach((f: any) => {
+        const formSecoes = sRes.data.filter((s: any) => s.formulario_id === f.id);
+        checklistMap[f.tipo] = formSecoes.map((s: any) => ({
+          section: s.nome,
+          items: pRes.data
+            .filter((p: any) => p.secao_id === s.id)
+            .map((p: any) => ({ id: p.codigo, label: p.label, options: p.opcoes })),
+        }));
+      });
+      setDynamicChecklist(checklistMap);
+      setConfigLoaded(true);
+    } else {
+      // Fallback to hardcoded
+      setDynamicTipos(tiposAuditoria);
+      setDynamicSetores(setoresPorTipo);
+      setDynamicChecklist(checklistItems);
+      setConfigLoaded(true);
+    }
+  };
+
+  // Use dynamic or fallback
+  const activeTipos = configLoaded ? dynamicTipos : tiposAuditoria;
+  const activeSetores = configLoaded ? dynamicSetores : setoresPorTipo;
+  const activeChecklist = configLoaded ? dynamicChecklist : checklistItems;
 
   const loadAuditorias = async () => {
     setIsLoading(true);
@@ -348,7 +404,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
     }
 
     // Check if all checklist items are answered
-    const allItems = checklistItems[tipoSelecionado].flatMap(section => section.items);
+    const allItems = (activeChecklist[tipoSelecionado] || []).flatMap(section => section.items);
     const unansweredItems = allItems.filter(item => !respostas[item.id]);
     if (unansweredItems.length > 0) {
       toast({ 
@@ -431,7 +487,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
     const data = filteredAuditorias.map(a => {
       const stats = getConformidadeStats(a);
       return {
-        Tipo: tiposAuditoria.find(t => t.value === a.tipo)?.label || a.tipo,
+        Tipo: activeTipos.find(t => t.value === a.tipo)?.label || a.tipo,
         Data: format(new Date(a.data_auditoria), "dd/MM/yyyy"),
         Setor: a.setor,
         Auditor: a.auditor_nome,
@@ -459,7 +515,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       body: filteredAuditorias.map(a => {
         const stats = getConformidadeStats(a);
         return [
-          tiposAuditoria.find(t => t.value === a.tipo)?.label || a.tipo,
+          activeTipos.find(t => t.value === a.tipo)?.label || a.tipo,
           format(new Date(a.data_auditoria), "dd/MM/yyyy"),
           a.setor,
           a.auditor_nome,
@@ -494,7 +550,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
-                {setoresPorTipo[tipoSelecionado].map(s => (
+                {(activeSetores[tipoSelecionado] || []).map(s => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
               </SelectContent>
@@ -602,7 +658,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
         )}
 
         {/* Checklist sections */}
-        {checklistItems[tipoSelecionado].map((section, idx) => (
+        {(activeChecklist[tipoSelecionado] || []).map((section, idx) => (
           <Card key={idx} className="border-l-4 border-l-primary">
             <CardHeader className="py-3">
               <CardTitle className="text-base">{section.section}</CardTitle>
@@ -802,7 +858,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os tipos</SelectItem>
-            {tiposAuditoria.map(t => (
+            {activeTipos.map(t => (
               <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
             ))}
           </SelectContent>
@@ -846,7 +902,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
                     <TableRow key={a.id}>
                       <TableCell>
                         <Badge variant="outline" className="whitespace-nowrap">
-                          {tiposAuditoria.find(t => t.value === a.tipo)?.label || a.tipo}
+                          {activeTipos.find(t => t.value === a.tipo)?.label || a.tipo}
                         </Badge>
                       </TableCell>
                       <TableCell>{format(new Date(a.data_auditoria), "dd/MM/yyyy")}</TableCell>
@@ -893,7 +949,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
           <DialogHeader>
             <DialogTitle>
               {tipoSelecionado 
-                ? (editingAuditoriaId ? "Editar — " : "") + (tiposAuditoria.find(t => t.value === tipoSelecionado)?.label || "")
+                ? (editingAuditoriaId ? "Editar — " : "") + (activeTipos.find(t => t.value === tipoSelecionado)?.label || "")
                 : "Nova Auditoria de Segurança do Paciente"
               }
             </DialogTitle>
@@ -907,11 +963,11 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
 
           {!tipoSelecionado ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-              {tiposAuditoria.map(tipo => (
+              {activeTipos.map(tipo => (
                 <Card 
                   key={tipo.value} 
                   className="cursor-pointer hover:border-primary transition-colors"
-                  onClick={() => handleSelectTipo(tipo.value)}
+                  onClick={() => handleSelectTipo(tipo.value as TipoAuditoria)}
                 >
                   <CardContent className="flex items-center gap-4 py-4">
                     <div className="p-3 rounded-lg bg-primary/10">
@@ -920,7 +976,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
                     <div>
                       <h4 className="font-medium">{tipo.label}</h4>
                       <p className="text-sm text-muted-foreground">
-                        {checklistItems[tipo.value].reduce((acc, s) => acc + s.items.length, 0)} itens
+                        {(activeChecklist[tipo.value as TipoAuditoria] || []).reduce((acc: number, s: any) => acc + s.items.length, 0)} itens
                       </p>
                     </div>
                   </CardContent>
@@ -956,7 +1012,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-muted-foreground">Tipo</Label>
-                  <p className="font-medium">{tiposAuditoria.find(t => t.value === selectedAuditoria.tipo)?.label}</p>
+                  <p className="font-medium">{activeTipos.find(t => t.value === selectedAuditoria.tipo)?.label}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">Data</Label>
@@ -982,7 +1038,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
                 <h4 className="font-medium mb-3">Respostas do Checklist</h4>
                 <div className="space-y-2">
                   {Object.entries(selectedAuditoria.respostas as Record<string, string>).map(([key, value]) => {
-                    const allItems = checklistItems[selectedAuditoria.tipo]?.flatMap(s => s.items) || [];
+                    const allItems = (activeChecklist[selectedAuditoria.tipo] || checklistItems[selectedAuditoria.tipo] || []).flatMap((s: any) => s.items) || [];
                     const item = allItems.find(i => i.id === key);
                     const displayValue = value === "conforme" ? "Conforme" :
                       value === "nao_conforme" ? "Não Conforme" :
