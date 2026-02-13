@@ -11,8 +11,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar, Filter } from "lucide-react";
+import { Plus, Calendar, Filter, Pencil, Trash2 } from "lucide-react";
+import { ExportDropdown } from "@/components/ui/export-dropdown";
+import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 import { Treinamento } from "./types";
+import * as XLSX from "xlsx";
 
 const statusColors: Record<string, string> = {
   planejado: "bg-blue-100 text-blue-800",
@@ -30,16 +33,19 @@ const statusLabels: Record<string, string> = {
   postergado: "Postergado",
 };
 
+const emptyForm = {
+  titulo: "", objetivo: "", tipo_treinamento: "Conhecimento", instrutor: "",
+  setor_responsavel: "", publico_alvo: "", carga_horaria: "", data_limite: "",
+  setores_alvo: "",
+};
+
 export default function CronogramaAdmin() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [filterStatus, setFilterStatus] = useState<string>("todos");
   const [openDialog, setOpenDialog] = useState(false);
-  const [form, setForm] = useState({
-    titulo: "", objetivo: "", tipo_treinamento: "Conhecimento", instrutor: "",
-    setor_responsavel: "", publico_alvo: "", carga_horaria: "", data_limite: "",
-    setores_alvo: "",
-  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState(emptyForm);
 
   const { data: treinamentos = [], isLoading } = useQuery({
     queryKey: ["lms-treinamentos"],
@@ -73,10 +79,44 @@ export default function CronogramaAdmin() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["lms-treinamentos"] });
       toast({ title: "Treinamento criado com sucesso!" });
-      setOpenDialog(false);
-      setForm({ titulo: "", objetivo: "", tipo_treinamento: "Conhecimento", instrutor: "", setor_responsavel: "", publico_alvo: "", carga_horaria: "", data_limite: "", setores_alvo: "" });
+      closeDialog();
     },
     onError: () => toast({ title: "Erro ao criar treinamento", variant: "destructive" }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: typeof form }) => {
+      const { error } = await supabase.from("lms_treinamentos").update({
+        titulo: data.titulo,
+        objetivo: data.objetivo,
+        tipo_treinamento: data.tipo_treinamento,
+        instrutor: data.instrutor,
+        setor_responsavel: data.setor_responsavel,
+        publico_alvo: data.publico_alvo,
+        carga_horaria: data.carga_horaria,
+        data_limite: data.data_limite || null,
+        setores_alvo: data.setores_alvo.split(",").map(s => s.trim()).filter(Boolean),
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lms-treinamentos"] });
+      toast({ title: "Treinamento atualizado!" });
+      closeDialog();
+    },
+    onError: () => toast({ title: "Erro ao atualizar", variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("lms_treinamentos").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lms-treinamentos"] });
+      toast({ title: "Treinamento excluído!" });
+    },
+    onError: () => toast({ title: "Erro ao excluir", variant: "destructive" }),
   });
 
   const updateStatusMutation = useMutation({
@@ -90,7 +130,61 @@ export default function CronogramaAdmin() {
     },
   });
 
+  const closeDialog = () => {
+    setOpenDialog(false);
+    setEditingId(null);
+    setForm(emptyForm);
+  };
+
+  const openEdit = (t: Treinamento) => {
+    setEditingId(t.id);
+    setForm({
+      titulo: t.titulo,
+      objetivo: t.objetivo || "",
+      tipo_treinamento: t.tipo_treinamento,
+      instrutor: t.instrutor || "",
+      setor_responsavel: t.setor_responsavel || "",
+      publico_alvo: t.publico_alvo || "",
+      carga_horaria: t.carga_horaria || "",
+      data_limite: t.data_limite || "",
+      setores_alvo: t.setores_alvo?.join(", ") || "",
+    });
+    setOpenDialog(true);
+  };
+
+  const handleSave = () => {
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data: form });
+    } else {
+      createMutation.mutate(form);
+    }
+  };
+
   const filtered = filterStatus === "todos" ? treinamentos : treinamentos.filter(t => t.status === filterStatus);
+
+  const exportHeaders = ["Tema", "Tipo", "Setor Resp.", "Público Alvo", "Instrutor", "Data Limite", "Status"];
+  const exportRows = filtered.map(t => [
+    t.titulo,
+    t.tipo_treinamento,
+    t.setor_responsavel || "-",
+    t.publico_alvo || "-",
+    t.instrutor || "-",
+    t.data_limite ? new Date(t.data_limite).toLocaleDateString("pt-BR") : "-",
+    statusLabels[t.status] || t.status,
+  ]);
+
+  const handleExportPDF = () => {
+    exportToPDF({ title: "Cronograma de Treinamentos", headers: exportHeaders, rows: exportRows, fileName: "cronograma_treinamentos", orientation: "landscape" });
+  };
+
+  const handleExportExcel = () => {
+    const ws = XLSX.utils.aoa_to_sheet([exportHeaders, ...exportRows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Cronograma");
+    XLSX.writeFile(wb, "cronograma_treinamentos.xlsx");
+  };
+
+  const isSaving = createMutation.isPending || updateMutation.isPending;
 
   return (
     <div className="space-y-4">
@@ -109,44 +203,47 @@ export default function CronogramaAdmin() {
           </Select>
         </div>
 
-        <Dialog open={openDialog} onOpenChange={setOpenDialog}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" /> Novo Treinamento</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader><DialogTitle>Novo Treinamento</DialogTitle></DialogHeader>
-            <div className="grid gap-3">
-              <div><Label>Título *</Label><Input value={form.titulo} onChange={e => setForm(p => ({ ...p, titulo: e.target.value }))} /></div>
-              <div><Label>Objetivo</Label><Textarea value={form.objetivo} onChange={e => setForm(p => ({ ...p, objetivo: e.target.value }))} /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label>Tipo</Label>
-                  <Select value={form.tipo_treinamento} onValueChange={v => setForm(p => ({ ...p, tipo_treinamento: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Conhecimento">Conhecimento</SelectItem>
-                      <SelectItem value="Habilidade (Técnico)">Habilidade</SelectItem>
-                      <SelectItem value="Atitude (Comportamental)">Atitude</SelectItem>
-                    </SelectContent>
-                  </Select>
+        <div className="flex items-center gap-2">
+          <ExportDropdown onExportPDF={handleExportPDF} onExportExcel={handleExportExcel} disabled={filtered.length === 0} />
+          <Dialog open={openDialog} onOpenChange={(v) => { if (!v) closeDialog(); else setOpenDialog(true); }}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4 mr-2" /> Novo Treinamento</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg">
+              <DialogHeader><DialogTitle>{editingId ? "Editar Treinamento" : "Novo Treinamento"}</DialogTitle></DialogHeader>
+              <div className="grid gap-3">
+                <div><Label>Título *</Label><Input value={form.titulo} onChange={e => setForm(p => ({ ...p, titulo: e.target.value }))} /></div>
+                <div><Label>Objetivo</Label><Textarea value={form.objetivo} onChange={e => setForm(p => ({ ...p, objetivo: e.target.value }))} /></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label>Tipo</Label>
+                    <Select value={form.tipo_treinamento} onValueChange={v => setForm(p => ({ ...p, tipo_treinamento: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Conhecimento">Conhecimento</SelectItem>
+                        <SelectItem value="Habilidade (Técnico)">Habilidade</SelectItem>
+                        <SelectItem value="Atitude (Comportamental)">Atitude</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div><Label>Instrutor</Label><Input value={form.instrutor} onChange={e => setForm(p => ({ ...p, instrutor: e.target.value }))} /></div>
                 </div>
-                <div><Label>Instrutor</Label><Input value={form.instrutor} onChange={e => setForm(p => ({ ...p, instrutor: e.target.value }))} /></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>Setor Responsável</Label><Input value={form.setor_responsavel} onChange={e => setForm(p => ({ ...p, setor_responsavel: e.target.value }))} /></div>
+                  <div><Label>Público Alvo</Label><Input value={form.publico_alvo} onChange={e => setForm(p => ({ ...p, publico_alvo: e.target.value }))} /></div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div><Label>Carga Horária</Label><Input value={form.carga_horaria} onChange={e => setForm(p => ({ ...p, carga_horaria: e.target.value }))} /></div>
+                  <div><Label>Data Limite</Label><Input type="date" value={form.data_limite} onChange={e => setForm(p => ({ ...p, data_limite: e.target.value }))} /></div>
+                </div>
+                <div><Label>Setores Alvo (separados por vírgula)</Label><Input value={form.setores_alvo} onChange={e => setForm(p => ({ ...p, setores_alvo: e.target.value }))} placeholder="Assistenciais, Administrativos" /></div>
+                <Button onClick={handleSave} disabled={!form.titulo || isSaving}>
+                  {isSaving ? "Salvando..." : editingId ? "Salvar Alterações" : "Criar Treinamento"}
+                </Button>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label>Setor Responsável</Label><Input value={form.setor_responsavel} onChange={e => setForm(p => ({ ...p, setor_responsavel: e.target.value }))} /></div>
-                <div><Label>Público Alvo</Label><Input value={form.publico_alvo} onChange={e => setForm(p => ({ ...p, publico_alvo: e.target.value }))} /></div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div><Label>Carga Horária</Label><Input value={form.carga_horaria} onChange={e => setForm(p => ({ ...p, carga_horaria: e.target.value }))} /></div>
-                <div><Label>Data Limite</Label><Input type="date" value={form.data_limite} onChange={e => setForm(p => ({ ...p, data_limite: e.target.value }))} /></div>
-              </div>
-              <div><Label>Setores Alvo (separados por vírgula)</Label><Input value={form.setores_alvo} onChange={e => setForm(p => ({ ...p, setores_alvo: e.target.value }))} placeholder="Assistenciais, Administrativos" /></div>
-              <Button onClick={() => createMutation.mutate(form)} disabled={!form.titulo || createMutation.isPending}>
-                {createMutation.isPending ? "Salvando..." : "Criar Treinamento"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       <Card>
@@ -182,16 +279,24 @@ export default function CronogramaAdmin() {
                         <Badge className={statusColors[t.status] || ""}>{statusLabels[t.status] || t.status}</Badge>
                       </TableCell>
                       <TableCell>
-                        <Select value={t.status} onValueChange={v => updateStatusMutation.mutate({ id: t.id, status: v })}>
-                          <SelectTrigger className="w-[130px] h-8 text-xs"><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="planejado">Planejado</SelectItem>
-                            <SelectItem value="em_andamento">Em Andamento</SelectItem>
-                            <SelectItem value="realizado">Realizado</SelectItem>
-                            <SelectItem value="cancelado">Cancelado</SelectItem>
-                            <SelectItem value="postergado">Postergado</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        <div className="flex items-center gap-1">
+                          <Select value={t.status} onValueChange={v => updateStatusMutation.mutate({ id: t.id, status: v })}>
+                            <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="planejado">Planejado</SelectItem>
+                              <SelectItem value="em_andamento">Em Andamento</SelectItem>
+                              <SelectItem value="realizado">Realizado</SelectItem>
+                              <SelectItem value="cancelado">Cancelado</SelectItem>
+                              <SelectItem value="postergado">Postergado</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEdit(t)}>
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => { if (confirm("Excluir este treinamento?")) deleteMutation.mutate(t.id); }}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
