@@ -47,6 +47,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/totem" element={<TotemRefeicoes />} />
+            <Route path="/terminal" element={<TotemRefeicoes />} />
             {/* Rota /controledefichas removida - medida provisória desativada */}
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
