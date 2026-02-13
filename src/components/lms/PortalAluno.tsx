@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { BookOpen, FileText, Video, PlayCircle, CheckCircle2, Clock, Award, Eye } from "lucide-react";
+import { BookOpen, FileText, Video, PlayCircle, CheckCircle2, Clock, Award, Eye, ChevronRight, Users, CalendarDays } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Treinamento, Material, Inscricao } from "./types";
 import QuizComponent from "./QuizComponent";
@@ -159,63 +159,80 @@ export default function PortalAluno() {
             const isInscrito = !!inscricao;
             const isCapacitado = inscricao?.status === "capacitado";
             const materialAcessado = !!inscricao?.material_acessado_em;
+            const isSelected = selectedMateriais === t.id;
 
             return (
-              <Card key={t.id} className={`transition-all hover:shadow-md ${isCapacitado ? "border-green-300 bg-green-50/30" : ""}`}>
-                <CardHeader className="pb-3">
+              <Card
+                key={t.id}
+                className={`transition-all hover:shadow-md cursor-pointer group ${isCapacitado ? "border-green-300 bg-green-50/30" : ""} ${isSelected ? "ring-2 ring-primary" : ""}`}
+                onClick={() => {
+                  if (isInscrito) {
+                    setSelectedMateriais(isSelected ? null : t.id);
+                    if (!isSelected) markMaterialAccessedMutation.mutate(t.id);
+                  }
+                }}
+              >
+                <CardHeader className="pb-2">
                   <div className="flex items-start justify-between">
                     <Badge variant="outline" className="text-xs">{t.tipo_treinamento}</Badge>
-                    {isCapacitado && <Award className="h-5 w-5 text-green-500" />}
-                  </div>
-                  <CardTitle className="text-base mt-2">{t.titulo}</CardTitle>
-                  <CardDescription className="text-xs line-clamp-3">{t.objetivo || "Sem descrição"}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <p><strong>Instrutor:</strong> {t.instrutor || "—"}</p>
-                    <p><strong>Setor:</strong> {t.setor_responsavel || "—"}</p>
-                    {t.data_limite && <p><strong>Prazo:</strong> {new Date(t.data_limite).toLocaleDateString("pt-BR")}</p>}
-                  </div>
-
-                  {!isInscrito ? (
-                    <Button className="w-full" onClick={() => enrollMutation.mutate(t.id)} disabled={enrollMutation.isPending}>
-                      <PlayCircle className="h-4 w-4 mr-2" /> Iniciar Treinamento
-                    </Button>
-                  ) : isCapacitado ? (
-                    <div className="flex items-center gap-2 text-green-600 font-medium text-sm justify-center py-2">
-                      <CheckCircle2 className="h-5 w-5" /> Capacitado — Nota: {inscricao.nota}%
+                    <div className="flex items-center gap-1">
+                      {isCapacitado && <Award className="h-5 w-5 text-green-500" />}
+                      {isInscrito && !isCapacitado && <ChevronRight className={`h-4 w-4 text-muted-foreground transition-transform ${isSelected ? "rotate-90" : "group-hover:translate-x-0.5"}`} />}
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Button
-                        variant={materialAcessado ? "outline" : "default"}
-                        className="w-full"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedMateriais(t.id);
-                          markMaterialAccessedMutation.mutate(t.id);
-                        }}
-                      >
-                        {materialAcessado ? <CheckCircle2 className="h-4 w-4 mr-2 text-green-500" /> : <FileText className="h-4 w-4 mr-2" />}
-                        {materialAcessado ? "Material Acessado" : "Acessar Material"}
-                      </Button>
+                  </div>
+                  <CardTitle className="text-base mt-2 group-hover:text-primary transition-colors">{t.titulo}</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3 pt-0">
+                  {t.objetivo && <p className="text-xs text-muted-foreground line-clamp-2">{t.objetivo}</p>}
 
-                      <Button
-                        variant="default"
-                        className="w-full"
-                        size="sm"
-                        disabled={!materialAcessado}
-                        onClick={() => setSelectedQuiz(t.id)}
-                      >
-                        <Award className="h-4 w-4 mr-2" /> Fazer Avaliação
-                      </Button>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    {t.instrutor && (
+                      <span className="flex items-center gap-1"><Users className="h-3 w-3" /> {t.instrutor}</span>
+                    )}
+                    {t.setor_responsavel && (
+                      <span className="flex items-center gap-1"><BookOpen className="h-3 w-3" /> {t.setor_responsavel}</span>
+                    )}
+                    {t.data_limite && (
+                      <span className="flex items-center gap-1"><CalendarDays className="h-3 w-3" /> {new Date(t.data_limite).toLocaleDateString("pt-BR")}</span>
+                    )}
+                    {t.carga_horaria && (
+                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {t.carga_horaria}</span>
+                    )}
+                  </div>
 
-                      {!materialAcessado && (
-                        <p className="text-xs text-muted-foreground text-center flex items-center gap-1 justify-center">
-                          <Clock className="h-3 w-3" /> Acesse o material para liberar a avaliação
-                        </p>
+                  {isCapacitado && (
+                    <div className="flex items-center gap-2 text-green-600 font-medium text-sm justify-center py-1 bg-green-50 rounded-md">
+                      <CheckCircle2 className="h-4 w-4" /> Capacitado — Nota: {inscricao.nota}%
+                    </div>
+                  )}
+
+                  {isInscrito && !isCapacitado && (
+                    <div className="flex items-center gap-2 text-xs">
+                      <Badge variant={materialAcessado ? "secondary" : "default"} className="text-xs">
+                        {materialAcessado ? "✓ Material acessado" : "Clique para ver materiais"}
+                      </Badge>
+                      {materialAcessado && (
+                        <Button
+                          variant="default"
+                          size="sm"
+                          className="ml-auto text-xs h-7"
+                          onClick={(e) => { e.stopPropagation(); setSelectedQuiz(t.id); }}
+                        >
+                          <Award className="h-3 w-3 mr-1" /> Avaliação
+                        </Button>
                       )}
                     </div>
+                  )}
+
+                  {!isInscrito && (
+                    <Button
+                      className="w-full"
+                      size="sm"
+                      onClick={(e) => { e.stopPropagation(); enrollMutation.mutate(t.id); }}
+                      disabled={enrollMutation.isPending}
+                    >
+                      <PlayCircle className="h-4 w-4 mr-2" /> Iniciar Treinamento
+                    </Button>
                   )}
                 </CardContent>
               </Card>
@@ -224,37 +241,43 @@ export default function PortalAluno() {
         </div>
       )}
 
-      {/* Internal Material Viewer */}
-      {selectedMateriais && (
-        <Card className="mt-4">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base">Materiais do Treinamento</CardTitle>
-              <Button variant="ghost" size="sm" onClick={() => setSelectedMateriais(null)}>Fechar</Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {materiais.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">Nenhum material disponível. O material foi marcado como acessado.</p>
-            ) : (
-              <div className="space-y-3">
-                {materiais.map(m => (
-                  <div key={m.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent transition-colors">
-                    {m.tipo === "video" ? <Video className="h-5 w-5 text-red-500" /> : <FileText className="h-5 w-5 text-blue-500" />}
-                    <div className="flex-1">
-                      <p className="font-medium text-sm">{m.titulo}</p>
-                      {m.descricao && <p className="text-xs text-muted-foreground">{m.descricao}</p>}
-                    </div>
-                    <Button size="sm" variant="outline" onClick={() => handleViewMaterial(m)}>
-                      <Eye className="h-4 w-4 mr-1" /> Visualizar
-                    </Button>
-                  </div>
-                ))}
+      {/* Materiais do treinamento selecionado */}
+      {selectedMateriais && (() => {
+        const treinamento = treinamentos.find(t => t.id === selectedMateriais);
+        return (
+          <Card className="mt-4 animate-in slide-in-from-top-2 duration-200">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base">📚 Materiais — {treinamento?.titulo}</CardTitle>
+                  <CardDescription className="text-xs mt-1">Visualize os materiais abaixo. Após acessar, a avaliação será liberada.</CardDescription>
+                </div>
+                <Button variant="ghost" size="sm" onClick={() => setSelectedMateriais(null)}>Fechar</Button>
               </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
+            </CardHeader>
+            <CardContent>
+              {materiais.length === 0 ? (
+                <p className="text-muted-foreground text-center py-4">Nenhum material disponível para este treinamento.</p>
+              ) : (
+                <div className="space-y-2">
+                  {materiais.map(m => (
+                    <div key={m.id} className="flex items-center gap-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors">
+                      {m.tipo === "video" ? <Video className="h-5 w-5 text-destructive" /> : <FileText className="h-5 w-5 text-primary" />}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{m.titulo}</p>
+                        {m.descricao && <p className="text-xs text-muted-foreground truncate">{m.descricao}</p>}
+                      </div>
+                      <Button size="sm" variant="outline" onClick={() => handleViewMaterial(m)}>
+                        <Eye className="h-4 w-4 mr-1" /> Abrir
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       {/* Internal viewer dialog */}
       <Dialog open={!!viewingUrl} onOpenChange={() => setViewingUrl(null)}>
