@@ -9,15 +9,28 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { BookOpen, Link, Plus, FileText, Video } from "lucide-react";
+import { BookOpen, Link, Plus, FileText, Video, Pencil, Trash2 } from "lucide-react";
+import { ExportDropdown } from "@/components/ui/export-dropdown";
+import { exportToPDF } from "@/lib/export-utils";
 import { Treinamento, Material } from "./types";
+import * as XLSX from "xlsx";
 
 export default function LNTDManager() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [selectedTreinamento, setSelectedTreinamento] = useState<string | null>(null);
   const [materialForm, setMaterialForm] = useState({ titulo: "", tipo: "pdf", url: "", descricao: "" });
+  const [editDialog, setEditDialog] = useState(false);
+  const [editForm, setEditForm] = useState({
+    id: "",
+    titulo: "",
+    metodo_identificacao: "",
+    competencia: "",
+    indicador_competencia: "",
+    setores_alvo: "",
+  });
 
   const { data: treinamentos = [] } = useQuery({
     queryKey: ["lms-treinamentos"],
@@ -72,12 +85,80 @@ export default function LNTDManager() {
     },
   });
 
+  const updateLNTDMutation = useMutation({
+    mutationFn: async (data: typeof editForm) => {
+      const { error } = await supabase.from("lms_treinamentos").update({
+        metodo_identificacao: data.metodo_identificacao || null,
+        competencia: data.competencia || null,
+        indicador_competencia: data.indicador_competencia || null,
+        setores_alvo: data.setores_alvo.split(",").map(s => s.trim()).filter(Boolean),
+      }).eq("id", data.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lms-treinamentos"] });
+      toast({ title: "LNTD atualizada!" });
+      setEditDialog(false);
+    },
+    onError: () => toast({ title: "Erro ao atualizar", variant: "destructive" }),
+  });
+
+  const deleteTreinamentoMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("lms_treinamentos").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["lms-treinamentos"] });
+      if (selectedTreinamento) setSelectedTreinamento(null);
+      toast({ title: "Treinamento excluído!" });
+    },
+    onError: () => toast({ title: "Erro ao excluir (pode haver dados vinculados)", variant: "destructive" }),
+  });
+
+  const openEditLNTD = (t: Treinamento) => {
+    setEditForm({
+      id: t.id,
+      titulo: t.titulo,
+      metodo_identificacao: t.metodo_identificacao || "",
+      competencia: t.competencia || "",
+      indicador_competencia: t.indicador_competencia || "",
+      setores_alvo: t.setores_alvo?.join(", ") || "",
+    });
+    setEditDialog(true);
+  };
+
   const selected = treinamentos.find(t => t.id === selectedTreinamento);
+
+  const exportHeaders = ["Tema", "Método", "Competência", "Indicador", "Setores Alvo"];
+  const exportRows = treinamentos.map(t => [
+    t.titulo,
+    t.metodo_identificacao || "-",
+    t.competencia || "-",
+    t.indicador_competencia || "-",
+    t.setores_alvo?.join(", ") || "-",
+  ]);
+
+  const handleExportPDF = () => {
+    exportToPDF({ title: "LNTD - Necessidades de Treinamento", headers: exportHeaders, rows: exportRows, fileName: "lntd_treinamentos", orientation: "landscape" });
+  };
+
+  const handleExportExcel = () => {
+    const ws = XLSX.utils.aoa_to_sheet([exportHeaders, ...exportRows]);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "LNTD");
+    XLSX.writeFile(wb, "lntd_treinamentos.xlsx");
+  };
 
   return (
     <div className="space-y-4">
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><BookOpen className="h-5 w-5" /> Necessidades de Treinamento (LNTD)</CardTitle></CardHeader>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="flex items-center gap-2"><BookOpen className="h-5 w-5" /> Necessidades de Treinamento (LNTD)</CardTitle>
+            <ExportDropdown onExportPDF={handleExportPDF} onExportExcel={handleExportExcel} disabled={treinamentos.length === 0} />
+          </div>
+        </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
             <Table>
@@ -89,7 +170,7 @@ export default function LNTDManager() {
                   <TableHead>Indicador</TableHead>
                   <TableHead>Setores Alvo</TableHead>
                   <TableHead>Materiais</TableHead>
-                  <TableHead>Ação</TableHead>
+                  <TableHead>Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -101,14 +182,22 @@ export default function LNTDManager() {
                     <TableCell className="text-xs max-w-[200px] truncate">{t.indicador_competencia || "-"}</TableCell>
                     <TableCell>{t.setores_alvo?.join(", ") || "-"}</TableCell>
                     <TableCell>
-                      <Badge variant="secondary">
+                      <Badge variant="secondary" className="cursor-pointer" onClick={() => setSelectedTreinamento(t.id)}>
                         <Link className="h-3 w-3 mr-1" />Vincular
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Button size="sm" variant={selectedTreinamento === t.id ? "default" : "outline"} onClick={() => setSelectedTreinamento(t.id)}>
-                        Gerenciar
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button size="icon" variant="ghost" className="h-8 w-8" onClick={() => openEditLNTD(t)}>
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 text-destructive" onClick={() => { if (confirm("Excluir este treinamento e todos os dados vinculados?")) deleteTreinamentoMutation.mutate(t.id); }}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant={selectedTreinamento === t.id ? "default" : "outline"} onClick={() => setSelectedTreinamento(t.id)}>
+                          Gerenciar
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -117,6 +206,22 @@ export default function LNTDManager() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit LNTD Dialog */}
+      <Dialog open={editDialog} onOpenChange={setEditDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader><DialogTitle>Editar LNTD: {editForm.titulo}</DialogTitle></DialogHeader>
+          <div className="grid gap-3">
+            <div><Label>Método de Identificação</Label><Input value={editForm.metodo_identificacao} onChange={e => setEditForm(p => ({ ...p, metodo_identificacao: e.target.value }))} /></div>
+            <div><Label>Competência</Label><Input value={editForm.competencia} onChange={e => setEditForm(p => ({ ...p, competencia: e.target.value }))} /></div>
+            <div><Label>Indicador de Competência</Label><Textarea value={editForm.indicador_competencia} onChange={e => setEditForm(p => ({ ...p, indicador_competencia: e.target.value }))} /></div>
+            <div><Label>Setores Alvo (separados por vírgula)</Label><Input value={editForm.setores_alvo} onChange={e => setEditForm(p => ({ ...p, setores_alvo: e.target.value }))} /></div>
+            <Button onClick={() => updateLNTDMutation.mutate(editForm)} disabled={updateLNTDMutation.isPending}>
+              {updateLNTDMutation.isPending ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {selected && (
         <Card>
