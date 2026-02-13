@@ -80,7 +80,8 @@ export const EditorFormulariosAuditoria = () => {
   // Form states
   const [perguntaForm, setPerguntaForm] = useState({ codigo: "", label: "", opcoes: ["conforme", "nao_conforme", "nao_aplica"] as string[] });
   const [secaoForm, setSecaoForm] = useState({ nome: "" });
-  const [formularioForm, setFormularioForm] = useState({ nome: "", setores: "" });
+  const [formularioForm, setFormularioForm] = useState({ nome: "", setores: "", destino: "seg_paciente" as string });
+  const [isCreatingFormulario, setIsCreatingFormulario] = useState(false);
   const [customOpcao, setCustomOpcao] = useState("");
 
   useEffect(() => { loadAll(); }, []);
@@ -203,22 +204,51 @@ export const EditorFormulariosAuditoria = () => {
     loadAll();
   };
 
-  // ---- Formulário edit ----
+  // ---- Formulário CRUD ----
   const openEditFormulario = () => {
     if (!selectedFormulario) return;
-    setFormularioForm({ nome: selectedFormulario.nome, setores: selectedFormulario.setores.join(", ") });
+    setIsCreatingFormulario(false);
+    setFormularioForm({ nome: selectedFormulario.nome, setores: selectedFormulario.setores.join(", "), destino: selectedFormulario.tipo });
+    setEditFormularioDialog(true);
+  };
+
+  const openNewFormulario = () => {
+    setIsCreatingFormulario(true);
+    setFormularioForm({ nome: "", setores: "", destino: "seg_paciente" });
     setEditFormularioDialog(true);
   };
 
   const saveFormulario = async () => {
-    if (!selectedFormulario || !formularioForm.nome.trim()) return;
+    if (!formularioForm.nome.trim()) {
+      toast({ title: "Erro", description: "Nome do formulário é obrigatório", variant: "destructive" });
+      return;
+    }
     const setoresArr = formularioForm.setores.split(",").map(s => s.trim()).filter(Boolean);
-    const { error } = await supabase
-      .from("auditoria_formularios_config")
-      .update({ nome: formularioForm.nome, setores: setoresArr })
-      .eq("id", selectedFormulario.id);
-    if (error) { toast({ title: "Erro", description: "Falha ao atualizar formulário", variant: "destructive" }); return; }
-    toast({ title: "Sucesso", description: "Formulário atualizado" });
+
+    if (isCreatingFormulario) {
+      const maxOrdem = formularios.length > 0 ? Math.max(...formularios.map(f => f.ordem ?? 0)) : 0;
+      const tipo = `custom_${Date.now()}`;
+      const { error } = await supabase
+        .from("auditoria_formularios_config")
+        .insert({
+          nome: formularioForm.nome,
+          tipo,
+          icone: "clipboard-check",
+          setores: setoresArr.length > 0 ? setoresArr : ["Todos"],
+          ordem: maxOrdem + 1,
+          ativo: true,
+        });
+      if (error) { toast({ title: "Erro", description: "Falha ao criar formulário", variant: "destructive" }); return; }
+      toast({ title: "Sucesso", description: "Formulário criado com sucesso" });
+    } else {
+      if (!selectedFormulario) return;
+      const { error } = await supabase
+        .from("auditoria_formularios_config")
+        .update({ nome: formularioForm.nome, setores: setoresArr })
+        .eq("id", selectedFormulario.id);
+      if (error) { toast({ title: "Erro", description: "Falha ao atualizar formulário", variant: "destructive" }); return; }
+      toast({ title: "Sucesso", description: "Formulário atualizado" });
+    }
     setEditFormularioDialog(false);
     loadAll();
   };
@@ -255,7 +285,12 @@ export const EditorFormulariosAuditoria = () => {
         <p className="text-sm text-muted-foreground">
           Gerencie as perguntas, seções e opções de resposta de cada formulário de auditoria.
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="flex justify-end">
+        <Button onClick={openNewFormulario}>
+          <Plus className="h-4 w-4 mr-1" /> Novo Formulário
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {formularios.filter(f => f.ativo).map(f => {
             const fSecoes = secoes.filter(s => s.formulario_id === f.id);
             const fPerguntas = fSecoes.flatMap(s => perguntas.filter(p => p.secao_id === s.id));
@@ -467,8 +502,8 @@ export const EditorFormulariosAuditoria = () => {
       <Dialog open={editFormularioDialog} onOpenChange={setEditFormularioDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Editar Formulário</DialogTitle>
-            <DialogDescription>Configure o nome e os setores disponíveis</DialogDescription>
+            <DialogTitle>{isCreatingFormulario ? "Novo Formulário" : "Editar Formulário"}</DialogTitle>
+            <DialogDescription>Configure o nome, destino e os setores disponíveis</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -476,8 +511,22 @@ export const EditorFormulariosAuditoria = () => {
               <Input
                 value={formularioForm.nome}
                 onChange={e => setFormularioForm(prev => ({ ...prev, nome: e.target.value }))}
+                placeholder="Ex: Checklist de Higienização"
               />
             </div>
+            {isCreatingFormulario && (
+              <div>
+                <Label>Destino (onde o formulário aparecerá)</Label>
+                <select
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={formularioForm.destino}
+                  onChange={e => setFormularioForm(prev => ({ ...prev, destino: e.target.value }))}
+                >
+                  <option value="seg_paciente">Auditorias de Segurança do Paciente</option>
+                  <option value="auditoria">Auditorias da Qualidade</option>
+                </select>
+              </div>
+            )}
             <div>
               <Label>Setores (separados por vírgula)</Label>
               <Input
