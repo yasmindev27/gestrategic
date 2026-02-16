@@ -2699,6 +2699,104 @@ export type Database = {
           },
         ]
       }
+      nsp_action_plans: {
+        Row: {
+          analise_critica: string | null
+          ano: number
+          created_at: string
+          fator_causa: string | null
+          id: string
+          indicator_id: string | null
+          mes: string
+          plano_acao: string | null
+          prazo: string | null
+          responsavel: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          analise_critica?: string | null
+          ano: number
+          created_at?: string
+          fator_causa?: string | null
+          id?: string
+          indicator_id?: string | null
+          mes: string
+          plano_acao?: string | null
+          prazo?: string | null
+          responsavel?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          analise_critica?: string | null
+          ano?: number
+          created_at?: string
+          fator_causa?: string | null
+          id?: string
+          indicator_id?: string | null
+          mes?: string
+          plano_acao?: string | null
+          prazo?: string | null
+          responsavel?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nsp_action_plans_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "nsp_indicators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nsp_indicators: {
+        Row: {
+          ano: number
+          categoria: string
+          created_at: string
+          id: string
+          indicador: string
+          mes: string
+          meta: number | null
+          subcategoria: string | null
+          unidade_medida: string
+          updated_at: string
+          valor_numero: number | null
+          valor_percentual: number | null
+        }
+        Insert: {
+          ano: number
+          categoria: string
+          created_at?: string
+          id?: string
+          indicador: string
+          mes: string
+          meta?: number | null
+          subcategoria?: string | null
+          unidade_medida?: string
+          updated_at?: string
+          valor_numero?: number | null
+          valor_percentual?: number | null
+        }
+        Update: {
+          ano?: number
+          categoria?: string
+          created_at?: string
+          id?: string
+          indicador?: string
+          mes?: string
+          meta?: number | null
+          subcategoria?: string | null
+          unidade_medida?: string
+          updated_at?: string
+          valor_numero?: number | null
+          valor_percentual?: number | null
+        }
+        Relationships: []
+      }
       perfis_sistema: {
         Row: {
           ativo: boolean | null
@@ -4213,6 +4311,104 @@ export type Database = {
           updated_at?: string
           usuario_id?: string
           usuario_nome?: string
+        }
+        Relationships: []
+      }
+      upa_action_plans: {
+        Row: {
+          analise_critica: string | null
+          ano: number
+          created_at: string
+          fator_causa: string | null
+          id: string
+          indicator_id: string | null
+          mes: string
+          plano_acao: string | null
+          prazo: string | null
+          responsavel: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          analise_critica?: string | null
+          ano: number
+          created_at?: string
+          fator_causa?: string | null
+          id?: string
+          indicator_id?: string | null
+          mes: string
+          plano_acao?: string | null
+          prazo?: string | null
+          responsavel?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          analise_critica?: string | null
+          ano?: number
+          created_at?: string
+          fator_causa?: string | null
+          id?: string
+          indicator_id?: string | null
+          mes?: string
+          plano_acao?: string | null
+          prazo?: string | null
+          responsavel?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upa_action_plans_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "upa_indicators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upa_indicators: {
+        Row: {
+          ano: number
+          categoria: string
+          created_at: string
+          id: string
+          indicador: string
+          mes: string
+          meta: number | null
+          subcategoria: string | null
+          unidade_medida: string
+          updated_at: string
+          valor_numero: number | null
+          valor_percentual: number | null
+        }
+        Insert: {
+          ano: number
+          categoria: string
+          created_at?: string
+          id?: string
+          indicador: string
+          mes: string
+          meta?: number | null
+          subcategoria?: string | null
+          unidade_medida?: string
+          updated_at?: string
+          valor_numero?: number | null
+          valor_percentual?: number | null
+        }
+        Update: {
+          ano?: number
+          categoria?: string
+          created_at?: string
+          id?: string
+          indicador?: string
+          mes?: string
+          meta?: number | null
+          subcategoria?: string | null
+          unidade_medida?: string
+          updated_at?: string
+          valor_numero?: number | null
+          valor_percentual?: number | null
         }
         Relationships: []
       }

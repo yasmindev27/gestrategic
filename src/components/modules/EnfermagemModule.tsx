@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Bug, BarChart3, FlaskConical, Pill, Bell, Microscope, HeartPulse } from 'lucide-react';
+import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Bug, BarChart3, FlaskConical, Pill, Bell, Microscope, HeartPulse, Activity } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +32,7 @@ import {
   NotificacoesEpidemiologicas,
   PortaECG,
 } from '@/components/sciras';
+import { IndicadoresUPA } from '@/components/indicadores';
 import { useTrocasDisponiveis, useTrocasPendentes, useMinhasEscalas } from '@/hooks/useEnfermagem';
 import type { Escala } from '@/components/enfermagem/types';
 
@@ -134,6 +135,10 @@ export default function EnfermagemModule() {
           <TabsTrigger value="sciras" className="gap-2 text-sm px-4 py-2">
             <Microscope className="h-4 w-4" />
             SCIRAS & Epidemiologia
+          </TabsTrigger>
+          <TabsTrigger value="indicadores-upa" className="gap-2 text-sm px-4 py-2">
+            <Activity className="h-4 w-4" />
+            Indicadores UPA
           </TabsTrigger>
         </TabsList>
 
