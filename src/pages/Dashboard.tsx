@@ -27,6 +27,8 @@ import { QualidadeModule } from "@/components/modules/QualidadeModule";
 import { ReportarIncidenteDialog } from "@/components/gestao-incidentes";
 import { ProfissionaisSaude } from "@/components/rh";
 import LMSModule from "@/components/lms/LMSModule";
+import ReuniaoModule from "@/components/modules/ReuniaoModule";
+import CookieBanner from "@/components/CookieBanner";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -178,6 +180,8 @@ const Dashboard = () => {
         return <ProfissionaisSaude />;
       case "lms":
         return <LMSModule />;
+      case "reuniao":
+        return <ReuniaoModule />;
       case "salus":
         return (
           <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
@@ -205,6 +209,7 @@ const Dashboard = () => {
       ) : (
         renderContent()
       )}
+      <CookieBanner />
     </DashboardLayout>
   );
 };

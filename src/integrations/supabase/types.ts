@@ -3196,6 +3196,48 @@ export type Database = {
         }
         Relationships: []
       }
+      reunioes: {
+        Row: {
+          ata_gerada: Json | null
+          created_at: string
+          criado_por: string
+          gravacao_url: string | null
+          id: string
+          participantes: string[] | null
+          pauta: string | null
+          status: string
+          titulo: string
+          transcricao: string | null
+          updated_at: string
+        }
+        Insert: {
+          ata_gerada?: Json | null
+          created_at?: string
+          criado_por: string
+          gravacao_url?: string | null
+          id?: string
+          participantes?: string[] | null
+          pauta?: string | null
+          status?: string
+          titulo: string
+          transcricao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ata_gerada?: Json | null
+          created_at?: string
+          criado_por?: string
+          gravacao_url?: string | null
+          id?: string
+          participantes?: string[] | null
+          pauta?: string | null
+          status?: string
+          titulo?: string
+          transcricao?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       riscos_operacionais: {
         Row: {
           acao_tomada: string | null
