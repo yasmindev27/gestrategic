@@ -1,14 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { SetupReuniao, SalaReuniao, AtaReuniao } from "@/components/reuniao";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Video, Plus, Clock, FileText } from "lucide-react";
+import { Video, Plus, Clock, FileText, LogIn } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type View = "list" | "setup" | "sala" | "ata";
 
@@ -17,6 +16,14 @@ const ReuniaoModule = () => {
   const [activeReuniaoId, setActiveReuniaoId] = useState<string>("");
   const [activeTranscricao, setActiveTranscricao] = useState<string>("");
   const [activeTitulo, setActiveTitulo] = useState<string>("");
+  const [isHost, setIsHost] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string>("");
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setCurrentUserId(data.user.id);
+    });
+  }, []);
 
   const { data: reunioes, refetch } = useQuery({
     queryKey: ["reunioes"],
@@ -33,7 +40,19 @@ const ReuniaoModule = () => {
 
   const handleStartMeeting = (reuniaoId: string) => {
     setActiveReuniaoId(reuniaoId);
+    setIsHost(true);
     setView("sala");
+  };
+
+  const handleRejoinMeeting = (reuniao: any) => {
+    setActiveReuniaoId(reuniao.id);
+    setIsHost(reuniao.criado_por === currentUserId);
+    setView("sala");
+  };
+
+  const handleLeaveMeeting = () => {
+    setView("list");
+    refetch();
   };
 
   const handleEndMeeting = (transcricao: string) => {
@@ -54,7 +73,14 @@ const ReuniaoModule = () => {
   }
 
   if (view === "sala") {
-    return <SalaReuniao reuniaoId={activeReuniaoId} onEnd={handleEndMeeting} />;
+    return (
+      <SalaReuniao
+        reuniaoId={activeReuniaoId}
+        isHost={isHost}
+        onEnd={handleEndMeeting}
+        onLeave={handleLeaveMeeting}
+      />
+    );
   }
 
   if (view === "ata") {
@@ -124,6 +150,11 @@ const ReuniaoModule = () => {
                 </div>
                 <div className="flex items-center gap-3">
                   {statusBadge(r.status)}
+                  {r.status === "em_andamento" && (
+                    <Button variant="default" size="sm" onClick={() => handleRejoinMeeting(r)}>
+                      <LogIn className="h-4 w-4 mr-1" /> Entrar Novamente
+                    </Button>
+                  )}
                   {r.status === "encerrada" && (
                     <Button variant="outline" size="sm" onClick={() => handleViewAta(r)}>
                       <FileText className="h-4 w-4 mr-1" /> Ata
