@@ -21,7 +21,11 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 
-const SalusModule = () => {
+interface SalusModuleProps {
+  onOpenExternal?: (url: string, title: string) => void;
+}
+
+const SalusModule = ({ onOpenExternal }: SalusModuleProps) => {
   const { toast } = useToast();
   const [dashboardUrl, setDashboardUrl] = useState(() => 
     localStorage.getItem("salus_dashboard_url") || ""
@@ -51,8 +55,12 @@ const SalusModule = () => {
     });
   };
 
-  const openExternalLink = (url: string) => {
-    window.open(url, "_blank", "noopener,noreferrer");
+  const openExternalLink = (url: string, title: string) => {
+    if (onOpenExternal) {
+      onOpenExternal(url, title);
+    } else {
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
   };
 
   return (
@@ -75,7 +83,7 @@ const SalusModule = () => {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Acessar Salus */}
-        <Card className="card-hover cursor-pointer" onClick={() => openExternalLink("https://novaserrana.sistemasalus.com.br/")}>
+        <Card className="card-hover cursor-pointer" onClick={() => openExternalLink("https://novaserrana.sistemasalus.com.br/", "Sistema Salus")}>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -114,7 +122,7 @@ const SalusModule = () => {
                 <Button 
                   variant="default" 
                   className="flex-1 gap-2"
-                  onClick={() => openExternalLink(dashboardUrl)}
+                  onClick={() => openExternalLink(dashboardUrl, "Dashboard Salus")}
                 >
                   <ExternalLink className="h-4 w-4" />
                   Abrir Dashboard
@@ -206,7 +214,7 @@ const SalusModule = () => {
           <Button
             variant="outline"
             className="w-full h-auto p-4 flex items-center gap-4 justify-start transition-all border-border hover:bg-info hover:text-info-foreground hover:border-info"
-            onClick={() => openExternalLink("https://dashboard-appolus.streamlit.app/#painel-entrada-por-classificacao")}
+            onClick={() => openExternalLink("https://dashboard-appolus.streamlit.app/#painel-entrada-por-classificacao", "Visão Geral da Unidade")}
           >
             <div className="p-2 rounded-lg bg-info/10 text-info">
               <Activity className="h-5 w-5" />
