@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Building2, AlertTriangle, Clock, CheckCircle2, Plus,
-  Filter, Users, TrendingUp, Search, History, CalendarClock, FileText, ShoppingCart,
+  Filter, Users, TrendingUp, Search, History, CalendarClock, FileText, ShoppingCart, ShieldAlert,
 } from 'lucide-react';
 import { LancamentoNotas } from '@/components/gerencia/LancamentoNotas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -181,6 +181,87 @@ function PendenciasCompraGerencia() {
                 })}
               </TableBody>
             </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+function DossieVazioMonitor() {
+  const { data: ativos = [], isLoading } = useQuery({
+    queryKey: ['gerencia_dossie_vazio'],
+    queryFn: async () => {
+      // Fetch all eng. clínica assets
+      const { data: assets, error } = await supabase
+        .from('ativos')
+        .select('id, nome, numero_patrimonio, categoria, status, setor_responsavel')
+        .eq('setor_responsavel', 'engenharia_clinica')
+        .in('status', ['operacional', 'reserva', 'em_manutencao'])
+        .order('nome');
+      if (error) throw error;
+      if (!assets?.length) return [];
+
+      // Fetch executions from last 12 months
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      const { data: execucoes } = await supabase
+        .from('manutencoes_execucoes')
+        .select('ativo_id')
+        .eq('setor', 'engenharia_clinica')
+        .gte('data_execucao', oneYearAgo.toISOString().split('T')[0]);
+
+      const ativosComExecucao = new Set((execucoes || []).map(e => e.ativo_id));
+      return assets.filter(a => !ativosComExecucao.has(a.id));
+    },
+    refetchInterval: 120000,
+  });
+
+  if (isLoading) return <LoadingState message="Analisando dossiês..." />;
+
+  return (
+    <div className="space-y-4">
+      <Card className={ativos.length > 0 ? 'border-amber-400 bg-amber-500/5' : ''}>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <ShieldAlert className="h-5 w-5 text-amber-600" />
+            Equipamentos com Risco de Evidência (Dossiê Vazio)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {ativos.length === 0 ? (
+            <p className="text-center py-6 text-muted-foreground">✅ Todos os equipamentos possuem laudos ou OS nos últimos 12 meses.</p>
+          ) : (
+            <>
+              <p className="text-sm text-amber-700 mb-3">
+                ⚠️ {ativos.length} equipamento{ativos.length > 1 ? 's' : ''} sem nenhum laudo ou ordem de serviço nos últimos 12 meses.
+                Isso compromete evidências para certificação ONA.
+              </p>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Equipamento</TableHead>
+                    <TableHead>Patrimônio</TableHead>
+                    <TableHead>Categoria</TableHead>
+                    <TableHead>Status Atual</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ativos.map(a => (
+                    <TableRow key={a.id} className="bg-amber-500/5">
+                      <TableCell className="font-medium">{a.nome}</TableCell>
+                      <TableCell className="font-mono text-sm">{a.numero_patrimonio || '-'}</TableCell>
+                      <TableCell>{a.categoria}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-amber-500/15 text-amber-700 border-amber-300">
+                          Sem evidência 12m
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </>
           )}
         </CardContent>
       </Card>
@@ -610,6 +691,10 @@ export function GerenciaModule() {
             <ShoppingCart className="h-4 w-4" />
             Pendências de Compra
           </TabsTrigger>
+          <TabsTrigger value="dossie" className="gap-2">
+            <ShieldAlert className="h-4 w-4" />
+            Risco Evidência
+          </TabsTrigger>
         </TabsList>
 
         {/* -- Tab: Planos de Ação -- */}
@@ -813,6 +898,11 @@ export function GerenciaModule() {
         {/* -- Tab: Pendências de Compra -- */}
         <TabsContent value="compras" className="mt-4">
           <PendenciasCompraGerencia />
+        </TabsContent>
+
+        {/* -- Tab: Equipamentos com Risco de Evidência (Dossiê Vazio) -- */}
+        <TabsContent value="dossie" className="mt-4">
+          <DossieVazioMonitor />
         </TabsContent>
       </Tabs>
 
