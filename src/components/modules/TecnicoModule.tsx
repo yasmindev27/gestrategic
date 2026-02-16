@@ -3,9 +3,9 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Ticket, Package, ExternalLink, Monitor, Wrench, Activity } from "lucide-react";
+import { AlertCircle, Ticket, Package, ExternalLink, Monitor, Wrench, Activity, ShoppingCart } from "lucide-react";
 import { InventarioModule } from "./InventarioModule";
-import { GestaoAtivos, PreventivasManager, DisponibilidadeDashboard } from "@/components/tecnico";
+import { GestaoAtivos, PreventivasManager, DisponibilidadeDashboard, PedidosCompraSection } from "@/components/tecnico";
 
 interface TecnicoModuleProps {
   setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'nir';
@@ -69,7 +69,7 @@ export const TecnicoModule = ({ setor, onOpenExternal }: TecnicoModuleProps) => 
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5 max-w-2xl">
+        <TabsList className="grid w-full grid-cols-6 max-w-3xl">
           <TabsTrigger value="ativos" className="flex items-center gap-2">
             <Monitor className="h-4 w-4" />
             <span className="hidden sm:inline">Ativos</span>
@@ -85,6 +85,10 @@ export const TecnicoModule = ({ setor, onOpenExternal }: TecnicoModuleProps) => 
           <TabsTrigger value="inventario" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
             <span className="hidden sm:inline">Inventário</span>
+          </TabsTrigger>
+          <TabsTrigger value="pedidos" className="flex items-center gap-2">
+            <ShoppingCart className="h-4 w-4" />
+            <span className="hidden sm:inline">Pedidos</span>
           </TabsTrigger>
           <TabsTrigger value="chamados" className="flex items-center gap-2">
             <Ticket className="h-4 w-4" />
@@ -106,6 +110,10 @@ export const TecnicoModule = ({ setor, onOpenExternal }: TecnicoModuleProps) => 
 
         <TabsContent value="inventario" className="mt-6">
           <InventarioModule setor={setor} />
+        </TabsContent>
+
+        <TabsContent value="pedidos" className="mt-6">
+          <PedidosCompraSection setor={setor} />
         </TabsContent>
 
         <TabsContent value="chamados" className="mt-6">
