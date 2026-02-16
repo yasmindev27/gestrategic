@@ -43,6 +43,7 @@ interface StatCardProps {
   loading?: boolean;
   urgent?: boolean;
   tooltip?: string;
+  onClick?: () => void;
 }
 
 const colorClasses = {
@@ -54,8 +55,8 @@ const colorClasses = {
 };
 
 const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
-  ({ title, value, description, icon: Icon, color, trend, loading, urgent }, ref) => (
-    <Card ref={ref} className={`shadow-sm hover:shadow-lg transition-all duration-300 border-border relative overflow-hidden hover:-translate-y-0.5 group ${urgent ? "border-l-4 border-l-warning ring-1 ring-warning/20" : "hover:border-primary/20"}`}>
+  ({ title, value, description, icon: Icon, color, trend, loading, urgent, onClick }, ref) => (
+    <Card ref={ref} onClick={onClick} className={`shadow-sm hover:shadow-lg transition-all duration-300 border-border relative overflow-hidden hover:-translate-y-0.5 group cursor-pointer hover:ring-1 hover:ring-primary/30 ${urgent ? "border-l-4 border-l-warning ring-1 ring-warning/20" : "hover:border-primary/20"}`}>
       {urgent && (
         <div className="absolute top-0 right-0 w-0 h-0 border-t-[24px] border-t-warning/80 border-l-[24px] border-l-transparent" />
       )}
@@ -91,7 +92,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
 );
 StatCard.displayName = "StatCard";
 
-const DashboardPersonalizado = () => {
+const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const [stats, setStats] = useState<DashboardStats>({
     chamadosAbertos: 0,
     chamadosPendentes: 0,
@@ -238,6 +239,7 @@ const DashboardPersonalizado = () => {
       color: "info",
       loading,
       tooltip: "Mostra o total de compromissos e tarefas agendadas para o seu perfil no dia de hoje.",
+      onClick: () => onNavigate?.("agenda"),
     });
 
     // Capacitações pendentes (universal)
@@ -250,6 +252,7 @@ const DashboardPersonalizado = () => {
       loading,
       urgent: stats.capacitacoesPendentes > 0,
       tooltip: "Número de treinamentos obrigatórios que ainda não foram iniciados ou concluídos pelos colaboradores.",
+      onClick: () => onNavigate?.("capacitacao"),
     });
 
     // Admin - visão completa do sistema
@@ -263,6 +266,7 @@ const DashboardPersonalizado = () => {
           color: "primary",
           loading,
           tooltip: "Rastro digital de todas as ações realizadas na plataforma hoje para fins de auditoria e segurança.",
+          onClick: () => onNavigate?.("logs"),
         }
       );
     }
@@ -277,6 +281,7 @@ const DashboardPersonalizado = () => {
         color: "primary",
         loading,
         tooltip: "Total de funcionários atualmente vinculados à sua unidade de gestão.",
+        onClick: () => onNavigate?.("equipe"),
       });
     }
 
@@ -291,6 +296,7 @@ const DashboardPersonalizado = () => {
           color: "warning",
           loading,
           urgent: stats.chamadosPendentes > 0,
+          onClick: () => onNavigate?.("chamados"),
         },
         {
           title: "Materiais Baixo Estoque",
@@ -300,6 +306,7 @@ const DashboardPersonalizado = () => {
           color: "destructive",
           loading,
           urgent: stats.produtosEstoqueBaixo > 0,
+          onClick: () => onNavigate?.("inventario"),
         }
       );
     }
@@ -314,6 +321,7 @@ const DashboardPersonalizado = () => {
         color: "info",
         loading,
         tooltip: "Quantitativo de colaboradores ativos com escala confirmada para o turno atual.",
+        onClick: () => onNavigate?.("escala-laboratorio"),
       });
     }
 
@@ -329,6 +337,7 @@ const DashboardPersonalizado = () => {
           loading,
           urgent: stats.prontuariosPendentes > 0,
           tooltip: "Documentos que aguardam revisão, assinatura ou processamento para serem finalizados.",
+          onClick: () => onNavigate?.("saida-prontuarios"),
         },
         {
           title: "Prontuários Concluídos",
@@ -338,6 +347,7 @@ const DashboardPersonalizado = () => {
           color: "success",
           loading,
           tooltip: "Total de prontuários que já passaram por todas as etapas de validação e foram finalizados com sucesso.",
+          onClick: () => onNavigate?.("saida-prontuarios"),
         }
       );
     }
