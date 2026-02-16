@@ -31,6 +31,7 @@ const ReuniaoModule = () => {
       const { data, error } = await supabase
         .from("reunioes")
         .select("*")
+        .in("status", ["agendada", "em_andamento"])
         .order("created_at", { ascending: false })
         .limit(50);
       if (error) throw error;
