@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -413,14 +414,7 @@ export const ColaboradoresManager = () => {
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={exportExcel}>
-                <FileSpreadsheet className="h-4 w-4 mr-1" />
-                Excel
-              </Button>
-              <Button variant="outline" size="sm" onClick={exportPDF}>
-                <FileDown className="h-4 w-4 mr-1" />
-                PDF
-              </Button>
+              <ExportDropdown onExportExcel={exportExcel} onExportPDF={exportPDF} />
               {isAdmin && (
                 <>
                   <Button 

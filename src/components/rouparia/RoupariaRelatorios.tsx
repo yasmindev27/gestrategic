@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -208,10 +209,7 @@ export function RoupariaRelatorios() {
                 90 dias
               </Button>
             </div>
-            <Button onClick={handleExportExcel} disabled={movimentacoes.length === 0}>
-              <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Exportar Excel
-            </Button>
+            <ExportDropdown onExportExcel={handleExportExcel} disabled={movimentacoes.length === 0} />
           </div>
         </CardContent>
       </Card>

@@ -12,6 +12,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { UtensilsCrossed, Calendar, CalendarDays, Salad, Loader2, Plus, Coffee, Sun, Cookie, Moon, Clock, CheckCircle2, XCircle, AlertCircle, BarChart3, FileDown, FileSpreadsheet, Filter, ClipboardList, TrendingUp, Search, Users, AlertTriangle, Pencil, Trash2 } from "lucide-react";
+import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { RegistrosRefeicoes } from "@/components/restaurante/RegistrosRefeicoes";
 import { RelatorioQuantitativoRefeicoes } from "@/components/restaurante/RelatorioQuantitativoRefeicoes";
 import { ColaboradoresManager } from "@/components/restaurante/ColaboradoresManager";
@@ -995,16 +996,7 @@ export const RestauranteModule = () => {
                       Mês
                     </Button>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={exportMinhasDietasToExcel} disabled={minhasSolicitacoesFiltradas.length === 0}>
-                      <FileSpreadsheet className="h-4 w-4 mr-1" />
-                      Excel
-                    </Button>
-                    <Button variant="outline" size="sm" onClick={exportMinhasDietasToPDF} disabled={minhasSolicitacoesFiltradas.length === 0}>
-                      <FileDown className="h-4 w-4 mr-1" />
-                      PDF
-                    </Button>
-                  </div>
+                  <ExportDropdown onExportExcel={exportMinhasDietasToExcel} onExportPDF={exportMinhasDietasToPDF} disabled={minhasSolicitacoesFiltradas.length === 0} />
                 </div>
               </div>
             </CardHeader>
@@ -1091,16 +1083,7 @@ export const RestauranteModule = () => {
                       <span className="text-muted-foreground">até</span>
                       <Input type="date" value={dashboardDataFim} onChange={e => setDashboardDataFim(e.target.value)} className="w-[140px]" />
                     </div>
-                    <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={exportToExcel}>
-                        <FileSpreadsheet className="h-4 w-4 mr-2" />
-                        Excel
-                      </Button>
-                      <Button variant="outline" size="sm" onClick={exportToPDF}>
-                        <FileDown className="h-4 w-4 mr-2" />
-                        PDF
-                      </Button>
-                    </div>
+                    <ExportDropdown onExportExcel={exportToExcel} onExportPDF={exportToPDF} />
                   </div>
                 </div>
               </CardHeader>
