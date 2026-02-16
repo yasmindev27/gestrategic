@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 interface DashboardLayoutProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
+  onOpenExternal?: (url: string, title: string) => void;
   children: ReactNode;
   showFloatingChat?: boolean;
 }
@@ -31,12 +32,13 @@ PageLoader.displayName = "PageLoader";
 const DashboardLayout = memo(({
   activeSection,
   onSectionChange,
+  onOpenExternal,
   children,
   showFloatingChat = true,
 }: DashboardLayoutProps) => {
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar activeSection={activeSection} onSectionChange={onSectionChange} />
+      <Sidebar activeSection={activeSection} onSectionChange={onSectionChange} onOpenExternal={onOpenExternal} />
       
       <main className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto space-y-6">

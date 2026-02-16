@@ -1,5 +1,6 @@
 import { useState, useEffect, lazy, Suspense, useMemo, useCallback, memo } from "react";
 import { useNavigate } from "react-router-dom";
+import ExternalViewer from "@/components/ExternalViewer";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import DashboardLayout, { PageLoader } from "@/components/layout/DashboardLayout";
@@ -44,6 +45,7 @@ const Dashboard = () => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("");
+  const [externalUrl, setExternalUrl] = useState<{ url: string; title: string } | null>(null);
   const { isNir, isRecepcao, isLoading: isLoadingRole } = useUserRole();
 
   useEffect(() => {
@@ -89,7 +91,12 @@ const Dashboard = () => {
 
   // Memoized section change handler
   const handleSectionChange = useCallback((section: string) => {
+    setExternalUrl(null);
     setActiveSection(section);
+  }, []);
+
+  const handleOpenExternal = useCallback((url: string, title: string) => {
+    setExternalUrl({ url, title });
   }, []);
 
   // Loading state
@@ -186,8 +193,17 @@ const Dashboard = () => {
     <DashboardLayout
       activeSection={activeSection}
       onSectionChange={handleSectionChange}
+      onOpenExternal={handleOpenExternal}
     >
-      {renderContent()}
+      {externalUrl ? (
+        <ExternalViewer
+          url={externalUrl.url}
+          title={externalUrl.title}
+          onClose={() => setExternalUrl(null)}
+        />
+      ) : (
+        renderContent()
+      )}
     </DashboardLayout>
   );
 };
