@@ -119,6 +119,74 @@ export function GerenciaModule() {
     },
   });
 
+  // Query inconsistências: profissionais escalados com atestado no mesmo período
+  const { data: inconsistencias = [] } = useQuery({
+    queryKey: ['gerencia_inconsistencias_escala_atestado'],
+    queryFn: async () => {
+      // Buscar atestados ativos (pendente ou aprovado)
+      const { data: atestados, error: errAt } = await supabase
+        .from('atestados')
+        .select('funcionario_nome, data_inicio, data_fim, tipo, status')
+        .in('status', ['pendente', 'aprovado']);
+      if (errAt) throw errAt;
+      if (!atestados?.length) return [];
+
+      // Buscar escalas médicas futuras/atuais
+      const today = format(new Date(), 'yyyy-MM-dd');
+      const { data: escalasMed, error: errEm } = await supabase
+        .from('escalas_medicos')
+        .select('profissional_id, data_plantao, setor')
+        .gte('data_plantao', today);
+      if (errEm) throw errEm;
+
+      // Buscar escalas enfermagem futuras/atuais
+      const { data: escalasEnf, error: errEe } = await supabase
+        .from('enfermagem_escalas')
+        .select('profissional_nome, data_plantao, setor')
+        .gte('data_plantao', today);
+      if (errEe) throw errEe;
+
+      // Buscar nomes dos médicos escalados
+      const profIds = [...new Set((escalasMed || []).map(e => e.profissional_id))];
+      let profMap = new Map<string, string>();
+      if (profIds.length) {
+        const { data: profs } = await supabase
+          .from('profissionais_saude')
+          .select('id, nome')
+          .in('id', profIds);
+        (profs || []).forEach(p => profMap.set(p.id, p.nome));
+      }
+
+      // Cruzar escalas com atestados
+      type Inconsistencia = { nome: string; data_plantao: string; setor: string; atestado_inicio: string; atestado_fim: string; tipo_atestado: string };
+      const results: Inconsistencia[] = [];
+
+      (escalasMed || []).forEach(e => {
+        const nome = profMap.get(e.profissional_id)?.toUpperCase() || '';
+        if (!nome) return;
+        atestados.forEach(a => {
+          if (a.funcionario_nome.toUpperCase() === nome &&
+              e.data_plantao >= a.data_inicio && e.data_plantao <= a.data_fim) {
+            results.push({ nome: a.funcionario_nome, data_plantao: e.data_plantao, setor: e.setor, atestado_inicio: a.data_inicio, atestado_fim: a.data_fim, tipo_atestado: a.tipo });
+          }
+        });
+      });
+
+      (escalasEnf || []).forEach(e => {
+        const nome = e.profissional_nome.toUpperCase();
+        atestados.forEach(a => {
+          if (a.funcionario_nome.toUpperCase() === nome &&
+              e.data_plantao >= a.data_inicio && e.data_plantao <= a.data_fim) {
+            results.push({ nome: a.funcionario_nome, data_plantao: e.data_plantao, setor: e.setor, atestado_inicio: a.data_inicio, atestado_fim: a.data_fim, tipo_atestado: a.tipo });
+          }
+        });
+      });
+
+      return results;
+    },
+    refetchInterval: 60000, // Atualiza a cada 1 min
+  });
+
   // Query histórico for selected plano
   const { data: historico = [] } = useQuery({
     queryKey: ['gerencia_planos_historico', selectedPlanoId],
@@ -339,6 +407,35 @@ export function GerenciaModule() {
               <p className="text-sm text-muted-foreground">
                 Distribuídas em {stats.setoresComAtraso} setor{stats.setoresComAtraso > 1 ? 'es' : ''} — ação imediata necessária
               </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Alert Crítico - Inconsistência Escala x Atestado */}
+      {inconsistencias.length > 0 && (
+        <Card className="border-destructive bg-destructive/10 ring-2 ring-destructive/30">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="p-3 rounded-full bg-destructive/20 animate-pulse">
+                <AlertTriangle className="h-6 w-6 text-destructive" />
+              </div>
+              <div>
+                <p className="text-lg font-bold text-destructive">⚠ {inconsistencias.length} Inconsistência{inconsistencias.length > 1 ? 's' : ''} Crítica{inconsistencias.length > 1 ? 's' : ''} Detectada{inconsistencias.length > 1 ? 's' : ''}</p>
+                <p className="text-sm text-destructive/80">Profissionais escalados com atestado registrado no mesmo período</p>
+              </div>
+            </div>
+            <div className="space-y-2 max-h-[200px] overflow-y-auto">
+              {inconsistencias.map((inc, idx) => (
+                <div key={idx} className="flex flex-wrap items-center gap-2 text-sm p-2 rounded-md bg-destructive/5 border border-destructive/20">
+                  <Badge variant="destructive" className="text-xs">CONFLITO</Badge>
+                  <span className="font-semibold">{inc.nome}</span>
+                  <span className="text-muted-foreground">escalado em</span>
+                  <span className="font-medium">{format(new Date(inc.data_plantao + 'T00:00:00'), 'dd/MM/yyyy')}</span>
+                  <span className="text-muted-foreground">({inc.setor})</span>
+                  <span className="text-destructive font-medium">— Atestado: {format(new Date(inc.atestado_inicio + 'T00:00:00'), 'dd/MM')} a {format(new Date(inc.atestado_fim + 'T00:00:00'), 'dd/MM')}</span>
+                </div>
+              ))}
             </div>
           </CardContent>
         </Card>
