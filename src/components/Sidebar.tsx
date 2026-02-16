@@ -74,8 +74,6 @@ const Sidebar = ({
         { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante", category: "logistica" },
         { icon: Receipt, label: "Faturamento", id: "faturamento", category: "administrativo" },
         { icon: UserCog, label: "RH/DP", id: "rhdp", category: "administrativo" },
-        { icon: Users, label: "Equipe", id: "equipe", category: "administrativo" },
-        { icon: Users, label: "Profissionais", id: "profissionais-saude", category: "administrativo" },
         { icon: ClipboardX, label: "Controle de Fichas", id: "controle-fichas", category: "administrativo" },
         { icon: Monitor, label: "TI", id: "tecnico-ti", category: "administrativo" },
         { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao", category: "administrativo" },
@@ -95,7 +93,7 @@ const Sidebar = ({
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
-        { icon: Users, label: "Equipe", id: "equipe" }
+        { icon: UserCog, label: "Equipe", id: "equipe" }
       );
       return items;
     }

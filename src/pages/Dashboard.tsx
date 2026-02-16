@@ -123,11 +123,8 @@ const Dashboard = () => {
       case "controle-fichas":
         return <ControleFichasModule />;
       case "equipe":
-        return (
-          <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-            <EquipeModule />
-          </Suspense>
-        );
+        return <RHDPModule />;
+
       case "agenda":
         return <AgendaModule />;
       case "admin":
@@ -176,7 +173,7 @@ const Dashboard = () => {
           </Suspense>
         );
       case "profissionais-saude":
-        return <ProfissionaisSaude />;
+        return <RHDPModule />;
       case "lms":
         return <LMSModule />;
       case "reuniao":
