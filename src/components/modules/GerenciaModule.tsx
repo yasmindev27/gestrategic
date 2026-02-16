@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Building2, AlertTriangle, Clock, CheckCircle2, Plus,
-  Filter, Users, TrendingUp, Search, History, CalendarClock, FileText
+  Filter, Users, TrendingUp, Search, History, CalendarClock, FileText, ShoppingCart,
 } from 'lucide-react';
 import { LancamentoNotas } from '@/components/gerencia/LancamentoNotas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -71,6 +71,121 @@ interface HistoricoItem {
   detalhes: string | null;
   executado_por_nome: string;
   created_at: string;
+}
+
+function PendenciasCompraGerencia() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const { data: pedidos = [], isLoading: loadingPedidos } = useQuery({
+    queryKey: ['gerencia_pedidos_compra'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('pedidos_compra').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+    refetchInterval: 30000,
+  });
+
+  const updatePedido = useMutation({
+    mutationFn: async ({ id, status, obs }: { id: string; status: string; obs?: string }) => {
+      const { error } = await supabase.from('pedidos_compra').update({
+        status, observacoes_gerencia: obs || null, aprovado_em: status === 'aprovado' ? new Date().toISOString() : null,
+      }).eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['gerencia_pedidos_compra'] }); toast({ title: 'Pedido atualizado!' }); },
+  });
+
+  const pendentes = pedidos.filter((p: any) => p.status === 'pendente');
+  const aprovados = pedidos.filter((p: any) => p.status === 'aprovado');
+
+  if (loadingPedidos) return <LoadingState message="Carregando pedidos..." />;
+
+  return (
+    <div className="space-y-4">
+      {pendentes.length > 0 && (
+        <Card className="border-amber-400 bg-amber-500/5">
+          <CardContent className="p-4 flex items-center gap-3">
+            <ShoppingCart className="h-6 w-6 text-amber-600" />
+            <p className="font-semibold text-amber-700">{pendentes.length} pedido{pendentes.length > 1 ? 's' : ''} aguardando aprovação</p>
+          </CardContent>
+        </Card>
+      )}
+      <Card>
+        <CardHeader><CardTitle className="text-base">Pedidos de Compra dos Setores Técnicos</CardTitle></CardHeader>
+        <CardContent className="p-0">
+          {pedidos.length === 0 ? (
+            <div className="p-8 text-center text-muted-foreground">Nenhum pedido de compra registrado.</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Setor</TableHead>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Qtd</TableHead>
+                  <TableHead>Urgência</TableHead>
+                  <TableHead>Justificativa</TableHead>
+                  <TableHead>Solicitante</TableHead>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pedidos.map((p: any) => {
+                  const dias = Math.floor((Date.now() - new Date(p.created_at).getTime()) / 86400000);
+                  return (
+                    <TableRow key={p.id} className={p.status === 'pendente' && dias > 3 ? 'bg-amber-500/5' : ''}>
+                      <TableCell className="font-medium">{p.setor_solicitante}</TableCell>
+                      <TableCell>{p.item_nome}</TableCell>
+                      <TableCell>{p.quantidade_solicitada} {p.unidade_medida}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={
+                          p.urgencia === 'critica' ? 'bg-red-500/15 text-red-700 border-red-300' :
+                          p.urgencia === 'alta' ? 'bg-orange-500/15 text-orange-700 border-orange-300' :
+                          'bg-amber-500/15 text-amber-700 border-amber-300'
+                        }>{p.urgencia}</Badge>
+                      </TableCell>
+                      <TableCell className="max-w-[200px] truncate">{p.justificativa}</TableCell>
+                      <TableCell>{p.solicitante_nome}</TableCell>
+                      <TableCell>
+                        {format(new Date(p.created_at), 'dd/MM/yyyy')}
+                        {p.status === 'pendente' && dias > 0 && (
+                          <span className="text-xs text-amber-600 ml-1">({dias}d)</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={
+                          p.status === 'aprovado' ? 'bg-emerald-500/15 text-emerald-700 border-emerald-300' :
+                          p.status === 'rejeitado' ? 'bg-red-500/15 text-red-700 border-red-300' :
+                          p.status === 'entregue' ? 'bg-blue-500/15 text-blue-700 border-blue-300' :
+                          'bg-muted text-muted-foreground'
+                        }>{p.status}</Badge>
+                      </TableCell>
+                      <TableCell>
+                        {p.status === 'pendente' && (
+                          <div className="flex gap-1">
+                            <Button size="sm" variant="outline" className="h-7 text-xs text-emerald-700"
+                              onClick={() => updatePedido.mutate({ id: p.id, status: 'aprovado' })}>Aprovar</Button>
+                            <Button size="sm" variant="outline" className="h-7 text-xs text-destructive"
+                              onClick={() => updatePedido.mutate({ id: p.id, status: 'rejeitado' })}>Rejeitar</Button>
+                          </div>
+                        )}
+                        {p.status === 'aprovado' && (
+                          <Button size="sm" variant="outline" className="h-7 text-xs"
+                            onClick={() => updatePedido.mutate({ id: p.id, status: 'entregue' })}>Entregue</Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
 }
 
 export function GerenciaModule() {
@@ -491,6 +606,10 @@ export function GerenciaModule() {
             <FileText className="h-4 w-4" />
             Lançamento de Notas
           </TabsTrigger>
+          <TabsTrigger value="compras" className="gap-2">
+            <ShoppingCart className="h-4 w-4" />
+            Pendências de Compra
+          </TabsTrigger>
         </TabsList>
 
         {/* -- Tab: Planos de Ação -- */}
@@ -689,6 +808,11 @@ export function GerenciaModule() {
         {/* -- Tab: Lançamento de Notas -- */}
         <TabsContent value="notas-fiscais" className="mt-4">
           <LancamentoNotas />
+        </TabsContent>
+
+        {/* -- Tab: Pendências de Compra -- */}
+        <TabsContent value="compras" className="mt-4">
+          <PendenciasCompraGerencia />
         </TabsContent>
       </Tabs>
 

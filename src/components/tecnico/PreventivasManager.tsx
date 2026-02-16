@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -16,12 +17,13 @@ import {
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { StatCard } from "@/components/ui/stat-card";
 import { LoadingState } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
-  Plus, CalendarClock, AlertTriangle, CheckCircle, Clock, Wrench, Play,
+  Plus, CalendarClock, AlertTriangle, CheckCircle, Clock, Wrench, Play, FlaskConical, ShieldAlert,
 } from "lucide-react";
 import { format, isPast, differenceInDays, addDays } from "date-fns";
 
@@ -43,21 +45,25 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
   const [execDialogOpen, setExecDialogOpen] = useState(false);
   const [selectedPrev, setSelectedPrev] = useState<any>(null);
   const [userName, setUserName] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("todas");
 
-  // Load user name
-  useState(() => {
+  useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
+        setUserId(data.user.id);
         supabase.from("profiles").select("full_name").eq("user_id", data.user.id).single()
           .then(({ data: p }) => { if (p) setUserName(p.full_name); });
       }
     });
-  });
+  }, []);
 
   const [formData, setFormData] = useState({
     ativo_id: "", titulo: "", descricao: "", periodicidade_dias: "30",
     proxima_execucao: "", responsavel_nome: "", prioridade: "media",
     custo_estimado: "", observacoes: "",
+    tipo_manutencao: "preventiva", requer_calibracao: false,
+    data_vencimento_calibracao: "",
   });
 
   const [execForm, setExecForm] = useState({
@@ -66,7 +72,6 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
     resultado: "concluida", observacoes: "",
   });
 
-  // Query ativos for selector
   const { data: ativos = [] } = useQuery({
     queryKey: ["ativos", setor],
     queryFn: async () => {
@@ -77,7 +82,6 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
     },
   });
 
-  // Query preventivas
   const { data: preventivas = [], isLoading } = useQuery({
     queryKey: ["preventivas", setor],
     queryFn: async () => {
@@ -91,7 +95,6 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
     },
   });
 
-  // Query últimas execuções
   const { data: execucoes = [] } = useQuery({
     queryKey: ["execucoes", setor],
     queryFn: async () => {
@@ -108,7 +111,6 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      const { data: user } = await supabase.auth.getUser();
       const { error } = await supabase.from("manutencoes_preventivas").insert({
         ativo_id: data.ativo_id,
         titulo: data.titulo,
@@ -120,7 +122,10 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
         custo_estimado: data.custo_estimado ? parseFloat(data.custo_estimado) : null,
         observacoes: data.observacoes || null,
         setor,
-        created_by: user.user?.id,
+        tipo_manutencao: data.tipo_manutencao,
+        requer_calibracao: data.requer_calibracao,
+        data_vencimento_calibracao: data.data_vencimento_calibracao || null,
+        created_by: userId,
       });
       if (error) throw error;
     },
@@ -135,16 +140,13 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
   const executeMutation = useMutation({
     mutationFn: async (data: typeof execForm) => {
       if (!selectedPrev) return;
-      const { data: user } = await supabase.auth.getUser();
-      
-      // Insert execution record
       const { error: execError } = await supabase.from("manutencoes_execucoes").insert({
         preventiva_id: selectedPrev.id,
         ativo_id: selectedPrev.ativo_id,
-        tipo: "preventiva",
+        tipo: selectedPrev.tipo_manutencao || "preventiva",
         descricao: data.descricao,
         data_execucao: data.data_execucao,
-        executado_por: user.user?.id,
+        executado_por: userId,
         executado_por_nome: userName,
         tempo_parada_horas: parseFloat(data.tempo_parada_horas) || 0,
         custo_real: data.custo_real ? parseFloat(data.custo_real) : null,
@@ -155,21 +157,40 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
       });
       if (execError) throw execError;
 
-      // Update preventiva: set last execution, calculate next
       const nextDate = format(
         addDays(new Date(data.data_execucao), selectedPrev.periodicidade_dias),
         "yyyy-MM-dd"
       );
-      const { error: updateError } = await supabase.from("manutencoes_preventivas").update({
+      const updateData: any = {
         ultima_execucao: data.data_execucao,
         proxima_execucao: nextDate,
         status: "agendada",
-      }).eq("id", selectedPrev.id);
+      };
+      if (selectedPrev.requer_calibracao) {
+        updateData.data_vencimento_calibracao = nextDate;
+      }
+      const { error: updateError } = await supabase.from("manutencoes_preventivas").update(updateData).eq("id", selectedPrev.id);
       if (updateError) throw updateError;
+
+      // Auto-create plano de ação for overdue calibrations that were just executed
+      if (selectedPrev.isOverdue && selectedPrev.requer_calibracao) {
+        await supabase.from("gerencia_planos_acao").insert({
+          titulo: `Calibração atrasada executada: ${selectedPrev.ativos?.nome || selectedPrev.titulo}`,
+          descricao: `Calibração do equipamento ${selectedPrev.ativos?.nome || ""} foi realizada com atraso de ${Math.abs(selectedPrev.daysRemaining)} dias. Verificar impacto operacional.`,
+          setor,
+          responsavel_nome: userName,
+          prioridade: "alta",
+          prazo: new Date(Date.now() + 7 * 86400000).toISOString(),
+          created_by: userId,
+          ultima_atualizacao_por: userName,
+          ultima_atualizacao_em: new Date().toISOString(),
+        });
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["preventivas", setor] });
       queryClient.invalidateQueries({ queryKey: ["execucoes", setor] });
+      queryClient.invalidateQueries({ queryKey: ["gerencia_planos_acao"] });
       toast({ title: "Manutenção registrada!" });
       setExecDialogOpen(false);
     },
@@ -179,22 +200,79 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
   const enriched = preventivas.map((p: any) => {
     const isOverdue = p.status !== "concluida" && isPast(new Date(p.proxima_execucao));
     const days = differenceInDays(new Date(p.proxima_execucao), new Date());
-    return { ...p, isOverdue, daysRemaining: days, effectiveStatus: isOverdue ? "atrasada" : p.status };
+    const calibracaoVencida = p.requer_calibracao && p.data_vencimento_calibracao && isPast(new Date(p.data_vencimento_calibracao));
+    return { ...p, isOverdue, daysRemaining: days, effectiveStatus: isOverdue ? "atrasada" : p.status, calibracaoVencida };
   });
+
+  const calibracoes = enriched.filter((p: any) => p.requer_calibracao);
+  const calibracoesVencidas = calibracoes.filter((p: any) => p.calibracaoVencida);
+
+  const listToShow = activeTab === "calibracoes" ? calibracoes : enriched;
 
   const stats = {
     total: enriched.length,
     atrasadas: enriched.filter((p: any) => p.isOverdue).length,
     proximas7d: enriched.filter((p: any) => !p.isOverdue && p.daysRemaining <= 7 && p.daysRemaining >= 0).length,
     executadas: execucoes.length,
+    calibracoesVencidas: calibracoesVencidas.length,
   };
+
+  // Auto-create planos de ação for overdue calibrations
+  useEffect(() => {
+    if (calibracoesVencidas.length === 0) return;
+    calibracoesVencidas.forEach(async (c: any) => {
+      // Check if a plano already exists
+      const { data: existing } = await supabase
+        .from("gerencia_planos_acao")
+        .select("id")
+        .ilike("titulo", `%Calibração vencida%${c.ativos?.nome || c.titulo}%`)
+        .eq("status", "pendente")
+        .limit(1);
+      if (existing && existing.length > 0) return;
+
+      await supabase.from("gerencia_planos_acao").insert({
+        titulo: `Calibração vencida: ${c.ativos?.nome || c.titulo}`,
+        descricao: `A calibração do equipamento "${c.ativos?.nome || ""}" (${c.titulo}) venceu em ${format(new Date(c.data_vencimento_calibracao + "T00:00:00"), "dd/MM/yyyy")}. Ação corretiva necessária.`,
+        setor,
+        responsavel_nome: c.responsavel_nome,
+        prioridade: "critica",
+        prazo: new Date().toISOString(),
+        ultima_atualizacao_por: "Sistema",
+        ultima_atualizacao_em: new Date().toISOString(),
+      });
+    });
+  }, [calibracoesVencidas.length]);
 
   if (isLoading) return <LoadingState message="Carregando preventivas..." />;
 
   return (
     <div className="space-y-4">
+      {/* Alert calibrações vencidas */}
+      {stats.calibracoesVencidas > 0 && (
+        <Card className="border-destructive bg-destructive/10 ring-2 ring-destructive/30">
+          <CardContent className="p-4 flex items-start gap-3">
+            <div className="p-3 rounded-full bg-destructive/20 animate-pulse">
+              <ShieldAlert className="h-6 w-6 text-destructive" />
+            </div>
+            <div>
+              <p className="text-lg font-bold text-destructive">⚠ {stats.calibracoesVencidas} Calibração{stats.calibracoesVencidas > 1 ? "ões" : ""} Vencida{stats.calibracoesVencidas > 1 ? "s" : ""}</p>
+              <p className="text-sm text-destructive/80 mb-2">
+                Compliance comprometido — Plano de Ação automático criado para a Gerência
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {calibracoesVencidas.map((c: any) => (
+                  <Badge key={c.id} variant="destructive" className="text-xs">
+                    {c.ativos?.nome || c.titulo}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Alert atrasadas */}
-      {stats.atrasadas > 0 && (
+      {stats.atrasadas > 0 && stats.calibracoesVencidas === 0 && (
         <Card className="border-destructive bg-destructive/5">
           <CardContent className="p-4 flex items-center gap-3">
             <AlertTriangle className="h-6 w-6 text-destructive" />
@@ -207,14 +285,27 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
       )}
 
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <StatCard title="Preventivas" value={stats.total} icon={CalendarClock} variant="primary" />
         <StatCard title="Atrasadas" value={stats.atrasadas} icon={AlertTriangle} variant="destructive" />
         <StatCard title="Próx. 7 dias" value={stats.proximas7d} icon={Clock} variant="warning" />
+        <StatCard title="Calibrações" value={calibracoes.length} icon={FlaskConical} variant="primary" />
         <StatCard title="Executadas (mês)" value={stats.executadas} icon={CheckCircle} variant="success" />
       </div>
 
-      <div className="flex justify-end">
+      {/* Tabs */}
+      <div className="flex items-center justify-between">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList>
+            <TabsTrigger value="todas">Todas</TabsTrigger>
+            <TabsTrigger value="calibracoes" className="flex items-center gap-1">
+              <FlaskConical className="h-3 w-3" /> Calibrações
+              {stats.calibracoesVencidas > 0 && (
+                <Badge variant="destructive" className="ml-1 text-[10px] px-1 py-0">{stats.calibracoesVencidas}</Badge>
+              )}
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="h-4 w-4 mr-2" /> Nova Preventiva
         </Button>
@@ -223,7 +314,7 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
       {/* Table */}
       <Card>
         <CardContent className="p-0">
-          {enriched.length === 0 ? (
+          {listToShow.length === 0 ? (
             <EmptyState icon={Wrench} title="Nenhuma preventiva" description="Agende manutenções preventivas" />
           ) : (
             <Table>
@@ -231,6 +322,7 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
                 <TableRow>
                   <TableHead>Ativo</TableHead>
                   <TableHead>Título</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Periodicidade</TableHead>
                   <TableHead>Próxima</TableHead>
                   <TableHead>Responsável</TableHead>
@@ -239,10 +331,20 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {enriched.map((p: any) => (
-                  <TableRow key={p.id} className={p.isOverdue ? "bg-destructive/5" : ""}>
-                    <TableCell className="font-medium">{p.ativos?.nome || "-"}</TableCell>
+                {listToShow.map((p: any) => (
+                  <TableRow key={p.id} className={p.calibracaoVencida ? "bg-destructive/10" : p.isOverdue ? "bg-destructive/5" : ""}>
+                    <TableCell className="font-medium">
+                      {p.ativos?.nome || "-"}
+                      {p.calibracaoVencida && (
+                        <Badge variant="destructive" className="ml-2 text-[10px]">CALIBRAÇÃO VENCIDA</Badge>
+                      )}
+                    </TableCell>
                     <TableCell>{p.titulo}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={p.requer_calibracao ? "bg-purple-500/15 text-purple-700 border-purple-300" : ""}>
+                        {p.requer_calibracao ? "Calibração" : p.tipo_manutencao === "corretiva" ? "Corretiva" : "Preventiva"}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{p.periodicidade_dias} dias</TableCell>
                     <TableCell>
                       <span className={p.isOverdue ? "text-destructive font-semibold" : ""}>
@@ -291,7 +393,7 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
                 <TableRow>
                   <TableHead>Data</TableHead>
                   <TableHead>Ativo</TableHead>
-                  <TableHead>Descrição</TableHead>
+                  <TableHead>Tipo</TableHead>
                   <TableHead>Executado por</TableHead>
                   <TableHead>Tempo parada</TableHead>
                   <TableHead>Resultado</TableHead>
@@ -302,7 +404,11 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
                   <TableRow key={e.id}>
                     <TableCell>{format(new Date(e.data_execucao + "T00:00:00"), "dd/MM/yyyy")}</TableCell>
                     <TableCell>{e.ativos?.nome || "-"}</TableCell>
-                    <TableCell className="max-w-[200px] truncate">{e.descricao}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="text-xs">
+                        {e.tipo === "calibracao" ? "Calibração" : e.tipo === "corretiva" ? "Corretiva" : "Preventiva"}
+                      </Badge>
+                    </TableCell>
                     <TableCell>{e.executado_por_nome}</TableCell>
                     <TableCell>{e.tempo_parada_horas}h</TableCell>
                     <TableCell>
@@ -320,8 +426,8 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
 
       {/* Dialog Nova Preventiva */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>Agendar Manutenção Preventiva</DialogTitle></DialogHeader>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Agendar Manutenção Preventiva / Calibração</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <Label>Ativo *</Label>
@@ -337,6 +443,25 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
               <Input value={formData.titulo} onChange={e => setFormData(p => ({ ...p, titulo: e.target.value }))} />
             </div>
             <div>
+              <Label>Tipo</Label>
+              <Select value={formData.tipo_manutencao} onValueChange={v => setFormData(p => ({ ...p, tipo_manutencao: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="preventiva">Preventiva</SelectItem>
+                  <SelectItem value="calibracao">Calibração</SelectItem>
+                  <SelectItem value="corretiva">Corretiva</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex items-end gap-2 pb-1">
+              <Checkbox
+                id="requer_calibracao"
+                checked={formData.requer_calibracao || formData.tipo_manutencao === "calibracao"}
+                onCheckedChange={v => setFormData(p => ({ ...p, requer_calibracao: !!v }))}
+              />
+              <Label htmlFor="requer_calibracao" className="text-sm">Requer Calibração</Label>
+            </div>
+            <div>
               <Label>Periodicidade (dias)</Label>
               <Input type="number" value={formData.periodicidade_dias} onChange={e => setFormData(p => ({ ...p, periodicidade_dias: e.target.value }))} />
             </div>
@@ -344,6 +469,12 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
               <Label>Próxima Execução *</Label>
               <Input type="date" value={formData.proxima_execucao} onChange={e => setFormData(p => ({ ...p, proxima_execucao: e.target.value }))} />
             </div>
+            {(formData.requer_calibracao || formData.tipo_manutencao === "calibracao") && (
+              <div className="col-span-2">
+                <Label>Vencimento da Calibração</Label>
+                <Input type="date" value={formData.data_vencimento_calibracao} onChange={e => setFormData(p => ({ ...p, data_vencimento_calibracao: e.target.value }))} />
+              </div>
+            )}
             <div>
               <Label>Responsável *</Label>
               <Input value={formData.responsavel_nome} onChange={e => setFormData(p => ({ ...p, responsavel_nome: e.target.value }))} />
@@ -377,7 +508,7 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
         </DialogContent>
       </Dialog>
 
-      {/* Dialog Executar Manutenção */}
+      {/* Dialog Executar */}
       <Dialog open={execDialogOpen} onOpenChange={setExecDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Registrar Execução de Manutenção</DialogTitle></DialogHeader>

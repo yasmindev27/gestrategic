@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -23,16 +23,16 @@ import { StatCard } from "@/components/ui/stat-card";
 import { LoadingState } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
-  Plus, Monitor, AlertTriangle, CheckCircle, Wrench, Shield, Package,
+  Plus, Monitor, AlertTriangle, CheckCircle, Wrench, Package, ShieldAlert, Archive,
 } from "lucide-react";
-import { format } from "date-fns";
 
 interface GestaoAtivosProps {
   setor: string;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
-  operacional: { label: "Operacional", className: "bg-emerald-500/15 text-emerald-700 border-emerald-300" },
+  operacional: { label: "Em Uso", className: "bg-emerald-500/15 text-emerald-700 border-emerald-300" },
+  reserva: { label: "Reserva (Backup)", className: "bg-blue-500/15 text-blue-700 border-blue-300" },
   em_manutencao: { label: "Em Manutenção", className: "bg-amber-500/15 text-amber-700 border-amber-300" },
   inoperante: { label: "Inoperante", className: "bg-red-500/15 text-red-700 border-red-300" },
   desativado: { label: "Desativado", className: "bg-muted text-muted-foreground" },
@@ -142,19 +142,56 @@ export function GestaoAtivos({ setor }: GestaoAtivosProps) {
 
   const stats = {
     total: ativos.length,
-    operacionais: ativos.filter(a => a.status === "operacional").length,
+    emUso: ativos.filter(a => a.status === "operacional").length,
+    reserva: ativos.filter(a => a.status === "reserva").length,
     manutencao: ativos.filter(a => a.status === "em_manutencao").length,
     inoperantes: ativos.filter(a => a.status === "inoperante").length,
   };
+
+  // Alert: critical items with zero backup
+  const criticosGrouped = new Map<string, { emUso: number; reserva: number }>();
+  ativos.filter(a => a.criticidade === "critica").forEach(a => {
+    const key = a.categoria || a.nome;
+    const entry = criticosGrouped.get(key) || { emUso: 0, reserva: 0 };
+    if (a.status === "operacional") entry.emUso++;
+    if (a.status === "reserva") entry.reserva++;
+    criticosGrouped.set(key, entry);
+  });
+  const alertasBackupZero = Array.from(criticosGrouped.entries())
+    .filter(([_, v]) => v.emUso > 0 && v.reserva === 0)
+    .map(([name]) => name);
 
   if (isLoading) return <LoadingState message="Carregando ativos..." />;
 
   return (
     <div className="space-y-4">
+      {/* Alert: Risco de Parada Operacional */}
+      {alertasBackupZero.length > 0 && (
+        <Card className="border-destructive bg-destructive/10 ring-2 ring-destructive/30">
+          <CardContent className="p-4 flex items-start gap-3">
+            <div className="p-3 rounded-full bg-destructive/20 animate-pulse">
+              <ShieldAlert className="h-6 w-6 text-destructive" />
+            </div>
+            <div>
+              <p className="text-lg font-bold text-destructive">⚠ Risco de Parada Operacional</p>
+              <p className="text-sm text-destructive/80 mb-2">
+                Itens críticos sem equipamento de reserva (backup):
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {alertasBackupZero.map(name => (
+                  <Badge key={name} variant="destructive" className="text-xs">{name}</Badge>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <StatCard title="Total de Ativos" value={stats.total} icon={Package} variant="primary" />
-        <StatCard title="Operacionais" value={stats.operacionais} icon={CheckCircle} variant="success" />
+        <StatCard title="Em Uso" value={stats.emUso} icon={CheckCircle} variant="success" />
+        <StatCard title="Reserva (Backup)" value={stats.reserva} icon={Archive} variant="primary" />
         <StatCard title="Em Manutenção" value={stats.manutencao} icon={Wrench} variant="warning" />
         <StatCard title="Inoperantes" value={stats.inoperantes} icon={AlertTriangle} variant="destructive" />
       </div>
@@ -218,13 +255,13 @@ export function GestaoAtivos({ setor }: GestaoAtivosProps) {
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant="outline" className={STATUS_CONFIG[a.status]?.className}>
-                        {STATUS_CONFIG[a.status]?.label}
+                      <Badge variant="outline" className={STATUS_CONFIG[a.status]?.className || ""}>
+                        {STATUS_CONFIG[a.status]?.label || a.status}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <Select value={a.status} onValueChange={(s) => updateStatusMutation.mutate({ id: a.id, status: s })}>
-                        <SelectTrigger className="w-[140px] h-8 text-xs">
+                        <SelectTrigger className="w-[160px] h-8 text-xs">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
