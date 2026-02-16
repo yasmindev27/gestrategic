@@ -1,10 +1,33 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import {
   FileText, Download, Loader2, Sparkles, CheckCircle, ListTodo,
   ClipboardList, Users, Clock, Pencil, Save, X, Send, CalendarPlus,
@@ -44,6 +67,21 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
   const [editAta, setEditAta] = useState<AtaData | null>(null);
   const [isSendingToAgenda, setIsSendingToAgenda] = useState(false);
   const [sentToAgenda, setSentToAgenda] = useState(false);
+  const [showAgendaDialog, setShowAgendaDialog] = useState(false);
+  const [agendaResponsaveis, setAgendaResponsaveis] = useState<Record<number, string>>({});
+
+  // Fetch all team members for responsible selector
+  const { data: colaboradores } = useQuery({
+    queryKey: ["profiles_agenda_envio"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .order("full_name");
+      if (error) throw error;
+      return data || [];
+    },
+  });
   const [meta, setMeta] = useState<ReuniaoMeta>({
     participantesNomes: [],
     participantesMap: new Map(),
@@ -148,28 +186,39 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
     }
   };
 
-  const sendToAgenda = async () => {
+  const openAgendaDialog = () => {
     if (!ata || ata.plano_acao.length === 0) {
       toast({ title: "Aviso", description: "Nenhuma ação no plano para enviar.", variant: "destructive" });
       return;
     }
+    // Pre-fill responsaveis from name matching
+    const initial: Record<number, string> = {};
+    ata.plano_acao.forEach((item, i) => {
+      const matched = meta.participantesMap.get(item.responsavel.toLowerCase());
+      if (matched) initial[i] = matched;
+    });
+    setAgendaResponsaveis(initial);
+    setShowAgendaDialog(true);
+  };
+
+  const sendToAgenda = async () => {
+    if (!ata) return;
 
     setIsSendingToAgenda(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
 
-      for (const item of ata.plano_acao) {
+      for (let i = 0; i < ata.plano_acao.length; i++) {
+        const item = ata.plano_acao[i];
         if (!item.tarefa.trim()) continue;
 
-        // Try to match responsavel name to a user_id
-        const responsavelId = meta.participantesMap.get(item.responsavel.toLowerCase()) || null;
-        const targetUserId = responsavelId || meta.criadorId;
+        const targetUserId = agendaResponsaveis[i] || meta.criadorId;
+        const responsavelNome = colaboradores?.find(c => c.user_id === targetUserId)?.full_name || item.responsavel;
 
-        // Create agenda item
         const { data: agendaItem, error: agendaError } = await supabase.from("agenda_items").insert({
           titulo: item.tarefa,
-          descricao: `Ação da reunião "${titulo}" — Prazo: ${item.prazo || "A definir"} | Responsável: ${item.responsavel}`,
+          descricao: `Ação da reunião "${titulo}" — Prazo: ${item.prazo || "A definir"} | Responsável: ${responsavelNome}`,
           tipo: "tarefa",
           data_inicio: new Date().toISOString().split("T")[0],
           data_fim: null,
@@ -180,7 +229,6 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
 
         if (agendaError) throw agendaError;
 
-        // Assign to the responsible participant
         await supabase.from("agenda_destinatarios").insert({
           agenda_item_id: agendaItem.id,
           usuario_id: targetUserId,
@@ -188,6 +236,7 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
       }
 
       setSentToAgenda(true);
+      setShowAgendaDialog(false);
       toast({ title: "Enviado!", description: `${ata.plano_acao.length} ação(ões) enviada(s) para a Agenda dos responsáveis.` });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
@@ -505,13 +554,11 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
             </Button>
             {isHost && (
               <Button
-                onClick={sendToAgenda}
+                onClick={openAgendaDialog}
                 className="flex-1"
-                disabled={isSendingToAgenda || sentToAgenda}
+                disabled={sentToAgenda}
               >
-                {isSendingToAgenda ? (
-                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
-                ) : sentToAgenda ? (
+                {sentToAgenda ? (
                   <><CheckCircle className="h-4 w-4 mr-2" /> Enviado para Agenda</>
                 ) : (
                   <><CalendarPlus className="h-4 w-4 mr-2" /> Enviar para Agenda</>
@@ -519,6 +566,70 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
               </Button>
             )}
           </div>
+
+          {/* Dialog para selecionar responsáveis */}
+          <Dialog open={showAgendaDialog} onOpenChange={setShowAgendaDialog}>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <CalendarPlus className="h-5 w-5" />
+                  Selecionar Responsáveis
+                </DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">
+                Selecione o responsável da equipe para cada ação do plano antes de enviar para a agenda.
+              </p>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Ação</TableHead>
+                    <TableHead className="w-[200px]">Responsável</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {ata?.plano_acao.map((item, i) => (
+                    <TableRow key={i}>
+                      <TableCell>
+                        <p className="text-sm font-medium">{item.tarefa}</p>
+                        <p className="text-xs text-muted-foreground">Prazo: {item.prazo || "A definir"}</p>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={agendaResponsaveis[i] || ""}
+                          onValueChange={(v) =>
+                            setAgendaResponsaveis((prev) => ({ ...prev, [i]: v }))
+                          }
+                        >
+                          <SelectTrigger className="w-full">
+                            <SelectValue placeholder="Selecionar..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {colaboradores?.map((c) => (
+                              <SelectItem key={c.user_id} value={c.user_id}>
+                                {c.full_name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowAgendaDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={sendToAgenda} disabled={isSendingToAgenda}>
+                  {isSendingToAgenda ? (
+                    <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
+                  ) : (
+                    <><Send className="h-4 w-4 mr-2" /> Confirmar e Enviar</>
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </div>
