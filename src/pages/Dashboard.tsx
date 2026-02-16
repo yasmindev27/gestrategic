@@ -194,6 +194,7 @@ const Dashboard = () => {
       activeSection={activeSection}
       onSectionChange={handleSectionChange}
       onOpenExternal={handleOpenExternal}
+      fullContent={!!externalUrl}
     >
       {externalUrl ? (
         <ExternalViewer
