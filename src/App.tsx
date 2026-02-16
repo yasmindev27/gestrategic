@@ -15,6 +15,7 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const TotemRefeicoes = lazy(() => import("./pages/TotemRefeicoes"));
 // const ControleFichasPublico = lazy(() => import("./pages/ControleFichasPublico"));
 const NotFound = lazy(() => import("./pages/NotFound"));
+const PoliticaPrivacidade = lazy(() => import("./pages/PoliticaPrivacidade"));
 
 // Loading fallback component
 const PageLoader = () => (
@@ -49,6 +50,7 @@ const App = () => (
             <Route path="/totem" element={<TotemRefeicoes />} />
             <Route path="/terminal" element={<TotemRefeicoes />} />
             {/* Rota /controledefichas removida - medida provisória desativada */}
+            <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

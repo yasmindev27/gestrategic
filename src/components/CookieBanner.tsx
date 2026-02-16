@@ -16,8 +16,8 @@ const CookieBanner = () => {
           Ao continuar, você concorda com nossa Política de Privacidade.
         </p>
         <div className="flex gap-2 flex-shrink-0">
-          <Button variant="ghost" size="sm" className="text-xs" onClick={() => window.open("https://gestrategic.lovable.app/politica-privacidade", "_blank")}>
-            Saiba mais
+          <Button variant="ghost" size="sm" className="text-xs" asChild>
+            <a href="/politica-privacidade" target="_blank" rel="noopener noreferrer">Política de Privacidade</a>
           </Button>
           <Button size="sm" className="text-xs" onClick={acceptConsent}>
             Aceitar
