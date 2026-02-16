@@ -114,7 +114,7 @@ const Dashboard = () => {
       case "dashboard":
         return <MemoizedDashboardPersonalizado />;
       case "abrir-chamado":
-        return <AbrirChamadoModule />;
+        return <AbrirChamadoModule onOpenExternal={handleOpenExternal} />;
       case "faturamento":
         return <FaturamentoUnificadoModule />;
       case "controle-fichas":
@@ -132,14 +132,14 @@ const Dashboard = () => {
       case "logs":
         return <LogsAuditoriaModule />;
       case "tecnico-ti":
-        return <MemoizedTecnicoModule setor="ti" />;
+        return <MemoizedTecnicoModule setor="ti" onOpenExternal={handleOpenExternal} />;
       case "tecnico-manutencao":
-        return <MemoizedTecnicoModule setor="manutencao" />;
+        return <MemoizedTecnicoModule setor="manutencao" onOpenExternal={handleOpenExternal} />;
       case "tecnico-engenharia":
-        return <MemoizedTecnicoModule setor="engenharia_clinica" />;
+        return <MemoizedTecnicoModule setor="engenharia_clinica" onOpenExternal={handleOpenExternal} />;
       case "nir":
       case "dashboard-nir":
-        return <NirModule />;
+        return <NirModule onOpenExternal={handleOpenExternal} />;
       case "mapa-leitos":
         return <MapaLeitosModule />;
       case "laboratorio":
@@ -181,7 +181,7 @@ const Dashboard = () => {
       case "salus":
         return (
           <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-            <SalusModule />
+            <SalusModule onOpenExternal={handleOpenExternal} />
           </Suspense>
         );
       default:

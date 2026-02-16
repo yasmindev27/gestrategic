@@ -8,6 +8,7 @@ import { InventarioModule } from "./InventarioModule";
 
 interface TecnicoModuleProps {
   setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'nir';
+  onOpenExternal?: (url: string, title: string) => void;
 }
 
 const setorLabels: Record<string, string> = {
@@ -17,7 +18,7 @@ const setorLabels: Record<string, string> = {
   nir: "NIR",
 };
 
-export const TecnicoModule = ({ setor }: TecnicoModuleProps) => {
+export const TecnicoModule = ({ setor, onOpenExternal }: TecnicoModuleProps) => {
   const { role, isAdmin, isLoading } = useUserRole();
   const [activeTab, setActiveTab] = useState("chamados");
   
@@ -25,7 +26,12 @@ export const TecnicoModule = ({ setor }: TecnicoModuleProps) => {
   const hasAccess = isAdmin || role === setor;
 
   const handleAbrirChamados = () => {
-    window.open("https://suporte.santacasachavantes.org/index.php", "_blank");
+    const url = "https://suporte.santacasachavantes.org/index.php";
+    if (onOpenExternal) {
+      onOpenExternal(url, "GLPI - Suporte");
+    } else {
+      window.open(url, "_blank");
+    }
   };
 
   if (isLoading) {

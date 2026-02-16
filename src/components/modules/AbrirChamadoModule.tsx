@@ -97,7 +97,11 @@ const statusLabels: Record<string, string> = {
   cancelado: "Cancelado",
 };
 
-export const AbrirChamadoModule = () => {
+interface AbrirChamadoModuleProps {
+  onOpenExternal?: (url: string, title: string) => void;
+}
+
+export const AbrirChamadoModule = ({ onOpenExternal }: AbrirChamadoModuleProps) => {
   const { logAction } = useLogAccess();
   const { toast } = useToast();
   
@@ -312,7 +316,12 @@ export const AbrirChamadoModule = () => {
   };
 
   const handleAbrirChamado = () => {
-    window.open("https://suporte.santacasachavantes.org/index.php", "_blank");
+    const url = "https://suporte.santacasachavantes.org/index.php";
+    if (onOpenExternal) {
+      onOpenExternal(url, "GLPI - Suporte");
+    } else {
+      window.open(url, "_blank");
+    }
   };
 
   return (

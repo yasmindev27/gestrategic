@@ -10,7 +10,11 @@ import logoSusFacil from "@/assets/logo-susfacil.png";
 
 type NirView = "menu" | "dashboard" | "mapa-leitos";
 
-export const NirModule = () => {
+interface NirModuleProps {
+  onOpenExternal?: (url: string, title: string) => void;
+}
+
+export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
   const [currentView, setCurrentView] = useState<NirView>("menu");
   const { logAction } = useLogAccess();
 
@@ -102,7 +106,14 @@ export const NirModule = () => {
 
         <Card 
           className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
-          onClick={() => window.open("https://www.susfacil.mg.gov.br/administrativo/seguranca/GEN/gen_acesso.php?ini=1", "_blank")}
+          onClick={() => {
+            const url = "https://www.susfacil.mg.gov.br/administrativo/seguranca/GEN/gen_acesso.php?ini=1";
+            if (onOpenExternal) {
+              onOpenExternal(url, "SUS Fácil MG");
+            } else {
+              window.open(url, "_blank");
+            }
+          }}
         >
           <CardHeader className="text-center pb-2">
             <div className="mx-auto p-4 bg-white rounded-lg w-fit group-hover:shadow-md transition-all">
