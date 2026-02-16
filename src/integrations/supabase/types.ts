@@ -761,6 +761,54 @@ export type Database = {
           },
         ]
       }
+      auditoria_temporalidade: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_fato: string
+          data_registro: string
+          delay_horas: number | null
+          descricao: string
+          id: string
+          justificado: boolean | null
+          justificativa_id: string | null
+          limite_horas: number
+          modulo: string
+          registro_id: string | null
+          setor: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_fato: string
+          data_registro: string
+          delay_horas?: number | null
+          descricao: string
+          id?: string
+          justificado?: boolean | null
+          justificativa_id?: string | null
+          limite_horas?: number
+          modulo: string
+          registro_id?: string | null
+          setor: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_fato?: string
+          data_registro?: string
+          delay_horas?: number | null
+          descricao?: string
+          id?: string
+          justificado?: boolean | null
+          justificativa_id?: string | null
+          limite_horas?: number
+          modulo?: string
+          registro_id?: string | null
+          setor?: string
+        }
+        Relationships: []
+      }
       auditorias_qualidade: {
         Row: {
           auditor: string
@@ -1663,6 +1711,57 @@ export type Database = {
         }
         Relationships: []
       }
+      controle_vigencia: {
+        Row: {
+          arquivo_url: string | null
+          bloqueio_operacional: boolean | null
+          categoria: string
+          created_at: string
+          created_by: string | null
+          data_emissao: string | null
+          data_validade: string
+          descricao: string
+          id: string
+          referencia_id: string | null
+          referencia_nome: string | null
+          setor_responsavel: string | null
+          tipo_documento: string
+          updated_at: string
+        }
+        Insert: {
+          arquivo_url?: string | null
+          bloqueio_operacional?: boolean | null
+          categoria: string
+          created_at?: string
+          created_by?: string | null
+          data_emissao?: string | null
+          data_validade: string
+          descricao: string
+          id?: string
+          referencia_id?: string | null
+          referencia_nome?: string | null
+          setor_responsavel?: string | null
+          tipo_documento: string
+          updated_at?: string
+        }
+        Update: {
+          arquivo_url?: string | null
+          bloqueio_operacional?: boolean | null
+          categoria?: string
+          created_at?: string
+          created_by?: string | null
+          data_emissao?: string | null
+          data_validade?: string
+          descricao?: string
+          id?: string
+          referencia_id?: string | null
+          referencia_nome?: string | null
+          setor_responsavel?: string | null
+          tipo_documento?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       daily_statistics: {
         Row: {
           admissions: number | null
@@ -2532,6 +2631,65 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      justificativas_atraso: {
+        Row: {
+          acao_corretiva: string
+          aprovado_em: string | null
+          aprovado_por: string | null
+          aprovado_por_nome: string | null
+          auditoria_id: string
+          created_at: string
+          id: string
+          motivo: string
+          observacao_gerencia: string | null
+          prazo_correcao: string | null
+          responsavel_id: string | null
+          responsavel_nome: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          acao_corretiva: string
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          aprovado_por_nome?: string | null
+          auditoria_id: string
+          created_at?: string
+          id?: string
+          motivo: string
+          observacao_gerencia?: string | null
+          prazo_correcao?: string | null
+          responsavel_id?: string | null
+          responsavel_nome: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          acao_corretiva?: string
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          aprovado_por_nome?: string | null
+          auditoria_id?: string
+          created_at?: string
+          id?: string
+          motivo?: string
+          observacao_gerencia?: string | null
+          prazo_correcao?: string | null
+          responsavel_id?: string | null
+          responsavel_nome?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "justificativas_atraso_auditoria_id_fkey"
+            columns: ["auditoria_id"]
+            isOneToOne: false
+            referencedRelation: "auditoria_temporalidade"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       lms_inscricoes: {
         Row: {
