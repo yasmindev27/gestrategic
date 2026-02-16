@@ -35,6 +35,8 @@ import {
 import { createStandardPdf, savePdfWithFooter } from "@/lib/export-utils";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Document, Packer, Paragraph, TextRun, Table as DocxTable, TableRow as DocxTableRow, TableCell as DocxTableCell, WidthType, HeadingLevel, BorderStyle, AlignmentType } from "docx";
+import { saveAs } from "file-saver";
 
 interface AtaReuniaoProps {
   reuniaoId: string;
@@ -316,6 +318,58 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
     savePdfWithFooter(doc, `Ata - ${titulo}`, `ata_reuniao_${reuniaoId.slice(0, 8)}`, logoImg);
   };
 
+  const exportWord = async () => {
+    if (!ata) return;
+
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: [
+          new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: `Ata - ${titulo}`, bold: true })] }),
+          new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: `Início: ${formatTime(meta.horaInicio)}`, size: 20 })] }),
+          new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: `Encerramento: ${formatTime(meta.horaEncerramento)}`, size: 20 })] }),
+          new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: `Organizador: ${meta.criadorNome}`, size: 20 })] }),
+          new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: `Participantes: ${meta.participantesNomes.join(", ")}`, size: 20 })] }),
+
+          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "Resumo Executivo", bold: true })] }),
+          new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: ata.resumo_executivo, size: 22 })] }),
+
+          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "Decisões Tomadas", bold: true })] }),
+          ...ata.decisoes_tomadas.map((d, i) =>
+            new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: `${i + 1}. ${d}`, size: 22 })] })
+          ),
+
+          new Paragraph({ heading: HeadingLevel.HEADING_2, spacing: { before: 200 }, children: [new TextRun({ text: "Plano de Ação", bold: true })] }),
+          new DocxTable({
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            rows: [
+              new DocxTableRow({
+                children: ["#", "Tarefa", "Responsável", "Prazo"].map(h =>
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 20 })] })] })
+                ),
+              }),
+              ...ata.plano_acao.map((item, i) =>
+                new DocxTableRow({
+                  children: [
+                    new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: String(i + 1), size: 20 })] })] }),
+                    new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.tarefa, size: 20 })] })] }),
+                    new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.responsavel, size: 20 })] })] }),
+                    new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.prazo, size: 20 })] })] }),
+                  ],
+                })
+              ),
+            ],
+          }),
+
+          new Paragraph({ spacing: { before: 400 }, children: [new TextRun({ text: "Documento gerado em conformidade com a LGPD (Lei nº 13.709/2018).", size: 14, color: "888888", italics: true })] }),
+        ],
+      }],
+    });
+
+    const blob = await Packer.toBlob(doc);
+    saveAs(blob, `ata_reuniao_${reuniaoId.slice(0, 8)}.docx`);
+  };
+
   return (
     <div className="max-w-3xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
@@ -548,9 +602,12 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
             </CardContent>
           </Card>
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <Button onClick={exportPdf} className="flex-1" variant="outline">
               <Download className="h-4 w-4 mr-2" /> Exportar PDF
+            </Button>
+            <Button onClick={exportWord} className="flex-1" variant="outline">
+              <FileText className="h-4 w-4 mr-2" /> Exportar Word
             </Button>
             {isHost && (
               <Button
