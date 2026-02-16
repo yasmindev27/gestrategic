@@ -2091,6 +2091,101 @@ export type Database = {
         }
         Relationships: []
       }
+      gerencia_fornecedores: {
+        Row: {
+          ativo: boolean
+          cnpj: string
+          created_at: string
+          created_by: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cnpj: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cnpj?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gerencia_notas_fiscais: {
+        Row: {
+          ano: number
+          cnpj: string
+          competencia: string
+          created_at: string
+          created_by: string | null
+          data_envio: string | null
+          data_recebimento: string | null
+          fornecedor_id: string | null
+          fornecedor_nome: string
+          id: string
+          numero_nf: string
+          observacao: string | null
+          status: string
+          status_pagamento: string
+          updated_at: string
+          valor_nota: number
+        }
+        Insert: {
+          ano?: number
+          cnpj?: string
+          competencia: string
+          created_at?: string
+          created_by?: string | null
+          data_envio?: string | null
+          data_recebimento?: string | null
+          fornecedor_id?: string | null
+          fornecedor_nome: string
+          id?: string
+          numero_nf?: string
+          observacao?: string | null
+          status?: string
+          status_pagamento?: string
+          updated_at?: string
+          valor_nota?: number
+        }
+        Update: {
+          ano?: number
+          cnpj?: string
+          competencia?: string
+          created_at?: string
+          created_by?: string | null
+          data_envio?: string | null
+          data_recebimento?: string | null
+          fornecedor_id?: string | null
+          fornecedor_nome?: string
+          id?: string
+          numero_nf?: string
+          observacao?: string | null
+          status?: string
+          status_pagamento?: string
+          updated_at?: string
+          valor_nota?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gerencia_notas_fiscais_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "gerencia_fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gerencia_planos_acao: {
         Row: {
           created_at: string

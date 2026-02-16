@@ -3,8 +3,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Building2, AlertTriangle, Clock, CheckCircle2, Plus,
-  Filter, Users, TrendingUp, Search, History, CalendarClock
+  Filter, Users, TrendingUp, Search, History, CalendarClock, FileText
 } from 'lucide-react';
+import { LancamentoNotas } from '@/components/gerencia/LancamentoNotas';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -394,6 +395,10 @@ export function GerenciaModule() {
             <Building2 className="h-4 w-4" />
             Visão por Setor
           </TabsTrigger>
+          <TabsTrigger value="notas-fiscais" className="gap-2">
+            <FileText className="h-4 w-4" />
+            Lançamento de Notas
+          </TabsTrigger>
         </TabsList>
 
         {/* -- Tab: Planos de Ação -- */}
@@ -587,6 +592,11 @@ export function GerenciaModule() {
               </Card>
             )}
           </div>
+        </TabsContent>
+
+        {/* -- Tab: Lançamento de Notas -- */}
+        <TabsContent value="notas-fiscais" className="mt-4">
+          <LancamentoNotas />
         </TabsContent>
       </Tabs>
 
