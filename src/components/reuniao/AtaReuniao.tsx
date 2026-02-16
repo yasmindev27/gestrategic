@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import {
   FileText, Download, Loader2, Sparkles, CheckCircle, ListTodo,
-  ClipboardList, Users, Clock, Pencil, Save, X,
+  ClipboardList, Users, Clock, Pencil, Save, X, Send, CalendarPlus,
 } from "lucide-react";
 import { createStandardPdf, savePdfWithFooter } from "@/lib/export-utils";
 import { format, parseISO } from "date-fns";
@@ -29,9 +29,11 @@ interface AtaData {
 
 interface ReuniaoMeta {
   participantesNomes: string[];
+  participantesMap: Map<string, string>; // name -> userId
   horaInicio: string | null;
   horaEncerramento: string | null;
   criadorNome: string;
+  criadorId: string;
 }
 
 const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = false, onBack }: AtaReuniaoProps) => {
@@ -40,11 +42,15 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
   const [isGenerating, setIsGenerating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editAta, setEditAta] = useState<AtaData | null>(null);
+  const [isSendingToAgenda, setIsSendingToAgenda] = useState(false);
+  const [sentToAgenda, setSentToAgenda] = useState(false);
   const [meta, setMeta] = useState<ReuniaoMeta>({
     participantesNomes: [],
+    participantesMap: new Map(),
     horaInicio: null,
     horaEncerramento: null,
     criadorNome: "",
+    criadorId: "",
   });
 
   // Load meeting metadata (participants names, times)
@@ -76,12 +82,15 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
           .in("user_id", allIds);
 
         const nameMap = new Map(profiles?.map((p) => [p.user_id, p.full_name || "Sem nome"]) || []);
+        const reverseMap = new Map(profiles?.map((p) => [(p.full_name || "").toLowerCase(), p.user_id]) || []);
 
         setMeta({
           participantesNomes: allIds.map((id) => nameMap.get(id) || "Desconhecido"),
+          participantesMap: reverseMap,
           horaInicio: r.hora_inicio || r.created_at || null,
           horaEncerramento: r.hora_encerramento || null,
           criadorNome: nameMap.get(r.criado_por) || "Desconhecido",
+          criadorId: r.criado_por,
         });
       }
     };
@@ -136,6 +145,54 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
       toast({ title: "Ata atualizada", description: "As alterações foram salvas." });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const sendToAgenda = async () => {
+    if (!ata || ata.plano_acao.length === 0) {
+      toast({ title: "Aviso", description: "Nenhuma ação no plano para enviar.", variant: "destructive" });
+      return;
+    }
+
+    setIsSendingToAgenda(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      for (const item of ata.plano_acao) {
+        if (!item.tarefa.trim()) continue;
+
+        // Try to match responsavel name to a user_id
+        const responsavelId = meta.participantesMap.get(item.responsavel.toLowerCase()) || null;
+        const targetUserId = responsavelId || meta.criadorId;
+
+        // Create agenda item
+        const { data: agendaItem, error: agendaError } = await supabase.from("agenda_items").insert({
+          titulo: item.tarefa,
+          descricao: `Ação da reunião "${titulo}" — Prazo: ${item.prazo || "A definir"} | Responsável: ${item.responsavel}`,
+          tipo: "tarefa",
+          data_inicio: new Date().toISOString().split("T")[0],
+          data_fim: null,
+          prioridade: "media",
+          status: "pendente",
+          criado_por: user.id,
+        }).select("id").single();
+
+        if (agendaError) throw agendaError;
+
+        // Assign to the responsible participant
+        await supabase.from("agenda_destinatarios").insert({
+          agenda_item_id: agendaItem.id,
+          usuario_id: targetUserId,
+        });
+      }
+
+      setSentToAgenda(true);
+      toast({ title: "Enviado!", description: `${ata.plano_acao.length} ação(ões) enviada(s) para a Agenda dos responsáveis.` });
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSendingToAgenda(false);
     }
   };
 
@@ -442,9 +499,26 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
             </CardContent>
           </Card>
 
-          <Button onClick={exportPdf} className="w-full" variant="outline">
-            <Download className="h-4 w-4 mr-2" /> Exportar PDF
-          </Button>
+          <div className="flex gap-3">
+            <Button onClick={exportPdf} className="flex-1" variant="outline">
+              <Download className="h-4 w-4 mr-2" /> Exportar PDF
+            </Button>
+            {isHost && (
+              <Button
+                onClick={sendToAgenda}
+                className="flex-1"
+                disabled={isSendingToAgenda || sentToAgenda}
+              >
+                {isSendingToAgenda ? (
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Enviando...</>
+                ) : sentToAgenda ? (
+                  <><CheckCircle className="h-4 w-4 mr-2" /> Enviado para Agenda</>
+                ) : (
+                  <><CalendarPlus className="h-4 w-4 mr-2" /> Enviar para Agenda</>
+                )}
+              </Button>
+            )}
+          </div>
         </>
       )}
     </div>
