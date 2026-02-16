@@ -316,6 +316,19 @@ Design System para Sistema Hospitalar - GESTRATEGIC:
     @apply flex flex-wrap items-center gap-3 p-4 bg-card rounded-lg border;
   }
 
+  /* Button groups — consistent spacing and alignment */
+  .btn-group {
+    @apply flex items-center gap-2 flex-wrap;
+  }
+
+  .btn-group-end {
+    @apply flex items-center justify-end gap-2 flex-wrap;
+  }
+
+  .btn-group-between {
+    @apply flex items-center justify-between gap-2 flex-wrap;
+  }
+
   /* Empty state container */
   .empty-state {
     @apply flex flex-col items-center justify-center py-12 text-center;
