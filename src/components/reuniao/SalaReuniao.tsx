@@ -7,15 +7,28 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { useToast } from "@/hooks/use-toast";
 import {
   Mic, MicOff, Video, VideoOff, Circle, Square,
-  Shield, Phone, Loader2
+  Shield, Phone, Loader2, LogOut, XCircle
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface SalaReuniaoProps {
   reuniaoId: string;
+  isHost: boolean;
   onEnd: (transcricao: string) => void;
+  onLeave: () => void;
 }
 
-const SalaReuniao = ({ reuniaoId, onEnd }: SalaReuniaoProps) => {
+const SalaReuniao = ({ reuniaoId, isHost, onEnd, onLeave }: SalaReuniaoProps) => {
   const { toast } = useToast();
   const videoRef = useRef<HTMLVideoElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
@@ -229,15 +242,49 @@ const SalaReuniao = ({ reuniaoId, onEnd }: SalaReuniaoProps) => {
                 <Square className="h-4 w-4 fill-current" />
               </Button>
             )}
+            {/* Sair button - visible to all */}
             <Button
-              variant="destructive"
+              variant="outline"
               className="rounded-full h-12 px-6"
-              onClick={handleEndMeeting}
-              disabled={isUploading}
+              onClick={() => {
+                streamRef.current?.getTracks().forEach((t) => t.stop());
+                recognitionRef.current?.stop();
+                onLeave();
+              }}
             >
-              {isUploading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <Phone className="h-5 w-5 mr-2" />}
-              Encerrar
+              <LogOut className="h-5 w-5 mr-2" />
+              Sair
             </Button>
+
+            {/* Encerrar button - host only */}
+            {isHost && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="destructive"
+                    className="rounded-full h-12 px-6"
+                    disabled={isUploading}
+                  >
+                    {isUploading ? <Loader2 className="h-5 w-5 animate-spin mr-2" /> : <XCircle className="h-5 w-5 mr-2" />}
+                    Encerrar Reunião
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Encerrar reunião?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Essa ação encerrará a reunião para todos os participantes. A gravação e a transcrição serão salvas automaticamente.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleEndMeeting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Confirmar Encerramento
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
           </div>
         </div>
 
