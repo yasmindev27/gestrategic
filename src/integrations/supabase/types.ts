@@ -530,6 +530,122 @@ export type Database = {
         }
         Relationships: []
       }
+      ativos: {
+        Row: {
+          categoria: string
+          created_at: string
+          created_by: string | null
+          criticidade: string
+          data_aquisicao: string | null
+          data_garantia_fim: string | null
+          descricao: string | null
+          fabricante: string | null
+          id: string
+          modelo: string | null
+          nome: string
+          numero_patrimonio: string | null
+          numero_serie: string | null
+          observacoes: string | null
+          setor_localizacao: string | null
+          setor_responsavel: string
+          status: string
+          updated_at: string
+          valor_aquisicao: number | null
+          vida_util_meses: number | null
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          created_by?: string | null
+          criticidade?: string
+          data_aquisicao?: string | null
+          data_garantia_fim?: string | null
+          descricao?: string | null
+          fabricante?: string | null
+          id?: string
+          modelo?: string | null
+          nome: string
+          numero_patrimonio?: string | null
+          numero_serie?: string | null
+          observacoes?: string | null
+          setor_localizacao?: string | null
+          setor_responsavel: string
+          status?: string
+          updated_at?: string
+          valor_aquisicao?: number | null
+          vida_util_meses?: number | null
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          created_by?: string | null
+          criticidade?: string
+          data_aquisicao?: string | null
+          data_garantia_fim?: string | null
+          descricao?: string | null
+          fabricante?: string | null
+          id?: string
+          modelo?: string | null
+          nome?: string
+          numero_patrimonio?: string | null
+          numero_serie?: string | null
+          observacoes?: string | null
+          setor_localizacao?: string | null
+          setor_responsavel?: string
+          status?: string
+          updated_at?: string
+          valor_aquisicao?: number | null
+          vida_util_meses?: number | null
+        }
+        Relationships: []
+      }
+      ativos_disponibilidade: {
+        Row: {
+          ativo_id: string
+          created_at: string
+          data: string
+          horas_operacionais: number
+          horas_parado: number
+          id: string
+          motivo_parada: string | null
+          registrado_por: string | null
+          registrado_por_nome: string | null
+          setor: string
+        }
+        Insert: {
+          ativo_id: string
+          created_at?: string
+          data: string
+          horas_operacionais?: number
+          horas_parado?: number
+          id?: string
+          motivo_parada?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string | null
+          setor: string
+        }
+        Update: {
+          ativo_id?: string
+          created_at?: string
+          data?: string
+          horas_operacionais?: number
+          horas_parado?: number
+          id?: string
+          motivo_parada?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string | null
+          setor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ativos_disponibilidade_ativo_id_fkey"
+            columns: ["ativo_id"]
+            isOneToOne: false
+            referencedRelation: "ativos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auditoria_formularios_config: {
         Row: {
           ativo: boolean | null
@@ -2749,6 +2865,146 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      manutencoes_execucoes: {
+        Row: {
+          ativo_id: string
+          created_at: string
+          custo_real: number | null
+          data_execucao: string
+          descricao: string
+          executado_por: string | null
+          executado_por_nome: string
+          id: string
+          observacoes: string | null
+          pecas_utilizadas: string | null
+          preventiva_id: string | null
+          resultado: string | null
+          setor: string
+          tempo_parada_horas: number | null
+          tipo: string
+        }
+        Insert: {
+          ativo_id: string
+          created_at?: string
+          custo_real?: number | null
+          data_execucao?: string
+          descricao: string
+          executado_por?: string | null
+          executado_por_nome: string
+          id?: string
+          observacoes?: string | null
+          pecas_utilizadas?: string | null
+          preventiva_id?: string | null
+          resultado?: string | null
+          setor: string
+          tempo_parada_horas?: number | null
+          tipo?: string
+        }
+        Update: {
+          ativo_id?: string
+          created_at?: string
+          custo_real?: number | null
+          data_execucao?: string
+          descricao?: string
+          executado_por?: string | null
+          executado_por_nome?: string
+          id?: string
+          observacoes?: string | null
+          pecas_utilizadas?: string | null
+          preventiva_id?: string | null
+          resultado?: string | null
+          setor?: string
+          tempo_parada_horas?: number | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manutencoes_execucoes_ativo_id_fkey"
+            columns: ["ativo_id"]
+            isOneToOne: false
+            referencedRelation: "ativos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manutencoes_execucoes_preventiva_id_fkey"
+            columns: ["preventiva_id"]
+            isOneToOne: false
+            referencedRelation: "manutencoes_preventivas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manutencoes_preventivas: {
+        Row: {
+          ativo_id: string
+          created_at: string
+          created_by: string | null
+          custo_estimado: number | null
+          descricao: string | null
+          id: string
+          observacoes: string | null
+          periodicidade_dias: number
+          prioridade: string
+          proxima_execucao: string
+          responsavel_id: string | null
+          responsavel_nome: string
+          setor: string
+          status: string
+          tipo: string
+          titulo: string
+          ultima_execucao: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo_id: string
+          created_at?: string
+          created_by?: string | null
+          custo_estimado?: number | null
+          descricao?: string | null
+          id?: string
+          observacoes?: string | null
+          periodicidade_dias?: number
+          prioridade?: string
+          proxima_execucao: string
+          responsavel_id?: string | null
+          responsavel_nome: string
+          setor: string
+          status?: string
+          tipo?: string
+          titulo: string
+          ultima_execucao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo_id?: string
+          created_at?: string
+          created_by?: string | null
+          custo_estimado?: number | null
+          descricao?: string | null
+          id?: string
+          observacoes?: string | null
+          periodicidade_dias?: number
+          prioridade?: string
+          proxima_execucao?: string
+          responsavel_id?: string | null
+          responsavel_nome?: string
+          setor?: string
+          status?: string
+          tipo?: string
+          titulo?: string
+          ultima_execucao?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manutencoes_preventivas_ativo_id_fkey"
+            columns: ["ativo_id"]
+            isOneToOne: false
+            referencedRelation: "ativos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       modulos_sistema: {
         Row: {
