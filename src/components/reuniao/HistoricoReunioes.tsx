@@ -3,6 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -468,12 +474,21 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
                       )}
                       {r.ata_gerada && (
                         <div className="flex gap-2 mt-4 pt-3 border-t">
-                          <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); exportAtaPdf(r); }}>
-                            <Download className="h-4 w-4 mr-2" /> Baixar PDF
-                          </Button>
-                          <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); exportAtaWord(r); }}>
-                            <FileText className="h-4 w-4 mr-2" /> Baixar Word
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
+                                <Download className="h-4 w-4 mr-2" /> Baixar Ata
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="start">
+                              <DropdownMenuItem onClick={() => exportAtaPdf(r)}>
+                                <FileText className="h-4 w-4 mr-2 text-red-500" /> PDF
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => exportAtaWord(r)}>
+                                <FileText className="h-4 w-4 mr-2 text-blue-500" /> Word (.docx)
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       )}
                     </div>

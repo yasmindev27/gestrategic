@@ -2,6 +2,12 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -603,12 +609,21 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
           </Card>
 
           <div className="flex gap-3 flex-wrap">
-            <Button onClick={exportPdf} className="flex-1" variant="outline">
-              <Download className="h-4 w-4 mr-2" /> Exportar PDF
-            </Button>
-            <Button onClick={exportWord} className="flex-1" variant="outline">
-              <FileText className="h-4 w-4 mr-2" /> Exportar Word
-            </Button>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="flex-1">
+                  <Download className="h-4 w-4 mr-2" /> Exportar Ata
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuItem onClick={exportPdf}>
+                  <FileText className="h-4 w-4 mr-2 text-red-500" /> PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={exportWord}>
+                  <FileText className="h-4 w-4 mr-2 text-blue-500" /> Word (.docx)
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             {isHost && (
               <Button
                 onClick={openAgendaDialog}
