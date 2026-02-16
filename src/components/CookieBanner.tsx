@@ -12,7 +12,7 @@ const CookieBanner = () => {
       <div className="max-w-5xl mx-auto px-4 py-3 flex flex-col sm:flex-row items-center gap-3">
         <Shield className="h-5 w-5 text-primary flex-shrink-0 hidden sm:block" />
         <p className="text-xs text-muted-foreground text-center sm:text-left flex-1">
-          A Gstrategic utiliza cookies essenciais para garantir segurança, autenticação e a melhor experiência de uso. 
+          A Gestrategic utiliza cookies essenciais para garantir segurança, autenticação e a melhor experiência de uso. 
           Ao continuar, você concorda com nossa Política de Privacidade.
         </p>
         <div className="flex gap-2 flex-shrink-0">
