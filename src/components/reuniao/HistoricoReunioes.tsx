@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useUserRole } from "@/hooks/useUserRole";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -43,7 +45,22 @@ import {
   ArrowLeft,
   Download,
   FileText,
+  Pencil,
+  Trash2,
+  Save,
+  X,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Input } from "@/components/ui/input";
 import { format, parseISO, isPast, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { createStandardPdf, savePdfWithFooter } from "@/lib/export-utils";
@@ -116,9 +133,15 @@ const parsePrazo = (prazo: string): Date | null => {
 };
 
 const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
+  const { isAdmin } = useUserRole();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("todos");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [deleteId, setDeleteId] = useState<string | null>(null);
 
   // Fetch encerradas meetings
   const { data: reunioes } = useQuery({
@@ -191,6 +214,30 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
 
     return result;
   }, [reunioesWithStatus, search, statusFilter]);
+
+  const handleEditSave = async (id: string) => {
+    if (!editTitle.trim()) return;
+    const { error } = await supabase.from("reunioes").update({ titulo: editTitle } as any).eq("id", id);
+    if (error) {
+      toast({ title: "Erro", description: "Falha ao atualizar título.", variant: "destructive" });
+    } else {
+      toast({ title: "Atualizado", description: "Título da reunião atualizado." });
+      queryClient.invalidateQueries({ queryKey: ["reunioes_historico"] });
+    }
+    setEditingId(null);
+  };
+
+  const handleDelete = async () => {
+    if (!deleteId) return;
+    const { error } = await supabase.from("reunioes").delete().eq("id", deleteId);
+    if (error) {
+      toast({ title: "Erro", description: "Falha ao excluir reunião.", variant: "destructive" });
+    } else {
+      toast({ title: "Excluída", description: "Reunião removida com sucesso." });
+      queryClient.invalidateQueries({ queryKey: ["reunioes_historico"] });
+    }
+    setDeleteId(null);
+  };
 
   const formatTime = (iso: string | null) => {
     if (!iso) return "—";
@@ -376,15 +423,43 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
                           ) : (
                             <ChevronRight className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                           )}
-                          <div className="min-w-0">
-                            <h3 className="font-medium text-foreground truncate">
-                              {r.titulo}
-                            </h3>
+                          <div className="min-w-0 flex-1">
+                            {editingId === r.id ? (
+                              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                <Input
+                                  value={editTitle}
+                                  onChange={(e) => setEditTitle(e.target.value)}
+                                  onKeyDown={(e) => e.key === "Enter" && handleEditSave(r.id)}
+                                  className="h-7 text-sm"
+                                  autoFocus
+                                />
+                                <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => handleEditSave(r.id)}>
+                                  <Save className="h-3.5 w-3.5" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-7 w-7 flex-shrink-0" onClick={() => setEditingId(null)}>
+                                  <X className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <h3 className="font-medium text-foreground truncate">
+                                {r.titulo}
+                              </h3>
+                            )}
                             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                               <Clock className="h-3 w-3" />
                               {formatTime(r.hora_encerramento || r.created_at)}
                             </div>
                           </div>
+                          {isAdmin && editingId !== r.id && (
+                            <div className="flex gap-1 flex-shrink-0 ml-2" onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setEditingId(r.id); setEditTitle(r.titulo || ""); }}>
+                                <Pencil className="h-3.5 w-3.5" />
+                              </Button>
+                              <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteId(r.id)}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
 
                         {/* Status summary badges */}
@@ -499,6 +574,23 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
           })}
         </div>
       )}
+      {/* Delete confirmation */}
+      <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir reunião?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta ação é irreversível. A reunião e sua ata serão permanentemente removidas.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
