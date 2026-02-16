@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -199,14 +200,7 @@ export const DashboardConformidade = () => {
             <RefreshCcw className="h-4 w-4 mr-2" />
             Atualizar
           </Button>
-          <Button variant="outline" size="sm" onClick={exportToExcel}>
-            <Download className="h-4 w-4 mr-2" />
-            Excel
-          </Button>
-          <Button variant="outline" size="sm" onClick={exportToPDF}>
-            <FileText className="h-4 w-4 mr-2" />
-            PDF
-          </Button>
+          <ExportDropdown onExportExcel={exportToExcel} onExportPDF={exportToPDF} />
         </div>
       </div>
 

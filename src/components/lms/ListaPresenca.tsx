@@ -9,6 +9,7 @@ import { ClipboardList } from "lucide-react";
 import { useState } from "react";
 import { Treinamento, Inscricao } from "./types";
 import { exportToCSV } from "@/lib/export-utils";
+import { ExportDropdown } from "@/components/ui/export-dropdown";
 
 const statusColors: Record<string, string> = {
   capacitado: "bg-green-100 text-green-800",
@@ -72,7 +73,7 @@ export default function ListaPresenca() {
                 {treinamentos.map(t => <SelectItem key={t.id} value={t.id}>{t.titulo}</SelectItem>)}
               </SelectContent>
             </Select>
-            <Button variant="outline" size="sm" onClick={handleExport}>Exportar CSV</Button>
+            <ExportDropdown onExportCSV={handleExport} />
           </div>
         </div>
       </CardHeader>
