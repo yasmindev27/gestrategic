@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Users, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog, Shirt, HardHat, Heart, AlertTriangle, Syringe, ExternalLink, MessageSquare, Ticket, GraduationCap } from "lucide-react";
+import { LayoutDashboard, Users, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog, Shirt, HardHat, Heart, AlertTriangle, Syringe, ExternalLink, MessageSquare, Ticket, GraduationCap, Video } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -84,6 +84,7 @@ const Sidebar = ({
         { icon: GraduationCap, label: "Capacitação", id: "lms", category: "administrativo" },
         { icon: ScrollText, label: "Logs", id: "logs", category: "administrativo" },
         { icon: Shield, label: "Administração", id: "admin", category: "administrativo" },
+        { icon: Video, label: "Reuniões", id: "reuniao", category: "administrativo" },
         { icon: FileText, label: "Docs Interact", id: "documentos-interact", category: "integracao" },
         { icon: Stethoscope, label: "Sistema Salus", id: "salus", category: "integracao" }
       );
@@ -260,9 +261,10 @@ const Sidebar = ({
         ? "https://suporte.santacasachavantes.org/index.php"
         : "https://santacasachavantes.interact.com.br/sa/custom/webdocuments/anonymous/list.jsp?unit=%2334";
 
-      const handleClick = (e: React.MouseEvent) => {
+    const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();
-        window.open(externalUrl, "_blank", "noopener,noreferrer");
+        toast({ title: "Redirecionando", description: "Acessando ambiente seguro do parceiro..." });
+        setTimeout(() => window.open(externalUrl, "_blank", "noopener,noreferrer"), 1500);
       };
 
       const link = (

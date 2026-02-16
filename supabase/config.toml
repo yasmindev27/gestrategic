@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.proxy-iframe]
 verify_jwt = false
+
+[functions.gerar-ata-reuniao]
+verify_jwt = false
