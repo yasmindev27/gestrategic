@@ -4,8 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Users, Plus, Upload, Search, Filter, Pencil, Trash2, 
   UserCheck, UserX, Stethoscope, Syringe, MoreHorizontal,
-  FileSpreadsheet, Download
+  FileSpreadsheet, Download, ClipboardList
 } from "lucide-react";
+import { ProfissionalPerfilDialog } from "./ProfissionalPerfilDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -78,6 +79,8 @@ const ProfissionaisSaude = () => {
   const [filterStatus, setFilterStatus] = useState<string>("todos");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [perfilOpen, setPerfilOpen] = useState(false);
+  const [selectedProfissional, setSelectedProfissional] = useState<Profissional | null>(null);
   const [editingProfissional, setEditingProfissional] = useState<Profissional | null>(null);
   const [formData, setFormData] = useState({
     nome: "",
@@ -474,6 +477,13 @@ const ProfissionaisSaude = () => {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => {
+                                setSelectedProfissional(p);
+                                setPerfilOpen(true);
+                              }}>
+                                <ClipboardList className="h-4 w-4 mr-2" />
+                                Ver Perfil
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEdit(p)}>
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Editar
@@ -639,6 +649,16 @@ const ProfissionaisSaude = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Perfil Dialog */}
+      {selectedProfissional && (
+        <ProfissionalPerfilDialog
+          open={perfilOpen}
+          onOpenChange={setPerfilOpen}
+          profissionalId={selectedProfissional.id}
+          profissionalNome={selectedProfissional.nome}
+        />
+      )}
     </div>
   );
 };

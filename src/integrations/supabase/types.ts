@@ -3352,6 +3352,50 @@ export type Database = {
         }
         Relationships: []
       }
+      profissionais_documentos: {
+        Row: {
+          arquivo_url: string
+          created_at: string
+          id: string
+          nome_arquivo: string
+          observacao: string | null
+          profissional_id: string
+          tipo_documento: string
+          uploaded_by: string | null
+          uploaded_by_nome: string
+        }
+        Insert: {
+          arquivo_url: string
+          created_at?: string
+          id?: string
+          nome_arquivo: string
+          observacao?: string | null
+          profissional_id: string
+          tipo_documento: string
+          uploaded_by?: string | null
+          uploaded_by_nome: string
+        }
+        Update: {
+          arquivo_url?: string
+          created_at?: string
+          id?: string
+          nome_arquivo?: string
+          observacao?: string | null
+          profissional_id?: string
+          tipo_documento?: string
+          uploaded_by?: string | null
+          uploaded_by_nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profissionais_documentos_profissional_id_fkey"
+            columns: ["profissional_id"]
+            isOneToOne: false
+            referencedRelation: "profissionais_saude"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profissionais_saude: {
         Row: {
           created_at: string

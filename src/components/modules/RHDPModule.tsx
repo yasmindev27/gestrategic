@@ -1,12 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, lazy, Suspense } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, FileText, ShieldX, ClipboardList } from "lucide-react";
+import { Clock, FileText, ShieldX, ClipboardList, Users, UserCog } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { BancoHorasSection } from "@/components/rhdp/BancoHorasSection";
 import { CentralAtestadosSection } from "@/components/rhdp/CentralAtestadosSection";
 import { FormulariosSection } from "@/components/rhdp/FormulariosSection";
+import { ProfissionaisSaude } from "@/components/rh";
+import { Loader2 } from "lucide-react";
+
+const EquipeModule = lazy(() => import("@/components/modules/EquipeModule"));
 
 export const RHDPModule = () => {
   const { isAdmin, hasRole, isLoading } = useUserRole();
@@ -49,27 +53,40 @@ export const RHDPModule = () => {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <FileText className="h-6 w-6 text-primary" />
+            <UserCog className="h-6 w-6 text-primary" />
             Recursos Humanos / Departamento Pessoal
           </CardTitle>
           <CardDescription>
-            Gerenciamento de banco de horas e atestados dos colaboradores
+            Central de gestão de pessoas, cadastros, escalas, banco de horas e atestados
           </CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-5">
               <TabsTrigger value="banco-horas" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
-                Banco de Horas
+                <span className="hidden sm:inline">Banco de Horas</span>
+                <span className="sm:hidden">Horas</span>
               </TabsTrigger>
               <TabsTrigger value="atestados" className="flex items-center gap-2">
                 <FileText className="h-4 w-4" />
-                Central de Atestados
+                <span className="hidden sm:inline">Atestados</span>
+                <span className="sm:hidden">Atest.</span>
               </TabsTrigger>
               <TabsTrigger value="formularios" className="flex items-center gap-2">
                 <ClipboardList className="h-4 w-4" />
-                Formulários
+                <span className="hidden sm:inline">Formulários</span>
+                <span className="sm:hidden">Forms</span>
+              </TabsTrigger>
+              <TabsTrigger value="profissionais" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Profissionais</span>
+                <span className="sm:hidden">Prof.</span>
+              </TabsTrigger>
+              <TabsTrigger value="equipe" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Equipe</span>
+                <span className="sm:hidden">Equipe</span>
               </TabsTrigger>
             </TabsList>
 
@@ -83,6 +100,16 @@ export const RHDPModule = () => {
 
             <TabsContent value="formularios" className="mt-6">
               <FormulariosSection />
+            </TabsContent>
+
+            <TabsContent value="profissionais" className="mt-6">
+              <ProfissionaisSaude />
+            </TabsContent>
+
+            <TabsContent value="equipe" className="mt-6">
+              <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
+                <EquipeModule />
+              </Suspense>
             </TabsContent>
           </Tabs>
         </CardContent>
