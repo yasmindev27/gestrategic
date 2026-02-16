@@ -1,15 +1,15 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
-import { SetupReuniao, SalaReuniao, AtaReuniao } from "@/components/reuniao";
+import { SetupReuniao, SalaReuniao, AtaReuniao, HistoricoReunioes } from "@/components/reuniao";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Video, Plus, Clock, FileText, LogIn } from "lucide-react";
+import { Video, Plus, Clock, FileText, LogIn, History } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
-type View = "list" | "setup" | "sala" | "ata";
+type View = "list" | "setup" | "sala" | "ata" | "historico";
 
 const ReuniaoModule = () => {
   const [view, setView] = useState<View>("list");
@@ -96,6 +96,10 @@ const ReuniaoModule = () => {
     );
   }
 
+  if (view === "historico") {
+    return <HistoricoReunioes onBack={() => setView("list")} />;
+  }
+
   const statusBadge = (status: string) => {
     const map: Record<string, { label: string; variant: "default" | "secondary" | "destructive" }> = {
       agendada: { label: "Agendada", variant: "secondary" },
@@ -118,9 +122,14 @@ const ReuniaoModule = () => {
             <p className="text-sm text-muted-foreground">Gerencie reuniões e atas com IA</p>
           </div>
         </div>
-        <Button onClick={() => setView("setup")}>
-          <Plus className="h-4 w-4 mr-2" /> Nova Reunião
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => setView("historico")}>
+            <History className="h-4 w-4 mr-2" /> Histórico
+          </Button>
+          <Button onClick={() => setView("setup")}>
+            <Plus className="h-4 w-4 mr-2" /> Nova Reunião
+          </Button>
+        </div>
       </div>
 
       {!reunioes || reunioes.length === 0 ? (
