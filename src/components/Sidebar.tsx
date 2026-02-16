@@ -63,7 +63,6 @@ const Sidebar = ({
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
         { icon: Ambulance, label: "NIR", id: "nir", category: "assistencial" },
-        { icon: Ambulance, label: "Mapa de Leitos", id: "mapa-leitos", category: "assistencial" },
         { icon: Stethoscope, label: "Médicos", id: "medicos", category: "assistencial" },
         { icon: Syringe, label: "Enfermagem", id: "enfermagem", category: "assistencial" },
         { icon: Heart, label: "Assist. Social", id: "assistencia-social", category: "assistencial" },

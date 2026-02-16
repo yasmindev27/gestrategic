@@ -15,7 +15,7 @@ import { LaboratorioModule } from "@/components/modules/LaboratorioModule";
 import { AgendaModule } from "@/components/agenda";
 import { LogsAuditoriaModule } from "@/components/modules/LogsAuditoriaModule";
 import { RestauranteModule } from "@/components/modules/RestauranteModule";
-import { MapaLeitosModule } from "@/components/modules/MapaLeitosModule";
+
 import { NirModule } from "@/components/modules/NirModule";
 import { RecepcaoModule } from "@/components/modules/RecepcaoModule";
 import { RHDPModule } from "@/components/modules/RHDPModule";
@@ -142,8 +142,6 @@ const Dashboard = () => {
       case "nir":
       case "dashboard-nir":
         return <NirModule onOpenExternal={handleOpenExternal} />;
-      case "mapa-leitos":
-        return <MapaLeitosModule />;
       case "laboratorio":
         return <LaboratorioModule />;
       case "restaurante":
