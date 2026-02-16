@@ -13,7 +13,7 @@ const ExternalViewer = ({ url, title, onClose }: ExternalViewerProps) => {
   const [error, setError] = useState(false);
 
   return (
-    <div className="flex flex-col h-full w-full">
+    <div className="flex flex-col h-[calc(100vh-1rem)] w-full">
       {/* Header bar */}
       <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border-b gap-2 shrink-0">
         <div className="flex items-center gap-2 min-w-0">
@@ -39,7 +39,7 @@ const ExternalViewer = ({ url, title, onClose }: ExternalViewerProps) => {
       </div>
 
       {/* Content area */}
-      <div className="flex-1 relative">
+      <div className="flex-1 relative min-h-0">
         {loading && !error && (
           <div className="absolute inset-0 flex items-center justify-center bg-background z-10">
             <div className="flex flex-col items-center gap-2">

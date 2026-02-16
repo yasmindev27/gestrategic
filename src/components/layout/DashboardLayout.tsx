@@ -11,6 +11,7 @@ interface DashboardLayoutProps {
   onOpenExternal?: (url: string, title: string) => void;
   children: ReactNode;
   showFloatingChat?: boolean;
+  fullContent?: boolean;
 }
 
 // Optimized loading fallback
@@ -35,25 +36,33 @@ const DashboardLayout = memo(({
   onOpenExternal,
   children,
   showFloatingChat = true,
+  fullContent = false,
 }: DashboardLayoutProps) => {
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar activeSection={activeSection} onSectionChange={onSectionChange} onOpenExternal={onOpenExternal} />
       
-      <main className="flex-1 p-6 overflow-auto">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <GreetingHeader />
-          
+      {fullContent ? (
+        <main className="flex-1 overflow-hidden">
           <Suspense fallback={<ModuleLoader />}>
             {children}
           </Suspense>
-        </div>
+        </main>
+      ) : (
+        <main className="flex-1 p-6 overflow-auto">
+          <div className="max-w-7xl mx-auto space-y-6">
+            <GreetingHeader />
+            
+            <Suspense fallback={<ModuleLoader />}>
+              {children}
+            </Suspense>
+          </div>
 
-        {/* Floating chat button */}
-        {showFloatingChat && activeSection !== "chat" && (
-          <FloatingChatButton currentModule={activeSection} />
-        )}
-      </main>
+          {showFloatingChat && activeSection !== "chat" && (
+            <FloatingChatButton currentModule={activeSection} />
+          )}
+        </main>
+      )}
     </div>
   );
 });
