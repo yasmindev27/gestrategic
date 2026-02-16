@@ -2887,6 +2887,87 @@ export type Database = {
           },
         ]
       }
+      porta_ecg_atendimentos: {
+        Row: {
+          action_plan: string | null
+          age: number
+          arrival_time: string
+          competence_month: number
+          competence_year: number
+          conducts: string[] | null
+          created_at: string
+          created_by: string | null
+          delay_reason: string | null
+          delay_reason_other: string | null
+          door_to_ecg_minutes: number
+          ecg_time: string
+          first_doctor_time: string | null
+          goal_minutes: number
+          id: string
+          initial_diagnosis: string | null
+          medical_report: string | null
+          observations: string | null
+          patient_name: string | null
+          record_number: string
+          risk_classification: string
+          sex: string
+          updated_at: string
+          within_goal: boolean
+        }
+        Insert: {
+          action_plan?: string | null
+          age?: number
+          arrival_time: string
+          competence_month: number
+          competence_year: number
+          conducts?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          delay_reason?: string | null
+          delay_reason_other?: string | null
+          door_to_ecg_minutes?: number
+          ecg_time: string
+          first_doctor_time?: string | null
+          goal_minutes?: number
+          id?: string
+          initial_diagnosis?: string | null
+          medical_report?: string | null
+          observations?: string | null
+          patient_name?: string | null
+          record_number: string
+          risk_classification?: string
+          sex?: string
+          updated_at?: string
+          within_goal?: boolean
+        }
+        Update: {
+          action_plan?: string | null
+          age?: number
+          arrival_time?: string
+          competence_month?: number
+          competence_year?: number
+          conducts?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          delay_reason?: string | null
+          delay_reason_other?: string | null
+          door_to_ecg_minutes?: number
+          ecg_time?: string
+          first_doctor_time?: string | null
+          goal_minutes?: number
+          id?: string
+          initial_diagnosis?: string | null
+          medical_report?: string | null
+          observations?: string | null
+          patient_name?: string | null
+          record_number?: string
+          risk_classification?: string
+          sex?: string
+          updated_at?: string
+          within_goal?: boolean
+        }
+        Relationships: []
+      }
       produtos: {
         Row: {
           ativo: boolean | null
