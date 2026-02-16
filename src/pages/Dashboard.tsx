@@ -112,7 +112,7 @@ const Dashboard = () => {
   const renderContent = () => {
     switch (activeSection) {
       case "dashboard":
-        return <MemoizedDashboardPersonalizado />;
+        return <MemoizedDashboardPersonalizado onNavigate={handleSectionChange} />;
       case "abrir-chamado":
         return <AbrirChamadoModule onOpenExternal={handleOpenExternal} />;
       case "faturamento":
@@ -185,7 +185,7 @@ const Dashboard = () => {
           </Suspense>
         );
       default:
-        return <MemoizedDashboardPersonalizado />;
+        return <MemoizedDashboardPersonalizado onNavigate={handleSectionChange} />;
     }
   };
 
