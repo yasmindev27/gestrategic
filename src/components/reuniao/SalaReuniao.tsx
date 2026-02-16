@@ -171,10 +171,11 @@ const SalaReuniao = ({ reuniaoId, isHost, onEnd, onLeave }: SalaReuniaoProps) =>
           await supabase.from("reunioes").update({
             gravacao_url: fileName,
             status: "encerrada",
-          }).eq("id", reuniaoId);
+            hora_encerramento: new Date().toISOString(),
+          } as any).eq("id", reuniaoId);
         }
       } else {
-        await supabase.from("reunioes").update({ status: "encerrada" }).eq("id", reuniaoId);
+        await supabase.from("reunioes").update({ status: "encerrada", hora_encerramento: new Date().toISOString() } as any).eq("id", reuniaoId);
       }
 
       const fullTranscricao = transcricao.join(". ");
