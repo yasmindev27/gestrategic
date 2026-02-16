@@ -38,6 +38,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { Skeleton } from "@/components/ui/skeleton";
 import { IndicadoresNSP } from "@/components/indicadores";
+import { useSetoresNomes } from "@/hooks/useSetores";
 import { format, addDays, subDays, parseISO, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
@@ -62,17 +63,6 @@ interface EscalaMedico {
   profissionais_saude?: Profissional;
 }
 
-const setoresUPA = [
-  "Emergência",
-  "Sala Vermelha",
-  "Sala Amarela",
-  "Sala Verde",
-  "Observação Adulto",
-  "Observação Pediátrica",
-  "Pediatria",
-  "Ortopedia",
-];
-
 const tipoPlantaoConfig = {
   regular: { label: "Regular", variant: "default" as const },
   sobreaviso: { label: "Sobreaviso", variant: "secondary" as const },
@@ -89,6 +79,7 @@ const statusConfig = {
 const MedicosModule = ({ onOpenExternal }: { onOpenExternal?: (url: string, title: string) => void }) => {
   const { toast } = useToast();
   const { logAction } = useLogAccess();
+  const { data: setoresUPA = [] } = useSetoresNomes();
 
   useEffect(() => {
     logAction("acesso_modulo", "medicos");

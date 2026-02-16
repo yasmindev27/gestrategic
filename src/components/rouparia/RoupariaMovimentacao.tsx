@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { useSetoresNomes } from "@/hooks/useSetores";
 import { 
   Barcode, 
   ArrowDownCircle, 
@@ -76,18 +77,6 @@ interface Movimentacao {
   };
 }
 
-const SETORES = [
-  "Enfermaria Masculina",
-  "Enfermaria Feminina",
-  "Pediatria",
-  "UTI",
-  "Centro Cirúrgico",
-  "Emergência",
-  "Ambulatório",
-  "Lavanderia",
-  "Outro"
-];
-
 const TIPO_LABELS: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   entrada: { label: "Entrada", color: "bg-green-500/10 text-green-600 border-green-200", icon: <ArrowDownCircle className="w-4 h-4" /> },
   saida: { label: "Saída", color: "bg-blue-500/10 text-blue-600 border-blue-200", icon: <ArrowUpCircle className="w-4 h-4" /> },
@@ -105,6 +94,7 @@ const PROXIMO_TIPO: Record<string, string> = {
 
 export function RoupariaMovimentacao() {
   const { toast } = useToast();
+  const { data: SETORES = [] } = useSetoresNomes();
   const barcodeInputRef = useRef<HTMLInputElement>(null);
   
   const [isLoading, setIsLoading] = useState(false);

@@ -20,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { useSetoresNomes } from "@/hooks/useSetores";
 import { format } from "date-fns";
 
 interface AdicionarEscalaDialogProps {
@@ -36,21 +37,10 @@ interface Profissional {
   especialidade: string | null;
 }
 
-const setoresUPA = [
-  "Emergência",
-  "Sala Vermelha",
-  "Sala Amarela",
-  "Sala Verde",
-  "Observação Adulto",
-  "Observação Pediátrica",
-  "Pediatria",
-  "Ortopedia",
-  "UTI",
-];
-
 const AdicionarEscalaDialog = ({ open, onOpenChange, selectedDate }: AdicionarEscalaDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { data: setoresUPA = [] } = useSetoresNomes();
   const [tipoProfissional, setTipoProfissional] = useState<"medico" | "enfermagem">("medico");
   const [formData, setFormData] = useState({
     profissional_id: "",
