@@ -35,9 +35,14 @@ import {
   AlertCircle,
   Timer,
   ArrowLeft,
+  Download,
+  FileText,
 } from "lucide-react";
 import { format, parseISO, isPast, parse } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { createStandardPdf, savePdfWithFooter } from "@/lib/export-utils";
+import { Document, Packer, Paragraph, TextRun, Table as DocxTable, TableRow as DocxTableRow, TableCell as DocxTableCell, WidthType, HeadingLevel } from "docx";
+import { saveAs } from "file-saver";
 
 interface HistoricoReunioesProps {
   onBack: () => void;
@@ -188,6 +193,100 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
     } catch {
       return "—";
     }
+  };
+
+  const exportAtaPdf = async (r: any) => {
+    const ata = r.ata_gerada as AtaData | null;
+    if (!ata) return;
+    const { doc, logoImg } = await createStandardPdf(`Ata - ${r.titulo}`);
+    let y = 35;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Encerramento: ${formatTime(r.hora_encerramento)}`, 14, y); y += 8;
+
+    if (ata.resumo_executivo) {
+      doc.setFontSize(12); doc.setFont("helvetica", "bold");
+      doc.text("Resumo Executivo", 14, y); y += 7;
+      doc.setFontSize(9); doc.setFont("helvetica", "normal");
+      const lines = doc.splitTextToSize(ata.resumo_executivo, 180);
+      doc.text(lines, 14, y); y += lines.length * 4.5 + 8;
+    }
+
+    if (ata.decisoes_tomadas?.length) {
+      doc.setFontSize(12); doc.setFont("helvetica", "bold");
+      doc.text("Decisões Tomadas", 14, y); y += 7;
+      doc.setFontSize(9); doc.setFont("helvetica", "normal");
+      ata.decisoes_tomadas.forEach((d, i) => {
+        const lines = doc.splitTextToSize(`${i + 1}. ${d}`, 175);
+        doc.text(lines, 16, y); y += lines.length * 4.5 + 2;
+      });
+      y += 6;
+    }
+
+    if (ata.plano_acao?.length) {
+      doc.setFontSize(12); doc.setFont("helvetica", "bold");
+      doc.text("Plano de Ação", 14, y); y += 7;
+      doc.setFontSize(9); doc.setFont("helvetica", "normal");
+      ata.plano_acao.forEach((item, i) => {
+        const text = `${i + 1}. ${item.tarefa} — Responsável: ${item.responsavel} | Prazo: ${item.prazo}`;
+        const lines = doc.splitTextToSize(text, 175);
+        doc.text(lines, 16, y); y += lines.length * 4.5 + 2;
+      });
+    }
+
+    savePdfWithFooter(doc, `Ata - ${r.titulo}`, `ata_${r.id.slice(0, 8)}`, logoImg);
+  };
+
+  const exportAtaWord = async (r: any) => {
+    const ata = r.ata_gerada as AtaData | null;
+    if (!ata) return;
+
+    const children: any[] = [
+      new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: `Ata - ${r.titulo}`, bold: true })] }),
+      new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: `Encerramento: ${formatTime(r.hora_encerramento)}`, size: 20 })] }),
+    ];
+
+    if (ata.resumo_executivo) {
+      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "Resumo Executivo", bold: true })] }));
+      children.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: ata.resumo_executivo, size: 22 })] }));
+    }
+
+    if (ata.decisoes_tomadas?.length) {
+      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "Decisões Tomadas", bold: true })] }));
+      ata.decisoes_tomadas.forEach((d, i) => {
+        children.push(new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: `${i + 1}. ${d}`, size: 22 })] }));
+      });
+    }
+
+    if (ata.plano_acao?.length) {
+      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, spacing: { before: 200 }, children: [new TextRun({ text: "Plano de Ação", bold: true })] }));
+      children.push(new DocxTable({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+          new DocxTableRow({
+            children: ["#", "Tarefa", "Responsável", "Prazo"].map(h =>
+              new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 20 })] })] })
+            ),
+          }),
+          ...ata.plano_acao.map((item, i) =>
+            new DocxTableRow({
+              children: [
+                new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: String(i + 1), size: 20 })] })] }),
+                new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.tarefa, size: 20 })] })] }),
+                new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.responsavel, size: 20 })] })] }),
+                new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.prazo, size: 20 })] })] }),
+              ],
+            })
+          ),
+        ],
+      }));
+    }
+
+    children.push(new Paragraph({ spacing: { before: 400 }, children: [new TextRun({ text: "Documento gerado em conformidade com a LGPD (Lei nº 13.709/2018).", size: 14, color: "888888", italics: true })] }));
+
+    const docx = new Document({ sections: [{ properties: {}, children }] });
+    const blob = await Packer.toBlob(docx);
+    saveAs(blob, `ata_${r.id.slice(0, 8)}.docx`);
   };
 
   return (
@@ -366,6 +465,16 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
                             )}
                           </TableBody>
                         </Table>
+                      )}
+                      {r.ata_gerada && (
+                        <div className="flex gap-2 mt-4 pt-3 border-t">
+                          <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); exportAtaPdf(r); }}>
+                            <Download className="h-4 w-4 mr-2" /> Baixar PDF
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={(e) => { e.stopPropagation(); exportAtaWord(r); }}>
+                            <FileText className="h-4 w-4 mr-2" /> Baixar Word
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </CollapsibleContent>
