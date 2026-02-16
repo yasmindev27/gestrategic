@@ -3262,9 +3262,13 @@ export type Database = {
         Row: {
           aprovado_em: string | null
           aprovado_por: string | null
+          arquivo_nome: string | null
+          arquivo_url: string | null
           ativo_id: string | null
           created_at: string
           data_estimada_entrega: string | null
+          encaminhado_almoxarifado: boolean | null
+          encaminhado_em: string | null
           id: string
           item_descricao: string | null
           item_nome: string
@@ -3283,9 +3287,13 @@ export type Database = {
         Insert: {
           aprovado_em?: string | null
           aprovado_por?: string | null
+          arquivo_nome?: string | null
+          arquivo_url?: string | null
           ativo_id?: string | null
           created_at?: string
           data_estimada_entrega?: string | null
+          encaminhado_almoxarifado?: boolean | null
+          encaminhado_em?: string | null
           id?: string
           item_descricao?: string | null
           item_nome: string
@@ -3304,9 +3312,13 @@ export type Database = {
         Update: {
           aprovado_em?: string | null
           aprovado_por?: string | null
+          arquivo_nome?: string | null
+          arquivo_url?: string | null
           ativo_id?: string | null
           created_at?: string
           data_estimada_entrega?: string | null
+          encaminhado_almoxarifado?: boolean | null
+          encaminhado_em?: string | null
           id?: string
           item_descricao?: string | null
           item_nome?: string

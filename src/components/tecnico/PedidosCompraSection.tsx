@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LoadingState } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingCart, Plus, Clock, CheckCircle, XCircle, Package } from "lucide-react";
+import { ShoppingCart, Plus, Clock, CheckCircle, XCircle, Package, Upload, FileText, Paperclip, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -34,12 +34,17 @@ const urgenciaConfig: Record<string, { label: string; className: string }> = {
   critica: { label: "Crítica", className: "bg-destructive/15 text-destructive" },
 };
 
+const ACCEPTED_TYPES = ".pdf,.doc,.docx,.xls,.xlsx";
+
 export function PedidosCompraSection({ setor }: PedidosCompraSectionProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [userName, setUserName] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
     item_nome: "", item_descricao: "", quantidade_solicitada: "1",
     unidade_medida: "UN", justificativa: "", urgencia: "media",
@@ -68,8 +73,30 @@ export function PedidosCompraSection({ setor }: PedidosCompraSectionProps) {
     },
   });
 
+  const uploadFile = async (file: File): Promise<{ url: string; nome: string } | null> => {
+    if (!userId) return null;
+    const ext = file.name.split(".").pop();
+    const path = `${userId}/${Date.now()}.${ext}`;
+    const { error } = await supabase.storage.from("pedidos-compra-anexos").upload(path, file);
+    if (error) throw error;
+    const { data: urlData } = supabase.storage.from("pedidos-compra-anexos").getPublicUrl(path);
+    return { url: urlData.publicUrl, nome: file.name };
+  };
+
   const criarMutation = useMutation({
     mutationFn: async (data: typeof form) => {
+      setUploading(true);
+      let arquivo_url: string | null = null;
+      let arquivo_nome: string | null = null;
+
+      if (selectedFile) {
+        const result = await uploadFile(selectedFile);
+        if (result) {
+          arquivo_url = result.url;
+          arquivo_nome = result.nome;
+        }
+      }
+
       const { error } = await supabase.from("pedidos_compra").insert({
         setor_solicitante: setor,
         solicitante_id: userId,
@@ -80,17 +107,23 @@ export function PedidosCompraSection({ setor }: PedidosCompraSectionProps) {
         unidade_medida: data.unidade_medida,
         justificativa: data.justificativa,
         urgencia: data.urgencia,
+        arquivo_url,
+        arquivo_nome,
+        encaminhado_almoxarifado: true,
+        encaminhado_em: new Date().toISOString(),
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["pedidos_compra_tecnico", setor] });
       queryClient.invalidateQueries({ queryKey: ["pedidos_compra", setor] });
-      toast({ title: "Pedido de compra enviado para a Gerência!" });
+      toast({ title: "Pedido enviado para Gerência e Almoxarifado!" });
       setDialogOpen(false);
+      setSelectedFile(null);
       setForm({ item_nome: "", item_descricao: "", quantidade_solicitada: "1", unidade_medida: "UN", justificativa: "", urgencia: "media" });
     },
     onError: (e: any) => toast({ title: "Erro", description: e.message, variant: "destructive" }),
+    onSettled: () => setUploading(false),
   });
 
   if (isLoading) return <LoadingState message="Carregando pedidos..." />;
@@ -98,12 +131,18 @@ export function PedidosCompraSection({ setor }: PedidosCompraSectionProps) {
   const pendentes = pedidos.filter((p: any) => p.status === "pendente").length;
   const aprovados = pedidos.filter((p: any) => p.status === "aprovado").length;
 
+  const getFileIcon = (name: string) => {
+    if (!name) return <FileText className="h-3 w-3" />;
+    const ext = name.split(".").pop()?.toLowerCase();
+    return <FileText className="h-3 w-3" />;
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-lg font-semibold">Pedidos de Compra</h3>
-          <p className="text-sm text-muted-foreground">Solicite peças, suprimentos e materiais para a Gerência</p>
+          <p className="text-sm text-muted-foreground">Solicite peças, suprimentos e materiais — encaminhados para Gerência e Almoxarifado</p>
         </div>
         <Button onClick={() => setDialogOpen(true)} className="gap-2">
           <Plus className="h-4 w-4" /> Novo Pedido
@@ -117,11 +156,11 @@ export function PedidosCompraSection({ setor }: PedidosCompraSectionProps) {
           <p className="text-2xl font-bold">{pedidos.length}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-xs text-amber-600">Pendentes</p>
+          <p className="text-xs text-muted-foreground">Pendentes</p>
           <p className="text-2xl font-bold text-amber-600">{pendentes}</p>
         </Card>
         <Card className="p-3">
-          <p className="text-xs text-emerald-600">Aprovados</p>
+          <p className="text-xs text-muted-foreground">Aprovados</p>
           <p className="text-2xl font-bold text-emerald-600">{aprovados}</p>
         </Card>
         <Card className="p-3">
@@ -149,12 +188,27 @@ export function PedidosCompraSection({ setor }: PedidosCompraSectionProps) {
                         <StatusIcon className="h-3 w-3 mr-1" /> {sc.label}
                       </Badge>
                       <Badge variant="outline" className={`text-xs ${uc.className}`}>{uc.label}</Badge>
+                      {p.encaminhado_almoxarifado && (
+                        <Badge variant="outline" className="text-xs bg-primary/10 text-primary border-primary/30">
+                          <Package className="h-3 w-3 mr-1" /> Almoxarifado
+                        </Badge>
+                      )}
                     </div>
                     <p className="text-sm text-muted-foreground mt-1">{p.justificativa}</p>
-                    <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground flex-wrap">
                       <span>Qtd: {p.quantidade_solicitada} {p.unidade_medida}</span>
                       <span>•</span>
                       <span>{format(new Date(p.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR })}</span>
+                      {p.arquivo_nome && (
+                        <>
+                          <span>•</span>
+                          <a href={p.arquivo_url} target="_blank" rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-primary hover:underline">
+                            <Paperclip className="h-3 w-3" /> {p.arquivo_nome}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        </>
+                      )}
                       {p.observacoes_gerencia && (
                         <>
                           <span>•</span>
@@ -171,7 +225,7 @@ export function PedidosCompraSection({ setor }: PedidosCompraSectionProps) {
       )}
 
       {/* Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) setSelectedFile(null); }}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>Solicitar Peça / Suprimento</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-4">
@@ -206,7 +260,48 @@ export function PedidosCompraSection({ setor }: PedidosCompraSectionProps) {
               <Input value={form.item_descricao} onChange={e => setForm(f => ({ ...f, item_descricao: e.target.value }))}
                 placeholder="Especificações, marca, modelo..." />
             </div>
+
+            {/* File Upload */}
+            <div className="col-span-2">
+              <Label>Anexar pedido (PDF, Word ou Excel)</Label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ACCEPTED_TYPES}
+                className="hidden"
+                onChange={e => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    if (file.size > 20 * 1024 * 1024) {
+                      toast({ title: "Arquivo muito grande", description: "Máximo 20MB", variant: "destructive" });
+                      return;
+                    }
+                    setSelectedFile(file);
+                  }
+                }}
+              />
+              {selectedFile ? (
+                <div className="flex items-center gap-2 mt-2 p-2 rounded border bg-muted/30">
+                  <FileText className="h-4 w-4 text-primary" />
+                  <span className="text-sm flex-1 truncate">{selectedFile.name}</span>
+                  <Button variant="ghost" size="sm" onClick={() => { setSelectedFile(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
+                    <XCircle className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="outline" className="w-full mt-2 gap-2" onClick={() => fileInputRef.current?.click()}>
+                  <Upload className="h-4 w-4" /> Selecionar arquivo
+                </Button>
+              )}
+              <p className="text-xs text-muted-foreground mt-1">Formatos: PDF, DOC, DOCX, XLS, XLSX (máx 20MB)</p>
+            </div>
           </div>
+
+          <div className="flex items-center gap-2 p-2 rounded bg-primary/5 border border-primary/20 text-xs text-primary">
+            <Package className="h-4 w-4 shrink-0" />
+            <span>Este pedido será encaminhado automaticamente para o <strong>Almoxarifado</strong> e <strong>Gerência</strong>.</span>
+          </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancelar</Button>
             <Button onClick={() => {
@@ -214,8 +309,8 @@ export function PedidosCompraSection({ setor }: PedidosCompraSectionProps) {
                 toast({ title: "Erro", description: "Preencha item e justificativa", variant: "destructive" }); return;
               }
               criarMutation.mutate(form);
-            }} disabled={criarMutation.isPending}>
-              Enviar Pedido
+            }} disabled={criarMutation.isPending || uploading}>
+              {uploading ? "Enviando..." : "Enviar Pedido"}
             </Button>
           </DialogFooter>
         </DialogContent>
