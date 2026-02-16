@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { DISCFormModule } from '@/components/disc/DISCFormModule';
 import { LancamentoNotas } from '@/components/gerencia/LancamentoNotas';
+import { GestaoTalentos } from '@/components/gerencia/GestaoTalentos';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -496,6 +497,10 @@ export function GerenciaModule() {
             <Brain className="h-4 w-4" />
             DISC Liderança
           </TabsTrigger>
+          <TabsTrigger value="talentos" className="gap-2">
+            <Users className="h-4 w-4" />
+            Gestão de Talentos
+          </TabsTrigger>
         </TabsList>
 
         {/* -- Tab: Planos de Ação -- */}
@@ -699,6 +704,11 @@ export function GerenciaModule() {
         {/* -- Tab: DISC Liderança -- */}
         <TabsContent value="disc" className="mt-4">
           <DISCFormModule />
+        </TabsContent>
+
+        {/* -- Tab: Gestão de Talentos -- */}
+        <TabsContent value="talentos" className="mt-4">
+          <GestaoTalentos />
         </TabsContent>
       </Tabs>
 
