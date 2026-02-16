@@ -2938,60 +2938,72 @@ export type Database = {
       manutencoes_preventivas: {
         Row: {
           ativo_id: string
+          certificado_calibracao: string | null
           created_at: string
           created_by: string | null
           custo_estimado: number | null
+          data_vencimento_calibracao: string | null
           descricao: string | null
           id: string
           observacoes: string | null
           periodicidade_dias: number
           prioridade: string
           proxima_execucao: string
+          requer_calibracao: boolean | null
           responsavel_id: string | null
           responsavel_nome: string
           setor: string
           status: string
           tipo: string
+          tipo_manutencao: string
           titulo: string
           ultima_execucao: string | null
           updated_at: string
         }
         Insert: {
           ativo_id: string
+          certificado_calibracao?: string | null
           created_at?: string
           created_by?: string | null
           custo_estimado?: number | null
+          data_vencimento_calibracao?: string | null
           descricao?: string | null
           id?: string
           observacoes?: string | null
           periodicidade_dias?: number
           prioridade?: string
           proxima_execucao: string
+          requer_calibracao?: boolean | null
           responsavel_id?: string | null
           responsavel_nome: string
           setor: string
           status?: string
           tipo?: string
+          tipo_manutencao?: string
           titulo: string
           ultima_execucao?: string | null
           updated_at?: string
         }
         Update: {
           ativo_id?: string
+          certificado_calibracao?: string | null
           created_at?: string
           created_by?: string | null
           custo_estimado?: number | null
+          data_vencimento_calibracao?: string | null
           descricao?: string | null
           id?: string
           observacoes?: string | null
           periodicidade_dias?: number
           prioridade?: string
           proxima_execucao?: string
+          requer_calibracao?: boolean | null
           responsavel_id?: string | null
           responsavel_nome?: string
           setor?: string
           status?: string
           tipo?: string
+          tipo_manutencao?: string
           titulo?: string
           ultima_execucao?: string | null
           updated_at?: string
@@ -3245,6 +3257,87 @@ export type Database = {
           valor_percentual?: number | null
         }
         Relationships: []
+      }
+      pedidos_compra: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          ativo_id: string | null
+          created_at: string
+          data_estimada_entrega: string | null
+          id: string
+          item_descricao: string | null
+          item_nome: string
+          justificativa: string
+          observacoes_gerencia: string | null
+          produto_id: string | null
+          quantidade_solicitada: number
+          setor_solicitante: string
+          solicitante_id: string | null
+          solicitante_nome: string
+          status: string
+          unidade_medida: string | null
+          updated_at: string
+          urgencia: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          ativo_id?: string | null
+          created_at?: string
+          data_estimada_entrega?: string | null
+          id?: string
+          item_descricao?: string | null
+          item_nome: string
+          justificativa: string
+          observacoes_gerencia?: string | null
+          produto_id?: string | null
+          quantidade_solicitada?: number
+          setor_solicitante: string
+          solicitante_id?: string | null
+          solicitante_nome: string
+          status?: string
+          unidade_medida?: string | null
+          updated_at?: string
+          urgencia?: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          ativo_id?: string | null
+          created_at?: string
+          data_estimada_entrega?: string | null
+          id?: string
+          item_descricao?: string | null
+          item_nome?: string
+          justificativa?: string
+          observacoes_gerencia?: string | null
+          produto_id?: string | null
+          quantidade_solicitada?: number
+          setor_solicitante?: string
+          solicitante_id?: string | null
+          solicitante_nome?: string
+          status?: string
+          unidade_medida?: string | null
+          updated_at?: string
+          urgencia?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_compra_ativo_id_fkey"
+            columns: ["ativo_id"]
+            isOneToOne: false
+            referencedRelation: "ativos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_compra_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       perfis_sistema: {
         Row: {
