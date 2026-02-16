@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
+import { useSetoresNomes } from "@/hooks/useSetores";
 import { Plus, ClipboardCheck, Trash2, Eye, Bell, AlertTriangle } from "lucide-react";
 import { format } from "date-fns";
 
@@ -37,22 +38,6 @@ interface Notificacao {
   prioridade: string;
   status: string;
 }
-
-const SETORES = [
-  "Recepção",
-  "Emergência",
-  "UTI",
-  "Enfermaria",
-  "Centro Cirúrgico",
-  "Laboratório",
-  "Farmácia",
-  "Cozinha/Restaurante",
-  "Lavanderia",
-  "Manutenção",
-  "Administração",
-  "Estacionamento",
-  "Área Externa"
-];
 
 const CHECKLIST_ITEMS = [
   { id: "extintores", label: "Extintores de incêndio em dia e acessíveis" },
@@ -82,6 +67,7 @@ const TIPOS_NOTIFICACAO = [
 ];
 
 export function RondasControl() {
+  const { data: SETORES = [] } = useSetoresNomes();
   const [rondas, setRondas] = useState<Ronda[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);

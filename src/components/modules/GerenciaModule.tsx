@@ -26,18 +26,12 @@ import { ExportDropdown } from '@/components/ui/export-dropdown';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useLogAccess } from '@/hooks/useLogAccess';
+import { useSetoresNomes } from '@/hooks/useSetores';
 import { LoadingState } from '@/components/ui/loading-state';
 import { format, isPast, differenceInDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { exportToCSV, exportToPDF } from '@/lib/export-utils';
 import * as XLSX from 'xlsx';
-
-const SETORES = [
-  'RH/DP', 'Manutenção', 'TI', 'Segurança do Trabalho', 'Financeiro',
-  'Faturamento', 'Enfermagem', 'NIR', 'Laboratório', 'Qualidade/NSP',
-  'Recepção', 'Rouparia', 'Restaurante', 'Assistência Social',
-  'Engenharia Clínica', 'Administração', 'Médicos',
-];
 
 const STATUS_CONFIG: Record<string, { label: string; variant: 'default' | 'secondary' | 'destructive' | 'outline'; className: string }> = {
   concluido: { label: 'Concluído', variant: 'default', className: 'bg-emerald-500/15 text-emerald-700 border-emerald-300' },
@@ -84,6 +78,7 @@ export function GerenciaModule() {
   const queryClient = useQueryClient();
   const { role, userId, isLoading: roleLoading } = useUserRole();
   const { logAction } = useLogAccess();
+  const { data: SETORES = [] } = useSetoresNomes();
   const [filterSetor, setFilterSetor] = useState('todos');
   const [filterStatus, setFilterStatus] = useState('todos');
   const [searchTerm, setSearchTerm] = useState('');
@@ -94,7 +89,7 @@ export function GerenciaModule() {
   const [userName, setUserName] = useState('');
 
   const [formData, setFormData] = useState({
-    titulo: '', descricao: '', setor: SETORES[0], responsavel_nome: '',
+    titulo: '', descricao: '', setor: '', responsavel_nome: '',
     prioridade: 'media', prazo: '', observacoes: '',
   });
 
@@ -269,7 +264,7 @@ export function GerenciaModule() {
   });
 
   const resetForm = () => {
-    setFormData({ titulo: '', descricao: '', setor: SETORES[0], responsavel_nome: '', prioridade: 'media', prazo: '', observacoes: '' });
+    setFormData({ titulo: '', descricao: '', setor: SETORES[0] || '', responsavel_nome: '', prioridade: 'media', prazo: '', observacoes: '' });
     setEditingPlano(null);
   };
 
