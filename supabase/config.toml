@@ -29,3 +29,6 @@ verify_jwt = false
 
 [functions.gerar-quiz-ia]
 verify_jwt = false
+
+[functions.proxy-iframe]
+verify_jwt = false
