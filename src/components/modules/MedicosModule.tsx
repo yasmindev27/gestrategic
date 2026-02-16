@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Stethoscope, Plus, Upload, Calendar, Clock, MapPin, 
   ChevronLeft, ChevronRight, Users, Download, FileSpreadsheet,
-  MoreHorizontal, Pencil, Trash2, CheckCircle, AlertCircle
+  MoreHorizontal, Pencil, Trash2, CheckCircle, AlertCircle, ExternalLink
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -83,7 +83,7 @@ const statusConfig = {
   cancelado: { label: "Cancelado", variant: "destructive" as const, icon: AlertCircle },
 };
 
-const MedicosModule = () => {
+const MedicosModule = ({ onOpenExternal }: { onOpenExternal?: (url: string, title: string) => void }) => {
   const { toast } = useToast();
   const { logAction } = useLogAccess();
 
@@ -348,6 +348,19 @@ const MedicosModule = () => {
           </div>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (onOpenExternal) {
+                onOpenExternal("https://www.pegaplantao.com.br/login/", "Pega Plantão");
+              } else {
+                window.open("https://www.pegaplantao.com.br/login/", "_blank", "noopener,noreferrer");
+              }
+            }}
+          >
+            <ExternalLink className="h-4 w-4 mr-2" />
+            Pega Plantão
+          </Button>
           <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
             <Upload className="h-4 w-4 mr-2" />
             Importar Escala
