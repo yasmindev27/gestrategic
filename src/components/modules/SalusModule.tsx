@@ -24,6 +24,22 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
+
+const getProxiedUrl = async (targetUrl: string): Promise<string> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return targetUrl;
+  
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const encoded = encodeURIComponent(targetUrl);
+  return `https://${projectId}.supabase.co/functions/v1/proxy-iframe?url=${encoded}`;
+};
+
+const getAuthHeaders = async (): Promise<Record<string, string>> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return {};
+  return { Authorization: `Bearer ${session.access_token}` };
+};
 
 interface SalusModuleProps {
   onOpenExternal?: (url: string, title: string) => void;
@@ -36,7 +52,7 @@ const SalusModule = ({ onOpenExternal }: SalusModuleProps) => {
   );
   const [urlInput, setUrlInput] = useState(dashboardUrl);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
-  const [activeView, setActiveView] = useState<{ url: string; title: string } | null>(null);
+  const [activeView, setActiveView] = useState<{ url: string; originalUrl: string; title: string } | null>(null);
   const [iframeLoading, setIframeLoading] = useState(false);
   const [iframeError, setIframeError] = useState(false);
 
@@ -62,10 +78,15 @@ const SalusModule = ({ onOpenExternal }: SalusModuleProps) => {
     });
   };
 
-  const openInline = (url: string, title: string) => {
-    setActiveView({ url, title });
+  const openInline = async (url: string, title: string) => {
     setIframeLoading(true);
     setIframeError(false);
+    try {
+      const proxiedUrl = await getProxiedUrl(url);
+      setActiveView({ url: proxiedUrl, originalUrl: url, title });
+    } catch {
+      setActiveView({ url, originalUrl: url, title });
+    }
   };
 
   const closeInline = () => {
@@ -91,10 +112,10 @@ const SalusModule = ({ onOpenExternal }: SalusModuleProps) => {
               className="text-xs"
               onClick={() => {
                 if (onOpenExternal) {
-                  onOpenExternal(activeView.url, activeView.title);
+                  onOpenExternal(activeView.originalUrl, activeView.title);
                   closeInline();
                 } else {
-                  window.open(activeView.url, "_blank", "noopener,noreferrer");
+                  window.open(activeView.originalUrl, "_blank", "noopener,noreferrer");
                 }
               }}
             >
@@ -105,7 +126,7 @@ const SalusModule = ({ onOpenExternal }: SalusModuleProps) => {
               variant="ghost"
               size="sm"
               className="text-xs"
-              onClick={() => window.open(activeView.url, "_blank", "noopener,noreferrer")}
+              onClick={() => window.open(activeView.originalUrl, "_blank", "noopener,noreferrer")}
             >
               <ExternalLink className="h-3 w-3 mr-1" />
               Nova aba
@@ -135,7 +156,7 @@ const SalusModule = ({ onOpenExternal }: SalusModuleProps) => {
                 <p className="text-sm text-muted-foreground">
                   Para sua segurança, clique no botão abaixo para visualizar em tela cheia.
                 </p>
-                <Button onClick={() => window.open(activeView.url, "_blank", "noopener,noreferrer")}>
+                <Button onClick={() => window.open(activeView.originalUrl, "_blank", "noopener,noreferrer")}>
                   <ExternalLink className="h-4 w-4 mr-2" />
                   Abrir Painel Salus
                 </Button>
