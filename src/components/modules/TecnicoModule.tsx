@@ -3,9 +3,8 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Ticket, Package, ExternalLink, Monitor, Wrench, Activity, ShoppingCart } from "lucide-react";
+import { AlertCircle, Ticket, Package, ExternalLink } from "lucide-react";
 import { InventarioModule } from "./InventarioModule";
-import { GestaoAtivos, PreventivasManager, DisponibilidadeDashboard, PedidosCompraSection } from "@/components/tecnico";
 
 interface TecnicoModuleProps {
   setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'nir';
@@ -21,8 +20,9 @@ const setorLabels: Record<string, string> = {
 
 export const TecnicoModule = ({ setor, onOpenExternal }: TecnicoModuleProps) => {
   const { role, isAdmin, isLoading } = useUserRole();
-  const [activeTab, setActiveTab] = useState("ativos");
+  const [activeTab, setActiveTab] = useState("chamados");
   
+  // Técnicos só podem acessar seu próprio setor ou se for admin
   const hasAccess = isAdmin || role === setor;
 
   const handleAbrirChamados = () => {
@@ -63,58 +63,22 @@ export const TecnicoModule = ({ setor, onOpenExternal }: TecnicoModuleProps) => 
             Central do Técnico - {setorLabels[setor]}
           </h2>
           <p className="text-muted-foreground">
-            Gestão de ativos, preventivas, inventário e disponibilidade
+            Gerencie chamados e inventário do seu setor
           </p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-6 max-w-3xl">
-          <TabsTrigger value="ativos" className="flex items-center gap-2">
-            <Monitor className="h-4 w-4" />
-            <span className="hidden sm:inline">Ativos</span>
-          </TabsTrigger>
-          <TabsTrigger value="preventivas" className="flex items-center gap-2">
-            <Wrench className="h-4 w-4" />
-            <span className="hidden sm:inline">Preventivas</span>
-          </TabsTrigger>
-          <TabsTrigger value="disponibilidade" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            <span className="hidden sm:inline">Disponibilidade</span>
+        <TabsList className="grid w-full grid-cols-2 max-w-md">
+          <TabsTrigger value="chamados" className="flex items-center gap-2">
+            <Ticket className="h-4 w-4" />
+            Chamados
           </TabsTrigger>
           <TabsTrigger value="inventario" className="flex items-center gap-2">
             <Package className="h-4 w-4" />
-            <span className="hidden sm:inline">Inventário</span>
-          </TabsTrigger>
-          <TabsTrigger value="pedidos" className="flex items-center gap-2">
-            <ShoppingCart className="h-4 w-4" />
-            <span className="hidden sm:inline">Pedidos</span>
-          </TabsTrigger>
-          <TabsTrigger value="chamados" className="flex items-center gap-2">
-            <Ticket className="h-4 w-4" />
-            <span className="hidden sm:inline">Chamados</span>
+            Inventário
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="ativos" className="mt-6">
-          <GestaoAtivos setor={setor} />
-        </TabsContent>
-
-        <TabsContent value="preventivas" className="mt-6">
-          <PreventivasManager setor={setor} />
-        </TabsContent>
-
-        <TabsContent value="disponibilidade" className="mt-6">
-          <DisponibilidadeDashboard setor={setor} />
-        </TabsContent>
-
-        <TabsContent value="inventario" className="mt-6">
-          <InventarioModule setor={setor} />
-        </TabsContent>
-
-        <TabsContent value="pedidos" className="mt-6">
-          <PedidosCompraSection setor={setor} />
-        </TabsContent>
 
         <TabsContent value="chamados" className="mt-6">
           <Card>
@@ -137,6 +101,10 @@ export const TecnicoModule = ({ setor, onOpenExternal }: TecnicoModuleProps) => 
               </Button>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="inventario" className="mt-6">
+          <InventarioModule setor={setor} />
         </TabsContent>
       </Tabs>
     </div>
