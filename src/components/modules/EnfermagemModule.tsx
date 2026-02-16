@@ -339,6 +339,11 @@ export default function EnfermagemModule() {
             </TabsContent>
           </Tabs>
         </TabsContent>
+
+        {/* ── Indicadores UPA ── */}
+        <TabsContent value="indicadores-upa" className="mt-6">
+          <IndicadoresUPA />
+        </TabsContent>
       </Tabs>
 
       <NovaEscalaDialog

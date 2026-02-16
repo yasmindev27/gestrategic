@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Stethoscope, Plus, Upload, Calendar, Clock, MapPin, 
   ChevronLeft, ChevronRight, Users, Download, FileSpreadsheet,
-  MoreHorizontal, Pencil, Trash2, CheckCircle, AlertCircle, ExternalLink
+  MoreHorizontal, Pencil, Trash2, CheckCircle, AlertCircle, ExternalLink,
+  BarChart3
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { Skeleton } from "@/components/ui/skeleton";
+import { IndicadoresNSP } from "@/components/indicadores";
 import { format, addDays, subDays, parseISO, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
@@ -343,31 +346,45 @@ const MedicosModule = ({ onOpenExternal }: { onOpenExternal?: (url: string, titl
             <Stethoscope className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-foreground">Escala Médica</h2>
-            <p className="text-sm text-muted-foreground">Gestão de plantões médicos</p>
+            <h2 className="text-xl font-semibold text-foreground">Módulo Médicos</h2>
+            <p className="text-sm text-muted-foreground">Gestão de plantões e indicadores de internação</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            onClick={() => {
-              toast({ title: "Redirecionando", description: "Acessando ambiente seguro do parceiro..." });
-              setTimeout(() => window.open("https://www.pegaplantao.com.br/login/", "_blank", "noopener,noreferrer"), 1500);
-            }}
-          >
-            <ExternalLink className="h-4 w-4 mr-2" />
-            Pega Plantão
-          </Button>
-          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Importar Escala
-          </Button>
-          <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar
-          </Button>
-        </div>
       </div>
+
+      <Tabs defaultValue="escalas">
+        <TabsList className="h-auto p-1">
+          <TabsTrigger value="escalas" className="gap-2 text-sm px-4 py-2">
+            <Calendar className="h-4 w-4" />
+            Escala Médica
+          </TabsTrigger>
+          <TabsTrigger value="indicadores-nsp" className="gap-2 text-sm px-4 py-2">
+            <BarChart3 className="h-4 w-4" />
+            Indicadores NSP
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="escalas" className="mt-6 space-y-6">
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                toast({ title: "Redirecionando", description: "Acessando ambiente seguro do parceiro..." });
+                setTimeout(() => window.open("https://www.pegaplantao.com.br/login/", "_blank", "noopener,noreferrer"), 1500);
+              }}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Pega Plantão
+            </Button>
+            <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Importar Escala
+            </Button>
+            <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar
+            </Button>
+          </div>
 
       {/* Date Navigation */}
       <Card>
@@ -687,6 +704,12 @@ const MedicosModule = ({ onOpenExternal }: { onOpenExternal?: (url: string, titl
           </div>
         </DialogContent>
       </Dialog>
+        </TabsContent>
+
+        <TabsContent value="indicadores-nsp" className="mt-6">
+          <IndicadoresNSP />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
