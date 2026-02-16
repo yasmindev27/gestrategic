@@ -43,10 +43,13 @@ const SalaReuniao = ({ reuniaoId, isHost, onEnd, onLeave }: SalaReuniaoProps) =>
   const [isUploading, setIsUploading] = useState(false);
   const [mediaReady, setMediaReady] = useState(false);
 
+  const [mediaError, setMediaError] = useState(false);
+
   // Initialize camera and microphone
   useEffect(() => {
     const initMedia = async () => {
       try {
+        // First try video + audio
         const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
         streamRef.current = stream;
         if (videoRef.current) {
@@ -54,7 +57,24 @@ const SalaReuniao = ({ reuniaoId, isHost, onEnd, onLeave }: SalaReuniaoProps) =>
         }
         setMediaReady(true);
       } catch (err) {
-        toast({ title: "Aviso", description: "Não foi possível acessar câmera/microfone. Verifique as permissões.", variant: "destructive" });
+        console.warn("Câmera+mic falhou, tentando apenas áudio...", err);
+        try {
+          // Fallback: audio only
+          const audioStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
+          streamRef.current = audioStream;
+          setMediaReady(true);
+          setIsCameraOn(false);
+          toast({ title: "Aviso", description: "Câmera indisponível. Reunião funcionando apenas com áudio.", variant: "default" });
+        } catch (err2) {
+          console.warn("Áudio também falhou:", err2);
+          setMediaError(true);
+          setMediaReady(true); // Allow entry anyway for text participation
+          setIsCameraOn(false);
+          toast({
+            title: "Mídia indisponível",
+            description: "Não foi possível acessar câmera/microfone. Você pode participar via texto. Para habilitar, permita o acesso nas configurações do navegador e recarregue.",
+          });
+        }
       }
     };
     initMedia();
@@ -192,8 +212,13 @@ const SalaReuniao = ({ reuniaoId, isHost, onEnd, onLeave }: SalaReuniaoProps) =>
                 className="w-full h-full object-cover"
               />
               {!isCameraOn && (
-                <div className="absolute inset-0 flex items-center justify-center bg-muted">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-muted gap-3">
                   <VideoOff className="h-16 w-16 text-muted-foreground" />
+                  {mediaError && (
+                    <p className="text-xs text-muted-foreground text-center px-4">
+                      Câmera/microfone indisponíveis. Permita o acesso no navegador e recarregue.
+                    </p>
+                  )}
                 </div>
               )}
               {isRecording && (
