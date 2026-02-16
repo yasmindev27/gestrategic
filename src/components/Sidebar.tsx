@@ -262,11 +262,7 @@ const Sidebar = ({
 
       const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();
-        if (onOpenExternal) {
-          onOpenExternal(externalUrl, item.label);
-        } else {
-          window.open(externalUrl, "_blank", "noopener,noreferrer");
-        }
+        window.open(externalUrl, "_blank", "noopener,noreferrer");
       };
 
       const link = (

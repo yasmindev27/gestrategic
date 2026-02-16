@@ -351,11 +351,7 @@ const MedicosModule = ({ onOpenExternal }: { onOpenExternal?: (url: string, titl
           <Button
             variant="outline"
             onClick={() => {
-              if (onOpenExternal) {
-                onOpenExternal("https://www.pegaplantao.com.br/login/", "Pega Plantão");
-              } else {
-                window.open("https://www.pegaplantao.com.br/login/", "_blank", "noopener,noreferrer");
-              }
+              window.open("https://www.pegaplantao.com.br/login/", "_blank", "noopener,noreferrer");
             }}
           >
             <ExternalLink className="h-4 w-4 mr-2" />

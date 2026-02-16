@@ -200,7 +200,7 @@ const SalusModule = ({ onOpenExternal }: SalusModuleProps) => {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Acessar Salus */}
-        <Card className="card-hover cursor-pointer" onClick={() => openInline("https://novaserrana.sistemasalus.com.br/", "Sistema Salus")}>
+        <Card className="card-hover cursor-pointer" onClick={() => window.open("https://novaserrana.sistemasalus.com.br/", "_blank", "noopener,noreferrer")}>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <div className="p-2 bg-primary/10 rounded-lg">
