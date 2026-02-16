@@ -2091,6 +2091,104 @@ export type Database = {
         }
         Relationships: []
       }
+      gerencia_planos_acao: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_conclusao: string | null
+          data_criacao: string
+          descricao: string | null
+          id: string
+          observacoes: string | null
+          prazo: string
+          prioridade: string
+          responsavel_id: string | null
+          responsavel_nome: string
+          setor: string
+          status: string
+          titulo: string
+          ultima_atualizacao_em: string | null
+          ultima_atualizacao_por: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_conclusao?: string | null
+          data_criacao?: string
+          descricao?: string | null
+          id?: string
+          observacoes?: string | null
+          prazo: string
+          prioridade?: string
+          responsavel_id?: string | null
+          responsavel_nome: string
+          setor: string
+          status?: string
+          titulo: string
+          ultima_atualizacao_em?: string | null
+          ultima_atualizacao_por?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_conclusao?: string | null
+          data_criacao?: string
+          descricao?: string | null
+          id?: string
+          observacoes?: string | null
+          prazo?: string
+          prioridade?: string
+          responsavel_id?: string | null
+          responsavel_nome?: string
+          setor?: string
+          status?: string
+          titulo?: string
+          ultima_atualizacao_em?: string | null
+          ultima_atualizacao_por?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gerencia_planos_historico: {
+        Row: {
+          acao: string
+          created_at: string
+          detalhes: string | null
+          executado_por: string | null
+          executado_por_nome: string
+          id: string
+          plano_id: string
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          detalhes?: string | null
+          executado_por?: string | null
+          executado_por_nome: string
+          id?: string
+          plano_id: string
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          detalhes?: string | null
+          executado_por?: string | null
+          executado_por_nome?: string
+          id?: string
+          plano_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gerencia_planos_historico_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "gerencia_planos_acao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gestor_cargos: {
         Row: {
           cargo_id: string

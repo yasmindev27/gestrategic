@@ -29,6 +29,7 @@ import { ProfissionaisSaude } from "@/components/rh";
 import LMSModule from "@/components/lms/LMSModule";
 import ReuniaoModule from "@/components/modules/ReuniaoModule";
 import CookieBanner from "@/components/CookieBanner";
+import { GerenciaModule } from "@/components/modules/GerenciaModule";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 
@@ -186,6 +187,8 @@ const Dashboard = () => {
             <SalusModule onOpenExternal={handleOpenExternal} />
           </Suspense>
         );
+      case "gerencia":
+        return <GerenciaModule />;
       default:
         return <MemoizedDashboardPersonalizado onNavigate={handleSectionChange} />;
     }
