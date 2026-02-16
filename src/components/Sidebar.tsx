@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 interface SidebarProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
+  onOpenExternal?: (url: string, title: string) => void;
 }
 
 const bottomItems = [{
@@ -31,7 +32,8 @@ const BADGE_IDS = new Set(["qualidade", "reportar-incidente", "laboratorio", "ch
 
 const Sidebar = ({
   activeSection,
-  onSectionChange
+  onSectionChange,
+  onOpenExternal
 }: SidebarProps) => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -258,12 +260,20 @@ const Sidebar = ({
         ? "https://suporte.santacasachavantes.org/index.php"
         : "https://santacasachavantes.interact.com.br/sa/custom/webdocuments/anonymous/list.jsp?unit=%2334";
 
+      const handleClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (onOpenExternal) {
+          onOpenExternal(externalUrl, item.label);
+        } else {
+          window.open(externalUrl, "_blank", "noopener,noreferrer");
+        }
+      };
+
       const link = (
         <li>
           <a
             href={externalUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+            onClick={handleClick}
             className={cn(buttonClasses, "text-[#8baec8] hover:bg-white/5 hover:text-white")}
           >
             {content}
@@ -272,7 +282,7 @@ const Sidebar = ({
         </li>
       );
       return isCollapsed ? <li>{withTooltip(
-        <a href={isExternalLink ? (item.id === "abrir-chamado" ? "https://suporte.santacasachavantes.org/index.php" : "https://santacasachavantes.interact.com.br/sa/custom/webdocuments/anonymous/list.jsp?unit=%2334") : "#"} target="_blank" rel="noopener noreferrer" className={cn(buttonClasses, "text-[#8baec8] hover:bg-white/5 hover:text-white")}>
+        <a href={externalUrl} onClick={handleClick} className={cn(buttonClasses, "text-[#8baec8] hover:bg-white/5 hover:text-white")}>
           {content}
         </a>
       )}</li> : link;
