@@ -276,21 +276,15 @@ export const RegistrosRefeicoes = ({ isAdmin = false }: RegistrosRefeicoesProps)
     });
   };
 
-  const exportToPDF = () => {
-    const doc = new jsPDF();
+  const exportToPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Relatório de Refeições');
     
-    // Header
-    doc.setFontSize(18);
-    doc.text("Relatório de Refeições", 14, 22);
-    
-    doc.setFontSize(11);
-    doc.text(`Período: ${format(new Date(dataInicio), "dd/MM/yyyy")} a ${format(new Date(dataFim), "dd/MM/yyyy")}`, 14, 32);
-    
-    // Stats
     doc.setFontSize(10);
-    doc.text(`Total: ${stats.total} | Colaboradores: ${stats.colaboradores} | Visitantes: ${stats.visitantes}`, 14, 42);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Período: ${format(new Date(dataInicio), "dd/MM/yyyy")} a ${format(new Date(dataFim), "dd/MM/yyyy")}`, 14, 32);
+    doc.text(`Total: ${stats.total} | Colaboradores: ${stats.colaboradores} | Visitantes: ${stats.visitantes}`, 14, 38);
     
-    // Table
     const tableData = registros.map(r => [
       r.colaborador_nome,
       r.tipo_pessoa === "colaborador" ? "Colaborador" : "Visitante",
@@ -300,15 +294,16 @@ export const RegistrosRefeicoes = ({ isAdmin = false }: RegistrosRefeicoesProps)
     ]);
 
     autoTable(doc, {
-      startY: 50,
+      startY: 44,
       head: [["Nome", "Tipo", "Data", "Hora", "Refeição"]],
       body: tableData,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [59, 130, 246] },
+      margin: { bottom: 28 },
     });
     
-    const fileName = `refeicoes_${format(new Date(dataInicio), "ddMMyyyy")}_${format(new Date(dataFim), "ddMMyyyy")}.pdf`;
-    doc.save(fileName);
+    const fileName = `refeicoes_${format(new Date(dataInicio), "ddMMyyyy")}_${format(new Date(dataFim), "ddMMyyyy")}`;
+    savePdfWithFooter(doc, 'Relatório de Refeições', fileName, logoImg);
     
     toast({
       title: "Sucesso",

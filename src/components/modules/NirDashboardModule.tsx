@@ -354,36 +354,38 @@ export const NirDashboardModule = () => {
     }
   };
 
-  const exportToPDF = () => {
+  const exportToPDF = async () => {
     try {
-      const doc = new jsPDF();
-      const pageWidth = doc.internal.pageSize.getWidth();
+      const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+      const { doc, logoImg } = await createStandardPdf('Relatório NIR - Dashboard de Regulação');
 
-      doc.setFontSize(18);
-      doc.text('Relatório NIR - Dashboard de Regulação', pageWidth / 2, 20, { align: 'center' });
-      
-      doc.setFontSize(12);
       const dateText = isSameDay(startDate, endDate) 
         ? format(startDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })
         : `${format(startDate, 'dd/MM/yyyy', { locale: ptBR })} a ${format(endDate, 'dd/MM/yyyy', { locale: ptBR })}`;
-      doc.text(dateText, pageWidth / 2, 28, { align: 'center' });
+      
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Período: ${dateText}`, 14, 32);
 
       doc.setFontSize(14);
-      doc.text('Indicadores Gerais', 14, 45);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Indicadores Gerais', 14, 42);
       
       doc.setFontSize(11);
-      doc.text(`Total de Leitos: ${occupancyStats.totalBeds}`, 14, 55);
-      doc.text(`Leitos Ocupados: ${occupancyStats.occupiedBeds}`, 14, 62);
-      doc.text(`Leitos Disponíveis: ${occupancyStats.availableBeds}`, 14, 69);
-      doc.text(`Taxa de Ocupação: ${occupancyStats.occupancyRate}%`, 14, 76);
-      doc.text(`Internações no período: ${todayAdmissions}`, 105, 55);
-      doc.text(`Altas no período: ${todayDischarges}`, 105, 62);
+      doc.setFont('helvetica', 'normal');
+      doc.text(`Total de Leitos: ${occupancyStats.totalBeds}`, 14, 52);
+      doc.text(`Leitos Ocupados: ${occupancyStats.occupiedBeds}`, 14, 59);
+      doc.text(`Leitos Disponíveis: ${occupancyStats.availableBeds}`, 14, 66);
+      doc.text(`Taxa de Ocupação: ${occupancyStats.occupancyRate}%`, 14, 73);
+      doc.text(`Internações no período: ${todayAdmissions}`, 105, 52);
+      doc.text(`Altas no período: ${todayDischarges}`, 105, 59);
 
       doc.setFontSize(14);
-      doc.text('Ocupação por Setor', 14, 92);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Ocupação por Setor', 14, 88);
 
       autoTable(doc, {
-        startY: 98,
+        startY: 94,
         head: [['Setor', 'Ocupados', 'Total', 'Disponíveis', 'Taxa (%)', 'Status']],
         body: sectorOccupancy.map(sector => [
           sector.name,
@@ -395,14 +397,10 @@ export const NirDashboardModule = () => {
         ]),
         theme: 'striped',
         headStyles: { fillColor: [41, 128, 185] },
+        margin: { bottom: 28 },
       });
 
-      const finalY = (doc as any).lastAutoTable.finalY || 150;
-      doc.setFontSize(9);
-      doc.setTextColor(128);
-      doc.text(`Gerado em ${format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`, 14, finalY + 15);
-
-      doc.save(`relatorio-nir-${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+      savePdfWithFooter(doc, 'Relatório NIR - Dashboard de Regulação', `relatorio-nir-${format(new Date(), 'yyyy-MM-dd')}`, logoImg);
 
       toast({
         title: "Exportado!",

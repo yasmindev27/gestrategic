@@ -526,16 +526,16 @@ export const QualidadeModule = () => {
     XLSX.writeFile(wb, `incidentes-nsp-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
   };
 
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Relatório de Incidentes - NSP", 14, 20);
+  const exportToPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Relatório de Incidentes - NSP');
+    
     doc.setFontSize(10);
-    doc.text(`Período: ${dataInicio || "Início"} a ${dataFim || "Atual"}`, 14, 28);
-    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 34);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Período: ${dataInicio || "Início"} a ${dataFim || "Atual"}`, 14, 32);
     
     autoTable(doc, {
-      startY: 42,
+      startY: 38,
       head: [["Número", "Data", "Tipo", "Setor", "Risco", "Status"]],
       body: filteredIncidentes.map(i => [
         i.numero_notificacao,
@@ -546,8 +546,9 @@ export const QualidadeModule = () => {
         statusIncidente.find(s => s.value === i.status)?.label || "",
       ]),
       styles: { fontSize: 8 },
+      margin: { bottom: 28 },
     });
-    doc.save(`incidentes-nsp-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    savePdfWithFooter(doc, 'Relatório de Incidentes - NSP', `incidentes-nsp-${format(new Date(), "yyyy-MM-dd")}`, logoImg);
   };
 
   const getRiscoColor = (risco: string) => {

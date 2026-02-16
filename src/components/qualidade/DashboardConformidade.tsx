@@ -149,13 +149,13 @@ export const DashboardConformidade = () => {
     XLSX.writeFile(wb, `conformidade-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
   };
 
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Relatório de Conformidade ONA/ISO 9001/Qmentum", 14, 20);
+  const exportToPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Relatório de Conformidade ONA/ISO 9001/Qmentum');
+    
     doc.setFontSize(10);
-    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}`, 14, 28);
-    doc.text(`Score ONA: ${conformidadeGeral.ona_score}% | ISO 9001: ${conformidadeGeral.iso_score}% | Qmentum: ${conformidadeGeral.qmentum_score}%`, 14, 34);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Score ONA: ${conformidadeGeral.ona_score}% | ISO 9001: ${conformidadeGeral.iso_score}% | Qmentum: ${conformidadeGeral.qmentum_score}%`, 14, 32);
 
     const tableData = indicadoresPorModulo.flatMap(modulo => 
       modulo.indicadores.map(ind => [
@@ -168,12 +168,13 @@ export const DashboardConformidade = () => {
     );
 
     autoTable(doc, {
-      startY: 42,
+      startY: 38,
       head: [["Módulo", "Indicador", "Valor", "Meta", "Status"]],
       body: tableData,
       styles: { fontSize: 7 },
+      margin: { bottom: 28 },
     });
-    doc.save(`conformidade-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    savePdfWithFooter(doc, 'Relatório de Conformidade ONA/ISO 9001/Qmentum', `conformidade-${format(new Date(), "yyyy-MM-dd")}`, logoImg);
   };
 
   if (isLoading) {

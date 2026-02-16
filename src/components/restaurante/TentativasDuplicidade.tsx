@@ -152,12 +152,9 @@ export const TentativasDuplicidade = () => {
     XLSX.writeFile(wb, `tentativas_duplicidade_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
   };
 
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Tentativas de Duplicidade de Refeições", 14, 15);
-    doc.setFontSize(10);
-    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 22);
+  const exportPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Tentativas de Duplicidade de Refeições');
 
     const tableData = tentativasFiltradas.map((t) => [
       format(new Date(t.data_tentativa), "dd/MM/yyyy"),
@@ -170,12 +167,13 @@ export const TentativasDuplicidade = () => {
     autoTable(doc, {
       head: [["Data", "Hora", "Nome", "Tipo", "Refeição"]],
       body: tableData,
-      startY: 28,
+      startY: 32,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [45, 125, 210] },
+      margin: { bottom: 28 },
     });
 
-    doc.save(`tentativas_duplicidade_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    savePdfWithFooter(doc, 'Tentativas de Duplicidade de Refeições', `tentativas_duplicidade_${format(new Date(), "yyyy-MM-dd")}`, logoImg);
   };
 
   if (isLoading) {
