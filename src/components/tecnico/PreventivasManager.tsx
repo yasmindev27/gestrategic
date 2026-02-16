@@ -514,9 +514,24 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
           <DialogHeader><DialogTitle>Registrar Execução de Manutenção</DialogTitle></DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
-              <Label>Descrição *</Label>
-              <Textarea value={execForm.descricao} onChange={e => setExecForm(p => ({ ...p, descricao: e.target.value }))} />
+              <Label>Descrição / Ação Realizada *</Label>
+              <Textarea value={execForm.descricao} onChange={e => setExecForm(p => ({ ...p, descricao: e.target.value }))} 
+                placeholder="Descreva detalhadamente a ação realizada (mínimo 30 caracteres)..." />
+              {execForm.descricao.length > 0 && execForm.descricao.length < 30 && (
+                <p className="text-xs text-amber-600 mt-1">Mínimo 30 caracteres ({execForm.descricao.length}/30)</p>
+              )}
             </div>
+            {/* Causa da Falha - obrigatório para corretivas */}
+            {selectedPrev?.tipo_manutencao === "corretiva" && (
+              <div className="col-span-2">
+                <Label className="text-amber-600">Causa da Falha * (Corretiva)</Label>
+                <Textarea value={execForm.observacoes} onChange={e => setExecForm(p => ({ ...p, observacoes: e.target.value }))}
+                  placeholder="Descreva a causa raiz da falha (mínimo 30 caracteres)..." />
+                {(execForm.observacoes || "").length > 0 && (execForm.observacoes || "").length < 30 && (
+                  <p className="text-xs text-amber-600 mt-1">Mínimo 30 caracteres ({(execForm.observacoes || "").length}/30)</p>
+                )}
+              </div>
+            )}
             <div>
               <Label>Data Execução</Label>
               <Input type="date" value={execForm.data_execucao} onChange={e => setExecForm(p => ({ ...p, data_execucao: e.target.value }))} />
@@ -544,15 +559,25 @@ export function PreventivasManager({ setor }: PreventivasManagerProps) {
               <Label>Peças Utilizadas</Label>
               <Input value={execForm.pecas_utilizadas} onChange={e => setExecForm(p => ({ ...p, pecas_utilizadas: e.target.value }))} />
             </div>
-            <div className="col-span-2">
-              <Label>Observações</Label>
-              <Textarea value={execForm.observacoes} onChange={e => setExecForm(p => ({ ...p, observacoes: e.target.value }))} />
-            </div>
+            {selectedPrev?.tipo_manutencao !== "corretiva" && (
+              <div className="col-span-2">
+                <Label>Observações</Label>
+                <Textarea value={execForm.observacoes} onChange={e => setExecForm(p => ({ ...p, observacoes: e.target.value }))} />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setExecDialogOpen(false)}>Cancelar</Button>
             <Button onClick={() => {
-              if (!execForm.descricao) { toast({ title: "Erro", description: "Descrição é obrigatória", variant: "destructive" }); return; }
+              // *** TRAVA 3: Validação de OS ***
+              if (execForm.descricao.trim().length < 30) {
+                toast({ title: "⚠️ Validação ONA", description: "O campo 'Ação Realizada' deve ter pelo menos 30 caracteres. Evite descrições genéricas como 'ok' ou 'feito'.", variant: "destructive" });
+                return;
+              }
+              if (selectedPrev?.tipo_manutencao === "corretiva" && (!execForm.observacoes || execForm.observacoes.trim().length < 30)) {
+                toast({ title: "⚠️ Validação ONA", description: "Para manutenções corretivas, o campo 'Causa da Falha' deve ter pelo menos 30 caracteres.", variant: "destructive" });
+                return;
+              }
               executeMutation.mutate(execForm);
             }} disabled={executeMutation.isPending}>Registrar</Button>
           </DialogFooter>
