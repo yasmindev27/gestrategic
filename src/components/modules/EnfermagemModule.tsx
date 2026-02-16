@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Bug, BarChart3, FlaskConical, Pill, Bell, Microscope } from 'lucide-react';
+import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Bug, BarChart3, FlaskConical, Pill, Bell, Microscope, HeartPulse } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,7 @@ import {
   CulturasMicrobiologicas,
   ControleAntimicrobianos,
   NotificacoesEpidemiologicas,
+  PortaECG,
 } from '@/components/sciras';
 import { useTrocasDisponiveis, useTrocasPendentes, useMinhasEscalas } from '@/hooks/useEnfermagem';
 import type { Escala } from '@/components/enfermagem/types';
@@ -306,6 +307,11 @@ export default function EnfermagemModule() {
                 <span className="hidden sm:inline">Epidemiologia</span>
                 <span className="sm:hidden">Epi.</span>
               </TabsTrigger>
+              <TabsTrigger value="porta-ecg" className="gap-2">
+                <HeartPulse className="h-4 w-4" />
+                <span className="hidden sm:inline">Porta-ECG</span>
+                <span className="sm:hidden">ECG</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="vigilancia" className="mt-6">
@@ -322,6 +328,9 @@ export default function EnfermagemModule() {
             </TabsContent>
             <TabsContent value="notificacoes" className="mt-6">
               <NotificacoesEpidemiologicas userId={userId || ''} userName={userName || ''} />
+            </TabsContent>
+            <TabsContent value="porta-ecg" className="mt-6">
+              <PortaECG userId={userId || ''} userName={userName || ''} />
             </TabsContent>
           </Tabs>
         </TabsContent>
