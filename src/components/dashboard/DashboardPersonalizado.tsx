@@ -10,6 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface DashboardStats {
   chamadosAbertos: number;
@@ -36,6 +42,7 @@ interface StatCardProps {
   trend?: "up" | "down";
   loading?: boolean;
   urgent?: boolean;
+  tooltip?: string;
 }
 
 const colorClasses = {
@@ -230,6 +237,7 @@ const DashboardPersonalizado = () => {
       icon: Calendar,
       color: "info",
       loading,
+      tooltip: "Mostra o total de compromissos e tarefas agendadas para o seu perfil no dia de hoje.",
     });
 
     // Capacitações pendentes (universal)
@@ -241,6 +249,7 @@ const DashboardPersonalizado = () => {
       color: stats.capacitacoesPendentes > 0 ? "warning" : "success",
       loading,
       urgent: stats.capacitacoesPendentes > 0,
+      tooltip: "Número de treinamentos obrigatórios que ainda não foram iniciados ou concluídos pelos colaboradores.",
     });
 
     // Admin - visão completa do sistema
@@ -253,6 +262,7 @@ const DashboardPersonalizado = () => {
           icon: BarChart3,
           color: "primary",
           loading,
+          tooltip: "Rastro digital de todas as ações realizadas na plataforma hoje para fins de auditoria e segurança.",
         }
       );
     }
@@ -266,6 +276,7 @@ const DashboardPersonalizado = () => {
         icon: Users,
         color: "primary",
         loading,
+        tooltip: "Total de funcionários atualmente vinculados à sua unidade de gestão.",
       });
     }
 
@@ -302,6 +313,7 @@ const DashboardPersonalizado = () => {
         icon: FlaskConical,
         color: "info",
         loading,
+        tooltip: "Quantitativo de colaboradores ativos com escala confirmada para o turno atual.",
       });
     }
 
@@ -316,6 +328,7 @@ const DashboardPersonalizado = () => {
           color: "warning",
           loading,
           urgent: stats.prontuariosPendentes > 0,
+          tooltip: "Documentos que aguardam revisão, assinatura ou processamento para serem finalizados.",
         },
         {
           title: "Prontuários Concluídos",
@@ -324,6 +337,7 @@ const DashboardPersonalizado = () => {
           icon: CheckCircle2,
           color: "success",
           loading,
+          tooltip: "Total de prontuários que já passaram por todas as etapas de validação e foram finalizados com sucesso.",
         }
       );
     }
@@ -393,11 +407,24 @@ const DashboardPersonalizado = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {cards.map((card, index) => (
-          <StatCard key={index} {...card} />
-        ))}
-      </div>
+      <TooltipProvider delayDuration={300}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {cards.map((card, index) => (
+            card.tooltip ? (
+              <Tooltip key={index}>
+                <TooltipTrigger asChild>
+                  <StatCard {...card} />
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="max-w-xs text-xs">
+                  {card.tooltip}
+                </TooltipContent>
+              </Tooltip>
+            ) : (
+              <StatCard key={index} {...card} />
+            )
+          ))}
+        </div>
+      </TooltipProvider>
     </div>
   );
 };
