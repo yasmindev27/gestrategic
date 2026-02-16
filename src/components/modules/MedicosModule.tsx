@@ -111,18 +111,46 @@ const MedicosModule = ({ onOpenExternal }: { onOpenExternal?: (url: string, titl
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
-  // Query médicos cadastrados
+  // Query médicos cadastrados (profissionais_saude + NIR bed_records)
   const { data: medicos, isLoading: loadingMedicos } = useQuery({
-    queryKey: ["profissionais_medicos"],
+    queryKey: ["profissionais_medicos_com_nir"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // 1. Profissionais de saúde cadastrados
+      const { data: profissionais, error: errProf } = await supabase
         .from("profissionais_saude")
         .select("id, nome, registro_profissional, especialidade")
         .eq("tipo", "medico")
         .eq("status", "ativo")
         .order("nome");
-      if (error) throw error;
-      return data as Profissional[];
+      if (errProf) throw errProf;
+
+      // 2. Médicos dos registros do NIR (bed_records)
+      const { data: nirRecords, error: errNir } = await supabase
+        .from("bed_records")
+        .select("medicos")
+        .not("medicos", "is", null)
+        .not("medicos", "eq", "");
+      if (errNir) throw errNir;
+
+      // Extrair nomes únicos do NIR que não estão no cadastro
+      const profNomes = new Set((profissionais || []).map(p => p.nome.toUpperCase()));
+      const nirNomes = new Set<string>();
+      (nirRecords || []).forEach((r: any) => {
+        const nomes = (r.medicos as string).split(/[,;\/\n]/).map((n: string) => n.trim().toUpperCase()).filter(Boolean);
+        nomes.forEach(n => {
+          if (!profNomes.has(n) && n.length > 2) nirNomes.add(n);
+        });
+      });
+
+      // Combinar: profissionais cadastrados + médicos do NIR (como entradas virtuais)
+      const nirEntries: Profissional[] = Array.from(nirNomes).sort().map(nome => ({
+        id: `nir_${nome}`,
+        nome,
+        registro_profissional: null,
+        especialidade: "NIR",
+      }));
+
+      return [...(profissionais as Profissional[]), ...nirEntries];
     },
   });
 
@@ -148,8 +176,23 @@ const MedicosModule = ({ onOpenExternal }: { onOpenExternal?: (url: string, titl
   // Mutations
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      let profId = data.profissional_id;
+
+      // Se for médico do NIR (virtual), cadastrar primeiro em profissionais_saude
+      if (profId.startsWith("nir_")) {
+        const nome = profId.replace("nir_", "");
+        const { data: newProf, error: errNew } = await supabase
+          .from("profissionais_saude")
+          .insert({ nome, tipo: "medico", status: "ativo" })
+          .select("id")
+          .single();
+        if (errNew) throw errNew;
+        profId = newProf.id;
+        queryClient.invalidateQueries({ queryKey: ["profissionais_medicos_com_nir"] });
+      }
+
       const { error } = await supabase.from("escalas_medicos").insert({
-        profissional_id: data.profissional_id,
+        profissional_id: profId,
         data_plantao: data.data_plantao,
         hora_inicio: data.hora_inicio,
         hora_fim: data.hora_fim,
@@ -566,7 +609,7 @@ const MedicosModule = ({ onOpenExternal }: { onOpenExternal?: (url: string, titl
                 <SelectContent>
                   {medicos?.map((m) => (
                     <SelectItem key={m.id} value={m.id}>
-                      {m.nome} {m.registro_profissional && `(${m.registro_profissional})`}
+                      {m.nome} {m.registro_profissional ? `(${m.registro_profissional})` : m.especialidade === "NIR" ? "(NIR)" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
