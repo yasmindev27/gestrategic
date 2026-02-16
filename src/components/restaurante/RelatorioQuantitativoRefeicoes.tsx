@@ -500,25 +500,23 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
     toast({ title: "Sucesso", description: "Arquivo Excel exportado!" });
   };
 
-  const exportToPDF = () => {
-    const doc = new jsPDF({ orientation: "landscape" });
+  const exportToPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Relatório Quantitativo de Refeições Diárias', 'landscape');
     
-    // Cores em RGB
-    const azulTotem = [59, 130, 246]; // bg-blue-500
-    const azulClaro = [219, 234, 254]; // bg-blue-100
-    const laranjaDeita = [249, 115, 22]; // bg-orange-500
-    const laranjaClaro = [255, 237, 213]; // bg-orange-100
-    const verdeTotal = [5, 150, 105]; // bg-emerald-600
-    const verdeClaro = [209, 250, 229]; // bg-emerald-100
+    const pageWidth = doc.internal.pageSize.getWidth();
 
-    // Título
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.text("Relatório Quantitativo de Refeições Diárias", 14, 15);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Período: ${format(parseISO(dataInicio), "dd/MM/yyyy")} a ${format(parseISO(dataFim), "dd/MM/yyyy")}`, 14, 23);
-    doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}`, 14, 29);
+    doc.text(`Período: ${format(parseISO(dataInicio), "dd/MM/yyyy")} a ${format(parseISO(dataFim), "dd/MM/yyyy")}`, 14, 32);
+
+    // Cores em RGB
+    const azulTotem = [59, 130, 246];
+    const azulClaro = [219, 234, 254];
+    const laranjaDeita = [249, 115, 22];
+    const laranjaClaro = [255, 237, 213];
+    const verdeTotal = [5, 150, 105];
+    const verdeClaro = [209, 250, 229];
 
     // Dashboard - KPIs
     doc.setFontSize(12);
@@ -755,7 +753,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       },
     });
 
-    doc.save(`quantitativo_refeicoes_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
+    savePdfWithFooter(doc, 'Relatório Quantitativo de Refeições Diárias', `quantitativo_refeicoes_${format(new Date(), "yyyyMMdd_HHmm")}`, logoImg);
     toast({ title: "Sucesso", description: "Arquivo PDF exportado com dashboard!" });
   };
 

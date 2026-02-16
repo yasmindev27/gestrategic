@@ -502,15 +502,12 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
     XLSX.writeFile(wb, `auditorias-seguranca-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
   };
 
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Auditorias de Segurança do Paciente", 14, 20);
-    doc.setFontSize(10);
-    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 28);
+  const exportToPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Auditorias de Segurança do Paciente');
     
     autoTable(doc, {
-      startY: 36,
+      startY: 32,
       head: [["Tipo", "Data", "Setor", "Auditor", "Conformidade"]],
       body: filteredAuditorias.map(a => {
         const stats = getConformidadeStats(a);
@@ -523,8 +520,9 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
         ];
       }),
       styles: { fontSize: 8 },
+      margin: { bottom: 28 },
     });
-    doc.save(`auditorias-seguranca-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    savePdfWithFooter(doc, 'Auditorias de Segurança do Paciente', `auditorias-seguranca-${format(new Date(), "yyyy-MM-dd")}`, logoImg);
   };
 
   const renderFormFields = () => {

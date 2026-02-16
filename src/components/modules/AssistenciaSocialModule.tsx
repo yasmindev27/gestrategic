@@ -355,15 +355,16 @@ export const AssistenciaSocialModule = () => {
     XLSX.writeFile(wb, `assistencia-social-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
   };
 
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Relatório - Assistência Social", 14, 20);
+  const exportToPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Relatório - Assistência Social');
+    
     doc.setFontSize(10);
-    doc.text(`Período: ${dataInicio || "Início"} a ${dataFim || "Atual"}`, 14, 28);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Período: ${dataInicio || "Início"} a ${dataFim || "Atual"}`, 14, 32);
     
     autoTable(doc, {
-      startY: 35,
+      startY: 38,
       head: [["Data", "Paciente", "Tipo", "Status", "Profissional"]],
       body: filteredAtendimentos.map(a => [
         format(new Date(a.data_atendimento), "dd/MM/yyyy"),
@@ -372,8 +373,9 @@ export const AssistenciaSocialModule = () => {
         statusAtendimento.find(s => s.value === a.status)?.label || "",
         a.profissional_nome,
       ]),
+      margin: { bottom: 28 },
     });
-    doc.save(`assistencia-social-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    savePdfWithFooter(doc, 'Relatório - Assistência Social', `assistencia-social-${format(new Date(), "yyyy-MM-dd")}`, logoImg);
   };
 
   if (isLoadingRole || isLoading) {

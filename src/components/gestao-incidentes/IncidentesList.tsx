@@ -120,15 +120,12 @@ export function IncidentesList({ refreshTrigger }: IncidentesListProps) {
     XLSX.writeFile(wb, `incidentes-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
   };
 
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Relatório de Incidentes", 14, 20);
-    doc.setFontSize(10);
-    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 28);
+  const exportToPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Relatório de Incidentes');
     
     autoTable(doc, {
-      startY: 35,
+      startY: 32,
       head: [["Número", "Data", "Tipo", "Setor", "Risco", "Status"]],
       body: filteredIncidentes.map(i => [
         i.numero_notificacao,
@@ -139,8 +136,9 @@ export function IncidentesList({ refreshTrigger }: IncidentesListProps) {
         i.status,
       ]),
       styles: { fontSize: 8 },
+      margin: { bottom: 28 },
     });
-    doc.save(`incidentes-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    savePdfWithFooter(doc, 'Relatório de Incidentes', `incidentes-${format(new Date(), "yyyy-MM-dd")}`, logoImg);
   };
 
   if (isLoading) {

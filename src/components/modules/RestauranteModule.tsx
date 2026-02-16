@@ -611,25 +611,21 @@ export const RestauranteModule = () => {
       description: "Arquivo Excel exportado!"
     });
   };
-  const exportRegistroGeralPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Registro Geral - Restaurante", 14, 15);
+  const exportRegistroGeralPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Registro Geral - Restaurante');
     doc.setFontSize(10);
-    doc.text(`Período: ${format(new Date(registroGeralDataInicio), "dd/MM/yyyy")} a ${format(new Date(registroGeralDataFim), "dd/MM/yyyy")}`, 14, 22);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Período: ${format(new Date(registroGeralDataInicio), "dd/MM/yyyy")} a ${format(new Date(registroGeralDataFim), "dd/MM/yyyy")}`, 14, 32);
     autoTable(doc, {
       head: [["Tipo", "Nome", "Descrição", "Data", "Status"]],
       body: registrosGerais.map(r => [r.tipo === "dieta" ? "Dieta" : "Refeição", r.nome, r.descricao.substring(0, 30) + (r.descricao.length > 30 ? "..." : ""), format(new Date(r.data), "dd/MM/yyyy"), r.status || "Registrado"]),
-      startY: 28,
-      styles: {
-        fontSize: 8
-      }
+      startY: 38,
+      styles: { fontSize: 8 },
+      margin: { bottom: 28 },
     });
-    doc.save(`registro_geral_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
-    toast({
-      title: "Sucesso",
-      description: "Arquivo PDF exportado!"
-    });
+    savePdfWithFooter(doc, 'Registro Geral - Restaurante', `registro_geral_${format(new Date(), "yyyyMMdd_HHmm")}`, logoImg);
+    toast({ title: "Sucesso", description: "Arquivo PDF exportado!" });
   };
   const exportSolicitacoesExcel = () => {
     const data = todasSolicitacoes.map(s => ({
@@ -652,23 +648,18 @@ export const RestauranteModule = () => {
       description: "Arquivo Excel exportado!"
     });
   };
-  const exportSolicitacoesPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Solicitações de Dieta para Pacientes", 14, 15);
+  const exportSolicitacoesPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Solicitações de Dieta para Pacientes');
     autoTable(doc, {
       head: [["Paciente", "Quarto", "Dieta", "Período", "Status"]],
       body: todasSolicitacoes.map(s => [s.paciente_nome || "N/A", s.quarto_leito || "N/A", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, format(new Date(s.data_inicio), "dd/MM") + (s.data_fim ? ` - ${format(new Date(s.data_fim), "dd/MM")}` : ""), s.status.charAt(0).toUpperCase() + s.status.slice(1)]),
-      startY: 22,
-      styles: {
-        fontSize: 8
-      }
+      startY: 32,
+      styles: { fontSize: 8 },
+      margin: { bottom: 28 },
     });
-    doc.save(`solicitacoes_dieta_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
-    toast({
-      title: "Sucesso",
-      description: "Arquivo PDF exportado!"
-    });
+    savePdfWithFooter(doc, 'Solicitações de Dieta para Pacientes', `solicitacoes_dieta_${format(new Date(), "yyyyMMdd_HHmm")}`, logoImg);
+    toast({ title: "Sucesso", description: "Arquivo PDF exportado!" });
   };
   const exportCardapiosExcel = () => {
     const data = cardapios.map(c => ({
@@ -686,23 +677,18 @@ export const RestauranteModule = () => {
       description: "Arquivo Excel exportado!"
     });
   };
-  const exportCardapiosPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Cardápios do Restaurante", 14, 15);
+  const exportCardapiosPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Cardápios do Restaurante');
     autoTable(doc, {
       head: [["Data", "Refeição", "Descrição", "Observações"]],
       body: cardapios.map(c => [format(new Date(c.data + 'T12:00:00'), "dd/MM/yyyy"), tipoRefeicaoLabels[c.tipo_refeicao]?.label || c.tipo_refeicao, c.descricao.substring(0, 50) + (c.descricao.length > 50 ? "..." : ""), c.observacoes || "-"]),
-      startY: 22,
-      styles: {
-        fontSize: 8
-      }
+      startY: 32,
+      styles: { fontSize: 8 },
+      margin: { bottom: 28 },
     });
-    doc.save(`cardapios_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
-    toast({
-      title: "Sucesso",
-      description: "Arquivo PDF exportado!"
-    });
+    savePdfWithFooter(doc, 'Cardápios do Restaurante', `cardapios_${format(new Date(), "yyyyMMdd_HHmm")}`, logoImg);
+    toast({ title: "Sucesso", description: "Arquivo PDF exportado!" });
   };
 
   // Dashboard functions
@@ -763,40 +749,27 @@ export const RestauranteModule = () => {
       description: "Arquivo Excel exportado com sucesso."
     });
   };
-  const exportToPDF = () => {
-    const doc = new jsPDF({
-      orientation: "landscape"
-    });
+  const exportToPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Relatório de Solicitações de Dieta', 'landscape');
 
-    // Header
-    doc.setFontSize(18);
-    doc.text("Relatório de Solicitações de Dieta", 14, 22);
-    doc.setFontSize(11);
-    doc.text(`Período: ${format(new Date(dashboardDataInicio), "dd/MM/yyyy")} a ${format(new Date(dashboardDataFim), "dd/MM/yyyy")}`, 14, 32);
-
-    // Stats
     doc.setFontSize(10);
-    doc.text(`Total de Dietas: ${dashboardStats.total}`, 14, 42);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Período: ${format(new Date(dashboardDataInicio), "dd/MM/yyyy")} a ${format(new Date(dashboardDataFim), "dd/MM/yyyy")}`, 14, 32);
+    doc.text(`Total de Dietas: ${dashboardStats.total}`, 14, 38);
 
-    // Table
     const tableData = dashboardSolicitacoes.map(s => [s.paciente_nome || "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.restricoes_alimentares || "-", format(new Date(s.data_inicio), "dd/MM/yyyy"), s.solicitante_nome]);
     autoTable(doc, {
-      startY: 50,
+      startY: 44,
       head: [["Paciente", "Quarto/Leito", "Tipo de Dieta", "Restrições", "Data Início", "Solicitante"]],
       body: tableData,
-      styles: {
-        fontSize: 8
-      },
-      headStyles: {
-        fillColor: [59, 130, 246]
-      }
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [59, 130, 246] },
+      margin: { bottom: 28 },
     });
-    const fileName = `dietas_${format(new Date(dashboardDataInicio), "ddMMyyyy")}_${format(new Date(dashboardDataFim), "ddMMyyyy")}.pdf`;
-    doc.save(fileName);
-    toast({
-      title: "Sucesso",
-      description: "Arquivo PDF exportado com sucesso."
-    });
+    const fileName = `dietas_${format(new Date(dashboardDataInicio), "ddMMyyyy")}_${format(new Date(dashboardDataFim), "ddMMyyyy")}`;
+    savePdfWithFooter(doc, 'Relatório de Solicitações de Dieta', fileName, logoImg);
+    toast({ title: "Sucesso", description: "Arquivo PDF exportado com sucesso." });
   };
 
   // Filtrar minhas solicitações pelo período selecionado
@@ -847,33 +820,25 @@ export const RestauranteModule = () => {
   };
 
   // Exportar minhas solicitações para PDF
-  const exportMinhasDietasToPDF = () => {
-    const doc = new jsPDF({
-      orientation: "landscape"
-    });
-    doc.setFontSize(18);
-    doc.text("Minhas Solicitações de Dieta", 14, 22);
-    doc.setFontSize(11);
-    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 32);
-    doc.text(`Total: ${minhasSolicitacoesFiltradas.length} dietas`, 14, 40);
+  const exportMinhasDietasToPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Minhas Solicitações de Dieta', 'landscape');
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Total: ${minhasSolicitacoesFiltradas.length} dietas`, 14, 32);
+    
     const tableData = minhasSolicitacoesFiltradas.map(s => [s.paciente_nome || "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.tem_acompanhante ? "Sim" : "Não", format(new Date(s.data_inicio), "dd/MM/yyyy"), s.data_fim ? format(new Date(s.data_fim), "dd/MM/yyyy") : "-", format(new Date(s.created_at), "dd/MM/yyyy")]);
     autoTable(doc, {
-      startY: 48,
+      startY: 38,
       head: [["Paciente", "Quarto/Leito", "Tipo", "Acomp.", "Data Início", "Data Fim", "Solicitado em"]],
       body: tableData,
-      styles: {
-        fontSize: 8
-      },
-      headStyles: {
-        fillColor: [59, 130, 246]
-      }
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [59, 130, 246] },
+      margin: { bottom: 28 },
     });
-    const fileName = `minhas_dietas_${format(new Date(), "ddMMyyyy")}.pdf`;
-    doc.save(fileName);
-    toast({
-      title: "Sucesso",
-      description: "Arquivo PDF exportado com sucesso."
-    });
+    savePdfWithFooter(doc, 'Minhas Solicitações de Dieta', `minhas_dietas_${format(new Date(), "ddMMyyyy")}`, logoImg);
+    toast({ title: "Sucesso", description: "Arquivo PDF exportado com sucesso." });
   };
 
   // Mostrar loading enquanto verifica roles

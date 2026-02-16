@@ -270,12 +270,13 @@ export const ColaboradoresManager = () => {
   };
 
   // Exportar PDF
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Colaboradores do Restaurante", 14, 15);
+  const exportPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Colaboradores do Restaurante');
+    
     doc.setFontSize(10);
-    doc.text(`Total: ${colaboradoresFiltrados.length} colaboradores`, 14, 22);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Total: ${colaboradoresFiltrados.length} colaboradores`, 14, 32);
     
     autoTable(doc, {
       head: [["Nome", "Matrícula", "Setor", "Cargo", "Status"]],
@@ -286,11 +287,12 @@ export const ColaboradoresManager = () => {
         c.cargo || "-",
         c.ativo ? "Ativo" : "Inativo",
       ]),
-      startY: 28,
+      startY: 38,
       styles: { fontSize: 9 },
+      margin: { bottom: 28 },
     });
     
-    doc.save(`colaboradores_restaurante_${format(new Date(), "yyyyMMdd")}.pdf`);
+    savePdfWithFooter(doc, 'Colaboradores do Restaurante', `colaboradores_restaurante_${format(new Date(), "yyyyMMdd")}`, logoImg);
     toast({ title: "Sucesso", description: "Arquivo PDF exportado!" });
   };
 
