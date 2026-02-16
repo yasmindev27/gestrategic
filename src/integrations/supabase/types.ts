@@ -3202,6 +3202,8 @@ export type Database = {
           created_at: string
           criado_por: string
           gravacao_url: string | null
+          hora_encerramento: string | null
+          hora_inicio: string | null
           id: string
           participantes: string[] | null
           pauta: string | null
@@ -3215,6 +3217,8 @@ export type Database = {
           created_at?: string
           criado_por: string
           gravacao_url?: string | null
+          hora_encerramento?: string | null
+          hora_inicio?: string | null
           id?: string
           participantes?: string[] | null
           pauta?: string | null
@@ -3228,6 +3232,8 @@ export type Database = {
           created_at?: string
           criado_por?: string
           gravacao_url?: string | null
+          hora_encerramento?: string | null
+          hora_inicio?: string | null
           id?: string
           participantes?: string[] | null
           pauta?: string | null

@@ -68,7 +68,8 @@ const SetupReuniao = ({ onStart }: SetupReuniaoProps) => {
         participantes: participantesSelecionados.map((p) => p.id),
         criado_por: user.id,
         status: "em_andamento",
-      }).select("id").single();
+        hora_inicio: new Date().toISOString(),
+      } as any).select("id").single();
 
       if (error) throw error;
       toast({ title: "Reunião iniciada", description: "A sala de reunião está pronta." });

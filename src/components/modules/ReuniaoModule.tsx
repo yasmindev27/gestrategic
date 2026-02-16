@@ -65,6 +65,7 @@ const ReuniaoModule = () => {
     setActiveReuniaoId(reuniao.id);
     setActiveTranscricao(reuniao.transcricao || "");
     setActiveTitulo(reuniao.titulo);
+    setIsHost(reuniao.criado_por === currentUserId);
     setView("ata");
   };
 
@@ -89,6 +90,7 @@ const ReuniaoModule = () => {
         reuniaoId={activeReuniaoId}
         transcricao={activeTranscricao}
         titulo={activeTitulo}
+        isHost={isHost}
         onBack={() => { setView("list"); refetch(); }}
       />
     );
