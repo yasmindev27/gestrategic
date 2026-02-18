@@ -528,9 +528,8 @@ export const ChatCorporativo = () => {
         throw uploadError;
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('chat-anexos')
-        .getPublicUrl(fileName);
+      // Use the storage path as reference (bucket is now private)
+      const fileStoragePath = fileName;
 
       // Enviar mensagem com arquivo
       const { data, error } = await supabase.functions.invoke("moderar-mensagem", {
@@ -538,7 +537,7 @@ export const ChatCorporativo = () => {
           conteudo: file.name,
           tipo: "arquivo",
           conversa_id: conversaSelecionada,
-          arquivo_url: publicUrl
+          arquivo_url: fileStoragePath
         }
       });
 
@@ -1225,15 +1224,23 @@ export const ChatCorporativo = () => {
                               isOwn ? "bg-primary text-primary-foreground" : "bg-muted"
                             }`}>
                               {msg.tipo === "arquivo" && msg.arquivo_url ? (
-                                <a 
-                                  href={msg.arquivo_url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-2 hover:underline"
+                                <button 
+                                  onClick={async () => {
+                                    const filePath = msg.arquivo_url!;
+                                    const { data, error } = await supabase.storage
+                                      .from('chat-anexos')
+                                      .createSignedUrl(filePath, 3600);
+                                    if (data?.signedUrl) {
+                                      window.open(data.signedUrl, '_blank');
+                                    } else {
+                                      toast({ title: "Erro ao abrir arquivo", description: "Não foi possível gerar link de acesso", variant: "destructive" });
+                                    }
+                                  }}
+                                  className="flex items-center gap-2 hover:underline cursor-pointer text-left"
                                 >
                                   {getFileIcon(msg.arquivo_url)}
                                   <span className="text-sm">{msg.conteudo}</span>
-                                </a>
+                                </button>
                               ) : (
                                 <p className="text-sm whitespace-pre-wrap break-words">
                                   {renderMensagemComMencoes(msg.conteudo)}

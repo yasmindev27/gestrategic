@@ -5379,6 +5379,50 @@ export type Database = {
         }
         Relationships: []
       }
+      lms_quiz_perguntas_aluno: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          opcao_a: string | null
+          opcao_b: string | null
+          opcao_c: string | null
+          opcao_d: string | null
+          ordem: number | null
+          pergunta: string | null
+          treinamento_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          opcao_a?: string | null
+          opcao_b?: string | null
+          opcao_c?: string | null
+          opcao_d?: string | null
+          ordem?: number | null
+          pergunta?: string | null
+          treinamento_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          opcao_a?: string | null
+          opcao_b?: string | null
+          opcao_c?: string | null
+          opcao_d?: string | null
+          ordem?: number | null
+          pergunta?: string | null
+          treinamento_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_quiz_perguntas_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            isOneToOne: false
+            referencedRelation: "lms_treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       buscar_colaborador_totem: {
@@ -5394,6 +5438,14 @@ export type Database = {
         Args: { _matricula: string }
         Returns: {
           user_id: string
+        }[]
+      }
+      corrigir_quiz: {
+        Args: { _respostas: Json; _treinamento_id: string }
+        Returns: {
+          acertos: number
+          nota: number
+          total: number
         }[]
       }
       gestor_gerencia_usuario: {
