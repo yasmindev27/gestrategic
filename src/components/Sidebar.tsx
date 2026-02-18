@@ -40,7 +40,7 @@ const Sidebar = ({
   const {
     role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
     isLaboratorio, isTecnico, isRecepcao, isClassificacao, isNir,
-    isFaturamento, isRHDP, isQualidade, isNSP
+    isFaturamento, isRHDP, isQualidade, isNSP, isMedicos
   } = useUserRole();
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
@@ -150,6 +150,15 @@ const Sidebar = ({
     if (isEngenhariaCinica) {
       items.push(
         { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" },
+        { icon: Calendar, label: "Agenda", id: "agenda" }
+      );
+      return items;
+    }
+    if (isMedicos) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: Stethoscope, label: "Médicos", id: "medicos" },
+        { icon: FlaskConical, label: "Resultados Exames", id: "laboratorio" },
         { icon: Calendar, label: "Agenda", id: "agenda" }
       );
       return items;
