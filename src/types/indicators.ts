@@ -115,8 +115,7 @@ export const NSP_INDICADORES_PROCESSO = [
   { indicador: 'Taxa de Ocupação', unidade: '%', meta: null },
   { indicador: 'Perfil Epidemiológico Adulto - Sexo Masculino', unidade: 'Nº', meta: null, subcategoria: 'Perfil Epidemiológico - Adulto' },
   { indicador: 'Perfil Epidemiológico Adulto - Sexo Feminino', unidade: 'Nº', meta: null, subcategoria: 'Perfil Epidemiológico - Adulto' },
-  { indicador: 'Perfil Epidemiológico Infantil - Sexo Masculino', unidade: 'Nº', meta: null, subcategoria: 'Perfil Epidemiológico - Infantil' },
-  { indicador: 'Perfil Epidemiológico Infantil - Sexo Feminino', unidade: 'Nº', meta: null, subcategoria: 'Perfil Epidemiológico - Infantil' },
+  { indicador: 'Perfil Epidemiológico Infantil', unidade: 'Nº', meta: null, subcategoria: 'Perfil Epidemiológico - Infantil' },
 ];
 
 export const NSP_INDICADORES_RESULTADO = [

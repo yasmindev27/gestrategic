@@ -85,10 +85,7 @@ export function IndicadoresNSP() {
     { name: 'Feminino', value: Number(filteredIndicators.find(i => i.indicador === 'Perfil Epidemiológico Adulto - Sexo Feminino')?.valor_numero || 0) },
   ].filter(d => d.value > 0);
 
-  const perfilInfantilData = [
-    { name: 'Masculino', value: Number(filteredIndicators.find(i => i.indicador === 'Perfil Epidemiológico Infantil - Sexo Masculino')?.valor_numero || 0) },
-    { name: 'Feminino', value: Number(filteredIndicators.find(i => i.indicador === 'Perfil Epidemiológico Infantil - Sexo Feminino')?.valor_numero || 0) },
-  ].filter(d => d.value > 0);
+  const perfilInfantilValue = Number(filteredIndicators.find(i => i.indicador === 'Perfil Epidemiológico Infantil')?.valor_numero || 0);
 
   // Desfechos Sepse
   const desfechoSepseData = filteredIndicators
@@ -312,20 +309,13 @@ export function IndicadoresNSP() {
 
             {/* Perfil Epidemiológico Infantil */}
             <Card>
-              <CardHeader><CardTitle className="text-lg">Perfil Epidemiológico - Infantil</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg">Perfil Epidemiológico Infantil</CardTitle></CardHeader>
               <CardContent>
-                {perfilInfantilData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={250}>
-                    <PieChart>
-                      <Pie data={perfilInfantilData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                        <Cell fill="#2563eb" />
-                        <Cell fill="#ec4899" />
-                      </Pie>
-                      <Tooltip />
-                      <Legend />
-                    </PieChart>
-                  </ResponsiveContainer>
+                {perfilInfantilValue > 0 ? (
+                  <div className="flex flex-col items-center justify-center h-[250px]">
+                    <span className="text-5xl font-bold text-primary">{perfilInfantilValue}</span>
+                    <span className="text-muted-foreground mt-2">Total de atendimentos infantis</span>
+                  </div>
                 ) : <div className="flex items-center justify-center h-[250px] text-muted-foreground">Sem dados para o período</div>}
               </CardContent>
             </Card>
