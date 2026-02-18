@@ -49,6 +49,7 @@ interface SolicitacaoDieta {
   tem_acompanhante: boolean | null;
   restricoes_alimentares: string | null;
   horarios_refeicoes: string[] | null;
+  entregue: boolean;
 }
 interface RegistroRefeicao {
   id: string;
@@ -164,8 +165,6 @@ export const RestauranteModule = () => {
     tipo_dieta: "",
     restricoes_alimentares: "",
     horarios_refeicoes: ["cafe", "almoco", "lanche", "jantar"] as string[],
-    data_inicio: format(new Date(), "yyyy-MM-dd"),
-    data_fim: "",
     observacoes: "",
     is_dieta_extra: false,
     observacao_dieta_extra: ""
@@ -210,8 +209,6 @@ export const RestauranteModule = () => {
     tipo_dieta: "",
     restricoes_alimentares: "",
     horarios_refeicoes: [] as string[],
-    data_inicio: "",
-    data_fim: "",
   });
   const [isDietaSubmitting, setIsDietaSubmitting] = useState(false);
   useEffect(() => {
@@ -342,10 +339,10 @@ export const RestauranteModule = () => {
   const handleSubmitSolicitacao = async () => {
     // Validação diferente para dieta extra
     if (formData.is_dieta_extra) {
-      if (!formData.tipo_dieta || !formData.data_inicio) {
+      if (!formData.tipo_dieta) {
         toast({
           title: "Erro",
-          description: "Preencha os campos obrigatórios: tipo de dieta e data início.",
+          description: "Preencha o campo obrigatório: tipo de dieta.",
           variant: "destructive"
         });
         return;
@@ -359,10 +356,10 @@ export const RestauranteModule = () => {
         return;
       }
     } else {
-      if (!formData.tipo_dieta || !formData.data_inicio || !formData.paciente_nome || !formData.quarto_leito) {
+      if (!formData.tipo_dieta || !formData.paciente_nome || !formData.quarto_leito) {
         toast({
           title: "Erro",
-          description: "Preencha os campos obrigatórios: nome do paciente, quarto/leito, tipo de dieta e data início.",
+          description: "Preencha os campos obrigatórios: nome do paciente, quarto/leito e tipo de dieta.",
           variant: "destructive"
         });
         return;
@@ -391,8 +388,7 @@ export const RestauranteModule = () => {
         tem_acompanhante: formData.tem_acompanhante,
         restricoes_alimentares: formData.restricoes_alimentares || null,
         horarios_refeicoes: formData.horarios_refeicoes,
-        data_inicio: formData.data_inicio,
-        data_fim: formData.data_fim || null,
+        data_inicio: format(new Date(), "yyyy-MM-dd"),
         observacoes: observacoesCompletas,
         status: "aprovada" // Dietas são automaticamente aceitas
       });
@@ -426,8 +422,6 @@ export const RestauranteModule = () => {
       tipo_dieta: dieta.tipo_dieta,
       restricoes_alimentares: dieta.restricoes_alimentares || "",
       horarios_refeicoes: dieta.horarios_refeicoes || ["cafe", "almoco", "lanche", "jantar"],
-      data_inicio: dieta.data_inicio,
-      data_fim: dieta.data_fim || "",
     });
     setEditDietaDialogOpen(true);
   };
@@ -451,8 +445,6 @@ export const RestauranteModule = () => {
           tipo_dieta: editDietaFormData.tipo_dieta,
           restricoes_alimentares: editDietaFormData.restricoes_alimentares || null,
           horarios_refeicoes: editDietaFormData.horarios_refeicoes,
-          data_inicio: editDietaFormData.data_inicio,
-          data_fim: editDietaFormData.data_fim || null,
         })
         .eq("id", selectedDieta.id);
 
@@ -555,6 +547,24 @@ export const RestauranteModule = () => {
 
   // Funções de status removidas - dietas são automaticamente aceitas
 
+  const handleToggleEntregue = async (dieta: SolicitacaoDieta) => {
+    try {
+      const { error } = await supabase
+        .from("solicitacoes_dieta")
+        .update({ entregue: !dieta.entregue })
+        .eq("id", dieta.id);
+      if (error) throw error;
+      toast({
+        title: "Sucesso",
+        description: dieta.entregue ? "Dieta marcada como não entregue." : "Dieta marcada como entregue.",
+      });
+      fetchData();
+    } catch (error) {
+      console.error("Erro ao atualizar entrega:", error);
+      toast({ title: "Erro", description: "Não foi possível atualizar.", variant: "destructive" });
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       paciente_nome: "",
@@ -564,8 +574,6 @@ export const RestauranteModule = () => {
       tipo_dieta: "",
       restricoes_alimentares: "",
       horarios_refeicoes: ["cafe", "almoco", "lanche", "jantar"],
-      data_inicio: format(new Date(), "yyyy-MM-dd"),
-      data_fim: "",
       observacoes: "",
       is_dieta_extra: false,
       observacao_dieta_extra: ""
@@ -735,9 +743,8 @@ export const RestauranteModule = () => {
       "Tipo de Dieta": tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
       "Restrições Alimentares": s.restricoes_alimentares || "-",
       "Horários": s.horarios_refeicoes?.map(h => horariosRefeicaoOptions.find(o => o.value === h)?.label).join(", ") || "-",
-      "Data Início": format(new Date(s.data_inicio), "dd/MM/yyyy"),
-      "Data Fim": s.data_fim ? format(new Date(s.data_fim), "dd/MM/yyyy") : "-",
       "Solicitado em": format(new Date(s.created_at), "dd/MM/yyyy HH:mm"),
+      "Entregue": s.entregue ? "Sim" : "Não",
       "Observações": s.observacoes || "-"
     }));
     const ws = XLSX.utils.json_to_sheet(dataToExport);
@@ -759,10 +766,10 @@ export const RestauranteModule = () => {
     doc.text(`Período: ${format(new Date(dashboardDataInicio), "dd/MM/yyyy")} a ${format(new Date(dashboardDataFim), "dd/MM/yyyy")}`, 14, 32);
     doc.text(`Total de Dietas: ${dashboardStats.total}`, 14, 38);
 
-    const tableData = dashboardSolicitacoes.map(s => [s.paciente_nome || "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.restricoes_alimentares || "-", format(new Date(s.data_inicio), "dd/MM/yyyy"), s.solicitante_nome]);
+    const tableData = dashboardSolicitacoes.map(s => [s.paciente_nome || "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.restricoes_alimentares || "-", s.entregue ? "Sim" : "Não", s.solicitante_nome]);
     autoTable(doc, {
       startY: 44,
-      head: [["Paciente", "Quarto/Leito", "Tipo de Dieta", "Restrições", "Data Início", "Solicitante"]],
+      head: [["Paciente", "Quarto/Leito", "Tipo de Dieta", "Restrições", "Entregue", "Solicitante"]],
       body: tableData,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [59, 130, 246] },
@@ -776,10 +783,10 @@ export const RestauranteModule = () => {
   // Filtrar minhas solicitações pelo período selecionado
   const minhasSolicitacoesFiltradas = minhasSolicitacoes.filter(s => {
     const hoje = new Date();
-    const dataInicio = new Date(s.data_inicio);
+    const dataCriacao = new Date(s.created_at);
     switch (minhasDietasFiltro) {
       case "dia":
-        return format(dataInicio, "yyyy-MM-dd") === format(hoje, "yyyy-MM-dd");
+        return format(dataCriacao, "yyyy-MM-dd") === format(hoje, "yyyy-MM-dd");
       case "semana":
         const inicioSemana = startOfWeek(hoje, {
           weekStartsOn: 0
@@ -787,9 +794,9 @@ export const RestauranteModule = () => {
         const fimSemana = endOfWeek(hoje, {
           weekStartsOn: 0
         });
-        return dataInicio >= inicioSemana && dataInicio <= fimSemana;
+        return dataCriacao >= inicioSemana && dataCriacao <= fimSemana;
       case "mes":
-        return dataInicio >= startOfMonth(hoje) && dataInicio <= endOfMonth(hoje);
+        return dataCriacao >= startOfMonth(hoje) && dataCriacao <= endOfMonth(hoje);
       default:
         return true;
     }
@@ -804,9 +811,8 @@ export const RestauranteModule = () => {
       "Tem Acompanhante": s.tem_acompanhante ? "Sim" : "Não",
       "Restrições Alimentares": s.restricoes_alimentares || "-",
       "Horários": s.horarios_refeicoes?.map(h => horariosRefeicaoOptions.find(o => o.value === h)?.label).join(", ") || "Todos",
-      "Data Início": format(new Date(s.data_inicio), "dd/MM/yyyy"),
-      "Data Fim": s.data_fim ? format(new Date(s.data_fim), "dd/MM/yyyy") : "-",
       "Solicitado em": format(new Date(s.created_at), "dd/MM/yyyy HH:mm"),
+      "Entregue": s.entregue ? "Sim" : "Não",
       "Observações": s.observacoes || "-"
     }));
     const ws = XLSX.utils.json_to_sheet(dataToExport);
@@ -829,10 +835,10 @@ export const RestauranteModule = () => {
     doc.setFont('helvetica', 'normal');
     doc.text(`Total: ${minhasSolicitacoesFiltradas.length} dietas`, 14, 32);
     
-    const tableData = minhasSolicitacoesFiltradas.map(s => [s.paciente_nome || "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.tem_acompanhante ? "Sim" : "Não", format(new Date(s.data_inicio), "dd/MM/yyyy"), s.data_fim ? format(new Date(s.data_fim), "dd/MM/yyyy") : "-", format(new Date(s.created_at), "dd/MM/yyyy")]);
+    const tableData = minhasSolicitacoesFiltradas.map(s => [s.paciente_nome || "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.tem_acompanhante ? "Sim" : "Não", s.entregue ? "Sim" : "Não", format(new Date(s.created_at), "dd/MM/yyyy")]);
     autoTable(doc, {
       startY: 38,
-      head: [["Paciente", "Quarto/Leito", "Tipo", "Acomp.", "Data Início", "Data Fim", "Solicitado em"]],
+      head: [["Paciente", "Quarto/Leito", "Tipo", "Acomp.", "Entregue", "Solicitado em"]],
       body: tableData,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [59, 130, 246] },
@@ -1014,8 +1020,8 @@ export const RestauranteModule = () => {
                       <TableHead>Tipo de Dieta</TableHead>
                       <TableHead>Horários</TableHead>
                       <TableHead>Acompanhante</TableHead>
-                      <TableHead>Período</TableHead>
                       <TableHead>Solicitado em</TableHead>
+                      <TableHead>Entregue</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1045,15 +1051,13 @@ export const RestauranteModule = () => {
                             {s.tem_acompanhante ? "Sim" : "Não"}
                           </Badge>
                         </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 text-sm">
-                            <Clock className="h-3 w-3" />
-                            {format(new Date(s.data_inicio), "dd/MM/yyyy")}
-                            {s.data_fim && ` - ${format(new Date(s.data_fim), "dd/MM/yyyy")}`}
-                          </div>
-                        </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={s.entregue ? "default" : "outline"} className={s.entregue ? "bg-green-600" : ""}>
+                            {s.entregue ? "Sim" : "Não"}
+                          </Badge>
                         </TableCell>
                       </TableRow>)}
                   </TableBody>
@@ -1123,8 +1127,9 @@ export const RestauranteModule = () => {
                             <TableHead>Paciente</TableHead>
                             <TableHead>Quarto/Leito</TableHead>
                             <TableHead>Tipo de Dieta</TableHead>
-                            <TableHead>Período</TableHead>
                             <TableHead>Solicitante</TableHead>
+                            <TableHead>Solicitado em</TableHead>
+                            <TableHead>Entregue</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1142,15 +1147,21 @@ export const RestauranteModule = () => {
                                   {s.restricoes_alimentares && <p className="text-xs text-muted-foreground">{s.restricoes_alimentares}</p>}
                                 </div>
                               </TableCell>
-                              <TableCell>
-                                <div className="flex items-center gap-1 text-sm">
-                                  <Clock className="h-3 w-3" />
-                                  {format(new Date(s.data_inicio), "dd/MM/yyyy")}
-                                  {s.data_fim && ` - ${format(new Date(s.data_fim), "dd/MM/yyyy")}`}
-                                </div>
-                              </TableCell>
                               <TableCell className="text-muted-foreground text-sm">
                                 {s.solicitante_nome}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground text-sm">
+                                {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
+                              </TableCell>
+                              <TableCell>
+                                <Button
+                                  variant={s.entregue ? "default" : "outline"}
+                                  size="sm"
+                                  className={s.entregue ? "bg-green-600 hover:bg-green-700" : ""}
+                                  onClick={() => handleToggleEntregue(s)}
+                                >
+                                  {s.entregue ? "✓ Entregue" : "Marcar Entregue"}
+                                </Button>
                               </TableCell>
                             </TableRow>)}
                         </TableBody>
@@ -1368,12 +1379,11 @@ export const RestauranteModule = () => {
                     {(() => {
                   // Filtrar por período
                   let solicitacoesFiltradas = todasSolicitacoes.filter(s => {
-                    const dataInicio = new Date(s.data_inicio);
+                    const dataCriacao = new Date(s.created_at);
                     const hoje = new Date();
                     hoje.setHours(0, 0, 0, 0);
                     if (solicitacoesPeriodo === "dia") {
-                      const dataStr = format(hoje, "yyyy-MM-dd");
-                      return s.data_inicio === dataStr || s.data_fim && s.data_inicio <= dataStr && s.data_fim >= dataStr || !s.data_fim && s.data_inicio <= dataStr;
+                      return format(dataCriacao, "yyyy-MM-dd") === format(hoje, "yyyy-MM-dd");
                     } else if (solicitacoesPeriodo === "semana") {
                       const inicioSemana = startOfWeek(hoje, {
                         weekStartsOn: 0
@@ -1381,11 +1391,11 @@ export const RestauranteModule = () => {
                       const fimSemana = endOfWeek(hoje, {
                         weekStartsOn: 0
                       });
-                      return dataInicio >= inicioSemana && dataInicio <= fimSemana;
+                      return dataCriacao >= inicioSemana && dataCriacao <= fimSemana;
                     } else if (solicitacoesPeriodo === "mes") {
                       const inicioMes = startOfMonth(hoje);
                       const fimMes = endOfMonth(hoje);
-                      return dataInicio >= inicioMes && dataInicio <= fimMes;
+                      return dataCriacao >= inicioMes && dataCriacao <= fimMes;
                     }
                     return true;
                   });
@@ -1415,8 +1425,9 @@ export const RestauranteModule = () => {
                                   </div>
                                 </TableHead>
                                 <TableHead>Quarto/Leito</TableHead>
-                                <TableHead>Período</TableHead>
                                 <TableHead>Solicitante</TableHead>
+                                <TableHead>Solicitado em</TableHead>
+                                <TableHead>Entregue</TableHead>
                                 {isAdmin && <TableHead className="w-[100px]">Ações</TableHead>}
                               </TableRow>
                             </TableHeader>
@@ -1450,18 +1461,20 @@ export const RestauranteModule = () => {
                                   </TableCell>
                                   <TableCell>{s.quarto_leito || "N/A"}</TableCell>
                                   <TableCell>
-                                    <div className="text-sm">
-                                      {format(new Date(s.data_inicio), "dd/MM/yyyy")}
-                                      {s.data_fim && <span className="text-muted-foreground">
-                                          {" → "}{format(new Date(s.data_fim), "dd/MM/yyyy")}
-                                        </span>}
-                                      {!s.data_fim && <span className="text-muted-foreground text-xs block">
-                                          (sem término)
-                                        </span>}
-                                    </div>
+                                    <span className="text-sm text-muted-foreground">{s.solicitante_nome}</span>
+                                  </TableCell>
+                                  <TableCell className="text-muted-foreground text-sm">
+                                    {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
                                   </TableCell>
                                   <TableCell>
-                                    <span className="text-sm text-muted-foreground">{s.solicitante_nome}</span>
+                                    <Button
+                                      variant={s.entregue ? "default" : "outline"}
+                                      size="sm"
+                                      className={s.entregue ? "bg-green-600 hover:bg-green-700" : ""}
+                                      onClick={() => handleToggleEntregue(s)}
+                                    >
+                                      {s.entregue ? "✓ Entregue" : "Marcar"}
+                                    </Button>
                                   </TableCell>
                                   {isAdmin && (
                                     <TableCell>
@@ -1660,24 +1673,6 @@ export const RestauranteModule = () => {
               </div>
             </div>
 
-            {/* Período e Observações */}
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Data Início *</Label>
-                <Input type="date" value={formData.data_inicio} onChange={e => setFormData({
-                ...formData,
-                data_inicio: e.target.value
-              })} />
-              </div>
-              <div className="space-y-2">
-                <Label>Data Fim (opcional)</Label>
-                <Input type="date" value={formData.data_fim} onChange={e => setFormData({
-                ...formData,
-                data_fim: e.target.value
-              })} />
-              </div>
-            </div>
-
             {/* Dieta Extra */}
             <div className="space-y-3 p-4 border rounded-lg bg-amber-50/50 border-amber-200">
               <div className="flex items-center space-x-2">
@@ -1814,16 +1809,6 @@ export const RestauranteModule = () => {
             <div className="space-y-2">
               <Label>Restrições Alimentares</Label>
               <Textarea value={editDietaFormData.restricoes_alimentares} onChange={e => setEditDietaFormData({...editDietaFormData, restricoes_alimentares: e.target.value})} rows={2} />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Data Início</Label>
-                <Input type="date" value={editDietaFormData.data_inicio} onChange={e => setEditDietaFormData({...editDietaFormData, data_inicio: e.target.value})} />
-              </div>
-              <div className="space-y-2">
-                <Label>Data Fim</Label>
-                <Input type="date" value={editDietaFormData.data_fim} onChange={e => setEditDietaFormData({...editDietaFormData, data_fim: e.target.value})} />
-              </div>
             </div>
           </div>
           <DialogFooter>
