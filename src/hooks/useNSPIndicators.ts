@@ -116,9 +116,9 @@ export const useNSPIndicators = () => {
 
   const calculateStats = useMemo(() => {
     const totalInternacoes = filteredIndicators.find(i => i.indicador === 'Número de Internações')?.valor_numero || 0;
-    const totalObitos = filteredIndicators.find(i => i.indicador === 'Número de Óbitos')?.valor_numero || 0;
-    const totalProfissionais = filteredIndicators.find(i => i.indicador === 'Número Total de Profissionais - Institucional')?.valor_numero || 0;
-    const totalNotificacoes = filteredIndicators.find(i => i.indicador === 'Número Total de Notificações de Incidentes')?.valor_numero || 0;
+    const taxaOcupacao = filteredIndicators.find(i => i.indicador === 'Taxa de Ocupação')?.valor_numero || 0;
+    const taxaMortalidade = filteredIndicators.find(i => i.indicador === 'Taxa de Mortalidade')?.valor_numero || 0;
+    const protocolosSepse = filteredIndicators.find(i => i.categoria === 'Protocolo de Sepse' && i.indicador === 'Total de Protocolos Abertos')?.valor_numero || 0;
 
     const alertas = filteredIndicators.filter(ind => {
       if (ind.meta === null || ind.valor_numero === null) return false;
@@ -127,8 +127,10 @@ export const useNSPIndicators = () => {
     });
 
     return {
-      totalInternacoes: Number(totalInternacoes), totalObitos: Number(totalObitos),
-      totalProfissionais: Number(totalProfissionais), totalNotificacoes: Number(totalNotificacoes),
+      totalInternacoes: Number(totalInternacoes),
+      taxaOcupacao: Number(taxaOcupacao),
+      taxaMortalidade: Number(taxaMortalidade),
+      protocolosSepse: Number(protocolosSepse),
       alertas, alertasCount: alertas.length,
     };
   }, [filteredIndicators]);

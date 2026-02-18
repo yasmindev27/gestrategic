@@ -95,63 +95,66 @@ export const UPA_INDICADORES_GESTAO = [
   { indicador: 'Demissões', unidade: 'Nº', meta: null, subcategoria: 'Turnover' },
 ];
 
-// ── NSP Indicators ──
+// ── NSP Indicators (Indicadores Hospitalares) ──
 export const NSP_CATEGORIAS = {
   ESTRUTURA: 'Indicadores de Estrutura',
   PROCESSO: 'Indicadores de Processo',
-  AUDITORIAS: 'Auditorias de Segurança do Paciente',
   RESULTADO: 'Indicadores de Resultado',
+  SEPSE: 'Protocolo de Sepse',
+  DOR_TORACICA: 'Protocolo de Dor Torácica',
 } as const;
 
 export const NSP_INDICADORES_ESTRUTURA = [
-  { indicador: 'Número Total de Profissionais - Institucional', unidade: 'Nº', meta: null },
-  { indicador: 'Número de Internações', unidade: 'Nº', meta: null },
-  { indicador: 'Número de Pacientes Atendidos', unidade: 'Nº', meta: null },
-  { indicador: 'Número de Óbitos', unidade: 'Nº', meta: null },
+  { indicador: 'Número Total de Leitos Clínicos', unidade: 'Nº', meta: null },
+  { indicador: 'Número de Leitos Pediátricos', unidade: 'Nº', meta: null },
+  { indicador: 'Número de Leitos de Isolamento', unidade: 'Nº', meta: null },
 ];
 
 export const NSP_INDICADORES_PROCESSO = [
-  { indicador: 'Número Total de Notificações de Incidentes', unidade: 'Nº', meta: null, subcategoria: 'Notificações' },
-  { indicador: 'Sem Dano', unidade: 'Nº', meta: null, subcategoria: 'Classificação de Incidentes' },
-  { indicador: 'Circunstância de Risco', unidade: 'Nº', meta: null, subcategoria: 'Classificação de Incidentes' },
-  { indicador: 'Quase Erro "Near Miss"', unidade: 'Nº', meta: null, subcategoria: 'Classificação de Incidentes' },
-  { indicador: 'Com Dano / Evento Adverso', unidade: 'Nº', meta: null, subcategoria: 'Classificação de Incidentes' },
-  { indicador: 'Dano Leve', unidade: 'Nº', meta: null, subcategoria: 'Grau do Dano' },
-  { indicador: 'Dano Moderado', unidade: 'Nº', meta: null, subcategoria: 'Grau do Dano' },
-  { indicador: 'Dano Grave', unidade: 'Nº', meta: null, subcategoria: 'Grau do Dano' },
-  { indicador: 'Óbito', unidade: 'Nº', meta: null, subcategoria: 'Grau do Dano' },
-  { indicador: 'Não Conformidades', unidade: 'Nº', meta: null, subcategoria: 'Não Conformidades' },
-  { indicador: 'Unidade de Internação', unidade: 'Nº', meta: null, subcategoria: 'Procedência das Notificações' },
-  { indicador: 'Emergência', unidade: 'Nº', meta: null, subcategoria: 'Procedência das Notificações' },
-  { indicador: 'Pronto Atendimento', unidade: 'Nº', meta: null, subcategoria: 'Procedência das Notificações' },
-  { indicador: 'Laboratório', unidade: 'Nº', meta: null, subcategoria: 'Procedência das Notificações' },
-  { indicador: 'Farmácia', unidade: 'Nº', meta: null, subcategoria: 'Procedência das Notificações' },
-  { indicador: 'Medicação', unidade: 'Nº', meta: null, subcategoria: 'Tipo de Incidentes - OMS' },
-  { indicador: 'Documentação', unidade: 'Nº', meta: null, subcategoria: 'Tipo de Incidentes - OMS' },
-  { indicador: 'Comportamento', unidade: 'Nº', meta: null, subcategoria: 'Tipo de Incidentes - OMS' },
-  { indicador: 'Equipamentos Médicos', unidade: 'Nº', meta: null, subcategoria: 'Tipo de Incidentes - OMS' },
-];
-
-export const NSP_INDICADORES_AUDITORIAS = [
-  { indicador: 'Nº pacientes avaliados - Identificação', unidade: 'Nº', meta: null, subcategoria: 'Identificação do Paciente' },
-  { indicador: 'Conformidade na identificação dos pacientes', unidade: '%', meta: 100, subcategoria: 'Identificação do Paciente' },
-  { indicador: 'Nº pacientes avaliados - Quedas', unidade: 'Nº', meta: null, subcategoria: 'Prevenção de Quedas' },
-  { indicador: 'Conformidade nas barreiras de prevenção de Queda', unidade: '%', meta: 100, subcategoria: 'Prevenção de Quedas' },
-  { indicador: 'Nº pacientes avaliados - Lesão', unidade: 'Nº', meta: null, subcategoria: 'Prevenção de Lesão por Pressão' },
-  { indicador: 'Conformidade nas barreiras de prevenção de Lesão por Pressão', unidade: '%', meta: 100, subcategoria: 'Prevenção de Lesão por Pressão' },
+  { indicador: 'Número de Internações', unidade: 'Nº', meta: null },
+  { indicador: 'Taxa de Ocupação', unidade: '%', meta: null },
+  { indicador: 'Perfil Epidemiológico Adulto - Sexo Masculino', unidade: 'Nº', meta: null, subcategoria: 'Perfil Epidemiológico - Adulto' },
+  { indicador: 'Perfil Epidemiológico Adulto - Sexo Feminino', unidade: 'Nº', meta: null, subcategoria: 'Perfil Epidemiológico - Adulto' },
+  { indicador: 'Perfil Epidemiológico Infantil - Sexo Masculino', unidade: 'Nº', meta: null, subcategoria: 'Perfil Epidemiológico - Infantil' },
+  { indicador: 'Perfil Epidemiológico Infantil - Sexo Feminino', unidade: 'Nº', meta: null, subcategoria: 'Perfil Epidemiológico - Infantil' },
 ];
 
 export const NSP_INDICADORES_RESULTADO = [
-  { indicador: 'Taxa de incidentes - Identificação do Paciente', unidade: 'Nº', meta: 0 },
-  { indicador: 'Taxa de incidentes - Comunicação Efetiva', unidade: 'Nº', meta: 0 },
-  { indicador: 'Taxa de incidentes - Medicamentos', unidade: 'Nº', meta: 0 },
-  { indicador: 'Taxa de incidentes - Quedas', unidade: 'Nº', meta: 0 },
-  { indicador: 'Taxa de incidentes - Retirada não programada de Dispositivos', unidade: 'Nº', meta: 0 },
-  { indicador: 'Taxa de incidentes - Lesão de Pele', unidade: 'Nº', meta: 0 },
-  { indicador: 'Taxa de incidentes - Flebite', unidade: 'Nº', meta: 0 },
-  { indicador: 'Taxa de incidentes - Farmacovigilância', unidade: 'Nº', meta: 0 },
-  { indicador: 'Taxa de incidentes - Tecnovigilância', unidade: 'Nº', meta: 0 },
+  { indicador: 'Tempo Médio de Permanência - Geral', unidade: 'Dias', meta: null },
+  { indicador: 'Tempo Médio de Permanência - Adulto', unidade: 'Dias', meta: null },
+  { indicador: 'Tempo Médio de Permanência - Infantil', unidade: 'Dias', meta: null },
+  { indicador: 'Taxa de Mortalidade', unidade: 'Nº', meta: null },
+  { indicador: 'Número de Transferências para HSJ', unidade: 'Nº', meta: null },
+  { indicador: 'Número de Transferências para Outros Hospitais', unidade: 'Nº', meta: null },
 ];
+
+export const NSP_INDICADORES_SEPSE = [
+  { indicador: 'Total de Protocolos Abertos', unidade: 'Nº', meta: null, subcategoria: 'Abertura' },
+  { indicador: 'Protocolo Negado pelo Médico', unidade: 'Nº', meta: null, subcategoria: 'Abertura' },
+  { indicador: 'Protocolos Realizados', unidade: 'Nº', meta: null, subcategoria: 'Abertura' },
+  { indicador: 'Coleta de HMC antes do ATB', unidade: 'Nº', meta: null, subcategoria: 'Conformidade' },
+  { indicador: 'Administração do ATB em até 01 hora da abertura do protocolo Sepse', unidade: 'Nº', meta: null, subcategoria: 'Conformidade' },
+  { indicador: 'Resultado do Lactato em até 60 min', unidade: 'Nº', meta: null, subcategoria: 'Conformidade' },
+  { indicador: 'Resultado do Lactato em 3 horas', unidade: 'Nº', meta: null, subcategoria: 'Conformidade' },
+  { indicador: 'Resultado do Lactato em 6 horas', unidade: 'Nº', meta: null, subcategoria: 'Conformidade' },
+  { indicador: 'Desfecho Clínico - Óbito', unidade: 'Nº', meta: null, subcategoria: 'Desfecho Clínico' },
+  { indicador: 'Desfecho Clínico - Transferência', unidade: 'Nº', meta: null, subcategoria: 'Desfecho Clínico' },
+  { indicador: 'Desfecho Clínico - Alta', unidade: 'Nº', meta: null, subcategoria: 'Desfecho Clínico' },
+];
+
+export const NSP_INDICADORES_DOR_TORACICA = [
+  { indicador: 'Total de Protocolos Abertos', unidade: 'Nº', meta: null, subcategoria: 'Abertura' },
+  { indicador: 'Baixo Risco', unidade: 'Nº', meta: null, subcategoria: 'Classificação de Risco' },
+  { indicador: 'Moderado / Alto Risco', unidade: 'Nº', meta: null, subcategoria: 'Classificação de Risco' },
+  { indicador: 'Porta ECG em até 10 minutos', unidade: 'Nº', meta: null, subcategoria: 'Tempo Resposta' },
+  { indicador: 'Porta Agulha em até 30 minutos', unidade: 'Nº', meta: null, subcategoria: 'Tempo Resposta' },
+  { indicador: 'Desfecho Clínico - Óbito', unidade: 'Nº', meta: null, subcategoria: 'Desfecho Clínico' },
+  { indicador: 'Desfecho Clínico - Transferência', unidade: 'Nº', meta: null, subcategoria: 'Desfecho Clínico' },
+  { indicador: 'Desfecho Clínico - Alta', unidade: 'Nº', meta: null, subcategoria: 'Desfecho Clínico' },
+];
+
+// Keep backward compatibility - auditorias is now empty but referenced in some places
+export const NSP_INDICADORES_AUDITORIAS: any[] = [];
 
 // Helper to get all indicators for a module
 export function getAllUPAIndicators() {
@@ -167,7 +170,8 @@ export function getAllNSPIndicators() {
   return [
     ...NSP_INDICADORES_ESTRUTURA.map(i => ({ ...i, categoria: NSP_CATEGORIAS.ESTRUTURA, subcategoria: null })),
     ...NSP_INDICADORES_PROCESSO.map(i => ({ ...i, categoria: NSP_CATEGORIAS.PROCESSO })),
-    ...NSP_INDICADORES_AUDITORIAS.map(i => ({ ...i, categoria: NSP_CATEGORIAS.AUDITORIAS })),
     ...NSP_INDICADORES_RESULTADO.map(i => ({ ...i, categoria: NSP_CATEGORIAS.RESULTADO, subcategoria: null })),
+    ...NSP_INDICADORES_SEPSE.map(i => ({ ...i, categoria: NSP_CATEGORIAS.SEPSE })),
+    ...NSP_INDICADORES_DOR_TORACICA.map(i => ({ ...i, categoria: NSP_CATEGORIAS.DOR_TORACICA })),
   ];
 }
