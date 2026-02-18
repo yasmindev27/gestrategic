@@ -19,7 +19,8 @@ import {
   MESES, NSP_CATEGORIAS,
   NSP_INDICADORES_ESTRUTURA, NSP_INDICADORES_PROCESSO, NSP_INDICADORES_AUDITORIAS, NSP_INDICADORES_RESULTADO,
 } from '@/types/indicators';
-import { exportToCSV, exportToPDF } from '@/lib/export-utils';
+import { exportToCSV, exportToPDF, createStandardPdf, savePdfWithFooter } from '@/lib/export-utils';
+import autoTable from 'jspdf-autotable';
 
 const COLORS = ['#2563eb', '#16a34a', '#eab308', '#ea580c', '#dc2626', '#8b5cf6', '#06b6d4', '#f97316'];
 const MESES_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -246,18 +247,75 @@ export function IndicadoresNSP() {
               ]);
               exportToCSV({ title: `Indicadores NSP - ${selectedMonth} ${selectedYear}`, headers, rows, fileName: `indicadores_nsp_${selectedMonth}_${selectedYear}` });
             }}
-            onExportPDF={() => {
-              const headers = ['Indicador', 'Categoria', 'Valor', 'Meta', 'Status'];
-              const rows = filteredIndicators.map(i => {
-                const isAlert = i.meta !== null && i.valor_numero !== null && (i.meta === 0 ? i.valor_numero > 0 : i.valor_numero > i.meta);
-                return [
-                  i.indicador, i.categoria.replace('Indicadores de ', '').replace('Auditorias de ', ''),
-                  i.valor_numero != null ? Number(i.valor_numero) : '—',
-                  i.meta != null ? Number(i.meta) : '—',
-                  i.meta !== null ? (isAlert ? 'Alerta' : 'OK') : '—',
-                ];
+            onExportPDF={async () => {
+              const pdfTitle = `Indicadores NSP - ${selectedMonth} ${selectedYear}`;
+              const { doc, logoImg } = await createStandardPdf(pdfTitle, 'landscape');
+
+              // 1) KPIs summary
+              autoTable(doc, {
+                startY: 32,
+                head: [['Total Internações', 'Total Óbitos', 'Profissionais', 'Notificações', 'Alertas']],
+                body: [[stats.totalInternacoes, stats.totalObitos, stats.totalProfissionais, stats.totalNotificacoes, stats.alertasCount]],
+                styles: { fontSize: 9, cellPadding: 3, halign: 'center' },
+                headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
               });
-              exportToPDF({ title: `Indicadores NSP - ${selectedMonth} ${selectedYear}`, headers, rows, fileName: `indicadores_nsp_${selectedMonth}_${selectedYear}`, orientation: 'landscape' });
+
+              // 2) Classificação de Incidentes
+              if (incidentData.length > 0) {
+                const lastY = (doc as any).lastAutoTable?.finalY || 50;
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Classificação de Incidentes', 14, lastY + 8);
+                autoTable(doc, {
+                  startY: lastY + 12,
+                  head: [['Incidente', 'Quantidade']],
+                  body: incidentData.map(d => [d.name, d.value]),
+                  styles: { fontSize: 8, cellPadding: 2 },
+                  headStyles: { fillColor: [52, 152, 219], textColor: 255, fontStyle: 'bold' },
+                  margin: { top: 32, bottom: 28 },
+                });
+              }
+
+              // 3) Tipos de Incidentes (OMS)
+              if (incidentTypeData.length > 0) {
+                const lastY = (doc as any).lastAutoTable?.finalY || 80;
+                doc.setFontSize(11);
+                doc.setFont('helvetica', 'bold');
+                doc.text('Tipos de Incidentes (OMS)', 14, lastY + 8);
+                autoTable(doc, {
+                  startY: lastY + 12,
+                  head: [['Tipo', 'Quantidade']],
+                  body: incidentTypeData.map(d => [d.name, d.value]),
+                  styles: { fontSize: 8, cellPadding: 2 },
+                  headStyles: { fillColor: [52, 152, 219], textColor: 255, fontStyle: 'bold' },
+                  margin: { top: 32, bottom: 28 },
+                });
+              }
+
+              // 4) Tabela principal de indicadores
+              const lastY2 = (doc as any).lastAutoTable?.finalY || 100;
+              doc.setFontSize(11);
+              doc.setFont('helvetica', 'bold');
+              doc.text('Resumo dos Indicadores', 14, lastY2 + 8);
+              autoTable(doc, {
+                startY: lastY2 + 12,
+                head: [['Indicador', 'Categoria', 'Valor', 'Meta', 'Status']],
+                body: filteredIndicators.map(i => {
+                  const isAlert = i.meta !== null && i.valor_numero !== null && (i.meta === 0 ? i.valor_numero > 0 : i.valor_numero > i.meta);
+                  return [
+                    i.indicador, i.categoria.replace('Indicadores de ', '').replace('Auditorias de ', ''),
+                    i.valor_numero != null ? Number(i.valor_numero) : '—',
+                    i.meta != null ? Number(i.meta) : '—',
+                    i.meta !== null ? (isAlert ? 'Alerta' : 'OK') : '—',
+                  ];
+                }),
+                styles: { fontSize: 8, cellPadding: 2 },
+                headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
+                alternateRowStyles: { fillColor: [245, 245, 245] },
+                margin: { top: 32, bottom: 28 },
+              });
+
+              savePdfWithFooter(doc, pdfTitle, `indicadores_nsp_${selectedMonth}_${selectedYear}`, logoImg);
             }}
           />
         </div>
