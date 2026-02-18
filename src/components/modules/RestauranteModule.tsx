@@ -1055,9 +1055,14 @@ export const RestauranteModule = () => {
                           {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
                         </TableCell>
                         <TableCell>
-                          <Badge variant={s.entregue ? "default" : "outline"} className={s.entregue ? "bg-green-600" : ""}>
-                            {s.entregue ? "Sim" : "Não"}
-                          </Badge>
+                          <Button
+                            variant={s.entregue ? "default" : "outline"}
+                            size="sm"
+                            className={s.entregue ? "bg-green-600 hover:bg-green-700" : ""}
+                            onClick={() => handleToggleEntregue(s)}
+                          >
+                            {s.entregue ? "✓ Entregue" : "Marcar Entregue"}
+                          </Button>
                         </TableCell>
                       </TableRow>)}
                   </TableBody>
@@ -1154,14 +1159,9 @@ export const RestauranteModule = () => {
                                 {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
                               </TableCell>
                               <TableCell>
-                                <Button
-                                  variant={s.entregue ? "default" : "outline"}
-                                  size="sm"
-                                  className={s.entregue ? "bg-green-600 hover:bg-green-700" : ""}
-                                  onClick={() => handleToggleEntregue(s)}
-                                >
-                                  {s.entregue ? "✓ Entregue" : "Marcar Entregue"}
-                                </Button>
+                                <Badge variant={s.entregue ? "default" : "outline"} className={s.entregue ? "bg-green-600" : ""}>
+                                  {s.entregue ? "Sim" : "Não"}
+                                </Badge>
                               </TableCell>
                             </TableRow>)}
                         </TableBody>
@@ -1467,14 +1467,9 @@ export const RestauranteModule = () => {
                                     {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
                                   </TableCell>
                                   <TableCell>
-                                    <Button
-                                      variant={s.entregue ? "default" : "outline"}
-                                      size="sm"
-                                      className={s.entregue ? "bg-green-600 hover:bg-green-700" : ""}
-                                      onClick={() => handleToggleEntregue(s)}
-                                    >
-                                      {s.entregue ? "✓ Entregue" : "Marcar"}
-                                    </Button>
+                                    <Badge variant={s.entregue ? "default" : "outline"} className={s.entregue ? "bg-green-600" : ""}>
+                                      {s.entregue ? "Sim" : "Não"}
+                                    </Badge>
                                   </TableCell>
                                   {isAdmin && (
                                     <TableCell>
