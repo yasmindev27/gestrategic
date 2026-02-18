@@ -97,6 +97,7 @@ export const useUserRole = () => {
   const isAssistenciaSocial = roles.includes("assistencia_social");
   const isQualidade = roles.includes("qualidade");
   const isNSP = roles.includes("nsp");
+  const isMedicos = roles.includes("medicos");
   const isTecnico = isTI || isManutencao || isEngenhariaCinica || isLaboratorio;
 
   const canAccessSaidaProntuarios = isAdmin || isRecepcao || isClassificacao || isNir || isFaturamento;
@@ -128,6 +129,7 @@ export const useUserRole = () => {
     isAssistenciaSocial,
     isQualidade,
     isNSP,
+    isMedicos,
     isTecnico,
     canAccessSaidaProntuarios,
     canAccessControleFichas,
