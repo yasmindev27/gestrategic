@@ -50,47 +50,92 @@ const UNIDADES = [
   "Observação sem leito",
 ];
 
+const QUESTION_SHORT_LABELS: Record<string, string> = {
+  proveniencia: "Proveniência",
+  hpp: "HPP",
+  exame_fisico: "Exame Físico",
+  plano_terapeutico: "Plano Terapêutico",
+  metas_terapeuticas: "Metas Terapêuticas",
+  plano_alta: "Plano de Alta",
+};
+
 const QUESTIONS = [
   {
     id: "proveniencia",
     number: 5,
-    title: "Descrição da proveniência do paciente",
-    description: "No prontuário do paciente está descrita a sua proveniência (SAMU, COBOM, Polícia Militar, Concessionária Way, transferência de outra unidade hospitalar ou encaminhamento do PSF)?",
+    title: "No prontuário do paciente está descrita a sua proveniência (SAMU, COBOM, Polícia Militar, Concessionária Way, transferência de outra unidade hospitalar ou encaminhamento do PSF)?",
+    description: "",
+    criteria: [],
+    example: "",
     hasNA: true,
   },
   {
     id: "hpp",
     number: 6,
-    title: "História Patológica Pregressa (HPP)",
-    description: "Doenças crônicas, cirurgias anteriores, medicamentos, alergias, comportamentos de risco e história familiar.",
+    title: "Como você avalia a descrição da História Patológica Pregressa (HPP):",
+    description: "",
+    criteria: [
+      "Se há registro de doenças crônicas (hipertensão, diabetes, cardiopatias, nefropatias, etc.).",
+      "Se há histórico de cirurgias ou internações anteriores.",
+      "Uso atual de medicamentos e alergias.",
+      "Histórico ginecológico/obstétrico (quando aplicável).",
+      "Comportamentos de risco (tabagismo, etilismo, uso de drogas, etc.) e história familiar relevante.",
+    ],
+    example: "\"HAS e DM2 há 10 anos. Uso regular de metformina e losartana. Alergia a dipirona. Tabagista até 2018.\"",
     hasNA: false,
   },
   {
     id: "exame_fisico",
     number: 7,
-    title: "Exame Físico",
-    description: "Sistemas pertinentes examinados, coerência com anamnese, sinais vitais, alterações descritas com precisão.",
+    title: "Como você avalia a descrição do exame físico:",
+    description: "",
+    criteria: [
+      "Todos os sistemas pertinentes à queixa e HDA foram devidamente examinados.",
+      "O exame físico está coerente com os dados da anamnese (por exemplo, se há dor torácica, deve haver avaliação cardíaca e pulmonar).",
+      "Se há ausência de contradições entre sinais vitais e estado geral (ex.: PA gravemente alterada sem qualquer outra observação).",
+      "Se as alterações encontradas no exame foram descritas com precisão (tipo, localização, intensidade).",
+    ],
+    example: "\"Paciente consciente, orientado. PA: 130x85 mmHg, FC: 88 bpm, SpO₂: 96% em ar ambiente. Pulmões com murmúrio vesicular diminuído em base direita. Abdome flácido, doloroso em FID, sem sinais de irritação peritoneal.\"",
     hasNA: false,
   },
   {
     id: "plano_terapeutico",
     number: 8,
-    title: "Plano Terapêutico",
-    description: "Alinhamento com hipótese diagnóstica, compatibilidade com gravidade, justificativas clínicas para condutas.",
+    title: "Como você avalia a descrição do Plano Terapêutico:",
+    description: "",
+    criteria: [
+      "O plano proposto está alinhado à hipótese diagnóstica confirmada ou em investigação.",
+      "O tratamento é compatível com a gravidade do caso e com os achados do exame clínico/laboratorial.",
+      "Se há justificativas clínicas para condutas terapêuticas específicas (ex: uso de antibióticos, suporte ventilatório, hemodiálise etc.).",
+    ],
+    example: "\"Iniciar ceftriaxona 1g 12/12h por 7 dias, considerando diagnóstico de pneumonia comunitária. Suporte hídrico e analgesia conforme dor.\"",
     hasNA: true,
   },
   {
     id: "metas_terapeuticas",
     number: 9,
-    title: "Metas Terapêuticas",
-    description: "Objetivos clínicos mensuráveis, controle glicêmico, estabilização, reavaliações previstas.",
+    title: "Como você avalia a descrição das Metas Terapêuticas:",
+    description: "O plano descreve objetivos clínicos mensuráveis, como:",
+    criteria: [
+      "Controle glicêmico (ex: manter glicemia < 180 mg/dL)",
+      "Estabilização hemodinâmica",
+      "Redução de marcadores inflamatórios",
+      "Melhora da função respiratória",
+      "Se o acompanhamento é descrito, com previsão de reavaliações clínicas ou laboratoriais.",
+    ],
+    example: "\"Objetivo: redução da PCR e febre em 48h; reavaliar antibiótico após nova radiografia.\"",
     hasNA: true,
   },
   {
     id: "plano_alta",
     number: 10,
-    title: "Plano de Alta Médica",
-    description: "Critérios clínicos de alta, resumo do tratamento, continuidade do cuidado.",
+    title: "Como você avalia a descrição do Plano de alta médica:",
+    description: "",
+    criteria: [
+      "O plano descreve os critérios clínicos que justificaram a alta (ex: estabilidade clínica, conclusão do tratamento, ausência de febre há 48h, função renal controlada).",
+      "Se há resumo do tratamento realizado durante a internação, facilitando a continuidade do cuidado.",
+    ],
+    example: "\"Paciente em estabilidade clínica, sem febre há 72h, com boa aceitação de dieta oral e controle de PA. Concluiu antibiótico por 10 dias.\"",
     hasNA: false,
   },
 ];
@@ -267,7 +312,24 @@ const FormularioAvaliacao = ({ onSuccess }: { onSuccess: () => void }) => {
                   <h4 className="font-semibold text-foreground">
                     {q.number}. {q.title}
                   </h4>
-                  <p className="text-sm text-muted-foreground mt-1">{q.description}</p>
+                  {q.description && (
+                    <p className="text-sm text-muted-foreground mt-1">{q.description}</p>
+                  )}
+                  {q.criteria && q.criteria.length > 0 && (
+                    <div className="mt-2 space-y-1">
+                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Critérios de avaliação:</p>
+                      <ul className="text-sm text-muted-foreground list-disc list-inside space-y-0.5">
+                        {q.criteria.map((c, i) => (
+                          <li key={i}>{c}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {q.example && (
+                    <p className="text-xs text-muted-foreground mt-2 italic border-l-2 border-muted pl-2">
+                      <span className="font-medium not-italic">Exemplo: </span>{q.example}
+                    </p>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {options.map((opt) => (
@@ -298,7 +360,7 @@ const FormularioAvaliacao = ({ onSuccess }: { onSuccess: () => void }) => {
           {/* Satisfaction */}
           <div className="border rounded-lg p-4 space-y-3">
             <h4 className="font-semibold text-foreground">
-              11. Nível de satisfação geral com a qualidade do prontuário
+              11. No geral, qual é o seu nível de satisfação com a qualidade das informações deste prontuário?
             </h4>
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Extremamente insatisfeito</span>
@@ -401,8 +463,9 @@ const IndicadoresDashboard = () => {
       .filter(v => v && v !== "na")
       .map(v => parseInt(v!));
     const avg = values.length > 0 ? values.reduce((s, v) => s + v, 0) / values.length : 0;
+    const shortLabel = QUESTION_SHORT_LABELS[q.id] || q.title;
     return {
-      name: q.title.length > 20 ? q.title.substring(0, 20) + "..." : q.title,
+      name: shortLabel,
       fullName: q.title,
       media: parseFloat(avg.toFixed(1)),
       total: values.length,
@@ -444,7 +507,7 @@ const IndicadoresDashboard = () => {
       .map(v => parseInt(v!));
     const avg = values.length > 0 ? values.reduce((s, v) => s + v, 0) / values.length : 0;
     return {
-      subject: q.title.length > 15 ? q.title.substring(0, 15) + "…" : q.title,
+      subject: QUESTION_SHORT_LABELS[q.id] || q.title,
       score: parseFloat(avg.toFixed(1)),
       fullMark: 9,
     };
