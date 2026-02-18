@@ -258,12 +258,8 @@ const ProfissionaisSaude = () => {
           const tipoRaw = (row["Tipo"] || row.TIPO || row.tipo || "").toString().toLowerCase();
           const cargoRaw = (row.Cargo || row.cargo || row.CARGO || "").toString().toLowerCase();
           let tipo = "medico";
-          if (tipoRaw.includes("téc") || tipoRaw.includes("tec") || cargoRaw.includes("téc") || cargoRaw.includes("tec")) {
-            tipo = "tecnico_enfermagem";
-          } else if (tipoRaw.includes("enf") || cargoRaw.includes("enf")) {
-            tipo = "enfermeiro";
-          } else if (tipoRaw.includes("méd") || tipoRaw.includes("med") || cargoRaw.includes("méd") || cargoRaw.includes("med")) {
-            tipo = "medico";
+          if (tipoRaw.includes("enf") || tipoRaw.includes("téc") || tipoRaw.includes("tec") || cargoRaw.includes("enf") || cargoRaw.includes("téc") || cargoRaw.includes("tec")) {
+            tipo = "enfermagem";
           }
           const situacao = (row["Situação do colaborador"] || row["Situacao do colaborador"] || row.Situacao || row.situacao || "").toString().toLowerCase();
           let status = "ativo";
