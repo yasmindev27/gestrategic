@@ -32,7 +32,7 @@ import {
   NotificacoesEpidemiologicas,
   PortaECG,
 } from '@/components/sciras';
-import { IndicadoresUPA } from '@/components/indicadores';
+import { IndicadoresNSP } from '@/components/indicadores';
 import { useTrocasDisponiveis, useTrocasPendentes, useMinhasEscalas } from '@/hooks/useEnfermagem';
 import type { Escala } from '@/components/enfermagem/types';
 
@@ -340,9 +340,9 @@ export default function EnfermagemModule() {
           </Tabs>
         </TabsContent>
 
-        {/* ── Indicadores UPA ── */}
+        {/* ── Indicadores Hospitalares ── */}
         <TabsContent value="indicadores-upa" className="mt-6">
-          <IndicadoresUPA />
+          <IndicadoresNSP />
         </TabsContent>
       </Tabs>
 
