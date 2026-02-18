@@ -6,8 +6,10 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Loader2, BarChart3, FileText, Users, Activity, AlertTriangle, Save, TrendingUp } from 'lucide-react';
+import { Loader2, BarChart3, FileText, Users, Activity, AlertTriangle, Save, TrendingUp, Pencil, Building2, ClipboardList, Heart } from 'lucide-react';
 import { useUPAIndicators } from '@/hooks/useUPAIndicators';
 import {
   MESES, UPA_CATEGORIAS, getAllUPAIndicators,
@@ -26,6 +28,9 @@ export function IndicadoresUPA() {
   } = useUPAIndicators();
 
   const [entryValues, setEntryValues] = useState<Record<string, string>>({});
+  const [entryObs, setEntryObs] = useState<Record<string, string>>({});
+  const [editingMeta, setEditingMeta] = useState<{ categoria: string; indicador: string; currentMeta: number | null } | null>(null);
+  const [newMetaValue, setNewMetaValue] = useState('');
 
   if (loading) {
     return (
@@ -62,36 +67,79 @@ export function IndicadoresUPA() {
     });
   };
 
+  const handleSaveMeta = () => {
+    if (!editingMeta) return;
+    const newMeta = newMetaValue === '' ? null : parseFloat(newMetaValue);
+    const existing = filteredIndicators.find(
+      i => i.categoria === editingMeta.categoria && i.indicador === editingMeta.indicador
+    );
+    saveIndicator({
+      mes: selectedMonth, ano: selectedYear,
+      categoria: editingMeta.categoria,
+      indicador: editingMeta.indicador,
+      subcategoria: existing?.subcategoria || null,
+      valor_numero: existing?.valor_numero ?? 0,
+      meta: newMeta,
+      unidade_medida: existing?.unidade_medida || 'Nº',
+    });
+    setEditingMeta(null);
+    setNewMetaValue('');
+  };
+
   const getExistingValue = (categoria: string, indicador: string) => {
     return filteredIndicators.find(i => i.categoria === categoria && i.indicador === indicador)?.valor_numero;
   };
 
-  const renderDataEntrySection = (title: string, categoria: string, items: any[]) => (
+  const getExistingMeta = (categoria: string, indicador: string) => {
+    return filteredIndicators.find(i => i.categoria === categoria && i.indicador === indicador)?.meta;
+  };
+
+  const renderDataEntrySection = (title: string, categoria: string, items: any[], icon?: React.ReactNode) => (
     <Card key={categoria}>
-      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          {icon}
+          {title}
+        </CardTitle>
+      </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Indicador</TableHead>
               <TableHead className="w-[100px]">Meta</TableHead>
-              <TableHead className="w-[120px]">Valor Atual</TableHead>
+              <TableHead className="w-[100px]">Valor Atual</TableHead>
               <TableHead className="w-[120px]">Novo Valor</TableHead>
-              <TableHead className="w-[80px]"></TableHead>
+              <TableHead className="w-[160px]">Observações</TableHead>
+              <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.map((item) => {
               const key = `${categoria}|${item.indicador}`;
               const existing = getExistingValue(categoria, item.indicador);
+              const currentMeta = getExistingMeta(categoria, item.indicador) ?? item.meta;
               return (
                 <TableRow key={item.indicador}>
                   <TableCell className="text-sm">
                     {item.indicador}
                     {item.subcategoria && <Badge variant="outline" className="ml-2 text-xs">{item.subcategoria}</Badge>}
                   </TableCell>
-                  <TableCell className="font-mono text-sm">{item.meta ?? '—'}</TableCell>
-                  <TableCell className="font-mono text-sm font-medium">{existing ?? '—'}</TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-1">
+                      <span className="font-mono text-sm">{currentMeta ?? '—'}</span>
+                      <Button
+                        size="icon" variant="ghost" className="h-6 w-6"
+                        onClick={() => {
+                          setEditingMeta({ categoria, indicador: item.indicador, currentMeta });
+                          setNewMetaValue(currentMeta?.toString() || '');
+                        }}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                  <TableCell className="font-mono text-sm font-medium">{existing != null ? Number(existing) : '—'}</TableCell>
                   <TableCell>
                     <Input
                       type="number" className="h-8"
@@ -101,7 +149,15 @@ export function IndicadoresUPA() {
                     />
                   </TableCell>
                   <TableCell>
-                    <Button size="sm" variant="ghost" onClick={() => handleSaveEntry(categoria, item.indicador, item.meta, item.subcategoria)}>
+                    <Input
+                      type="text" className="h-8 text-xs"
+                      value={entryObs[key] || ''}
+                      onChange={e => setEntryObs(prev => ({ ...prev, [key]: e.target.value }))}
+                      placeholder="Obs..."
+                    />
+                  </TableCell>
+                  <TableCell>
+                    <Button size="sm" variant="ghost" onClick={() => handleSaveEntry(categoria, item.indicador, currentMeta, item.subcategoria)}>
                       <Save className="h-4 w-4" />
                     </Button>
                   </TableCell>
@@ -230,10 +286,10 @@ export function IndicadoresUPA() {
         </TabsContent>
 
         <TabsContent value="entrada" className="mt-6 space-y-6">
-          {renderDataEntrySection('Indicadores de Estrutura', UPA_CATEGORIAS.ESTRUTURA, UPA_INDICADORES_ESTRUTURA)}
-          {renderDataEntrySection('Indicadores de Processo', UPA_CATEGORIAS.PROCESSO, UPA_INDICADORES_PROCESSO)}
-          {renderDataEntrySection('Indicadores de Resultado', UPA_CATEGORIAS.RESULTADO, UPA_INDICADORES_RESULTADO)}
-          {renderDataEntrySection('Gestão de Pessoas', UPA_CATEGORIAS.GESTAO_PESSOAS, UPA_INDICADORES_GESTAO)}
+          {renderDataEntrySection('Indicadores de Estrutura', UPA_CATEGORIAS.ESTRUTURA, UPA_INDICADORES_ESTRUTURA, <Building2 className="h-4 w-4 text-primary" />)}
+          {renderDataEntrySection('Indicadores de Processo', UPA_CATEGORIAS.PROCESSO, UPA_INDICADORES_PROCESSO, <ClipboardList className="h-4 w-4 text-primary" />)}
+          {renderDataEntrySection('Indicadores de Resultado', UPA_CATEGORIAS.RESULTADO, UPA_INDICADORES_RESULTADO, <Heart className="h-4 w-4 text-destructive" />)}
+          {renderDataEntrySection('Gestão de Pessoas', UPA_CATEGORIAS.GESTAO_PESSOAS, UPA_INDICADORES_GESTAO, <Users className="h-4 w-4 text-primary" />)}
         </TabsContent>
 
         <TabsContent value="epidemiologico" className="mt-6">
@@ -291,6 +347,31 @@ export function IndicadoresUPA() {
           </div>
         </TabsContent>
       </Tabs>
+
+      {/* Dialog para editar meta */}
+      <Dialog open={!!editingMeta} onOpenChange={open => { if (!open) setEditingMeta(null); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Editar Meta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">{editingMeta?.indicador}</p>
+            <div className="space-y-2">
+              <Label>Nova Meta</Label>
+              <Input
+                type="number"
+                value={newMetaValue}
+                onChange={e => setNewMetaValue(e.target.value)}
+                placeholder={editingMeta?.currentMeta?.toString() || 'Sem meta'}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingMeta(null)}>Cancelar</Button>
+            <Button onClick={handleSaveMeta}>Salvar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
