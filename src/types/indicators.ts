@@ -71,6 +71,22 @@ export const UPA_INDICADORES_PROCESSO = [
   { indicador: 'Acima de 60 anos (Idoso)', unidade: 'Nº', meta: null, subcategoria: 'Perfil Idade Adulto' },
   { indicador: 'Sexo Masculino', unidade: 'Nº', meta: null, subcategoria: 'Perfil Gênero' },
   { indicador: 'Sexo Feminino', unidade: 'Nº', meta: null, subcategoria: 'Perfil Gênero' },
+  { indicador: 'Total de Atendimentos Adulto', unidade: 'Nº', meta: null, subcategoria: 'Patologias Adulto' },
+  { indicador: 'Distúrbios Respiratórios - Adulto', unidade: 'Nº', meta: null, subcategoria: 'Patologias Adulto' },
+  { indicador: 'Distúrbios Gastrointestinais - Adulto', unidade: 'Nº', meta: null, subcategoria: 'Patologias Adulto' },
+  { indicador: 'Distúrbios Neurológicos - Adulto', unidade: 'Nº', meta: null, subcategoria: 'Patologias Adulto' },
+  { indicador: 'Distúrbios Cardiológicos - Adulto', unidade: 'Nº', meta: null, subcategoria: 'Patologias Adulto' },
+  { indicador: 'Distúrbios Urológicos - Adulto', unidade: 'Nº', meta: null, subcategoria: 'Patologias Adulto' },
+  { indicador: 'Distúrbios Ortopédicos - Adulto', unidade: 'Nº', meta: null, subcategoria: 'Patologias Adulto' },
+  { indicador: 'Outros - Adulto', unidade: 'Nº', meta: null, subcategoria: 'Patologias Adulto' },
+  { indicador: 'Total de Atendimentos Infantil', unidade: 'Nº', meta: null, subcategoria: 'Patologias Infantil' },
+  { indicador: 'Distúrbios Respiratórios - Infantil', unidade: 'Nº', meta: null, subcategoria: 'Patologias Infantil' },
+  { indicador: 'Distúrbios Gastrointestinais - Infantil', unidade: 'Nº', meta: null, subcategoria: 'Patologias Infantil' },
+  { indicador: 'Distúrbios Neurológicos - Infantil', unidade: 'Nº', meta: null, subcategoria: 'Patologias Infantil' },
+  { indicador: 'Distúrbios Cardiológicos - Infantil', unidade: 'Nº', meta: null, subcategoria: 'Patologias Infantil' },
+  { indicador: 'Distúrbios Urológicos - Infantil', unidade: 'Nº', meta: null, subcategoria: 'Patologias Infantil' },
+  { indicador: 'Distúrbios Ortopédicos - Infantil', unidade: 'Nº', meta: null, subcategoria: 'Patologias Infantil' },
+  { indicador: 'Outros - Infantil', unidade: 'Nº', meta: null, subcategoria: 'Patologias Infantil' },
 ];
 
 export const UPA_INDICADORES_RESULTADO = [
