@@ -441,9 +441,9 @@ const ProfissionaisSaude = () => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead>Matrícula</TableHead>
                   <TableHead>Nome</TableHead>
                   <TableHead>Tipo</TableHead>
-                  <TableHead>Registro</TableHead>
                   <TableHead>Especialidade</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Contato</TableHead>
@@ -462,6 +462,7 @@ const ProfissionaisSaude = () => {
                     const TipoIcon = tipoConfig[p.tipo].icon;
                     return (
                       <TableRow key={p.id}>
+                        <TableCell>{p.registro_profissional || "-"}</TableCell>
                         <TableCell className="font-medium">{p.nome}</TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -469,7 +470,6 @@ const ProfissionaisSaude = () => {
                             <span>{tipoConfig[p.tipo].label}</span>
                           </div>
                         </TableCell>
-                        <TableCell>{p.registro_profissional || "-"}</TableCell>
                         <TableCell>{p.especialidade || "-"}</TableCell>
                         <TableCell>
                           <Badge variant={statusConfig[p.status]?.variant || "outline"}>
