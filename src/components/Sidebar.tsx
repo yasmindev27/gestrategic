@@ -94,7 +94,9 @@ const Sidebar = ({
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Stethoscope, label: "Médicos", id: "medicos" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
-        { icon: UserCog, label: "Equipe", id: "equipe" }
+        { icon: UserCog, label: "Equipe", id: "equipe" },
+        { icon: FileText, label: "Docs Interact", id: "documentos-interact", category: "integracao" },
+        { icon: Stethoscope, label: "Sistema Salus", id: "salus", category: "integracao" }
       );
       return items;
     }
