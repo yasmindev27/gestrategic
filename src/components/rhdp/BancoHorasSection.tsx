@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, Search, Clock, TrendingUp, TrendingDown, Download, Upload, Filter, FileText } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Plus, Search, Clock, TrendingUp, TrendingDown, Download, Upload, Filter, FileText, Pencil, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
@@ -41,6 +42,9 @@ export const BancoHorasSection = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [selectedRegistro, setSelectedRegistro] = useState<BancoHora | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
@@ -57,6 +61,14 @@ export const BancoHorasSection = () => {
     observacao: "",
   });
 
+  const [editFormData, setEditFormData] = useState({
+    funcionario_user_id: "",
+    data: "",
+    tipo: "credito",
+    horas: "",
+    motivo: "",
+    observacao: "",
+  });
   useEffect(() => {
     loadData();
   }, []);
@@ -145,6 +157,56 @@ export const BancoHorasSection = () => {
       observacao: "",
     });
     loadData();
+  };
+
+  const openEditDialog = (registro: BancoHora) => {
+    setSelectedRegistro(registro);
+    setEditFormData({
+      funcionario_user_id: registro.funcionario_user_id,
+      data: registro.data,
+      tipo: registro.tipo,
+      horas: String(registro.horas),
+      motivo: registro.motivo || "",
+      observacao: registro.observacao || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedRegistro) return;
+    const selectedProfile = profiles.find(p => p.user_id === editFormData.funcionario_user_id);
+    if (!selectedProfile) return;
+    const { error } = await supabase.from("banco_horas").update({
+      funcionario_user_id: editFormData.funcionario_user_id,
+      funcionario_nome: selectedProfile.full_name,
+      data: editFormData.data,
+      tipo: editFormData.tipo,
+      horas: parseFloat(editFormData.horas),
+      motivo: editFormData.motivo || null,
+      observacao: editFormData.observacao || null,
+    }).eq("id", selectedRegistro.id);
+    if (error) {
+      toast({ title: "Erro", description: "Não foi possível atualizar.", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Sucesso", description: "Registro atualizado." });
+    setIsEditDialogOpen(false);
+    setSelectedRegistro(null);
+    loadData();
+  };
+
+  const handleDeleteBH = async () => {
+    if (!selectedRegistro) return;
+    const { error } = await supabase.from("banco_horas").delete().eq("id", selectedRegistro.id);
+    if (error) {
+      toast({ title: "Erro", description: "Não foi possível excluir.", variant: "destructive" });
+    } else {
+      toast({ title: "Sucesso", description: "Registro excluído." });
+      loadData();
+    }
+    setDeleteDialogOpen(false);
+    setSelectedRegistro(null);
   };
 
   const calcularSaldo = (funcionarioId: string) => {
@@ -612,18 +674,19 @@ export const BancoHorasSection = () => {
               <TableHead>Horas</TableHead>
               <TableHead>Motivo</TableHead>
               <TableHead>Saldo Atual</TableHead>
+              <TableHead className="text-center">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
+                <TableCell colSpan={7} className="text-center py-8">
                   <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
                 </TableCell>
               </TableRow>
             ) : filteredRegistros.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                   Nenhum registro encontrado.
                 </TableCell>
               </TableRow>
@@ -651,12 +714,89 @@ export const BancoHorasSection = () => {
                   <TableCell className="font-medium">
                     {calcularSaldo(registro.funcionario_user_id).toFixed(1)}h
                   </TableCell>
+                  <TableCell>
+                    <div className="flex items-center justify-center gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => openEditDialog(registro)} className="hover:bg-primary/10 hover:text-primary">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => { setSelectedRegistro(registro); setDeleteDialogOpen(true); }} className="hover:bg-destructive/10 hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
                 </TableRow>
               ))
             )}
           </TableBody>
         </Table>
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Registro de Horas</DialogTitle>
+            <DialogDescription>Altere os dados do registro selecionado.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEdit} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Colaborador</Label>
+              <Select value={editFormData.funcionario_user_id} onValueChange={(v) => setEditFormData({ ...editFormData, funcionario_user_id: v })}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>{profiles.map(p => <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Data</Label>
+                <Input type="date" value={editFormData.data} onChange={(e) => setEditFormData({ ...editFormData, data: e.target.value })} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo</Label>
+                <Select value={editFormData.tipo} onValueChange={(v) => setEditFormData({ ...editFormData, tipo: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="credito">Crédito (+)</SelectItem>
+                    <SelectItem value="debito">Débito (-)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Horas</Label>
+              <Input type="number" step="0.5" min="0.5" value={editFormData.horas} onChange={(e) => setEditFormData({ ...editFormData, horas: e.target.value })} required />
+            </div>
+            <div className="space-y-2">
+              <Label>Motivo</Label>
+              <Input value={editFormData.motivo} onChange={(e) => setEditFormData({ ...editFormData, motivo: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Observação</Label>
+              <Textarea value={editFormData.observacao} onChange={(e) => setEditFormData({ ...editFormData, observacao: e.target.value })} />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
+              <Button type="submit">Salvar</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o registro de <strong>{selectedRegistro?.funcionario_nome}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteBH} className="bg-destructive hover:bg-destructive/90">Excluir</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

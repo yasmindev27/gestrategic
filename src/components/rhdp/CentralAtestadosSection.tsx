@@ -173,8 +173,20 @@ export const CentralAtestadosSection = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedAtestado, setSelectedAtestado] = useState<Atestado | null>(null);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [mesSelecionado, setMesSelecionado] = useState<string>("all");
   const [anoSelecionado, setAnoSelecionado] = useState<string>(new Date().getFullYear().toString());
+
+  const [editFormData, setEditFormData] = useState({
+    funcionario_user_id: "",
+    data_inicio: "",
+    data_fim: "",
+    tipo: "medico",
+    cid: "",
+    medico_nome: "",
+    crm: "",
+    observacao: "",
+  });
 
   const [formData, setFormData] = useState({
     funcionario_user_id: "",
@@ -341,6 +353,49 @@ export const CentralAtestadosSection = () => {
     else { toast({ title: "Sucesso", description: "Atestado excluído." }); loadData(); }
     setDeleteDialogOpen(false);
     setSelectedAtestado(null);
+  };
+
+  const openEditAtestado = (atestado: Atestado) => {
+    setSelectedAtestado(atestado);
+    setEditFormData({
+      funcionario_user_id: atestado.funcionario_user_id,
+      data_inicio: atestado.data_inicio,
+      data_fim: atestado.data_fim,
+      tipo: atestado.tipo,
+      cid: atestado.cid || "",
+      medico_nome: atestado.medico_nome || "",
+      crm: atestado.crm || "",
+      observacao: atestado.observacao || "",
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleEditAtestado = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAtestado) return;
+    const selectedProfile = profiles.find(p => p.user_id === editFormData.funcionario_user_id);
+    if (!selectedProfile) return;
+    const diasAfastamento = calculateDays(editFormData.data_inicio, editFormData.data_fim);
+    const { error } = await supabase.from("atestados").update({
+      funcionario_user_id: editFormData.funcionario_user_id,
+      funcionario_nome: selectedProfile.full_name,
+      data_inicio: editFormData.data_inicio,
+      data_fim: editFormData.data_fim,
+      dias_afastamento: diasAfastamento,
+      tipo: editFormData.tipo,
+      cid: editFormData.cid || null,
+      medico_nome: editFormData.medico_nome || null,
+      crm: editFormData.crm || null,
+      observacao: editFormData.observacao || null,
+    }).eq("id", selectedAtestado.id);
+    if (error) {
+      toast({ title: "Erro", description: "Não foi possível atualizar.", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Sucesso", description: "Atestado atualizado." });
+    setIsEditDialogOpen(false);
+    setSelectedAtestado(null);
+    loadData();
   };
 
   const viewFile = async (filePathOrUrl: string) => {
@@ -696,6 +751,9 @@ export const CentralAtestadosSection = () => {
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center justify-center gap-1">
+                            <Button variant="ghost" size="icon" onClick={() => openEditAtestado(a)} className="hover:bg-primary/10 hover:text-primary">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
                             <Button variant="ghost" size="icon" onClick={() => { setSelectedAtestado(a); setDeleteDialogOpen(true); }} className="hover:bg-destructive/10 hover:text-destructive">
                               <Trash2 className="h-4 w-4" />
                             </Button>
@@ -710,6 +768,68 @@ export const CentralAtestadosSection = () => {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Edit Atestado Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Atestado</DialogTitle>
+            <DialogDescription>Altere os dados do atestado selecionado.</DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditAtestado} className="space-y-4">
+            <div className="space-y-2">
+              <Label>Colaborador *</Label>
+              <Select value={editFormData.funcionario_user_id} onValueChange={(v) => setEditFormData({ ...editFormData, funcionario_user_id: v })}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>{profiles.map(p => <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Tipo *</Label>
+              <Select value={editFormData.tipo} onValueChange={(v) => setEditFormData({ ...editFormData, tipo: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="medico">Atestado Médico</SelectItem>
+                  <SelectItem value="acompanhante">Acompanhante</SelectItem>
+                  <SelectItem value="declaracao">Declaração</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Data Início *</Label>
+                <Input type="date" value={editFormData.data_inicio} onChange={(e) => setEditFormData({ ...editFormData, data_inicio: e.target.value })} required />
+              </div>
+              <div className="space-y-2">
+                <Label>Data Fim *</Label>
+                <Input type="date" value={editFormData.data_fim} onChange={(e) => setEditFormData({ ...editFormData, data_fim: e.target.value })} required />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>CID</Label>
+                <Input value={editFormData.cid} onChange={(e) => setEditFormData({ ...editFormData, cid: e.target.value.toUpperCase() })} maxLength={10} />
+              </div>
+              <div className="space-y-2">
+                <Label>CRM</Label>
+                <Input value={editFormData.crm} onChange={(e) => setEditFormData({ ...editFormData, crm: e.target.value })} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Nome do Médico</Label>
+              <Input value={editFormData.medico_nome} onChange={(e) => setEditFormData({ ...editFormData, medico_nome: e.target.value })} />
+            </div>
+            <div className="space-y-2">
+              <Label>Observação</Label>
+              <Textarea value={editFormData.observacao} onChange={(e) => setEditFormData({ ...editFormData, observacao: e.target.value })} />
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancelar</Button>
+              <Button type="submit">Salvar</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete Confirmation */}
       <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
