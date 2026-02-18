@@ -108,11 +108,7 @@ export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
           className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
           onClick={() => {
             const url = "https://www.susfacil.mg.gov.br/administrativo/seguranca/GEN/gen_acesso.php?ini=1";
-            if (onOpenExternal) {
-              onOpenExternal(url, "SUS Fácil MG");
-            } else {
-              window.open(url, "_blank");
-            }
+            window.open(url, "_blank", "noopener,noreferrer");
           }}
         >
           <CardHeader className="text-center pb-2">
