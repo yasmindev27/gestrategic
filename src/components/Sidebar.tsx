@@ -92,6 +92,7 @@ const Sidebar = ({
     if (isGestor) {
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: Stethoscope, label: "Médicos", id: "medicos" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
         { icon: UserCog, label: "Equipe", id: "equipe" }
       );
