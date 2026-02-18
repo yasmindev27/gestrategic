@@ -1,0 +1,3 @@
+ALTER TABLE public.auditorias_seguranca_paciente DROP CONSTRAINT auditorias_seguranca_paciente_tipo_check;
+
+ALTER TABLE public.auditorias_seguranca_paciente ADD CONSTRAINT auditorias_seguranca_paciente_tipo_check CHECK (tipo = ANY (ARRAY['comunicacao_efetiva'::text, 'lesao_pressao'::text, 'queda'::text, 'higiene_maos'::text, 'avaliacao_prontuarios_enfermeiros'::text, 'prontuario_qualitativa_cc'::text]));
