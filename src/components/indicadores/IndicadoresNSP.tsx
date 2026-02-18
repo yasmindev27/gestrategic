@@ -11,13 +11,14 @@ import { Label } from '@/components/ui/label';
 import { ExportDropdown } from '@/components/ui/export-dropdown';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, Legend, Area, AreaChart,
+  PieChart, Pie, Cell, Legend,
 } from 'recharts';
-import { Loader2, BarChart3, FileText, Shield, Users, AlertTriangle, Save, ClipboardList, TrendingUp, Target, Pencil } from 'lucide-react';
+import { Loader2, BarChart3, FileText, Shield, Users, AlertTriangle, Save, ClipboardList, TrendingUp, Target, Pencil, Activity, Heart } from 'lucide-react';
 import { useNSPIndicators } from '@/hooks/useNSPIndicators';
 import {
   MESES, NSP_CATEGORIAS,
-  NSP_INDICADORES_ESTRUTURA, NSP_INDICADORES_PROCESSO, NSP_INDICADORES_AUDITORIAS, NSP_INDICADORES_RESULTADO,
+  NSP_INDICADORES_ESTRUTURA, NSP_INDICADORES_PROCESSO, NSP_INDICADORES_RESULTADO,
+  NSP_INDICADORES_SEPSE, NSP_INDICADORES_DOR_TORACICA,
 } from '@/types/indicators';
 import { exportToCSV, exportToPDF, createStandardPdf, savePdfWithFooter } from '@/lib/export-utils';
 import autoTable from 'jspdf-autotable';
@@ -32,6 +33,7 @@ export function IndicadoresNSP() {
   } = useNSPIndicators();
 
   const [entryValues, setEntryValues] = useState<Record<string, string>>({});
+  const [entryObs, setEntryObs] = useState<Record<string, string>>({});
   const [editingMeta, setEditingMeta] = useState<{ categoria: string; indicador: string; currentMeta: number | null } | null>(null);
   const [newMetaValue, setNewMetaValue] = useState('');
 
@@ -42,58 +44,31 @@ export function IndicadoresNSP() {
     return MESES.map((mes, idx) => {
       const monthIndicators = indicators.filter(i => i.mes === mes && i.ano === selectedYear);
       const internacoes = monthIndicators.find(i => i.indicador === 'Número de Internações')?.valor_numero || null;
-      const obitos = monthIndicators.find(i => i.indicador === 'Número de Óbitos')?.valor_numero || null;
-      const notificacoes = monthIndicators.find(i => i.indicador === 'Número Total de Notificações de Incidentes')?.valor_numero || null;
-      const naoConformidades = monthIndicators.find(i => i.indicador === 'Não Conformidades')?.valor_numero || null;
+      const taxaOcupacao = monthIndicators.find(i => i.indicador === 'Taxa de Ocupação')?.valor_numero || null;
+      const mortalidade = monthIndicators.find(i => i.indicador === 'Taxa de Mortalidade')?.valor_numero || null;
       return {
         mes: MESES_SHORT[idx],
         Internações: internacoes != null ? Number(internacoes) : null,
-        Óbitos: obitos != null ? Number(obitos) : null,
-        Notificações: notificacoes != null ? Number(notificacoes) : null,
-        'Não Conformidades': naoConformidades != null ? Number(naoConformidades) : null,
+        'Taxa Ocupação (%)': taxaOcupacao != null ? Number(taxaOcupacao) : null,
+        Mortalidade: mortalidade != null ? Number(mortalidade) : null,
       };
     });
   }, [indicators, selectedYear]);
 
-  const incidentRatesEvolution = useMemo(() => {
-    const rateIndicators = [
-      'Taxa de incidentes - Quedas',
-      'Taxa de incidentes - Medicamentos',
-      'Taxa de incidentes - Lesão de Pele',
-      'Taxa de incidentes - Flebite',
-    ];
+  const protocolEvolution = useMemo(() => {
     return MESES.map((mes, idx) => {
       const monthIndicators = indicators.filter(i => i.mes === mes && i.ano === selectedYear);
-      const row: any = { mes: MESES_SHORT[idx] };
-      rateIndicators.forEach(name => {
-        const shortName = name.replace('Taxa de incidentes - ', '');
-        const val = monthIndicators.find(i => i.indicador === name)?.valor_numero;
-        row[shortName] = val != null ? Number(val) : null;
-      });
-      return row;
+      const sepse = monthIndicators.find(i => i.categoria === NSP_CATEGORIAS.SEPSE && i.indicador === 'Total de Protocolos Abertos')?.valor_numero;
+      const dorToracica = monthIndicators.find(i => i.categoria === NSP_CATEGORIAS.DOR_TORACICA && i.indicador === 'Total de Protocolos Abertos')?.valor_numero;
+      return {
+        mes: MESES_SHORT[idx],
+        Sepse: sepse != null ? Number(sepse) : null,
+        'Dor Torácica': dorToracica != null ? Number(dorToracica) : null,
+      };
     });
   }, [indicators, selectedYear]);
 
-  const auditEvolution = useMemo(() => {
-    const auditIndicators = [
-      'Conformidade na identificação dos pacientes',
-      'Conformidade nas barreiras de prevenção de Queda',
-      'Conformidade nas barreiras de prevenção de Lesão por Pressão',
-    ];
-    return MESES.map((mes, idx) => {
-      const monthIndicators = indicators.filter(i => i.mes === mes && i.ano === selectedYear);
-      const row: any = { mes: MESES_SHORT[idx] };
-      auditIndicators.forEach(name => {
-        const shortName = name.replace('Conformidade na ', '').replace('Conformidade nas barreiras de prevenção de ', 'Prev. ');
-        const val = monthIndicators.find(i => i.indicador === name)?.valor_numero;
-        row[shortName] = val != null ? Number(val) : null;
-      });
-      row['Meta'] = 100;
-      return row;
-    });
-  }, [indicators, selectedYear]);
-
-  const hasEvolutionData = monthlyEvolutionData.some(d => d.Internações !== null || d.Notificações !== null);
+  const hasEvolutionData = monthlyEvolutionData.some(d => d.Internações !== null || d.Mortalidade !== null);
 
   if (loading) {
     return (
@@ -104,16 +79,27 @@ export function IndicadoresNSP() {
     );
   }
 
-  // Incident classification for chart
-  const incidentData = filteredIndicators
-    .filter(i => i.subcategoria === 'Classificação de Incidentes')
-    .map((i, idx) => ({ name: i.indicador, value: Number(i.valor_numero || 0), fill: COLORS[idx % COLORS.length] }))
+  // Perfil epidemiológico for pie chart
+  const perfilAdultoData = [
+    { name: 'Masculino', value: Number(filteredIndicators.find(i => i.indicador === 'Perfil Epidemiológico Adulto - Sexo Masculino')?.valor_numero || 0) },
+    { name: 'Feminino', value: Number(filteredIndicators.find(i => i.indicador === 'Perfil Epidemiológico Adulto - Sexo Feminino')?.valor_numero || 0) },
+  ].filter(d => d.value > 0);
+
+  const perfilInfantilData = [
+    { name: 'Masculino', value: Number(filteredIndicators.find(i => i.indicador === 'Perfil Epidemiológico Infantil - Sexo Masculino')?.valor_numero || 0) },
+    { name: 'Feminino', value: Number(filteredIndicators.find(i => i.indicador === 'Perfil Epidemiológico Infantil - Sexo Feminino')?.valor_numero || 0) },
+  ].filter(d => d.value > 0);
+
+  // Desfechos Sepse
+  const desfechoSepseData = filteredIndicators
+    .filter(i => i.categoria === NSP_CATEGORIAS.SEPSE && i.subcategoria === 'Desfecho Clínico')
+    .map((i, idx) => ({ name: i.indicador.replace('Desfecho Clínico - ', ''), value: Number(i.valor_numero || 0), fill: COLORS[idx % COLORS.length] }))
     .filter(d => d.value > 0);
 
-  // Incident type (OMS) for chart
-  const incidentTypeData = filteredIndicators
-    .filter(i => i.subcategoria === 'Tipo de Incidentes - OMS')
-    .map(i => ({ name: i.indicador, value: Number(i.valor_numero || 0) }))
+  // Desfechos Dor Torácica
+  const desfechoDorData = filteredIndicators
+    .filter(i => i.categoria === NSP_CATEGORIAS.DOR_TORACICA && i.subcategoria === 'Desfecho Clínico')
+    .map((i, idx) => ({ name: i.indicador.replace('Desfecho Clínico - ', ''), value: Number(i.valor_numero || 0), fill: COLORS[idx % COLORS.length] }))
     .filter(d => d.value > 0);
 
   const handleSaveEntry = (categoria: string, indicador: string, meta: number | null, subcategoria?: string | null, unidade?: string) => {
@@ -155,18 +141,24 @@ export function IndicadoresNSP() {
     return filteredIndicators.find(i => i.categoria === categoria && i.indicador === indicador)?.meta;
   };
 
-  const renderDataEntrySection = (title: string, categoria: string, items: any[]) => (
+  const renderDataEntrySection = (title: string, categoria: string, items: any[], icon?: React.ReactNode) => (
     <Card key={categoria}>
-      <CardHeader><CardTitle className="text-base">{title}</CardTitle></CardHeader>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          {icon}
+          {title}
+        </CardTitle>
+      </CardHeader>
       <CardContent>
         <Table>
           <TableHeader>
             <TableRow>
               <TableHead>Indicador</TableHead>
-              <TableHead className="w-[120px]">Meta</TableHead>
-              <TableHead className="w-[120px]">Valor Atual</TableHead>
+              <TableHead className="w-[100px]">Meta</TableHead>
+              <TableHead className="w-[100px]">Valor Atual</TableHead>
               <TableHead className="w-[120px]">Novo Valor</TableHead>
-              <TableHead className="w-[80px]"></TableHead>
+              <TableHead className="w-[160px]">Observações</TableHead>
+              <TableHead className="w-[60px]"></TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -204,6 +196,14 @@ export function IndicadoresNSP() {
                     />
                   </TableCell>
                   <TableCell>
+                    <Input
+                      type="text" className="h-8 text-xs"
+                      value={entryObs[key] || ''}
+                      onChange={e => setEntryObs(prev => ({ ...prev, [key]: e.target.value }))}
+                      placeholder="Obs..."
+                    />
+                  </TableCell>
+                  <TableCell>
                     <Button size="sm" variant="ghost" onClick={() => handleSaveEntry(categoria, item.indicador, currentMeta, item.subcategoria, item.unidade)}>
                       <Save className="h-4 w-4" />
                     </Button>
@@ -223,9 +223,9 @@ export function IndicadoresNSP() {
         <div>
           <h2 className="text-xl font-bold flex items-center gap-2">
             <Shield className="h-5 w-5 text-primary" />
-            Núcleo de Segurança do Paciente
+            Indicadores Hospitalares
           </h2>
-          <p className="text-sm text-muted-foreground">Indicadores de Internação - Monitoramento de Incidentes</p>
+          <p className="text-sm text-muted-foreground">Internação — Protocolos de Sepse e Dor Torácica</p>
         </div>
         <div className="flex gap-2 items-center">
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
@@ -245,77 +245,28 @@ export function IndicadoresNSP() {
                 i.meta != null ? Number(i.meta) : '', 
                 i.unidade_medida || ''
               ]);
-              exportToCSV({ title: `Indicadores NSP - ${selectedMonth} ${selectedYear}`, headers, rows, fileName: `indicadores_nsp_${selectedMonth}_${selectedYear}` });
+              exportToCSV({ title: `Indicadores Hospitalares - ${selectedMonth} ${selectedYear}`, headers, rows, fileName: `indicadores_hospitalares_${selectedMonth}_${selectedYear}` });
             }}
             onExportPDF={async () => {
-              const pdfTitle = `Indicadores NSP - ${selectedMonth} ${selectedYear}`;
+              const pdfTitle = `Indicadores Hospitalares - ${selectedMonth} ${selectedYear}`;
               const { doc, logoImg } = await createStandardPdf(pdfTitle, 'landscape');
 
-              // 1) KPIs summary
               autoTable(doc, {
                 startY: 32,
-                head: [['Total Internações', 'Total Óbitos', 'Profissionais', 'Notificações', 'Alertas']],
-                body: [[stats.totalInternacoes, stats.totalObitos, stats.totalProfissionais, stats.totalNotificacoes, stats.alertasCount]],
-                styles: { fontSize: 9, cellPadding: 3, halign: 'center' },
-                headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
-              });
-
-              // 2) Classificação de Incidentes
-              if (incidentData.length > 0) {
-                const lastY = (doc as any).lastAutoTable?.finalY || 50;
-                doc.setFontSize(11);
-                doc.setFont('helvetica', 'bold');
-                doc.text('Classificação de Incidentes', 14, lastY + 8);
-                autoTable(doc, {
-                  startY: lastY + 12,
-                  head: [['Incidente', 'Quantidade']],
-                  body: incidentData.map(d => [d.name, d.value]),
-                  styles: { fontSize: 8, cellPadding: 2 },
-                  headStyles: { fillColor: [52, 152, 219], textColor: 255, fontStyle: 'bold' },
-                  margin: { top: 32, bottom: 28 },
-                });
-              }
-
-              // 3) Tipos de Incidentes (OMS)
-              if (incidentTypeData.length > 0) {
-                const lastY = (doc as any).lastAutoTable?.finalY || 80;
-                doc.setFontSize(11);
-                doc.setFont('helvetica', 'bold');
-                doc.text('Tipos de Incidentes (OMS)', 14, lastY + 8);
-                autoTable(doc, {
-                  startY: lastY + 12,
-                  head: [['Tipo', 'Quantidade']],
-                  body: incidentTypeData.map(d => [d.name, d.value]),
-                  styles: { fontSize: 8, cellPadding: 2 },
-                  headStyles: { fillColor: [52, 152, 219], textColor: 255, fontStyle: 'bold' },
-                  margin: { top: 32, bottom: 28 },
-                });
-              }
-
-              // 4) Tabela principal de indicadores
-              const lastY2 = (doc as any).lastAutoTable?.finalY || 100;
-              doc.setFontSize(11);
-              doc.setFont('helvetica', 'bold');
-              doc.text('Resumo dos Indicadores', 14, lastY2 + 8);
-              autoTable(doc, {
-                startY: lastY2 + 12,
-                head: [['Indicador', 'Categoria', 'Valor', 'Meta', 'Status']],
-                body: filteredIndicators.map(i => {
-                  const isAlert = i.meta !== null && i.valor_numero !== null && (i.meta === 0 ? i.valor_numero > 0 : i.valor_numero > i.meta);
-                  return [
-                    i.indicador, i.categoria.replace('Indicadores de ', '').replace('Auditorias de ', ''),
-                    i.valor_numero != null ? Number(i.valor_numero) : '—',
-                    i.meta != null ? Number(i.meta) : '—',
-                    i.meta !== null ? (isAlert ? 'Alerta' : 'OK') : '—',
-                  ];
-                }),
+                head: [['Indicador', 'Categoria', 'Valor', 'Meta', 'Unidade']],
+                body: filteredIndicators.map(i => [
+                  i.indicador, i.categoria,
+                  i.valor_numero != null ? Number(i.valor_numero) : '—',
+                  i.meta != null ? Number(i.meta) : '—',
+                  i.unidade_medida || 'Nº',
+                ]),
                 styles: { fontSize: 8, cellPadding: 2 },
                 headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
                 alternateRowStyles: { fillColor: [245, 245, 245] },
                 margin: { top: 32, bottom: 28 },
               });
 
-              savePdfWithFooter(doc, pdfTitle, `indicadores_nsp_${selectedMonth}_${selectedYear}`, logoImg);
+              savePdfWithFooter(doc, pdfTitle, `indicadores_hospitalares_${selectedMonth}_${selectedYear}`, logoImg);
             }}
           />
         </div>
@@ -323,10 +274,10 @@ export function IndicadoresNSP() {
 
       {/* KPI Cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Total Internações</p><p className="text-2xl font-bold">{stats.totalInternacoes}</p></div><Users className="h-6 w-6 text-primary opacity-80" /></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Total Óbitos</p><p className="text-2xl font-bold">{stats.totalObitos}</p></div><AlertTriangle className="h-6 w-6 text-destructive opacity-80" /></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Profissionais</p><p className="text-2xl font-bold">{stats.totalProfissionais}</p></div><Users className="h-6 w-6 text-blue-600 opacity-80" /></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Notificações</p><p className="text-2xl font-bold">{stats.totalNotificacoes}</p></div><ClipboardList className="h-6 w-6 text-yellow-600 opacity-80" /></div>{stats.alertasCount > 0 && <Badge variant="destructive" className="mt-2">{stats.alertasCount} alertas</Badge>}</CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Internações</p><p className="text-2xl font-bold">{stats.totalInternacoes}</p></div><Users className="h-6 w-6 text-primary opacity-80" /></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Taxa de Ocupação</p><p className="text-2xl font-bold">{stats.taxaOcupacao}%</p></div><BarChart3 className="h-6 w-6 text-primary opacity-80" /></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Taxa de Mortalidade</p><p className="text-2xl font-bold">{stats.taxaMortalidade}</p></div><AlertTriangle className="h-6 w-6 text-destructive opacity-80" /></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Protocolos Sepse</p><p className="text-2xl font-bold">{stats.protocolosSepse}</p></div><Activity className="h-6 w-6 text-primary opacity-80" /></div></CardContent></Card>
       </div>
 
       <Tabs defaultValue="dashboard" className="w-full">
@@ -339,41 +290,86 @@ export function IndicadoresNSP() {
         {/* ── Dashboard Tab ── */}
         <TabsContent value="dashboard" className="mt-6">
           <div className="grid gap-6 lg:grid-cols-2">
+            {/* Perfil Epidemiológico Adulto */}
             <Card>
-              <CardHeader><CardTitle className="text-lg">Classificação de Incidentes</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg">Perfil Epidemiológico - Adulto</CardTitle></CardHeader>
               <CardContent>
-                {incidentData.length > 0 ? (
+                {perfilAdultoData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={250}>
                     <PieChart>
-                      <Pie data={incidentData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}
-                        label={({ name, percent }) => `${name.substring(0, 15)}... ${(percent * 100).toFixed(0)}%`}>
-                        {incidentData.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                      <Pie data={perfilAdultoData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                        <Cell fill="#2563eb" />
+                        <Cell fill="#ec4899" />
                       </Pie>
                       <Tooltip />
+                      <Legend />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : <div className="flex items-center justify-center h-[250px] text-muted-foreground">Sem dados para o período</div>}
               </CardContent>
             </Card>
+
+            {/* Perfil Epidemiológico Infantil */}
             <Card>
-              <CardHeader><CardTitle className="text-lg">Tipos de Incidentes (OMS)</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="text-lg">Perfil Epidemiológico - Infantil</CardTitle></CardHeader>
               <CardContent>
-                {incidentTypeData.length > 0 ? (
+                {perfilInfantilData.length > 0 ? (
                   <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={incidentTypeData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis dataKey="name" type="category" width={120} tick={{ fontSize: 10 }} />
+                    <PieChart>
+                      <Pie data={perfilInfantilData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                        <Cell fill="#2563eb" />
+                        <Cell fill="#ec4899" />
+                      </Pie>
                       <Tooltip />
-                      <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                    </BarChart>
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : <div className="flex items-center justify-center h-[250px] text-muted-foreground">Sem dados para o período</div>}
+              </CardContent>
+            </Card>
+
+            {/* Desfechos Sepse */}
+            <Card>
+              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Activity className="h-5 w-5 text-destructive" />Desfechos - Protocolo Sepse</CardTitle></CardHeader>
+              <CardContent>
+                {desfechoSepseData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie data={desfechoSepseData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                        {desfechoSepseData.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : <div className="flex items-center justify-center h-[250px] text-muted-foreground">Sem dados para o período</div>}
+              </CardContent>
+            </Card>
+
+            {/* Desfechos Dor Torácica */}
+            <Card>
+              <CardHeader><CardTitle className="text-lg flex items-center gap-2"><Heart className="h-5 w-5 text-destructive" />Desfechos - Dor Torácica</CardTitle></CardHeader>
+              <CardContent>
+                {desfechoDorData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={250}>
+                    <PieChart>
+                      <Pie data={desfechoDorData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={80}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                        {desfechoDorData.map((e, i) => <Cell key={i} fill={e.fill} />)}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
                   </ResponsiveContainer>
                 ) : <div className="flex items-center justify-center h-[250px] text-muted-foreground">Sem dados para o período</div>}
               </CardContent>
             </Card>
           </div>
 
-          {/* Summary table with editable meta */}
+          {/* Summary table */}
           {filteredIndicators.length > 0 && (
             <Card className="mt-6">
               <CardHeader><CardTitle className="text-lg flex items-center gap-2">Resumo dos Indicadores <Target className="h-4 w-4 text-muted-foreground" /></CardTitle></CardHeader>
@@ -396,7 +392,7 @@ export function IndicadoresNSP() {
                         return (
                           <TableRow key={ind.id}>
                             <TableCell className="text-sm">{ind.indicador}</TableCell>
-                            <TableCell><Badge variant="outline" className="text-xs">{ind.categoria.replace('Indicadores de ', '').replace('Auditorias de ', '')}</Badge></TableCell>
+                            <TableCell><Badge variant="outline" className="text-xs">{ind.categoria}</Badge></TableCell>
                             <TableCell className="text-right font-mono font-bold">{ind.valor_numero != null ? Number(ind.valor_numero) : '—'}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex items-center justify-end gap-1">
@@ -430,7 +426,6 @@ export function IndicadoresNSP() {
 
         {/* ── Evolução Mensal Tab ── */}
         <TabsContent value="evolucao" className="mt-6 space-y-6">
-          {/* Main indicators evolution */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
@@ -451,9 +446,8 @@ export function IndicadoresNSP() {
                     />
                     <Legend />
                     <Line type="monotone" dataKey="Internações" stroke="#2563eb" strokeWidth={2} dot={{ r: 4 }} connectNulls />
-                    <Line type="monotone" dataKey="Óbitos" stroke="#dc2626" strokeWidth={2} dot={{ r: 4 }} connectNulls />
-                    <Line type="monotone" dataKey="Notificações" stroke="#eab308" strokeWidth={2} dot={{ r: 4 }} connectNulls />
-                    <Line type="monotone" dataKey="Não Conformidades" stroke="#ea580c" strokeWidth={2} dot={{ r: 4 }} connectNulls />
+                    <Line type="monotone" dataKey="Taxa Ocupação (%)" stroke="#16a34a" strokeWidth={2} dot={{ r: 4 }} connectNulls />
+                    <Line type="monotone" dataKey="Mortalidade" stroke="#dc2626" strokeWidth={2} dot={{ r: 4 }} connectNulls />
                   </LineChart>
                 </ResponsiveContainer>
               ) : (
@@ -466,17 +460,17 @@ export function IndicadoresNSP() {
             </CardContent>
           </Card>
 
-          {/* Incident rates evolution */}
+          {/* Protocolos evolution */}
           <Card>
             <CardHeader>
               <CardTitle className="text-lg flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive" />
-                Evolução das Taxas de Incidentes ({selectedYear})
+                <Activity className="h-5 w-5 text-destructive" />
+                Evolução — Protocolos Abertos ({selectedYear})
               </CardTitle>
             </CardHeader>
             <CardContent>
               <ResponsiveContainer width="100%" height={300}>
-                <AreaChart data={incidentRatesEvolution}>
+                <BarChart data={protocolEvolution}>
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                   <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 12 }} />
@@ -484,39 +478,9 @@ export function IndicadoresNSP() {
                     contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
                   />
                   <Legend />
-                  <Area type="monotone" dataKey="Quedas" stroke="#dc2626" fill="#dc2626" fillOpacity={0.1} strokeWidth={2} connectNulls />
-                  <Area type="monotone" dataKey="Medicamentos" stroke="#2563eb" fill="#2563eb" fillOpacity={0.1} strokeWidth={2} connectNulls />
-                  <Area type="monotone" dataKey="Lesão de Pele" stroke="#eab308" fill="#eab308" fillOpacity={0.1} strokeWidth={2} connectNulls />
-                  <Area type="monotone" dataKey="Flebite" stroke="#8b5cf6" fill="#8b5cf6" fillOpacity={0.1} strokeWidth={2} connectNulls />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Audit conformity evolution */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <ClipboardList className="h-5 w-5 text-primary" />
-                Conformidade das Auditorias ({selectedYear})
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={auditEvolution}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                  <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
-                  <YAxis domain={[0, 110]} tick={{ fontSize: 12 }} unit="%" />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
-                    formatter={(value: any, name: string) => [name === 'Meta' ? `${value}%` : value != null ? `${value}%` : '—', name]}
-                  />
-                  <Legend />
-                  <Line type="monotone" dataKey="identificação dos pacientes" stroke="#2563eb" strokeWidth={2} dot={{ r: 4 }} connectNulls />
-                  <Line type="monotone" dataKey="Prev. Queda" stroke="#16a34a" strokeWidth={2} dot={{ r: 4 }} connectNulls />
-                  <Line type="monotone" dataKey="Prev. Lesão por Pressão" stroke="#eab308" strokeWidth={2} dot={{ r: 4 }} connectNulls />
-                  <Line type="monotone" dataKey="Meta" stroke="#dc2626" strokeWidth={1} strokeDasharray="8 4" dot={false} />
-                </LineChart>
+                  <Bar dataKey="Sepse" fill="#dc2626" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="Dor Torácica" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </CardContent>
           </Card>
@@ -524,10 +488,11 @@ export function IndicadoresNSP() {
 
         {/* ── Entrada de Dados Tab ── */}
         <TabsContent value="entrada" className="mt-6 space-y-6">
-          {renderDataEntrySection('Indicadores de Estrutura', NSP_CATEGORIAS.ESTRUTURA, NSP_INDICADORES_ESTRUTURA)}
-          {renderDataEntrySection('Indicadores de Processo', NSP_CATEGORIAS.PROCESSO, NSP_INDICADORES_PROCESSO)}
-          {renderDataEntrySection('Auditorias de Segurança', NSP_CATEGORIAS.AUDITORIAS, NSP_INDICADORES_AUDITORIAS)}
-          {renderDataEntrySection('Indicadores de Resultado', NSP_CATEGORIAS.RESULTADO, NSP_INDICADORES_RESULTADO)}
+          {renderDataEntrySection('Indicadores de Estrutura', NSP_CATEGORIAS.ESTRUTURA, NSP_INDICADORES_ESTRUTURA, <ClipboardList className="h-4 w-4 text-primary" />)}
+          {renderDataEntrySection('Indicadores de Processo', NSP_CATEGORIAS.PROCESSO, NSP_INDICADORES_PROCESSO, <Users className="h-4 w-4 text-primary" />)}
+          {renderDataEntrySection('Indicadores de Resultado', NSP_CATEGORIAS.RESULTADO, NSP_INDICADORES_RESULTADO, <Target className="h-4 w-4 text-primary" />)}
+          {renderDataEntrySection('Protocolo de Sepse', NSP_CATEGORIAS.SEPSE, NSP_INDICADORES_SEPSE, <Activity className="h-4 w-4 text-destructive" />)}
+          {renderDataEntrySection('Protocolo de Dor Torácica', NSP_CATEGORIAS.DOR_TORACICA, NSP_INDICADORES_DOR_TORACICA, <Heart className="h-4 w-4 text-destructive" />)}
         </TabsContent>
       </Tabs>
 
