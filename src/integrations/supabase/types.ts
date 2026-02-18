@@ -4974,6 +4974,7 @@ export type Database = {
           data_fim: string | null
           data_inicio: string
           descricao_especifica: string | null
+          entregue: boolean
           horarios_refeicoes: string[] | null
           id: string
           observacoes: string | null
@@ -4995,6 +4996,7 @@ export type Database = {
           data_fim?: string | null
           data_inicio: string
           descricao_especifica?: string | null
+          entregue?: boolean
           horarios_refeicoes?: string[] | null
           id?: string
           observacoes?: string | null
@@ -5016,6 +5018,7 @@ export type Database = {
           data_fim?: string | null
           data_inicio?: string
           descricao_especifica?: string | null
+          entregue?: boolean
           horarios_refeicoes?: string[] | null
           id?: string
           observacoes?: string | null
