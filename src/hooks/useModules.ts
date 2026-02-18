@@ -43,7 +43,7 @@ export const useModules = () => {
     faturamento: isAdmin || isFaturamento,
     mapaLeitos: isAdmin || isNir,
     enfermagem: isAdmin || isGestor,
-    laboratorio: isAdmin || isLaboratorio || isMedicos,
+    laboratorio: isAdmin || isLaboratorio || isMedicos || isGestor,
     restaurante: isAdmin || isRestaurante,
     rhdp: isAdmin || isRHDP,
     assistenciaSocial: isAdmin || isAssistenciaSocial,

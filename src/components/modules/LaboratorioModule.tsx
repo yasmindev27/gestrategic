@@ -11,9 +11,9 @@ import ExternalViewer from "@/components/ExternalViewer";
 const RESULTADOS_URL = "https://portal.worklabweb.com.br/resultados-on-line/2079";
 
 export const LaboratorioModule = () => {
-  const { isAdmin, isLaboratorio, isMedicos, isLoading } = useUserRole();
+  const { isAdmin, isLaboratorio, isMedicos, isGestor, isLoading } = useUserRole();
   const { logAction } = useLogAccess();
-  const isMedicosOnly = isMedicos && !isAdmin && !isLaboratorio;
+  const isMedicosOnly = (isMedicos || isGestor) && !isAdmin && !isLaboratorio;
   const [activeTab, setActiveTab] = useState(isMedicosOnly ? "resultados" : "escala");
   
   useEffect(() => {
@@ -25,7 +25,7 @@ export const LaboratorioModule = () => {
     logAction("navegacao_aba", "laboratorio", { aba: value });
   };
   
-  const hasAccess = isAdmin || isLaboratorio || isMedicos;
+  const hasAccess = isAdmin || isLaboratorio || isMedicos || isGestor;
 
   if (isLoading) {
     return (

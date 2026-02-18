@@ -93,6 +93,7 @@ const Sidebar = ({
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Stethoscope, label: "Médicos", id: "medicos" },
+        { icon: FlaskConical, label: "Resultados Exames", id: "laboratorio" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
         { icon: UserCog, label: "Equipe", id: "equipe" },
         { icon: FileText, label: "Docs Interact", id: "documentos-interact", category: "integracao" },
