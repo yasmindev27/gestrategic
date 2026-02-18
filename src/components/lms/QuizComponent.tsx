@@ -9,6 +9,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Award, CheckCircle2, XCircle, ArrowRight, Loader2 } from "lucide-react";
 import { Treinamento, QuizPergunta } from "./types";
 
+type QuizPerguntaAluno = Omit<QuizPergunta, 'resposta_correta'>;
+
 interface QuizProps {
   treinamento: Treinamento;
   inscricaoId: string;
@@ -27,20 +29,23 @@ export default function QuizComponent({ treinamento, inscricaoId, userId, onComp
   const { data: perguntas = [], isLoading } = useQuery({
     queryKey: ["lms-quiz", treinamento.id],
     queryFn: async () => {
-      const { data, error } = await supabase.from("lms_quiz_perguntas").select("*").eq("treinamento_id", treinamento.id).order("ordem");
+      // Use the view that excludes correct answers for security
+      const { data, error } = await supabase.from("lms_quiz_perguntas_aluno").select("id, treinamento_id, pergunta, opcao_a, opcao_b, opcao_c, opcao_d, ordem, created_at").eq("treinamento_id", treinamento.id).order("ordem");
       if (error) throw error;
-      return data as QuizPergunta[];
+      return data as QuizPerguntaAluno[];
     },
   });
 
   const submitMutation = useMutation({
     mutationFn: async () => {
-      let acertos = 0;
-      perguntas.forEach(p => {
-        if (answers[p.id] === p.resposta_correta) acertos++;
+      // Use server-side grading function (answers are never sent to client)
+      const { data: gradeData, error: gradeError } = await supabase.rpc("corrigir_quiz", {
+        _respostas: answers,
+        _treinamento_id: treinamento.id,
       });
-      const total = perguntas.length;
-      const nota = total > 0 ? Math.round((acertos / total) * 100) : 0;
+      if (gradeError) throw gradeError;
+
+      const { acertos, total, nota } = gradeData[0];
       const aprovado = nota >= (treinamento.nota_minima_aprovacao || 70);
 
       // Save attempt
@@ -65,7 +70,6 @@ export default function QuizComponent({ treinamento, inscricaoId, userId, onComp
         }).eq("id", inscricaoId);
         if (updateError) throw updateError;
 
-        // Update training status if it was planned
         await supabase.from("lms_treinamentos").update({ status: "realizado" }).eq("id", treinamento.id).eq("status", "planejado");
       } else {
         await supabase.from("lms_inscricoes").update({
