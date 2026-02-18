@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
 import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend, Area, AreaChart,
@@ -18,6 +19,7 @@ import {
   MESES, NSP_CATEGORIAS,
   NSP_INDICADORES_ESTRUTURA, NSP_INDICADORES_PROCESSO, NSP_INDICADORES_AUDITORIAS, NSP_INDICADORES_RESULTADO,
 } from '@/types/indicators';
+import { exportToCSV, exportToPDF } from '@/lib/export-utils';
 
 const COLORS = ['#2563eb', '#16a34a', '#eab308', '#ea580c', '#dc2626', '#8b5cf6', '#06b6d4', '#f97316'];
 const MESES_SHORT = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
@@ -224,7 +226,7 @@ export function IndicadoresNSP() {
           </h2>
           <p className="text-sm text-muted-foreground">Indicadores de Internação - Monitoramento de Incidentes</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 items-center">
           <Select value={selectedMonth} onValueChange={setSelectedMonth}>
             <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
             <SelectContent>{MESES.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
@@ -233,6 +235,31 @@ export function IndicadoresNSP() {
             <SelectTrigger className="w-[100px]"><SelectValue /></SelectTrigger>
             <SelectContent>{[2024, 2025, 2026].map(a => <SelectItem key={a} value={a.toString()}>{a}</SelectItem>)}</SelectContent>
           </Select>
+          <ExportDropdown
+            onExportCSV={() => {
+              const headers = ['Indicador', 'Categoria', 'Subcategoria', 'Valor', 'Meta', 'Unidade'];
+              const rows = filteredIndicators.map(i => [
+                i.indicador, i.categoria, i.subcategoria || '', 
+                i.valor_numero != null ? Number(i.valor_numero) : '', 
+                i.meta != null ? Number(i.meta) : '', 
+                i.unidade_medida || ''
+              ]);
+              exportToCSV({ title: `Indicadores NSP - ${selectedMonth} ${selectedYear}`, headers, rows, fileName: `indicadores_nsp_${selectedMonth}_${selectedYear}` });
+            }}
+            onExportPDF={() => {
+              const headers = ['Indicador', 'Categoria', 'Valor', 'Meta', 'Status'];
+              const rows = filteredIndicators.map(i => {
+                const isAlert = i.meta !== null && i.valor_numero !== null && (i.meta === 0 ? i.valor_numero > 0 : i.valor_numero > i.meta);
+                return [
+                  i.indicador, i.categoria.replace('Indicadores de ', '').replace('Auditorias de ', ''),
+                  i.valor_numero != null ? Number(i.valor_numero) : '—',
+                  i.meta != null ? Number(i.meta) : '—',
+                  i.meta !== null ? (isAlert ? 'Alerta' : 'OK') : '—',
+                ];
+              });
+              exportToPDF({ title: `Indicadores NSP - ${selectedMonth} ${selectedYear}`, headers, rows, fileName: `indicadores_nsp_${selectedMonth}_${selectedYear}`, orientation: 'landscape' });
+            }}
+          />
         </div>
       </div>
 

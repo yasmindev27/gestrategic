@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { useToast } from "@/hooks/use-toast";
 import {
   ClipboardCheck, BarChart3, FileText, Plus, TrendingUp,
@@ -27,6 +28,7 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 
 // Scale labels 0-9
 const SCALE_OPTIONS = [
@@ -536,8 +538,44 @@ const IndicadoresDashboard = () => {
       media: parseFloat((data.sum / data.count).toFixed(1)),
     }));
 
+  const handleExportCSV = () => {
+    const headers = ['Data', 'Iniciais', 'Prontuário', 'Unidade', 'Proveniência', 'HPP', 'Exame Físico', 'Plano Terapêutico', 'Metas Terapêuticas', 'Plano Alta', 'Satisfação', 'Avaliador'];
+    const rows = avaliacoes.map(a => {
+      const r = a.respostas as Record<string, string> | null;
+      return [
+        a.data_auditoria ? format(new Date(a.data_auditoria), 'dd/MM/yyyy') : '',
+        a.paciente_iniciais || '', a.numero_prontuario || '',
+        a.unidade_atendimento || '',
+        r?.proveniencia || '', r?.hpp || '', r?.exame_fisico || '',
+        r?.plano_terapeutico || '', r?.metas_terapeuticas || '', r?.plano_alta || '',
+        a.satisfacao_geral?.toString() || '', a.auditor_nome || '',
+      ];
+    });
+    exportToCSV({ title: 'Avaliação Prontuários CC', headers, rows, fileName: 'avaliacoes_prontuarios_cc' });
+  };
+
+  const handleExportPDF = () => {
+    const headers = ['Data', 'Iniciais', 'Pront.', 'Unidade', 'Média', 'Satisfação', 'Avaliador'];
+    const rows = avaliacoes.map(a => {
+      const r = a.respostas as Record<string, string> | null;
+      const values = r ? Object.values(r).filter(v => v !== 'na').map(v => parseInt(v)) : [];
+      const avg = values.length > 0 ? (values.reduce((s, v) => s + v, 0) / values.length).toFixed(1) : '—';
+      return [
+        a.data_auditoria ? format(new Date(a.data_auditoria), 'dd/MM/yyyy') : '',
+        a.paciente_iniciais || '', a.numero_prontuario || '',
+        a.unidade_atendimento?.split('(')[0]?.trim() || '',
+        avg, a.satisfacao_geral?.toString() || '—', a.auditor_nome || '',
+      ];
+    });
+    exportToPDF({ title: 'Avaliação Qualitativa de Prontuários - Corpo Clínico', headers, rows, fileName: 'avaliacoes_prontuarios_cc', orientation: 'landscape' });
+  };
+
   return (
     <div className="space-y-6">
+      {/* Export */}
+      <div className="flex justify-end">
+        <ExportDropdown onExportCSV={handleExportCSV} onExportPDF={handleExportPDF} />
+      </div>
       {/* KPIs */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
