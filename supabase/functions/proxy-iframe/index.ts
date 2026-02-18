@@ -14,6 +14,7 @@ const ALLOWED_DOMAINS = [
   "sistemasalus.com.br",
   "streamlit.app",
   "pegaplantao.com.br",
+  "worklabweb.com.br",
 ];
 
 function isDomainAllowed(url: string): boolean {
