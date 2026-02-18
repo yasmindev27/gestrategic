@@ -28,7 +28,8 @@ import {
 } from "recharts";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { exportToCSV, exportToPDF } from "@/lib/export-utils";
+import { exportToCSV, createStandardPdf, savePdfWithFooter } from "@/lib/export-utils";
+import autoTable from "jspdf-autotable";
 
 // Scale labels 0-9
 const SCALE_OPTIONS = [
@@ -554,20 +555,92 @@ const IndicadoresDashboard = () => {
     exportToCSV({ title: 'Avaliação Prontuários CC', headers, rows, fileName: 'avaliacoes_prontuarios_cc' });
   };
 
-  const handleExportPDF = () => {
-    const headers = ['Data', 'Iniciais', 'Pront.', 'Unidade', 'Média', 'Satisfação', 'Avaliador'];
-    const rows = avaliacoes.map(a => {
-      const r = a.respostas as Record<string, string> | null;
-      const values = r ? Object.values(r).filter(v => v !== 'na').map(v => parseInt(v)) : [];
-      const avg = values.length > 0 ? (values.reduce((s, v) => s + v, 0) / values.length).toFixed(1) : '—';
-      return [
-        a.data_auditoria ? format(new Date(a.data_auditoria), 'dd/MM/yyyy') : '',
-        a.paciente_iniciais || '', a.numero_prontuario || '',
-        a.unidade_atendimento?.split('(')[0]?.trim() || '',
-        avg, a.satisfacao_geral?.toString() || '—', a.auditor_nome || '',
-      ];
+  const handleExportPDF = async () => {
+    const pdfTitle = 'Avaliação Qualitativa de Prontuários - Corpo Clínico';
+    const { doc, logoImg } = await createStandardPdf(pdfTitle, 'landscape');
+
+    // 1) KPIs
+    autoTable(doc, {
+      startY: 32,
+      head: [['Avaliações', 'Média Geral', 'Satisfação Média']],
+      body: [[avaliacoes.length, avgOverall, avgSatisfacao]],
+      styles: { fontSize: 10, cellPadding: 3, halign: 'center' },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
     });
-    exportToPDF({ title: 'Avaliação Qualitativa de Prontuários - Corpo Clínico', headers, rows, fileName: 'avaliacoes_prontuarios_cc', orientation: 'landscape' });
+
+    // 2) Radar - Média por critério
+    let lastY = (doc as any).lastAutoTable?.finalY || 50;
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Média por Critério de Avaliação', 14, lastY + 8);
+    autoTable(doc, {
+      startY: lastY + 12,
+      head: [['Critério', 'Média (0-9)']],
+      body: radarData.map(d => [d.subject, d.score]),
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [52, 152, 219], textColor: 255, fontStyle: 'bold' },
+      margin: { top: 32, bottom: 28 },
+    });
+
+    // 3) Distribuição por Unidade
+    const byUnidadeFiltered = byUnidade.filter(u => u.qtd > 0);
+    if (byUnidadeFiltered.length > 0) {
+      lastY = (doc as any).lastAutoTable?.finalY || 80;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Distribuição por Unidade', 14, lastY + 8);
+      autoTable(doc, {
+        startY: lastY + 12,
+        head: [['Unidade', 'Quantidade']],
+        body: byUnidadeFiltered.map(u => [u.name, u.qtd]),
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [52, 152, 219], textColor: 255, fontStyle: 'bold' },
+        margin: { top: 32, bottom: 28 },
+      });
+    }
+
+    // 4) Tendência Mensal
+    if (monthlyTrend.length > 0) {
+      lastY = (doc as any).lastAutoTable?.finalY || 100;
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Tendência Mensal', 14, lastY + 8);
+      autoTable(doc, {
+        startY: lastY + 12,
+        head: [['Mês', 'Média']],
+        body: monthlyTrend.map(t => [t.mes, t.media]),
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [52, 152, 219], textColor: 255, fontStyle: 'bold' },
+        margin: { top: 32, bottom: 28 },
+      });
+    }
+
+    // 5) Tabela de avaliações individuais
+    lastY = (doc as any).lastAutoTable?.finalY || 120;
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Avaliações Individuais', 14, lastY + 8);
+    autoTable(doc, {
+      startY: lastY + 12,
+      head: [['Data', 'Iniciais', 'Pront.', 'Unidade', 'Média', 'Satisfação', 'Avaliador']],
+      body: avaliacoes.map(a => {
+        const r = a.respostas as Record<string, string> | null;
+        const values = r ? Object.values(r).filter(v => v !== 'na').map(v => parseInt(v)) : [];
+        const avg = values.length > 0 ? (values.reduce((s, v) => s + v, 0) / values.length).toFixed(1) : '—';
+        return [
+          a.data_auditoria ? format(new Date(a.data_auditoria), 'dd/MM/yyyy') : '',
+          a.paciente_iniciais || '', a.numero_prontuario || '',
+          a.unidade_atendimento?.split('(')[0]?.trim() || '',
+          avg, a.satisfacao_geral?.toString() || '—', a.auditor_nome || '',
+        ];
+      }),
+      styles: { fontSize: 8, cellPadding: 2 },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      margin: { top: 32, bottom: 28 },
+    });
+
+    savePdfWithFooter(doc, pdfTitle, 'avaliacoes_prontuarios_cc', logoImg);
   };
 
   return (
