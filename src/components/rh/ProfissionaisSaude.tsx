@@ -255,8 +255,16 @@ const ProfissionaisSaude = () => {
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
         const records = jsonData.map((row: any) => {
-          const tipoRaw = (row["Tipo"] || row.TIPO || row.tipo || "medico").toString().toLowerCase();
-          const tipo = tipoRaw.includes("enf") ? "enfermagem" : "medico";
+          const tipoRaw = (row["Tipo"] || row.TIPO || row.tipo || "").toString().toLowerCase();
+          const cargoRaw = (row.Cargo || row.cargo || row.CARGO || "").toString().toLowerCase();
+          let tipo = "medico";
+          if (tipoRaw.includes("téc") || tipoRaw.includes("tec") || cargoRaw.includes("téc") || cargoRaw.includes("tec")) {
+            tipo = "tecnico_enfermagem";
+          } else if (tipoRaw.includes("enf") || cargoRaw.includes("enf")) {
+            tipo = "enfermeiro";
+          } else if (tipoRaw.includes("méd") || tipoRaw.includes("med") || cargoRaw.includes("méd") || cargoRaw.includes("med")) {
+            tipo = "medico";
+          }
           const situacao = (row["Situação do colaborador"] || row["Situacao do colaborador"] || row.Situacao || row.situacao || "").toString().toLowerCase();
           let status = "ativo";
           if (situacao.includes("inativ") || situacao.includes("demit")) status = "inativo";
