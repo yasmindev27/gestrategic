@@ -40,7 +40,7 @@ const Sidebar = ({
   const {
     role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
     isLaboratorio, isTecnico, isRecepcao, isClassificacao, isNir,
-    isFaturamento, isRHDP, isQualidade, isNSP, isMedicos
+    isFaturamento, isRHDP, isQualidade, isNSP, isMedicos, isEnfermagem
   } = useUserRole();
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
@@ -93,11 +93,20 @@ const Sidebar = ({
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Stethoscope, label: "Médicos", id: "medicos" },
+        { icon: Syringe, label: "Enfermagem", id: "enfermagem" },
         { icon: FlaskConical, label: "Resultados Exames", id: "laboratorio" },
         { icon: Calendar, label: "Agenda", id: "agenda" },
         { icon: UserCog, label: "Equipe", id: "equipe" },
         { icon: FileText, label: "Docs Interact", id: "documentos-interact", category: "integracao" },
         { icon: Stethoscope, label: "Sistema Salus", id: "salus", category: "integracao" }
+      );
+      return items;
+    }
+    if (isEnfermagem) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: Syringe, label: "Enfermagem", id: "enfermagem" },
+        { icon: Calendar, label: "Agenda", id: "agenda" }
       );
       return items;
     }

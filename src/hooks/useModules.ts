@@ -34,6 +34,7 @@ export const useModules = () => {
     isAssistenciaSocial,
     isQualidade,
     isMedicos,
+    isEnfermagem,
   } = useUserRole();
 
   // Memoized module access checks
@@ -42,7 +43,7 @@ export const useModules = () => {
     nir: isAdmin || isNir,
     faturamento: isAdmin || isFaturamento,
     mapaLeitos: isAdmin || isNir,
-    enfermagem: isAdmin || isGestor,
+    enfermagem: isAdmin || isGestor || isEnfermagem,
     laboratorio: isAdmin || isLaboratorio || isMedicos || isGestor,
     restaurante: isAdmin || isRestaurante,
     rhdp: isAdmin || isRHDP,
@@ -63,7 +64,7 @@ export const useModules = () => {
   }), [
     isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
     isLaboratorio, isNir, isRecepcao, isFaturamento, isRHDP,
-    isRestaurante, isAssistenciaSocial, isQualidade, isMedicos
+    isRestaurante, isAssistenciaSocial, isQualidade, isMedicos, isEnfermagem
   ]);
 
   const canAccessModule = (moduleId: string): boolean => {
