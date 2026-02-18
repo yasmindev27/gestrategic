@@ -254,15 +254,25 @@ const ProfissionaisSaude = () => {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
-        const records = jsonData.map((row: any) => ({
-          nome: (row.Nome || row.NOME || row.nome || "").toString().toUpperCase(),
-          tipo: (row.Tipo || row.TIPO || row.tipo || "medico").toString().toLowerCase(),
-          registro_profissional: (row["Registro Profissional"] || row.CRM || row.COREN || row.registro || "").toString() || null,
-          especialidade: (row.Especialidade || row.ESPECIALIDADE || "").toString() || null,
-          status: "ativo",
-          telefone: (row.Telefone || row.TELEFONE || "").toString() || null,
-          email: (row.Email || row.EMAIL || "").toString() || null,
-        })).filter((r: any) => r.nome);
+        const records = jsonData.map((row: any) => {
+          const tipoRaw = (row["Tipo"] || row.TIPO || row.tipo || "medico").toString().toLowerCase();
+          const tipo = tipoRaw.includes("enf") ? "enfermagem" : "medico";
+          const situacao = (row["Situação do colaborador"] || row["Situacao do colaborador"] || row.Situacao || row.situacao || "").toString().toLowerCase();
+          let status = "ativo";
+          if (situacao.includes("inativ") || situacao.includes("demit")) status = "inativo";
+          else if (situacao.includes("féri") || situacao.includes("feri")) status = "ferias";
+          else if (situacao.includes("afast")) status = "afastado";
+
+          return {
+            nome: (row["Nome de exibição"] || row["Nome de exibicao"] || row.Nome || row.NOME || row.nome || "").toString().toUpperCase(),
+            tipo,
+            registro_profissional: (row["Matrícula"] || row.Matricula || row.matricula || "").toString() || null,
+            especialidade: (row.Cargo || row.cargo || row.CARGO || "").toString() || null,
+            status,
+            telefone: null,
+            email: null,
+          };
+        }).filter((r: any) => r.nome);
 
         if (records.length > 0) {
           importMutation.mutate(records);
@@ -278,8 +288,8 @@ const ProfissionaisSaude = () => {
 
   const downloadTemplate = () => {
     const template = [
-      { Nome: "JOÃO DA SILVA", Tipo: "medico", "Registro Profissional": "CRM 12345", Especialidade: "Clínico Geral", Telefone: "(14) 99999-9999", Email: "joao@email.com" },
-      { Nome: "MARIA SANTOS", Tipo: "enfermagem", "Registro Profissional": "COREN 54321", Especialidade: "UTI", Telefone: "(14) 88888-8888", Email: "maria@email.com" },
+      { "Matrícula": "12345", "Nome de exibição": "JOÃO DA SILVA", "Data de admissão": "01/01/2020", "Data de demissão": "", "Cargo": "Clínico Geral", "Tipo": "medico", "Situação do colaborador": "Ativo" },
+      { "Matrícula": "54321", "Nome de exibição": "MARIA SANTOS", "Data de admissão": "15/03/2021", "Data de demissão": "", "Cargo": "Enfermeira UTI", "Tipo": "enfermagem", "Situação do colaborador": "Ativo" },
     ];
     const ws = XLSX.utils.json_to_sheet(template);
     const wb = XLSX.utils.book_new();
@@ -644,7 +654,7 @@ const ProfissionaisSaude = () => {
             </div>
             <div className="text-xs text-muted-foreground">
               <p><strong>Colunas esperadas:</strong></p>
-              <p>Nome, Tipo (medico/enfermagem), Registro Profissional, Especialidade, Telefone, Email</p>
+              <p>Matrícula, Nome de exibição, Data de admissão, Data de demissão, Cargo, Tipo, Situação do colaborador</p>
             </div>
           </div>
         </DialogContent>
