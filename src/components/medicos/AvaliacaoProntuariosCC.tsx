@@ -30,19 +30,19 @@ import { ptBR } from "date-fns/locale";
 
 // Scale labels 0-9
 const SCALE_OPTIONS = [
-  { value: "0", label: "0 - Registro inexistente", short: "Inexistente" },
-  { value: "1", label: "1 - Registro insuficiente, sem utilidade clínica", short: "Insuficiente" },
-  { value: "2", label: "2 - Registro muito ruim", short: "Muito ruim" },
-  { value: "3", label: "3 - Registro ruim", short: "Ruim" },
-  { value: "4", label: "4 - Registro insatisfatório", short: "Insatisfatório" },
-  { value: "5", label: "5 - Registro medíocre (mínimo aceitável)", short: "Medíocre" },
-  { value: "6", label: "6 - Registro regular", short: "Regular" },
-  { value: "7", label: "7 - Registro satisfatório", short: "Satisfatório" },
-  { value: "8", label: "8 - Registro bom", short: "Bom" },
-  { value: "9", label: "9 - Registro muito bom", short: "Muito bom" },
+  { value: "0", label: "0 - Registro inexistente", short: "Inexistente", tooltip: "Não há nenhum dado referente ao item avaliado no prontuário. Totalmente ausente." },
+  { value: "1", label: "1 - Registro insuficiente", short: "Insuficiente", tooltip: "Palavras soltas ou termos sem sentido, impossíveis de interpretar. Sem utilidade clínica." },
+  { value: "2", label: "2 - Registro muito ruim", short: "Muito ruim", tooltip: "Incompleto, confuso e sem relação clara com o quadro clínico. Compromete a segurança do paciente." },
+  { value: "3", label: "3 - Registro ruim", short: "Ruim", tooltip: "Informação pobre, muito genérica ou apenas parcialmente relacionada ao caso. Não atende às exigências mínimas legais." },
+  { value: "4", label: "4 - Registro insatisfatório", short: "Insatisfatório", tooltip: "Contém algum dado útil, mas ainda há grandes lacunas e não fornece segurança para a conduta ou auditoria." },
+  { value: "5", label: "5 - Registro medíocre (mínimo aceitável)", short: "Medíocre", tooltip: "Contém as informações básicas necessárias, mas superficial, sem detalhes ou sem integração entre os dados. Atende apenas parcialmente às boas práticas." },
+  { value: "6", label: "6 - Registro regular", short: "Regular", tooltip: "Relativamente bem feito, mas com algumas omissões importantes ou falta de detalhamento em pontos críticos. Pode dificultar a continuidade do cuidado." },
+  { value: "7", label: "7 - Registro satisfatório", short: "Satisfatório", tooltip: "Cumpre os requisitos essenciais, com linguagem adequada e informações claras, mas ainda pode melhorar em completude e padronização." },
+  { value: "8", label: "8 - Registro bom", short: "Bom", tooltip: "Completo na maior parte, claro, coerente e suficiente para a assistência e auditoria. Eventuais falhas menores de forma ou detalhes." },
+  { value: "9", label: "9 - Registro muito bom", short: "Muito bom", tooltip: "Completo, organizado, claro, sem inconsistências, com boa lógica clínica e rastreabilidade. Apenas pequenas imperfeições formais." },
 ];
 
-const SCALE_WITH_NA = [...SCALE_OPTIONS, { value: "na", label: "Não se aplica", short: "N/A" }];
+const SCALE_WITH_NA = [...SCALE_OPTIONS, { value: "na", label: "Não se aplica", short: "N/A", tooltip: "Este item não se aplica ao prontuário avaliado." }];
 
 const UNIDADES = [
   "Emergência (observação vermelha)",
@@ -55,7 +55,7 @@ const QUESTIONS = [
     id: "proveniencia",
     number: 5,
     title: "Descrição da proveniência do paciente",
-    description: "No prontuário está descrita a proveniência (SAMU, COBOM, Polícia Militar, Concessionária Way, transferência, encaminhamento do PSF)?",
+    description: "No prontuário do paciente está descrita a sua proveniência (SAMU, COBOM, Polícia Militar, Concessionária Way, transferência de outra unidade hospitalar ou encaminhamento do PSF)?",
     hasNA: true,
   },
   {
@@ -280,7 +280,7 @@ const FormularioAvaliacao = ({ onSuccess }: { onSuccess: () => void }) => {
                           ? getScaleColor(opt.value) + " ring-2 ring-offset-1 ring-current"
                           : "bg-background text-muted-foreground border-border hover:bg-accent"
                       }`}
-                      title={opt.label}
+                      title={opt.tooltip || opt.label}
                     >
                       {opt.value === "na" ? "N/A" : opt.value}
                     </button>
