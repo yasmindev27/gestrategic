@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Ambulance, LayoutDashboard, BedDouble, ExternalLink, Truck } from "lucide-react";
+import { Ambulance, LayoutDashboard, BedDouble, ExternalLink, Truck, Navigation } from "lucide-react";
 import { NirDashboardModule } from "./NirDashboardModule";
 import { MapaLeitosModule } from "./MapaLeitosModule";
 import { SalusImportModule, ListaFaltantesSalus } from "@/components/nir";
@@ -132,6 +132,27 @@ export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
           <CardContent className="text-center">
             <Button variant="outline" className="w-full">
               Acessar Transferências
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card
+          className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
+          onClick={() => window.open("/transporte", "_blank")}
+        >
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
+              <Navigation className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle className="mt-4">Área do Motorista</CardTitle>
+            <CardDescription>
+              Painel mobile para motoristas em rota
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Button variant="outline" className="w-full gap-2">
+              <ExternalLink className="h-4 w-4" />
+              Abrir Painel
             </Button>
           </CardContent>
         </Card>
