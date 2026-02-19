@@ -346,7 +346,7 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
     return text
       .replace(/\*\*(.*?)\*\*/g, '$1')  // **bold**
       .replace(/\*(.*?)\*/g, '$1')      // *italic*
-      .replace(/^[!]+\s*/gm, '')        // leading ! markers
+      .replace(/^[!'!]+\s*/gm, '')      // leading !' or ! markers
       .replace(/^[-•]\s*/gm, '- ')      // normalize bullets
       .trim();
   };
