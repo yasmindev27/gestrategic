@@ -571,9 +571,17 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
                             <Button
                               variant="outline"
                               size="sm"
-                              onClick={(e) => {
+                              onClick={async (e) => {
                                 e.stopPropagation();
-                                window.open(r.gravacao_url, "_blank");
+                                const { data, error } = await supabase.storage
+                                  .from("reunioes")
+                                  .createSignedUrl(r.gravacao_url, 3600);
+                                if (data?.signedUrl) {
+                                  window.open(data.signedUrl, "_blank");
+                                } else {
+                                  toast({ title: "Erro", description: "Não foi possível acessar a gravação.", variant: "destructive" });
+                                  console.error("Erro ao gerar URL da gravação:", error);
+                                }
                               }}
                             >
                               <Video className="h-4 w-4 mr-2" /> Ver Gravação
