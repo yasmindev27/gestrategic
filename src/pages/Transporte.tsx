@@ -8,7 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Truck, MapPin, Clock, CheckCircle2, LogOut, Navigation, ChevronRight, Play, AlertTriangle, LocateFixed } from "lucide-react";
+import { Loader2, Truck, MapPin, Clock, CheckCircle2, LogOut, Navigation, ChevronRight, Play, AlertTriangle, LocateFixed, FileWarning } from "lucide-react";
 import logoGestrategic from "@/assets/logo-gestrategic.jpg";
 
 type Solicitacao = {
@@ -49,6 +49,13 @@ const Transporte = () => {
   const [locAtiva, setLocAtiva] = useState(false);
   const [locLoading, setLocLoading] = useState(false);
   const [locError, setLocError] = useState("");
+  const [finalizarOpen, setFinalizarOpen] = useState(false);
+  const [finalizarMissaoId, setFinalizarMissaoId] = useState<string | null>(null);
+  const [kmFinal, setKmFinal] = useState("");
+  const [intercorrenciaOpen, setIntercorrenciaOpen] = useState(false);
+  const [intercorrenciaMissaoId, setIntercorrenciaMissaoId] = useState<string | null>(null);
+  const [intercorrenciaTexto, setIntercorrenciaTexto] = useState("");
+  const [intercorrenciaLoading, setIntercorrenciaLoading] = useState(false);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -160,24 +167,76 @@ const Transporte = () => {
     }
   };
 
-  const handleFinalizarMissao = async (missaoId: string) => {
-    setActionLoading(missaoId);
+  const abrirFinalizar = (missaoId: string) => {
+    setFinalizarMissaoId(missaoId);
+    setKmFinal("");
+    setFinalizarOpen(true);
+  };
+
+  const confirmarFinalizar = async () => {
+    if (!kmFinal.trim() || isNaN(Number(kmFinal))) {
+      toast({ title: "Informe a km final da ambulância", variant: "destructive" });
+      return;
+    }
+    setFinalizarOpen(false);
+    if (!finalizarMissaoId) return;
+    setActionLoading(finalizarMissaoId);
     try {
+      // Get current km_rodados (km inicial) to calculate total
+      const { data: sol } = await supabase
+        .from("transferencia_solicitacoes")
+        .select("km_rodados")
+        .eq("id", finalizarMissaoId)
+        .single();
+      const kmInicial = (sol as any)?.km_rodados || 0;
+      const kmTotal = Math.max(0, Number(kmFinal) - kmInicial);
+
       const { error } = await supabase
         .from("transferencia_solicitacoes")
         .update({
           status: "concluida",
           hora_chegada: new Date().toISOString(),
+          km_rodados: kmTotal,
         })
-        .eq("id", missaoId);
+        .eq("id", finalizarMissaoId);
       if (error) throw error;
-      toast({ title: "Missão finalizada com sucesso!" });
+      toast({ title: `Missão finalizada! ${kmTotal} km percorridos.` });
       setSelectedMissao(null);
       loadMissoes(userName);
     } catch (err: any) {
       toast({ title: "Erro ao finalizar", description: err.message, variant: "destructive" });
     } finally {
       setActionLoading(null);
+      setFinalizarMissaoId(null);
+    }
+  };
+
+  const abrirIntercorrencia = (missaoId: string) => {
+    setIntercorrenciaMissaoId(missaoId);
+    setIntercorrenciaTexto("");
+    setIntercorrenciaOpen(true);
+  };
+
+  const salvarIntercorrencia = async () => {
+    if (!intercorrenciaTexto.trim()) {
+      toast({ title: "Descreva a intercorrência", variant: "destructive" });
+      return;
+    }
+    setIntercorrenciaLoading(true);
+    try {
+      const { error } = await supabase.from("transferencia_intercorrencias").insert({
+        solicitacao_id: intercorrenciaMissaoId!,
+        descricao: intercorrenciaTexto.trim(),
+        registrado_por: user?.id,
+        registrado_por_nome: userName,
+      });
+      if (error) throw error;
+      toast({ title: "Intercorrência registrada!" });
+      setIntercorrenciaOpen(false);
+    } catch (err: any) {
+      toast({ title: "Erro ao registrar", description: err.message, variant: "destructive" });
+    } finally {
+      setIntercorrenciaLoading(false);
     }
   };
 
@@ -310,25 +369,39 @@ const Transporte = () => {
                       </Button>
                     )}
                     {m.status === "em_transporte" && (
-                      <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs" onClick={(e) => {
-                          e.stopPropagation();
-                          handleNavegar(m.destino);
-                        }}>
-                          <Navigation className="h-3 w-3" />
-                          Navegar
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          className="flex-1 gap-1 text-xs"
-                          disabled={actionLoading === m.id}
+                      <div className="space-y-2">
+                        <div className="flex gap-2">
+                          <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs" onClick={(e) => {
+                            e.stopPropagation();
+                            handleNavegar(m.destino);
+                          }}>
+                            <Navigation className="h-3 w-3" />
+                            Navegar
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            className="flex-1 gap-1 text-xs"
+                            disabled={actionLoading === m.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              abrirFinalizar(m.id);
+                            }}
+                          >
+                            {actionLoading === m.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                            Finalizar
+                          </Button>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          className="w-full gap-1 text-xs"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleFinalizarMissao(m.id);
+                            abrirIntercorrencia(m.id);
                           }}
                         >
-                          {actionLoading === m.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
-                          Finalizar
+                          <FileWarning className="h-3 w-3" />
+                          Registrar Intercorrência
                         </Button>
                       </div>
                     )}
@@ -446,6 +519,81 @@ const Transporte = () => {
             >
               <Play className="h-4 w-4" />
               Confirmar Saída
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Finalizar dialog: km final */}
+      <Dialog open={finalizarOpen} onOpenChange={setFinalizarOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-primary" />
+              Finalizar Missão
+            </DialogTitle>
+            <DialogDescription>
+              Informe a km atual da ambulância para calcular a distância percorrida.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="km-final" className="text-sm font-medium">Km final da ambulância</Label>
+            <Input
+              id="km-final"
+              type="number"
+              inputMode="numeric"
+              placeholder="Ex: 45280"
+              value={kmFinal}
+              onChange={(e) => setKmFinal(e.target.value)}
+              className="text-lg"
+            />
+          </div>
+          <DialogFooter className="flex gap-2 sm:gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setFinalizarOpen(false)}>
+              Cancelar
+            </Button>
+            <Button className="flex-1 gap-2" disabled={!kmFinal.trim()} onClick={confirmarFinalizar}>
+              <CheckCircle2 className="h-4 w-4" />
+              Confirmar Chegada
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Intercorrência dialog */}
+      <Dialog open={intercorrenciaOpen} onOpenChange={setIntercorrenciaOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <FileWarning className="h-5 w-5" />
+              Registrar Intercorrência
+            </DialogTitle>
+            <DialogDescription>
+              Descreva o que aconteceu durante o transporte.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="intercorrencia" className="text-sm font-medium">Descrição</Label>
+            <textarea
+              id="intercorrencia"
+              className="flex min-h-[100px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              placeholder="Descreva a intercorrência..."
+              value={intercorrenciaTexto}
+              onChange={(e) => setIntercorrenciaTexto(e.target.value)}
+            />
+          </div>
+          <DialogFooter className="flex gap-2 sm:gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setIntercorrenciaOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              className="flex-1 gap-2"
+              disabled={!intercorrenciaTexto.trim() || intercorrenciaLoading}
+              onClick={salvarIntercorrencia}
+            >
+              {intercorrenciaLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileWarning className="h-4 w-4" />}
+              Registrar
             </Button>
           </DialogFooter>
         </DialogContent>

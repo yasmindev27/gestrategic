@@ -5079,6 +5079,41 @@ export type Database = {
           },
         ]
       }
+      transferencia_intercorrencias: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          registrado_por: string | null
+          registrado_por_nome: string
+          solicitacao_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          id?: string
+          registrado_por?: string | null
+          registrado_por_nome: string
+          solicitacao_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          registrado_por?: string | null
+          registrado_por_nome?: string
+          solicitacao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transferencia_intercorrencias_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "transferencia_solicitacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transferencia_solicitacoes: {
         Row: {
           created_at: string
