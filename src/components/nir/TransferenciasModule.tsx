@@ -1,0 +1,459 @@
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Truck, Plus, Search, Clock, CheckCircle, AlertTriangle, Loader2, ArrowRight } from "lucide-react";
+
+interface Veiculo {
+  id: string;
+  placa: string;
+  tipo: string;
+  motorista_nome: string;
+  status: string;
+}
+
+interface Solicitacao {
+  id: string;
+  paciente_nome: string;
+  setor_origem: string;
+  destino: string;
+  motivo: string | null;
+  prioridade: string;
+  status: string;
+  veiculo_id: string | null;
+  hora_saida: string | null;
+  hora_chegada: string | null;
+  solicitado_por_nome: string;
+  created_at: string;
+}
+
+interface PacienteInternado {
+  bed_id: string;
+  patient_name: string;
+  sector: string;
+  hipotese_diagnostica: string | null;
+  data_internacao: string | null;
+}
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
+  pendente: { label: "Pendente", color: "bg-yellow-500", icon: Clock },
+  em_transporte: { label: "Em Transporte", color: "bg-blue-500", icon: Truck },
+  concluida: { label: "Concluída", color: "bg-green-500", icon: CheckCircle },
+  cancelada: { label: "Cancelada", color: "bg-destructive", icon: AlertTriangle },
+};
+
+const VEICULO_STATUS: Record<string, { label: string; color: string }> = {
+  disponivel: { label: "Disponível", color: "bg-green-500" },
+  em_uso: { label: "Em Uso", color: "bg-blue-500" },
+  manutencao: { label: "Manutenção", color: "bg-yellow-500" },
+  indisponivel: { label: "Indisponível", color: "bg-destructive" },
+};
+
+export const TransferenciasModule = () => {
+  const { toast } = useToast();
+  const userRole = useUserRole();
+  const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
+  const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
+  const [pacientes, setPacientes] = useState<PacienteInternado[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchPaciente, setSearchPaciente] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedPaciente, setSelectedPaciente] = useState<PacienteInternado | null>(null);
+
+  // Form state
+  const [formDestino, setFormDestino] = useState("");
+  const [formMotivo, setFormMotivo] = useState("");
+  const [formPrioridade, setFormPrioridade] = useState("normal");
+  const [formPacienteNome, setFormPacienteNome] = useState("");
+  const [formSetorOrigem, setFormSetorOrigem] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const today = new Date().toISOString().split("T")[0];
+
+      const [veiculosRes, solicitacoesRes, bedRes] = await Promise.all([
+        supabase.from("transferencia_veiculos").select("*").order("motorista_nome"),
+        supabase.from("transferencia_solicitacoes").select("*").order("created_at", { ascending: false }).limit(50),
+        supabase.from("bed_records").select("bed_id, patient_name, sector, hipotese_diagnostica, data_internacao").eq("shift_date", today).not("patient_name", "is", null).is("data_alta", null),
+      ]);
+
+      if (veiculosRes.data) setVeiculos(veiculosRes.data);
+      if (solicitacoesRes.data) setSolicitacoes(solicitacoesRes.data);
+      if (bedRes.data) setPacientes(bedRes.data as PacienteInternado[]);
+    } catch (err) {
+      console.error("Erro ao carregar dados:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const handleSolicitar = (p: PacienteInternado) => {
+    setSelectedPaciente(p);
+    setFormPacienteNome(p.patient_name || "");
+    setFormSetorOrigem(getSectorLabel(p.sector));
+    setFormDestino("");
+    setFormMotivo("");
+    setFormPrioridade("normal");
+    setDialogOpen(true);
+  };
+
+  const handleSubmit = async () => {
+    if (!formPacienteNome || !formDestino) {
+      toast({ title: "Preencha os campos obrigatórios", variant: "destructive" });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const user = (await supabase.auth.getUser()).data.user;
+      const { error } = await supabase.from("transferencia_solicitacoes").insert({
+        paciente_nome: formPacienteNome,
+        setor_origem: formSetorOrigem,
+        destino: formDestino,
+        motivo: formMotivo || null,
+        prioridade: formPrioridade,
+        solicitado_por: user?.id,
+        solicitado_por_nome: user?.email || "—",
+      });
+
+      if (error) throw error;
+
+      toast({ title: "Transferência solicitada com sucesso!" });
+      setDialogOpen(false);
+      loadData();
+    } catch (err: any) {
+      toast({ title: "Erro ao solicitar", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const getSectorLabel = (sector: string) => {
+    const map: Record<string, string> = {
+      "enfermaria-masculina": "Enf. Masculina",
+      "enfermaria-feminina": "Enf. Feminina",
+      pediatria: "Pediatria",
+      isolamento: "Isolamento",
+      urgencia: "Urgência",
+    };
+    return map[sector] || sector;
+  };
+
+  const filteredPacientes = pacientes.filter(
+    (p) =>
+      !searchPaciente ||
+      p.patient_name?.toLowerCase().includes(searchPaciente.toLowerCase()) ||
+      getSectorLabel(p.sector).toLowerCase().includes(searchPaciente.toLowerCase())
+  );
+
+  // ---- Gantt helpers ----
+  const now = new Date();
+  const ganttStart = new Date(now);
+  ganttStart.setHours(0, 0, 0, 0);
+  const ganttEnd = new Date(now);
+  ganttEnd.setHours(23, 59, 59, 999);
+  const totalMs = ganttEnd.getTime() - ganttStart.getTime();
+
+  const getBarStyle = (sol: Solicitacao) => {
+    const start = sol.hora_saida ? new Date(sol.hora_saida) : new Date(sol.created_at);
+    const end = sol.hora_chegada ? new Date(sol.hora_chegada) : sol.status === "em_transporte" ? now : new Date(start.getTime() + 60 * 60 * 1000);
+    const leftPct = Math.max(0, ((start.getTime() - ganttStart.getTime()) / totalMs) * 100);
+    const widthPct = Math.max(2, Math.min(100 - leftPct, ((end.getTime() - start.getTime()) / totalMs) * 100));
+    return { left: `${leftPct}%`, width: `${widthPct}%` };
+  };
+
+  const getBarColor = (status: string) => {
+    switch (status) {
+      case "em_transporte": return "bg-blue-500";
+      case "concluida": return "bg-green-500";
+      case "cancelada": return "bg-destructive/60";
+      default: return "bg-yellow-500";
+    }
+  };
+
+  // Group solicitacoes by vehicle/motorista
+  const veiculoMap = new Map<string, { label: string; solicitacoes: Solicitacao[] }>();
+  veiculos.forEach((v) => {
+    veiculoMap.set(v.id, { label: `${v.motorista_nome} — ${v.placa}`, solicitacoes: [] });
+  });
+  // Add unassigned group
+  veiculoMap.set("sem-veiculo", { label: "Sem veículo atribuído", solicitacoes: [] });
+
+  solicitacoes.forEach((s) => {
+    const key = s.veiculo_id || "sem-veiculo";
+    if (veiculoMap.has(key)) {
+      veiculoMap.get(key)!.solicitacoes.push(s);
+    } else {
+      veiculoMap.get("sem-veiculo")!.solicitacoes.push(s);
+    }
+  });
+
+  // Time markers
+  const hours = Array.from({ length: 13 }, (_, i) => i * 2); // 0,2,4,...,24
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Truck className="h-5 w-5 text-primary" />
+            Transferências
+          </h3>
+          <p className="text-sm text-muted-foreground">Gestão de transferências de pacientes e acompanhamento de veículos</p>
+        </div>
+      </div>
+
+      {/* Gantt Chart */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Diagrama de Gantt — Veículos / Motoristas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {veiculos.length === 0 && solicitacoes.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Nenhum veículo ou transferência cadastrado ainda.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="min-w-[700px]">
+                {/* Time header */}
+                <div className="flex border-b pb-1 mb-2">
+                  <div className="w-48 shrink-0 text-xs font-medium text-muted-foreground">Motorista / Veículo</div>
+                  <div className="flex-1 relative h-5">
+                    {hours.map((h) => (
+                      <span
+                        key={h}
+                        className="absolute text-[10px] text-muted-foreground -translate-x-1/2"
+                        style={{ left: `${(h / 24) * 100}%` }}
+                      >
+                        {String(h).padStart(2, "0")}h
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Rows */}
+                {Array.from(veiculoMap.entries()).map(([key, { label, solicitacoes: sols }]) => {
+                  if (key === "sem-veiculo" && sols.length === 0) return null;
+                  const veiculo = veiculos.find((v) => v.id === key);
+                  const vStatus = veiculo ? VEICULO_STATUS[veiculo.status] : null;
+
+                  return (
+                    <div key={key} className="flex items-center border-b last:border-0 py-2 min-h-[40px]">
+                      <div className="w-48 shrink-0 pr-2">
+                        <div className="text-xs font-medium truncate">{label}</div>
+                        {vStatus && (
+                          <Badge variant="outline" className="text-[10px] gap-1 mt-0.5">
+                            <span className={`w-1.5 h-1.5 rounded-full ${vStatus.color}`} />
+                            {vStatus.label}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex-1 relative h-8 bg-muted/30 rounded">
+                        {/* Grid lines */}
+                        {hours.map((h) => (
+                          <div
+                            key={h}
+                            className="absolute top-0 bottom-0 border-l border-border/30"
+                            style={{ left: `${(h / 24) * 100}%` }}
+                          />
+                        ))}
+                        {/* Now indicator */}
+                        <div
+                          className="absolute top-0 bottom-0 border-l-2 border-primary z-10"
+                          style={{ left: `${((now.getTime() - ganttStart.getTime()) / totalMs) * 100}%` }}
+                        />
+                        {/* Bars */}
+                        <TooltipProvider>
+                          {sols.map((s) => {
+                            const barStyle = getBarStyle(s);
+                            const cfg = STATUS_CONFIG[s.status] || STATUS_CONFIG.pendente;
+                            return (
+                              <Tooltip key={s.id}>
+                                <TooltipTrigger asChild>
+                                  <div
+                                    className={`absolute top-1 bottom-1 rounded ${getBarColor(s.status)} opacity-80 hover:opacity-100 cursor-pointer transition-opacity`}
+                                    style={barStyle}
+                                  />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <p className="font-medium">{s.paciente_nome}</p>
+                                  <p className="text-xs">{s.setor_origem} → {s.destino}</p>
+                                  <p className="text-xs">Status: {cfg.label}</p>
+                                  {s.hora_saida && <p className="text-xs">Saída: {format(new Date(s.hora_saida), "HH:mm")}</p>}
+                                  {s.hora_chegada && <p className="text-xs">Chegada: {format(new Date(s.hora_chegada), "HH:mm")}</p>}
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </TooltipProvider>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t">
+                {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                  <div key={key} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className={`w-3 h-3 rounded ${getBarColor(key)}`} />
+                    {cfg.label}
+                  </div>
+                ))}
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="w-3 h-0.5 bg-primary" />
+                  Horário atual
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Pacientes Internados */}
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <CardTitle className="text-base">Pacientes Internados</CardTitle>
+            <div className="relative w-64">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Buscar paciente ou setor..."
+                value={searchPaciente}
+                onChange={(e) => setSearchPaciente(e.target.value)}
+                className="pl-9 h-9"
+              />
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {filteredPacientes.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-6">Nenhum paciente internado encontrado.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead>Setor</TableHead>
+                    <TableHead>Hipótese Diagnóstica</TableHead>
+                    <TableHead>Data Internação</TableHead>
+                    <TableHead className="text-right">Ação</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredPacientes.map((p) => (
+                    <TableRow key={p.bed_id}>
+                      <TableCell className="font-medium">{p.patient_name}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{getSectorLabel(p.sector)}</Badge>
+                      </TableCell>
+                      <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
+                        {p.hipotese_diagnostica || "—"}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {p.data_internacao ? format(new Date(p.data_internacao), "dd/MM/yyyy") : "—"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" className="gap-1.5" onClick={() => handleSolicitar(p)}>
+                          <ArrowRight className="h-3.5 w-3.5" />
+                          Solicitar Transferência
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Dialog Solicitar Transferência */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Solicitar Transferência</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Paciente</Label>
+              <Input value={formPacienteNome} readOnly className="bg-muted/50" />
+            </div>
+            <div>
+              <Label>Setor de Origem</Label>
+              <Input value={formSetorOrigem} readOnly className="bg-muted/50" />
+            </div>
+            <div>
+              <Label>Destino *</Label>
+              <Input
+                placeholder="Ex: Hospital Regional, UPA Centro..."
+                value={formDestino}
+                onChange={(e) => setFormDestino(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Prioridade</Label>
+              <Select value={formPrioridade} onValueChange={setFormPrioridade}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="baixa">Baixa</SelectItem>
+                  <SelectItem value="normal">Normal</SelectItem>
+                  <SelectItem value="alta">Alta</SelectItem>
+                  <SelectItem value="urgente">Urgente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Motivo</Label>
+              <Textarea
+                placeholder="Descreva o motivo da transferência..."
+                value={formMotivo}
+                onChange={(e) => setFormMotivo(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmit} disabled={isSaving}>
+                {isSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                Solicitar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+};
