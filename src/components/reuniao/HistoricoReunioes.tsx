@@ -52,7 +52,17 @@ import {
   Video,
   RefreshCw,
   Loader2,
+  Sparkles,
+  Edit3,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -146,6 +156,40 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
   const [editTitle, setEditTitle] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
+  const [editAtaReuniao, setEditAtaReuniao] = useState<any | null>(null);
+  const [editAtaResumo, setEditAtaResumo] = useState("");
+  const [editAtaDecisoes, setEditAtaDecisoes] = useState("");
+  const [savingAta, setSavingAta] = useState(false);
+
+  const openEditAta = (reuniao: any) => {
+    const ata = typeof reuniao.ata_gerada === "string" ? JSON.parse(reuniao.ata_gerada) : reuniao.ata_gerada;
+    setEditAtaResumo(ata?.resumo_executivo || "");
+    setEditAtaDecisoes((ata?.decisoes_tomadas || []).join("\n"));
+    setEditAtaReuniao(reuniao);
+  };
+
+  const saveEditAta = async () => {
+    if (!editAtaReuniao) return;
+    setSavingAta(true);
+    try {
+      const currentAta = typeof editAtaReuniao.ata_gerada === "string"
+        ? JSON.parse(editAtaReuniao.ata_gerada)
+        : editAtaReuniao.ata_gerada || {};
+      const updatedAta = {
+        ...currentAta,
+        resumo_executivo: editAtaResumo,
+        decisoes_tomadas: editAtaDecisoes.split("\n").filter((l: string) => l.trim()),
+      };
+      await supabase.from("reunioes").update({ ata_gerada: updatedAta } as any).eq("id", editAtaReuniao.id);
+      queryClient.invalidateQueries({ queryKey: ["reunioes_historico"] });
+      toast({ title: "Ata atualizada", description: "As alterações foram salvas." });
+      setEditAtaReuniao(null);
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message || "Falha ao salvar.", variant: "destructive" });
+    } finally {
+      setSavingAta(false);
+    }
+  };
 
   const regenerateAta = async (reuniao: any) => {
     if (!reuniao.transcricao?.trim()) {
@@ -615,23 +659,31 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
                               <Video className="h-4 w-4 mr-2" /> Ver Gravação
                             </Button>
                           )}
-                          {r.transcricao && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              disabled={regeneratingId === r.id}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                regenerateAta(r);
-                              }}
-                            >
-                              {regeneratingId === r.id ? (
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              ) : (
-                                <RefreshCw className="h-4 w-4 mr-2" />
-                              )}
-                              {regeneratingId === r.id ? "Gerando..." : "Refazer Ata"}
-                            </Button>
+                          {(r.ata_gerada || r.transcricao) && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" disabled={regeneratingId === r.id} onClick={(e) => e.stopPropagation()}>
+                                  {regeneratingId === r.id ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                  ) : (
+                                    <Pencil className="h-4 w-4 mr-2" />
+                                  )}
+                                  {regeneratingId === r.id ? "Gerando..." : "Editar Ata"}
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start">
+                                {r.transcricao && (
+                                  <DropdownMenuItem onClick={() => regenerateAta(r)}>
+                                    <Sparkles className="h-4 w-4 mr-2" /> Refazer com IA
+                                  </DropdownMenuItem>
+                                )}
+                                {r.ata_gerada && (
+                                  <DropdownMenuItem onClick={() => openEditAta(r)}>
+                                    <Edit3 className="h-4 w-4 mr-2" /> Editar existente
+                                  </DropdownMenuItem>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           )}
                         </div>
                       )}
@@ -660,6 +712,42 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Ata Dialog */}
+      <Dialog open={!!editAtaReuniao} onOpenChange={() => setEditAtaReuniao(null)}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Editar Ata</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Resumo Executivo</label>
+              <Textarea
+                value={editAtaResumo}
+                onChange={(e) => setEditAtaResumo(e.target.value)}
+                rows={6}
+                placeholder="Resumo da reunião..."
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Decisões Tomadas (uma por linha)</label>
+              <Textarea
+                value={editAtaDecisoes}
+                onChange={(e) => setEditAtaDecisoes(e.target.value)}
+                rows={5}
+                placeholder="Uma decisão por linha..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditAtaReuniao(null)}>Cancelar</Button>
+            <Button onClick={saveEditAta} disabled={savingAta}>
+              {savingAta ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              Salvar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
