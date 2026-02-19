@@ -1,10 +1,11 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Truck, MapPin, Clock, CheckCircle2, AlertTriangle, LogOut, Navigation, ChevronRight } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2, Truck, MapPin, Clock, CheckCircle2, LogOut, Navigation, ChevronRight, Play } from "lucide-react";
 import logoGestrategic from "@/assets/logo-gestrategic.jpg";
 
 type Solicitacao = {
@@ -29,11 +30,13 @@ const prioridadeColors: Record<string, string> = {
 
 const Transporte = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [user, setUser] = useState<any>(null);
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
   const [missoes, setMissoes] = useState<Solicitacao[]>([]);
   const [selectedMissao, setSelectedMissao] = useState<Solicitacao | null>(null);
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -54,7 +57,7 @@ const Transporte = () => {
     checkAuth();
   }, [navigate]);
 
-  const loadMissoes = async (nome: string) => {
+  const loadMissoes = useCallback(async (nome: string) => {
     setLoading(true);
     const { data } = await supabase
       .from("transferencia_solicitacoes")
@@ -64,6 +67,54 @@ const Transporte = () => {
       .limit(50);
     setMissoes((data as Solicitacao[]) || []);
     setLoading(false);
+  }, []);
+
+  const handleAceitarMissao = async (missaoId: string) => {
+    setActionLoading(missaoId);
+    try {
+      const { error } = await supabase
+        .from("transferencia_solicitacoes")
+        .update({
+          status: "em_transporte",
+          motorista_nome: userName,
+          hora_saida: new Date().toISOString(),
+        })
+        .eq("id", missaoId);
+      if (error) throw error;
+      toast({ title: "Missão aceita! Boa viagem." });
+      setSelectedMissao(null);
+      loadMissoes(userName);
+    } catch (err: any) {
+      toast({ title: "Erro ao aceitar missão", description: err.message, variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleFinalizarMissao = async (missaoId: string) => {
+    setActionLoading(missaoId);
+    try {
+      const { error } = await supabase
+        .from("transferencia_solicitacoes")
+        .update({
+          status: "concluida",
+          hora_chegada: new Date().toISOString(),
+        })
+        .eq("id", missaoId);
+      if (error) throw error;
+      toast({ title: "Missão finalizada com sucesso!" });
+      setSelectedMissao(null);
+      loadMissoes(userName);
+    } catch (err: any) {
+      toast({ title: "Erro ao finalizar", description: err.message, variant: "destructive" });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleNavegar = (destino: string) => {
+    const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destino)}`;
+    window.open(url, "_blank");
   };
 
   const handleLogout = async () => {
@@ -176,22 +227,38 @@ const Transporte = () => {
                       <p><span className="font-medium">Motorista:</span> {m.motorista_nome || "Não atribuído"}</p>
                     </div>
                     {m.status === "pendente" && (
-                      <Button size="sm" className="w-full mt-2 gap-2" onClick={(e) => {
-                        e.stopPropagation();
-                        // Future: accept mission
-                      }}>
-                        <CheckCircle2 className="h-4 w-4" />
+                      <Button 
+                        size="sm" 
+                        className="w-full mt-2 gap-2" 
+                        disabled={actionLoading === m.id}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleAceitarMissao(m.id);
+                        }}
+                      >
+                        {actionLoading === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
                         Aceitar Missão
                       </Button>
                     )}
                     {m.status === "em_transporte" && (
                       <div className="flex gap-2">
-                        <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs">
+                        <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs" onClick={(e) => {
+                          e.stopPropagation();
+                          handleNavegar(m.destino);
+                        }}>
                           <Navigation className="h-3 w-3" />
                           Navegar
                         </Button>
-                        <Button size="sm" className="flex-1 gap-1 text-xs">
-                          <CheckCircle2 className="h-3 w-3" />
+                        <Button 
+                          size="sm" 
+                          className="flex-1 gap-1 text-xs"
+                          disabled={actionLoading === m.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleFinalizarMissao(m.id);
+                          }}
+                        >
+                          {actionLoading === m.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
                           Finalizar
                         </Button>
                       </div>
