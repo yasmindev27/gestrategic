@@ -344,6 +344,22 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
   const exportAtaPdf = async (r: any) => {
     const ata = r.ata_gerada as AtaData | null;
     if (!ata) return;
+
+    // Resolve participant names
+    let participantNames: string[] = [];
+    let organizerName = "";
+    if (r.participantes?.length) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", r.participantes);
+      if (profiles) {
+        participantNames = profiles.map((p: any) => p.full_name || "—");
+        const org = profiles.find((p: any) => p.user_id === r.criado_por);
+        organizerName = org?.full_name || "";
+      }
+    }
+
     const { doc, logoImg } = await createStandardPdf(`Ata - ${r.titulo}`);
     let y = 35;
     const pageHeight = doc.internal.pageSize.getHeight();
@@ -352,8 +368,30 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
       if (y + needed > pageHeight - marginBottom) { doc.addPage(); y = 35; }
     };
 
+    // Metadata block
     doc.setFontSize(9); doc.setFont("helvetica", "normal");
-    doc.text(`Encerramento: ${formatTime(r.hora_encerramento)}`, 14, y); y += 8;
+    if (organizerName) {
+      doc.setFont("helvetica", "bold"); doc.text("Organizador: ", 14, y);
+      doc.setFont("helvetica", "normal"); doc.text(organizerName, 14 + doc.getTextWidth("Organizador: "), y);
+      y += 5;
+    }
+    doc.setFont("helvetica", "bold"); doc.text("Início: ", 14, y);
+    doc.setFont("helvetica", "normal"); doc.text(formatTime(r.hora_inicio), 14 + doc.getTextWidth("Início: "), y);
+    doc.setFont("helvetica", "bold"); doc.text("Encerramento: ", 100, y);
+    doc.setFont("helvetica", "normal"); doc.text(formatTime(r.hora_encerramento), 100 + doc.getTextWidth("Encerramento: "), y);
+    y += 7;
+
+    // Lista de presença
+    if (participantNames.length) {
+      doc.setFontSize(11); doc.setFont("helvetica", "bold");
+      doc.text("LISTA DE PRESENÇA", 14, y); y += 6;
+      doc.setFontSize(9); doc.setFont("helvetica", "normal");
+      participantNames.forEach((name, i) => {
+        checkPage(5);
+        doc.text(`${i + 1}. ${name}`, 16, y); y += 4.5;
+      });
+      y += 6;
+    }
 
     // Resumo Executivo
     if (ata.resumo_executivo) {
@@ -473,11 +511,49 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
     const ata = r.ata_gerada as AtaData | null;
     if (!ata) return;
 
+    // Resolve participant names
+    let participantNames: string[] = [];
+    let organizerName = "";
+    if (r.participantes?.length) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", r.participantes);
+      if (profiles) {
+        participantNames = profiles.map((p: any) => p.full_name || "—");
+        const org = profiles.find((p: any) => p.user_id === r.criado_por);
+        organizerName = org?.full_name || "";
+      }
+    }
+
     const children: any[] = [
       new Paragraph({ heading: HeadingLevel.HEADING_1, alignment: "center" as any, children: [new TextRun({ text: "ATA DE REUNIÃO", bold: true })] }),
       new Paragraph({ alignment: "center" as any, spacing: { after: 200 }, children: [new TextRun({ text: r.titulo || "", size: 24, bold: true })] }),
-      new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: `Encerramento: ${formatTime(r.hora_encerramento)}`, size: 20 })] }),
     ];
+
+    // Metadata
+    if (organizerName) {
+      children.push(new Paragraph({ spacing: { after: 80 }, children: [
+        new TextRun({ text: "Organizador: ", size: 20, bold: true }),
+        new TextRun({ text: organizerName, size: 20 }),
+      ]}));
+    }
+    children.push(new Paragraph({ spacing: { after: 80 }, children: [
+      new TextRun({ text: "Início: ", size: 20, bold: true }),
+      new TextRun({ text: formatTime(r.hora_inicio), size: 20 }),
+      new TextRun({ text: "    Encerramento: ", size: 20, bold: true }),
+      new TextRun({ text: formatTime(r.hora_encerramento), size: 20 }),
+    ]}));
+
+    // Lista de presença
+    if (participantNames.length) {
+      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, spacing: { before: 200 }, children: [new TextRun({ text: "LISTA DE PRESENÇA", bold: true })] }));
+      participantNames.forEach((name, i) => {
+        children.push(new Paragraph({ spacing: { after: 60 }, children: [new TextRun({ text: `${i + 1}. ${name}`, size: 22 })] }));
+      });
+    }
+
+    children.push(new Paragraph({ spacing: { after: 200 }, children: [] }));
 
     // Resumo
     if (ata.resumo_executivo) {
