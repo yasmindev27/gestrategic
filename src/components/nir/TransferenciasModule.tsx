@@ -103,6 +103,7 @@ export const TransferenciasModule = () => {
       if (veiculosRes.data) setVeiculos(veiculosRes.data);
       if (solicitacoesRes.data) setSolicitacoes(solicitacoesRes.data);
       if (bedRes.data) setPacientes(bedRes.data as PacienteInternado[]);
+      if (motoristasRes.data) setMotoristas(motoristasRes.data as Motorista[]);
     } catch (err) {
       console.error("Erro ao carregar dados:", err);
     } finally {
@@ -127,8 +128,8 @@ export const TransferenciasModule = () => {
   };
 
   const handleSubmit = async () => {
-    if (!formPacienteNome || !formDestino || !formVeiculoId) {
-      toast({ title: "Preencha os campos obrigatórios (paciente, destino e veículo)", variant: "destructive" });
+    if (!formPacienteNome || !formDestino || !formVeiculoId || !formMotorista) {
+      toast({ title: "Preencha os campos obrigatórios (paciente, destino, veículo e motorista)", variant: "destructive" });
       return;
     }
 
@@ -467,12 +468,19 @@ export const TransferenciasModule = () => {
               </Select>
             </div>
             <div>
-              <Label>Motorista</Label>
-              <Input
-                placeholder="Nome do motorista"
-                value={formMotorista}
-                onChange={(e) => setFormMotorista(e.target.value)}
-              />
+              <Label>Motorista *</Label>
+              <Select value={formMotorista} onValueChange={setFormMotorista}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o motorista" />
+                </SelectTrigger>
+                <SelectContent>
+                  {motoristas.map((m) => (
+                    <SelectItem key={m.user_id} value={m.full_name}>
+                      {m.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <Label>Motivo</Label>
