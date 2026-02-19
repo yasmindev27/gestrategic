@@ -341,6 +341,16 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
     }
   };
 
+  const stripMarkdown = (text: string): string => {
+    if (!text) return text;
+    return text
+      .replace(/\*\*(.*?)\*\*/g, '$1')  // **bold**
+      .replace(/\*(.*?)\*/g, '$1')      // *italic*
+      .replace(/^[!]+\s*/gm, '')        // leading ! markers
+      .replace(/^[-•]\s*/gm, '- ')      // normalize bullets
+      .trim();
+  };
+
   const exportAtaPdf = async (r: any) => {
     const ata = r.ata_gerada as AtaData | null;
     if (!ata) return;
@@ -399,7 +409,7 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
       doc.setFontSize(12); doc.setFont("helvetica", "bold");
       doc.text("RESUMO EXECUTIVO", 14, y); y += 7;
       doc.setFontSize(9); doc.setFont("helvetica", "normal");
-      const lines = doc.splitTextToSize(ata.resumo_executivo, 180);
+      const lines = doc.splitTextToSize(stripMarkdown(ata.resumo_executivo), 180);
       checkPage(lines.length * 4.5);
       doc.text(lines, 14, y); y += lines.length * 4.5 + 8;
     }
@@ -410,7 +420,7 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
       doc.setFontSize(12); doc.setFont("helvetica", "bold");
       doc.text("1. ABERTURA", 14, y); y += 7;
       doc.setFontSize(9); doc.setFont("helvetica", "normal");
-      const lines = doc.splitTextToSize(ata.abertura, 180);
+      const lines = doc.splitTextToSize(stripMarkdown(ata.abertura), 180);
       checkPage(lines.length * 4.5);
       doc.text(lines, 14, y); y += lines.length * 4.5 + 8;
     }
@@ -420,9 +430,9 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
       ata.secoes_discussao.forEach((secao) => {
         checkPage(20);
         doc.setFontSize(11); doc.setFont("helvetica", "bold");
-        doc.text(`${secao.numero} ${secao.titulo}`, 14, y); y += 7;
+        doc.text(`${secao.numero} ${stripMarkdown(secao.titulo)}`, 14, y); y += 7;
         doc.setFontSize(9); doc.setFont("helvetica", "normal");
-        const lines = doc.splitTextToSize(secao.conteudo, 175);
+        const lines = doc.splitTextToSize(stripMarkdown(secao.conteudo), 175);
         lines.forEach((line: string) => {
           checkPage(5);
           doc.text(line, 16, y); y += 4.5;
@@ -437,7 +447,7 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
       doc.setFontSize(12); doc.setFont("helvetica", "bold");
       doc.text("REGISTRO DAS DISCUSSÕES", 14, y); y += 7;
       doc.setFontSize(9); doc.setFont("helvetica", "normal");
-      const lines = doc.splitTextToSize(ata.registro_discussoes, 180);
+      const lines = doc.splitTextToSize(stripMarkdown(ata.registro_discussoes), 180);
       lines.forEach((line: string) => {
         checkPage(5);
         doc.text(line, 14, y); y += 4.5;
@@ -452,8 +462,8 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
       doc.text("PONTOS CRÍTICOS E ENCAMINHAMENTOS", 14, y); y += 7;
       doc.setFontSize(9); doc.setFont("helvetica", "normal");
       ata.pontos_criticos.forEach((pc) => {
-        const probLines = doc.splitTextToSize(`• ${pc.problema}`, 166);
-        const encLines = doc.splitTextToSize(`! ${pc.encaminhamento}`, 160);
+        const probLines = doc.splitTextToSize(`• ${stripMarkdown(pc.problema)}`, 166);
+        const encLines = doc.splitTextToSize(`→ ${stripMarkdown(pc.encaminhamento)}`, 160);
         checkPage(probLines.length * 4.5 + encLines.length * 4.5 + 6);
         doc.setFont("helvetica", "bold");
         doc.text(probLines, 16, y); y += probLines.length * 4.5 + 1;
@@ -471,7 +481,7 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
       doc.setFontSize(9); doc.setFont("helvetica", "normal");
       ata.decisoes_tomadas.forEach((d, i) => {
         checkPage(8);
-        const lines = doc.splitTextToSize(`${i + 1}. ${d}`, 175);
+        const lines = doc.splitTextToSize(`${i + 1}. ${stripMarkdown(d)}`, 175);
         doc.text(lines, 16, y); y += lines.length * 4.5 + 2;
       });
       y += 6;
@@ -486,7 +496,7 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
       doc.setFontSize(9); doc.setFont("helvetica", "normal");
       pendencias.forEach((item, i) => {
         checkPage(8);
-        const text = `${i + 1}. ${item.descricao} — Responsável: ${item.responsavel} | Prazo: ${item.prazo}`;
+        const text = `${i + 1}. ${stripMarkdown(item.descricao)} — Responsável: ${item.responsavel} | Prazo: ${item.prazo}`;
         const lines = doc.splitTextToSize(text, 175);
         doc.text(lines, 16, y); y += lines.length * 4.5 + 2;
       });
@@ -499,7 +509,7 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
       doc.setFontSize(12); doc.setFont("helvetica", "bold");
       doc.text("ENCERRAMENTO", 14, y); y += 7;
       doc.setFontSize(9); doc.setFont("helvetica", "normal");
-      const lines = doc.splitTextToSize(ata.encerramento, 180);
+      const lines = doc.splitTextToSize(stripMarkdown(ata.encerramento), 180);
       checkPage(lines.length * 4.5);
       doc.text(lines, 14, y); y += lines.length * 4.5;
     }
@@ -558,21 +568,20 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
     // Resumo
     if (ata.resumo_executivo) {
       children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "RESUMO EXECUTIVO", bold: true })] }));
-      children.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: ata.resumo_executivo, size: 22 })] }));
+      children.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: stripMarkdown(ata.resumo_executivo), size: 22 })] }));
     }
 
     // Abertura
     if (ata.abertura) {
       children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "1. ABERTURA", bold: true })] }));
-      children.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: ata.abertura, size: 22 })] }));
+      children.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: stripMarkdown(ata.abertura), size: 22 })] }));
     }
 
     // Seções de Discussão
     if (ata.secoes_discussao?.length) {
       ata.secoes_discussao.forEach((secao) => {
-        children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: `${secao.numero} ${secao.titulo}`, bold: true })] }));
-        // Split content by lines to handle bullet points
-        secao.conteudo.split("\n").forEach(line => {
+        children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: `${secao.numero} ${stripMarkdown(secao.titulo)}`, bold: true })] }));
+        stripMarkdown(secao.conteudo).split("\n").forEach(line => {
           if (line.trim()) {
             children.push(new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: line.trim(), size: 22 })] }));
           }
@@ -583,7 +592,7 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
     // Legacy: registro_discussoes
     if (!ata.secoes_discussao?.length && ata.registro_discussoes) {
       children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "REGISTRO DAS DISCUSSÕES", bold: true })] }));
-      children.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: ata.registro_discussoes, size: 22 })] }));
+      children.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: stripMarkdown(ata.registro_discussoes), size: 22 })] }));
     }
 
     // Pontos Críticos
@@ -600,8 +609,8 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
           ...ata.pontos_criticos.map((pc) =>
             new DocxTableRow({
               children: [
-                new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: pc.problema, size: 20 })] })] }),
-                new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: pc.encaminhamento, size: 20 })] })] }),
+                new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: stripMarkdown(pc.problema), size: 20 })] })] }),
+                new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: stripMarkdown(pc.encaminhamento), size: 20 })] })] }),
               ],
             })
           ),
@@ -613,7 +622,7 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
     if (ata.decisoes_tomadas?.length) {
       children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "DECISÕES TOMADAS", bold: true })] }));
       ata.decisoes_tomadas.forEach((d, i) => {
-        children.push(new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: `${i + 1}. ${d}`, size: 22 })] }));
+        children.push(new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: `${i + 1}. ${stripMarkdown(d)}`, size: 22 })] }));
       });
     }
 
@@ -633,7 +642,7 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
             new DocxTableRow({
               children: [
                 new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: String(i + 1), size: 20 })] })] }),
-                new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.descricao, size: 20 })] })] }),
+                new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: stripMarkdown(item.descricao), size: 20 })] })] }),
                 new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.responsavel, size: 20 })] })] }),
                 new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.prazo, size: 20 })] })] }),
               ],
@@ -646,7 +655,7 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
     // Encerramento
     if (ata.encerramento) {
       children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, spacing: { before: 200 }, children: [new TextRun({ text: "ENCERRAMENTO", bold: true })] }));
-      children.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: ata.encerramento, size: 22 })] }));
+      children.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: stripMarkdown(ata.encerramento), size: 22 })] }));
     }
 
     children.push(new Paragraph({ spacing: { before: 400 }, children: [new TextRun({ text: "Documento gerado em conformidade com a LGPD (Lei nº 13.709/2018).", size: 14, color: "888888", italics: true })] }));
