@@ -176,6 +176,19 @@ export const TransferenciasModule = () => {
     return map[sector] || sector;
   };
 
+  // Map patient names to their latest transfer status
+  const getPatientTransferStatus = (patientName: string | null) => {
+    if (!patientName) return null;
+    const sol = solicitacoes.find(
+      (s) => s.paciente_nome === patientName && s.status !== "cancelada" && s.status !== "concluida"
+    );
+    if (!sol) return null;
+    if (sol.status === "em_transporte") return { label: "Em Transporte", variant: "default" as const, color: "bg-blue-500 text-white border-0" };
+    if (sol.veiculo_id && (sol as any).motorista_nome) return { label: "Aguardando Saída", variant: "outline" as const, color: "border-blue-500 text-blue-600" };
+    if (sol.veiculo_id) return { label: "Aguardando Motorista", variant: "outline" as const, color: "border-yellow-500 text-yellow-600" };
+    return { label: "Transferência Pendente", variant: "outline" as const, color: "border-orange-500 text-orange-600" };
+  };
+
   const filteredPacientes = pacientes.filter(
     (p) =>
       !searchPaciente ||
@@ -385,11 +398,12 @@ export const TransferenciasModule = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Setor</TableHead>
-                    <TableHead>Hipótese Diagnóstica</TableHead>
-                    <TableHead>Data Internação</TableHead>
-                    <TableHead className="text-right">Ação</TableHead>
+                     <TableHead>Paciente</TableHead>
+                     <TableHead>Setor</TableHead>
+                     <TableHead>Hipótese Diagnóstica</TableHead>
+                     <TableHead>Data Internação</TableHead>
+                     <TableHead>Status Transferência</TableHead>
+                     <TableHead className="text-right">Ação</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -404,6 +418,13 @@ export const TransferenciasModule = () => {
                       </TableCell>
                       <TableCell className="text-sm">
                         {p.data_internacao ? format(new Date(p.data_internacao), "dd/MM/yyyy") : "—"}
+                      </TableCell>
+                      <TableCell>
+                        {(() => {
+                          const transferStatus = getPatientTransferStatus(p.patient_name);
+                          if (!transferStatus) return <span className="text-xs text-muted-foreground">Sem solicitação</span>;
+                          return <Badge className={transferStatus.color}>{transferStatus.label}</Badge>;
+                        })()}
                       </TableCell>
                       <TableCell className="text-right">
                         <Button size="sm" className="gap-1.5" onClick={() => handleSolicitar(p)}>
