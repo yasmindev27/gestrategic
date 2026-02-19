@@ -37,6 +37,7 @@ import {
 import {
   FileText, Download, Loader2, Sparkles, CheckCircle, ListTodo,
   ClipboardList, Users, Clock, Pencil, Save, X, Send, CalendarPlus,
+  MessageSquareWarning, BookOpen,
 } from "lucide-react";
 import { createStandardPdf, savePdfWithFooter } from "@/lib/export-utils";
 import { format, parseISO } from "date-fns";
@@ -52,15 +53,31 @@ interface AtaReuniaoProps {
   onBack: () => void;
 }
 
+interface ConflitosAlternativas {
+  tema: string;
+  opcoes_consideradas: string;
+  decisao_final: string;
+  proponentes?: string;
+}
+
+interface Pendencia {
+  descricao: string;
+  responsavel: string;
+  prazo: string;
+}
+
 interface AtaData {
   resumo_executivo: string;
+  registro_discussoes?: string;
+  conflitos_alternativas?: ConflitosAlternativas[];
   decisoes_tomadas: string[];
+  pendencias?: Pendencia[];
   plano_acao: { tarefa: string; responsavel: string; prazo: string }[];
 }
 
 interface ReuniaoMeta {
   participantesNomes: string[];
-  participantesMap: Map<string, string>; // name -> userId
+  participantesMap: Map<string, string>;
   horaInicio: string | null;
   horaEncerramento: string | null;
   criadorNome: string;
@@ -78,7 +95,6 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
   const [showAgendaDialog, setShowAgendaDialog] = useState(false);
   const [agendaResponsaveis, setAgendaResponsaveis] = useState<Record<number, string>>({});
 
-  // Fetch all team members for responsible selector
   const { data: colaboradores } = useQuery({
     queryKey: ["profiles_agenda_envio"],
     queryFn: async () => {
@@ -90,6 +106,7 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
       return data || [];
     },
   });
+
   const [meta, setMeta] = useState<ReuniaoMeta>({
     participantesNomes: [],
     participantesMap: new Map(),
@@ -99,7 +116,6 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
     criadorId: "",
   });
 
-  // Load meeting metadata (participants names, times)
   useEffect(() => {
     const loadMeta = async () => {
       const { data: reuniao } = await supabase
@@ -109,15 +125,12 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
         .single();
 
       if (!reuniao) return;
-
       const r = reuniao as any;
 
-      // Load saved ata if exists
       if (r.ata_gerada && !ata) {
         setAta(r.ata_gerada as AtaData);
       }
 
-      // Resolve participant names
       const participantIds: string[] = r.participantes || [];
       const allIds = [...new Set([r.criado_por, ...participantIds])];
 
@@ -195,13 +208,12 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
   };
 
   const openAgendaDialog = () => {
-    if (!ata || ata.plano_acao.length === 0) {
-      toast({ title: "Aviso", description: "Nenhuma ação no plano para enviar.", variant: "destructive" });
+    if (!ata || (ata.plano_acao || []).length === 0) {
+      toast({ title: "Aviso", description: "Nenhuma pendência para enviar.", variant: "destructive" });
       return;
     }
-    // Pre-fill responsaveis from name matching
     const initial: Record<number, string> = {};
-    ata.plano_acao.forEach((item, i) => {
+    (ata.plano_acao || []).forEach((item, i) => {
       const matched = meta.participantesMap.get(item.responsavel.toLowerCase());
       if (matched) initial[i] = matched;
     });
@@ -217,8 +229,9 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
 
-      for (let i = 0; i < ata.plano_acao.length; i++) {
-        const item = ata.plano_acao[i];
+      const items = ata.plano_acao || [];
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
         if (!item.tarefa.trim()) continue;
 
         const targetUserId = agendaResponsaveis[i] || meta.criadorId;
@@ -245,7 +258,7 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
 
       setSentToAgenda(true);
       setShowAgendaDialog(false);
-      toast({ title: "Enviado!", description: `${ata.plano_acao.length} ação(ões) enviada(s) para a Agenda dos responsáveis.` });
+      toast({ title: "Enviado!", description: `${items.length} pendência(s) enviada(s) para a Agenda dos responsáveis.` });
     } catch (err: any) {
       toast({ title: "Erro", description: err.message, variant: "destructive" });
     } finally {
@@ -270,56 +283,84 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
     const { doc, logoImg } = await createStandardPdf(`Ata - ${titulo}`);
     let y = 35;
 
-    // Meeting info
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text(`Início: ${formatTime(meta.horaInicio)}`, 14, y);
-    y += 5;
-    doc.text(`Encerramento: ${formatTime(meta.horaEncerramento)}`, 14, y);
-    y += 5;
-    doc.text(`Organizador: ${meta.criadorNome}`, 14, y);
-    y += 5;
-    doc.text(`Participantes: ${meta.participantesNomes.join(", ")}`, 14, y);
-    y += 10;
+    doc.text(`Início: ${formatTime(meta.horaInicio)}`, 14, y); y += 5;
+    doc.text(`Encerramento: ${formatTime(meta.horaEncerramento)}`, 14, y); y += 5;
+    doc.text(`Organizador: ${meta.criadorNome}`, 14, y); y += 5;
+    doc.text(`Participantes: ${meta.participantesNomes.join(", ")}`, 14, y); y += 10;
 
     // Resumo Executivo
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("Resumo Executivo", 14, y);
-    y += 7;
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
+    doc.setFontSize(12); doc.setFont("helvetica", "bold");
+    doc.text("Resumo Executivo", 14, y); y += 7;
+    doc.setFontSize(9); doc.setFont("helvetica", "normal");
     const resumoLines = doc.splitTextToSize(ata.resumo_executivo, 180);
-    doc.text(resumoLines, 14, y);
-    y += resumoLines.length * 4.5 + 8;
+    doc.text(resumoLines, 14, y); y += resumoLines.length * 4.5 + 8;
+
+    // Registro de Discussões
+    if (ata.registro_discussoes) {
+      if (y > 250) { doc.addPage(); y = 20; }
+      doc.setFontSize(12); doc.setFont("helvetica", "bold");
+      doc.text("Registro de Discussões", 14, y); y += 7;
+      doc.setFontSize(9); doc.setFont("helvetica", "normal");
+      const discLines = doc.splitTextToSize(ata.registro_discussoes, 180);
+      for (const line of discLines) {
+        if (y > 275) { doc.addPage(); y = 20; }
+        doc.text(line, 14, y); y += 4.5;
+      }
+      y += 8;
+    }
+
+    // Conflitos e Alternativas
+    if (ata.conflitos_alternativas && ata.conflitos_alternativas.length > 0) {
+      if (y > 250) { doc.addPage(); y = 20; }
+      doc.setFontSize(12); doc.setFont("helvetica", "bold");
+      doc.text("Conflitos e Alternativas", 14, y); y += 7;
+      doc.setFontSize(9); doc.setFont("helvetica", "normal");
+      ata.conflitos_alternativas.forEach((c, i) => {
+        if (y > 260) { doc.addPage(); y = 20; }
+        doc.setFont("helvetica", "bold");
+        doc.text(`${i + 1}. ${c.tema}`, 14, y); y += 5;
+        doc.setFont("helvetica", "normal");
+        const opLines = doc.splitTextToSize(`Opções: ${c.opcoes_consideradas}`, 175);
+        doc.text(opLines, 16, y); y += opLines.length * 4.5 + 2;
+        const decLines = doc.splitTextToSize(`Decisão: ${c.decisao_final}`, 175);
+        doc.text(decLines, 16, y); y += decLines.length * 4.5 + 2;
+        if (c.proponentes) {
+          doc.text(`Proponentes: ${c.proponentes}`, 16, y); y += 5;
+        }
+        y += 3;
+      });
+      y += 5;
+    }
 
     // Decisões Tomadas
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("Decisões Tomadas", 14, y);
-    y += 7;
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
+    if (y > 250) { doc.addPage(); y = 20; }
+    doc.setFontSize(12); doc.setFont("helvetica", "bold");
+    doc.text("Decisões Tomadas", 14, y); y += 7;
+    doc.setFontSize(9); doc.setFont("helvetica", "normal");
     ata.decisoes_tomadas.forEach((d, i) => {
+      if (y > 275) { doc.addPage(); y = 20; }
       const lines = doc.splitTextToSize(`${i + 1}. ${d}`, 175);
-      doc.text(lines, 16, y);
-      y += lines.length * 4.5 + 2;
+      doc.text(lines, 16, y); y += lines.length * 4.5 + 2;
     });
     y += 6;
 
-    // Plano de Ação
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    doc.text("Plano de Ação", 14, y);
-    y += 7;
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-    ata.plano_acao.forEach((item, i) => {
-      const text = `${i + 1}. ${item.tarefa} — Responsável: ${item.responsavel} | Prazo: ${item.prazo}`;
-      const lines = doc.splitTextToSize(text, 175);
-      doc.text(lines, 16, y);
-      y += lines.length * 4.5 + 2;
-    });
+    // Pendências
+    const pendencias = ata.pendencias || ata.plano_acao || [];
+    if (pendencias.length > 0) {
+      if (y > 250) { doc.addPage(); y = 20; }
+      doc.setFontSize(12); doc.setFont("helvetica", "bold");
+      doc.text("Pendências", 14, y); y += 7;
+      doc.setFontSize(9); doc.setFont("helvetica", "normal");
+      pendencias.forEach((item: any, i: number) => {
+        if (y > 275) { doc.addPage(); y = 20; }
+        const desc = item.descricao || item.tarefa || "";
+        const text = `${i + 1}. ${desc} — Responsável: ${item.responsavel} | Prazo: ${item.prazo}`;
+        const lines = doc.splitTextToSize(text, 175);
+        doc.text(lines, 16, y); y += lines.length * 4.5 + 2;
+      });
+    }
 
     savePdfWithFooter(doc, `Ata - ${titulo}`, `ata_reuniao_${reuniaoId.slice(0, 8)}`, logoImg);
   };
@@ -327,51 +368,85 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
   const exportWord = async () => {
     if (!ata) return;
 
-    const doc = new Document({
-      sections: [{
-        properties: {},
-        children: [
-          new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: `Ata - ${titulo}`, bold: true })] }),
-          new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: `Início: ${formatTime(meta.horaInicio)}`, size: 20 })] }),
-          new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: `Encerramento: ${formatTime(meta.horaEncerramento)}`, size: 20 })] }),
-          new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: `Organizador: ${meta.criadorNome}`, size: 20 })] }),
-          new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: `Participantes: ${meta.participantesNomes.join(", ")}`, size: 20 })] }),
+    const children: any[] = [
+      new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: `Ata - ${titulo}`, bold: true })] }),
+      new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: `Início: ${formatTime(meta.horaInicio)}`, size: 20 })] }),
+      new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: `Encerramento: ${formatTime(meta.horaEncerramento)}`, size: 20 })] }),
+      new Paragraph({ spacing: { after: 100 }, children: [new TextRun({ text: `Organizador: ${meta.criadorNome}`, size: 20 })] }),
+      new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: `Participantes: ${meta.participantesNomes.join(", ")}`, size: 20 })] }),
 
-          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "Resumo Executivo", bold: true })] }),
-          new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: ata.resumo_executivo, size: 22 })] }),
+      new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "Resumo Executivo", bold: true })] }),
+      new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: ata.resumo_executivo, size: 22 })] }),
+    ];
 
-          new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "Decisões Tomadas", bold: true })] }),
-          ...ata.decisoes_tomadas.map((d, i) =>
-            new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: `${i + 1}. ${d}`, size: 22 })] })
-          ),
+    // Registro de Discussões
+    if (ata.registro_discussoes) {
+      children.push(
+        new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "Registro de Discussões", bold: true })] }),
+        ...ata.registro_discussoes.split("\n").filter(l => l.trim()).map(line =>
+          new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: line, size: 22 })] })
+        ),
+      );
+    }
 
-          new Paragraph({ heading: HeadingLevel.HEADING_2, spacing: { before: 200 }, children: [new TextRun({ text: "Plano de Ação", bold: true })] }),
-          new DocxTable({
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            rows: [
-              new DocxTableRow({
-                children: ["#", "Tarefa", "Responsável", "Prazo"].map(h =>
-                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 20 })] })] })
-                ),
-              }),
-              ...ata.plano_acao.map((item, i) =>
-                new DocxTableRow({
-                  children: [
-                    new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: String(i + 1), size: 20 })] })] }),
-                    new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.tarefa, size: 20 })] })] }),
-                    new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.responsavel, size: 20 })] })] }),
-                    new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.prazo, size: 20 })] })] }),
-                  ],
-                })
+    // Conflitos e Alternativas
+    if (ata.conflitos_alternativas && ata.conflitos_alternativas.length > 0) {
+      children.push(
+        new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "Conflitos e Alternativas", bold: true })] }),
+      );
+      ata.conflitos_alternativas.forEach((c, i) => {
+        children.push(
+          new Paragraph({ spacing: { before: 120, after: 40 }, children: [new TextRun({ text: `${i + 1}. ${c.tema}`, bold: true, size: 22 })] }),
+          new Paragraph({ spacing: { after: 40 }, children: [new TextRun({ text: `Opções consideradas: ${c.opcoes_consideradas}`, size: 22 })] }),
+          new Paragraph({ spacing: { after: 40 }, children: [new TextRun({ text: `Decisão final: ${c.decisao_final}`, size: 22 })] }),
+        );
+        if (c.proponentes) {
+          children.push(new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: `Proponentes: ${c.proponentes}`, size: 22, italics: true })] }));
+        }
+      });
+    }
+
+    // Decisões
+    children.push(
+      new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "Decisões Tomadas", bold: true })] }),
+      ...ata.decisoes_tomadas.map((d, i) =>
+        new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: `${i + 1}. ${d}`, size: 22 })] })
+      ),
+    );
+
+    // Pendências
+    const pendencias = ata.pendencias || ata.plano_acao || [];
+    if (pendencias.length > 0) {
+      children.push(
+        new Paragraph({ heading: HeadingLevel.HEADING_2, spacing: { before: 200 }, children: [new TextRun({ text: "Pendências", bold: true })] }),
+        new DocxTable({
+          width: { size: 100, type: WidthType.PERCENTAGE },
+          rows: [
+            new DocxTableRow({
+              children: ["#", "Pendência", "Responsável", "Prazo"].map(h =>
+                new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 20 })] })] })
               ),
-            ],
-          }),
+            }),
+            ...pendencias.map((item: any, i: number) =>
+              new DocxTableRow({
+                children: [
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: String(i + 1), size: 20 })] })] }),
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.descricao || item.tarefa || "", size: 20 })] })] }),
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.responsavel, size: 20 })] })] }),
+                  new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.prazo, size: 20 })] })] }),
+                ],
+              })
+            ),
+          ],
+        }),
+      );
+    }
 
-          new Paragraph({ spacing: { before: 400 }, children: [new TextRun({ text: "Documento gerado em conformidade com a LGPD (Lei nº 13.709/2018).", size: 14, color: "888888", italics: true })] }),
-        ],
-      }],
-    });
+    children.push(
+      new Paragraph({ spacing: { before: 400 }, children: [new TextRun({ text: "Documento gerado em conformidade com a LGPD (Lei nº 13.709/2018).", size: 14, color: "888888", italics: true })] }),
+    );
 
+    const doc = new Document({ sections: [{ properties: {}, children }] });
     const blob = await Packer.toBlob(doc);
     saveAs(blob, `ata_reuniao_${reuniaoId.slice(0, 8)}.docx`);
   };
@@ -427,18 +502,14 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
             <div>
               <h3 className="font-semibold text-foreground">Gerar Ata com IA</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                A inteligência artificial processará a transcrição e gerará um relatório estruturado.
+                A inteligência artificial processará a transcrição e gerará uma ata completa e detalhada.
               </p>
             </div>
             <Button onClick={generateAta} disabled={isGenerating} size="lg">
               {isGenerating ? (
-                <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" /> Gerando ata...
-                </>
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Gerando ata...</>
               ) : (
-                <>
-                  <Sparkles className="h-4 w-4 mr-2" /> Gerar Ata
-                </>
+                <><Sparkles className="h-4 w-4 mr-2" /> Gerar Ata</>
               )}
             </Button>
           </CardContent>
@@ -465,6 +536,7 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
             </div>
           )}
 
+          {/* Resumo Executivo */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -476,7 +548,7 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
                 <Textarea
                   value={editAta!.resumo_executivo}
                   onChange={(e) => setEditAta({ ...editAta!, resumo_executivo: e.target.value })}
-                  rows={5}
+                  rows={4}
                 />
               ) : (
                 <p className="text-sm text-foreground leading-relaxed">{currentAta.resumo_executivo}</p>
@@ -484,6 +556,98 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
             </CardContent>
           </Card>
 
+          {/* Registro de Discussões */}
+          {(currentAta.registro_discussoes || isEditing) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <BookOpen className="h-4 w-4" /> Registro de Discussões
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isEditing ? (
+                  <Textarea
+                    value={editAta!.registro_discussoes || ""}
+                    onChange={(e) => setEditAta({ ...editAta!, registro_discussoes: e.target.value })}
+                    rows={12}
+                    placeholder="Registro detalhado de tudo que foi discutido..."
+                  />
+                ) : (
+                  <div className="text-sm text-foreground leading-relaxed whitespace-pre-wrap">
+                    {currentAta.registro_discussoes}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Conflitos e Alternativas */}
+          {((currentAta.conflitos_alternativas && currentAta.conflitos_alternativas.length > 0) || isEditing) && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  <MessageSquareWarning className="h-4 w-4" /> Conflitos e Alternativas
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {isEditing ? (
+                  <div className="space-y-4">
+                    {(editAta!.conflitos_alternativas || []).map((c, i) => (
+                      <div key={i} className="bg-muted/50 p-3 rounded-lg space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs text-muted-foreground font-medium">Conflito {i + 1}</span>
+                          <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
+                            const updated = (editAta!.conflitos_alternativas || []).filter((_, idx) => idx !== i);
+                            setEditAta({ ...editAta!, conflitos_alternativas: updated });
+                          }}>
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        <Input placeholder="Tema" value={c.tema} onChange={(e) => {
+                          const updated = [...(editAta!.conflitos_alternativas || [])];
+                          updated[i] = { ...updated[i], tema: e.target.value };
+                          setEditAta({ ...editAta!, conflitos_alternativas: updated });
+                        }} />
+                        <Textarea placeholder="Opções consideradas" value={c.opcoes_consideradas} rows={3} onChange={(e) => {
+                          const updated = [...(editAta!.conflitos_alternativas || [])];
+                          updated[i] = { ...updated[i], opcoes_consideradas: e.target.value };
+                          setEditAta({ ...editAta!, conflitos_alternativas: updated });
+                        }} />
+                        <Input placeholder="Decisão final" value={c.decisao_final} onChange={(e) => {
+                          const updated = [...(editAta!.conflitos_alternativas || [])];
+                          updated[i] = { ...updated[i], decisao_final: e.target.value };
+                          setEditAta({ ...editAta!, conflitos_alternativas: updated });
+                        }} />
+                        <Input placeholder="Proponentes (opcional)" value={c.proponentes || ""} onChange={(e) => {
+                          const updated = [...(editAta!.conflitos_alternativas || [])];
+                          updated[i] = { ...updated[i], proponentes: e.target.value };
+                          setEditAta({ ...editAta!, conflitos_alternativas: updated });
+                        }} />
+                      </div>
+                    ))}
+                    <Button variant="outline" size="sm" onClick={() => setEditAta({ ...editAta!, conflitos_alternativas: [...(editAta!.conflitos_alternativas || []), { tema: "", opcoes_consideradas: "", decisao_final: "" }] })}>
+                      + Adicionar conflito
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {(currentAta.conflitos_alternativas || []).map((c, i) => (
+                      <div key={i} className="bg-muted/50 p-4 rounded-lg space-y-2">
+                        <p className="text-sm font-semibold text-foreground">{i + 1}. {c.tema}</p>
+                        <div className="text-sm text-foreground/90 space-y-1 pl-4">
+                          <p><span className="font-medium">Opções consideradas:</span> {c.opcoes_consideradas}</p>
+                          <p><span className="font-medium">Decisão final:</span> {c.decisao_final}</p>
+                          {c.proponentes && <p className="text-muted-foreground italic">Proponentes: {c.proponentes}</p>}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Decisões Tomadas */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
@@ -496,21 +660,15 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
                   {editAta!.decisoes_tomadas.map((d, i) => (
                     <div key={i} className="flex items-center gap-2">
                       <span className="text-xs text-muted-foreground w-5">{i + 1}.</span>
-                      <Input
-                        value={d}
-                        onChange={(e) => {
-                          const updated = [...editAta!.decisoes_tomadas];
-                          updated[i] = e.target.value;
-                          setEditAta({ ...editAta!, decisoes_tomadas: updated });
-                        }}
-                      />
-                      <Button
-                        variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0"
-                        onClick={() => {
-                          const updated = editAta!.decisoes_tomadas.filter((_, idx) => idx !== i);
-                          setEditAta({ ...editAta!, decisoes_tomadas: updated });
-                        }}
-                      >
+                      <Input value={d} onChange={(e) => {
+                        const updated = [...editAta!.decisoes_tomadas];
+                        updated[i] = e.target.value;
+                        setEditAta({ ...editAta!, decisoes_tomadas: updated });
+                      }} />
+                      <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => {
+                        const updated = editAta!.decisoes_tomadas.filter((_, idx) => idx !== i);
+                        setEditAta({ ...editAta!, decisoes_tomadas: updated });
+                      }}>
                         <X className="h-3 w-3" />
                       </Button>
                     </div>
@@ -534,10 +692,11 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
             </CardContent>
           </Card>
 
+          {/* Pendências (plano_acao for backwards compat) */}
           <Card>
             <CardHeader>
               <CardTitle className="text-base flex items-center gap-2">
-                <ListTodo className="h-4 w-4" /> Plano de Ação
+                <ListTodo className="h-4 w-4" /> Pendências
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -546,20 +705,18 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
                   {editAta!.plano_acao.map((item, i) => (
                     <div key={i} className="bg-muted/50 p-3 rounded-lg space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground font-medium">Ação {i + 1}</span>
-                        <Button
-                          variant="ghost" size="icon" className="h-6 w-6"
-                          onClick={() => {
-                            const updated = editAta!.plano_acao.filter((_, idx) => idx !== i);
-                            setEditAta({ ...editAta!, plano_acao: updated });
-                          }}
-                        >
+                        <span className="text-xs text-muted-foreground font-medium">Pendência {i + 1}</span>
+                        <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
+                          const updated = editAta!.plano_acao.filter((_, idx) => idx !== i);
+                          setEditAta({ ...editAta!, plano_acao: updated });
+                        }}>
                           <X className="h-3 w-3" />
                         </Button>
                       </div>
-                      <Input
-                        placeholder="Tarefa"
+                      <Textarea
+                        placeholder="Descrição da pendência (literal)"
                         value={item.tarefa}
+                        rows={2}
                         onChange={(e) => {
                           const updated = [...editAta!.plano_acao];
                           updated[i] = { ...updated[i], tarefa: e.target.value };
@@ -567,29 +724,21 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
                         }}
                       />
                       <div className="grid grid-cols-2 gap-2">
-                        <Input
-                          placeholder="Responsável"
-                          value={item.responsavel}
-                          onChange={(e) => {
-                            const updated = [...editAta!.plano_acao];
-                            updated[i] = { ...updated[i], responsavel: e.target.value };
-                            setEditAta({ ...editAta!, plano_acao: updated });
-                          }}
-                        />
-                        <Input
-                          placeholder="Prazo"
-                          value={item.prazo}
-                          onChange={(e) => {
-                            const updated = [...editAta!.plano_acao];
-                            updated[i] = { ...updated[i], prazo: e.target.value };
-                            setEditAta({ ...editAta!, plano_acao: updated });
-                          }}
-                        />
+                        <Input placeholder="Responsável" value={item.responsavel} onChange={(e) => {
+                          const updated = [...editAta!.plano_acao];
+                          updated[i] = { ...updated[i], responsavel: e.target.value };
+                          setEditAta({ ...editAta!, plano_acao: updated });
+                        }} />
+                        <Input placeholder="Prazo" value={item.prazo} onChange={(e) => {
+                          const updated = [...editAta!.plano_acao];
+                          updated[i] = { ...updated[i], prazo: e.target.value };
+                          setEditAta({ ...editAta!, plano_acao: updated });
+                        }} />
                       </div>
                     </div>
                   ))}
                   <Button variant="outline" size="sm" onClick={() => setEditAta({ ...editAta!, plano_acao: [...editAta!.plano_acao, { tarefa: "", responsavel: "", prazo: "" }] })}>
-                    + Adicionar ação
+                    + Adicionar pendência
                   </Button>
                 </div>
               ) : (
@@ -625,11 +774,7 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
               </DropdownMenuContent>
             </DropdownMenu>
             {isHost && (
-              <Button
-                onClick={openAgendaDialog}
-                className="flex-1"
-                disabled={sentToAgenda}
-              >
+              <Button onClick={openAgendaDialog} className="flex-1" disabled={sentToAgenda}>
                 {sentToAgenda ? (
                   <><CheckCircle className="h-4 w-4 mr-2" /> Enviado para Agenda</>
                 ) : (
@@ -649,12 +794,12 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
                 </DialogTitle>
               </DialogHeader>
               <p className="text-sm text-muted-foreground">
-                Selecione o responsável da equipe para cada ação do plano antes de enviar para a agenda.
+                Selecione o responsável da equipe para cada pendência antes de enviar para a agenda.
               </p>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Ação</TableHead>
+                    <TableHead>Pendência</TableHead>
                     <TableHead className="w-[200px]">Responsável</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -668,9 +813,7 @@ const AtaReuniao = ({ reuniaoId, transcricao, titulo = "Reunião", isHost = fals
                       <TableCell>
                         <Select
                           value={agendaResponsaveis[i] || ""}
-                          onValueChange={(v) =>
-                            setAgendaResponsaveis((prev) => ({ ...prev, [i]: v }))
-                          }
+                          onValueChange={(v) => setAgendaResponsaveis((prev) => ({ ...prev, [i]: v }))}
                         >
                           <SelectTrigger className="w-full">
                             <SelectValue placeholder="Selecionar..." />
