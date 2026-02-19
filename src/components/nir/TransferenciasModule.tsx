@@ -78,6 +78,8 @@ export const TransferenciasModule = () => {
   const [formPrioridade, setFormPrioridade] = useState("normal");
   const [formPacienteNome, setFormPacienteNome] = useState("");
   const [formSetorOrigem, setFormSetorOrigem] = useState("");
+  const [formVeiculoId, setFormVeiculoId] = useState("");
+  const [formMotorista, setFormMotorista] = useState("");
   const [isSaving, setIsSaving] = useState(false);
 
   const loadData = useCallback(async () => {
@@ -112,24 +114,31 @@ export const TransferenciasModule = () => {
     setFormDestino("");
     setFormMotivo("");
     setFormPrioridade("normal");
+    setFormVeiculoId("");
+    setFormMotorista("");
     setDialogOpen(true);
   };
 
   const handleSubmit = async () => {
-    if (!formPacienteNome || !formDestino) {
-      toast({ title: "Preencha os campos obrigatórios", variant: "destructive" });
+    if (!formPacienteNome || !formDestino || !formVeiculoId) {
+      toast({ title: "Preencha os campos obrigatórios (paciente, destino e veículo)", variant: "destructive" });
       return;
     }
 
     setIsSaving(true);
     try {
       const user = (await supabase.auth.getUser()).data.user;
+      const selectedVeiculo = veiculos.find(v => v.id === formVeiculoId);
       const { error } = await supabase.from("transferencia_solicitacoes").insert({
         paciente_nome: formPacienteNome,
         setor_origem: formSetorOrigem,
         destino: formDestino,
         motivo: formMotivo || null,
         prioridade: formPrioridade,
+        veiculo_id: formVeiculoId || null,
+        veiculo_placa: selectedVeiculo?.placa || null,
+        veiculo_tipo: selectedVeiculo?.tipo || null,
+        motorista_nome: formMotorista || null,
         solicitado_por: user?.id,
         solicitado_por_nome: user?.email || "—",
       });
@@ -432,6 +441,31 @@ export const TransferenciasModule = () => {
                   <SelectItem value="urgente">Urgente</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <Label>Veículo *</Label>
+              <Select value={formVeiculoId} onValueChange={(val) => {
+                setFormVeiculoId(val);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o veículo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {veiculos.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.tipo} — {v.placa}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Motorista</Label>
+              <Input
+                placeholder="Nome do motorista"
+                value={formMotorista}
+                onChange={(e) => setFormMotorista(e.target.value)}
+              />
             </div>
             <div>
               <Label>Motivo</Label>
