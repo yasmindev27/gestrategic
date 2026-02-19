@@ -6,15 +6,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Truck, Plus, Search, Clock, CheckCircle, AlertTriangle, Loader2, ArrowRight, MapPin, Navigation } from "lucide-react";
+import { Truck, Search, Clock, CheckCircle, AlertTriangle, Loader2, ArrowRight, MapPin, Navigation, Download, FileText, FileSpreadsheet } from "lucide-react";
+import { createStandardPdf, applyPdfHeaderFooter } from "@/lib/export-utils";
+import autoTable from "jspdf-autotable";
+import * as XLSX from "xlsx";
 
 interface Veiculo {
   id: string;
@@ -239,7 +243,75 @@ export const TransferenciasModule = () => {
   });
 
   // Time markers
-  const hours = Array.from({ length: 13 }, (_, i) => i * 2); // 0,2,4,...,24
+  const getStatusLabel = (status: string) => STATUS_CONFIG[status]?.label || status;
+
+  const exportPdf = async () => {
+    const { doc, logoImg } = await createStandardPdf("Relatório de Transferências");
+    let y = 34;
+
+    // KPIs
+    const total = solicitacoes.length;
+    const pendentes = solicitacoes.filter(s => s.status === "pendente").length;
+    const emTransporte = solicitacoes.filter(s => s.status === "em_transporte").length;
+    const concluidas = solicitacoes.filter(s => s.status === "concluida").length;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Resumo", 14, y); y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.text(`Total: ${total}  |  Pendentes: ${pendentes}  |  Em Transporte: ${emTransporte}  |  Concluídas: ${concluidas}`, 14, y);
+    y += 10;
+
+    // Table
+    const rows = solicitacoes.map(s => [
+      s.paciente_nome,
+      s.setor_origem,
+      s.destino,
+      (s as any).veiculo_tipo || "—",
+      (s as any).veiculo_placa || "—",
+      (s as any).motorista_nome || "—",
+      getStatusLabel(s.status),
+      s.prioridade,
+      format(new Date(s.created_at), "dd/MM/yyyy HH:mm"),
+    ]);
+
+    autoTable(doc, {
+      startY: y,
+      head: [["Paciente", "Origem", "Destino", "Veículo", "Placa", "Motorista", "Status", "Prioridade", "Data"]],
+      body: rows,
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fillColor: [45, 125, 210], textColor: 255, fontStyle: "bold" },
+      margin: { left: 14, right: 14 },
+    });
+
+    applyPdfHeaderFooter(doc, "Relatório de Transferências", logoImg);
+    doc.save(`transferencias_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    toast({ title: "PDF exportado com sucesso!" });
+  };
+
+  const exportExcel = () => {
+    const rows = solicitacoes.map(s => ({
+      Paciente: s.paciente_nome,
+      "Setor Origem": s.setor_origem,
+      Destino: s.destino,
+      Veículo: (s as any).veiculo_tipo || "",
+      Placa: (s as any).veiculo_placa || "",
+      Motorista: (s as any).motorista_nome || "",
+      Status: getStatusLabel(s.status),
+      Prioridade: s.prioridade,
+      "Solicitado por": s.solicitado_por_nome,
+      Data: format(new Date(s.created_at), "dd/MM/yyyy HH:mm"),
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Transferências");
+    XLSX.writeFile(wb, `transferencias_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+    toast({ title: "Excel exportado com sucesso!" });
+  };
+
+  // Time markers
+  const hours = Array.from({ length: 13 }, (_, i) => i * 2);
+
 
   if (isLoading) {
     return (
@@ -259,6 +331,24 @@ export const TransferenciasModule = () => {
           </h3>
           <p className="text-sm text-muted-foreground">Gestão de transferências de pacientes e acompanhamento de veículos</p>
         </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="outline" size="sm" className="gap-2">
+              <Download className="h-4 w-4" />
+              Exportar
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="bg-popover">
+            <DropdownMenuItem onClick={exportPdf} className="gap-2 cursor-pointer">
+              <FileText className="h-4 w-4 text-red-500" />
+              Exportar PDF
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={exportExcel} className="gap-2 cursor-pointer">
+              <FileSpreadsheet className="h-4 w-4 text-green-600" />
+              Exportar Excel
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Gantt Chart */}
