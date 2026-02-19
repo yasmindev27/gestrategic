@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Truck, MapPin, Clock, CheckCircle2, LogOut, Navigation, ChevronRight, Play } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Loader2, Truck, MapPin, Clock, CheckCircle2, LogOut, Navigation, ChevronRight, Play, AlertTriangle } from "lucide-react";
 import logoGestrategic from "@/assets/logo-gestrategic.jpg";
 
 type Solicitacao = {
@@ -37,6 +38,9 @@ const Transporte = () => {
   const [missoes, setMissoes] = useState<Solicitacao[]>([]);
   const [selectedMissao, setSelectedMissao] = useState<Solicitacao | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [pendingMissaoId, setPendingMissaoId] = useState<string | null>(null);
+  const [pendingMissaoMotorista, setPendingMissaoMotorista] = useState<string | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -69,7 +73,19 @@ const Transporte = () => {
     setLoading(false);
   }, []);
 
-  const handleAceitarMissao = async (missaoId: string) => {
+  const tentarAceitarMissao = (missao: Solicitacao) => {
+    const motoristaAtribuido = missao.motorista_nome?.trim();
+    if (motoristaAtribuido && motoristaAtribuido.toLowerCase() !== userName.toLowerCase()) {
+      setPendingMissaoId(missao.id);
+      setPendingMissaoMotorista(motoristaAtribuido);
+      setConfirmDialogOpen(true);
+    } else {
+      executarAceitarMissao(missao.id);
+    }
+  };
+
+  const executarAceitarMissao = async (missaoId: string) => {
+    setConfirmDialogOpen(false);
     setActionLoading(missaoId);
     try {
       const { error } = await supabase
@@ -88,6 +104,8 @@ const Transporte = () => {
       toast({ title: "Erro ao aceitar missão", description: err.message, variant: "destructive" });
     } finally {
       setActionLoading(null);
+      setPendingMissaoId(null);
+      setPendingMissaoMotorista(null);
     }
   };
 
@@ -233,7 +251,7 @@ const Transporte = () => {
                         disabled={actionLoading === m.id}
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleAceitarMissao(m.id);
+                          tentarAceitarMissao(m);
                         }}
                       >
                         {actionLoading === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
@@ -286,6 +304,35 @@ const Transporte = () => {
           <span className="text-[10px]">Histórico</span>
         </button>
       </nav>
+
+      {/* Confirm dialog when driver name doesn't match */}
+      <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              Atenção
+            </DialogTitle>
+            <DialogDescription className="pt-2">
+              Esta missão está atribuída para <span className="font-semibold text-foreground">{pendingMissaoMotorista}</span>, mas você está logado como <span className="font-semibold text-foreground">{userName}</span>. Deseja aceitar mesmo assim?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => {
+              setConfirmDialogOpen(false);
+              setPendingMissaoId(null);
+              setPendingMissaoMotorista(null);
+            }}>
+              Voltar
+            </Button>
+            <Button className="flex-1" onClick={() => {
+              if (pendingMissaoId) executarAceitarMissao(pendingMissaoId);
+            }}>
+              Aceitar mesmo assim
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
