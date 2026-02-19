@@ -347,8 +347,9 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
     const { doc, logoImg } = await createStandardPdf(`Ata - ${r.titulo}`);
     let y = 35;
     const pageHeight = doc.internal.pageSize.getHeight();
+    const marginBottom = 25;
     const checkPage = (needed: number) => {
-      if (y + needed > pageHeight - 20) { doc.addPage(); y = 20; }
+      if (y + needed > pageHeight - marginBottom) { doc.addPage(); y = 35; }
     };
 
     doc.setFontSize(9); doc.setFont("helvetica", "normal");
