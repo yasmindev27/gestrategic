@@ -5087,6 +5087,7 @@ export type Database = {
           hora_saida: string | null
           id: string
           motivo: string | null
+          motorista_nome: string | null
           paciente_nome: string
           prioridade: string
           setor_origem: string
@@ -5095,6 +5096,8 @@ export type Database = {
           status: string
           updated_at: string
           veiculo_id: string | null
+          veiculo_placa: string | null
+          veiculo_tipo: string | null
         }
         Insert: {
           created_at?: string
@@ -5103,6 +5106,7 @@ export type Database = {
           hora_saida?: string | null
           id?: string
           motivo?: string | null
+          motorista_nome?: string | null
           paciente_nome: string
           prioridade?: string
           setor_origem: string
@@ -5111,6 +5115,8 @@ export type Database = {
           status?: string
           updated_at?: string
           veiculo_id?: string | null
+          veiculo_placa?: string | null
+          veiculo_tipo?: string | null
         }
         Update: {
           created_at?: string
@@ -5119,6 +5125,7 @@ export type Database = {
           hora_saida?: string | null
           id?: string
           motivo?: string | null
+          motorista_nome?: string | null
           paciente_nome?: string
           prioridade?: string
           setor_origem?: string
@@ -5127,6 +5134,8 @@ export type Database = {
           status?: string
           updated_at?: string
           veiculo_id?: string | null
+          veiculo_placa?: string | null
+          veiculo_tipo?: string | null
         }
         Relationships: [
           {
