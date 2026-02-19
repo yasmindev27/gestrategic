@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Truck, Search, Clock, CheckCircle, AlertTriangle, Loader2, ArrowRight, MapPin, Navigation, Download, FileText, FileSpreadsheet } from "lucide-react";
+import { Truck, Search, Clock, CheckCircle, AlertTriangle, Loader2, ArrowRight, MapPin, Navigation, Download, FileText, FileSpreadsheet, BarChart3 } from "lucide-react";
 import { createStandardPdf, applyPdfHeaderFooter } from "@/lib/export-utils";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
@@ -83,6 +83,10 @@ export const TransferenciasModule = () => {
   const [mapDialogOpen, setMapDialogOpen] = useState(false);
   const [selectedSolicitacao, setSelectedSolicitacao] = useState<Solicitacao | null>(null);
   const [selectedPaciente, setSelectedPaciente] = useState<PacienteInternado | null>(null);
+  const [veiculoStatsOpen, setVeiculoStatsOpen] = useState(false);
+  const [veiculoStatsId, setVeiculoStatsId] = useState<string | null>(null);
+  const [veiculoStatsData, setVeiculoStatsData] = useState<{ dia: number; semana: number; mes: number; ano: number; kmDia: number; kmSemana: number; kmMes: number; kmAno: number } | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
 
   // Form state
   const [formDestino, setFormDestino] = useState("");
@@ -322,6 +326,47 @@ export const TransferenciasModule = () => {
     toast({ title: "Excel exportado com sucesso!" });
   };
 
+  const loadVeiculoStats = async (veiculoId: string) => {
+    setVeiculoStatsId(veiculoId);
+    setVeiculoStatsOpen(true);
+    setLoadingStats(true);
+    try {
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
+      const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek).toISOString();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const startOfYear = new Date(now.getFullYear(), 0, 1).toISOString();
+
+      const { data: allSols } = await supabase
+        .from("transferencia_solicitacoes")
+        .select("created_at, status, km_rodados")
+        .eq("veiculo_id", veiculoId)
+        .gte("created_at", startOfYear);
+
+      const sols = (allSols || []) as Array<{ created_at: string; status: string; km_rodados: number | null }>;
+      const concluded = sols.filter(s => s.status === "concluida");
+
+      const countAfter = (date: string) => concluded.filter(s => s.created_at >= date).length;
+      const kmAfter = (date: string) => concluded.filter(s => s.created_at >= date).reduce((sum, s) => sum + (s.km_rodados || 0), 0);
+
+      setVeiculoStatsData({
+        dia: countAfter(startOfDay),
+        semana: countAfter(startOfWeek),
+        mes: countAfter(startOfMonth),
+        ano: concluded.length,
+        kmDia: kmAfter(startOfDay),
+        kmSemana: kmAfter(startOfWeek),
+        kmMes: kmAfter(startOfMonth),
+        kmAno: kmAfter(startOfYear),
+      });
+    } catch (err) {
+      console.error("Erro ao carregar stats:", err);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
   // Time markers
   const hours = Array.from({ length: 13 }, (_, i) => i * 2);
 
@@ -401,8 +446,14 @@ export const TransferenciasModule = () => {
 
                   return (
                     <div key={key} className="flex items-center border-b last:border-0 py-2 min-h-[40px]">
-                      <div className="w-48 shrink-0 pr-2">
-                        <div className="text-xs font-medium truncate">{label}</div>
+                      <div 
+                        className={`w-48 shrink-0 pr-2 ${key !== "sem-veiculo" ? "cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors" : ""}`}
+                        onClick={() => key !== "sem-veiculo" && loadVeiculoStats(key)}
+                      >
+                        <div className="text-xs font-medium truncate flex items-center gap-1">
+                          {label}
+                          {key !== "sem-veiculo" && <BarChart3 className="h-3 w-3 text-muted-foreground shrink-0" />}
+                        </div>
                         {vStatus && (
                           <Badge variant="outline" className="text-[10px] gap-1 mt-0.5">
                             <span className={`w-1.5 h-1.5 rounded-full ${vStatus.color}`} />
@@ -707,6 +758,81 @@ export const TransferenciasModule = () => {
                     Localização simulada — GPS do motorista será integrado em breve
                   </div>
                 </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+      {/* Vehicle Stats Dialog */}
+      <Dialog open={veiculoStatsOpen} onOpenChange={setVeiculoStatsOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Estatísticas do Veículo
+            </DialogTitle>
+          </DialogHeader>
+          {(() => {
+            const v = veiculos.find(v => v.id === veiculoStatsId);
+            if (!v) return null;
+            return (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 pb-3 border-b">
+                  <div className="p-2 bg-primary/10 rounded-full">
+                    <Truck className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{v.motorista_nome}</p>
+                    <p className="text-xs text-muted-foreground">{v.tipo} — {v.placa}</p>
+                  </div>
+                </div>
+
+                {loadingStats ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                ) : veiculoStatsData ? (
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Transferências Concluídas</h4>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { label: "Hoje", value: veiculoStatsData.dia },
+                          { label: "Semana", value: veiculoStatsData.semana },
+                          { label: "Mês", value: veiculoStatsData.mes },
+                          { label: "Ano", value: veiculoStatsData.ano },
+                        ].map(({ label, value }) => (
+                          <Card key={label} className="text-center">
+                            <CardContent className="p-3">
+                              <p className="text-xl font-bold text-primary">{value}</p>
+                              <p className="text-[10px] text-muted-foreground">{label}</p>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Km Rodados</h4>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { label: "Hoje", value: veiculoStatsData.kmDia },
+                          { label: "Semana", value: veiculoStatsData.kmSemana },
+                          { label: "Mês", value: veiculoStatsData.kmMes },
+                          { label: "Ano", value: veiculoStatsData.kmAno },
+                        ].map(({ label, value }) => (
+                          <Card key={label} className="text-center">
+                            <CardContent className="p-3">
+                              <p className="text-xl font-bold text-foreground">{value.toLocaleString("pt-BR")}</p>
+                              <p className="text-[10px] text-muted-foreground">{label}</p>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
               </div>
             );
           })()}

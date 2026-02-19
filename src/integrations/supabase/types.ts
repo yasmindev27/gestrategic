@@ -5086,6 +5086,7 @@ export type Database = {
           hora_chegada: string | null
           hora_saida: string | null
           id: string
+          km_rodados: number | null
           motivo: string | null
           motorista_nome: string | null
           paciente_nome: string
@@ -5105,6 +5106,7 @@ export type Database = {
           hora_chegada?: string | null
           hora_saida?: string | null
           id?: string
+          km_rodados?: number | null
           motivo?: string | null
           motorista_nome?: string | null
           paciente_nome: string
@@ -5124,6 +5126,7 @@ export type Database = {
           hora_chegada?: string | null
           hora_saida?: string | null
           id?: string
+          km_rodados?: number | null
           motivo?: string | null
           motorista_nome?: string | null
           paciente_nome?: string
