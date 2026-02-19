@@ -49,6 +49,7 @@ import {
   Trash2,
   Save,
   X,
+  Video,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -547,23 +548,37 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
                           </TableBody>
                         </Table>
                       )}
-                      {r.ata_gerada && (
+                      {(r.ata_gerada || r.gravacao_url) && (
                         <div className="flex gap-2 mt-4 pt-3 border-t">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
-                                <Download className="h-4 w-4 mr-2" /> Baixar Ata
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="start">
-                              <DropdownMenuItem onClick={() => exportAtaPdf(r)}>
-                                <FileText className="h-4 w-4 mr-2 text-red-500" /> PDF
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => exportAtaWord(r)}>
-                                <FileText className="h-4 w-4 mr-2 text-blue-500" /> Word (.docx)
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          {r.ata_gerada && (
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" onClick={(e) => e.stopPropagation()}>
+                                  <Download className="h-4 w-4 mr-2" /> Baixar Ata
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="start">
+                                <DropdownMenuItem onClick={() => exportAtaPdf(r)}>
+                                  <FileText className="h-4 w-4 mr-2 text-red-500" /> PDF
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => exportAtaWord(r)}>
+                                  <FileText className="h-4 w-4 mr-2 text-blue-500" /> Word (.docx)
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          )}
+                          {r.gravacao_url && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                window.open(r.gravacao_url, "_blank");
+                              }}
+                            >
+                              <Video className="h-4 w-4 mr-2" /> Ver Gravação
+                            </Button>
+                          )}
                         </div>
                       )}
                     </div>
