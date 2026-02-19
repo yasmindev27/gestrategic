@@ -413,14 +413,14 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
       doc.setFontSize(12); doc.setFont("helvetica", "bold");
       doc.text("PONTOS CRÍTICOS E ENCAMINHAMENTOS", 14, y); y += 7;
       doc.setFontSize(9); doc.setFont("helvetica", "normal");
-      ata.pontos_criticos.forEach((pc, i) => {
-        checkPage(12);
+      ata.pontos_criticos.forEach((pc) => {
+        const probLines = doc.splitTextToSize(`• ${pc.problema}`, 166);
+        const encLines = doc.splitTextToSize(`! ${pc.encaminhamento}`, 160);
+        checkPage(probLines.length * 4.5 + encLines.length * 4.5 + 6);
         doc.setFont("helvetica", "bold");
-        const probLines = doc.splitTextToSize(`• ${pc.problema}`, 175);
-        doc.text(probLines, 16, y); y += probLines.length * 4.5;
-        doc.setFont("helvetica", "normal");
-        const encLines = doc.splitTextToSize(`  → ${pc.encaminhamento}`, 170);
-        doc.text(encLines, 18, y); y += encLines.length * 4.5 + 3;
+        doc.text(probLines, 16, y); y += probLines.length * 4.5 + 1;
+        doc.setFont("helvetica", "italic");
+        doc.text(encLines, 20, y); y += encLines.length * 4.5 + 4;
       });
       y += 5;
     }
