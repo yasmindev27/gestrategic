@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Truck, Plus, Search, Clock, CheckCircle, AlertTriangle, Loader2, ArrowRight } from "lucide-react";
+import { Truck, Plus, Search, Clock, CheckCircle, AlertTriangle, Loader2, ArrowRight, MapPin, Navigation } from "lucide-react";
 
 interface Veiculo {
   id: string;
@@ -76,6 +76,8 @@ export const TransferenciasModule = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchPaciente, setSearchPaciente] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [mapDialogOpen, setMapDialogOpen] = useState(false);
+  const [selectedSolicitacao, setSelectedSolicitacao] = useState<Solicitacao | null>(null);
   const [selectedPaciente, setSelectedPaciente] = useState<PacienteInternado | null>(null);
 
   // Form state
@@ -317,12 +319,17 @@ export const TransferenciasModule = () => {
                                   <div
                                     className={`absolute top-1 bottom-1 rounded ${getBarColor(s.status)} opacity-80 hover:opacity-100 cursor-pointer transition-opacity`}
                                     style={barStyle}
+                                    onClick={() => {
+                                      setSelectedSolicitacao(s);
+                                      setMapDialogOpen(true);
+                                    }}
                                   />
                                 </TooltipTrigger>
                                 <TooltipContent side="top" className="max-w-xs">
                                   <p className="font-medium">{s.paciente_nome}</p>
                                   <p className="text-xs">{s.setor_origem} → {s.destino}</p>
                                   <p className="text-xs">Status: {cfg.label}</p>
+                                  <p className="text-xs text-primary">Clique para ver no mapa</p>
                                   {s.hora_saida && <p className="text-xs">Saída: {format(new Date(s.hora_saida), "HH:mm")}</p>}
                                   {s.hora_chegada && <p className="text-xs">Chegada: {format(new Date(s.hora_chegada), "HH:mm")}</p>}
                                 </TooltipContent>
@@ -501,6 +508,80 @@ export const TransferenciasModule = () => {
               </Button>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+      {/* Dialog Mapa do Veículo */}
+      <Dialog open={mapDialogOpen} onOpenChange={setMapDialogOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-primary" />
+              Localização do Veículo
+            </DialogTitle>
+          </DialogHeader>
+          {selectedSolicitacao && (() => {
+            const veiculo = veiculos.find(v => v.id === selectedSolicitacao.veiculo_id);
+            const cfg = STATUS_CONFIG[selectedSolicitacao.status] || STATUS_CONFIG.pendente;
+            // Simulated coordinates near Governador Valadares, MG
+            const simulatedLat = -18.8509 + (Math.random() - 0.5) * 0.05;
+            const simulatedLng = -41.9494 + (Math.random() - 0.5) * 0.05;
+            const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${simulatedLng - 0.01}%2C${simulatedLat - 0.01}%2C${simulatedLng + 0.01}%2C${simulatedLat + 0.01}&layer=mapnik&marker=${simulatedLat}%2C${simulatedLng}`;
+
+            return (
+              <div className="space-y-4">
+                {/* Info cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-lg border p-3 space-y-1">
+                    <p className="text-xs text-muted-foreground">Paciente</p>
+                    <p className="font-medium text-sm">{selectedSolicitacao.paciente_nome}</p>
+                  </div>
+                  <div className="rounded-lg border p-3 space-y-1">
+                    <p className="text-xs text-muted-foreground">Status</p>
+                    <Badge className={`${getBarColor(selectedSolicitacao.status)} text-white border-0`}>
+                      {cfg.label}
+                    </Badge>
+                  </div>
+                  <div className="rounded-lg border p-3 space-y-1">
+                    <p className="text-xs text-muted-foreground">Veículo</p>
+                    <p className="font-medium text-sm">
+                      {(selectedSolicitacao as any).veiculo_tipo || veiculo?.tipo || "—"}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Placa: {(selectedSolicitacao as any).veiculo_placa || veiculo?.placa || "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border p-3 space-y-1">
+                    <p className="text-xs text-muted-foreground">Motorista</p>
+                    <p className="font-medium text-sm flex items-center gap-1">
+                      <Navigation className="h-3.5 w-3.5 text-primary" />
+                      {(selectedSolicitacao as any).motorista_nome || veiculo?.motorista_nome || "—"}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border p-3 space-y-1">
+                    <p className="text-xs text-muted-foreground">Origem</p>
+                    <p className="font-medium text-sm">{selectedSolicitacao.setor_origem}</p>
+                  </div>
+                  <div className="rounded-lg border p-3 space-y-1">
+                    <p className="text-xs text-muted-foreground">Destino</p>
+                    <p className="font-medium text-sm">{selectedSolicitacao.destino}</p>
+                  </div>
+                </div>
+
+                {/* Map */}
+                <div className="rounded-lg overflow-hidden border relative">
+                  <iframe
+                    src={mapUrl}
+                    className="w-full h-[350px] border-0"
+                    title="Localização do veículo"
+                  />
+                  <div className="absolute bottom-2 left-2 bg-background/90 backdrop-blur-sm rounded-md px-3 py-1.5 text-xs text-muted-foreground flex items-center gap-1.5 border">
+                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                    Localização simulada — GPS do motorista será integrado em breve
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
