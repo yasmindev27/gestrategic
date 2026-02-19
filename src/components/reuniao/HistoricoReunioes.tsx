@@ -92,8 +92,16 @@ interface PlanoAcaoItem {
 
 interface AtaData {
   resumo_executivo?: string;
+  abertura?: string;
+  secoes_discussao?: { numero: string; titulo: string; conteudo: string }[];
+  pontos_criticos?: { problema: string; encaminhamento: string }[];
   decisoes_tomadas?: string[];
+  pendencias?: { descricao: string; responsavel: string; prazo: string }[];
+  encerramento?: string;
   plano_acao?: PlanoAcaoItem[];
+  // Legacy fields
+  registro_discussoes?: string;
+  conflitos_alternativas?: any[];
 }
 
 type StatusFilter = "todos" | "pendente" | "atrasado" | "em_andamento" | "concluido";
@@ -158,13 +166,21 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
   const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
   const [editAtaReuniao, setEditAtaReuniao] = useState<any | null>(null);
   const [editAtaResumo, setEditAtaResumo] = useState("");
+  const [editAtaAbertura, setEditAtaAbertura] = useState("");
   const [editAtaDecisoes, setEditAtaDecisoes] = useState("");
+  const [editAtaEncerramento, setEditAtaEncerramento] = useState("");
+  const [editAtaSecoes, setEditAtaSecoes] = useState<{ numero: string; titulo: string; conteudo: string }[]>([]);
+  const [editAtaPontosCriticos, setEditAtaPontosCriticos] = useState<{ problema: string; encaminhamento: string }[]>([]);
   const [savingAta, setSavingAta] = useState(false);
 
   const openEditAta = (reuniao: any) => {
     const ata = typeof reuniao.ata_gerada === "string" ? JSON.parse(reuniao.ata_gerada) : reuniao.ata_gerada;
     setEditAtaResumo(ata?.resumo_executivo || "");
+    setEditAtaAbertura(ata?.abertura || "");
     setEditAtaDecisoes((ata?.decisoes_tomadas || []).join("\n"));
+    setEditAtaEncerramento(ata?.encerramento || "");
+    setEditAtaSecoes(ata?.secoes_discussao || []);
+    setEditAtaPontosCriticos(ata?.pontos_criticos || []);
     setEditAtaReuniao(reuniao);
   };
 
@@ -178,7 +194,11 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
       const updatedAta = {
         ...currentAta,
         resumo_executivo: editAtaResumo,
+        abertura: editAtaAbertura,
+        secoes_discussao: editAtaSecoes,
+        pontos_criticos: editAtaPontosCriticos,
         decisoes_tomadas: editAtaDecisoes.split("\n").filter((l: string) => l.trim()),
+        encerramento: editAtaEncerramento,
       };
       await supabase.from("reunioes").update({ ata_gerada: updatedAta } as any).eq("id", editAtaReuniao.id);
       queryClient.invalidateQueries({ queryKey: ["reunioes_historico"] });
@@ -326,38 +346,123 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
     if (!ata) return;
     const { doc, logoImg } = await createStandardPdf(`Ata - ${r.titulo}`);
     let y = 35;
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const checkPage = (needed: number) => {
+      if (y + needed > pageHeight - 20) { doc.addPage(); y = 20; }
+    };
+
+    doc.setFontSize(9); doc.setFont("helvetica", "normal");
     doc.text(`Encerramento: ${formatTime(r.hora_encerramento)}`, 14, y); y += 8;
 
+    // Resumo Executivo
     if (ata.resumo_executivo) {
+      checkPage(20);
       doc.setFontSize(12); doc.setFont("helvetica", "bold");
-      doc.text("Resumo Executivo", 14, y); y += 7;
+      doc.text("RESUMO EXECUTIVO", 14, y); y += 7;
       doc.setFontSize(9); doc.setFont("helvetica", "normal");
       const lines = doc.splitTextToSize(ata.resumo_executivo, 180);
+      checkPage(lines.length * 4.5);
       doc.text(lines, 14, y); y += lines.length * 4.5 + 8;
     }
 
-    if (ata.decisoes_tomadas?.length) {
+    // Abertura
+    if (ata.abertura) {
+      checkPage(20);
       doc.setFontSize(12); doc.setFont("helvetica", "bold");
-      doc.text("Decisões Tomadas", 14, y); y += 7;
+      doc.text("1. ABERTURA", 14, y); y += 7;
+      doc.setFontSize(9); doc.setFont("helvetica", "normal");
+      const lines = doc.splitTextToSize(ata.abertura, 180);
+      checkPage(lines.length * 4.5);
+      doc.text(lines, 14, y); y += lines.length * 4.5 + 8;
+    }
+
+    // Seções de Discussão
+    if (ata.secoes_discussao?.length) {
+      ata.secoes_discussao.forEach((secao) => {
+        checkPage(20);
+        doc.setFontSize(11); doc.setFont("helvetica", "bold");
+        doc.text(`${secao.numero} ${secao.titulo}`, 14, y); y += 7;
+        doc.setFontSize(9); doc.setFont("helvetica", "normal");
+        const lines = doc.splitTextToSize(secao.conteudo, 175);
+        lines.forEach((line: string) => {
+          checkPage(5);
+          doc.text(line, 16, y); y += 4.5;
+        });
+        y += 5;
+      });
+    }
+
+    // Legacy: registro_discussoes
+    if (!ata.secoes_discussao?.length && ata.registro_discussoes) {
+      checkPage(20);
+      doc.setFontSize(12); doc.setFont("helvetica", "bold");
+      doc.text("REGISTRO DAS DISCUSSÕES", 14, y); y += 7;
+      doc.setFontSize(9); doc.setFont("helvetica", "normal");
+      const lines = doc.splitTextToSize(ata.registro_discussoes, 180);
+      lines.forEach((line: string) => {
+        checkPage(5);
+        doc.text(line, 14, y); y += 4.5;
+      });
+      y += 8;
+    }
+
+    // Pontos Críticos
+    if (ata.pontos_criticos?.length) {
+      checkPage(20);
+      doc.setFontSize(12); doc.setFont("helvetica", "bold");
+      doc.text("PONTOS CRÍTICOS E ENCAMINHAMENTOS", 14, y); y += 7;
+      doc.setFontSize(9); doc.setFont("helvetica", "normal");
+      ata.pontos_criticos.forEach((pc, i) => {
+        checkPage(12);
+        doc.setFont("helvetica", "bold");
+        const probLines = doc.splitTextToSize(`• ${pc.problema}`, 175);
+        doc.text(probLines, 16, y); y += probLines.length * 4.5;
+        doc.setFont("helvetica", "normal");
+        const encLines = doc.splitTextToSize(`  → ${pc.encaminhamento}`, 170);
+        doc.text(encLines, 18, y); y += encLines.length * 4.5 + 3;
+      });
+      y += 5;
+    }
+
+    // Decisões
+    if (ata.decisoes_tomadas?.length) {
+      checkPage(20);
+      doc.setFontSize(12); doc.setFont("helvetica", "bold");
+      doc.text("DECISÕES TOMADAS", 14, y); y += 7;
       doc.setFontSize(9); doc.setFont("helvetica", "normal");
       ata.decisoes_tomadas.forEach((d, i) => {
+        checkPage(8);
         const lines = doc.splitTextToSize(`${i + 1}. ${d}`, 175);
         doc.text(lines, 16, y); y += lines.length * 4.5 + 2;
       });
       y += 6;
     }
 
-    if (ata.plano_acao?.length) {
+    // Pendências / Plano de Ação
+    const pendencias = ata.pendencias || ata.plano_acao?.map(p => ({ descricao: p.tarefa, responsavel: p.responsavel, prazo: p.prazo })) || [];
+    if (pendencias.length) {
+      checkPage(20);
       doc.setFontSize(12); doc.setFont("helvetica", "bold");
-      doc.text("Plano de Ação", 14, y); y += 7;
+      doc.text("PENDÊNCIAS E PLANO DE AÇÃO", 14, y); y += 7;
       doc.setFontSize(9); doc.setFont("helvetica", "normal");
-      ata.plano_acao.forEach((item, i) => {
-        const text = `${i + 1}. ${item.tarefa} — Responsável: ${item.responsavel} | Prazo: ${item.prazo}`;
+      pendencias.forEach((item, i) => {
+        checkPage(8);
+        const text = `${i + 1}. ${item.descricao} — Responsável: ${item.responsavel} | Prazo: ${item.prazo}`;
         const lines = doc.splitTextToSize(text, 175);
         doc.text(lines, 16, y); y += lines.length * 4.5 + 2;
       });
+      y += 5;
+    }
+
+    // Encerramento
+    if (ata.encerramento) {
+      checkPage(20);
+      doc.setFontSize(12); doc.setFont("helvetica", "bold");
+      doc.text("ENCERRAMENTO", 14, y); y += 7;
+      doc.setFontSize(9); doc.setFont("helvetica", "normal");
+      const lines = doc.splitTextToSize(ata.encerramento, 180);
+      checkPage(lines.length * 4.5);
+      doc.text(lines, 14, y); y += lines.length * 4.5;
     }
 
     savePdfWithFooter(doc, `Ata - ${r.titulo}`, `ata_${r.id.slice(0, 8)}`, logoImg);
@@ -368,37 +473,90 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
     if (!ata) return;
 
     const children: any[] = [
-      new Paragraph({ heading: HeadingLevel.HEADING_1, children: [new TextRun({ text: `Ata - ${r.titulo}`, bold: true })] }),
+      new Paragraph({ heading: HeadingLevel.HEADING_1, alignment: "center" as any, children: [new TextRun({ text: "ATA DE REUNIÃO", bold: true })] }),
+      new Paragraph({ alignment: "center" as any, spacing: { after: 200 }, children: [new TextRun({ text: r.titulo || "", size: 24, bold: true })] }),
       new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: `Encerramento: ${formatTime(r.hora_encerramento)}`, size: 20 })] }),
     ];
 
+    // Resumo
     if (ata.resumo_executivo) {
-      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "Resumo Executivo", bold: true })] }));
+      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "RESUMO EXECUTIVO", bold: true })] }));
       children.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: ata.resumo_executivo, size: 22 })] }));
     }
 
+    // Abertura
+    if (ata.abertura) {
+      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "1. ABERTURA", bold: true })] }));
+      children.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: ata.abertura, size: 22 })] }));
+    }
+
+    // Seções de Discussão
+    if (ata.secoes_discussao?.length) {
+      ata.secoes_discussao.forEach((secao) => {
+        children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: `${secao.numero} ${secao.titulo}`, bold: true })] }));
+        // Split content by lines to handle bullet points
+        secao.conteudo.split("\n").forEach(line => {
+          if (line.trim()) {
+            children.push(new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: line.trim(), size: 22 })] }));
+          }
+        });
+      });
+    }
+
+    // Legacy: registro_discussoes
+    if (!ata.secoes_discussao?.length && ata.registro_discussoes) {
+      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "REGISTRO DAS DISCUSSÕES", bold: true })] }));
+      children.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: ata.registro_discussoes, size: 22 })] }));
+    }
+
+    // Pontos Críticos
+    if (ata.pontos_criticos?.length) {
+      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, spacing: { before: 200 }, children: [new TextRun({ text: "PONTOS CRÍTICOS E ENCAMINHAMENTOS", bold: true })] }));
+      children.push(new DocxTable({
+        width: { size: 100, type: WidthType.PERCENTAGE },
+        rows: [
+          new DocxTableRow({
+            children: ["Problema Identificado", "Encaminhamento / Responsável"].map(h =>
+              new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 20 })] })] })
+            ),
+          }),
+          ...ata.pontos_criticos.map((pc) =>
+            new DocxTableRow({
+              children: [
+                new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: pc.problema, size: 20 })] })] }),
+                new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: pc.encaminhamento, size: 20 })] })] }),
+              ],
+            })
+          ),
+        ],
+      }));
+    }
+
+    // Decisões
     if (ata.decisoes_tomadas?.length) {
-      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "Decisões Tomadas", bold: true })] }));
+      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, children: [new TextRun({ text: "DECISÕES TOMADAS", bold: true })] }));
       ata.decisoes_tomadas.forEach((d, i) => {
         children.push(new Paragraph({ spacing: { after: 80 }, children: [new TextRun({ text: `${i + 1}. ${d}`, size: 22 })] }));
       });
     }
 
-    if (ata.plano_acao?.length) {
-      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, spacing: { before: 200 }, children: [new TextRun({ text: "Plano de Ação", bold: true })] }));
+    // Pendências
+    const pendencias = ata.pendencias || ata.plano_acao?.map(p => ({ descricao: p.tarefa, responsavel: p.responsavel, prazo: p.prazo })) || [];
+    if (pendencias.length) {
+      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, spacing: { before: 200 }, children: [new TextRun({ text: "PENDÊNCIAS E PLANO DE AÇÃO", bold: true })] }));
       children.push(new DocxTable({
         width: { size: 100, type: WidthType.PERCENTAGE },
         rows: [
           new DocxTableRow({
-            children: ["#", "Tarefa", "Responsável", "Prazo"].map(h =>
+            children: ["#", "Pendência", "Responsável", "Prazo"].map(h =>
               new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: h, bold: true, size: 20 })] })] })
             ),
           }),
-          ...ata.plano_acao.map((item, i) =>
+          ...pendencias.map((item, i) =>
             new DocxTableRow({
               children: [
                 new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: String(i + 1), size: 20 })] })] }),
-                new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.tarefa, size: 20 })] })] }),
+                new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.descricao, size: 20 })] })] }),
                 new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.responsavel, size: 20 })] })] }),
                 new DocxTableCell({ children: [new Paragraph({ children: [new TextRun({ text: item.prazo, size: 20 })] })] }),
               ],
@@ -406,6 +564,12 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
           ),
         ],
       }));
+    }
+
+    // Encerramento
+    if (ata.encerramento) {
+      children.push(new Paragraph({ heading: HeadingLevel.HEADING_2, spacing: { before: 200 }, children: [new TextRun({ text: "ENCERRAMENTO", bold: true })] }));
+      children.push(new Paragraph({ spacing: { after: 200 }, children: [new TextRun({ text: ata.encerramento, size: 22 })] }));
     }
 
     children.push(new Paragraph({ spacing: { before: 400 }, children: [new TextRun({ text: "Documento gerado em conformidade com a LGPD (Lei nº 13.709/2018).", size: 14, color: "888888", italics: true })] }));
@@ -715,28 +879,78 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
 
       {/* Edit Ata Dialog */}
       <Dialog open={!!editAtaReuniao} onOpenChange={() => setEditAtaReuniao(null)}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Editar Ata</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <label className="text-sm font-medium mb-1.5 block">Resumo Executivo</label>
-              <Textarea
-                value={editAtaResumo}
-                onChange={(e) => setEditAtaResumo(e.target.value)}
-                rows={6}
-                placeholder="Resumo da reunião..."
-              />
+              <Textarea value={editAtaResumo} onChange={(e) => setEditAtaResumo(e.target.value)} rows={4} placeholder="Resumo da reunião..." />
             </div>
             <div>
+              <label className="text-sm font-medium mb-1.5 block">Abertura</label>
+              <Textarea value={editAtaAbertura} onChange={(e) => setEditAtaAbertura(e.target.value)} rows={3} placeholder="Texto de abertura..." />
+            </div>
+
+            {/* Seções de discussão */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium">Seções de Discussão</label>
+                <Button variant="outline" size="sm" onClick={() => setEditAtaSecoes([...editAtaSecoes, { numero: String(editAtaSecoes.length + 1), titulo: "", conteudo: "" }])}>
+                  + Seção
+                </Button>
+              </div>
+              {editAtaSecoes.map((secao, i) => (
+                <div key={i} className="border rounded-lg p-3 mb-2 space-y-2">
+                  <div className="flex gap-2">
+                    <Input className="w-20" placeholder="Nº" value={secao.numero} onChange={(e) => {
+                      const updated = [...editAtaSecoes]; updated[i] = { ...secao, numero: e.target.value }; setEditAtaSecoes(updated);
+                    }} />
+                    <Input className="flex-1" placeholder="Título da seção" value={secao.titulo} onChange={(e) => {
+                      const updated = [...editAtaSecoes]; updated[i] = { ...secao, titulo: e.target.value }; setEditAtaSecoes(updated);
+                    }} />
+                    <Button variant="ghost" size="icon" className="text-destructive h-9 w-9" onClick={() => setEditAtaSecoes(editAtaSecoes.filter((_, j) => j !== i))}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <Textarea rows={4} placeholder="Conteúdo detalhado..." value={secao.conteudo} onChange={(e) => {
+                    const updated = [...editAtaSecoes]; updated[i] = { ...secao, conteudo: e.target.value }; setEditAtaSecoes(updated);
+                  }} />
+                </div>
+              ))}
+            </div>
+
+            {/* Pontos Críticos */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium">Pontos Críticos e Encaminhamentos</label>
+                <Button variant="outline" size="sm" onClick={() => setEditAtaPontosCriticos([...editAtaPontosCriticos, { problema: "", encaminhamento: "" }])}>
+                  + Ponto
+                </Button>
+              </div>
+              {editAtaPontosCriticos.map((pc, i) => (
+                <div key={i} className="flex gap-2 mb-2">
+                  <Input className="flex-1" placeholder="Problema" value={pc.problema} onChange={(e) => {
+                    const updated = [...editAtaPontosCriticos]; updated[i] = { ...pc, problema: e.target.value }; setEditAtaPontosCriticos(updated);
+                  }} />
+                  <Input className="flex-1" placeholder="Encaminhamento" value={pc.encaminhamento} onChange={(e) => {
+                    const updated = [...editAtaPontosCriticos]; updated[i] = { ...pc, encaminhamento: e.target.value }; setEditAtaPontosCriticos(updated);
+                  }} />
+                  <Button variant="ghost" size="icon" className="text-destructive h-9 w-9" onClick={() => setEditAtaPontosCriticos(editAtaPontosCriticos.filter((_, j) => j !== i))}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            <div>
               <label className="text-sm font-medium mb-1.5 block">Decisões Tomadas (uma por linha)</label>
-              <Textarea
-                value={editAtaDecisoes}
-                onChange={(e) => setEditAtaDecisoes(e.target.value)}
-                rows={5}
-                placeholder="Uma decisão por linha..."
-              />
+              <Textarea value={editAtaDecisoes} onChange={(e) => setEditAtaDecisoes(e.target.value)} rows={4} placeholder="Uma decisão por linha..." />
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Encerramento</label>
+              <Textarea value={editAtaEncerramento} onChange={(e) => setEditAtaEncerramento(e.target.value)} rows={3} placeholder="Texto de encerramento..." />
             </div>
           </div>
           <DialogFooter>
