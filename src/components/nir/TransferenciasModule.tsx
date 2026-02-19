@@ -93,6 +93,19 @@ export const TransferenciasModule = () => {
   const [formVeiculoId, setFormVeiculoId] = useState("");
   const [formMotorista, setFormMotorista] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [reguladorNome, setReguladorNome] = useState("");
+
+  // Load regulador name from profile
+  useEffect(() => {
+    const loadRegulador = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.id) {
+        const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).single();
+        if (profile?.full_name) setReguladorNome(profile.full_name);
+      }
+    };
+    loadRegulador();
+  }, []);
 
   const loadData = useCallback(async () => {
     setIsLoading(true);
@@ -124,7 +137,7 @@ export const TransferenciasModule = () => {
   const handleSolicitar = (p: PacienteInternado) => {
     setSelectedPaciente(p);
     setFormPacienteNome(p.patient_name || "");
-    setFormSetorOrigem(getSectorLabel(p.sector));
+    setFormSetorOrigem("UPA Antônio José dos Santos");
     setFormDestino("");
     setFormMotivo("");
     setFormPrioridade("normal");
@@ -145,7 +158,7 @@ export const TransferenciasModule = () => {
       const selectedVeiculo = veiculos.find(v => v.id === formVeiculoId);
       const { error } = await supabase.from("transferencia_solicitacoes").insert({
         paciente_nome: formPacienteNome,
-        setor_origem: formSetorOrigem,
+        setor_origem: "UPA Antônio José dos Santos",
         destino: formDestino,
         motivo: formMotivo || null,
         prioridade: formPrioridade,
@@ -154,7 +167,7 @@ export const TransferenciasModule = () => {
         veiculo_tipo: selectedVeiculo?.tipo || null,
         motorista_nome: formMotorista || null,
         solicitado_por: user?.id,
-        solicitado_por_nome: user?.email || "—",
+        solicitado_por_nome: reguladorNome || user?.email || "—",
       });
 
       if (error) throw error;
@@ -543,16 +556,20 @@ export const TransferenciasModule = () => {
               <Input value={formPacienteNome} readOnly className="bg-muted/50" />
             </div>
             <div>
-              <Label>Setor de Origem</Label>
-              <Input value={formSetorOrigem} readOnly className="bg-muted/50" />
+              <Label>Unidade de Origem</Label>
+              <Input value="UPA Antônio José dos Santos" readOnly className="bg-muted/50" />
             </div>
             <div>
               <Label>Destino *</Label>
               <Input
-                placeholder="Ex: Hospital Regional, UPA Centro..."
+                placeholder="Ex: Hospital Regional, Santa Casa..."
                 value={formDestino}
                 onChange={(e) => setFormDestino(e.target.value)}
               />
+            </div>
+            <div>
+              <Label>Regulador</Label>
+              <Input value={reguladorNome || "Carregando..."} readOnly className="bg-muted/50" />
             </div>
             <div>
               <Label>Prioridade</Label>
