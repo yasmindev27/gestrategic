@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,8 +8,19 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Truck, MapPin, Clock, CheckCircle2, LogOut, Navigation, ChevronRight, Play, AlertTriangle, LocateFixed, FileWarning } from "lucide-react";
+import { Loader2, Truck, MapPin, Clock, CheckCircle2, LogOut, Navigation, ChevronRight, Play, AlertTriangle, LocateFixed, FileWarning, Map } from "lucide-react";
 import logoGestrategic from "@/assets/logo-gestrategic.jpg";
+import { MapContainer, TileLayer, Polyline, Marker, Popup } from "react-leaflet";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+
+// Fix leaflet default icon
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
+  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
+  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
+});
 
 type Solicitacao = {
   id: string;
@@ -23,6 +34,8 @@ type Solicitacao = {
   veiculo_tipo: string | null;
   solicitado_por_nome: string | null;
 };
+
+type Coordenada = { latitude: number; longitude: number; registrado_em: string };
 
 const prioridadeColors: Record<string, string> = {
   baixa: "bg-green-100 text-green-800 border-green-300",
@@ -57,6 +70,11 @@ const Transporte = () => {
   const [intercorrenciaTexto, setIntercorrenciaTexto] = useState("");
   const [intercorrenciaLoading, setIntercorrenciaLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"missoes" | "historico">("missoes");
+  const [rotaMapOpen, setRotaMapOpen] = useState(false);
+  const [rotaCoordenadas, setRotaCoordenadas] = useState<Coordenada[]>([]);
+  const [rotaLoading, setRotaLoading] = useState(false);
+  const [rotaMissaoNome, setRotaMissaoNome] = useState("");
+  const trackingRef = useRef<number | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -76,6 +94,43 @@ const Transporte = () => {
     };
     checkAuth();
   }, [navigate]);
+
+  // Auto-detect GPS when pre-accept dialog opens
+  useEffect(() => {
+    if (preAcceptOpen && !locAtiva) {
+      ativarLocalizacao();
+    }
+  }, [preAcceptOpen]);
+
+  // GPS tracking: periodically save coordinates while there's an active mission
+  useEffect(() => {
+    const activeMission = missoes.find(m => m.status === "em_transporte");
+    if (activeMission && user) {
+      const saveCoord = () => {
+        navigator.geolocation?.getCurrentPosition(
+          async (pos) => {
+            await supabase.from("transferencia_coordenadas").insert({
+              solicitacao_id: activeMission.id,
+              latitude: pos.coords.latitude,
+              longitude: pos.coords.longitude,
+            });
+          },
+          () => {}, // silently fail
+          { enableHighAccuracy: true, timeout: 10000 }
+        );
+      };
+      // Save immediately then every 30s
+      saveCoord();
+      const interval = window.setInterval(saveCoord, 30000);
+      trackingRef.current = interval;
+      return () => window.clearInterval(interval);
+    } else {
+      if (trackingRef.current) {
+        window.clearInterval(trackingRef.current);
+        trackingRef.current = null;
+      }
+    }
+  }, [missoes, user]);
 
   const loadMissoes = useCallback(async (nome: string) => {
     setLoading(true);
@@ -120,7 +175,7 @@ const Transporte = () => {
         setLocAtiva(true);
         setLocLoading(false);
       },
-      (err) => {
+      () => {
         setLocError("Permissão negada. Ative a localização nas configurações do navegador.");
         setLocLoading(false);
       },
@@ -183,14 +238,13 @@ const Transporte = () => {
     if (!finalizarMissaoId) return;
     setActionLoading(finalizarMissaoId);
     try {
-      // Get current km_rodados (km inicial) to calculate total
       const { data: sol } = await supabase
         .from("transferencia_solicitacoes")
         .select("km_rodados")
         .eq("id", finalizarMissaoId)
         .single();
-      const kmInicial = (sol as any)?.km_rodados || 0;
-      const kmTotal = Math.max(0, Number(kmFinal) - kmInicial);
+      const kmIni = (sol as any)?.km_rodados || 0;
+      const kmTotal = Math.max(0, Number(kmFinal) - kmIni);
 
       const { error } = await supabase
         .from("transferencia_solicitacoes")
@@ -249,6 +303,19 @@ const Transporte = () => {
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
+  };
+
+  const abrirRotaMapa = async (missao: Solicitacao) => {
+    setRotaLoading(true);
+    setRotaMissaoNome(`${missao.setor_origem} → ${missao.destino}`);
+    setRotaMapOpen(true);
+    const { data } = await supabase
+      .from("transferencia_coordenadas")
+      .select("latitude, longitude, registrado_em")
+      .eq("solicitacao_id", missao.id)
+      .order("registrado_em", { ascending: true });
+    setRotaCoordenadas((data as Coordenada[]) || []);
+    setRotaLoading(false);
   };
 
   const formatDate = (d: string) => {
@@ -433,7 +500,11 @@ const Transporte = () => {
               </Card>
             ) : (
               missoes.filter(m => m.status === "concluida").map((m) => (
-                <Card key={m.id}>
+                <Card 
+                  key={m.id} 
+                  className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]"
+                  onClick={() => abrirRotaMapa(m)}
+                >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1 min-w-0">
@@ -453,6 +524,7 @@ const Transporte = () => {
                           <span>{formatDate(m.created_at)}</span>
                         </div>
                       </div>
+                      <Map className="h-5 w-5 text-primary shrink-0" />
                     </div>
                   </CardContent>
                 </Card>
@@ -519,14 +591,19 @@ const Transporte = () => {
               Iniciar Missão
             </DialogTitle>
             <DialogDescription>
-              Ative sua localização e informe a km atual do veículo para prosseguir.
+              Confirme sua localização e informe a km atual do veículo para prosseguir.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             {/* Location */}
             <div className="space-y-2">
               <Label className="text-sm font-medium">Localização</Label>
-              {locAtiva ? (
+              {locLoading ? (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-muted border text-muted-foreground text-sm">
+                  <Loader2 className="h-4 w-4 animate-spin shrink-0" />
+                  Verificando localização...
+                </div>
+              ) : locAtiva ? (
                 <div className="flex items-center gap-2 p-3 rounded-md bg-green-50 border border-green-200 text-green-800 text-sm">
                   <LocateFixed className="h-4 w-4 shrink-0" />
                   Localização ativada
@@ -535,10 +612,9 @@ const Transporte = () => {
                 <Button
                   variant="outline"
                   className="w-full gap-2"
-                  disabled={locLoading}
                   onClick={ativarLocalizacao}
                 >
-                  {locLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+                  <LocateFixed className="h-4 w-4" />
                   Ativar Localização
                 </Button>
               )}
@@ -647,6 +723,64 @@ const Transporte = () => {
               Registrar
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rota Map dialog */}
+      <Dialog open={rotaMapOpen} onOpenChange={setRotaMapOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Map className="h-5 w-5 text-primary" />
+              Rota Percorrida
+            </DialogTitle>
+            <DialogDescription>{rotaMissaoNome}</DialogDescription>
+          </DialogHeader>
+          <div className="w-full h-[400px] rounded-md overflow-hidden border">
+            {rotaLoading ? (
+              <div className="h-full flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              </div>
+            ) : rotaCoordenadas.length === 0 ? (
+              <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-2">
+                <MapPin className="h-10 w-10 opacity-40" />
+                <p className="text-sm">Nenhum ponto de GPS registrado para esta missão</p>
+              </div>
+            ) : (
+              <MapContainer
+                center={[rotaCoordenadas[0].latitude, rotaCoordenadas[0].longitude]}
+                zoom={13}
+                style={{ height: "100%", width: "100%" }}
+              >
+                <TileLayer
+                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                />
+                <Polyline
+                  positions={rotaCoordenadas.map(c => [c.latitude, c.longitude] as [number, number])}
+                  color="hsl(221, 83%, 53%)"
+                  weight={4}
+                />
+                {/* Start marker */}
+                <Marker position={[rotaCoordenadas[0].latitude, rotaCoordenadas[0].longitude]}>
+                  <Popup>
+                    <strong>Início</strong><br />
+                    {new Date(rotaCoordenadas[0].registrado_em).toLocaleString("pt-BR")}
+                  </Popup>
+                </Marker>
+                {/* End marker */}
+                <Marker position={[rotaCoordenadas[rotaCoordenadas.length - 1].latitude, rotaCoordenadas[rotaCoordenadas.length - 1].longitude]}>
+                  <Popup>
+                    <strong>Fim</strong><br />
+                    {new Date(rotaCoordenadas[rotaCoordenadas.length - 1].registrado_em).toLocaleString("pt-BR")}
+                  </Popup>
+                </Marker>
+              </MapContainer>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground text-center">
+            {rotaCoordenadas.length > 0 && `${rotaCoordenadas.length} pontos registrados`}
+          </p>
         </DialogContent>
       </Dialog>
     </div>

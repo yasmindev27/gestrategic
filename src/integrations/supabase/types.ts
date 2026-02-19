@@ -5079,6 +5079,41 @@ export type Database = {
           },
         ]
       }
+      transferencia_coordenadas: {
+        Row: {
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          registrado_em: string
+          solicitacao_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          registrado_em?: string
+          solicitacao_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          registrado_em?: string
+          solicitacao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transferencia_coordenadas_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "transferencia_solicitacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transferencia_intercorrencias: {
         Row: {
           created_at: string
