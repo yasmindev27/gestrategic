@@ -47,6 +47,11 @@ interface PacienteInternado {
   data_internacao: string | null;
 }
 
+interface Motorista {
+  user_id: string;
+  full_name: string;
+}
+
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   pendente: { label: "Pendente", color: "bg-yellow-500", icon: Clock },
   em_transporte: { label: "Em Transporte", color: "bg-blue-500", icon: Truck },
@@ -65,6 +70,7 @@ export const TransferenciasModule = () => {
   const { toast } = useToast();
   const userRole = useUserRole();
   const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
+  const [motoristas, setMotoristas] = useState<Motorista[]>([]);
   const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
   const [pacientes, setPacientes] = useState<PacienteInternado[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,10 +93,11 @@ export const TransferenciasModule = () => {
     try {
       const today = new Date().toISOString().split("T")[0];
 
-      const [veiculosRes, solicitacoesRes, bedRes] = await Promise.all([
+      const [veiculosRes, solicitacoesRes, bedRes, motoristasRes] = await Promise.all([
         supabase.from("transferencia_veiculos").select("*").order("motorista_nome"),
         supabase.from("transferencia_solicitacoes").select("*").order("created_at", { ascending: false }).limit(50),
         supabase.from("bed_records").select("bed_id, patient_name, sector, hipotese_diagnostica, data_internacao").eq("shift_date", today).not("patient_name", "is", null).is("data_alta", null),
+        supabase.from("profiles").select("user_id, full_name").eq("cargo", "CONDUTOR DE AMBULÂNCIA").order("full_name"),
       ]);
 
       if (veiculosRes.data) setVeiculos(veiculosRes.data);
