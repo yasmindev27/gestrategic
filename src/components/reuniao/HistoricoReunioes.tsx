@@ -50,6 +50,8 @@ import {
   Save,
   X,
   Video,
+  RefreshCw,
+  Loader2,
 } from "lucide-react";
 import {
   AlertDialog,
@@ -143,6 +145,32 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [regeneratingId, setRegeneratingId] = useState<string | null>(null);
+
+  const regenerateAta = async (reuniao: any) => {
+    if (!reuniao.transcricao?.trim()) {
+      toast({ title: "Erro", description: "Sem transcrição disponível para gerar a ata.", variant: "destructive" });
+      return;
+    }
+    setRegeneratingId(reuniao.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("gerar-ata-reuniao", {
+        body: { transcricao: reuniao.transcricao, titulo: reuniao.titulo, reuniaoId: reuniao.id },
+      });
+      if (error) throw error;
+      if (data?.ata) {
+        await supabase.from("reunioes").update({ ata_gerada: data.ata } as any).eq("id", reuniao.id);
+        queryClient.invalidateQueries({ queryKey: ["reunioes_historico"] });
+        toast({ title: "Ata regenerada", description: "A ata foi refeita com sucesso." });
+      } else {
+        throw new Error("Resposta sem ata");
+      }
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message || "Falha ao regenerar ata.", variant: "destructive" });
+    } finally {
+      setRegeneratingId(null);
+    }
+  };
 
   // Fetch encerradas meetings
   const { data: reunioes } = useQuery({
@@ -548,7 +576,7 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
                           </TableBody>
                         </Table>
                       )}
-                      {(r.ata_gerada || r.gravacao_url) && (
+                      {(r.ata_gerada || r.gravacao_url || r.transcricao) && (
                         <div className="flex gap-2 mt-4 pt-3 border-t">
                           {r.ata_gerada && (
                             <DropdownMenu>
@@ -585,6 +613,24 @@ const HistoricoReunioes = ({ onBack }: HistoricoReunioesProps) => {
                               }}
                             >
                               <Video className="h-4 w-4 mr-2" /> Ver Gravação
+                            </Button>
+                          )}
+                          {r.transcricao && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              disabled={regeneratingId === r.id}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                regenerateAta(r);
+                              }}
+                            >
+                              {regeneratingId === r.id ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                              ) : (
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                              )}
+                              {regeneratingId === r.id ? "Gerando..." : "Refazer Ata"}
                             </Button>
                           )}
                         </div>
