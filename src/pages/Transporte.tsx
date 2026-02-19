@@ -6,7 +6,9 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Loader2, Truck, MapPin, Clock, CheckCircle2, LogOut, Navigation, ChevronRight, Play, AlertTriangle } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, Truck, MapPin, Clock, CheckCircle2, LogOut, Navigation, ChevronRight, Play, AlertTriangle, LocateFixed } from "lucide-react";
 import logoGestrategic from "@/assets/logo-gestrategic.jpg";
 
 type Solicitacao = {
@@ -41,6 +43,12 @@ const Transporte = () => {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingMissaoId, setPendingMissaoId] = useState<string | null>(null);
   const [pendingMissaoMotorista, setPendingMissaoMotorista] = useState<string | null>(null);
+  const [preAcceptOpen, setPreAcceptOpen] = useState(false);
+  const [preAcceptMissaoId, setPreAcceptMissaoId] = useState<string | null>(null);
+  const [kmInicial, setKmInicial] = useState("");
+  const [locAtiva, setLocAtiva] = useState(false);
+  const [locLoading, setLocLoading] = useState(false);
+  const [locError, setLocError] = useState("");
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -80,21 +88,64 @@ const Transporte = () => {
       setPendingMissaoMotorista(motoristaAtribuido);
       setConfirmDialogOpen(true);
     } else {
-      executarAceitarMissao(missao.id);
+      abrirPreAccept(missao.id);
     }
   };
 
-  const executarAceitarMissao = async (missaoId: string) => {
+  const abrirPreAccept = (missaoId: string) => {
+    setPreAcceptMissaoId(missaoId);
+    setKmInicial("");
+    setLocAtiva(false);
+    setLocError("");
+    setPreAcceptOpen(true);
+  };
+
+  const ativarLocalizacao = () => {
+    if (!navigator.geolocation) {
+      setLocError("Geolocalização não suportada neste dispositivo.");
+      return;
+    }
+    setLocLoading(true);
+    setLocError("");
+    navigator.geolocation.getCurrentPosition(
+      () => {
+        setLocAtiva(true);
+        setLocLoading(false);
+      },
+      (err) => {
+        setLocError("Permissão negada. Ative a localização nas configurações do navegador.");
+        setLocLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  const confirmarPreAccept = () => {
+    if (!locAtiva) {
+      toast({ title: "Ative a localização antes de aceitar", variant: "destructive" });
+      return;
+    }
+    if (!kmInicial.trim() || isNaN(Number(kmInicial))) {
+      toast({ title: "Informe a km atual da ambulância", variant: "destructive" });
+      return;
+    }
+    setPreAcceptOpen(false);
+    if (preAcceptMissaoId) executarAceitarMissao(preAcceptMissaoId, Number(kmInicial));
+  };
+
+  const executarAceitarMissao = async (missaoId: string, km?: number) => {
     setConfirmDialogOpen(false);
     setActionLoading(missaoId);
     try {
+      const updateData: any = {
+        status: "em_transporte",
+        motorista_nome: userName,
+        hora_saida: new Date().toISOString(),
+      };
+      if (km !== undefined) updateData.km_rodados = km;
       const { error } = await supabase
         .from("transferencia_solicitacoes")
-        .update({
-          status: "em_transporte",
-          motorista_nome: userName,
-          hora_saida: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq("id", missaoId);
       if (error) throw error;
       toast({ title: "Missão aceita! Boa viagem." });
@@ -326,9 +377,75 @@ const Transporte = () => {
               Voltar
             </Button>
             <Button className="flex-1" onClick={() => {
-              if (pendingMissaoId) executarAceitarMissao(pendingMissaoId);
+              setConfirmDialogOpen(false);
+              if (pendingMissaoId) abrirPreAccept(pendingMissaoId);
             }}>
               Aceitar mesmo assim
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Pre-accept dialog: location + km */}
+      <Dialog open={preAcceptOpen} onOpenChange={setPreAcceptOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5 text-primary" />
+              Iniciar Missão
+            </DialogTitle>
+            <DialogDescription>
+              Ative sua localização e informe a km atual do veículo para prosseguir.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            {/* Location */}
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Localização</Label>
+              {locAtiva ? (
+                <div className="flex items-center gap-2 p-3 rounded-md bg-green-50 border border-green-200 text-green-800 text-sm">
+                  <LocateFixed className="h-4 w-4 shrink-0" />
+                  Localização ativada
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  className="w-full gap-2"
+                  disabled={locLoading}
+                  onClick={ativarLocalizacao}
+                >
+                  {locLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
+                  Ativar Localização
+                </Button>
+              )}
+              {locError && <p className="text-xs text-destructive">{locError}</p>}
+            </div>
+
+            {/* KM */}
+            <div className="space-y-2">
+              <Label htmlFor="km-inicial" className="text-sm font-medium">Km atual da ambulância</Label>
+              <Input
+                id="km-inicial"
+                type="number"
+                inputMode="numeric"
+                placeholder="Ex: 45230"
+                value={kmInicial}
+                onChange={(e) => setKmInicial(e.target.value)}
+                className="text-lg"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex gap-2 sm:gap-2">
+            <Button variant="outline" className="flex-1" onClick={() => setPreAcceptOpen(false)}>
+              Cancelar
+            </Button>
+            <Button
+              className="flex-1 gap-2"
+              disabled={!locAtiva || !kmInicial.trim()}
+              onClick={confirmarPreAccept}
+            >
+              <Play className="h-4 w-4" />
+              Confirmar Saída
             </Button>
           </DialogFooter>
         </DialogContent>
