@@ -56,6 +56,7 @@ const Transporte = () => {
   const [intercorrenciaMissaoId, setIntercorrenciaMissaoId] = useState<string | null>(null);
   const [intercorrenciaTexto, setIntercorrenciaTexto] = useState("");
   const [intercorrenciaLoading, setIntercorrenciaLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState<"missoes" | "historico">("missoes");
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -304,126 +305,176 @@ const Transporte = () => {
 
       {/* Mission List */}
       <div className="flex-1 px-4 pb-4 space-y-3">
-        <h2 className="font-semibold text-foreground flex items-center gap-2">
-          <Truck className="h-5 w-5 text-primary" />
-          Missões de Transporte
-        </h2>
+        {activeTab === "missoes" && (
+          <>
+            <h2 className="font-semibold text-foreground flex items-center gap-2">
+              <Truck className="h-5 w-5 text-primary" />
+              Missões de Transporte
+            </h2>
 
-        {missoes.length === 0 ? (
-          <Card>
-            <CardContent className="p-8 text-center text-muted-foreground">
-              <Navigation className="h-12 w-12 mx-auto mb-3 opacity-40" />
-              <p>Nenhuma missão no momento</p>
-            </CardContent>
-          </Card>
-        ) : (
-          missoes.map((m) => (
-            <Card 
-              key={m.id} 
-              className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]"
-              onClick={() => setSelectedMissao(selectedMissao?.id === m.id ? null : m)}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge className={`text-xs ${prioridadeColors[m.prioridade] || "bg-muted"}`}>
-                        {m.prioridade?.toUpperCase()}
-                      </Badge>
-                      <Badge variant={m.status === "pendente" ? "outline" : m.status === "em_transporte" ? "default" : "secondary"} className="text-xs">
-                        {m.status === "pendente" ? "Pendente" : m.status === "em_transporte" ? "Em Rota" : m.status === "concluida" ? "Concluída" : m.status}
-                      </Badge>
+            {missoes.filter(m => m.status !== "concluida").length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center text-muted-foreground">
+                  <Navigation className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                  <p>Nenhuma missão no momento</p>
+                </CardContent>
+              </Card>
+            ) : (
+              missoes.filter(m => m.status !== "concluida").map((m) => (
+                <Card 
+                  key={m.id} 
+                  className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]"
+                  onClick={() => setSelectedMissao(selectedMissao?.id === m.id ? null : m)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge className={`text-xs ${prioridadeColors[m.prioridade] || "bg-muted"}`}>
+                            {m.prioridade?.toUpperCase()}
+                          </Badge>
+                          <Badge variant={m.status === "pendente" ? "outline" : "default"} className="text-xs">
+                            {m.status === "pendente" ? "Pendente" : "Em Rota"}
+                          </Badge>
+                        </div>
+                        <p className="font-semibold text-sm truncate">{m.paciente_nome}</p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{m.setor_origem} → {m.destino}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                          <Clock className="h-3 w-3 shrink-0" />
+                          <span>{formatDate(m.created_at)}</span>
+                        </div>
+                      </div>
+                      <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform ${selectedMissao?.id === m.id ? "rotate-90" : ""}`} />
                     </div>
-                    <p className="font-semibold text-sm truncate">{m.paciente_nome}</p>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                      <MapPin className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{m.setor_origem} → {m.destino}</span>
-                    </div>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                      <Clock className="h-3 w-3 shrink-0" />
-                      <span>{formatDate(m.created_at)}</span>
-                    </div>
-                  </div>
-                  <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform ${selectedMissao?.id === m.id ? "rotate-90" : ""}`} />
-                </div>
 
-                {selectedMissao?.id === m.id && (
-                  <div className="mt-3 pt-3 border-t space-y-2">
-                    <div className="text-xs space-y-1">
-                      <p><span className="font-medium">Regulador:</span> {m.solicitado_por_nome || "—"}</p>
-                      <p><span className="font-medium">Veículo:</span> {m.veiculo_tipo || "Não definido"}</p>
-                      <p><span className="font-medium">Motorista:</span> {m.motorista_nome || "Não atribuído"}</p>
-                    </div>
-                    {m.status === "pendente" && (
-                      <Button 
-                        size="sm" 
-                        className="w-full mt-2 gap-2" 
-                        disabled={actionLoading === m.id}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          tentarAceitarMissao(m);
-                        }}
-                      >
-                        {actionLoading === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                        Aceitar Missão
-                      </Button>
-                    )}
-                    {m.status === "em_transporte" && (
-                      <div className="space-y-2">
-                        <div className="flex gap-2">
-                          <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs" onClick={(e) => {
-                            e.stopPropagation();
-                            handleNavegar(m.destino);
-                          }}>
-                            <Navigation className="h-3 w-3" />
-                            Navegar
-                          </Button>
+                    {selectedMissao?.id === m.id && (
+                      <div className="mt-3 pt-3 border-t space-y-2">
+                        <div className="text-xs space-y-1">
+                          <p><span className="font-medium">Regulador:</span> {m.solicitado_por_nome || "—"}</p>
+                          <p><span className="font-medium">Veículo:</span> {m.veiculo_tipo || "Não definido"}</p>
+                          <p><span className="font-medium">Motorista:</span> {m.motorista_nome || "Não atribuído"}</p>
+                        </div>
+                        {m.status === "pendente" && (
                           <Button 
                             size="sm" 
-                            className="flex-1 gap-1 text-xs"
+                            className="w-full mt-2 gap-2" 
                             disabled={actionLoading === m.id}
                             onClick={(e) => {
                               e.stopPropagation();
-                              abrirFinalizar(m.id);
+                              tentarAceitarMissao(m);
                             }}
                           >
-                            {actionLoading === m.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
-                            Finalizar
+                            {actionLoading === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                            Aceitar Missão
                           </Button>
-                        </div>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          className="w-full gap-1 text-xs"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            abrirIntercorrencia(m.id);
-                          }}
-                        >
-                          <FileWarning className="h-3 w-3" />
-                          Registrar Intercorrência
-                        </Button>
+                        )}
+                        {m.status === "em_transporte" && (
+                          <div className="space-y-2">
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs" onClick={(e) => {
+                                e.stopPropagation();
+                                handleNavegar(m.destino);
+                              }}>
+                                <Navigation className="h-3 w-3" />
+                                Navegar
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                className="flex-1 gap-1 text-xs"
+                                disabled={actionLoading === m.id}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  abrirFinalizar(m.id);
+                                }}
+                              >
+                                {actionLoading === m.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
+                                Finalizar
+                              </Button>
+                            </div>
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="w-full gap-1 text-xs"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                abrirIntercorrencia(m.id);
+                              }}
+                            >
+                              <FileWarning className="h-3 w-3" />
+                              Registrar Intercorrência
+                            </Button>
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </>
+        )}
+
+        {activeTab === "historico" && (
+          <>
+            <h2 className="font-semibold text-foreground flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" />
+              Histórico de Missões
+            </h2>
+
+            {missoes.filter(m => m.status === "concluida").length === 0 ? (
+              <Card>
+                <CardContent className="p-8 text-center text-muted-foreground">
+                  <CheckCircle2 className="h-12 w-12 mx-auto mb-3 opacity-40" />
+                  <p>Nenhuma missão concluída</p>
+                </CardContent>
+              </Card>
+            ) : (
+              missoes.filter(m => m.status === "concluida").map((m) => (
+                <Card key={m.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge className={`text-xs ${prioridadeColors[m.prioridade] || "bg-muted"}`}>
+                            {m.prioridade?.toUpperCase()}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">Concluída</Badge>
+                        </div>
+                        <p className="font-semibold text-sm truncate">{m.paciente_nome}</p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
+                          <MapPin className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{m.setor_origem} → {m.destino}</span>
+                        </div>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                          <Clock className="h-3 w-3 shrink-0" />
+                          <span>{formatDate(m.created_at)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))
+            )}
+          </>
         )}
       </div>
 
       {/* Bottom nav */}
-      <nav className="bg-card border-t sticky bottom-0 grid grid-cols-3 text-center py-2">
-        <button className="flex flex-col items-center gap-0.5 text-primary">
+      <nav className="bg-card border-t sticky bottom-0 grid grid-cols-2 text-center py-2">
+        <button 
+          className={`flex flex-col items-center gap-0.5 ${activeTab === "missoes" ? "text-primary" : "text-muted-foreground"}`}
+          onClick={() => setActiveTab("missoes")}
+        >
           <Truck className="h-5 w-5" />
           <span className="text-[10px] font-medium">Missões</span>
         </button>
-        <button className="flex flex-col items-center gap-0.5 text-muted-foreground">
-          <MapPin className="h-5 w-5" />
-          <span className="text-[10px]">Checklist</span>
-        </button>
-        <button className="flex flex-col items-center gap-0.5 text-muted-foreground">
+        <button 
+          className={`flex flex-col items-center gap-0.5 ${activeTab === "historico" ? "text-primary" : "text-muted-foreground"}`}
+          onClick={() => setActiveTab("historico")}
+        >
           <Clock className="h-5 w-5" />
           <span className="text-[10px]">Histórico</span>
         </button>
