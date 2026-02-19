@@ -183,10 +183,10 @@ export const TransferenciasModule = () => {
       (s) => s.paciente_nome === patientName && s.status !== "cancelada" && s.status !== "concluida"
     );
     if (!sol) return null;
-    if (sol.status === "em_transporte") return { label: "Em Transporte", variant: "default" as const, color: "bg-blue-500 text-white border-0" };
-    if (sol.veiculo_id && (sol as any).motorista_nome) return { label: "Aguardando Saída", variant: "outline" as const, color: "border-blue-500 text-blue-600" };
-    if (sol.veiculo_id) return { label: "Aguardando Motorista", variant: "outline" as const, color: "border-yellow-500 text-yellow-600" };
-    return { label: "Transferência Pendente", variant: "outline" as const, color: "border-orange-500 text-orange-600" };
+    if (sol.status === "em_transporte") return { label: "🚑 Em Transporte", color: "bg-primary text-primary-foreground shadow-sm" };
+    if (sol.veiculo_id && (sol as any).motorista_nome) return { label: "✅ Aguardando Saída", color: "bg-emerald-50 text-emerald-700 border border-emerald-200" };
+    if (sol.veiculo_id) return { label: "⏳ Aguardando Motorista", color: "bg-amber-50 text-amber-700 border border-amber-200" };
+    return { label: "🔔 Transferência Pendente", color: "bg-orange-50 text-orange-700 border border-orange-200" };
   };
 
   const filteredPacientes = pacientes.filter(
