@@ -25,16 +25,22 @@ serve(async (req) => {
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    const systemPrompt = `Você é um assistente especializado em gerar atas de reuniões institucionais em português brasileiro.
-Analise a transcrição fornecida e retorne EXCLUSIVAMENTE uma chamada de ferramenta com os dados estruturados.
-Seja objetivo e profissional. Se a transcrição for curta ou incompleta, faça o melhor possível com o conteúdo disponível.`;
+    const systemPrompt = `Você é um secretário(a) executivo(a) especializado em redigir ATAS DE REUNIÃO completas e detalhadas em português brasileiro.
+
+REGRAS OBRIGATÓRIAS:
+1. NÃO RESUMA. Você deve registrar TODOS os pontos discutidos com o nível de detalhe em que foram falados. Se alguém explicou uma lógica de banco de dados, uma regra de negócio, um fluxo operacional — registre os detalhes técnicos, nomes de sistemas, campos, valores, etc.
+2. RASTREABILIDADE: Sempre que possível, identifique QUEM disse ou propôs cada ponto (ex: "Fulano propôs que...", "Ciclano questionou se..."). Use os nomes que aparecem na transcrição.
+3. PRESERVAR CONFLITOS E ALTERNATIVAS: Se houve discussão entre dois ou mais caminhos/opções, registre TODOS os caminhos considerados, os argumentos a favor e contra, e qual foi escolhido e por quê.
+4. PENDÊNCIAS LITERAIS: Extraia CADA tarefa, compromisso ou pendência mencionada literalmente, sem reformular. Mantenha as palavras originais do falante quando possível.
+5. O campo "registro_discussoes" deve conter a narrativa completa da reunião, organizada cronologicamente ou por tema, preservando o máximo de detalhes.
+6. O campo "resumo_executivo" deve ser um parágrafo curto (3-5 linhas) apenas para referência rápida — os detalhes ficam em "registro_discussoes".`;
 
     const userPrompt = `Reunião: "${titulo || "Sem título"}"
 
-Transcrição:
+Transcrição completa:
 ${transcricao}
 
-Gere a ata estruturada desta reunião.`;
+Gere a ata detalhada desta reunião conforme as regras.`;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -53,31 +59,52 @@ Gere a ata estruturada desta reunião.`;
             type: "function",
             function: {
               name: "gerar_ata",
-              description: "Gera a ata estruturada de uma reunião",
+              description: "Gera a ata completa e detalhada de uma reunião",
               parameters: {
                 type: "object",
                 properties: {
-                  resumo_executivo: { type: "string", description: "Resumo executivo da reunião em 2-4 parágrafos" },
-                  decisoes_tomadas: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Lista de decisões tomadas na reunião",
+                  resumo_executivo: {
+                    type: "string",
+                    description: "Parágrafo curto (3-5 linhas) com visão geral da reunião para referência rápida.",
                   },
-                  plano_acao: {
+                  registro_discussoes: {
+                    type: "string",
+                    description: "Narrativa COMPLETA e DETALHADA de tudo que foi discutido na reunião, organizada por tema ou cronologicamente. Inclua detalhes técnicos, regras de negócio, nomes de sistemas, valores, lógicas explicadas. Identifique quem falou o quê sempre que possível. Use parágrafos e marcadores para organizar. NÃO RESUMA — registre com riqueza de detalhes.",
+                  },
+                  conflitos_alternativas: {
                     type: "array",
                     items: {
                       type: "object",
                       properties: {
-                        tarefa: { type: "string" },
-                        responsavel: { type: "string" },
-                        prazo: { type: "string" },
+                        tema: { type: "string", description: "O tema ou questão onde houve divergência ou alternativas" },
+                        opcoes_consideradas: { type: "string", description: "As opções/caminhos que foram discutidos, com argumentos prós e contras" },
+                        decisao_final: { type: "string", description: "Qual opção foi escolhida e por quê" },
+                        proponentes: { type: "string", description: "Quem defendeu cada posição, se identificável" },
                       },
-                      required: ["tarefa", "responsavel", "prazo"],
+                      required: ["tema", "opcoes_consideradas", "decisao_final"],
                     },
-                    description: "Plano de ação com tarefas, responsáveis e prazos",
+                    description: "Pontos onde houve dúvida, divergência ou escolha entre alternativas. Registre o caminho descartado e o motivo.",
+                  },
+                  decisoes_tomadas: {
+                    type: "array",
+                    items: { type: "string" },
+                    description: "Lista de todas as decisões tomadas na reunião, com detalhes suficientes para entender o contexto.",
+                  },
+                  pendencias: {
+                    type: "array",
+                    items: {
+                      type: "object",
+                      properties: {
+                        descricao: { type: "string", description: "A pendência/tarefa EXATAMENTE como foi mencionada, preservando as palavras originais" },
+                        responsavel: { type: "string", description: "Quem ficou responsável" },
+                        prazo: { type: "string", description: "Prazo mencionado ou 'A definir'" },
+                      },
+                      required: ["descricao", "responsavel", "prazo"],
+                    },
+                    description: "TODAS as tarefas, compromissos e pendências mencionados, extraídos literalmente da transcrição.",
                   },
                 },
-                required: ["resumo_executivo", "decisoes_tomadas", "plano_acao"],
+                required: ["resumo_executivo", "registro_discussoes", "conflitos_alternativas", "decisoes_tomadas", "pendencias"],
               },
             },
           },
@@ -111,7 +138,26 @@ Gere a ata estruturada desta reunião.`;
       throw new Error("Resposta da IA não contém dados estruturados");
     }
 
-    const ata = JSON.parse(toolCall.function.arguments);
+    const ataRaw = JSON.parse(toolCall.function.arguments);
+
+    // Backwards-compatible: map pendencias -> plano_acao for legacy support
+    const ata = {
+      resumo_executivo: ataRaw.resumo_executivo || "",
+      registro_discussoes: ataRaw.registro_discussoes || "",
+      conflitos_alternativas: ataRaw.conflitos_alternativas || [],
+      decisoes_tomadas: ataRaw.decisoes_tomadas || [],
+      pendencias: (ataRaw.pendencias || []).map((p: any) => ({
+        descricao: p.descricao || p.tarefa || "",
+        responsavel: p.responsavel || "",
+        prazo: p.prazo || "A definir",
+      })),
+      // Keep plano_acao for backwards compat with agenda feature
+      plano_acao: (ataRaw.pendencias || []).map((p: any) => ({
+        tarefa: p.descricao || p.tarefa || "",
+        responsavel: p.responsavel || "",
+        prazo: p.prazo || "A definir",
+      })),
+    };
 
     return new Response(JSON.stringify({ ata }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
