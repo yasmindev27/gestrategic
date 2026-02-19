@@ -5079,6 +5079,95 @@ export type Database = {
           },
         ]
       }
+      transferencia_solicitacoes: {
+        Row: {
+          created_at: string
+          destino: string
+          hora_chegada: string | null
+          hora_saida: string | null
+          id: string
+          motivo: string | null
+          paciente_nome: string
+          prioridade: string
+          setor_origem: string
+          solicitado_por: string | null
+          solicitado_por_nome: string
+          status: string
+          updated_at: string
+          veiculo_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          destino: string
+          hora_chegada?: string | null
+          hora_saida?: string | null
+          id?: string
+          motivo?: string | null
+          paciente_nome: string
+          prioridade?: string
+          setor_origem: string
+          solicitado_por?: string | null
+          solicitado_por_nome: string
+          status?: string
+          updated_at?: string
+          veiculo_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          destino?: string
+          hora_chegada?: string | null
+          hora_saida?: string | null
+          id?: string
+          motivo?: string | null
+          paciente_nome?: string
+          prioridade?: string
+          setor_origem?: string
+          solicitado_por?: string | null
+          solicitado_por_nome?: string
+          status?: string
+          updated_at?: string
+          veiculo_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transferencia_solicitacoes_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "transferencia_veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transferencia_veiculos: {
+        Row: {
+          created_at: string
+          id: string
+          motorista_nome: string
+          placa: string
+          status: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          motorista_nome: string
+          placa: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          motorista_nome?: string
+          placa?: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       uniformes_seguranca: {
         Row: {
           created_at: string
