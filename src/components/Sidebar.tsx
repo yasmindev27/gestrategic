@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Users, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, FlaskConical, Calendar, ScrollText, UtensilsCrossed, Ambulance, FileText, UserCog, Shirt, HardHat, Heart, AlertTriangle, Syringe, ExternalLink, MessageSquare, Ticket, GraduationCap, Video, Building2 } from "lucide-react";
+import { LayoutDashboard, Users, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, FlaskConical, Calendar, UtensilsCrossed, Ambulance, FileText, UserCog, Shirt, HardHat, Heart, AlertTriangle, Syringe, ExternalLink, MessageSquare, Ticket, GraduationCap, Video, Building2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -80,7 +80,6 @@ const Sidebar = ({
         { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia", category: "administrativo" },
         { icon: Calendar, label: "Agenda", id: "agenda", category: "administrativo" },
         { icon: GraduationCap, label: "Capacitação", id: "lms", category: "administrativo" },
-        { icon: ScrollText, label: "Logs", id: "logs", category: "administrativo" },
         { icon: Shield, label: "Administração", id: "admin", category: "administrativo" },
         { icon: Video, label: "Reuniões", id: "reuniao", category: "administrativo" },
         { icon: FileText, label: "Docs Interact", id: "documentos-interact", category: "integracao" },

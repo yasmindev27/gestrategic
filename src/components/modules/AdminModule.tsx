@@ -74,6 +74,7 @@ import { SetoresManager } from "@/components/admin/SetoresManager";
 import { GestoresVinculacao } from "@/components/admin/GestoresVinculacao";
 import { PermissoesManager } from "@/components/admin/PermissoesManager";
 import { InfraestruturaPanel } from "@/components/admin/InfraestruturaPanel";
+import { LogsAuditoriaModule } from "@/components/modules/LogsAuditoriaModule";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -723,48 +724,7 @@ export const AdminModule = () => {
         </TabsContent>
 
         <TabsContent value="logs" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Acesso</CardTitle>
-              <CardDescription>
-                Últimas 100 ações registradas no sistema
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {logs.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Nenhum log registrado.
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Data/Hora</TableHead>
-                      <TableHead>Módulo</TableHead>
-                      <TableHead>Ação</TableHead>
-                      <TableHead>Detalhes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {logs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell>
-                          {format(new Date(log.created_at), "dd/MM/yy HH:mm:ss", { locale: ptBR })}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{log.modulo}</Badge>
-                        </TableCell>
-                        <TableCell>{log.acao}</TableCell>
-                        <TableCell className="max-w-xs truncate text-muted-foreground text-sm">
-                          {log.detalhes ? JSON.stringify(log.detalhes) : "-"}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+          <LogsAuditoriaModule />
         </TabsContent>
 
         <TabsContent value="infraestrutura" className="space-y-4 mt-4">
