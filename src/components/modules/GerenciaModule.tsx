@@ -3,11 +3,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Building2, AlertTriangle, Clock, CheckCircle2, Plus,
-  Filter, Users, TrendingUp, Search, History, CalendarClock, FileText, Brain
+  Filter, Users, TrendingUp, Search, History, CalendarClock, FileText, Brain, ReceiptText
 } from 'lucide-react';
 import { DISCFormModule } from '@/components/disc/DISCFormModule';
 import { LancamentoNotas } from '@/components/gerencia/LancamentoNotas';
 import { GestaoTalentos } from '@/components/gerencia/GestaoTalentos';
+import { DashboardFaturamento } from '@/components/faturamento/DashboardFaturamento';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -656,44 +657,64 @@ export function GerenciaModule() {
 
         {/* -- Tab: Visão por Setor -- */}
         <TabsContent value="setores" className="mt-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {resumoSetores.map(([setor, data]) => (
-              <Card
-                key={setor}
-                className={`cursor-pointer hover:shadow-md transition-shadow ${data.atrasados > 0 ? 'border-destructive/40' : ''}`}
-                onClick={() => { setFilterSetor(setor); }}
-              >
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-semibold flex items-center justify-between">
-                    {setor}
-                    {data.atrasados > 0 && (
-                      <Badge variant="destructive" className="text-xs">{data.atrasados} atrasado{data.atrasados > 1 ? 's' : ''}</Badge>
-                    )}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="flex gap-4 text-sm">
-                    <span className="text-muted-foreground">Total: <strong>{data.total}</strong></span>
-                    <span className="text-emerald-600">Concluídos: <strong>{data.concluidos}</strong></span>
-                  </div>
-                  {/* Progress bar */}
-                  <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-emerald-500 rounded-full transition-all"
-                      style={{ width: `${data.total > 0 ? (data.concluidos / data.total) * 100 : 0}%` }}
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-            {resumoSetores.length === 0 && (
-              <Card className="col-span-full">
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  Nenhum plano de ação cadastrado ainda.
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          <Tabs defaultValue="geral">
+            <TabsList className="mb-4">
+              <TabsTrigger value="geral" className="gap-2">
+                <Building2 className="h-4 w-4" />
+                Geral (Planos)
+              </TabsTrigger>
+              <TabsTrigger value="faturamento" className="gap-2">
+                <ReceiptText className="h-4 w-4" />
+                Faturamento
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Sub-tab: Visão geral dos planos por setor */}
+            <TabsContent value="geral">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {resumoSetores.map(([setor, data]) => (
+                  <Card
+                    key={setor}
+                    className={`cursor-pointer hover:shadow-md transition-shadow ${data.atrasados > 0 ? 'border-destructive/40' : ''}`}
+                    onClick={() => { setFilterSetor(setor); }}
+                  >
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold flex items-center justify-between">
+                        {setor}
+                        {data.atrasados > 0 && (
+                          <Badge variant="destructive" className="text-xs">{data.atrasados} atrasado{data.atrasados > 1 ? 's' : ''}</Badge>
+                        )}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="flex gap-4 text-sm">
+                        <span className="text-muted-foreground">Total: <strong>{data.total}</strong></span>
+                        <span className="text-emerald-600">Concluídos: <strong>{data.concluidos}</strong></span>
+                      </div>
+                      <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full transition-all"
+                          style={{ width: `${data.total > 0 ? (data.concluidos / data.total) * 100 : 0}%` }}
+                        />
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+                {resumoSetores.length === 0 && (
+                  <Card className="col-span-full">
+                    <CardContent className="p-8 text-center text-muted-foreground">
+                      Nenhum plano de ação cadastrado ainda.
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </TabsContent>
+
+            {/* Sub-tab: Dashboard de Faturamento */}
+            <TabsContent value="faturamento">
+              <DashboardFaturamento />
+            </TabsContent>
+          </Tabs>
         </TabsContent>
 
         {/* -- Tab: Lançamento de Notas -- */}
