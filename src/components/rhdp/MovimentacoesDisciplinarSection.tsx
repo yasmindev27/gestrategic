@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSetoresNomes } from "@/hooks/useSetores";
+import { useCargos } from "@/hooks/useProfissionais";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -86,7 +87,7 @@ const MOTIVOS_CLT = [
   "Outros",
 ];
 
-const CARGOS = ["Enfermeiro", "Técnico de Enfermagem", "Médico", "Recepcionista", "Administrativo", "Outros"];
+// Cargos são carregados dinamicamente do banco via useCargos()
 
 const STATUS_ASSINATURA = [
   { value: "assinado", label: "Assinado", variant: "success" as const },
@@ -112,6 +113,8 @@ export function MovimentacoesDisciplinarSection() {
   const { userId } = useUserRole();
   const queryClient = useQueryClient();
   const { data: setoresData = [] } = useSetoresNomes();
+  const { data: cargosDb = [] } = useCargos();
+  const CARGOS = cargosDb.map((c) => c.nome);
 
   // Filtros globais
   const [search, setSearch] = useState("");
