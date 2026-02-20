@@ -114,7 +114,7 @@ export const SaidaProntuariosModule = () => {
   // Filter states
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [statusFilter, setStatusFilter] = useState<string>("em_fluxo");
   const [showFilters, setShowFilters] = useState(false);
   const [salusAnalysis, setSalusAnalysis] = useState<AnalysisResult | null>(null);
   
@@ -204,7 +204,12 @@ export const SaidaProntuariosModule = () => {
     if (searchTerm) query = query.ilike("paciente_nome", `%${searchTerm}%`);
     if (dataInicio) query = query.gte("data_atendimento", dataInicio);
     if (dataFim) query = query.lte("data_atendimento", dataFim);
-    if (statusFilter !== "todos") query = query.eq("status", statusFilter);
+    
+    if (statusFilter === "em_fluxo") {
+      query = query.neq("status", "concluido");
+    } else if (statusFilter !== "todos") {
+      query = query.eq("status", statusFilter);
+    }
 
     const { data, error } = await query;
     if (!error && data) setSaidas(data as SaidaProntuario[]);
@@ -584,10 +589,10 @@ export const SaidaProntuariosModule = () => {
     setSearchTerm("");
     setDataInicio("");
     setDataFim("");
-    setStatusFilter("todos");
+    setStatusFilter("em_fluxo");
   };
 
-  const hasActiveFilters = searchTerm || dataInicio || dataFim || statusFilter !== "todos";
+  const hasActiveFilters = searchTerm || dataInicio || dataFim || (statusFilter !== "em_fluxo");
 
   // Check if a record is missing from Salus analysis
   const isMissingFromSalus = (saida: SaidaProntuario): boolean => {
@@ -1028,16 +1033,16 @@ export const SaidaProntuariosModule = () => {
                   <label className="text-sm font-medium mb-1 block">Status</label>
                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Todos" />
+                      <SelectValue placeholder="Em Fluxo" />
                     </SelectTrigger>
                     <SelectContent>
+                      <SelectItem value="em_fluxo">⚡ Em Fluxo (não concluídos)</SelectItem>
                       <SelectItem value="todos">Todos</SelectItem>
                       <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
                       <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
                       <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
                       <SelectItem value="em_avaliacao">Em Avaliação</SelectItem>
                       <SelectItem value="concluido">Concluído</SelectItem>
-                      <SelectItem value="pendente">Pendente</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
