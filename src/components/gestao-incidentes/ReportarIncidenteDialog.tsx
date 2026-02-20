@@ -101,16 +101,16 @@ export function ReportarIncidenteDialog({ onSectionChange }: ReportarIncidenteDi
               <CardTitle className="text-base text-primary">Exemplos de Reportes</CardTitle>
             </CardHeader>
             <CardContent className="text-sm space-y-2">
-              <div className="p-2 bg-background rounded">
-                <p className="font-medium">⚠️ Equipamento</p>
+              <div className="p-2 bg-background rounded border">
+                <p className="font-medium text-destructive">Equipamento</p>
                 <p className="text-muted-foreground">Monitor cardíaco com falha intermitente</p>
               </div>
-              <div className="p-2 bg-background rounded">
-                <p className="font-medium">🔶 Laudo</p>
+              <div className="p-2 bg-background rounded border">
+                <p className="font-medium text-warning">Laudo</p>
                 <p className="text-muted-foreground">Resultado de exame crítico atrasado</p>
               </div>
-              <div className="p-2 bg-background rounded">
-                <p className="font-medium">💊 Medicamento</p>
+              <div className="p-2 bg-background rounded border">
+                <p className="font-medium text-primary">Medicamento</p>
                 <p className="text-muted-foreground">Dose quase administrada errada</p>
               </div>
             </CardContent>

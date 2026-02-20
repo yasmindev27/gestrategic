@@ -561,9 +561,9 @@ export const AbrirChamadoModule = ({ onOpenExternal }: AbrirChamadoModuleProps) 
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="baixa">🟢 Baixa - Melhorias, preventivas</SelectItem>
-                    <SelectItem value="media">🟡 Média - Afeta produtividade</SelectItem>
-                    <SelectItem value="alta">🟠 Alta - Equipamentos importantes</SelectItem>
-                    <SelectItem value="urgente">🔴 Urgente - Risco à vida/suporte vital</SelectItem>
+                    <SelectItem value="media">Média — Afeta produtividade</SelectItem>
+                    <SelectItem value="alta">Alta — Equipamentos importantes</SelectItem>
+                    <SelectItem value="urgente">Urgente — Risco à vida / suporte vital</SelectItem>
                   </SelectContent>
                 </Select>
               )}

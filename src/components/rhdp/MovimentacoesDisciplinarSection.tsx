@@ -480,7 +480,7 @@ export function MovimentacoesDisciplinarSection() {
                                 </div>
                               )}
                               {isCritico && (
-                                <Badge variant="destructive" className="text-xs mt-1">⚠ Crítico</Badge>
+                                <Badge variant="destructive" className="text-xs mt-1">Crítico</Badge>
                               )}
                             </TableCell>
                             <TableCell>

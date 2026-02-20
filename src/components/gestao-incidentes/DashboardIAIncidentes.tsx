@@ -297,16 +297,16 @@ export function DashboardIAIncidentes() {
                     <p className="font-medium text-sm mb-2">{rec.acao}</p>
                     <div className="flex flex-wrap gap-2">
                       {rec.setor_alvo && (
-                        <Badge variant="outline" className="text-xs">
-                          📍 {rec.setor_alvo}
+                        <Badge variant="outline" className="text-xs gap-1">
+                          <Building2 className="h-3 w-3" />{rec.setor_alvo}
                         </Badge>
                       )}
-                      <Badge variant="outline" className="text-xs">
-                        ⏰ {rec.prazo}
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <Target className="h-3 w-3" />{rec.prazo}
                       </Badge>
                       {rec.base_normativa && (
-                        <Badge variant="secondary" className="text-xs">
-                          📚 {rec.base_normativa}
+                        <Badge variant="secondary" className="text-xs gap-1">
+                          <Lightbulb className="h-3 w-3" />{rec.base_normativa}
                         </Badge>
                       )}
                     </div>

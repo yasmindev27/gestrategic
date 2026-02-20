@@ -16,13 +16,15 @@ interface ReportarIncidenteRapidoProps {
   onIncidenteRegistrado?: () => void;
 }
 
+import { PersonStanding, Pill, Wrench, Tag, FileStack, MoreHorizontal } from "lucide-react";
+
 const tiposIncidente = [
-  { value: "queda", label: "Queda", icon: "🚶" },
-  { value: "erro_medicacao", label: "Erro de Medicação", icon: "💊" },
-  { value: "falha_equipamento", label: "Falha em Equipamento", icon: "🔧" },
-  { value: "erro_identificacao", label: "Erro de Identificação", icon: "🏷️" },
-  { value: "atraso_laudo", label: "Atraso em Laudo", icon: "📋" },
-  { value: "outros", label: "Outros", icon: "📝" },
+  { value: "queda", label: "Queda", icon: PersonStanding },
+  { value: "erro_medicacao", label: "Erro de Medicação", icon: Pill },
+  { value: "falha_equipamento", label: "Falha em Equipamento", icon: Wrench },
+  { value: "erro_identificacao", label: "Erro de Identificação", icon: Tag },
+  { value: "atraso_laudo", label: "Atraso em Laudo", icon: FileStack },
+  { value: "outros", label: "Outros", icon: MoreHorizontal },
 ];
 
 const setoresCompletos = [
@@ -241,7 +243,9 @@ export function ReportarIncidenteRapido({ onIncidenteRegistrado }: ReportarIncid
         <div className="space-y-3">
           <Label className="text-sm font-medium">Tipo de Incidente *</Label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {tiposIncidente.map((tipo) => (
+            {tiposIncidente.map((tipo) => {
+              const Icon = tipo.icon;
+              return (
               <button
                 key={tipo.value}
                 type="button"
@@ -253,11 +257,12 @@ export function ReportarIncidenteRapido({ onIncidenteRegistrado }: ReportarIncid
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">{tipo.icon}</span>
+                  <Icon className="h-5 w-5 text-muted-foreground" />
                   <span className="font-medium text-sm">{tipo.label}</span>
                 </div>
               </button>
-            ))}
+            );
+            })}
           </div>
         </div>
 
