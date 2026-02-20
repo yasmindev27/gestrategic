@@ -621,7 +621,7 @@ export const FaturamentoModule = () => {
                   const avaliacao = avaliacoes.find(a => a.saida_prontuario_id === saida.id && a.is_finalizada);
                   return (
                     <TableRow key={saida.id}>
-                      <TableCell className="font-medium">{saida.paciente_nome || "-"}</TableCell>
+                      <TableCell className="font-medium uppercase">{saida.paciente_nome || "-"}</TableCell>
                       <TableCell>
                         {safeFormatDate(saida.nascimento_mae, "dd/MM/yyyy")}
                       </TableCell>
