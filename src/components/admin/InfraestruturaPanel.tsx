@@ -281,7 +281,7 @@ export function InfraestruturaPanel() {
                   />
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {value > 85 ? "⚠ Uso elevado" : value > 70 ? "Atenção" : "Normal"}
+                  {value > 85 ? "Uso elevado" : value > 70 ? "Atenção" : "Normal"}
                 </p>
               </CardContent>
             </Card>

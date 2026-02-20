@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, AlertTriangle, Lightbulb, Target, Loader2, CheckCircle2, Clock, Save, Wand2 } from "lucide-react";
+import { Brain, AlertTriangle, Lightbulb, Target, Loader2, CheckCircle2, Clock, Save, Wand2, UserCheck } from "lucide-react";
 
 interface IncidenteData {
   id?: string;
@@ -56,11 +56,11 @@ const CATEGORIA_LABELS: Record<string, string> = {
   fator_paciente: "Fator do Paciente",
 };
 
-const CLASSIFICACAO_ICONS: Record<string, { icon: string; color: string }> = {
-  circunstancia_notificavel: { icon: "📋", color: "bg-blue-500" },
-  quase_erro: { icon: "⚠️", color: "bg-yellow-500" },
-  incidente_sem_dano: { icon: "🔶", color: "bg-orange-500" },
-  evento_adverso: { icon: "🔴", color: "bg-red-600" },
+const CLASSIFICACAO_CORES: Record<string, string> = {
+  circunstancia_notificavel: "bg-blue-500",
+  quase_erro: "bg-yellow-500",
+  incidente_sem_dano: "bg-orange-500",
+  evento_adverso: "bg-red-600",
 };
 
 const PRIORIDADE_COLORS: Record<string, string> = {
@@ -295,9 +295,7 @@ export function AnalisarIncidenteIA({
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between">
                         <div className="flex items-center gap-3">
-                          <span className="text-2xl">
-                            {CLASSIFICACAO_ICONS[analise.classificacao_sugerida.tipo]?.icon || "📋"}
-                          </span>
+                          <div className={`w-4 h-4 rounded-full ${CLASSIFICACAO_CORES[analise.classificacao_sugerida.tipo] || "bg-muted"}`} />
                           <div>
                             <p className="font-medium">{analise.classificacao_sugerida.label}</p>
                             <p className="text-sm text-muted-foreground">
@@ -370,8 +368,8 @@ export function AnalisarIncidenteIA({
                             <div className="flex-1">
                               <p className="font-medium text-sm">{acao.acao}</p>
                               <div className="flex flex-wrap gap-2 mt-2">
-                                <Badge variant="outline" className="text-xs">
-                                  👤 {acao.responsavel_sugerido}
+                                <Badge variant="outline" className="text-xs gap-1">
+                                  <UserCheck className="h-3 w-3" />{acao.responsavel_sugerido}
                                 </Badge>
                                 <Badge variant="outline" className="text-xs">
                                   <Clock className="h-3 w-3 mr-1" />

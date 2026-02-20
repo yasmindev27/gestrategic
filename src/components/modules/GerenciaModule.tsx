@@ -418,7 +418,7 @@ export function GerenciaModule() {
                 <AlertTriangle className="h-6 w-6 text-destructive" />
               </div>
               <div>
-                <p className="text-lg font-bold text-destructive">⚠ {inconsistencias.length} Inconsistência{inconsistencias.length > 1 ? 's' : ''} Crítica{inconsistencias.length > 1 ? 's' : ''} Detectada{inconsistencias.length > 1 ? 's' : ''}</p>
+                <p className="text-lg font-bold text-destructive">{inconsistencias.length} Inconsistência{inconsistencias.length > 1 ? 's' : ''} Crítica{inconsistencias.length > 1 ? 's' : ''} Detectada{inconsistencias.length > 1 ? 's' : ''}</p>
                 <p className="text-sm text-destructive/80">Profissionais escalados com atestado registrado no mesmo período</p>
               </div>
             </div>
