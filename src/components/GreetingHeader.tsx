@@ -27,7 +27,7 @@ const getGreeting = () => {
 };
 
 const GreetingHeader = () => {
-  const [userName, setUserName] = useState<string>("Usuário");
+  const [userName, setUserName] = useState<string>("Administrador do Sistema");
   const greeting = getGreeting();
   const Icon = greeting.icon;
   const today = new Date().toLocaleDateString('pt-BR', { 
@@ -41,7 +41,7 @@ const GreetingHeader = () => {
     const fetchUserName = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Usuário";
+        const fullName = user.user_metadata?.full_name || user.email?.split("@")[0] || "Administrador do Sistema";
         // Get first name only
         const firstName = fullName.split(" ")[0];
         setUserName(firstName);
