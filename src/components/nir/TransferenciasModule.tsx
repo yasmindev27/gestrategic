@@ -84,6 +84,8 @@ export const TransferenciasModule = () => {
   const [selectedSolicitacao, setSelectedSolicitacao] = useState<Solicitacao | null>(null);
   const [selectedPaciente, setSelectedPaciente] = useState<PacienteInternado | null>(null);
   const [veiculoStatsOpen, setVeiculoStatsOpen] = useState(false);
+  const [lastCoord, setLastCoord] = useState<{ lat: number; lng: number; registrado_em: string } | null>(null);
+  const [loadingCoord, setLoadingCoord] = useState(false);
   const [veiculoStatsId, setVeiculoStatsId] = useState<string | null>(null);
   const [veiculoStatsData, setVeiculoStatsData] = useState<{ dia: number; semana: number; mes: number; ano: number; kmDia: number; kmSemana: number; kmMes: number; kmAno: number } | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
@@ -320,6 +322,33 @@ export const TransferenciasModule = () => {
     XLSX.writeFile(wb, `transferencias_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
     toast({ title: "Excel exportado com sucesso!" });
   };
+
+  const loadLastCoord = useCallback(async (solicitacaoId: string) => {
+    setLoadingCoord(true);
+    setLastCoord(null);
+    try {
+      const { data } = await supabase
+        .from("transferencia_coordenadas")
+        .select("latitude, longitude, registrado_em")
+        .eq("solicitacao_id", solicitacaoId)
+        .order("registrado_em", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (data) {
+        setLastCoord({ lat: data.latitude, lng: data.longitude, registrado_em: data.registrado_em });
+      }
+    } finally {
+      setLoadingCoord(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (mapDialogOpen && selectedSolicitacao) {
+      loadLastCoord(selectedSolicitacao.id);
+    } else {
+      setLastCoord(null);
+    }
+  }, [mapDialogOpen, selectedSolicitacao, loadLastCoord]);
 
   const loadVeiculoStats = async (veiculoId: string) => {
     setVeiculoStatsId(veiculoId);
@@ -688,21 +717,19 @@ export const TransferenciasModule = () => {
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-primary" />
+              <Navigation className="h-4 w-4 text-primary" />
               Localização do Veículo
             </DialogTitle>
           </DialogHeader>
           {selectedSolicitacao && (() => {
             const veiculo = veiculos.find(v => v.id === selectedSolicitacao.veiculo_id);
             const cfg = STATUS_CONFIG[selectedSolicitacao.status] || STATUS_CONFIG.pendente;
-            // Simulated coordinates near Governador Valadares, MG
-            const simulatedLat = -18.8509 + (Math.random() - 0.5) * 0.05;
-            const simulatedLng = -41.9494 + (Math.random() - 0.5) * 0.05;
-            const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${simulatedLng - 0.01}%2C${simulatedLat - 0.01}%2C${simulatedLng + 0.01}%2C${simulatedLat + 0.01}&layer=mapnik&marker=${simulatedLat}%2C${simulatedLng}`;
+            const mapUrl = lastCoord
+              ? `https://www.openstreetmap.org/export/embed.html?bbox=${lastCoord.lng - 0.01}%2C${lastCoord.lat - 0.01}%2C${lastCoord.lng + 0.01}%2C${lastCoord.lat + 0.01}&layer=mapnik&marker=${lastCoord.lat}%2C${lastCoord.lng}`
+              : null;
 
             return (
-              <div className="space-y-4">
-                {/* Info cards */}
+              <div className="space-y-4 mt-2">
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-lg border p-3 space-y-1">
                     <p className="text-xs text-muted-foreground">Paciente</p>
@@ -740,23 +767,43 @@ export const TransferenciasModule = () => {
                   </div>
                 </div>
 
-                {/* Map */}
                 <div className="rounded-lg overflow-hidden border relative">
-                  <iframe
-                    src={mapUrl}
-                    className="w-full h-[350px] border-0"
-                    title="Localização do veículo"
-                  />
-                  <div className="absolute bottom-2 left-2 bg-background/90 backdrop-blur-sm rounded-md px-3 py-1.5 text-xs text-muted-foreground flex items-center gap-1.5 border">
-                    <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                    Localização simulada — GPS do motorista será integrado em breve
-                  </div>
+                  {loadingCoord ? (
+                    <div className="w-full h-[350px] flex items-center justify-center bg-muted/30">
+                      <div className="text-center text-muted-foreground">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-2" />
+                        <p className="text-xs">Buscando localização GPS...</p>
+                      </div>
+                    </div>
+                  ) : mapUrl ? (
+                    <>
+                      <iframe
+                        src={mapUrl}
+                        className="w-full h-[350px] border-0"
+                        title="Localização do veículo"
+                        loading="lazy"
+                      />
+                      <div className="absolute bottom-2 left-2 bg-background/90 backdrop-blur-sm rounded-md px-3 py-1.5 text-xs text-muted-foreground flex items-center gap-1.5 border">
+                        <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                        GPS real — atualizado em {new Date(lastCoord!.registrado_em).toLocaleTimeString("pt-BR")}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="w-full h-[350px] flex items-center justify-center bg-muted/30">
+                      <div className="text-center text-muted-foreground">
+                        <Navigation className="h-10 w-10 mx-auto mb-2 opacity-30" />
+                        <p className="text-sm font-medium">Sem dados de GPS</p>
+                        <p className="text-xs mt-1">Nenhuma coordenada registrada para esta missão</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );
           })()}
         </DialogContent>
       </Dialog>
+
 
       {/* Vehicle Stats Dialog */}
       <Dialog open={veiculoStatsOpen} onOpenChange={setVeiculoStatsOpen}>
