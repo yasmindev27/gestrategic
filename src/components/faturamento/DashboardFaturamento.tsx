@@ -225,15 +225,19 @@ export function DashboardFaturamento() {
       if (a.is_finalizada) map[a.avaliador_id].avaliados++;
     });
 
+    const META = 100;
+
     return Object.values(map)
       .map((item) => {
         const profile = profiles.find((p) => p.user_id === item.avaliador_id);
-        const eficiencia = item.lancados > 0 ? ((item.avaliados / item.lancados) * 100).toFixed(0) : "0";
+        const progressoMeta = Math.min((item.avaliados / META) * 100, 100);
+        const metaAtingida = item.avaliados >= META;
         return {
           ...item,
           nome: profile?.full_name || "Avaliador Desconhecido",
           cargo: profile?.cargo || "—",
-          eficiencia: Number(eficiencia),
+          progressoMeta: Math.round(progressoMeta),
+          metaAtingida,
         };
       })
       .sort((a, b) => b.avaliados - a.avaliados);
@@ -498,9 +502,8 @@ export function DashboardFaturamento() {
                   <TableHead className="w-10">#</TableHead>
                   <TableHead>Profissional</TableHead>
                   <TableHead>Cargo</TableHead>
-                  <TableHead className="text-center">Iniciadas</TableHead>
-                  <TableHead className="text-center">Finalizadas</TableHead>
-                  <TableHead className="text-center">% Eficiência</TableHead>
+                  <TableHead className="text-center">Avaliados</TableHead>
+                  <TableHead className="text-center">Meta (100)</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -508,7 +511,7 @@ export function DashboardFaturamento() {
                   <TableRow key={item.avaliador_id}>
                     <TableCell>
                       <div className="flex items-center justify-center">
-                        {index === 0 ? (
+                        {item.metaAtingida ? (
                           <Trophy className="h-4 w-4 text-amber-500" />
                         ) : (
                           <span className="text-muted-foreground text-sm font-medium">{index + 1}</span>
@@ -518,10 +521,7 @@ export function DashboardFaturamento() {
                     <TableCell className="font-medium">{item.nome}</TableCell>
                     <TableCell className="text-muted-foreground">{item.cargo}</TableCell>
                     <TableCell className="text-center">
-                      <Badge variant="outline">{item.lancados}</Badge>
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Badge className="bg-green-500/10 text-green-700 border-green-200">
+                      <Badge className={item.metaAtingida ? "bg-green-500/10 text-green-700 border-green-200" : ""} variant={item.metaAtingida ? "outline" : "outline"}>
                         {item.avaliados}
                       </Badge>
                     </TableCell>
@@ -529,26 +529,26 @@ export function DashboardFaturamento() {
                       <div className="flex items-center justify-center gap-2">
                         <div className="w-20 bg-muted rounded-full h-2">
                           <div
-                            className={`h-2 rounded-full ${
-                              item.eficiencia >= 80
+                            className={`h-2 rounded-full transition-all ${
+                              item.metaAtingida
                                 ? "bg-green-500"
-                                : item.eficiencia >= 50
+                                : item.progressoMeta >= 50
                                 ? "bg-amber-500"
                                 : "bg-destructive"
                             }`}
-                            style={{ width: `${Math.min(item.eficiencia, 100)}%` }}
+                            style={{ width: `${item.progressoMeta}%` }}
                           />
                         </div>
                         <span
                           className={`text-sm font-bold ${
-                            item.eficiencia >= 80
+                            item.metaAtingida
                               ? "text-green-600"
-                              : item.eficiencia >= 50
+                              : item.progressoMeta >= 50
                               ? "text-amber-600"
                               : "text-destructive"
                           }`}
                         >
-                          {item.eficiencia}%
+                          {item.metaAtingida ? "✓ Meta" : `${item.progressoMeta}%`}
                         </span>
                       </div>
                     </TableCell>
