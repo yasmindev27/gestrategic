@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,39 +10,48 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { 
-  Search, 
-  CalendarIcon, 
-  Filter, 
-  FileText, 
-  Loader2, 
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Search,
+  CalendarIcon,
+  Filter,
+  FileText,
+  Loader2,
   RefreshCw,
   Eye,
   User,
   Activity,
   Clock,
   Download,
-  FileSpreadsheet
+  FileSpreadsheet,
+  ShieldCheck,
+  UserCheck,
+  Pencil,
+  Trash2,
+  LogIn,
+  LogOut,
+  Plus,
+  AlertTriangle,
+  Info,
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-// Função para sanitização de HTML - previne XSS
+// ── Sanitização XSS ──────────────────────────────────────────────────────────
 const escapeHtml = (text: string | null | undefined): string => {
   if (text == null) return "";
-  const div = document.createElement('div');
+  const div = document.createElement("div");
   div.textContent = String(text);
   return div.innerHTML;
 };
-
-// Função para sanitizar objetos JSON
 const escapeJson = (obj: unknown): string => {
   if (obj == null) return "-";
   return escapeHtml(JSON.stringify(obj));
 };
 
+// ── Tipos ────────────────────────────────────────────────────────────────────
 interface LogEntry {
   id: string;
   user_id: string | null;
@@ -54,29 +63,102 @@ interface LogEntry {
   user_name?: string;
 }
 
-const acaoLabels: Record<string, { label: string; color: string }> = {
-  acesso: { label: "Acesso", color: "bg-blue-500/10 text-blue-600 border-blue-200" },
-  criar: { label: "Criar", color: "bg-green-500/10 text-green-600 border-green-200" },
-  editar: { label: "Editar", color: "bg-yellow-500/10 text-yellow-600 border-yellow-200" },
-  excluir: { label: "Excluir", color: "bg-red-500/10 text-red-600 border-red-200" },
-  login: { label: "Login", color: "bg-primary/10 text-primary border-primary/20" },
-  logout: { label: "Logout", color: "bg-muted text-muted-foreground border-border" },
+// Trilha de auditoria derivada dos logs
+interface TrilhaEntry {
+  id: string;
+  quem: string;
+  quem_id: string | null;
+  o_que: string;
+  em_qual: string;
+  modulo: string;
+  data_hora: string;
+  impacto: "baixo" | "medio" | "alto";
+  detalhes: Record<string, unknown> | null;
+  acao_raw: string;
+}
+
+// ── Mapa de ações ─────────────────────────────────────────────────────────────
+const acaoConfig: Record<string, {
+  label: string;
+  descricao: string;
+  color: string;
+  icon: React.ElementType;
+  impacto: TrilhaEntry["impacto"];
+}> = {
+  acesso:        { label: "Acesso",        descricao: "Visualizou módulo",           color: "bg-blue-500/10 text-blue-600 border-blue-200",       icon: Info,       impacto: "baixo" },
+  criar:         { label: "Criar",         descricao: "Criou novo registro",          color: "bg-emerald-500/10 text-emerald-600 border-emerald-200", icon: Plus,       impacto: "medio" },
+  editar:        { label: "Editar",        descricao: "Editou registro existente",    color: "bg-amber-500/10 text-amber-600 border-amber-200",    icon: Pencil,     impacto: "medio" },
+  excluir:       { label: "Excluir",       descricao: "Removeu registro",             color: "bg-destructive/10 text-destructive border-destructive/20", icon: Trash2,  impacto: "alto"  },
+  login:         { label: "Login",         descricao: "Autenticou no sistema",        color: "bg-primary/10 text-primary border-primary/20",       icon: LogIn,      impacto: "baixo" },
+  logout:        { label: "Logout",        descricao: "Encerrou sessão",              color: "bg-muted text-muted-foreground border-border",        icon: LogOut,     impacto: "baixo" },
+  alterar_role:  { label: "Alterar Perfil", descricao: "Alterou perfil de acesso",   color: "bg-purple-500/10 text-purple-600 border-purple-200", icon: UserCheck,  impacto: "alto"  },
+  exportar:      { label: "Exportar",      descricao: "Exportou dados",               color: "bg-orange-500/10 text-orange-600 border-orange-200", icon: Download,   impacto: "medio" },
 };
 
+const getAcaoConfig = (acao: string) =>
+  acaoConfig[acao] ?? { label: acao, descricao: acao, color: "bg-muted text-muted-foreground border-border", icon: Activity, impacto: "baixo" as const };
+
+const impactoConfig: Record<TrilhaEntry["impacto"], { label: string; color: string }> = {
+  baixo: { label: "Baixo",  color: "bg-emerald-500/10 text-emerald-600 border-emerald-200" },
+  medio: { label: "Médio",  color: "bg-amber-500/10 text-amber-600 border-amber-200" },
+  alto:  { label: "Alto",   color: "bg-destructive/10 text-destructive border-destructive/20" },
+};
+
+// ── Deriva trilha a partir dos logs ──────────────────────────────────────────
+const derivarTrilha = (logs: LogEntry[]): TrilhaEntry[] =>
+  logs.map((log): TrilhaEntry => {
+    const cfg = getAcaoConfig(log.acao);
+    const det = log.detalhes || {};
+
+    // "Em qual registro" — tenta extrair do campo detalhes
+    const emQual =
+      (det.nome as string) ||
+      (det.titulo as string) ||
+      (det.numero_chamado as string) ||
+      (det.numero_notificacao as string) ||
+      (det.paciente_nome as string) ||
+      (det.full_name as string) ||
+      (det.registro_id as string) ||
+      formatModulo(log.modulo);
+
+    // "O que fez" — combina ação com módulo
+    const oQue = `${cfg.descricao} em ${formatModulo(log.modulo)}`;
+
+    return {
+      id: log.id,
+      quem: log.user_name || "Sistema",
+      quem_id: log.user_id,
+      o_que: oQue,
+      em_qual: emQual,
+      modulo: log.modulo,
+      data_hora: log.created_at,
+      impacto: cfg.impacto,
+      detalhes: log.detalhes,
+      acao_raw: log.acao,
+    };
+  });
+
+// ── Helper ────────────────────────────────────────────────────────────────────
+function formatModulo(modulo: string) {
+  return modulo.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+}
+
+// ── Componente principal ──────────────────────────────────────────────────────
 export const LogsAuditoriaModule = () => {
-  const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [logs, setLogs]           = useState<LogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [selectedModulo, setSelectedModulo] = useState<string>("todos");
-  const [selectedAcao, setSelectedAcao] = useState<string>("todos");
+  const [selectedModulo, setSelectedModulo] = useState("todos");
+  const [selectedAcao, setSelectedAcao]     = useState("todos");
   const [dateFrom, setDateFrom] = useState<Date | undefined>(subDays(new Date(), 7));
-  const [dateTo, setDateTo] = useState<Date | undefined>(new Date());
-  const [modulos, setModulos] = useState<string[]>([]);
+  const [dateTo,   setDateTo]   = useState<Date | undefined>(new Date());
+  const [modulos, setModulos]   = useState<string[]>([]);
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
-  const [totalCount, setTotalCount] = useState(0);
+  const [totalCount, setTotalCount]   = useState(0);
   const [page, setPage] = useState(1);
   const pageSize = 50;
 
+  // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchLogs = async () => {
     setIsLoading(true);
     try {
@@ -85,36 +167,22 @@ export const LogsAuditoriaModule = () => {
         .select("*", { count: "exact" })
         .order("created_at", { ascending: false });
 
-      if (dateFrom) {
-        query = query.gte("created_at", startOfDay(dateFrom).toISOString());
-      }
-      if (dateTo) {
-        query = query.lte("created_at", endOfDay(dateTo).toISOString());
-      }
-      if (selectedModulo !== "todos") {
-        query = query.eq("modulo", selectedModulo);
-      }
-      if (selectedAcao !== "todos") {
-        query = query.eq("acao", selectedAcao);
-      }
+      if (dateFrom) query = query.gte("created_at", startOfDay(dateFrom).toISOString());
+      if (dateTo)   query = query.lte("created_at", endOfDay(dateTo).toISOString());
+      if (selectedModulo !== "todos") query = query.eq("modulo", selectedModulo);
+      if (selectedAcao   !== "todos") query = query.eq("acao", selectedAcao);
 
-      // Pagination
       const from = (page - 1) * pageSize;
-      const to = from + pageSize - 1;
-      query = query.range(from, to);
+      query = query.range(from, from + pageSize - 1);
 
       const { data, error, count } = await query;
-
       if (error) throw error;
 
-      // Fetch user names for each unique user_id using RPC function
+      // Nomes de usuário via RPC
       const userIds = [...new Set((data || []).map(l => l.user_id).filter(Boolean))] as string[];
-      
       let userMap: Record<string, string> = {};
       if (userIds.length > 0) {
-        const { data: userNames } = await supabase
-          .rpc("get_user_names_by_ids", { _user_ids: userIds });
-        
+        const { data: userNames } = await supabase.rpc("get_user_names_by_ids", { _user_ids: userIds });
         if (userNames) {
           userMap = (userNames as { user_id: string; full_name: string }[]).reduce((acc, p) => {
             acc[p.user_id] = p.full_name;
@@ -126,159 +194,114 @@ export const LogsAuditoriaModule = () => {
       const logsWithNames = (data || []).map(log => ({
         ...log,
         user_name: log.user_id ? userMap[log.user_id] || "Usuário removido" : "Sistema",
-        detalhes: log.detalhes as Record<string, unknown> | null
+        detalhes: log.detalhes as Record<string, unknown> | null,
       }));
 
       setLogs(logsWithNames);
       setTotalCount(count || 0);
-    } catch (error) {
-      console.error("Erro ao buscar logs:", error);
+    } catch (err) {
+      console.error("Erro ao buscar logs:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
   const fetchModulos = async () => {
-    try {
-      const { data } = await supabase
-        .from("logs_acesso")
-        .select("modulo")
-        .order("modulo");
-      
-      if (data) {
-        const uniqueModulos = [...new Set(data.map(d => d.modulo))];
-        setModulos(uniqueModulos);
-      }
-    } catch (error) {
-      console.error("Erro ao buscar módulos:", error);
-    }
+    const { data } = await supabase.from("logs_acesso").select("modulo").order("modulo");
+    if (data) setModulos([...new Set(data.map(d => d.modulo))]);
   };
 
-  useEffect(() => {
-    fetchModulos();
-  }, []);
+  useEffect(() => { fetchModulos(); }, []);
+  useEffect(() => { fetchLogs(); }, [selectedModulo, selectedAcao, dateFrom, dateTo, page]);
 
-  useEffect(() => {
-    fetchLogs();
-  }, [selectedModulo, selectedAcao, dateFrom, dateTo, page]);
-
+  // ── Filtro local ──────────────────────────────────────────────────────────
   const filteredLogs = logs.filter(log => {
     if (!searchTerm) return true;
-    const search = searchTerm.toLowerCase();
+    const s = searchTerm.toLowerCase();
     return (
-      log.user_name?.toLowerCase().includes(search) ||
-      log.modulo.toLowerCase().includes(search) ||
-      log.acao.toLowerCase().includes(search)
+      (log.user_name?.toLowerCase().includes(s)) ||
+      log.modulo.toLowerCase().includes(s) ||
+      log.acao.toLowerCase().includes(s)
     );
   });
 
-  const getAcaoBadge = (acao: string) => {
-    const config = acaoLabels[acao] || { label: acao, color: "bg-muted text-muted-foreground" };
-    return (
-      <Badge variant="outline" className={cn("font-medium", config.color)}>
-        {config.label}
-      </Badge>
-    );
+  const trilha = derivarTrilha(filteredLogs);
+
+  // ── KPIs ──────────────────────────────────────────────────────────────────
+  const altosImpacto = trilha.filter(t => t.impacto === "alto").length;
+  const usuariosUnicos = new Set(logs.map(l => l.user_id)).size;
+  const ultimoEvento = logs[0]
+    ? format(new Date(logs[0].created_at), "HH:mm", { locale: ptBR })
+    : "--:--";
+
+  // ── Export ────────────────────────────────────────────────────────────────
+  const exportToCSV = () => {
+    const headers = ["Data/Hora", "Quem fez", "O que fez", "Em qual registro", "Módulo", "Impacto", "Detalhes"];
+    const rows = trilha.map(t => [
+      format(new Date(t.data_hora), "dd/MM/yyyy HH:mm:ss"),
+      t.quem,
+      t.o_que,
+      t.em_qual,
+      formatModulo(t.modulo),
+      impactoConfig[t.impacto].label,
+      t.detalhes ? JSON.stringify(t.detalhes) : "",
+    ]);
+    const csv = [headers.join(";"), ...rows.map(r => r.map(c => `"${c}"`).join(";"))].join("\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `trilha_auditoria_${format(new Date(), "yyyy-MM-dd_HH-mm")}.csv`;
+    a.click();
   };
 
-  const formatModulo = (modulo: string) => {
-    return modulo
-      .split("_")
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+  const exportToPDF = () => {
+    const win = window.open("", "_blank");
+    if (!win) return;
+    win.document.write(`<!DOCTYPE html><html><head>
+      <title>Trilha de Auditoria — ${format(new Date(), "dd/MM/yyyy HH:mm")}</title>
+      <style>
+        body{font-family:Arial,sans-serif;margin:20px;font-size:11px}
+        h1{font-size:16px;margin-bottom:4px}
+        p{color:#666;font-size:11px;margin:2px 0}
+        table{width:100%;border-collapse:collapse;margin-top:16px}
+        th,td{border:1px solid #ddd;padding:6px;text-align:left}
+        th{background:#f5f5f5;font-weight:bold}
+        tr:nth-child(even){background:#fafafa}
+        .alto{color:#dc2626;font-weight:bold}
+        .medio{color:#ca8a04}
+        .baixo{color:#16a34a}
+        @media print{body{margin:0}}
+      </style></head><body>
+      <h1>Trilha de Auditoria — LGPD/ONA Compliance</h1>
+      <p>Gerado em: ${escapeHtml(format(new Date(), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR }))}</p>
+      <p>Período: ${escapeHtml(dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Início")} até ${escapeHtml(dateTo ? format(dateTo, "dd/MM/yyyy") : "Hoje")}</p>
+      <p>Total de eventos: ${filteredLogs.length}</p>
+      <table><thead><tr>
+        <th>Data/Hora</th><th>Quem fez</th><th>O que fez</th><th>Em qual registro</th><th>Impacto</th>
+      </tr></thead><tbody>
+      ${trilha.map(t => `<tr>
+        <td>${escapeHtml(format(new Date(t.data_hora), "dd/MM/yyyy HH:mm:ss"))}</td>
+        <td>${escapeHtml(t.quem)}</td>
+        <td>${escapeHtml(t.o_que)}</td>
+        <td>${escapeHtml(t.em_qual)}</td>
+        <td class="${t.impacto}">${escapeHtml(impactoConfig[t.impacto].label)}</td>
+      </tr>`).join("")}
+      </tbody></table>
+      <script>window.onload=function(){window.print()}</script>
+    </body></html>`);
+    win.document.close();
   };
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
-  const exportToCSV = () => {
-    const headers = ["Data/Hora", "Usuário", "Módulo", "Ação", "Detalhes"];
-    const rows = filteredLogs.map(log => [
-      format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss"),
-      log.user_name || "Sistema",
-      formatModulo(log.modulo),
-      acaoLabels[log.acao]?.label || log.acao,
-      log.detalhes ? JSON.stringify(log.detalhes) : ""
-    ]);
-
-    const csvContent = [
-      headers.join(";"),
-      ...rows.map(row => row.map(cell => `"${cell}"`).join(";"))
-    ].join("\n");
-
-    const blob = new Blob(["\ufeff" + csvContent], { type: "text/csv;charset=utf-8;" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `logs_auditoria_${format(new Date(), "yyyy-MM-dd_HH-mm")}.csv`;
-    link.click();
-  };
-
-  const exportToPDF = () => {
-    const printWindow = window.open("", "_blank");
-    if (!printWindow) return;
-
-    const htmlContent = `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Logs de Auditoria - ${format(new Date(), "dd/MM/yyyy HH:mm")}</title>
-        <style>
-          body { font-family: Arial, sans-serif; margin: 20px; }
-          h1 { color: #333; font-size: 18px; margin-bottom: 5px; }
-          p { color: #666; font-size: 12px; margin-bottom: 20px; }
-          table { width: 100%; border-collapse: collapse; font-size: 11px; }
-          th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-          th { background-color: #f5f5f5; font-weight: bold; }
-          tr:nth-child(even) { background-color: #fafafa; }
-          .badge { padding: 2px 6px; border-radius: 4px; font-size: 10px; }
-          .acesso { background: #dbeafe; color: #1d4ed8; }
-          .criar { background: #dcfce7; color: #16a34a; }
-          .editar { background: #fef3c7; color: #ca8a04; }
-          .excluir { background: #fee2e2; color: #dc2626; }
-          @media print { body { margin: 0; } }
-        </style>
-      </head>
-      <body>
-        <h1>Relatório de Logs de Auditoria</h1>
-        <p>Gerado em: ${format(new Date(), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR })}</p>
-        <p>Período: ${dateFrom ? format(dateFrom, "dd/MM/yyyy") : "Início"} até ${dateTo ? format(dateTo, "dd/MM/yyyy") : "Hoje"}</p>
-        <p>Total de registros: ${filteredLogs.length}</p>
-        <table>
-          <thead>
-            <tr>
-              <th>Data/Hora</th>
-              <th>Usuário</th>
-              <th>Módulo</th>
-              <th>Ação</th>
-              <th>Detalhes</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${filteredLogs.map(log => `
-              <tr>
-                <td>${escapeHtml(format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss"))}</td>
-                <td>${escapeHtml(log.user_name || "Sistema")}</td>
-                <td>${escapeHtml(formatModulo(log.modulo))}</td>
-                <td><span class="badge ${escapeHtml(log.acao)}">${escapeHtml(acaoLabels[log.acao]?.label || log.acao)}</span></td>
-                <td>${escapeJson(log.detalhes)}</td>
-              </tr>
-            `).join("")}
-          </tbody>
-        </table>
-        <script>window.onload = function() { window.print(); }</script>
-      </body>
-      </html>
-    `;
-
-    printWindow.document.write(htmlContent);
-    printWindow.document.close();
-  };
-
+  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Header */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Logs de Auditoria</h2>
-          <p className="text-muted-foreground">Monitoramento de ações e acessos do sistema</p>
+          <h2 className="text-2xl font-bold text-foreground">Logs & Trilha de Auditoria</h2>
+          <p className="text-muted-foreground text-sm">Conformidade LGPD · ONA · Rastreabilidade completa</p>
         </div>
         <div className="flex gap-2">
           <DropdownMenu>
@@ -291,11 +314,11 @@ export const LogsAuditoriaModule = () => {
             <DropdownMenuContent>
               <DropdownMenuItem onClick={exportToCSV}>
                 <FileSpreadsheet className="h-4 w-4 mr-2" />
-                Exportar CSV
+                CSV — Trilha de Auditoria
               </DropdownMenuItem>
               <DropdownMenuItem onClick={exportToPDF}>
                 <FileText className="h-4 w-4 mr-2" />
-                Exportar PDF
+                PDF — Relatório LGPD
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -306,144 +329,86 @@ export const LogsAuditoriaModule = () => {
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <FileText className="h-6 w-6 text-primary" />
+      {/* KPIs */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {[
+          { label: "Total de Eventos",     value: totalCount,      icon: FileText,   bg: "bg-primary/10",          ico: "text-primary" },
+          { label: "Ações Alto Impacto",   value: altosImpacto,    icon: AlertTriangle, bg: "bg-destructive/10", ico: "text-destructive" },
+          { label: "Usuários Ativos",      value: usuariosUnicos,  icon: User,       bg: "bg-emerald-500/10",      ico: "text-emerald-600" },
+          { label: "Último Evento",        value: ultimoEvento,    icon: Clock,      bg: "bg-amber-500/10",        ico: "text-amber-600" },
+        ].map(({ label, value, icon: Icon, bg, ico }) => (
+          <Card key={label}>
+            <CardContent className="pt-5">
+              <div className="flex items-center gap-3">
+                <div className={cn("p-2.5 rounded-lg", bg)}>
+                  <Icon className={cn("h-5 w-5", ico)} />
+                </div>
+                <div>
+                  <p className="text-xl font-bold">{value}</p>
+                  <p className="text-xs text-muted-foreground">{label}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-2xl font-bold">{totalCount}</p>
-                <p className="text-sm text-muted-foreground">Total de Registros</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-blue-500/10 rounded-lg">
-                <Activity className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{modulos.length}</p>
-                <p className="text-sm text-muted-foreground">Módulos Ativos</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-green-500/10 rounded-lg">
-                <User className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {new Set(logs.map(l => l.user_id)).size}
-                </p>
-                <p className="text-sm text-muted-foreground">Usuários na Página</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 bg-yellow-500/10 rounded-lg">
-                <Clock className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">
-                  {logs[0] ? format(new Date(logs[0].created_at), "HH:mm", { locale: ptBR }) : "--:--"}
-                </p>
-                <p className="text-sm text-muted-foreground">Último Registro</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Filters */}
+      {/* Filtros */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Filter className="h-5 w-5" />
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Filter className="h-4 w-4" />
             Filtros
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
             <div className="relative md:col-span-2">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por usuário ou módulo..."
+                placeholder="Buscar por usuário, módulo ou ação..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
-
             <Select value={selectedModulo} onValueChange={setSelectedModulo}>
-              <SelectTrigger>
-                <SelectValue placeholder="Módulo" />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Módulo" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos os módulos</SelectItem>
-                {modulos.map(m => (
-                  <SelectItem key={m} value={m}>{formatModulo(m)}</SelectItem>
+                {modulos.map(m => <SelectItem key={m} value={m}>{formatModulo(m)}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={selectedAcao} onValueChange={setSelectedAcao}>
+              <SelectTrigger><SelectValue placeholder="Ação" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todas as ações</SelectItem>
+                {Object.entries(acaoConfig).map(([k, v]) => (
+                  <SelectItem key={k} value={k}>{v.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-
-            <Select value={selectedAcao} onValueChange={setSelectedAcao}>
-              <SelectTrigger>
-                <SelectValue placeholder="Ação" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todas as ações</SelectItem>
-                <SelectItem value="acesso">Acesso</SelectItem>
-                <SelectItem value="criar">Criar</SelectItem>
-                <SelectItem value="editar">Editar</SelectItem>
-                <SelectItem value="excluir">Excluir</SelectItem>
-                <SelectItem value="login">Login</SelectItem>
-                <SelectItem value="logout">Logout</SelectItem>
-              </SelectContent>
-            </Select>
-
             <div className="flex gap-2">
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="flex-1 justify-start">
-                    <CalendarIcon className="h-4 w-4 mr-2" />
+                  <Button variant="outline" className="flex-1 justify-start text-sm">
+                    <CalendarIcon className="h-4 w-4 mr-1" />
                     {dateFrom ? format(dateFrom, "dd/MM", { locale: ptBR }) : "De"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={dateFrom}
-                    onSelect={setDateFrom}
-                    locale={ptBR}
-                  />
+                  <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} locale={ptBR} />
                 </PopoverContent>
               </Popover>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="flex-1 justify-start">
-                    <CalendarIcon className="h-4 w-4 mr-2" />
+                  <Button variant="outline" className="flex-1 justify-start text-sm">
+                    <CalendarIcon className="h-4 w-4 mr-1" />
                     {dateTo ? format(dateTo, "dd/MM", { locale: ptBR }) : "Até"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={dateTo}
-                    onSelect={setDateTo}
-                    locale={ptBR}
-                  />
+                  <Calendar mode="single" selected={dateTo} onSelect={setDateTo} locale={ptBR} />
                 </PopoverContent>
               </Popover>
             </div>
@@ -451,143 +416,279 @@ export const LogsAuditoriaModule = () => {
         </CardContent>
       </Card>
 
-      {/* Logs Table */}
-      <Card>
-        <CardContent className="p-0">
-          <ScrollArea className="h-[500px]">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-64">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : filteredLogs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
-                <FileText className="h-12 w-12 mb-4 opacity-50" />
-                <p>Nenhum log encontrado</p>
-              </div>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[180px]">Data/Hora</TableHead>
-                    <TableHead>Usuário</TableHead>
-                    <TableHead>Módulo</TableHead>
-                    <TableHead>Ação</TableHead>
-                    <TableHead className="text-right">Detalhes</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredLogs.map((log) => (
-                    <TableRow key={log.id} className="hover:bg-muted/50">
-                      <TableCell className="font-mono text-sm">
-                        {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                            <span className="text-xs font-medium text-primary">
-                              {log.user_name?.slice(0, 2).toUpperCase() || "??"}
-                            </span>
-                          </div>
-                          <span className="font-medium">{log.user_name}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">{formatModulo(log.modulo)}</Badge>
-                      </TableCell>
-                      <TableCell>{getAcaoBadge(log.acao)}</TableCell>
-                      <TableCell className="text-right">
-                        {log.detalhes && Object.keys(log.detalhes).length > 0 ? (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setSelectedLog(log)}
+      {/* Tabs */}
+      <Tabs defaultValue="trilha">
+        <TabsList>
+          <TabsTrigger value="trilha" className="gap-2">
+            <ShieldCheck className="h-4 w-4" />
+            Trilha de Auditoria
+          </TabsTrigger>
+          <TabsTrigger value="logs" className="gap-2">
+            <Activity className="h-4 w-4" />
+            Logs Brutos
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ── Trilha de Auditoria ── */}
+        <TabsContent value="trilha" className="mt-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-base">
+                <ShieldCheck className="h-4 w-4 text-primary" />
+                Trilha de Auditoria — LGPD Compliance
+              </CardTitle>
+              <CardDescription>
+                Registro imutável de "Quem fez", "O que fez", "Em qual registro" e "Data/Hora"
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[520px]">
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-48">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : trilha.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                    <ShieldCheck className="h-10 w-10 mb-3 opacity-40" />
+                    <p>Nenhum evento encontrado</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[155px]">Data/Hora</TableHead>
+                        <TableHead>Quem fez</TableHead>
+                        <TableHead>O que fez</TableHead>
+                        <TableHead>Em qual registro</TableHead>
+                        <TableHead>Impacto</TableHead>
+                        <TableHead className="w-10" />
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {trilha.map((t) => {
+                        const AcaoIcon = getAcaoConfig(t.acao_raw).icon;
+                        const imp = impactoConfig[t.impacto];
+                        return (
+                          <TableRow
+                            key={t.id}
+                            className={cn(
+                              "hover:bg-muted/40",
+                              t.impacto === "alto" && "bg-destructive/5 hover:bg-destructive/10"
+                            )}
                           >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        ) : (
-                          <span className="text-muted-foreground text-sm">—</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            )}
-          </ScrollArea>
+                            <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+                              {format(new Date(t.data_hora), "dd/MM/yy HH:mm:ss", { locale: ptBR })}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-xs font-semibold text-primary">
+                                    {t.quem.slice(0, 2).toUpperCase()}
+                                  </span>
+                                </div>
+                                <span className="text-sm font-medium">{t.quem}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <AcaoIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                                <span className="text-sm">{t.o_que}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-sm font-medium text-foreground">{t.em_qual}</span>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={cn("text-xs", imp.color)}>
+                                {imp.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              {t.detalhes && Object.keys(t.detalhes).length > 0 && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 w-7 p-0"
+                                  onClick={() => setSelectedLog(logs.find(l => l.id === t.id) || null)}
+                                >
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </ScrollArea>
 
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between p-4 border-t">
-              <p className="text-sm text-muted-foreground">
-                Mostrando {((page - 1) * pageSize) + 1} a {Math.min(page * pageSize, totalCount)} de {totalCount}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                >
-                  Anterior
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages}
-                >
-                  Próximo
-                </Button>
-              </div>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Details Dialog */}
-      <Dialog open={!!selectedLog} onOpenChange={() => setSelectedLog(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Detalhes do Log</DialogTitle>
-          </DialogHeader>
-          {selectedLog && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-muted-foreground">Usuário</p>
-                  <p className="font-medium">{selectedLog.user_name}</p>
-                </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Data/Hora</p>
-                  <p className="font-medium">
-                    {format(new Date(selectedLog.created_at), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR })}
+              {/* Paginação */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between p-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    {((page - 1) * pageSize) + 1}–{Math.min(page * pageSize, totalCount)} de {totalCount} eventos
                   </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Anterior</Button>
+                    <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Próximo</Button>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Módulo</p>
-                  <Badge variant="secondary">{formatModulo(selectedLog.modulo)}</Badge>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Logs Brutos ── */}
+        <TabsContent value="logs" className="mt-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Activity className="h-4 w-4" />
+                Logs Brutos do Sistema
+              </CardTitle>
+              <CardDescription>Registro técnico completo de todas as ações</CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <ScrollArea className="h-[520px]">
+                {isLoading ? (
+                  <div className="flex items-center justify-center h-48">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                  </div>
+                ) : filteredLogs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                    <FileText className="h-10 w-10 mb-3 opacity-40" />
+                    <p>Nenhum log encontrado</p>
+                  </div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[170px]">Data/Hora</TableHead>
+                        <TableHead>Usuário</TableHead>
+                        <TableHead>Módulo</TableHead>
+                        <TableHead>Ação</TableHead>
+                        <TableHead className="text-right w-10">Det.</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredLogs.map((log) => {
+                        const cfg = getAcaoConfig(log.acao);
+                        return (
+                          <TableRow key={log.id} className="hover:bg-muted/50">
+                            <TableCell className="font-mono text-xs text-muted-foreground">
+                              {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex items-center gap-2">
+                                <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                  <span className="text-xs font-semibold text-primary">
+                                    {log.user_name?.slice(0, 2).toUpperCase() || "??"}
+                                  </span>
+                                </div>
+                                <span className="text-sm font-medium">{log.user_name}</span>
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary" className="text-xs">{formatModulo(log.modulo)}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline" className={cn("text-xs font-medium", cfg.color)}>
+                                {cfg.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-right">
+                              {log.detalhes && Object.keys(log.detalhes).length > 0 ? (
+                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setSelectedLog(log)}>
+                                  <Eye className="h-3.5 w-3.5" />
+                                </Button>
+                              ) : (
+                                <span className="text-muted-foreground text-sm">—</span>
+                              )}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                )}
+              </ScrollArea>
+
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between p-4 border-t">
+                  <p className="text-sm text-muted-foreground">
+                    {((page - 1) * pageSize) + 1}–{Math.min(page * pageSize, totalCount)} de {totalCount}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}>Anterior</Button>
+                    <Button variant="outline" size="sm" onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}>Próximo</Button>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm text-muted-foreground">Ação</p>
-                  {getAcaoBadge(selectedLog.acao)}
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Detail Dialog */}
+      <Dialog open={!!selectedLog} onOpenChange={() => setSelectedLog(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ShieldCheck className="h-5 w-5 text-primary" />
+              Detalhe do Evento
+            </DialogTitle>
+          </DialogHeader>
+          {selectedLog && (() => {
+            const cfg = getAcaoConfig(selectedLog.acao);
+            const trilhaItem = derivarTrilha([selectedLog])[0];
+            return (
+              <div className="space-y-4 pt-2">
+                {/* Trilha */}
+                <div className="grid grid-cols-2 gap-3 p-4 rounded-lg bg-muted/40 border">
+                  {[
+                    { label: "👤 Quem fez",       value: trilhaItem.quem },
+                    { label: "⚡ O que fez",       value: trilhaItem.o_que },
+                    { label: "📄 Em qual registro", value: trilhaItem.em_qual },
+                    { label: "🕐 Data/Hora",       value: format(new Date(selectedLog.created_at), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR }) },
+                  ].map(({ label, value }) => (
+                    <div key={label}>
+                      <p className="text-xs text-muted-foreground">{label}</p>
+                      <p className="text-sm font-medium mt-0.5">{value}</p>
+                    </div>
+                  ))}
                 </div>
-                {selectedLog.ip_address && (
-                  <div className="col-span-2">
-                    <p className="text-sm text-muted-foreground">IP</p>
-                    <p className="font-mono text-sm">{selectedLog.ip_address}</p>
+
+                {/* Badges */}
+                <div className="flex gap-2 flex-wrap">
+                  <Badge variant="outline" className="text-xs">
+                    {formatModulo(selectedLog.modulo)}
+                  </Badge>
+                  <Badge variant="outline" className={cn("text-xs", cfg.color)}>
+                    {cfg.label}
+                  </Badge>
+                  <Badge variant="outline" className={cn("text-xs", impactoConfig[trilhaItem.impacto].color)}>
+                    Impacto {impactoConfig[trilhaItem.impacto].label}
+                  </Badge>
+                  {selectedLog.ip_address && (
+                    <Badge variant="outline" className="text-xs font-mono">
+                      IP: {selectedLog.ip_address}
+                    </Badge>
+                  )}
+                </div>
+
+                {/* Payload */}
+                {selectedLog.detalhes && Object.keys(selectedLog.detalhes).length > 0 && (
+                  <div>
+                    <p className="text-xs text-muted-foreground mb-2">Dados técnicos (payload)</p>
+                    <pre className="bg-muted p-3 rounded-lg text-xs overflow-auto max-h-44 leading-relaxed">
+                      {JSON.stringify(selectedLog.detalhes, null, 2)}
+                    </pre>
                   </div>
                 )}
               </div>
-              {selectedLog.detalhes && Object.keys(selectedLog.detalhes).length > 0 && (
-                <div>
-                  <p className="text-sm text-muted-foreground mb-2">Dados Adicionais</p>
-                  <pre className="bg-muted p-4 rounded-lg text-sm overflow-auto max-h-48">
-                    {JSON.stringify(selectedLog.detalhes, null, 2)}
-                  </pre>
-                </div>
-              )}
-            </div>
-          )}
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
