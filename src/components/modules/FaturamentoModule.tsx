@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
+import { DashboardFaturamento } from "@/components/faturamento/DashboardFaturamento";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,7 +49,8 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Eye
+  Eye,
+  BarChart2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { safeFormatDate } from "@/lib/brasilia-time";
@@ -158,7 +160,7 @@ const resultadoFinalOptions = [
 ];
 
 export const FaturamentoModule = () => {
-  const { isFaturamento, isAdmin, userId, isLoading: isLoadingRole } = useUserRole();
+  const { isFaturamento, isAdmin, isGestor, userId, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
   const { toast } = useToast();
   
@@ -167,7 +169,9 @@ export const FaturamentoModule = () => {
   const [prontuariosFaltantes, setProntuariosFaltantes] = useState<SaidaProntuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<"lista" | "faltantes" | "avaliados">("lista");
+  const [activeTab, setActiveTab] = useState<"lista" | "faltantes" | "avaliados" | "dashboard">("lista");
+
+  const canSeeDashboard = isAdmin || isGestor;
   
   // Form dialog
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -561,8 +565,23 @@ export const FaturamentoModule = () => {
           <CheckCircle className="h-4 w-4 mr-2" />
           Avaliados ({avaliacoes.filter(a => a.is_finalizada).length})
         </Button>
+        {canSeeDashboard && (
+          <Button
+            variant={activeTab === "dashboard" ? "default" : "outline"}
+            onClick={() => setActiveTab("dashboard")}
+          >
+            <BarChart2 className="h-4 w-4 mr-2" />
+            Dashboard Gerencial
+          </Button>
+        )}
       </div>
 
+      {/* Dashboard Tab */}
+      {activeTab === "dashboard" && canSeeDashboard && (
+        <DashboardFaturamento />
+      )}
+
+      {activeTab !== "dashboard" && (<>
       {/* Search */}
       <Card>
         <CardContent className="pt-6">
@@ -669,6 +688,7 @@ export const FaturamentoModule = () => {
           )}
         </CardContent>
       </Card>
+      </>)}
 
       {/* Evaluation Form Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
