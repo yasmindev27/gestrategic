@@ -607,6 +607,7 @@ export const FaturamentoModule = () => {
                 <TableRow>
                   <TableHead>Paciente</TableHead>
                   <TableHead>Data Nasc.</TableHead>
+                  <TableHead>Data Atendimento</TableHead>
                   <TableHead>Status Fluxo</TableHead>
                   <TableHead>Recepção</TableHead>
                   <TableHead>Classificação</TableHead>
@@ -623,6 +624,9 @@ export const FaturamentoModule = () => {
                       <TableCell className="font-medium">{saida.paciente_nome || "-"}</TableCell>
                       <TableCell>
                         {safeFormatDate(saida.nascimento_mae, "dd/MM/yyyy")}
+                      </TableCell>
+                      <TableCell>
+                        {safeFormatDate(saida.data_atendimento, "dd/MM/yyyy")}
                       </TableCell>
                       <TableCell>{getStatusBadge(saida.status)}</TableCell>
                       <TableCell>
