@@ -14,6 +14,7 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  ReferenceLine,
 } from "recharts";
 import {
   FileText,
@@ -82,6 +83,7 @@ export function DashboardFaturamento() {
   const [isLoading, setIsLoading] = useState(true);
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   const [granularity, setGranularity] = useState<Granularity>("day");
+  const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -202,11 +204,20 @@ export function DashboardFaturamento() {
       .sort((a, b) => a.periodo.localeCompare(b.periodo));
   }, [saidas, avaliacoes, granularity]);
 
-  // ── Tabela de Performance ─────────────────────────────────────────────────
+  // ── Tabela de Performance (filtrável por período clicado) ────────────────
   const performanceData = useMemo(() => {
+    // Se há período selecionado, filtra avaliações daquele bucket
+    const filteredAvaliacoes = selectedPeriod
+      ? avaliacoes.filter((a) => {
+          const dateStr = a.data_conclusao || a.data_inicio;
+          if (!dateStr) return false;
+          return groupByKey(dateStr, granularity) === selectedPeriod;
+        })
+      : avaliacoes;
+
     const map: Record<string, { avaliador_id: string; lancados: number; avaliados: number }> = {};
 
-    avaliacoes.forEach((a) => {
+    filteredAvaliacoes.forEach((a) => {
       if (!map[a.avaliador_id]) {
         map[a.avaliador_id] = { avaliador_id: a.avaliador_id, lancados: 0, avaliados: 0 };
       }
@@ -220,13 +231,13 @@ export function DashboardFaturamento() {
         const eficiencia = item.lancados > 0 ? ((item.avaliados / item.lancados) * 100).toFixed(0) : "0";
         return {
           ...item,
-          nome: profile?.full_name || "Usuário Desconhecido",
+          nome: profile?.full_name || "Avaliador Desconhecido",
           cargo: profile?.cargo || "—",
           eficiencia: Number(eficiencia),
         };
       })
       .sort((a, b) => b.avaliados - a.avaliados);
-  }, [avaliacoes, profiles]);
+  }, [avaliacoes, profiles, selectedPeriod, granularity]);
 
   if (isLoading) {
     return (
@@ -360,8 +371,35 @@ export function DashboardFaturamento() {
               Nenhum dado encontrado para o período selecionado.
             </div>
           ) : (
+            <>
+              {selectedPeriod && (
+                <div className="flex items-center gap-2 mb-3">
+                  <Badge variant="secondary" className="text-xs">
+                    📅 Filtrando: {selectedPeriod}
+                  </Badge>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 text-xs text-muted-foreground"
+                    onClick={() => setSelectedPeriod(null)}
+                  >
+                    ✕ Limpar filtro
+                  </Button>
+                </div>
+              )}
             <ResponsiveContainer width="100%" height={320}>
-              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+              <AreaChart
+                data={chartData}
+                margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
+                onClick={(e) => {
+                  if (e && e.activeLabel) {
+                    setSelectedPeriod(prev =>
+                      prev === e.activeLabel ? null : e.activeLabel as string
+                    );
+                  }
+                }}
+                style={{ cursor: "pointer" }}
+              >
                 <defs>
                   <linearGradient id="colorLancados" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
@@ -386,8 +424,18 @@ export function DashboardFaturamento() {
                     borderRadius: "8px",
                     fontSize: "12px",
                   }}
+                  formatter={(value, name) => [value, name]}
+                  labelFormatter={(label) => `📅 ${label} — clique para filtrar`}
                 />
                 <Legend />
+                {selectedPeriod && (
+                  <ReferenceLine
+                    x={selectedPeriod}
+                    stroke="hsl(var(--primary))"
+                    strokeWidth={2}
+                    strokeDasharray="4 2"
+                  />
+                )}
                 <Area
                   type="monotone"
                   dataKey="lancados"
@@ -414,6 +462,7 @@ export function DashboardFaturamento() {
                 />
               </AreaChart>
             </ResponsiveContainer>
+            </>
           )}
         </CardContent>
       </Card>
@@ -424,8 +473,17 @@ export function DashboardFaturamento() {
           <CardTitle className="flex items-center gap-2">
             <Trophy className="h-4 w-4 text-amber-500" />
             Performance por Avaliador
+            {selectedPeriod && (
+              <Badge variant="outline" className="ml-2 text-xs font-normal">
+                📅 {selectedPeriod}
+              </Badge>
+            )}
           </CardTitle>
-          <CardDescription>Ranking de produtividade da equipe de avaliação</CardDescription>
+          <CardDescription>
+            {selectedPeriod
+              ? `Clique em outro dia no gráfico para mudar o filtro, ou "Limpar filtro" para ver todos`
+              : "Clique em um dia no gráfico para filtrar por período"}
+          </CardDescription>
         </CardHeader>
         <CardContent>
           {performanceData.length === 0 ? (
