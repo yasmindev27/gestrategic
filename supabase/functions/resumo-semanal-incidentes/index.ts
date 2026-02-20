@@ -119,7 +119,11 @@ serve(async (req) => {
     // Call AI to generate summary
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY não configurada");
+      console.error("Serviço de IA não configurado no ambiente");
+      return new Response(
+        JSON.stringify({ error: "Serviço de resumo temporariamente indisponível", success: false }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     const prompt = `Analise os dados de incidentes hospitalares da última semana e gere um resumo executivo para a gestão de qualidade.

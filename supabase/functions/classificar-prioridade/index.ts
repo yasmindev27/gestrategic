@@ -47,7 +47,11 @@ serve(async (req) => {
 
     const lovableApiKey = Deno.env.get('LOVABLE_API_KEY');
     if (!lovableApiKey) {
-      throw new Error('LOVABLE_API_KEY não configurada');
+      console.error("Serviço de IA não configurado no ambiente");
+      return new Response(
+        JSON.stringify({ error: "Serviço temporariamente indisponível", prioridade: "media", sucesso: false }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     const { titulo, descricao, categoria } = await req.json();

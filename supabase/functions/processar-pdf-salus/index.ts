@@ -90,7 +90,11 @@ Deno.serve(async (req) => {
     // Use Lovable AI to extract patient data from the PDF
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY não configurada');
+      console.error("Serviço de IA não configurado no ambiente");
+      return new Response(
+        JSON.stringify({ error: "Serviço de processamento temporariamente indisponível", success: false }),
+        { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
     console.log('Enviando PDF para análise via IA...');

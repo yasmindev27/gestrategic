@@ -117,7 +117,11 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) {
-      throw new Error("LOVABLE_API_KEY não configurada");
+      console.error("Serviço de IA não configurado no ambiente");
+      return new Response(
+        JSON.stringify({ error: "Serviço de análise temporariamente indisponível", success: false }),
+        { status: 503, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
     }
 
     // Build prompt based on analysis type
