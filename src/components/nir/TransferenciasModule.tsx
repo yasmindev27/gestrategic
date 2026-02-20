@@ -247,15 +247,10 @@ export const TransferenciasModule = () => {
   veiculos.forEach((v) => {
     veiculoMap.set(v.id, { label: `${v.motorista_nome} — ${v.placa}`, solicitacoes: [] });
   });
-  // Add unassigned group
-  veiculoMap.set("sem-veiculo", { label: "Sem veículo atribuído", solicitacoes: [] });
-
   solicitacoes.forEach((s) => {
-    const key = s.veiculo_id || "sem-veiculo";
-    if (veiculoMap.has(key)) {
+    const key = s.veiculo_id;
+    if (key && veiculoMap.has(key)) {
       veiculoMap.get(key)!.solicitacoes.push(s);
-    } else {
-      veiculoMap.get("sem-veiculo")!.solicitacoes.push(s);
     }
   });
 
@@ -440,19 +435,18 @@ export const TransferenciasModule = () => {
 
                 {/* Rows */}
                 {Array.from(veiculoMap.entries()).map(([key, { label, solicitacoes: sols }]) => {
-                  if (key === "sem-veiculo" && sols.length === 0) return null;
                   const veiculo = veiculos.find((v) => v.id === key);
                   const vStatus = veiculo ? VEICULO_STATUS[veiculo.status] : null;
 
                   return (
                     <div key={key} className="flex items-center border-b last:border-0 py-2 min-h-[40px]">
                       <div 
-                        className={`w-48 shrink-0 pr-2 ${key !== "sem-veiculo" ? "cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors" : ""}`}
-                        onClick={() => key !== "sem-veiculo" && loadVeiculoStats(key)}
+                        className="w-48 shrink-0 pr-2 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors"
+                        onClick={() => loadVeiculoStats(key)}
                       >
                         <div className="text-xs font-medium truncate flex items-center gap-1">
                           {label}
-                          {key !== "sem-veiculo" && <BarChart3 className="h-3 w-3 text-muted-foreground shrink-0" />}
+                          <BarChart3 className="h-3 w-3 text-muted-foreground shrink-0" />
                         </div>
                         {vStatus && (
                           <Badge variant="outline" className="text-[10px] gap-1 mt-0.5">
