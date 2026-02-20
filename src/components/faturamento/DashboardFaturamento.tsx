@@ -307,7 +307,7 @@ export function DashboardFaturamento() {
 
         return {
           ...item,
-          nome: profile?.full_name || "Avaliador Desconhecido",
+          nome: profile?.full_name || `ID:${item.avaliador_id.slice(0, 8)}`,
           cargo: profile?.cargo || "—",
           score,
           metaAvaliados,
