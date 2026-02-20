@@ -151,13 +151,34 @@ export const LogsAuditoriaModule = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedModulo, setSelectedModulo] = useState("todos");
   const [selectedAcao, setSelectedAcao]     = useState("todos");
+  const [selectedCritico, setSelectedCritico] = useState("todos"); // Ações críticas
+  const [matriculaFiltro, setMatriculaFiltro] = useState(""); // Matrícula específica
   const [dateFrom, setDateFrom] = useState<Date | undefined>(subDays(new Date(), 7));
   const [dateTo,   setDateTo]   = useState<Date | undefined>(new Date());
+  const [dateEspecifica, setDateEspecifica] = useState<Date | undefined>(undefined); // Data exata
   const [modulos, setModulos]   = useState<string[]>([]);
   const [selectedLog, setSelectedLog] = useState<LogEntry | null>(null);
   const [totalCount, setTotalCount]   = useState(0);
   const [page, setPage] = useState(1);
+  const [matriculaResolvida, setMatriculaResolvida] = useState<string | null>(null); // user_id da matrícula
   const pageSize = 50;
+
+  // Ações críticas pré-definidas
+  const ACOES_CRITICAS: Record<string, string[]> = {
+    exclusoes:          ["excluir"],
+    alteracoes_salariais: ["editar_salario", "alterar_salario", "editar", "alterar_role"],
+  };
+
+  // ── Resolve matrícula → user_id ────────────────────────────────────────────
+  const resolveMatricula = async (mat: string) => {
+    if (!mat.trim()) { setMatriculaResolvida(null); return; }
+    const { data } = await supabase.rpc("buscar_usuario_por_matricula", { _matricula: mat.trim() });
+    if (data && data.length > 0) {
+      setMatriculaResolvida(data[0].user_id);
+    } else {
+      setMatriculaResolvida("__nenhum__"); // matrícula não encontrada
+    }
+  };
 
   // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchLogs = async () => {
@@ -168,10 +189,33 @@ export const LogsAuditoriaModule = () => {
         .select("*", { count: "exact" })
         .order("created_at", { ascending: false });
 
-      if (dateFrom) query = query.gte("created_at", startOfDay(dateFrom).toISOString());
-      if (dateTo)   query = query.lte("created_at", endOfDay(dateTo).toISOString());
+      // Período: data específica tem prioridade sobre intervalo
+      if (dateEspecifica) {
+        query = query
+          .gte("created_at", startOfDay(dateEspecifica).toISOString())
+          .lte("created_at", endOfDay(dateEspecifica).toISOString());
+      } else {
+        if (dateFrom) query = query.gte("created_at", startOfDay(dateFrom).toISOString());
+        if (dateTo)   query = query.lte("created_at", endOfDay(dateTo).toISOString());
+      }
+
       if (selectedModulo !== "todos") query = query.eq("modulo", selectedModulo);
-      if (selectedAcao   !== "todos") query = query.eq("acao", selectedAcao);
+
+      // Filtro de ação simples ou crítica
+      if (selectedAcao !== "todos") {
+        query = query.eq("acao", selectedAcao);
+      } else if (selectedCritico !== "todos") {
+        const acoesAlvo = ACOES_CRITICAS[selectedCritico] || [];
+        if (acoesAlvo.length > 0) query = query.in("acao", acoesAlvo);
+      }
+
+      // Filtro por matrícula (user_id resolvido)
+      if (matriculaResolvida && matriculaResolvida !== "__nenhum__") {
+        query = query.eq("user_id", matriculaResolvida);
+      } else if (matriculaResolvida === "__nenhum__") {
+        // Matrícula digitada mas não encontrada → retorna vazio
+        setLogs([]); setTotalCount(0); setIsLoading(false); return;
+      }
 
       const from = (page - 1) * pageSize;
       query = query.range(from, from + pageSize - 1);
@@ -217,14 +261,17 @@ export const LogsAuditoriaModule = () => {
   };
 
   useEffect(() => { fetchModulos(); }, []);
-  useEffect(() => { fetchLogs(); }, [selectedModulo, selectedAcao, dateFrom, dateTo, page]);
+  useEffect(() => {
+    fetchLogs();
+  }, [selectedModulo, selectedAcao, selectedCritico, dateFrom, dateTo, dateEspecifica, page, matriculaResolvida]);
 
-  // ── Filtro local ──────────────────────────────────────────────────────────
+  // ── Filtro local (busca textual) ───────────────────────────────────────────
   const filteredLogs = logs.filter(log => {
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();
     return (
       (log.user_name?.toLowerCase().includes(s)) ||
+      (log.user_matricula?.toLowerCase().includes(s)) ||
       log.modulo.toLowerCase().includes(s) ||
       log.acao.toLowerCase().includes(s)
     );
@@ -363,53 +410,219 @@ export const LogsAuditoriaModule = () => {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
             <Filter className="h-4 w-4" />
-            Filtros
+            Filtros de Auditoria
           </CardTitle>
+          <CardDescription className="text-xs">
+            Combine os filtros abaixo para rastrear ações específicas — conformidade LGPD
+          </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
-            <div className="relative md:col-span-2">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar por usuário, módulo ou ação..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
+        <CardContent className="space-y-3">
+          {/* Linha 1: Matrícula + Busca geral */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {/* Filtro por Matrícula */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                <User className="h-3 w-3" /> Matrícula do Funcionário
+              </label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Ex: 000123"
+                    value={matriculaFiltro}
+                    onChange={(e) => setMatriculaFiltro(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && resolveMatricula(matriculaFiltro)}
+                    className="pl-10"
+                  />
+                </div>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="shrink-0"
+                  onClick={() => resolveMatricula(matriculaFiltro)}
+                  disabled={isLoading}
+                >
+                  Filtrar
+                </Button>
+                {matriculaResolvida && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 text-destructive hover:text-destructive"
+                    onClick={() => { setMatriculaFiltro(""); setMatriculaResolvida(null); }}
+                  >
+                    ✕
+                  </Button>
+                )}
+              </div>
+              {matriculaResolvida === "__nenhum__" && (
+                <p className="text-xs text-destructive">Matrícula não encontrada</p>
+              )}
+              {matriculaResolvida && matriculaResolvida !== "__nenhum__" && (
+                <p className="text-xs text-primary font-medium">✓ Funcionário encontrado — filtrando registros</p>
+              )}
             </div>
-            <Select value={selectedModulo} onValueChange={setSelectedModulo}>
-              <SelectTrigger><SelectValue placeholder="Módulo" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os módulos</SelectItem>
-                {modulos.map(m => <SelectItem key={m} value={m}>{formatModulo(m)}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={selectedAcao} onValueChange={setSelectedAcao}>
-              <SelectTrigger><SelectValue placeholder="Ação" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todas as ações</SelectItem>
-                {Object.entries(acaoConfig).map(([k, v]) => (
-                  <SelectItem key={k} value={k}>{v.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className="flex gap-2">
+
+            {/* Busca textual */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                <Search className="h-3 w-3" /> Busca livre
+              </label>
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Usuário, módulo, ação..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* Linha 2: Ações Críticas + Módulo + Ação */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Ações Críticas */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-destructive uppercase tracking-wide flex items-center gap-1">
+                <AlertTriangle className="h-3 w-3" /> Ações Críticas
+              </label>
+              <Select
+                value={selectedCritico}
+                onValueChange={(v) => {
+                  setSelectedCritico(v);
+                  if (v !== "todos") setSelectedAcao("todos"); // mutuamente exclusivo
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar críticos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos (sem filtro)</SelectItem>
+                  <SelectItem value="exclusoes">
+                    <span className="flex items-center gap-2">
+                      <Trash2 className="h-3.5 w-3.5 text-destructive" /> Somente Exclusões
+                    </span>
+                  </SelectItem>
+                  <SelectItem value="alteracoes_salariais">
+                    <span className="flex items-center gap-2">
+                      <Pencil className="h-3.5 w-3.5 text-warning" /> Alterações Salariais / Perfil
+                    </span>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Módulo */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Módulo/Tabela</label>
+              <Select value={selectedModulo} onValueChange={setSelectedModulo}>
+                <SelectTrigger><SelectValue placeholder="Módulo" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os módulos</SelectItem>
+                  {modulos.map(m => <SelectItem key={m} value={m}>{formatModulo(m)}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Ação */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Ação Realizada</label>
+              <Select
+                value={selectedAcao}
+                onValueChange={(v) => {
+                  setSelectedAcao(v);
+                  if (v !== "todos") setSelectedCritico("todos"); // mutuamente exclusivo
+                }}
+              >
+                <SelectTrigger><SelectValue placeholder="Ação" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todas as ações</SelectItem>
+                  {Object.entries(acaoConfig).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* Linha 3: Período */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {/* Data específica */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                <CalendarIcon className="h-3 w-3" /> Data Específica
+              </label>
+              <div className="flex gap-2">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={dateEspecifica ? "default" : "outline"}
+                      className="flex-1 justify-start text-sm"
+                    >
+                      <CalendarIcon className="h-4 w-4 mr-2" />
+                      {dateEspecifica ? format(dateEspecifica, "dd/MM/yyyy", { locale: ptBR }) : "Escolher data"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={dateEspecifica}
+                      onSelect={(d) => {
+                        setDateEspecifica(d);
+                        if (d) { setDateFrom(undefined); setDateTo(undefined); }
+                      }}
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
+                {dateEspecifica && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="shrink-0 text-muted-foreground"
+                    onClick={() => setDateEspecifica(undefined)}
+                  >
+                    ✕
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            {/* Intervalo De */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                <CalendarIcon className="h-3 w-3" /> Período — De
+              </label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="flex-1 justify-start text-sm">
-                    <CalendarIcon className="h-4 w-4 mr-1" />
-                    {dateFrom ? format(dateFrom, "dd/MM", { locale: ptBR }) : "De"}
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-sm"
+                    disabled={!!dateEspecifica}
+                  >
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    {dateFrom ? format(dateFrom, "dd/MM/yyyy", { locale: ptBR }) : "Início"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
                   <Calendar mode="single" selected={dateFrom} onSelect={setDateFrom} locale={ptBR} />
                 </PopoverContent>
               </Popover>
+            </div>
+
+            {/* Intervalo Até */}
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Período — Até</label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className="flex-1 justify-start text-sm">
-                    <CalendarIcon className="h-4 w-4 mr-1" />
-                    {dateTo ? format(dateTo, "dd/MM", { locale: ptBR }) : "Até"}
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-sm"
+                    disabled={!!dateEspecifica}
+                  >
+                    <CalendarIcon className="h-4 w-4 mr-2" />
+                    {dateTo ? format(dateTo, "dd/MM/yyyy", { locale: ptBR }) : "Hoje"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -418,6 +631,48 @@ export const LogsAuditoriaModule = () => {
               </Popover>
             </div>
           </div>
+
+          {/* Indicadores de filtros ativos */}
+          {(matriculaResolvida || selectedCritico !== "todos" || selectedAcao !== "todos" || selectedModulo !== "todos" || dateEspecifica) && (
+            <div className="flex flex-wrap gap-2 pt-1 border-t border-border">
+              <span className="text-xs text-muted-foreground self-center">Filtros ativos:</span>
+              {matriculaResolvida && matriculaResolvida !== "__nenhum__" && (
+                <Badge variant="secondary" className="text-xs gap-1">
+                  <User className="h-3 w-3" /> Matrícula: {matriculaFiltro}
+                </Badge>
+              )}
+              {selectedCritico !== "todos" && (
+                <Badge variant="destructive" className="text-xs gap-1">
+                  <AlertTriangle className="h-3 w-3" />
+                  {selectedCritico === "exclusoes" ? "Somente Exclusões" : "Alterações Salariais/Perfil"}
+                </Badge>
+              )}
+              {selectedAcao !== "todos" && (
+                <Badge variant="outline" className="text-xs">{acaoConfig[selectedAcao]?.label || selectedAcao}</Badge>
+              )}
+              {selectedModulo !== "todos" && (
+                <Badge variant="outline" className="text-xs">{formatModulo(selectedModulo)}</Badge>
+              )}
+              {dateEspecifica && (
+                <Badge variant="outline" className="text-xs gap-1">
+                  <CalendarIcon className="h-3 w-3" /> {format(dateEspecifica, "dd/MM/yyyy")}
+                </Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-xs h-6 px-2 text-muted-foreground"
+                onClick={() => {
+                  setMatriculaFiltro(""); setMatriculaResolvida(null);
+                  setSelectedCritico("todos"); setSelectedAcao("todos");
+                  setSelectedModulo("todos"); setDateEspecifica(undefined);
+                  setDateFrom(subDays(new Date(), 7)); setDateTo(new Date());
+                }}
+              >
+                Limpar todos
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 
