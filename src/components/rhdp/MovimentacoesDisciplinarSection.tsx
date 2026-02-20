@@ -24,14 +24,16 @@ import {
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  AlertTriangle, ArrowRightLeft, ChevronDown, Download, FileSpreadsheet,
-  FileText, Plus, Search, ShieldAlert,
+  AlertTriangle, ArrowRightLeft, ChevronDown, ChevronLeft, ChevronRight,
+  Download, Eye, EyeOff, FileSpreadsheet, FileText, Plus, Search, ShieldAlert,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format, parseISO, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { exportToPDF, exportToCSV } from "@/lib/export-utils";
 import * as XLSX from "xlsx";
+import { sanitizeText, sanitizeName, sanitizeSearchQuery } from "@/lib/sanitize";
+import { maskMatricula, maskSensitiveText } from "@/lib/data-mask";
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -110,16 +112,25 @@ const statusBadge = (status: string) => {
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function MovimentacoesDisciplinarSection() {
-  const { userId } = useUserRole();
+  const { userId, role } = useUserRole();
+  const isAdmin = role === "admin" || role === "rh_dp";
   const queryClient = useQueryClient();
   const { data: setoresData = [] } = useSetoresNomes();
   const { data: cargosDb = [] } = useCargos();
   const CARGOS = cargosDb.map((c) => c.nome);
 
+  // Controle de revelação de dados sensíveis
+  const [revealSensitive, setRevealSensitive] = useState(false);
+
   // Filtros globais
   const [search, setSearch] = useState("");
   const [dateFrom, setDateFrom] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
   const [dateTo, setDateTo] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
+
+  // Paginação
+  const PAGE_SIZE = 20;
+  const [ocPage, setOcPage] = useState(1);
+  const [movPage, setMovPage] = useState(1);
 
   // Modals
   const [showTransferModal, setShowTransferModal] = useState(false);
@@ -226,17 +237,25 @@ export function MovimentacoesDisciplinarSection() {
     onError: () => toast.error("Erro ao lançar ocorrência."),
   });
 
-  // ── Filtros locais ────────────────────────────────────────────────────────
+  // ── Filtros locais (com sanitização de busca) ─────────────────────────────
+
+  const cleanSearch = sanitizeSearchQuery(search);
 
   const filteredMov = movimentacoes.filter((m) => {
-    const q = search.toLowerCase();
+    const q = cleanSearch.toLowerCase();
     return !q || m.colaborador_nome.toLowerCase().includes(q) || (m.colaborador_matricula ?? "").includes(q);
   });
 
   const filteredOc = ocorrencias.filter((o) => {
-    const q = search.toLowerCase();
+    const q = cleanSearch.toLowerCase();
     return !q || o.colaborador_nome.toLowerCase().includes(q) || (o.colaborador_matricula ?? "").includes(q);
   });
+
+  // Paginação
+  const paginatedOc  = filteredOc.slice((ocPage - 1) * PAGE_SIZE, ocPage * PAGE_SIZE);
+  const paginatedMov = filteredMov.slice((movPage - 1) * PAGE_SIZE, movPage * PAGE_SIZE);
+  const totalOcPages  = Math.max(1, Math.ceil(filteredOc.length / PAGE_SIZE));
+  const totalMovPages = Math.max(1, Math.ceil(filteredMov.length / PAGE_SIZE));
 
   // Alerta: colaboradores com >2 ocorrências no mês filtrado
   const ocorrenciasPorColaborador: Record<string, number> = {};
@@ -337,15 +356,29 @@ export function MovimentacoesDisciplinarSection() {
             <Input
               placeholder="Buscar nome ou matrícula..."
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setOcPage(1); setMovPage(1); }}
               className="pl-9 w-64"
+              maxLength={100}
             />
           </div>
           <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-40" />
           <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-40" />
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {/* Botão revelar dados sensíveis — apenas admin/rh_dp */}
+          {isAdmin && (
+            <Button
+              variant={revealSensitive ? "default" : "outline"}
+              size="sm"
+              className="gap-2"
+              onClick={() => setRevealSensitive((v) => !v)}
+              title="Revelar dados sensíveis (matrícula, motivo)"
+            >
+              {revealSensitive ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {revealSensitive ? "Ocultar dados" : "Revelar dados"}
+            </Button>
+          )}
           <Button variant="outline" onClick={() => setShowTransferModal(true)} className="gap-2">
             <ArrowRightLeft className="h-4 w-4" />
             + Transferir Setor
@@ -425,14 +458,14 @@ export function MovimentacoesDisciplinarSection() {
                           Carregando...
                         </TableCell>
                       </TableRow>
-                    ) : filteredOc.length === 0 ? (
+                    ) : paginatedOc.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                           Nenhuma ocorrência registrada no período.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredOc.map((o) => {
+                      paginatedOc.map((o) => {
                         const isCritico = (ocorrenciasPorColaborador[o.colaborador_nome] ?? 0) > 2;
                         return (
                           <TableRow
@@ -442,7 +475,9 @@ export function MovimentacoesDisciplinarSection() {
                             <TableCell>
                               <div className="font-medium uppercase">{o.colaborador_nome}</div>
                               {o.colaborador_matricula && (
-                                <div className="text-xs text-muted-foreground">Mat: {o.colaborador_matricula}</div>
+                                <div className="text-xs text-muted-foreground font-mono">
+                                  Mat: {maskMatricula(o.colaborador_matricula, revealSensitive)}
+                                </div>
                               )}
                               {isCritico && (
                                 <Badge variant="destructive" className="text-xs mt-1">⚠ Crítico</Badge>
@@ -453,26 +488,16 @@ export function MovimentacoesDisciplinarSection() {
                               {o.setor && <div className="text-xs text-muted-foreground">{o.setor}</div>}
                             </TableCell>
                             <TableCell>
-                              <Badge
-                                variant="outline"
-                                className={
-                                  o.tipo_ocorrencia === "suspensao"
-                                    ? "bg-red-50 text-red-700 border-red-200"
-                                    : o.tipo_ocorrencia === "advertencia_escrita"
-                                    ? "bg-orange-50 text-orange-700 border-orange-200"
-                                    : "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                }
-                              >
-                                {tipoLabel(o.tipo_ocorrencia)}
-                                {o.tipo_ocorrencia === "suspensao" && o.dias_suspensao
-                                  ? ` (${o.dias_suspensao}d)`
-                                  : ""}
-                              </Badge>
+                              <Badge variant="outline">{tipoLabel(o.tipo_ocorrencia)}{o.tipo_ocorrencia === "suspensao" && o.dias_suspensao ? ` (${o.dias_suspensao}d)` : ""}</Badge>
                             </TableCell>
                             <TableCell className="whitespace-nowrap">
                               {format(parseISO(o.data_ocorrencia), "dd/MM/yyyy")}
                             </TableCell>
-                            <TableCell>{o.motivo_clt}</TableCell>
+                            <TableCell>
+                              <span className="font-mono text-sm">
+                                {maskSensitiveText(o.motivo_clt, revealSensitive, 12)}
+                              </span>
+                            </TableCell>
                             <TableCell>{statusBadge(o.status_assinatura)}</TableCell>
                           </TableRow>
                         );
@@ -481,6 +506,22 @@ export function MovimentacoesDisciplinarSection() {
                   </TableBody>
                 </Table>
               </div>
+              {/* Paginação Ocorrências */}
+              {totalOcPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                  <span className="text-xs text-muted-foreground">
+                    Pág. {ocPage} de {totalOcPages} — {filteredOc.length} registros
+                  </span>
+                  <div className="flex gap-1">
+                    <Button variant="outline" size="sm" disabled={ocPage <= 1} onClick={() => setOcPage((p) => p - 1)}>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" disabled={ocPage >= totalOcPages} onClick={() => setOcPage((p) => p + 1)}>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -507,23 +548,23 @@ export function MovimentacoesDisciplinarSection() {
                   <TableBody>
                     {loadingMov ? (
                       <TableRow>
-                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                          Carregando...
-                        </TableCell>
+                        <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Carregando...</TableCell>
                       </TableRow>
-                    ) : filteredMov.length === 0 ? (
+                    ) : paginatedMov.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                           Nenhuma movimentação registrada no período.
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredMov.map((m) => (
+                      paginatedMov.map((m) => (
                         <TableRow key={m.id}>
                           <TableCell>
                             <div className="font-medium uppercase">{m.colaborador_nome}</div>
                             {m.colaborador_matricula && (
-                              <div className="text-xs text-muted-foreground">Mat: {m.colaborador_matricula}</div>
+                              <div className="text-xs text-muted-foreground font-mono">
+                                Mat: {maskMatricula(m.colaborador_matricula, revealSensitive)}
+                              </div>
                             )}
                           </TableCell>
                           <TableCell>{m.cargo}</TableCell>
@@ -539,7 +580,7 @@ export function MovimentacoesDisciplinarSection() {
                             {format(parseISO(m.data_mudanca), "dd/MM/yyyy")}
                           </TableCell>
                           <TableCell className="text-sm text-muted-foreground max-w-[200px] truncate">
-                            {m.motivo ?? "-"}
+                            {maskSensitiveText(m.motivo ?? undefined, revealSensitive, 20)}
                           </TableCell>
                         </TableRow>
                       ))
@@ -547,6 +588,22 @@ export function MovimentacoesDisciplinarSection() {
                   </TableBody>
                 </Table>
               </div>
+              {/* Paginação Movimentações */}
+              {totalMovPages > 1 && (
+                <div className="flex items-center justify-between px-4 py-3 border-t border-border">
+                  <span className="text-xs text-muted-foreground">
+                    Pág. {movPage} de {totalMovPages} — {filteredMov.length} registros
+                  </span>
+                  <div className="flex gap-1">
+                    <Button variant="outline" size="sm" disabled={movPage <= 1} onClick={() => setMovPage((p) => p - 1)}>
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Button variant="outline" size="sm" disabled={movPage >= totalMovPages} onClick={() => setMovPage((p) => p + 1)}>
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
