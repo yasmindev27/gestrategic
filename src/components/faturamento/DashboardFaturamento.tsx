@@ -149,6 +149,7 @@ export function DashboardFaturamento() {
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
   const kpis = useMemo(() => {
+    const META_DIARIA = 250;
     const total = saidas.length;
     const avaliados = avaliacoes.filter((a) => a.is_finalizada).length;
     const avaliadoIds = new Set(
@@ -156,6 +157,12 @@ export function DashboardFaturamento() {
     );
     const pendentes = saidas.filter((s) => !avaliadoIds.has(s.id)).length;
     const taxaPendencia = total > 0 ? ((pendentes / total) * 100).toFixed(1) : "0.0";
+
+    // Meta diária: calcula média de lançamentos por dia no período
+    const dias = rangeToDays[dateRange];
+    const mediaLancamentosDia = dias > 0 ? (total / dias) : 0;
+    const progressoMetaDiaria = Math.min((mediaLancamentosDia / META_DIARIA) * 100, 100);
+    const metaDiariaAtingida = mediaLancamentosDia >= META_DIARIA;
 
     // Tempo médio em horas
     const tempos = avaliacoes
@@ -168,8 +175,17 @@ export function DashboardFaturamento() {
     const tempoMedio =
       tempos.length > 0 ? (tempos.reduce((s, v) => s + v, 0) / tempos.length).toFixed(1) : "—";
 
-    return { total, avaliados, pendentes, taxaPendencia, tempoMedio };
-  }, [saidas, avaliacoes]);
+    return {
+      total,
+      avaliados,
+      pendentes,
+      taxaPendencia,
+      tempoMedio,
+      mediaLancamentosDia: mediaLancamentosDia.toFixed(0),
+      progressoMetaDiaria: Math.round(progressoMetaDiaria),
+      metaDiariaAtingida,
+    };
+  }, [saidas, avaliacoes, dateRange]);
 
   // ── Gráfico de Tendências ─────────────────────────────────────────────────
   const chartData = useMemo(() => {
@@ -283,16 +299,34 @@ export function DashboardFaturamento() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-l-4 border-l-primary">
+        <Card className={`border-l-4 ${kpis.metaDiariaAtingida ? "border-l-primary" : "border-l-amber-500"}`}>
           <CardContent className="pt-5">
             <div className="flex items-start justify-between">
-              <div>
+              <div className="flex-1">
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Lançamentos</p>
-                <p className="text-3xl font-bold text-foreground mt-1">{kpis.total.toLocaleString("pt-BR")}</p>
-                <p className="text-xs text-muted-foreground mt-1">{RANGE_OPTIONS.find(o => o.value === dateRange)?.label}</p>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <p className="text-3xl font-bold text-foreground">{kpis.total.toLocaleString("pt-BR")}</p>
+                  {kpis.metaDiariaAtingida && (
+                    <span className="text-xs font-semibold text-green-600">✓ Meta/dia</span>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Média: <span className="font-medium">{kpis.mediaLancamentosDia}/dia</span>
+                  {" · "}meta: 250/dia
+                </p>
+                {/* Barra de progresso da meta */}
+                <div className="mt-2 w-full bg-muted rounded-full h-1.5">
+                  <div
+                    className={`h-1.5 rounded-full transition-all ${
+                      kpis.metaDiariaAtingida ? "bg-primary" : "bg-amber-500"
+                    }`}
+                    style={{ width: `${kpis.progressoMetaDiaria}%` }}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">{kpis.progressoMetaDiaria}% da meta diária</p>
               </div>
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <FileText className="h-5 w-5 text-primary" />
+              <div className={`p-2 rounded-lg ml-3 ${kpis.metaDiariaAtingida ? "bg-primary/10" : "bg-amber-500/10"}`}>
+                <FileText className={`h-5 w-5 ${kpis.metaDiariaAtingida ? "text-primary" : "text-amber-500"}`} />
               </div>
             </div>
           </CardContent>
