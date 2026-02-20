@@ -32,6 +32,7 @@ import CookieBanner from "@/components/CookieBanner";
 import { GerenciaModule } from "@/components/modules/GerenciaModule";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
+import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 
 // Lazy load heavy modules
 const EnfermagemModule = lazy(() => import("@/components/modules/EnfermagemModule"));
@@ -50,6 +51,9 @@ const Dashboard = () => {
   const [activeSection, setActiveSection] = useState("");
   const [externalUrl, setExternalUrl] = useState<{ url: string; title: string } | null>(null);
   const { isNir, isRecepcao, isLoading: isLoadingRole } = useUserRole();
+
+  // Segurança: logout automático por inatividade (15 min) — LGPD / UPA
+  useSessionTimeout(15);
 
   useEffect(() => {
     let isMounted = true;
