@@ -1,14 +1,14 @@
 import { useState, useEffect, lazy, Suspense } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, FileText, ShieldX, ClipboardList, Users, UserCog } from "lucide-react";
+import { Clock, FileText, ShieldX, ClipboardList, Users, UserCog, AlertTriangle, Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { BancoHorasSection } from "@/components/rhdp/BancoHorasSection";
 import { CentralAtestadosSection } from "@/components/rhdp/CentralAtestadosSection";
 import { FormulariosSection } from "@/components/rhdp/FormulariosSection";
+import { MovimentacoesDisciplinarSection } from "@/components/rhdp/MovimentacoesDisciplinarSection";
 import { ProfissionaisSaude } from "@/components/rh";
-import { Loader2 } from "lucide-react";
 
 const EquipeModule = lazy(() => import("@/components/modules/EquipeModule"));
 
@@ -62,7 +62,7 @@ export const RHDPModule = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="banco-horas" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 <span className="hidden sm:inline">Banco de Horas</span>
@@ -77,6 +77,11 @@ export const RHDPModule = () => {
                 <ClipboardList className="h-4 w-4" />
                 <span className="hidden sm:inline">Formulários</span>
                 <span className="sm:hidden">Forms</span>
+              </TabsTrigger>
+              <TabsTrigger value="disciplinar" className="flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="hidden sm:inline">Disciplinar</span>
+                <span className="sm:hidden">Discip.</span>
               </TabsTrigger>
               <TabsTrigger value="profissionais" className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
@@ -100,6 +105,10 @@ export const RHDPModule = () => {
 
             <TabsContent value="formularios" className="mt-6">
               <FormulariosSection />
+            </TabsContent>
+
+            <TabsContent value="disciplinar" className="mt-6">
+              <MovimentacoesDisciplinarSection />
             </TabsContent>
 
             <TabsContent value="profissionais" className="mt-6">
