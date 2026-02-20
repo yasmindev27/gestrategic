@@ -61,6 +61,7 @@ interface LogEntry {
   ip_address: string | null;
   created_at: string;
   user_name?: string;
+  user_matricula?: string | null;
 }
 
 // Trilha de auditoria derivada dos logs
@@ -178,22 +179,26 @@ export const LogsAuditoriaModule = () => {
       const { data, error, count } = await query;
       if (error) throw error;
 
-      // Nomes de usuário via RPC
+      // Nomes e matrículas via profiles
       const userIds = [...new Set((data || []).map(l => l.user_id).filter(Boolean))] as string[];
-      let userMap: Record<string, string> = {};
+      let userMap: Record<string, { name: string; matricula: string | null }> = {};
       if (userIds.length > 0) {
-        const { data: userNames } = await supabase.rpc("get_user_names_by_ids", { _user_ids: userIds });
-        if (userNames) {
-          userMap = (userNames as { user_id: string; full_name: string }[]).reduce((acc, p) => {
-            acc[p.user_id] = p.full_name;
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, matricula")
+          .in("user_id", userIds);
+        if (profiles) {
+          userMap = profiles.reduce((acc, p) => {
+            acc[p.user_id] = { name: p.full_name, matricula: p.matricula };
             return acc;
-          }, {} as Record<string, string>);
+          }, {} as Record<string, { name: string; matricula: string | null }>);
         }
       }
 
       const logsWithNames = (data || []).map(log => ({
         ...log,
-        user_name: log.user_id ? userMap[log.user_id] || "Usuário removido" : "Sistema",
+        user_name: log.user_id ? userMap[log.user_id]?.name || "Usuário removido" : "Sistema",
+        user_matricula: log.user_id ? userMap[log.user_id]?.matricula ?? null : null,
         detalhes: log.detalhes as Record<string, unknown> | null,
       }));
 
@@ -456,18 +461,19 @@ export const LogsAuditoriaModule = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[155px]">Data/Hora</TableHead>
-                        <TableHead>Quem fez</TableHead>
-                        <TableHead>O que fez</TableHead>
-                        <TableHead>Em qual registro</TableHead>
-                        <TableHead>Impacto</TableHead>
+                        <TableHead className="w-[160px]">Data/Hora</TableHead>
+                        <TableHead>Usuário (Nome/Matrícula)</TableHead>
+                        <TableHead>Ação Realizada</TableHead>
+                        <TableHead>Módulo/Tabela</TableHead>
+                        <TableHead>Registro Alvo (ID/Nome)</TableHead>
                         <TableHead className="w-10" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {trilha.map((t) => {
-                        const AcaoIcon = getAcaoConfig(t.acao_raw).icon;
-                        const imp = impactoConfig[t.impacto];
+                        const cfg = getAcaoConfig(t.acao_raw);
+                        const AcaoIcon = cfg.icon;
+                        const log = logs.find(l => l.id === t.id);
                         return (
                           <TableRow
                             key={t.id}
@@ -476,9 +482,12 @@ export const LogsAuditoriaModule = () => {
                               t.impacto === "alto" && "bg-destructive/5 hover:bg-destructive/10"
                             )}
                           >
+                            {/* Data/Hora */}
                             <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap">
                               {format(new Date(t.data_hora), "dd/MM/yy HH:mm:ss", { locale: ptBR })}
                             </TableCell>
+
+                            {/* Usuário (Nome/Matrícula) */}
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -486,30 +495,45 @@ export const LogsAuditoriaModule = () => {
                                     {t.quem.slice(0, 2).toUpperCase()}
                                   </span>
                                 </div>
-                                <span className="text-sm font-medium">{t.quem}</span>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium leading-tight truncate">{t.quem}</p>
+                                  {log?.user_matricula && (
+                                    <p className="text-xs text-muted-foreground font-mono">{log.user_matricula}</p>
+                                  )}
+                                </div>
                               </div>
                             </TableCell>
+
+                            {/* Ação Realizada */}
                             <TableCell>
-                              <div className="flex items-center gap-2">
-                                <AcaoIcon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
-                                <span className="text-sm">{t.o_que}</span>
+                              <div className="flex items-center gap-1.5">
+                                <AcaoIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                                <Badge variant="outline" className={cn("text-xs font-medium", cfg.color)}>
+                                  {cfg.label}
+                                </Badge>
                               </div>
                             </TableCell>
+
+                            {/* Módulo/Tabela */}
                             <TableCell>
-                              <span className="text-sm font-medium text-foreground">{t.em_qual}</span>
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline" className={cn("text-xs", imp.color)}>
-                                {imp.label}
+                              <Badge variant="secondary" className="text-xs">
+                                {formatModulo(t.modulo)}
                               </Badge>
                             </TableCell>
+
+                            {/* Registro Alvo (ID/Nome) */}
+                            <TableCell>
+                              <span className="text-sm font-medium">{t.em_qual}</span>
+                            </TableCell>
+
+                            {/* Detalhes */}
                             <TableCell>
                               {t.detalhes && Object.keys(t.detalhes).length > 0 && (
                                 <Button
                                   variant="ghost"
                                   size="sm"
                                   className="h-7 w-7 p-0"
-                                  onClick={() => setSelectedLog(logs.find(l => l.id === t.id) || null)}
+                                  onClick={() => setSelectedLog(log || null)}
                                 >
                                   <Eye className="h-3.5 w-3.5" />
                                 </Button>
@@ -564,21 +588,27 @@ export const LogsAuditoriaModule = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-[170px]">Data/Hora</TableHead>
-                        <TableHead>Usuário</TableHead>
-                        <TableHead>Módulo</TableHead>
-                        <TableHead>Ação</TableHead>
-                        <TableHead className="text-right w-10">Det.</TableHead>
+                        <TableHead className="w-[160px]">Data/Hora</TableHead>
+                        <TableHead>Usuário (Nome/Matrícula)</TableHead>
+                        <TableHead>Ação Realizada</TableHead>
+                        <TableHead>Módulo/Tabela</TableHead>
+                        <TableHead>Registro Alvo (ID/Nome)</TableHead>
+                        <TableHead className="w-10" />
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredLogs.map((log) => {
                         const cfg = getAcaoConfig(log.acao);
+                        const AcaoIcon = cfg.icon;
+                        const trilhaItem = derivarTrilha([log])[0];
                         return (
                           <TableRow key={log.id} className="hover:bg-muted/50">
-                            <TableCell className="font-mono text-xs text-muted-foreground">
-                              {format(new Date(log.created_at), "dd/MM/yyyy HH:mm:ss", { locale: ptBR })}
+                            {/* Data/Hora */}
+                            <TableCell className="font-mono text-xs text-muted-foreground whitespace-nowrap">
+                              {format(new Date(log.created_at), "dd/MM/yy HH:mm:ss", { locale: ptBR })}
                             </TableCell>
+
+                            {/* Usuário (Nome/Matrícula) */}
                             <TableCell>
                               <div className="flex items-center gap-2">
                                 <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
@@ -586,18 +616,39 @@ export const LogsAuditoriaModule = () => {
                                     {log.user_name?.slice(0, 2).toUpperCase() || "??"}
                                   </span>
                                 </div>
-                                <span className="text-sm font-medium">{log.user_name}</span>
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium leading-tight truncate">{log.user_name}</p>
+                                  {log.user_matricula && (
+                                    <p className="text-xs text-muted-foreground font-mono">{log.user_matricula}</p>
+                                  )}
+                                </div>
                               </div>
                             </TableCell>
+
+                            {/* Ação Realizada */}
                             <TableCell>
-                              <Badge variant="secondary" className="text-xs">{formatModulo(log.modulo)}</Badge>
+                              <div className="flex items-center gap-1.5">
+                                <AcaoIcon className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                                <Badge variant="outline" className={cn("text-xs font-medium", cfg.color)}>
+                                  {cfg.label}
+                                </Badge>
+                              </div>
                             </TableCell>
+
+                            {/* Módulo/Tabela */}
                             <TableCell>
-                              <Badge variant="outline" className={cn("text-xs font-medium", cfg.color)}>
-                                {cfg.label}
+                              <Badge variant="secondary" className="text-xs">
+                                {formatModulo(log.modulo)}
                               </Badge>
                             </TableCell>
-                            <TableCell className="text-right">
+
+                            {/* Registro Alvo */}
+                            <TableCell>
+                              <span className="text-sm font-medium">{trilhaItem.em_qual}</span>
+                            </TableCell>
+
+                            {/* Detalhes */}
+                            <TableCell>
                               {log.detalhes && Object.keys(log.detalhes).length > 0 ? (
                                 <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setSelectedLog(log)}>
                                   <Eye className="h-3.5 w-3.5" />
