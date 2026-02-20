@@ -242,6 +242,9 @@ export function DashboardFaturamento() {
     }> = {};
 
     filteredAvaliacoes.forEach((a) => {
+      // Ignora registros sem avaliador identificado
+      if (!a.avaliador_id) return;
+
       if (!map[a.avaliador_id]) {
         map[a.avaliador_id] = {
           avaliador_id: a.avaliador_id,
