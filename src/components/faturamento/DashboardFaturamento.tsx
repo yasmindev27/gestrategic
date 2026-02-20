@@ -222,7 +222,6 @@ export function DashboardFaturamento() {
 
   // ── Tabela de Performance (filtrável por período clicado) ────────────────
   const performanceData = useMemo(() => {
-    // Se há período selecionado, filtra avaliações daquele bucket
     const filteredAvaliacoes = selectedPeriod
       ? avaliacoes.filter((a) => {
           const dateStr = a.data_conclusao || a.data_inicio;
@@ -231,32 +230,60 @@ export function DashboardFaturamento() {
         })
       : avaliacoes;
 
-    const map: Record<string, { avaliador_id: string; lancados: number; avaliados: number }> = {};
+    const META_AVALIADOS = 100;
+
+    const map: Record<string, {
+      avaliador_id: string;
+      iniciadas: number;
+      avaliados: number;
+      pendentes: number;
+    }> = {};
 
     filteredAvaliacoes.forEach((a) => {
       if (!map[a.avaliador_id]) {
-        map[a.avaliador_id] = { avaliador_id: a.avaliador_id, lancados: 0, avaliados: 0 };
+        map[a.avaliador_id] = { avaliador_id: a.avaliador_id, iniciadas: 0, avaliados: 0, pendentes: 0 };
       }
-      map[a.avaliador_id].lancados++;
-      if (a.is_finalizada) map[a.avaliador_id].avaliados++;
+      map[a.avaliador_id].iniciadas++;
+      if (a.is_finalizada) {
+        map[a.avaliador_id].avaliados++;
+      } else {
+        map[a.avaliador_id].pendentes++;
+      }
     });
-
-    const META = 100;
 
     return Object.values(map)
       .map((item) => {
         const profile = profiles.find((p) => p.user_id === item.avaliador_id);
-        const progressoMeta = Math.min((item.avaliados / META) * 100, 100);
-        const metaAtingida = item.avaliados >= META;
+
+        // Fator 1 — Meta de avaliações (40%): avaliados >= 100
+        const fatorMeta = Math.min(item.avaliados / META_AVALIADOS, 1);
+
+        // Fator 2 — Taxa de conclusão (40%): avaliados / iniciadas (sem pendências)
+        const fatorConclusao = item.iniciadas > 0 ? item.avaliados / item.iniciadas : 0;
+
+        // Fator 3 — Penalidade por pendências (20%): quanto menos pendentes, melhor
+        const fatorSemPendencias = item.iniciadas > 0
+          ? 1 - (item.pendentes / item.iniciadas)
+          : 1;
+
+        // Score composto 0–100
+        const scoreCompost = (fatorMeta * 0.4 + fatorConclusao * 0.4 + fatorSemPendencias * 0.2) * 100;
+        const score = Math.round(scoreCompost);
+
+        const metaAvaliados = item.avaliados >= META_AVALIADOS;
+        const progressoMeta = Math.min(Math.round((item.avaliados / META_AVALIADOS) * 100), 100);
+
         return {
           ...item,
           nome: profile?.full_name || "Avaliador Desconhecido",
           cargo: profile?.cargo || "—",
-          progressoMeta: Math.round(progressoMeta),
-          metaAtingida,
+          score,
+          metaAvaliados,
+          progressoMeta,
+          taxaConclusao: Math.round(fatorConclusao * 100),
         };
       })
-      .sort((a, b) => b.avaliados - a.avaliados);
+      .sort((a, b) => b.score - a.score);
   }, [avaliacoes, profiles, selectedPeriod, granularity]);
 
   if (isLoading) {
@@ -537,7 +564,9 @@ export function DashboardFaturamento() {
                   <TableHead>Profissional</TableHead>
                   <TableHead>Cargo</TableHead>
                   <TableHead className="text-center">Avaliados</TableHead>
-                  <TableHead className="text-center">Meta (100)</TableHead>
+                  <TableHead className="text-center">Pendentes</TableHead>
+                  <TableHead className="text-center">Conclusão</TableHead>
+                  <TableHead className="text-center">Score</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -545,7 +574,7 @@ export function DashboardFaturamento() {
                   <TableRow key={item.avaliador_id}>
                     <TableCell>
                       <div className="flex items-center justify-center">
-                        {item.metaAtingida ? (
+                        {item.metaAvaliados && item.score >= 80 ? (
                           <Trophy className="h-4 w-4 text-amber-500" />
                         ) : (
                           <span className="text-muted-foreground text-sm font-medium">{index + 1}</span>
@@ -553,36 +582,78 @@ export function DashboardFaturamento() {
                       </div>
                     </TableCell>
                     <TableCell className="font-medium">{item.nome}</TableCell>
-                    <TableCell className="text-muted-foreground">{item.cargo}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm">{item.cargo}</TableCell>
+
+                    {/* Avaliados vs Meta 100 */}
                     <TableCell className="text-center">
-                      <Badge className={item.metaAtingida ? "bg-green-500/10 text-green-700 border-green-200" : ""} variant={item.metaAtingida ? "outline" : "outline"}>
-                        {item.avaliados}
+                      <div className="flex flex-col items-center gap-0.5">
+                        <Badge
+                          variant="outline"
+                          className={item.metaAvaliados ? "border-green-400 text-green-700" : ""}
+                        >
+                          {item.avaliados}
+                          {item.metaAvaliados && " ✓"}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{item.progressoMeta}% da meta</span>
+                      </div>
+                    </TableCell>
+
+                    {/* Pendentes — quanto mais, pior */}
+                    <TableCell className="text-center">
+                      <Badge
+                        variant="outline"
+                        className={
+                          item.pendentes === 0
+                            ? "border-green-400 text-green-700"
+                            : item.pendentes <= 5
+                            ? "border-amber-400 text-amber-700"
+                            : "border-destructive text-destructive"
+                        }
+                      >
+                        {item.pendentes}
                       </Badge>
                     </TableCell>
+
+                    {/* Taxa de conclusão */}
+                    <TableCell className="text-center">
+                      <span
+                        className={`text-sm font-semibold ${
+                          item.taxaConclusao >= 80
+                            ? "text-green-600"
+                            : item.taxaConclusao >= 50
+                            ? "text-amber-600"
+                            : "text-destructive"
+                        }`}
+                      >
+                        {item.taxaConclusao}%
+                      </span>
+                    </TableCell>
+
+                    {/* Score composto */}
                     <TableCell className="text-center">
                       <div className="flex items-center justify-center gap-2">
-                        <div className="w-20 bg-muted rounded-full h-2">
+                        <div className="w-16 bg-muted rounded-full h-2">
                           <div
                             className={`h-2 rounded-full transition-all ${
-                              item.metaAtingida
+                              item.score >= 80
                                 ? "bg-green-500"
-                                : item.progressoMeta >= 50
+                                : item.score >= 50
                                 ? "bg-amber-500"
                                 : "bg-destructive"
                             }`}
-                            style={{ width: `${item.progressoMeta}%` }}
+                            style={{ width: `${item.score}%` }}
                           />
                         </div>
                         <span
-                          className={`text-sm font-bold ${
-                            item.metaAtingida
+                          className={`text-sm font-bold w-10 ${
+                            item.score >= 80
                               ? "text-green-600"
-                              : item.progressoMeta >= 50
+                              : item.score >= 50
                               ? "text-amber-600"
                               : "text-destructive"
                           }`}
                         >
-                          {item.metaAtingida ? "✓ Meta" : `${item.progressoMeta}%`}
+                          {item.score}%
                         </span>
                       </div>
                     </TableCell>
