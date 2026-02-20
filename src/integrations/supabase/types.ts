@@ -4236,6 +4236,126 @@ export type Database = {
         }
         Relationships: []
       }
+      rh_movimentacoes_setor: {
+        Row: {
+          aprovado_por: string | null
+          cargo: string
+          colaborador_matricula: string | null
+          colaborador_nome: string
+          created_at: string
+          data_mudanca: string
+          id: string
+          motivo: string | null
+          observacoes: string | null
+          registrado_por: string | null
+          registrado_por_nome: string
+          setor_anterior: string
+          setor_novo: string
+          updated_at: string
+        }
+        Insert: {
+          aprovado_por?: string | null
+          cargo: string
+          colaborador_matricula?: string | null
+          colaborador_nome: string
+          created_at?: string
+          data_mudanca?: string
+          id?: string
+          motivo?: string | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome: string
+          setor_anterior: string
+          setor_novo: string
+          updated_at?: string
+        }
+        Update: {
+          aprovado_por?: string | null
+          cargo?: string
+          colaborador_matricula?: string | null
+          colaborador_nome?: string
+          created_at?: string
+          data_mudanca?: string
+          id?: string
+          motivo?: string | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string
+          setor_anterior?: string
+          setor_novo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rh_ocorrencias_disciplinares: {
+        Row: {
+          arquivo_url: string | null
+          cargo: string | null
+          colaborador_matricula: string | null
+          colaborador_nome: string
+          created_at: string
+          data_assinatura: string | null
+          data_ocorrencia: string
+          descricao: string | null
+          dias_suspensao: number | null
+          id: string
+          motivo_clt: string
+          observacoes: string | null
+          registrado_por: string | null
+          registrado_por_nome: string
+          setor: string | null
+          status_assinatura: string
+          testemunha_1: string | null
+          testemunha_2: string | null
+          tipo_ocorrencia: string
+          updated_at: string
+        }
+        Insert: {
+          arquivo_url?: string | null
+          cargo?: string | null
+          colaborador_matricula?: string | null
+          colaborador_nome: string
+          created_at?: string
+          data_assinatura?: string | null
+          data_ocorrencia?: string
+          descricao?: string | null
+          dias_suspensao?: number | null
+          id?: string
+          motivo_clt: string
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome: string
+          setor?: string | null
+          status_assinatura?: string
+          testemunha_1?: string | null
+          testemunha_2?: string | null
+          tipo_ocorrencia: string
+          updated_at?: string
+        }
+        Update: {
+          arquivo_url?: string | null
+          cargo?: string | null
+          colaborador_matricula?: string | null
+          colaborador_nome?: string
+          created_at?: string
+          data_assinatura?: string | null
+          data_ocorrencia?: string
+          descricao?: string | null
+          dias_suspensao?: number | null
+          id?: string
+          motivo_clt?: string
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string
+          setor?: string | null
+          status_assinatura?: string
+          testemunha_1?: string | null
+          testemunha_2?: string | null
+          tipo_ocorrencia?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       riscos_operacionais: {
         Row: {
           acao_tomada: string | null
