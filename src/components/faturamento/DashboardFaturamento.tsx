@@ -1,0 +1,506 @@
+import { useState, useEffect, useMemo } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+} from "recharts";
+import {
+  FileText,
+  Clock,
+  CheckCircle,
+  AlertCircle,
+  TrendingUp,
+  Users,
+  Loader2,
+  RefreshCw,
+  Trophy,
+} from "lucide-react";
+import { format, subDays, parseISO, startOfDay, startOfWeek, startOfMonth } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+interface SaidaProntuario {
+  id: string;
+  status: string;
+  data_atendimento: string | null;
+  created_at: string;
+}
+
+interface Avaliacao {
+  id: string;
+  saida_prontuario_id: string | null;
+  avaliador_id: string;
+  is_finalizada: boolean;
+  data_inicio: string;
+  data_conclusao: string | null;
+}
+
+interface Profile {
+  user_id: string;
+  full_name: string;
+  cargo: string | null;
+}
+
+type Granularity = "day" | "week" | "month";
+type DateRange = "7d" | "30d" | "90d";
+
+const RANGE_OPTIONS: { value: DateRange; label: string }[] = [
+  { value: "7d", label: "Últimos 7 dias" },
+  { value: "30d", label: "Últimos 30 dias" },
+  { value: "90d", label: "Últimos 90 dias" },
+];
+
+const GRAN_OPTIONS: { value: Granularity; label: string }[] = [
+  { value: "day", label: "Dia" },
+  { value: "week", label: "Semana" },
+  { value: "month", label: "Mês" },
+];
+
+const rangeToDays: Record<DateRange, number> = { "7d": 7, "30d": 30, "90d": 90 };
+
+function groupByKey(date: string, gran: Granularity): string {
+  const d = parseISO(date);
+  if (gran === "day") return format(d, "dd/MM");
+  if (gran === "week") return `Sem ${format(startOfWeek(d, { locale: ptBR }), "dd/MM")}`;
+  return format(startOfMonth(d), "MMM/yy", { locale: ptBR });
+}
+
+export function DashboardFaturamento() {
+  const [saidas, setSaidas] = useState<SaidaProntuario[]>([]);
+  const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [dateRange, setDateRange] = useState<DateRange>("30d");
+  const [granularity, setGranularity] = useState<Granularity>("day");
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const since = subDays(new Date(), rangeToDays[dateRange]).toISOString();
+
+      const pageSize = 1000;
+
+      // Fetch all saidas in range
+      const allSaidas: SaidaProntuario[] = [];
+      let from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("saida_prontuarios")
+          .select("id, status, data_atendimento, created_at")
+          .gte("created_at", since)
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        allSaidas.push(...((data || []) as SaidaProntuario[]));
+        if ((data || []).length < pageSize) break;
+        from += pageSize;
+      }
+
+      // Fetch all avaliacoes in range
+      const allAvaliacoes: Avaliacao[] = [];
+      from = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("avaliacoes_prontuarios")
+          .select("id, saida_prontuario_id, avaliador_id, is_finalizada, data_inicio, data_conclusao")
+          .gte("data_inicio", since)
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        allAvaliacoes.push(...((data || []) as Avaliacao[]));
+        if ((data || []).length < pageSize) break;
+        from += pageSize;
+      }
+
+      // Fetch profiles for avaliadores
+      const avaliadorIds = [...new Set(allAvaliacoes.map((a) => a.avaliador_id))];
+      let profilesData: Profile[] = [];
+      if (avaliadorIds.length > 0) {
+        const { data } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, cargo")
+          .in("user_id", avaliadorIds);
+        profilesData = (data || []) as Profile[];
+      }
+
+      setSaidas(allSaidas);
+      setAvaliacoes(allAvaliacoes);
+      setProfiles(profilesData);
+    } catch (err) {
+      console.error("Dashboard faturamento error:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [dateRange]);
+
+  // ── KPIs ──────────────────────────────────────────────────────────────────
+  const kpis = useMemo(() => {
+    const total = saidas.length;
+    const avaliados = avaliacoes.filter((a) => a.is_finalizada).length;
+    const avaliadoIds = new Set(
+      avaliacoes.filter((a) => a.is_finalizada && a.saida_prontuario_id).map((a) => a.saida_prontuario_id!)
+    );
+    const pendentes = saidas.filter((s) => !avaliadoIds.has(s.id)).length;
+    const taxaPendencia = total > 0 ? ((pendentes / total) * 100).toFixed(1) : "0.0";
+
+    // Tempo médio em horas
+    const tempos = avaliacoes
+      .filter((a) => a.is_finalizada && a.data_conclusao && a.data_inicio)
+      .map((a) => {
+        const diff =
+          new Date(a.data_conclusao!).getTime() - new Date(a.data_inicio).getTime();
+        return diff / (1000 * 60 * 60);
+      });
+    const tempoMedio =
+      tempos.length > 0 ? (tempos.reduce((s, v) => s + v, 0) / tempos.length).toFixed(1) : "—";
+
+    return { total, avaliados, pendentes, taxaPendencia, tempoMedio };
+  }, [saidas, avaliacoes]);
+
+  // ── Gráfico de Tendências ─────────────────────────────────────────────────
+  const chartData = useMemo(() => {
+    const buckets: Record<string, { lancados: number; pendentes: number; avaliados: number }> = {};
+
+    const ensureBucket = (key: string) => {
+      if (!buckets[key]) buckets[key] = { lancados: 0, pendentes: 0, avaliados: 0 };
+    };
+
+    const avaliadoIds = new Set(
+      avaliacoes.filter((a) => a.is_finalizada && a.saida_prontuario_id).map((a) => a.saida_prontuario_id!)
+    );
+
+    saidas.forEach((s) => {
+      if (!s.created_at) return;
+      const key = groupByKey(s.created_at, granularity);
+      ensureBucket(key);
+      buckets[key].lancados++;
+      if (!avaliadoIds.has(s.id)) buckets[key].pendentes++;
+    });
+
+    avaliacoes
+      .filter((a) => a.is_finalizada && a.data_conclusao)
+      .forEach((a) => {
+        const key = groupByKey(a.data_conclusao!, granularity);
+        ensureBucket(key);
+        buckets[key].avaliados++;
+      });
+
+    return Object.entries(buckets)
+      .map(([key, val]) => ({ periodo: key, ...val }))
+      .sort((a, b) => a.periodo.localeCompare(b.periodo));
+  }, [saidas, avaliacoes, granularity]);
+
+  // ── Tabela de Performance ─────────────────────────────────────────────────
+  const performanceData = useMemo(() => {
+    const map: Record<string, { avaliador_id: string; lancados: number; avaliados: number }> = {};
+
+    avaliacoes.forEach((a) => {
+      if (!map[a.avaliador_id]) {
+        map[a.avaliador_id] = { avaliador_id: a.avaliador_id, lancados: 0, avaliados: 0 };
+      }
+      map[a.avaliador_id].lancados++;
+      if (a.is_finalizada) map[a.avaliador_id].avaliados++;
+    });
+
+    return Object.values(map)
+      .map((item) => {
+        const profile = profiles.find((p) => p.user_id === item.avaliador_id);
+        const eficiencia = item.lancados > 0 ? ((item.avaliados / item.lancados) * 100).toFixed(0) : "0";
+        return {
+          ...item,
+          nome: profile?.full_name || "Usuário Desconhecido",
+          cargo: profile?.cargo || "—",
+          eficiencia: Number(eficiencia),
+        };
+      })
+      .sort((a, b) => b.avaliados - a.avaliados);
+  }, [avaliacoes, profiles]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground">Carregando dashboard...</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header + Filtros */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-primary" />
+            Dashboard de Faturamento
+          </h3>
+          <p className="text-muted-foreground text-sm">Visão gerencial — acesso restrito</p>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
+            <SelectTrigger className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {RANGE_OPTIONS.map((o) => (
+                <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button variant="outline" size="sm" onClick={fetchData}>
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Atualizar
+          </Button>
+        </div>
+      </div>
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-l-4 border-l-primary">
+          <CardContent className="pt-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Total Lançamentos</p>
+                <p className="text-3xl font-bold text-foreground mt-1">{kpis.total.toLocaleString("pt-BR")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{RANGE_OPTIONS.find(o => o.value === dateRange)?.label}</p>
+              </div>
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <FileText className="h-5 w-5 text-primary" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-destructive">
+          <CardContent className="pt-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Taxa de Pendência</p>
+                <p className="text-3xl font-bold text-foreground mt-1">{kpis.taxaPendencia}%</p>
+                <p className="text-xs text-muted-foreground mt-1">{kpis.pendentes.toLocaleString("pt-BR")} sem avaliação</p>
+              </div>
+              <div className="p-2 bg-destructive/10 rounded-lg">
+                <AlertCircle className="h-5 w-5 text-destructive" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-green-500">
+          <CardContent className="pt-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Avaliados</p>
+                <p className="text-3xl font-bold text-foreground mt-1">{kpis.avaliados.toLocaleString("pt-BR")}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {kpis.total > 0 ? (((kpis.avaliados / kpis.total) * 100).toFixed(1)) : "0.0"}% do total
+                </p>
+              </div>
+              <div className="p-2 bg-green-500/10 rounded-lg">
+                <CheckCircle className="h-5 w-5 text-green-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="border-l-4 border-l-amber-500">
+          <CardContent className="pt-5">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-xs text-muted-foreground uppercase tracking-wide">Tempo Médio de Resposta</p>
+                <p className="text-3xl font-bold text-foreground mt-1">{kpis.tempoMedio}</p>
+                <p className="text-xs text-muted-foreground mt-1">horas (lançamento → avaliação)</p>
+              </div>
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <Clock className="h-5 w-5 text-amber-500" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Gráfico de Tendências */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" />
+                Tendências de Produção
+              </CardTitle>
+              <CardDescription>Lançados × Pendentes × Avaliados ao longo do tempo</CardDescription>
+            </div>
+            <Select value={granularity} onValueChange={(v) => setGranularity(v as Granularity)}>
+              <SelectTrigger className="w-32">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {GRAN_OPTIONS.map((o) => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {chartData.length === 0 ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground">
+              Nenhum dado encontrado para o período selecionado.
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={320}>
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorLancados" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorPendentes" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="colorAvaliados" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                <XAxis dataKey="periodo" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: "hsl(var(--card))",
+                    border: "1px solid hsl(var(--border))",
+                    borderRadius: "8px",
+                    fontSize: "12px",
+                  }}
+                />
+                <Legend />
+                <Area
+                  type="monotone"
+                  dataKey="lancados"
+                  name="🔵 Lançados"
+                  stroke="#3b82f6"
+                  fill="url(#colorLancados)"
+                  strokeWidth={2}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="pendentes"
+                  name="🟡 Pendentes"
+                  stroke="#f59e0b"
+                  fill="url(#colorPendentes)"
+                  strokeWidth={2}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="avaliados"
+                  name="🟢 Avaliados"
+                  stroke="#22c55e"
+                  fill="url(#colorAvaliados)"
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Tabela de Performance */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Trophy className="h-4 w-4 text-amber-500" />
+            Performance por Avaliador
+          </CardTitle>
+          <CardDescription>Ranking de produtividade da equipe de avaliação</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {performanceData.length === 0 ? (
+            <div className="flex items-center justify-center py-10 text-muted-foreground">
+              <Users className="h-5 w-5 mr-2" />
+              Nenhuma avaliação registrada no período.
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-10">#</TableHead>
+                  <TableHead>Profissional</TableHead>
+                  <TableHead>Cargo</TableHead>
+                  <TableHead className="text-center">Iniciadas</TableHead>
+                  <TableHead className="text-center">Finalizadas</TableHead>
+                  <TableHead className="text-center">% Eficiência</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {performanceData.map((item, index) => (
+                  <TableRow key={item.avaliador_id}>
+                    <TableCell>
+                      <div className="flex items-center justify-center">
+                        {index === 0 ? (
+                          <Trophy className="h-4 w-4 text-amber-500" />
+                        ) : (
+                          <span className="text-muted-foreground text-sm font-medium">{index + 1}</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="font-medium">{item.nome}</TableCell>
+                    <TableCell className="text-muted-foreground">{item.cargo}</TableCell>
+                    <TableCell className="text-center">
+                      <Badge variant="outline">{item.lancados}</Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Badge className="bg-green-500/10 text-green-700 border-green-200">
+                        {item.avaliados}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="w-20 bg-muted rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full ${
+                              item.eficiencia >= 80
+                                ? "bg-green-500"
+                                : item.eficiencia >= 50
+                                ? "bg-amber-500"
+                                : "bg-destructive"
+                            }`}
+                            style={{ width: `${Math.min(item.eficiencia, 100)}%` }}
+                          />
+                        </div>
+                        <span
+                          className={`text-sm font-bold ${
+                            item.eficiencia >= 80
+                              ? "text-green-600"
+                              : item.eficiencia >= 50
+                              ? "text-amber-600"
+                              : "text-destructive"
+                          }`}
+                        >
+                          {item.eficiencia}%
+                        </span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
