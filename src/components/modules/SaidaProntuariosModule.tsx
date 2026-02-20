@@ -154,79 +154,120 @@ export const SaidaProntuariosModule = () => {
   const canValidateClassificacao = isClassificacao || isAdmin;
   const canValidateNir = isNir || isAdmin;
 
+  // Pagination
+  const PAGE_SIZE = 100;
+  const [saidasPage, setSaidasPage] = useState(0);
+  const [folhasPage, setFolhasPage] = useState(0);
+  const [faltantesPage, setFaltantesPage] = useState(0);
+
   useEffect(() => {
     if (!isLoadingRole && canAccess) {
-      fetchSaidas();
+      fetchCounts();
       logAction("acesso", "saida_prontuarios", { role: role || "unknown" });
     }
   }, [canAccess, isLoadingRole, role]);
 
-  const fetchSaidas = async () => {
+  // Fetch only counts on load (very fast)
+  const fetchCounts = async () => {
     setIsLoading(true);
     try {
-      // Get total count first (bypasses 1000 row limit)
-      const { count: totalCount, error: countError } = await supabase
-        .from("saida_prontuarios")
-        .select("*", { count: 'exact', head: true });
-      
-      if (countError) throw countError;
-      
-      // Paginated fetch to get ALL records (Supabase default limit is 1000)
-      const allRecords: SaidaProntuario[] = [];
-      const pageSize = 1000;
-      let page = 0;
-      let hasMore = true;
-      
-      while (hasMore) {
-        const { data: pageData, error: pageError } = await supabase
-          .from("saida_prontuarios")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .range(page * pageSize, (page + 1) * pageSize - 1);
-        
-        if (pageError) throw pageError;
-        
-        if (pageData && pageData.length > 0) {
-          allRecords.push(...pageData);
-          hasMore = pageData.length === pageSize;
-          page++;
-        } else {
-          hasMore = false;
-        }
-      }
-      
-      // Filter records in memory for accurate categorization
-      // This handles NULL values properly which Supabase .not() and .or() struggle with
-      const regular = allRecords.filter(s => 
-        !s.is_folha_avulsa && 
-        (!s.observacao_classificacao || !s.observacao_classificacao.toLowerCase().includes('importado via salus'))
-      );
-      
-      const folhas = allRecords.filter(s => s.is_folha_avulsa === true);
-      
-      const salusImports = allRecords.filter(s => 
-        s.observacao_classificacao?.toLowerCase().includes('importado via salus')
-      );
-
-      // Set counts from filtered data (accurate counts)
-      setTotalSaidasCount(regular.length);
-      setTotalFolhasCount(folhas.length);
-      setTotalFaltantesCount(salusImports.length);
-
-      // Set data
-      setSaidas(regular);
-      setFolhasAvulsas(folhas);
-      setFaltantesSalus(salusImports);
-    } catch (error) {
-      console.error("Error fetching saidas:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar lista de saída.",
-        variant: "destructive",
-      });
+      const [regularCount, folhasCount, salusCount] = await Promise.all([
+        supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
+          .eq("is_folha_avulsa", false)
+          .not("observacao_classificacao", "ilike", "%importado via salus%"),
+        supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
+          .eq("is_folha_avulsa", true),
+        supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
+          .ilike("observacao_classificacao", "%importado via salus%"),
+      ]);
+      setTotalSaidasCount(regularCount.count ?? 0);
+      setTotalFolhasCount(folhasCount.count ?? 0);
+      setTotalFaltantesCount(salusCount.count ?? 0);
     } finally {
       setIsLoading(false);
     }
+    fetchSaidasPage(0);
+    fetchFolhasPage(0);
+    fetchFaltantesPage(0);
+  };
+
+  const fetchSaidasPage = async (page: number) => {
+    const from = page * PAGE_SIZE;
+    let query = supabase
+      .from("saida_prontuarios")
+      .select("*")
+      .eq("is_folha_avulsa", false)
+      .not("observacao_classificacao", "ilike", "%importado via salus%")
+      .order("data_atendimento", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (searchTerm) query = query.ilike("paciente_nome", `%${searchTerm}%`);
+    if (dataInicio) query = query.gte("data_atendimento", dataInicio);
+    if (dataFim) query = query.lte("data_atendimento", dataFim);
+    if (statusFilter !== "todos") query = query.eq("status", statusFilter);
+
+    const { data, error } = await query;
+    if (!error && data) setSaidas(data as SaidaProntuario[]);
+    setSaidasPage(page);
+  };
+
+  const fetchFolhasPage = async (page: number) => {
+    const from = page * PAGE_SIZE;
+    let query = supabase
+      .from("saida_prontuarios")
+      .select("*")
+      .eq("is_folha_avulsa", true)
+      .order("data_atendimento", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (folhasSearchTerm) query = query.ilike("paciente_nome", `%${folhasSearchTerm}%`);
+    if (folhasDataInicio) query = query.gte("data_atendimento", folhasDataInicio);
+    if (folhasDataFim) query = query.lte("data_atendimento", folhasDataFim);
+
+    const { data, error } = await query;
+    if (!error && data) setFolhasAvulsas(data as SaidaProntuario[]);
+    setFolhasPage(page);
+  };
+
+  const fetchFaltantesPage = async (page: number) => {
+    const from = page * PAGE_SIZE;
+    let query = supabase
+      .from("saida_prontuarios")
+      .select("*")
+      .ilike("observacao_classificacao", "%importado via salus%")
+      .order("data_atendimento", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+
+    if (faltantesSearchTerm) query = query.ilike("paciente_nome", `%${faltantesSearchTerm}%`);
+    if (faltantesDataInicio) query = query.gte("data_atendimento", faltantesDataInicio);
+    if (faltantesDataFim) query = query.lte("data_atendimento", faltantesDataFim);
+
+    const { data, error } = await query;
+    if (!error && data) setFaltantesSalus(data as SaidaProntuario[]);
+    setFaltantesPage(page);
+  };
+
+  // Re-fetch when filters change (debounced via useEffect)
+  useEffect(() => {
+    if (!isLoadingRole && canAccess) {
+      fetchSaidasPage(0);
+    }
+  }, [searchTerm, dataInicio, dataFim, statusFilter]);
+
+  useEffect(() => {
+    if (!isLoadingRole && canAccess) {
+      fetchFolhasPage(0);
+    }
+  }, [folhasSearchTerm, folhasDataInicio, folhasDataFim]);
+
+  useEffect(() => {
+    if (!isLoadingRole && canAccess) {
+      fetchFaltantesPage(0);
+    }
+  }, [faltantesSearchTerm, faltantesDataInicio, faltantesDataFim]);
+
+  const fetchSaidas = async () => {
+    await fetchCounts();
   };
 
   const handleAddSaida = async () => {
@@ -534,37 +575,10 @@ export const SaidaProntuariosModule = () => {
     return <div className="flex gap-1">{buttons}</div>;
   };
 
-  // Apply all filters
-  const filteredSaidas = saidas.filter(s => {
-    // Text search - only by patient name now
-    const matchesSearch = 
-      !searchTerm ||
-      (s.paciente_nome && s.paciente_nome.toLowerCase().includes(searchTerm.toLowerCase()));
-
-    // Date filter - now uses data_atendimento instead of created_at
-    let matchesDate = true;
-    if (dataInicio || dataFim) {
-      if (s.data_atendimento) {
-        const recordDate = new Date(s.data_atendimento + "T12:00:00");
-        if (dataInicio) {
-          const startDate = new Date(dataInicio + "T00:00:00");
-          matchesDate = matchesDate && recordDate >= startDate;
-        }
-        if (dataFim) {
-          const endDate = new Date(dataFim + "T23:59:59");
-          matchesDate = matchesDate && recordDate <= endDate;
-        }
-      } else {
-        // If no data_atendimento, exclude from filtered results when date filter is active
-        matchesDate = false;
-      }
-    }
-
-    // Status filter
-    const matchesStatus = statusFilter === "todos" || s.status === statusFilter;
-
-    return matchesSearch && matchesDate && matchesStatus;
-  });
+  // Server-side filtered — data already filtered by the DB
+  const filteredSaidas = saidas;
+  const filteredFolhasAvulsas = folhasAvulsas;
+  const filteredFaltantesSalus = faltantesSalus;
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -601,33 +615,6 @@ export const SaidaProntuariosModule = () => {
     });
   };
 
-  // Get filtered faltantes from database
-  const filteredFaltantesSalus = faltantesSalus.filter(s => {
-    // Text search - only by patient name now
-    const matchesSearch = 
-      !faltantesSearchTerm ||
-      (s.paciente_nome && s.paciente_nome.toLowerCase().includes(faltantesSearchTerm.toLowerCase()));
-
-    let matchesDate = true;
-    if (faltantesDataInicio || faltantesDataFim) {
-      if (s.data_atendimento) {
-        const recordDate = new Date(s.data_atendimento + "T12:00:00");
-        if (faltantesDataInicio) {
-          const startDate = new Date(faltantesDataInicio + "T00:00:00");
-          matchesDate = matchesDate && recordDate >= startDate;
-        }
-        if (faltantesDataFim) {
-          const endDate = new Date(faltantesDataFim + "T23:59:59");
-          matchesDate = matchesDate && recordDate <= endDate;
-        }
-      } else {
-        matchesDate = false;
-      }
-    }
-
-    return matchesSearch && matchesDate;
-  });
-
   const clearFaltantesFilters = () => {
     setFaltantesSearchTerm("");
     setFaltantesDataInicio("");
@@ -635,32 +622,6 @@ export const SaidaProntuariosModule = () => {
   };
 
   const hasFaltantesActiveFilters = faltantesSearchTerm || faltantesDataInicio || faltantesDataFim;
-
-  // Filters for folhas avulsas
-  const filteredFolhasAvulsas = folhasAvulsas.filter(s => {
-    const matchesSearch = 
-      !folhasSearchTerm ||
-      (s.paciente_nome && s.paciente_nome.toLowerCase().includes(folhasSearchTerm.toLowerCase()));
-
-    let matchesDate = true;
-    if (folhasDataInicio || folhasDataFim) {
-      if (s.data_atendimento) {
-        const recordDate = new Date(s.data_atendimento + "T12:00:00");
-        if (folhasDataInicio) {
-          const startDate = new Date(folhasDataInicio + "T00:00:00");
-          matchesDate = matchesDate && recordDate >= startDate;
-        }
-        if (folhasDataFim) {
-          const endDate = new Date(folhasDataFim + "T23:59:59");
-          matchesDate = matchesDate && recordDate <= endDate;
-        }
-      } else {
-        matchesDate = false;
-      }
-    }
-
-    return matchesSearch && matchesDate;
-  });
 
   const clearFolhasFilters = () => {
     setFolhasSearchTerm("");
