@@ -237,17 +237,34 @@ export function DashboardFaturamento() {
       iniciadas: number;
       avaliados: number;
       pendentes: number;
+      // dias com atividade → { totalDias, diasComAvaliacao }
+      diasAtividade: Record<string, { qualquer: boolean; avaliou: boolean }>;
     }> = {};
 
     filteredAvaliacoes.forEach((a) => {
       if (!map[a.avaliador_id]) {
-        map[a.avaliador_id] = { avaliador_id: a.avaliador_id, iniciadas: 0, avaliados: 0, pendentes: 0 };
+        map[a.avaliador_id] = {
+          avaliador_id: a.avaliador_id,
+          iniciadas: 0,
+          avaliados: 0,
+          pendentes: 0,
+          diasAtividade: {},
+        };
       }
-      map[a.avaliador_id].iniciadas++;
+      const entry = map[a.avaliador_id];
+      entry.iniciadas++;
+
+      // Dia da atividade (usando data_inicio)
+      const dia = a.data_inicio ? a.data_inicio.slice(0, 10) : "desconhecido";
+      if (!entry.diasAtividade[dia]) {
+        entry.diasAtividade[dia] = { qualquer: true, avaliou: false };
+      }
+
       if (a.is_finalizada) {
-        map[a.avaliador_id].avaliados++;
+        entry.avaliados++;
+        entry.diasAtividade[dia].avaliou = true;
       } else {
-        map[a.avaliador_id].pendentes++;
+        entry.pendentes++;
       }
     });
 
@@ -255,19 +272,31 @@ export function DashboardFaturamento() {
       .map((item) => {
         const profile = profiles.find((p) => p.user_id === item.avaliador_id);
 
-        // Fator 1 — Meta de avaliações (40%): avaliados >= 100
+        // Fator 1 — Meta de avaliações (35%): avaliados >= 100
         const fatorMeta = Math.min(item.avaliados / META_AVALIADOS, 1);
 
-        // Fator 2 — Taxa de conclusão (40%): avaliados / iniciadas (sem pendências)
+        // Fator 2 — Taxa de conclusão (30%): avaliados / iniciadas
         const fatorConclusao = item.iniciadas > 0 ? item.avaliados / item.iniciadas : 0;
 
-        // Fator 3 — Penalidade por pendências (20%): quanto menos pendentes, melhor
+        // Fator 3 — Sem pendências (15%): quanto menos pendentes, melhor
         const fatorSemPendencias = item.iniciadas > 0
           ? 1 - (item.pendentes / item.iniciadas)
           : 1;
 
+        // Fator 4 — Dias produtivos (20%): dias em que avaliou / dias com qualquer atividade
+        const totalDiasAtivos = Object.keys(item.diasAtividade).length;
+        const diasComAvaliacao = Object.values(item.diasAtividade).filter((d) => d.avaliou).length;
+        const diasSoLancou = totalDiasAtivos - diasComAvaliacao; // dias sem avaliação
+        const fatorDiasProdutivos = totalDiasAtivos > 0
+          ? diasComAvaliacao / totalDiasAtivos
+          : 0;
+
         // Score composto 0–100
-        const scoreCompost = (fatorMeta * 0.4 + fatorConclusao * 0.4 + fatorSemPendencias * 0.2) * 100;
+        const scoreCompost =
+          (fatorMeta * 0.35 +
+           fatorConclusao * 0.30 +
+           fatorSemPendencias * 0.15 +
+           fatorDiasProdutivos * 0.20) * 100;
         const score = Math.round(scoreCompost);
 
         const metaAvaliados = item.avaliados >= META_AVALIADOS;
@@ -281,6 +310,9 @@ export function DashboardFaturamento() {
           metaAvaliados,
           progressoMeta,
           taxaConclusao: Math.round(fatorConclusao * 100),
+          diasSoLancou,
+          totalDiasAtivos,
+          diasComAvaliacao,
         };
       })
       .sort((a, b) => b.score - a.score);
@@ -565,6 +597,7 @@ export function DashboardFaturamento() {
                   <TableHead>Cargo</TableHead>
                   <TableHead className="text-center">Avaliados</TableHead>
                   <TableHead className="text-center">Pendentes</TableHead>
+                  <TableHead className="text-center">Dias s/ Avaliação</TableHead>
                   <TableHead className="text-center">Conclusão</TableHead>
                   <TableHead className="text-center">Score</TableHead>
                 </TableRow>
@@ -591,14 +624,13 @@ export function DashboardFaturamento() {
                           variant="outline"
                           className={item.metaAvaliados ? "border-green-400 text-green-700" : ""}
                         >
-                          {item.avaliados}
-                          {item.metaAvaliados && " ✓"}
+                          {item.avaliados}{item.metaAvaliados && " ✓"}
                         </Badge>
                         <span className="text-xs text-muted-foreground">{item.progressoMeta}% da meta</span>
                       </div>
                     </TableCell>
 
-                    {/* Pendentes — quanto mais, pior */}
+                    {/* Pendentes */}
                     <TableCell className="text-center">
                       <Badge
                         variant="outline"
@@ -612,6 +644,28 @@ export function DashboardFaturamento() {
                       >
                         {item.pendentes}
                       </Badge>
+                    </TableCell>
+
+                    {/* Dias que só lançou, não avaliou */}
+                    <TableCell className="text-center">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <Badge
+                          variant="outline"
+                          className={
+                            item.diasSoLancou === 0
+                              ? "border-green-400 text-green-700"
+                              : item.diasSoLancou <= 2
+                              ? "border-amber-400 text-amber-700"
+                              : "border-destructive text-destructive"
+                          }
+                        >
+                          {item.diasSoLancou}
+                          {item.diasSoLancou === 0 && " ✓"}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {item.diasComAvaliacao}/{item.totalDiasAtivos} dias ativos
+                        </span>
+                      </div>
                     </TableCell>
 
                     {/* Taxa de conclusão */}
