@@ -1198,7 +1198,7 @@ export const SaidaProntuariosModule = () => {
                         key={saida.id}
                         className={missingFromSalus ? "bg-destructive/10 border-l-4 border-l-destructive" : ""}
                       >
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium uppercase">
                           <div className="flex items-center gap-2">
                             {saida.paciente_nome || "-"}
                             {missingFromSalus && (
@@ -1360,7 +1360,7 @@ export const SaidaProntuariosModule = () => {
                       filteredFolhasAvulsas.map((item, index) => (
                         <TableRow key={item.id} className="bg-warning/5">
                           <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
-                          <TableCell className="font-medium">{item.paciente_nome || '-'}</TableCell>
+                          <TableCell className="font-medium uppercase">{item.paciente_nome || '-'}</TableCell>
                           <TableCell>
                             {safeFormatDate(item.nascimento_mae, "dd/MM/yyyy")}
                           </TableCell>
@@ -1513,7 +1513,7 @@ export const SaidaProntuariosModule = () => {
                       filteredFaltantesSalus.map((item, index) => (
                         <TableRow key={item.id} className="bg-destructive/5">
                           <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
-                          <TableCell className="font-medium">{item.paciente_nome || '-'}</TableCell>
+                          <TableCell className="font-medium uppercase">{item.paciente_nome || '-'}</TableCell>
                           <TableCell>
                             {safeFormatDate(item.nascimento_mae, "dd/MM/yyyy")}
                           </TableCell>
