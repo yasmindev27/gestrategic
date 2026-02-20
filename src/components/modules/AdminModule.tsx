@@ -63,6 +63,7 @@ import {
   RefreshCw,
   Briefcase,
   Building2,
+  Server,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -72,6 +73,7 @@ import { CargosManager } from "@/components/admin/CargosManager";
 import { SetoresManager } from "@/components/admin/SetoresManager";
 import { GestoresVinculacao } from "@/components/admin/GestoresVinculacao";
 import { PermissoesManager } from "@/components/admin/PermissoesManager";
+import { InfraestruturaPanel } from "@/components/admin/InfraestruturaPanel";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -587,6 +589,10 @@ export const AdminModule = () => {
             <History className="h-4 w-4 mr-2" />
             Logs
           </TabsTrigger>
+          <TabsTrigger value="infraestrutura">
+            <Server className="h-4 w-4 mr-2" />
+            Infraestrutura
+          </TabsTrigger>
           <TabsTrigger value="configuracoes">
             <Settings className="h-4 w-4 mr-2" />
             Configurações
@@ -759,6 +765,10 @@ export const AdminModule = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="infraestrutura" className="space-y-4 mt-4">
+          <InfraestruturaPanel />
         </TabsContent>
 
         <TabsContent value="configuracoes" className="space-y-4 mt-4">
