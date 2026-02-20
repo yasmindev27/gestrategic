@@ -11,9 +11,8 @@ import logoGestrategic from "@/assets/logo-gestrategic.jpg";
 import { z } from "zod";
 import { ChangePasswordDialog } from "@/components/ChangePasswordDialog";
 
-const emailSchema = z.string().email("Email inválido");
 const passwordSchema = z.string().min(6, "Senha deve ter pelo menos 6 caracteres");
-const matriculaSchema = z.string().min(1, "Matrícula é obrigatória");
+const identifierSchema = z.string().min(1, "Email ou matrícula é obrigatório");
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -22,9 +21,6 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  
-  // Login type: email or matricula
-  const [loginType, setLoginType] = useState<"email" | "matricula">("email");
   
   // Login form
   const [loginIdentifier, setLoginIdentifier] = useState("");
@@ -77,13 +73,11 @@ const Auth = () => {
     }
   };
 
+  const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
   const validateLogin = () => {
     try {
-      if (loginType === "email") {
-        emailSchema.parse(loginIdentifier);
-      } else {
-        matriculaSchema.parse(loginIdentifier);
-      }
+      identifierSchema.parse(loginIdentifier);
       passwordSchema.parse(loginPassword);
       return true;
     } catch (error) {
@@ -107,8 +101,9 @@ const Auth = () => {
     
     let email = loginIdentifier;
     
-    // If logging in with matricula, find the associated email
-    if (loginType === "matricula") {
+    // Detecta automaticamente se é email ou matrícula
+    if (!isEmail(loginIdentifier)) {
+      // Tratado como matrícula
       const { data: profiles, error: profileError } = await supabase
         .rpc("buscar_usuario_por_matricula", { _matricula: loginIdentifier });
 
@@ -122,7 +117,6 @@ const Auth = () => {
         return;
       }
 
-      // Get the email from the profile - we use the internal email format
       email = `${loginIdentifier}@interno.local`;
     }
     
@@ -137,9 +131,7 @@ const Auth = () => {
       let errorMessage = "Erro ao fazer login";
       
       if (error.message.includes("Invalid login credentials")) {
-        errorMessage = loginType === "email" 
-          ? "Email ou senha incorretos" 
-          : "Matrícula ou senha incorretos";
+        errorMessage = "Email/matrícula ou senha incorretos";
       } else if (error.message.includes("Email not confirmed")) {
         errorMessage = "Por favor, confirme seu email antes de fazer login";
       }
@@ -199,43 +191,16 @@ const Auth = () => {
           </CardHeader>
           <CardContent className="pt-4">
             <form onSubmit={handleLogin} className="space-y-5">
-              {/* Login Type Selector */}
-              <div className="flex gap-1 bg-muted/40 p-1 rounded-xl border border-border/50">
-                <Button
-                  type="button"
-                  variant={loginType === "email" ? "default" : "ghost"}
-                  size="sm"
-                  className={`flex-1 rounded-lg transition-all duration-300 ${loginType === "email" ? "shadow-sm" : ""}`}
-                  onClick={() => {
-                    setLoginType("email");
-                    setLoginIdentifier("");
-                  }}
-                >
-                  Email
-                </Button>
-                <Button
-                  type="button"
-                  variant={loginType === "matricula" ? "default" : "ghost"}
-                  size="sm"
-                  className={`flex-1 rounded-lg transition-all duration-300 ${loginType === "matricula" ? "shadow-sm" : ""}`}
-                  onClick={() => {
-                    setLoginType("matricula");
-                    setLoginIdentifier("");
-                  }}
-                >
-                  Matrícula
-                </Button>
-              </div>
-
+              {/* Identifier field */}
               <div className="space-y-2">
                 <Label htmlFor="login-identifier" className="text-foreground text-sm font-medium">
-                  {loginType === "email" ? "Email" : "Matrícula"}
+                  Email ou Matrícula
                 </Label>
                 <div className="input-glow rounded-lg transition-all duration-200">
                   <Input
                     id="login-identifier"
-                    type={loginType === "email" ? "email" : "text"}
-                    placeholder={loginType === "email" ? "seu@email.com" : "Digite sua matrícula"}
+                    type="text"
+                    placeholder="seu@email.com ou sua matrícula"
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
                     required
