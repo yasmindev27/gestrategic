@@ -407,11 +407,11 @@ export function MovimentacoesDisciplinarSection() {
           )}
           <Button variant="outline" size="sm" onClick={() => setShowTransferModal(true)} className="gap-2">
             <ArrowRightLeft className="h-4 w-4" />
-            + Transferir Setor
+            Transferir Setor
           </Button>
           <Button size="sm" onClick={() => setShowOcorrenciaModal(true)} className="gap-2">
             <Plus className="h-4 w-4" />
-            + Lançar Ocorrência
+            Lançar Ocorrência
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
