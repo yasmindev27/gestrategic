@@ -34,7 +34,6 @@ export function PainelSeguranca() {
   const [saving, setSaving] = useState(false);
   const [filtro, setFiltro] = useState<"pendente" | "atendido" | "todos">("pendente");
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const prevCountRef = useRef(0);
   const { toast } = useToast();
 
   const fetchAlertas = useCallback(async () => {
@@ -49,15 +48,10 @@ export function PainelSeguranca() {
 
     const { data, error } = await query;
     if (!error && data) {
-      const pendentes = data.filter(a => a.status === "pendente").length;
-      if (pendentes > prevCountRef.current && somAtivo && prevCountRef.current > 0) {
-        playAlert();
-      }
-      prevCountRef.current = pendentes;
       setAlertas(data);
     }
     setLoading(false);
-  }, [filtro, somAtivo]);
+  }, [filtro]);
 
   useEffect(() => {
     fetchAlertas();
@@ -72,31 +66,31 @@ export function PainelSeguranca() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchAlertas]);
 
-  const playAlert = () => {
-    try {
-      const ctx = new AudioContext();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.frequency.value = 880;
-      osc.type = "square";
-      gain.gain.value = 0.3;
-      osc.start();
-      osc.stop(ctx.currentTime + 0.5);
-      setTimeout(() => {
-        const osc2 = ctx.createOscillator();
-        const gain2 = ctx.createGain();
-        osc2.connect(gain2);
-        gain2.connect(ctx.destination);
-        osc2.frequency.value = 1100;
-        osc2.type = "square";
-        gain2.gain.value = 0.3;
-        osc2.start();
-        osc2.stop(ctx.currentTime + 0.5);
-      }, 600);
-    } catch {}
-  };
+  // Toque de radinho em loop enquanto houver alertas pendentes
+  useEffect(() => {
+    const pendentes = alertas.filter(a => a.status === "pendente").length;
+
+    if (pendentes > 0 && somAtivo) {
+      if (!audioRef.current) {
+        audioRef.current = new Audio("/assets/toque-seguranca.mp3");
+        audioRef.current.loop = true;
+        audioRef.current.volume = 0.7;
+      }
+      audioRef.current.play().catch(() => {});
+    } else {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    }
+
+    return () => {
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      }
+    };
+  }, [alertas, somAtivo]);
 
   const handleAtender = async () => {
     if (!atenderDialog) return;
