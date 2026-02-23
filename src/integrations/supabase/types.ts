@@ -216,6 +216,54 @@ export type Database = {
         }
         Relationships: []
       }
+      alertas_seguranca: {
+        Row: {
+          atendido_em: string | null
+          atendido_por: string | null
+          atendido_por_nome: string | null
+          created_at: string
+          desfecho: string | null
+          id: string
+          observacao: string | null
+          setor: string
+          status: string
+          tipo: string
+          updated_at: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          atendido_em?: string | null
+          atendido_por?: string | null
+          atendido_por_nome?: string | null
+          created_at?: string
+          desfecho?: string | null
+          id?: string
+          observacao?: string | null
+          setor: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Update: {
+          atendido_em?: string | null
+          atendido_por?: string | null
+          atendido_por_nome?: string | null
+          created_at?: string
+          desfecho?: string | null
+          id?: string
+          observacao?: string | null
+          setor?: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+          usuario_id?: string
+          usuario_nome?: string
+        }
+        Relationships: []
+      }
       analises_incidentes: {
         Row: {
           analisado_por: string | null

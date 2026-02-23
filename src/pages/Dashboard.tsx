@@ -30,6 +30,7 @@ import LMSModule from "@/components/lms/LMSModule";
 import ReuniaoModule from "@/components/modules/ReuniaoModule";
 import CookieBanner from "@/components/CookieBanner";
 import { GerenciaModule } from "@/components/modules/GerenciaModule";
+import { PainelSeguranca } from "@/components/seguranca";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
@@ -190,6 +191,8 @@ const Dashboard = () => {
         );
       case "gerencia":
         return <GerenciaModule />;
+      case "painel-seguranca":
+        return <PainelSeguranca />;
       default:
         return <MemoizedDashboardPersonalizado onNavigate={handleSectionChange} />;
     }

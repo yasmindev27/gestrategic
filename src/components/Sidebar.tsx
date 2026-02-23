@@ -2,13 +2,14 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
-import { LayoutDashboard, Users, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ClipboardX, Receipt, Shield, Monitor, Wrench, Stethoscope, FlaskConical, Calendar, UtensilsCrossed, Ambulance, FileText, UserCog, Shirt, HardHat, Heart, AlertTriangle, Syringe, ExternalLink, MessageSquare, Ticket, GraduationCap, Video, Building2 } from "lucide-react";
+import { LayoutDashboard, Users, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ClipboardX, Receipt, Shield, ShieldAlert, Monitor, Wrench, Stethoscope, FlaskConical, Calendar, UtensilsCrossed, Ambulance, FileText, UserCog, Shirt, HardHat, Heart, AlertTriangle, Syringe, ExternalLink, MessageSquare, Ticket, GraduationCap, Video, Building2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { AlertaSegurancaButton } from "@/components/seguranca";
 
 interface SidebarProps {
   activeSection: string;
@@ -40,7 +41,8 @@ const Sidebar = ({
   const {
     role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
     isLaboratorio, isTecnico, isRecepcao, isClassificacao, isNir,
-    isFaturamento, isRHDP, isQualidade, isNSP, isMedicos, isEnfermagem
+    isFaturamento, isRHDP, isQualidade, isNSP, isMedicos, isEnfermagem,
+    isSeguranca
   } = useUserRole();
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
@@ -81,6 +83,7 @@ const Sidebar = ({
         { icon: Calendar, label: "Agenda", id: "agenda", category: "administrativo" },
         { icon: GraduationCap, label: "Capacitação", id: "lms", category: "administrativo" },
         { icon: Shield, label: "Administração", id: "admin", category: "administrativo" },
+        { icon: ShieldAlert, label: "Painel Segurança", id: "painel-seguranca", category: "administrativo" },
         { icon: Video, label: "Reuniões", id: "reuniao", category: "administrativo" },
         { icon: FileText, label: "Docs Interact", id: "documentos-interact", category: "integracao" },
         { icon: Stethoscope, label: "Sistema Salus", id: "salus", category: "integracao" }
@@ -191,6 +194,15 @@ const Sidebar = ({
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: AlertTriangle, label: "Qualidade/NSP", id: "qualidade" },
+        { icon: Calendar, label: "Agenda", id: "agenda" }
+      );
+      return items;
+    }
+    if (isSeguranca) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: ShieldAlert, label: "Painel Segurança", id: "painel-seguranca" },
+        { icon: HardHat, label: "Seg. Trabalho", id: "seguranca-trabalho" },
         { icon: Calendar, label: "Agenda", id: "agenda" }
       );
       return items;
@@ -458,6 +470,10 @@ const Sidebar = ({
         {/* Navigation */}
         <nav className="flex-1 p-3 overflow-y-auto scrollbar-thin">
           {renderCategorizedMenu()}
+          {/* Botão de Alerta de Segurança — acessível em qualquer tela */}
+          <div className="mt-4 px-1">
+            <AlertaSegurancaButton collapsed={isCollapsed} />
+          </div>
         </nav>
 
         {/* Bottom Section */}
