@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSetoresNomes } from "@/hooks/useSetores";
-import { useCargos } from "@/hooks/useProfissionais";
+import { useCargos, useColaboradores } from "@/hooks/useProfissionais";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -117,8 +117,28 @@ export function MovimentacoesDisciplinarSection() {
   const queryClient = useQueryClient();
   const { data: setoresData = [] } = useSetoresNomes();
   const { data: cargosDb = [] } = useCargos();
+  const { data: colaboradoresData = [] } = useColaboradores();
   const CARGOS = cargosDb.map((c) => c.nome);
 
+  // Filtro de colaboradores para seleção
+  const [ocColabSearch, setOcColabSearch] = useState("");
+  const [transColabSearch, setTransColabSearch] = useState("");
+
+  const filteredColabForOc = useMemo(() => {
+    if (!ocColabSearch || ocColabSearch.length < 2) return [];
+    const term = ocColabSearch.toLowerCase();
+    return colaboradoresData.filter(c =>
+      c.full_name?.toLowerCase().includes(term)
+    ).slice(0, 10);
+  }, [ocColabSearch, colaboradoresData]);
+
+  const filteredColabForTrans = useMemo(() => {
+    if (!transColabSearch || transColabSearch.length < 2) return [];
+    const term = transColabSearch.toLowerCase();
+    return colaboradoresData.filter(c =>
+      c.full_name?.toLowerCase().includes(term)
+    ).slice(0, 10);
+  }, [transColabSearch, colaboradoresData]);
   // Controle de revelação de dados sensíveis
   const [revealSensitive, setRevealSensitive] = useState(false);
 
@@ -201,8 +221,10 @@ export function MovimentacoesDisciplinarSection() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rh_movimentacoes"] });
+      queryClient.invalidateQueries({ queryKey: ["gestao_talentos_profiles"] });
       setShowTransferModal(false);
       setTransferForm(emptyTransfer);
+      setTransColabSearch("");
       toast.success("Transferência registrada com sucesso!");
     },
     onError: () => toast.error("Erro ao registrar transferência."),
@@ -230,8 +252,12 @@ export function MovimentacoesDisciplinarSection() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["rh_ocorrencias"] });
+      // Atualizar gestão de talentos na gerência
+      queryClient.invalidateQueries({ queryKey: ["gestao_talentos_profiles"] });
+      queryClient.invalidateQueries({ queryKey: ["gestao_talentos_atestados"] });
       setShowOcorrenciaModal(false);
       setOcorrenciaForm(emptyOcorrencia);
+      setOcColabSearch("");
       toast.success("Ocorrência lançada com sucesso!");
     },
     onError: () => toast.error("Erro ao lançar ocorrência."),
@@ -349,15 +375,15 @@ export function MovimentacoesDisciplinarSection() {
       )}
 
       {/* Filtros + Ações */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex flex-col sm:flex-row gap-2 flex-1">
-          <div className="relative">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <div className="relative flex-1 max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Buscar nome ou matrícula..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setOcPage(1); setMovPage(1); }}
-              className="pl-9 w-64"
+              className="pl-9"
               maxLength={100}
             />
           </div>
@@ -365,7 +391,7 @@ export function MovimentacoesDisciplinarSection() {
           <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-40" />
         </div>
 
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex flex-wrap gap-2">
           {/* Botão revelar dados sensíveis — apenas admin/rh_dp */}
           {isAdmin && (
             <Button
@@ -379,17 +405,17 @@ export function MovimentacoesDisciplinarSection() {
               {revealSensitive ? "Ocultar dados" : "Revelar dados"}
             </Button>
           )}
-          <Button variant="outline" onClick={() => setShowTransferModal(true)} className="gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowTransferModal(true)} className="gap-2">
             <ArrowRightLeft className="h-4 w-4" />
             + Transferir Setor
           </Button>
-          <Button onClick={() => setShowOcorrenciaModal(true)} className="gap-2">
+          <Button size="sm" onClick={() => setShowOcorrenciaModal(true)} className="gap-2">
             <Plus className="h-4 w-4" />
             + Lançar Ocorrência
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="outline" className="gap-2">
+              <Button variant="outline" size="sm" className="gap-2">
                 <Download className="h-4 w-4" />
                 Exportar Relatório
                 <ChevronDown className="h-4 w-4" />
@@ -619,23 +645,47 @@ export function MovimentacoesDisciplinarSection() {
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1 col-span-2 sm:col-span-1">
-                <Label>Nome do Colaborador *</Label>
+            <div className="space-y-1">
+              <Label>Colaborador *</Label>
+              <div className="relative">
                 <Input
-                  value={transferForm.colaborador_nome}
-                  onChange={(e) => setTransferForm((f) => ({ ...f, colaborador_nome: e.target.value }))}
-                  placeholder="Nome completo"
+                  value={transferForm.colaborador_nome || transColabSearch}
+                  onChange={(e) => {
+                    setTransColabSearch(e.target.value);
+                    setTransferForm((f) => ({ ...f, colaborador_nome: "", colaborador_matricula: "", cargo: "", setor_anterior: "" }));
+                  }}
+                  placeholder="Buscar colaborador..."
                 />
+                {filteredColabForTrans.length > 0 && !transferForm.colaborador_nome && (
+                  <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {filteredColabForTrans.map((c) => (
+                      <button
+                        key={c.user_id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                        onClick={() => {
+                          setTransferForm((f) => ({
+                            ...f,
+                            colaborador_nome: c.full_name || "",
+                            cargo: c.cargo || "",
+                            setor_anterior: c.setor || "",
+                          }));
+                          setTransColabSearch("");
+                        }}
+                      >
+                        <span className="font-medium">{c.full_name}</span>
+                        {c.cargo && <span className="text-xs text-muted-foreground ml-2">— {c.cargo}</span>}
+                        {c.setor && <span className="text-xs text-muted-foreground ml-1">({c.setor})</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="space-y-1">
-                <Label>Matrícula</Label>
-                <Input
-                  value={transferForm.colaborador_matricula}
-                  onChange={(e) => setTransferForm((f) => ({ ...f, colaborador_matricula: e.target.value }))}
-                  placeholder="Opcional"
-                />
-              </div>
+              {transferForm.colaborador_nome && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  ✓ {transferForm.colaborador_nome} {transferForm.cargo && `— ${transferForm.cargo}`}
+                </p>
+              )}
             </div>
             <div className="space-y-1">
               <Label>Cargo *</Label>
@@ -709,23 +759,47 @@ export function MovimentacoesDisciplinarSection() {
             </DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1 col-span-2 sm:col-span-1">
-                <Label>Nome do Colaborador *</Label>
+            <div className="space-y-1">
+              <Label>Colaborador *</Label>
+              <div className="relative">
                 <Input
-                  value={ocorrenciaForm.colaborador_nome}
-                  onChange={(e) => setOcorrenciaForm((f) => ({ ...f, colaborador_nome: e.target.value }))}
-                  placeholder="Nome completo"
+                  value={ocorrenciaForm.colaborador_nome || ocColabSearch}
+                  onChange={(e) => {
+                    setOcColabSearch(e.target.value);
+                    setOcorrenciaForm((f) => ({ ...f, colaborador_nome: "", colaborador_matricula: "", cargo: "", setor: "" }));
+                  }}
+                  placeholder="Buscar colaborador..."
                 />
+                {filteredColabForOc.length > 0 && !ocorrenciaForm.colaborador_nome && (
+                  <div className="absolute z-50 w-full mt-1 bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {filteredColabForOc.map((c) => (
+                      <button
+                        key={c.user_id}
+                        type="button"
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground transition-colors"
+                        onClick={() => {
+                          setOcorrenciaForm((f) => ({
+                            ...f,
+                            colaborador_nome: c.full_name || "",
+                            cargo: c.cargo || "",
+                            setor: c.setor || "",
+                          }));
+                          setOcColabSearch("");
+                        }}
+                      >
+                        <span className="font-medium">{c.full_name}</span>
+                        {c.cargo && <span className="text-xs text-muted-foreground ml-2">— {c.cargo}</span>}
+                        {c.setor && <span className="text-xs text-muted-foreground ml-1">({c.setor})</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
-              <div className="space-y-1">
-                <Label>Matrícula</Label>
-                <Input
-                  value={ocorrenciaForm.colaborador_matricula}
-                  onChange={(e) => setOcorrenciaForm((f) => ({ ...f, colaborador_matricula: e.target.value }))}
-                  placeholder="Opcional"
-                />
-              </div>
+              {ocorrenciaForm.colaborador_nome && (
+                <p className="text-xs text-muted-foreground mt-1">
+                  ✓ {ocorrenciaForm.colaborador_nome} {ocorrenciaForm.cargo && `— ${ocorrenciaForm.cargo}`} {ocorrenciaForm.setor && `(${ocorrenciaForm.setor})`}
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
