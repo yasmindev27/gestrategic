@@ -3,12 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Building2, AlertTriangle, Clock, CheckCircle2, Plus,
-  Filter, Users, TrendingUp, Search, History, CalendarClock, FileText, Brain, ReceiptText
+  Filter, Users, TrendingUp, Search, History, CalendarClock, FileText, Brain, ReceiptText, GitBranch
 } from 'lucide-react';
 import { DISCFormModule } from '@/components/disc/DISCFormModule';
 import { LancamentoNotas } from '@/components/gerencia/LancamentoNotas';
 import { GestaoTalentos } from '@/components/gerencia/GestaoTalentos';
 import { DashboardFaturamento } from '@/components/faturamento/DashboardFaturamento';
+import { FluxogramaSetores } from '@/components/admin/FluxogramaSetores';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -502,6 +503,10 @@ export function GerenciaModule() {
             <Users className="h-4 w-4" />
             Gestão de Talentos
           </TabsTrigger>
+          <TabsTrigger value="fluxograma" className="gap-2">
+            <GitBranch className="h-4 w-4" />
+            Fluxograma
+          </TabsTrigger>
         </TabsList>
 
         {/* -- Tab: Planos de Ação -- */}
@@ -730,6 +735,11 @@ export function GerenciaModule() {
         {/* -- Tab: Gestão de Talentos -- */}
         <TabsContent value="talentos" className="mt-4">
           <GestaoTalentos />
+        </TabsContent>
+
+        {/* -- Tab: Fluxograma Setores -- */}
+        <TabsContent value="fluxograma" className="mt-4">
+          <FluxogramaSetores />
         </TabsContent>
       </Tabs>
 
