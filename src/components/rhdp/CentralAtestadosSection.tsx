@@ -260,7 +260,7 @@ export const CentralAtestadosSection = () => {
       acc[key].totalDias += a.dias_afastamento || 0;
       return acc;
     }, {} as Record<string, { nome: string; quantidade: number; totalDias: number }>);
-    return Object.values(grouped).sort((a, b) => b.quantidade !== a.quantidade ? b.quantidade - a.quantidade : b.totalDias - a.totalDias).slice(0, 5);
+    return Object.values(grouped).sort((a, b) => b.totalDias !== a.totalDias ? b.totalDias - a.totalDias : b.quantidade - a.quantidade).slice(0, 5);
   }, [atestadosFiltrados]);
 
   const chartDataByTipo = useMemo(() => {
