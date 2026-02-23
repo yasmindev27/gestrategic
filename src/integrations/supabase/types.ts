@@ -5074,6 +5074,213 @@ export type Database = {
         }
         Relationships: []
       }
+      seg_patrimonial_conflitos: {
+        Row: {
+          created_at: string
+          descricao: string
+          desfecho: string | null
+          grau_agressividade: string
+          id: string
+          nome_envolvido: string
+          registrado_por: string
+          registrado_por_nome: string
+          setor: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          desfecho?: string | null
+          grau_agressividade?: string
+          id?: string
+          nome_envolvido: string
+          registrado_por: string
+          registrado_por_nome: string
+          setor: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          desfecho?: string | null
+          grau_agressividade?: string
+          id?: string
+          nome_envolvido?: string
+          registrado_por?: string
+          registrado_por_nome?: string
+          setor?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      seg_patrimonial_danos: {
+        Row: {
+          created_at: string
+          descricao: string
+          encaminhado_manutencao: boolean | null
+          foto_url: string | null
+          id: string
+          local_dano: string
+          registrado_por: string
+          registrado_por_nome: string
+          status: string
+          tipo_dano: string
+          updated_at: string
+          urgencia: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          encaminhado_manutencao?: boolean | null
+          foto_url?: string | null
+          id?: string
+          local_dano: string
+          registrado_por: string
+          registrado_por_nome: string
+          status?: string
+          tipo_dano: string
+          updated_at?: string
+          urgencia?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          encaminhado_manutencao?: boolean | null
+          foto_url?: string | null
+          id?: string
+          local_dano?: string
+          registrado_por?: string
+          registrado_por_nome?: string
+          status?: string
+          tipo_dano?: string
+          updated_at?: string
+          urgencia?: string
+        }
+        Relationships: []
+      }
+      seg_patrimonial_passagem_plantao: {
+        Row: {
+          created_at: string
+          id: string
+          lido_em: string | null
+          lido_por: string | null
+          lido_por_nome: string | null
+          pontos_atencao: string | null
+          relato: string
+          turno_entrada: string
+          turno_saida: string
+          usuario_saida_id: string
+          usuario_saida_nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lido_em?: string | null
+          lido_por?: string | null
+          lido_por_nome?: string | null
+          pontos_atencao?: string | null
+          relato: string
+          turno_entrada: string
+          turno_saida: string
+          usuario_saida_id: string
+          usuario_saida_nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lido_em?: string | null
+          lido_por?: string | null
+          lido_por_nome?: string | null
+          pontos_atencao?: string | null
+          relato?: string
+          turno_entrada?: string
+          turno_saida?: string
+          usuario_saida_id?: string
+          usuario_saida_nome?: string
+        }
+        Relationships: []
+      }
+      seg_patrimonial_rondas: {
+        Row: {
+          created_at: string
+          detalhes_infraestrutura: string | null
+          id: string
+          infraestrutura_ok: boolean | null
+          observacoes: string | null
+          setor: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          created_at?: string
+          detalhes_infraestrutura?: string | null
+          id?: string
+          infraestrutura_ok?: boolean | null
+          observacoes?: string | null
+          setor: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Update: {
+          created_at?: string
+          detalhes_infraestrutura?: string | null
+          id?: string
+          infraestrutura_ok?: boolean | null
+          observacoes?: string | null
+          setor?: string
+          usuario_id?: string
+          usuario_nome?: string
+        }
+        Relationships: []
+      }
+      seg_patrimonial_visitantes: {
+        Row: {
+          created_at: string
+          documento: string | null
+          hora_entrada: string
+          hora_saida: string | null
+          id: string
+          nome_visitante: string
+          numero_prontuario: string | null
+          paciente_nome: string
+          parentesco: string | null
+          registrado_por: string
+          registrado_por_nome: string
+          setor_leito: string
+        }
+        Insert: {
+          created_at?: string
+          documento?: string | null
+          hora_entrada?: string
+          hora_saida?: string | null
+          id?: string
+          nome_visitante: string
+          numero_prontuario?: string | null
+          paciente_nome: string
+          parentesco?: string | null
+          registrado_por: string
+          registrado_por_nome: string
+          setor_leito: string
+        }
+        Update: {
+          created_at?: string
+          documento?: string | null
+          hora_entrada?: string
+          hora_saida?: string | null
+          id?: string
+          nome_visitante?: string
+          numero_prontuario?: string | null
+          paciente_nome?: string
+          parentesco?: string | null
+          registrado_por?: string
+          registrado_por_nome?: string
+          setor_leito?: string
+        }
+        Relationships: []
+      }
       setores: {
         Row: {
           ativo: boolean | null

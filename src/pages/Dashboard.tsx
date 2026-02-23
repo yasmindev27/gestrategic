@@ -22,6 +22,7 @@ import { RHDPModule } from "@/components/modules/RHDPModule";
 import { ChatModule } from "@/components/modules/ChatModule";
 import { RoupariaModule } from "@/components/modules/RoupariaModule";
 import { SegurancaTrabalhoModule } from "@/components/modules/SegurancaTrabalhoModule";
+import { SegurancaPatrimonialModule } from "@/components/modules/SegurancaPatrimonialModule";
 import { AssistenciaSocialModule } from "@/components/modules/AssistenciaSocialModule";
 import { QualidadeModule } from "@/components/modules/QualidadeModule";
 import { ReportarIncidenteDialog } from "@/components/gestao-incidentes";
@@ -193,6 +194,8 @@ const Dashboard = () => {
         return <GerenciaModule />;
       case "painel-seguranca":
         return <PainelSeguranca />;
+      case "seguranca-patrimonial":
+        return <SegurancaPatrimonialModule />;
       default:
         return <MemoizedDashboardPersonalizado onNavigate={handleSectionChange} />;
     }

@@ -84,6 +84,7 @@ const Sidebar = ({
         { icon: GraduationCap, label: "Capacitação", id: "lms", category: "administrativo" },
         { icon: Shield, label: "Administração", id: "admin", category: "administrativo" },
         { icon: ShieldAlert, label: "Painel Segurança", id: "painel-seguranca", category: "administrativo" },
+        { icon: Shield, label: "Seg. Patrimonial", id: "seguranca-patrimonial", category: "apoio" },
         { icon: Video, label: "Reuniões", id: "reuniao", category: "administrativo" },
         { icon: FileText, label: "Docs Interact", id: "documentos-interact", category: "integracao" },
         { icon: Stethoscope, label: "Sistema Salus", id: "salus", category: "integracao" }
@@ -202,6 +203,7 @@ const Sidebar = ({
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: ShieldAlert, label: "Painel Segurança", id: "painel-seguranca" },
+        { icon: Shield, label: "Seg. Patrimonial", id: "seguranca-patrimonial" },
         { icon: HardHat, label: "Seg. Trabalho", id: "seguranca-trabalho" },
         { icon: Calendar, label: "Agenda", id: "agenda" }
       );
