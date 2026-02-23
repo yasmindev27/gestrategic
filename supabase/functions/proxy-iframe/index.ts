@@ -15,6 +15,7 @@ const ALLOWED_DOMAINS = [
   "streamlit.app",
   "pegaplantao.com.br",
   "worklabweb.com.br",
+  "santacasachavantes.org",
 ];
 
 function isDomainAllowed(url: string): boolean {
