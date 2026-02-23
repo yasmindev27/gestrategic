@@ -160,6 +160,10 @@ export const SaidaProntuariosModule = () => {
   const [folhasPage, setFolhasPage] = useState(0);
   const [faltantesPage, setFaltantesPage] = useState(0);
 
+  // Section visibility: only one section visible at a time
+  type VisibleSection = "fluxo" | "folhas" | "faltantes" | null;
+  const [visibleSection, setVisibleSection] = useState<VisibleSection>("fluxo");
+
   useEffect(() => {
     if (!isLoadingRole && canAccess) {
       fetchCounts();
@@ -1064,8 +1068,8 @@ export const SaidaProntuariosModule = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Total de Registros */}
         <Card 
-          className="bg-primary/5 border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors"
-          onClick={() => document.getElementById('prontuarios-fluxo')?.scrollIntoView({ behavior: 'smooth' })}
+          className={`cursor-pointer hover:bg-primary/10 transition-colors ${visibleSection === "fluxo" ? "bg-primary/10 border-primary ring-2 ring-primary/30" : "bg-primary/5 border-primary/20"}`}
+          onClick={() => setVisibleSection(visibleSection === "fluxo" ? null : "fluxo")}
         >
           <CardContent className="py-4">
             <div className="flex items-center gap-3">
@@ -1085,8 +1089,8 @@ export const SaidaProntuariosModule = () => {
 
         {/* Folhas Avulsas */}
         <Card 
-          className="bg-warning/5 border-warning/20 cursor-pointer hover:bg-warning/10 transition-colors"
-          onClick={() => document.getElementById('folhas-avulsas')?.scrollIntoView({ behavior: 'smooth' })}
+          className={`cursor-pointer hover:bg-warning/10 transition-colors ${visibleSection === "folhas" ? "bg-warning/10 border-warning ring-2 ring-warning/30" : "bg-warning/5 border-warning/20"}`}
+          onClick={() => setVisibleSection(visibleSection === "folhas" ? null : "folhas")}
         >
           <CardContent className="py-4">
             <div className="flex items-center gap-3">
@@ -1103,8 +1107,8 @@ export const SaidaProntuariosModule = () => {
 
         {/* Prontuários Faltantes */}
         <Card 
-          className="bg-destructive/5 border-destructive/20 cursor-pointer hover:bg-destructive/10 transition-colors"
-          onClick={() => document.getElementById('prontuarios-faltantes')?.scrollIntoView({ behavior: 'smooth' })}
+          className={`cursor-pointer hover:bg-destructive/10 transition-colors ${visibleSection === "faltantes" ? "bg-destructive/10 border-destructive ring-2 ring-destructive/30" : "bg-destructive/5 border-destructive/20"}`}
+          onClick={() => setVisibleSection(visibleSection === "faltantes" ? null : "faltantes")}
         >
           <CardContent className="py-4">
             <div className="flex items-center gap-3">
@@ -1120,7 +1124,8 @@ export const SaidaProntuariosModule = () => {
         </Card>
       </div>
 
-      {/* Table */}
+      {/* Table - Prontuários em Fluxo */}
+      {visibleSection === "fluxo" && (
       <Card id="prontuarios-fluxo">
         <CardHeader>
           <CardTitle>Prontuários em Fluxo</CardTitle>
@@ -1209,8 +1214,10 @@ export const SaidaProntuariosModule = () => {
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Folhas Avulsas */}
+      {visibleSection === "folhas" && (
       <Card id="folhas-avulsas" className="bg-warning/5 border-warning/30">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -1364,8 +1371,10 @@ export const SaidaProntuariosModule = () => {
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Prontuários Faltantes - Importados via Salus */}
+      {visibleSection === "faltantes" && (
       <Card id="prontuarios-faltantes" className="bg-destructive/5 border-destructive/30">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -1502,6 +1511,7 @@ export const SaidaProntuariosModule = () => {
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Validation Dialog */}
       <Dialog open={validarOpen} onOpenChange={setValidarOpen}>
