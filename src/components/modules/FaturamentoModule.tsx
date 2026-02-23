@@ -180,6 +180,7 @@ export const FaturamentoModule = () => {
   const [datePreset, setDatePreset] = useState<DateFilterPreset>(null);
   const [customDateStart, setCustomDateStart] = useState("");
   const [customDateEnd, setCustomDateEnd] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("todos");
 
   const canSeeDashboard = isAdmin || isGestor;
   
@@ -502,6 +503,9 @@ export const FaturamentoModule = () => {
     const matchesName = (s.paciente_nome || '').toLowerCase().includes(searchTerm.toLowerCase());
     if (!matchesName) return false;
 
+    // Status filter
+    if (statusFilter !== "todos" && s.status !== statusFilter) return false;
+
     const range = getDateRange();
     if (range && s.data_atendimento) {
       try {
@@ -709,9 +713,28 @@ export const FaturamentoModule = () => {
             )}
           </div>
 
-          {datePreset && (
+          {/* Status filter */}
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Status:</span>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-8 w-48 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                <SelectItem value="pendente">Pendente</SelectItem>
+                <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
+                <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
+                <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
+                <SelectItem value="concluido">Concluído</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {(datePreset || statusFilter !== "todos") && (
             <p className="text-xs text-muted-foreground">
-              Exibindo <span className="font-medium text-foreground">{filteredSaidas.length}</span> registro(s) no período selecionado
+              Exibindo <span className="font-medium text-foreground">{filteredSaidas.length}</span> registro(s) filtrado(s)
             </p>
           )}
         </CardContent>
