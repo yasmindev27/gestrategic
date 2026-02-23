@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Skeleton } from "@/components/ui/skeleton";
+import { MetricasSegurancaWidget } from "@/components/seguranca";
 import {
   Tooltip,
   TooltipContent,
@@ -435,6 +436,9 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
           ))}
         </div>
       </TooltipProvider>
+
+      {/* Métricas de Segurança — apenas para admin */}
+      {isAdmin && <MetricasSegurancaWidget />}
     </div>
   );
 };
