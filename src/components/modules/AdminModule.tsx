@@ -63,6 +63,7 @@ import {
   RefreshCw,
   Briefcase,
   Building2,
+  GitBranch,
   Server,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -75,6 +76,7 @@ import { GestoresVinculacao } from "@/components/admin/GestoresVinculacao";
 import { PermissoesManager } from "@/components/admin/PermissoesManager";
 import { InfraestruturaPanel } from "@/components/admin/InfraestruturaPanel";
 import { LogsAuditoriaModule } from "@/components/modules/LogsAuditoriaModule";
+import { FluxogramaSetores } from "@/components/admin/FluxogramaSetores";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -598,6 +600,10 @@ export const AdminModule = () => {
             <Settings className="h-4 w-4 mr-2" />
             Configurações
           </TabsTrigger>
+          <TabsTrigger value="fluxograma">
+            <GitBranch className="h-4 w-4 mr-2" />
+            Fluxograma
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="usuarios" className="space-y-4 mt-4">
@@ -746,6 +752,10 @@ export const AdminModule = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="fluxograma" className="mt-4">
+          <FluxogramaSetores />
         </TabsContent>
       </Tabs>
 
