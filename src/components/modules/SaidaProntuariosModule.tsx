@@ -174,7 +174,7 @@ export const SaidaProntuariosModule = () => {
       const [regularCount, folhasCount, salusCount] = await Promise.all([
         supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
           .eq("is_folha_avulsa", false)
-          .not("observacao_classificacao", "ilike", "%importado via salus%"),
+          .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%"),
         supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
           .eq("is_folha_avulsa", true),
         supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
@@ -197,7 +197,7 @@ export const SaidaProntuariosModule = () => {
       .from("saida_prontuarios")
       .select("*")
       .eq("is_folha_avulsa", false)
-      .not("observacao_classificacao", "ilike", "%importado via salus%")
+      .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%")
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
