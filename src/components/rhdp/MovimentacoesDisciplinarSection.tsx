@@ -804,21 +804,21 @@ export function MovimentacoesDisciplinarSection() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label>Cargo</Label>
-                <Select value={ocorrenciaForm.cargo} onValueChange={(v) => setOcorrenciaForm((f) => ({ ...f, cargo: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Cargo..." /></SelectTrigger>
-                  <SelectContent>
-                    {CARGOS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Input
+                  value={ocorrenciaForm.cargo}
+                  readOnly
+                  className="bg-muted cursor-default"
+                  placeholder="Preenchido ao selecionar colaborador"
+                />
               </div>
               <div className="space-y-1">
                 <Label>Setor</Label>
-                <Select value={ocorrenciaForm.setor} onValueChange={(v) => setOcorrenciaForm((f) => ({ ...f, setor: v }))}>
-                  <SelectTrigger><SelectValue placeholder="Setor..." /></SelectTrigger>
-                  <SelectContent>
-                    {setoresData.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <Input
+                  value={ocorrenciaForm.setor}
+                  readOnly
+                  className="bg-muted cursor-default"
+                  placeholder="Preenchido ao selecionar colaborador"
+                />
               </div>
             </div>
             <div className="space-y-1">
