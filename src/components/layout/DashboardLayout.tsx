@@ -3,6 +3,7 @@ import { Loader2 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import GreetingHeader from "@/components/GreetingHeader";
 import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
+import { FloatingSegurancaButton } from "@/components/seguranca/FloatingSegurancaButton";
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
@@ -59,7 +60,10 @@ const DashboardLayout = memo(({
           </div>
 
           {showFloatingChat && activeSection !== "chat" && (
-            <FloatingChatButton currentModule={activeSection} />
+            <>
+              <FloatingSegurancaButton />
+              <FloatingChatButton currentModule={activeSection} />
+            </>
           )}
         </main>
       )}
