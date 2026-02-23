@@ -205,7 +205,7 @@ export const SaidaProntuariosModule = () => {
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
-    if (searchTerm) query = query.ilike("paciente_nome", `%${searchTerm}%`);
+    if (debouncedSearchTerm) query = query.ilike("paciente_nome", `%${debouncedSearchTerm}%`);
     if (dataInicio) query = query.gte("data_atendimento", dataInicio);
     if (dataFim) query = query.lte("data_atendimento", dataFim);
     
@@ -229,7 +229,7 @@ export const SaidaProntuariosModule = () => {
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
-    if (folhasSearchTerm) query = query.ilike("paciente_nome", `%${folhasSearchTerm}%`);
+    if (debouncedFolhasSearch) query = query.ilike("paciente_nome", `%${debouncedFolhasSearch}%`);
     if (folhasDataInicio) query = query.gte("data_atendimento", folhasDataInicio);
     if (folhasDataFim) query = query.lte("data_atendimento", folhasDataFim);
 
@@ -247,7 +247,7 @@ export const SaidaProntuariosModule = () => {
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
-    if (faltantesSearchTerm) query = query.ilike("paciente_nome", `%${faltantesSearchTerm}%`);
+    if (debouncedFaltantesSearch) query = query.ilike("paciente_nome", `%${debouncedFaltantesSearch}%`);
     if (faltantesDataInicio) query = query.gte("data_atendimento", faltantesDataInicio);
     if (faltantesDataFim) query = query.lte("data_atendimento", faltantesDataFim);
 
@@ -256,24 +256,42 @@ export const SaidaProntuariosModule = () => {
     setFaltantesPage(page);
   };
 
-  // Re-fetch when filters change (debounced via useEffect)
+  // Debounced search values
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [debouncedFaltantesSearch, setDebouncedFaltantesSearch] = useState("");
+  const [debouncedFolhasSearch, setDebouncedFolhasSearch] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearchTerm(searchTerm), 400);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedFaltantesSearch(faltantesSearchTerm), 400);
+    return () => clearTimeout(t);
+  }, [faltantesSearchTerm]);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedFolhasSearch(folhasSearchTerm), 400);
+    return () => clearTimeout(t);
+  }, [folhasSearchTerm]);
+
+  // Re-fetch when filters change (debounced)
   useEffect(() => {
     if (!isLoadingRole && canAccess) {
       fetchSaidasPage(0);
     }
-  }, [searchTerm, dataInicio, dataFim, statusFilter]);
+  }, [debouncedSearchTerm, dataInicio, dataFim, statusFilter]);
 
   useEffect(() => {
     if (!isLoadingRole && canAccess) {
       fetchFolhasPage(0);
     }
-  }, [folhasSearchTerm, folhasDataInicio, folhasDataFim]);
+  }, [debouncedFolhasSearch, folhasDataInicio, folhasDataFim]);
 
   useEffect(() => {
     if (!isLoadingRole && canAccess) {
       fetchFaltantesPage(0);
     }
-  }, [faltantesSearchTerm, faltantesDataInicio, faltantesDataFim]);
+  }, [debouncedFaltantesSearch, faltantesDataInicio, faltantesDataFim]);
 
   const fetchSaidas = async () => {
     await fetchCounts();

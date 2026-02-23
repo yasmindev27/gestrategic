@@ -57,7 +57,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { safeFormatDate } from "@/lib/brasilia-time";
-import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, format, isWithinInterval, parseISO } from "date-fns";
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 type DateFilterPreset = "hoje" | "semana" | "mes" | "ano" | "custom" | null;
@@ -182,6 +182,16 @@ export const FaturamentoModule = () => {
   const [customDateEnd, setCustomDateEnd] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("todos");
 
+  // Server-side pagination
+  const PAGE_SIZE = 100;
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [faltantesCount, setFaltantesCount] = useState(0);
+  const [avaliadosCount, setAvaliadosCount] = useState(0);
+
+  // Avaliacoes lookup map (only for current page saidas)
+  const [avaliacoesMap, setAvaliacoesMap] = useState<Map<string, Avaliacao>>(new Map());
+
   const canSeeDashboard = isAdmin || isGestor;
   
   // Form dialog
@@ -196,84 +206,185 @@ export const FaturamentoModule = () => {
 
   const canAccess = isFaturamento || isAdmin;
 
+  // Debounce search term
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     if (!isLoadingRole && canAccess) {
-      fetchData();
       logAction("acesso", "faturamento", { modulo: "prontuarios" });
     }
   }, [canAccess, isLoadingRole]);
 
-  const fetchData = async () => {
+  // Fetch counts (lightweight)
+  useEffect(() => {
+    if (!isLoadingRole && canAccess) {
+      fetchCounts();
+    }
+  }, [canAccess, isLoadingRole]);
+
+  // Re-fetch data when filters/tab/page change
+  useEffect(() => {
+    if (!isLoadingRole && canAccess && activeTab !== "dashboard") {
+      fetchPageData();
+    }
+  }, [canAccess, isLoadingRole, activeTab, currentPage, debouncedSearch, datePreset, customDateStart, customDateEnd, statusFilter]);
+
+  // Reset page on filter/tab change
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [activeTab, debouncedSearch, datePreset, customDateStart, customDateEnd, statusFilter]);
+
+  const getDateRangeForQuery = (): { start: string; end: string } | null => {
+    const now = new Date();
+    switch (datePreset) {
+      case "hoje":
+        return { start: format(startOfDay(now), "yyyy-MM-dd"), end: format(endOfDay(now), "yyyy-MM-dd'T'23:59:59") };
+      case "semana":
+        return { start: format(startOfWeek(now, { locale: ptBR }), "yyyy-MM-dd"), end: format(endOfWeek(now, { locale: ptBR }), "yyyy-MM-dd'T'23:59:59") };
+      case "mes":
+        return { start: format(startOfMonth(now), "yyyy-MM-dd"), end: format(endOfMonth(now), "yyyy-MM-dd'T'23:59:59") };
+      case "ano":
+        return { start: format(startOfYear(now), "yyyy-MM-dd"), end: format(endOfYear(now), "yyyy-MM-dd'T'23:59:59") };
+      case "custom":
+        if (customDateStart) {
+          return { start: customDateStart, end: customDateEnd || customDateStart + "T23:59:59" };
+        }
+        return null;
+      default:
+        return null;
+    }
+  };
+
+  const applyFiltersToQuery = (query: any) => {
+    if (debouncedSearch) {
+      query = query.ilike("paciente_nome", `%${debouncedSearch}%`);
+    }
+    if (statusFilter !== "todos") {
+      query = query.eq("status", statusFilter);
+    }
+    const range = getDateRangeForQuery();
+    if (range) {
+      query = query.gte("data_atendimento", range.start).lte("data_atendimento", range.end);
+    }
+    return query;
+  };
+
+  const fetchCounts = async () => {
+    try {
+      const [totalRes, faltantesRes, avaliadosRes] = await Promise.all([
+        supabase.from("saida_prontuarios").select("*", { count: "exact", head: true }),
+        // Faltantes = saidas without a finalized avaliacao
+        supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
+          .not("id", "in", `(${
+            // We'll use a simpler approach: count avaliacoes finalizadas
+            ""
+          })`),
+        supabase.from("avaliacoes_prontuarios").select("*", { count: "exact", head: true })
+          .eq("is_finalizada", true),
+      ]);
+      setTotalCount(totalRes.count ?? 0);
+      setAvaliadosCount(avaliadosRes.count ?? 0);
+      // Faltantes = total - avaliados
+      setFaltantesCount((totalRes.count ?? 0) - (avaliadosRes.count ?? 0));
+    } catch (e) {
+      console.error("Error fetching counts:", e);
+    }
+  };
+
+  const fetchPageData = async () => {
     setIsLoading(true);
     try {
-      // Supabase has a default limit of 1000 rows per request.
-      // For this module we need the full dataset to correctly compute "Lista Geral" and "Faltantes".
-      const pageSize = 1000;
+      const from = currentPage * PAGE_SIZE;
 
-      const fetchAllSaidas = async (): Promise<SaidaProntuario[]> => {
-        const all: SaidaProntuario[] = [];
-        let from = 0;
+      if (activeTab === "avaliados") {
+        // Fetch finalized avaliacoes with server-side pagination
+        let query = supabase
+          .from("avaliacoes_prontuarios")
+          .select("*")
+          .eq("is_finalizada", true)
+          .order("data_inicio", { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
 
-        while (true) {
-          const { data, error } = await supabase
-            .from("saida_prontuarios")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .order("id", { ascending: false })
-            .range(from, from + pageSize - 1);
-
-          if (error) throw error;
-
-          const rows = (data || []) as SaidaProntuario[];
-          all.push(...rows);
-
-          if (rows.length < pageSize) break;
-          from += pageSize;
+        if (debouncedSearch) {
+          query = query.ilike("paciente_nome", `%${debouncedSearch}%`);
         }
 
-        return all;
-      };
+        const { data, error } = await query;
+        if (error) throw error;
+        setAvaliacoes((data || []) as Avaliacao[]);
+        setSaidas([]);
+        setProntuariosFaltantes([]);
+      } else if (activeTab === "faltantes") {
+        // Fetch saidas that do NOT have a finalized avaliacao
+        // Strategy: fetch saidas page, then check which have avaliacoes
+        let query = supabase
+          .from("saida_prontuarios")
+          .select("*")
+          .order("created_at", { ascending: false });
 
-      const fetchAllAvaliacoes = async (): Promise<Avaliacao[]> => {
-        const all: Avaliacao[] = [];
-        let from = 0;
+        query = applyFiltersToQuery(query);
 
-        while (true) {
-          const { data, error } = await supabase
+        // We fetch more to compensate for filtering out avaliados
+        const { data: saidasData, error } = await query.range(from, from + PAGE_SIZE * 2 - 1);
+        if (error) throw error;
+
+        const rows = (saidasData || []) as SaidaProntuario[];
+        if (rows.length > 0) {
+          const ids = rows.map(r => r.id);
+          const { data: avData } = await supabase
+            .from("avaliacoes_prontuarios")
+            .select("saida_prontuario_id")
+            .eq("is_finalizada", true)
+            .in("saida_prontuario_id", ids);
+
+          const avaliadosSet = new Set((avData || []).map(a => a.saida_prontuario_id));
+          const faltantes = rows.filter(r => !avaliadosSet.has(r.id)).slice(0, PAGE_SIZE);
+          setProntuariosFaltantes(faltantes);
+        } else {
+          setProntuariosFaltantes([]);
+        }
+        setSaidas([]);
+        setAvaliacoes([]);
+      } else {
+        // Lista Geral - server-side paginated
+        let query = supabase
+          .from("saida_prontuarios")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
+
+        query = applyFiltersToQuery(query);
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        const rows = (data || []) as SaidaProntuario[];
+        setSaidas(rows);
+
+        // Fetch avaliacoes only for visible saidas (batch lookup)
+        if (rows.length > 0) {
+          const ids = rows.map(r => r.id);
+          const { data: avData } = await supabase
             .from("avaliacoes_prontuarios")
             .select("*")
-            .order("data_inicio", { ascending: false })
-            .order("id", { ascending: false })
-            .range(from, from + pageSize - 1);
+            .eq("is_finalizada", true)
+            .in("saida_prontuario_id", ids);
 
-          if (error) throw error;
-
-          const rows = (data || []) as Avaliacao[];
-          all.push(...rows);
-
-          if (rows.length < pageSize) break;
-          from += pageSize;
+          const map = new Map<string, Avaliacao>();
+          (avData || []).forEach((a: any) => {
+            if (a.saida_prontuario_id) map.set(a.saida_prontuario_id, a as Avaliacao);
+          });
+          setAvaliacoesMap(map);
+        } else {
+          setAvaliacoesMap(new Map());
         }
-
-        return all;
-      };
-
-      const [saidasData, avaliacoesData] = await Promise.all([
-        fetchAllSaidas(),
-        fetchAllAvaliacoes(),
-      ]);
-
-      setSaidas(saidasData);
-      setAvaliacoes(avaliacoesData);
-
-      // Filter faltantes - those without completed evaluation (using saida_prontuario_id)
-      const avaliadosSaidaIdSet = new Set(
-        avaliacoesData
-          .filter((a) => a.is_finalizada && !!a.saida_prontuario_id)
-          .map((a) => a.saida_prontuario_id as string)
-      );
-
-      setProntuariosFaltantes(saidasData.filter((s) => !avaliadosSaidaIdSet.has(s.id)));
+        setProntuariosFaltantes([]);
+        setAvaliacoes([]);
+      }
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -284,6 +395,11 @@ export const FaturamentoModule = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const fetchData = async () => {
+    await fetchCounts();
+    await fetchPageData();
   };
 
   const handleOpenForm = (saida: SaidaProntuario) => {
@@ -459,68 +575,16 @@ export const FaturamentoModule = () => {
   };
 
   const isProntuarioAvaliado = (saidaId: string) => {
-    return avaliacoes.some(a => a.saida_prontuario_id === saidaId && a.is_finalizada);
+    return avaliacoesMap.has(saidaId);
   };
 
-  const getListaAtual = () => {
-    switch (activeTab) {
-      case "lista":
-        return saidas;
-      case "faltantes":
-        return prontuariosFaltantes;
-      case "avaliados":
-        return saidas.filter(s => isProntuarioAvaliado(s.id));
-      default:
-        return saidas;
-    }
-  };
-
-  const getDateRange = (): { start: Date; end: Date } | null => {
-    const now = new Date();
-    switch (datePreset) {
-      case "hoje":
-        return { start: startOfDay(now), end: endOfDay(now) };
-      case "semana":
-        return { start: startOfWeek(now, { locale: ptBR }), end: endOfWeek(now, { locale: ptBR }) };
-      case "mes":
-        return { start: startOfMonth(now), end: endOfMonth(now) };
-      case "ano":
-        return { start: startOfYear(now), end: endOfYear(now) };
-      case "custom":
-        if (customDateStart && customDateEnd) {
-          return { start: startOfDay(parseISO(customDateStart)), end: endOfDay(parseISO(customDateEnd)) };
-        }
-        if (customDateStart) {
-          return { start: startOfDay(parseISO(customDateStart)), end: endOfDay(parseISO(customDateStart)) };
-        }
-        return null;
-      default:
-        return null;
-    }
-  };
-
-  const filteredSaidas = getListaAtual().filter(s => {
-    const matchesName = (s.paciente_nome || '').toLowerCase().includes(searchTerm.toLowerCase());
-    if (!matchesName) return false;
-
-    // Status filter
-    if (statusFilter !== "todos" && s.status !== statusFilter) return false;
-
-    const range = getDateRange();
-    if (range && s.data_atendimento) {
-      try {
-        const d = parseISO(s.data_atendimento);
-        return isWithinInterval(d, { start: range.start, end: range.end });
-      } catch {
-        return false;
-      }
-    }
-    if (range && !s.data_atendimento) return false;
-    return true;
-  });
+  // Data is now server-side filtered; just return current data
+  const displayData = activeTab === "lista" ? saidas 
+    : activeTab === "faltantes" ? prontuariosFaltantes 
+    : [];
 
   const handleViewAvaliacao = (saidaId: string) => {
-    const avaliacao = avaliacoes.find(a => a.saida_prontuario_id === saidaId && a.is_finalizada);
+    const avaliacao = avaliacoesMap.get(saidaId);
     if (avaliacao) {
       setSelectedAvaliacao(avaliacao);
       setViewDialogOpen(true);
@@ -600,21 +664,21 @@ export const FaturamentoModule = () => {
           onClick={() => setActiveTab("lista")}
         >
           <FileText className="h-4 w-4 mr-2" />
-          Lista Geral ({saidas.length})
+          Lista Geral ({totalCount})
         </Button>
         <Button
           variant={activeTab === "faltantes" ? "default" : "outline"}
           onClick={() => setActiveTab("faltantes")}
         >
           <AlertCircle className="h-4 w-4 mr-2" />
-          Faltantes ({prontuariosFaltantes.length})
+          Faltantes ({faltantesCount})
         </Button>
         <Button
           variant={activeTab === "avaliados" ? "default" : "outline"}
           onClick={() => setActiveTab("avaliados")}
         >
           <CheckCircle className="h-4 w-4 mr-2" />
-          Avaliados ({avaliacoes.filter(a => a.is_finalizada).length})
+          Avaliados ({avaliadosCount})
         </Button>
         {canSeeDashboard && (
           <Button
@@ -734,7 +798,7 @@ export const FaturamentoModule = () => {
 
           {(datePreset || statusFilter !== "todos") && (
             <p className="text-xs text-muted-foreground">
-              Exibindo <span className="font-medium text-foreground">{filteredSaidas.length}</span> registro(s) filtrado(s)
+              Exibindo <span className="font-medium text-foreground">{displayData.length}</span> registro(s) filtrado(s)
             </p>
           )}
         </CardContent>
@@ -759,7 +823,48 @@ export const FaturamentoModule = () => {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : filteredSaidas.length === 0 ? (
+          ) : activeTab === "avaliados" ? (
+            // Avaliados tab - show avaliacoes directly
+            avaliacoes.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhuma avaliação encontrada.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Paciente</TableHead>
+                    <TableHead>Nº Prontuário</TableHead>
+                    <TableHead>Setor</TableHead>
+                    <TableHead>Resultado</TableHead>
+                    <TableHead>Data Avaliação</TableHead>
+                    <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {avaliacoes.map((av) => (
+                    <TableRow key={av.id}>
+                      <TableCell className="font-medium uppercase">{av.paciente_nome || "-"}</TableCell>
+                      <TableCell>{av.numero_prontuario || "-"}</TableCell>
+                      <TableCell>{av.unidade_setor || "-"}</TableCell>
+                      <TableCell>{getResultadoBadge(av.resultado_final)}</TableCell>
+                      <TableCell>{safeFormatDate(av.data_inicio, "dd/MM/yyyy")}</TableCell>
+                      <TableCell>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => { setSelectedAvaliacao(av); setViewDialogOpen(true); }}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Visualizar
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )
+          ) : displayData.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               Nenhum prontuário encontrado.
             </div>
@@ -779,8 +884,8 @@ export const FaturamentoModule = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSaidas.map((saida) => {
-                  const avaliacao = avaliacoes.find(a => a.saida_prontuario_id === saida.id && a.is_finalizada);
+                {displayData.map((saida) => {
+                  const avaliacao = avaliacoesMap.get(saida.id);
                   return (
                     <TableRow key={saida.id}>
                       <TableCell className="font-medium uppercase">{saida.paciente_nome || "-"}</TableCell>
@@ -828,6 +933,30 @@ export const FaturamentoModule = () => {
                 })}
               </TableBody>
             </Table>
+          )}
+
+          {/* Pagination */}
+          {!isLoading && (activeTab !== "avaliados" ? displayData.length >= PAGE_SIZE : avaliacoes.length >= PAGE_SIZE) && (
+            <div className="flex justify-center gap-2 mt-4">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                disabled={currentPage === 0}
+                onClick={() => setCurrentPage(p => p - 1)}
+              >
+                Anterior
+              </Button>
+              <span className="text-sm text-muted-foreground self-center">
+                Página {currentPage + 1}
+              </span>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => setCurrentPage(p => p + 1)}
+              >
+                Próxima
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
