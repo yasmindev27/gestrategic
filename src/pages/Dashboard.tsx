@@ -193,7 +193,7 @@ const Dashboard = () => {
       case "gerencia":
         return <GerenciaModule />;
       case "painel-seguranca":
-        return <PainelSeguranca />;
+        return <SegurancaPatrimonialModule />;
       case "seguranca-patrimonial":
         return <SegurancaPatrimonialModule />;
       default:
