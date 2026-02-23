@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin, ShieldAlert, Users, Construction, FileText } from "lucide-react";
+import { MapPin, ShieldAlert, Users, Construction, FileText, Bell } from "lucide-react";
 import {
   RondasPatrimoniais,
   GestaoConflitos,
@@ -8,10 +8,11 @@ import {
   MapaDanos,
   PassagemPlantao,
 } from "@/components/seguranca-patrimonial";
+import { PainelSeguranca } from "@/components/seguranca";
 import { useLogAccess } from "@/hooks/useLogAccess";
 
 export function SegurancaPatrimonialModule() {
-  const [activeTab, setActiveTab] = useState("rondas");
+  const [activeTab, setActiveTab] = useState("painel");
   const { logAction } = useLogAccess();
 
   useEffect(() => {
@@ -33,7 +34,11 @@ export function SegurancaPatrimonialModule() {
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="painel" className="flex items-center gap-2">
+            <Bell className="h-4 w-4" />
+            <span className="hidden sm:inline">Painel</span>
+          </TabsTrigger>
           <TabsTrigger value="rondas" className="flex items-center gap-2">
             <MapPin className="h-4 w-4" />
             <span className="hidden sm:inline">Rondas</span>
@@ -56,6 +61,7 @@ export function SegurancaPatrimonialModule() {
           </TabsTrigger>
         </TabsList>
 
+        <TabsContent value="painel" className="mt-6"><PainelSeguranca /></TabsContent>
         <TabsContent value="rondas" className="mt-6"><RondasPatrimoniais /></TabsContent>
         <TabsContent value="conflitos" className="mt-6"><GestaoConflitos /></TabsContent>
         <TabsContent value="visitantes" className="mt-6"><ControleVisitantes /></TabsContent>
