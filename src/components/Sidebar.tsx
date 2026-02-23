@@ -282,8 +282,9 @@ const Sidebar = ({
 
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();
+        // Open immediately to avoid popup blockers, then show toast
+        window.open(externalUrl, "_blank", "noopener,noreferrer");
         toast({ title: "Redirecionando", description: "Acessando ambiente seguro do parceiro..." });
-        setTimeout(() => window.open(externalUrl, "_blank", "noopener,noreferrer"), 1500);
       };
 
       const link = (
