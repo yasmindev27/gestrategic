@@ -470,10 +470,6 @@ const Sidebar = ({
         {/* Navigation */}
         <nav className="flex-1 p-3 overflow-y-auto scrollbar-thin">
           {renderCategorizedMenu()}
-          {/* Botão de Alerta de Segurança — acessível em qualquer tela */}
-          <div className="mt-4 px-1">
-            <AlertaSegurancaButton collapsed={isCollapsed} />
-          </div>
         </nav>
 
         {/* Bottom Section */}
