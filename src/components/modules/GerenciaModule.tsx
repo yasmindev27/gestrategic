@@ -503,10 +503,6 @@ export function GerenciaModule() {
             <Users className="h-4 w-4" />
             Gestão de Talentos
           </TabsTrigger>
-          <TabsTrigger value="fluxograma" className="gap-2">
-            <GitBranch className="h-4 w-4" />
-            Fluxograma
-          </TabsTrigger>
         </TabsList>
 
         {/* -- Tab: Planos de Ação -- */}
@@ -672,6 +668,10 @@ export function GerenciaModule() {
                 <ReceiptText className="h-4 w-4" />
                 Faturamento
               </TabsTrigger>
+              <TabsTrigger value="fluxograma" className="gap-2">
+                <GitBranch className="h-4 w-4" />
+                Fluxograma
+              </TabsTrigger>
             </TabsList>
 
             {/* Sub-tab: Visão geral dos planos por setor */}
@@ -719,6 +719,11 @@ export function GerenciaModule() {
             <TabsContent value="faturamento">
               <DashboardFaturamento />
             </TabsContent>
+
+            {/* Sub-tab: Fluxograma de Setores */}
+            <TabsContent value="fluxograma">
+              <FluxogramaSetores />
+            </TabsContent>
           </Tabs>
         </TabsContent>
 
@@ -737,10 +742,6 @@ export function GerenciaModule() {
           <GestaoTalentos />
         </TabsContent>
 
-        {/* -- Tab: Fluxograma Setores -- */}
-        <TabsContent value="fluxograma" className="mt-4">
-          <FluxogramaSetores />
-        </TabsContent>
       </Tabs>
 
       {/* New Plan Dialog */}
