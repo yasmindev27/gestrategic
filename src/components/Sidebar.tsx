@@ -262,7 +262,7 @@ const Sidebar = ({
   const MenuItemRender = ({ item }: { item: MenuItem }) => {
     const Icon = item.icon;
     const isActive = activeSection === item.id;
-    const isExternalLink = item.id === "documentos-interact";
+    const isExternalLink = item.id === "documentos-interact" || item.id === "abrir-chamado";
 
     const buttonClasses = cn(
       "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm relative",

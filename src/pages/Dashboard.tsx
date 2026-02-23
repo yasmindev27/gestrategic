@@ -122,8 +122,7 @@ const Dashboard = () => {
     switch (activeSection) {
       case "dashboard":
         return <MemoizedDashboardPersonalizado onNavigate={handleSectionChange} />;
-      case "abrir-chamado":
-        return <AbrirChamadoModule onOpenExternal={handleOpenExternal} />;
+      // abrir-chamado now opens GLPI externally via Sidebar
       case "faturamento":
         return <FaturamentoUnificadoModule />;
       case "controle-fichas":
