@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { ShieldAlert, CheckCircle2, Clock, Volume2, VolumeX } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { ShieldAlert, CheckCircle2, Clock } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,12 +28,10 @@ interface Alerta {
 export function PainelSeguranca() {
   const [alertas, setAlertas] = useState<Alerta[]>([]);
   const [loading, setLoading] = useState(true);
-  const [somAtivo, setSomAtivo] = useState(true);
   const [atenderDialog, setAtenderDialog] = useState<Alerta | null>(null);
   const [desfecho, setDesfecho] = useState("");
   const [saving, setSaving] = useState(false);
   const [filtro, setFiltro] = useState<"pendente" | "atendido" | "todos">("pendente");
-  const audioRef = useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
 
   const fetchAlertas = useCallback(async () => {
@@ -66,31 +64,6 @@ export function PainelSeguranca() {
     return () => { supabase.removeChannel(channel); };
   }, [fetchAlertas]);
 
-  // Toque de radinho em loop enquanto houver alertas pendentes
-  useEffect(() => {
-    const pendentes = alertas.filter(a => a.status === "pendente").length;
-
-    if (pendentes > 0 && somAtivo) {
-      if (!audioRef.current) {
-        audioRef.current = new Audio("/assets/toque-seguranca.mp3");
-        audioRef.current.loop = true;
-        audioRef.current.volume = 0.7;
-      }
-      audioRef.current.play().catch(() => {});
-    } else {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-    }
-
-    return () => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.currentTime = 0;
-      }
-    };
-  }, [alertas, somAtivo]);
 
   const handleAtender = async () => {
     if (!atenderDialog) return;
@@ -140,14 +113,6 @@ export function PainelSeguranca() {
               {pendentesCount} pendente{pendentesCount > 1 ? "s" : ""}
             </Badge>
           )}
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => setSomAtivo(!somAtivo)}
-            title={somAtivo ? "Desativar som" : "Ativar som"}
-          >
-            {somAtivo ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
-          </Button>
         </div>
       </div>
 
