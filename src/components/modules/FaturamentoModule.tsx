@@ -51,9 +51,16 @@ import {
   Clock,
   Eye,
   BarChart2,
+  Calendar as CalendarIcon,
+  Filter,
+  X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { safeFormatDate } from "@/lib/brasilia-time";
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, format, isWithinInterval, parseISO } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+type DateFilterPreset = "hoje" | "semana" | "mes" | "ano" | "custom" | null;
 
 interface SaidaProntuario {
   id: string;
@@ -170,6 +177,9 @@ export const FaturamentoModule = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState<"lista" | "faltantes" | "avaliados" | "dashboard">("lista");
+  const [datePreset, setDatePreset] = useState<DateFilterPreset>(null);
+  const [customDateStart, setCustomDateStart] = useState("");
+  const [customDateEnd, setCustomDateEnd] = useState("");
 
   const canSeeDashboard = isAdmin || isGestor;
   
@@ -464,9 +474,46 @@ export const FaturamentoModule = () => {
     }
   };
 
-  const filteredSaidas = getListaAtual().filter(
-    s => (s.paciente_nome || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const getDateRange = (): { start: Date; end: Date } | null => {
+    const now = new Date();
+    switch (datePreset) {
+      case "hoje":
+        return { start: startOfDay(now), end: endOfDay(now) };
+      case "semana":
+        return { start: startOfWeek(now, { locale: ptBR }), end: endOfWeek(now, { locale: ptBR }) };
+      case "mes":
+        return { start: startOfMonth(now), end: endOfMonth(now) };
+      case "ano":
+        return { start: startOfYear(now), end: endOfYear(now) };
+      case "custom":
+        if (customDateStart && customDateEnd) {
+          return { start: startOfDay(parseISO(customDateStart)), end: endOfDay(parseISO(customDateEnd)) };
+        }
+        if (customDateStart) {
+          return { start: startOfDay(parseISO(customDateStart)), end: endOfDay(parseISO(customDateStart)) };
+        }
+        return null;
+      default:
+        return null;
+    }
+  };
+
+  const filteredSaidas = getListaAtual().filter(s => {
+    const matchesName = (s.paciente_nome || '').toLowerCase().includes(searchTerm.toLowerCase());
+    if (!matchesName) return false;
+
+    const range = getDateRange();
+    if (range && s.data_atendimento) {
+      try {
+        const d = parseISO(s.data_atendimento);
+        return isWithinInterval(d, { start: range.start, end: range.end });
+      } catch {
+        return false;
+      }
+    }
+    if (range && !s.data_atendimento) return false;
+    return true;
+  });
 
   const handleViewAvaliacao = (saidaId: string) => {
     const avaliacao = avaliacoes.find(a => a.saida_prontuario_id === saidaId && a.is_finalizada);
@@ -582,9 +629,9 @@ export const FaturamentoModule = () => {
       )}
 
       {activeTab !== "dashboard" && (<>
-      {/* Search */}
+      {/* Search & Filters */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="pt-6 space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -594,6 +641,79 @@ export const FaturamentoModule = () => {
               className="pl-10"
             />
           </div>
+
+          {/* Date filter presets */}
+          <div className="flex flex-wrap items-center gap-2">
+            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground mr-1">Filtrar por:</span>
+            {([
+              { key: "hoje", label: "Hoje" },
+              { key: "semana", label: "Semana" },
+              { key: "mes", label: "Mês" },
+              { key: "ano", label: "Ano" },
+            ] as { key: DateFilterPreset; label: string }[]).map(({ key, label }) => (
+              <Button
+                key={key}
+                size="sm"
+                variant={datePreset === key ? "default" : "outline"}
+                onClick={() => {
+                  setDatePreset(datePreset === key ? null : key);
+                  setCustomDateStart("");
+                  setCustomDateEnd("");
+                }}
+                className="h-8"
+              >
+                {label}
+              </Button>
+            ))}
+
+            <Separator orientation="vertical" className="h-6 mx-1" />
+
+            {/* Custom date range */}
+            <Input
+              type="date"
+              value={customDateStart}
+              onChange={(e) => {
+                setCustomDateStart(e.target.value);
+                setDatePreset(e.target.value ? "custom" : null);
+              }}
+              className="h-8 w-36 text-xs"
+              placeholder="Data início"
+            />
+            <span className="text-xs text-muted-foreground">até</span>
+            <Input
+              type="date"
+              value={customDateEnd}
+              onChange={(e) => {
+                setCustomDateEnd(e.target.value);
+                if (customDateStart) setDatePreset("custom");
+              }}
+              className="h-8 w-36 text-xs"
+              placeholder="Data fim"
+            />
+
+            {datePreset && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setDatePreset(null);
+                  setCustomDateStart("");
+                  setCustomDateEnd("");
+                }}
+                className="h-8 text-muted-foreground"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Limpar
+              </Button>
+            )}
+          </div>
+
+          {datePreset && (
+            <p className="text-xs text-muted-foreground">
+              Exibindo <span className="font-medium text-foreground">{filteredSaidas.length}</span> registro(s) no período selecionado
+            </p>
+          )}
         </CardContent>
       </Card>
 
