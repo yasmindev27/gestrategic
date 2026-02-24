@@ -96,6 +96,7 @@ export const ChatCorporativo = () => {
   const [showMentions, setShowMentions] = useState(false);
   const [mentionSearch, setMentionSearch] = useState("");
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [privateUserSearch, setPrivateUserSearch] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -860,7 +861,7 @@ export const ChatCorporativo = () => {
             </CardTitle>
             <div className="flex gap-1">
               {/* Novo Chat Privado */}
-              <Dialog open={privateChatDialogOpen} onOpenChange={setPrivateChatDialogOpen}>
+              <Dialog open={privateChatDialogOpen} onOpenChange={(open) => { setPrivateChatDialogOpen(open); if (!open) setPrivateUserSearch(""); }}>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="icon" title="Novo Chat Privado">
                     <User className="h-4 w-4" />
@@ -871,8 +872,20 @@ export const ChatCorporativo = () => {
                     <DialogTitle>Novo Chat Privado</DialogTitle>
                     <DialogDescription>Selecione um usuário para iniciar uma conversa</DialogDescription>
                   </DialogHeader>
+                  <div className="relative mb-2">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar pessoa..."
+                      value={privateUserSearch}
+                      onChange={(e) => setPrivateUserSearch(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
                   <ScrollArea className="h-64 border rounded-md p-2">
-                    {todosUsuarios.filter(u => u.user_id !== userId).map((usuario) => (
+                    {todosUsuarios
+                      .filter(u => u.user_id !== userId)
+                      .filter(u => !privateUserSearch || u.full_name.toLowerCase().includes(privateUserSearch.toLowerCase()))
+                      .map((usuario) => (
                       <button
                         key={usuario.user_id}
                         onClick={() => setSelectedPrivateUser(usuario.user_id)}
