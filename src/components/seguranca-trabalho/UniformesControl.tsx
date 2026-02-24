@@ -75,7 +75,7 @@ export function UniformesControl() {
   const [buscaColab, setBuscaColab] = useState("");
   const [showColabList, setShowColabList] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [movResumo, setMovResumo] = useState<{ usuario_nome: string; produto: string; entradas: number; saidas: number }[]>([]);
+  const [movResumo, setMovResumo] = useState<{ usuario_nome: string; responsavel_entrega: string; produto: string; entradas: number; saidas: number }[]>([]);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -123,31 +123,22 @@ export function UniformesControl() {
       if (error) throw error;
       setUniformes(uniformesData || []);
 
-      // Fetch movimentações for resumo
-      const { data: movData } = await supabase
-        .from("movimentacoes_estoque")
-        .select("*, produtos(nome)")
-        .eq("setor", "seguranca_uniformes");
-
-      if (movData && movData.length > 0) {
-        const userIds = [...new Set(movData.map(m => m.usuario_id))];
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("user_id, full_name")
-          .in("user_id", userIds);
-        const nameMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
-
-        const resumoMap = new Map<string, { usuario_nome: string; produto: string; entradas: number; saidas: number }>();
-        movData.forEach(m => {
-          const key = `${m.usuario_id}_${m.produto_id}`;
+      // Build resumo from uniformes_seguranca table
+      if (uniformesData && uniformesData.length > 0) {
+        const resumoMap = new Map<string, { usuario_nome: string; responsavel_entrega: string; produto: string; entradas: number; saidas: number }>();
+        uniformesData.forEach(u => {
+          const key = `${u.usuario_id}_${u.tipo_uniforme}`;
           const existing = resumoMap.get(key) || {
-            usuario_nome: nameMap.get(m.usuario_id) || "-",
-            produto: (m.produtos as any)?.nome || "-",
+            usuario_nome: u.usuario_nome,
+            responsavel_entrega: u.registrado_por_nome,
+            produto: u.tipo_uniforme,
             entradas: 0,
             saidas: 0,
           };
-          if (m.tipo === 'entrada') existing.entradas += m.quantidade;
-          else existing.saidas += m.quantidade;
+          if (u.status === 'entregue') existing.entradas += u.quantidade;
+          if (u.status === 'devolvido') existing.saidas += u.quantidade;
+          // Keep latest registrado_por_nome
+          existing.responsavel_entrega = u.registrado_por_nome;
           resumoMap.set(key, existing);
         });
         setMovResumo(Array.from(resumoMap.values()).sort((a, b) => a.usuario_nome.localeCompare(b.usuario_nome)));
@@ -333,6 +324,7 @@ export function UniformesControl() {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Colaborador</TableHead>
+                        <TableHead>Responsável pela Entrega</TableHead>
                         <TableHead>Produto / Uniforme</TableHead>
                         <TableHead className="text-center">Entradas</TableHead>
                         <TableHead className="text-center">Saídas</TableHead>
@@ -343,6 +335,7 @@ export function UniformesControl() {
                       {movResumo.map((r, i) => (
                         <TableRow key={i}>
                           <TableCell className="font-medium">{r.usuario_nome}</TableCell>
+                          <TableCell>{r.responsavel_entrega}</TableCell>
                           <TableCell>{r.produto}</TableCell>
                           <TableCell className="text-center">
                             <Badge variant="default">{r.entradas}</Badge>
