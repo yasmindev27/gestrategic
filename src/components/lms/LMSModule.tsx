@@ -9,8 +9,8 @@ import QuizManager from "./QuizManager";
 import PortalAluno from "./PortalAluno";
 
 export default function LMSModule() {
-  const { isAdmin, isGestor, isRHDP, isQualidade } = useUserRole();
-  const isManager = isAdmin || isGestor || isRHDP || isQualidade;
+  const { isAdmin, isGestor, isRHDP, isQualidade, isSeguranca, isFaturamento } = useUserRole();
+  const isManager = isAdmin || isGestor || isRHDP || isQualidade || isSeguranca || isFaturamento;
 
   if (!isManager) {
     return (
