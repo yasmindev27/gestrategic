@@ -134,38 +134,22 @@ export function DashboardFaturamento() {
         profilesData = (data || []) as Profile[];
       }
 
-      // Fetch ALL saidas (sem filtro de data) para calcular pendentes gerais
-      const allSaidasIds: string[] = [];
-      let fromAll = 0;
-      while (true) {
-        const { data, error } = await supabase
-          .from("saida_prontuarios")
-          .select("id")
-          .range(fromAll, fromAll + pageSize - 1);
-        if (error) throw error;
-        allSaidasIds.push(...(data || []).map(d => d.id));
-        if ((data || []).length < pageSize) break;
-        fromAll += pageSize;
-      }
+      // Calcular pendentes gerais usando contagem eficiente
+      const { count: totalSaidasCount, error: errSaidas } = await supabase
+        .from("saida_prontuarios")
+        .select("*", { count: "exact", head: true });
+      if (errSaidas) throw errSaidas;
 
-      // Fetch ALL avaliacoes finalizadas (sem filtro de data)
-      const allAvalFinIds = new Set<string>();
-      let fromAval = 0;
-      while (true) {
-        const { data, error } = await supabase
-          .from("avaliacoes_prontuarios")
-          .select("saida_prontuario_id")
-          .eq("is_finalizada", true)
-          .not("saida_prontuario_id", "is", null)
-          .range(fromAval, fromAval + pageSize - 1);
-        if (error) throw error;
-        (data || []).forEach(d => { if (d.saida_prontuario_id) allAvalFinIds.add(d.saida_prontuario_id); });
-        if ((data || []).length < pageSize) break;
-        fromAval += pageSize;
-      }
+      const { count: totalAvalFinCount, error: errAvalFin } = await supabase
+        .from("avaliacoes_prontuarios")
+        .select("*", { count: "exact", head: true })
+        .eq("is_finalizada", true)
+        .not("saida_prontuario_id", "is", null);
+      if (errAvalFin) throw errAvalFin;
 
-      const pendentesGeral = allSaidasIds.filter(id => !allAvalFinIds.has(id)).length;
-      setTotalPendentesGeral(pendentesGeral);
+      const pendentesGeral = (totalSaidasCount || 0) - (totalAvalFinCount || 0);
+      console.log("[Dashboard Fat] saidas:", totalSaidasCount, "avalFin:", totalAvalFinCount, "pendentes:", pendentesGeral);
+      setTotalPendentesGeral(Math.max(pendentesGeral, 0));
 
       setSaidas(allSaidas);
       setAvaliacoes(allAvaliacoes);
