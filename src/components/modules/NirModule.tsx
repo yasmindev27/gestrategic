@@ -7,6 +7,7 @@ import { MapaLeitosModule } from "./MapaLeitosModule";
 import { SalusImportModule, ListaFaltantesSalus } from "@/components/nir";
 import { TransferenciasModule } from "@/components/nir/TransferenciasModule";
 import { useLogAccess } from "@/hooks/useLogAccess";
+import { useRealtimeSync, REALTIME_PRESETS } from "@/hooks/useRealtimeSync";
 import logoSusFacil from "@/assets/logo-susfacil.png";
 
 type NirView = "menu" | "dashboard" | "mapa-leitos" | "transferencias";
@@ -18,6 +19,7 @@ interface NirModuleProps {
 export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
   const [currentView, setCurrentView] = useState<NirView>("menu");
   const { logAction } = useLogAccess();
+  useRealtimeSync(REALTIME_PRESETS.nir);
 
   useEffect(() => {
     logAction("acesso_modulo", "nir");

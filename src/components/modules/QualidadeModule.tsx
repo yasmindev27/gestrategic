@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLogAccess } from "@/hooks/useLogAccess";
+import { useRealtimeSync, REALTIME_PRESETS } from "@/hooks/useRealtimeSync";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -131,6 +132,7 @@ const setoresHospitalares = [
 
 export const QualidadeModule = () => {
   const { logAction } = useLogAccess();
+  useRealtimeSync(REALTIME_PRESETS.qualidade);
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("conformidade");
   

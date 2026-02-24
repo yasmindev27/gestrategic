@@ -15,6 +15,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useLogAccess } from '@/hooks/useLogAccess';
+import { useRealtimeSync, REALTIME_PRESETS } from '@/hooks/useRealtimeSync';
 import { LoadingState } from '@/components/ui/loading-state';
 import {
   CalendarioEscalas,
@@ -40,6 +41,7 @@ export default function EnfermagemModule() {
   const navigate = useNavigate();
   const { role, isLoading: roleLoading, userId } = useUserRole();
   const { logAction } = useLogAccess();
+  useRealtimeSync(REALTIME_PRESETS.enfermagem);
   const [session, setSession] = useState<{ user: { id: string } } | null>(null);
   const [userName, setUserName] = useState<string>('');
   const [setores, setSetores] = useState<string[]>([]);

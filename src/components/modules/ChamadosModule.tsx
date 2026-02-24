@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
+import { useRealtimeSync, REALTIME_PRESETS } from "@/hooks/useRealtimeSync";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -155,6 +156,7 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
   const { role } = useUserRole();
   const { logAction } = useLogAccess();
   const { toast } = useToast();
+  useRealtimeSync(REALTIME_PRESETS.chamados);
   
   const [chamados, setChamados] = useState<Chamado[]>([]);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
