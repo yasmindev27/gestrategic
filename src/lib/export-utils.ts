@@ -18,12 +18,12 @@ const loadLogo = (callback: (img: HTMLImageElement | null) => void) => {
  */
 const addHeader = (doc: jsPDF, title: string, dataGerada: string, logoImg: HTMLImageElement | null) => {
   const pageWidth = doc.internal.pageSize.width;
-  doc.setFontSize(16);
+  doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text(title, 14, 18);
-  doc.setFontSize(10);
+  doc.text(title, 14, 16);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'normal');
-  doc.text(`Gerado em: ${dataGerada}`, 14, 25);
+  doc.text(`Gerado em: ${dataGerada}`, 14, 23);
 
   if (logoImg) {
     try {
