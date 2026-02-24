@@ -14,8 +14,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export function FloatingSegurancaButton() {
+  const { role } = useUserRole();
   const [open, setOpen] = useState(false);
   const [tipo, setTipo] = useState<"urgente" | "apoio">("apoio");
   const [observacao, setObservacao] = useState("");
@@ -68,7 +70,7 @@ export function FloatingSegurancaButton() {
     <>
       <Button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-24 h-14 w-14 rounded-full shadow-lg z-50 hover:scale-110 transition-transform bg-destructive hover:bg-destructive/90 text-destructive-foreground animate-pulse hover:animate-none"
+        className={`fixed bottom-6 right-24 h-14 w-14 rounded-full shadow-lg z-50 hover:scale-110 transition-transform bg-destructive hover:bg-destructive/90 text-destructive-foreground ${role === 'admin' || role === 'seguranca' ? 'animate-pulse hover:animate-none' : ''}`}
         size="icon"
         title="Chamar Segurança"
       >
