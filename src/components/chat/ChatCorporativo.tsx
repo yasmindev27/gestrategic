@@ -419,16 +419,30 @@ export const ChatCorporativo = ({ initialConversaId }: ChatCorporativoProps = {}
         },
         async (payload) => {
           const newMsg = payload.new as Mensagem;
-          // Buscar nome do remetente
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("user_id", newMsg.remetente_id)
-            .single();
+          
+          // Se é mensagem própria, usar userName local (já está no cache otimista)
+          let remetenteNome = "Usuário";
+          if (newMsg.remetente_id === userId) {
+            remetenteNome = userName || "Você";
+          } else {
+            // Tentar do cache de usuários primeiro
+            const cachedUsers = queryClient.getQueryData<Usuario[]>(["todos-usuarios"]);
+            const cached = cachedUsers?.find(u => u.user_id === newMsg.remetente_id);
+            if (cached) {
+              remetenteNome = cached.full_name;
+            } else {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("user_id", newMsg.remetente_id)
+                .single();
+              remetenteNome = profile?.full_name || "Usuário";
+            }
+          }
 
           const msgComNome: Mensagem = {
             ...newMsg,
-            remetente_nome: profile?.full_name || "Usuário",
+            remetente_nome: remetenteNome,
             lido: false,
             lidoPorTodos: false,
           };
@@ -438,9 +452,10 @@ export const ChatCorporativo = ({ initialConversaId }: ChatCorporativoProps = {}
             ["chat-mensagens", conversaSelecionada],
             (old: Mensagem[] | undefined) => {
               if (!old) return [msgComNome];
-              // Evitar duplicatas
-              if (old.some(m => m.id === newMsg.id)) return old;
-              return [...old, msgComNome];
+              // Evitar duplicatas (incluindo temp messages)
+              const filtered = old.filter(m => !m.id.startsWith('temp-'));
+              if (filtered.some(m => m.id === newMsg.id)) return filtered;
+              return [...filtered, msgComNome];
             }
           );
         }
@@ -474,7 +489,7 @@ export const ChatCorporativo = ({ initialConversaId }: ChatCorporativoProps = {}
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversaSelecionada, queryClient]);
+  }, [conversaSelecionada, queryClient, userId, userName]);
 
   // Scroll para última mensagem
   useEffect(() => {
@@ -516,11 +531,34 @@ export const ChatCorporativo = ({ initialConversaId }: ChatCorporativoProps = {}
   const enviarMensagem = useCallback(async () => {
     if (!novaMensagem.trim() || !conversaSelecionada || !userId || enviando) return;
 
+    const mensagemTexto = novaMensagem.trim();
     setEnviando(true);
+    setNovaMensagem("");
+    
+    // Optimistic: adicionar mensagem instantaneamente na UI
+    const tempId = `temp-${Date.now()}`;
+    const mensagemOtimista: Mensagem = {
+      id: tempId,
+      conversa_id: conversaSelecionada,
+      remetente_id: userId,
+      conteudo: mensagemTexto,
+      tipo: "texto",
+      created_at: new Date().toISOString(),
+      excluido: false,
+      remetente_nome: userName || "Você",
+      lido: false,
+      lidoPorTodos: false,
+    };
+    
+    queryClient.setQueryData(
+      ["chat-mensagens", conversaSelecionada],
+      (old: Mensagem[] | undefined) => old ? [...old, mensagemOtimista] : [mensagemOtimista]
+    );
+
     try {
       const { data, error } = await supabase.functions.invoke("moderar-mensagem", {
         body: {
-          conteudo: novaMensagem.trim(),
+          conteudo: mensagemTexto,
           tipo: "texto",
           conversa_id: conversaSelecionada
         }
@@ -529,6 +567,11 @@ export const ChatCorporativo = ({ initialConversaId }: ChatCorporativoProps = {}
       if (error) throw error;
 
       if (!data.approved) {
+        // Remover mensagem otimista se bloqueada
+        queryClient.setQueryData(
+          ["chat-mensagens", conversaSelecionada],
+          (old: Mensagem[] | undefined) => old ? old.filter(m => m.id !== tempId) : []
+        );
         toast({
           title: "Mensagem bloqueada",
           description: data.reason,
@@ -536,9 +579,12 @@ export const ChatCorporativo = ({ initialConversaId }: ChatCorporativoProps = {}
         });
         return;
       }
-
-      setNovaMensagem("");
-      queryClient.invalidateQueries({ queryKey: ["chat-mensagens", conversaSelecionada] });
+      
+      // Remover a mensagem temporária - o realtime vai inserir a real
+      queryClient.setQueryData(
+        ["chat-mensagens", conversaSelecionada],
+        (old: Mensagem[] | undefined) => old ? old.filter(m => m.id !== tempId) : []
+      );
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
       toast({
@@ -549,7 +595,7 @@ export const ChatCorporativo = ({ initialConversaId }: ChatCorporativoProps = {}
     } finally {
       setEnviando(false);
     }
-  }, [novaMensagem, conversaSelecionada, userId, enviando, queryClient]);
+  }, [novaMensagem, conversaSelecionada, userId, enviando, queryClient, userName]);
 
   // Upload e envio de arquivo
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -618,8 +664,7 @@ export const ChatCorporativo = ({ initialConversaId }: ChatCorporativoProps = {}
         title: "Arquivo enviado",
         description: "Arquivo anexado com sucesso",
       });
-
-      queryClient.invalidateQueries({ queryKey: ["chat-mensagens", conversaSelecionada] });
+      // Realtime vai atualizar automaticamente
     } catch (error) {
       console.error("Erro ao enviar arquivo:", error);
       toast({
