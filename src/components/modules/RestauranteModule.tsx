@@ -284,15 +284,32 @@ export const RestauranteModule = () => {
           if (todasError) throw todasError;
           setTodasSolicitacoes(todasData || []);
 
-          // Buscar registros de refeições do totem
-          const {
-            data: refeicoesData,
-            error: refeicoesError
-          } = await supabase.from("refeicoes_registros").select("*").order("created_at", {
-            ascending: false
-          });
-          if (refeicoesError) throw refeicoesError;
-          setRegistrosRefeicoes(refeicoesData || []);
+          // Buscar TODOS os registros de refeições do totem (paginação para superar limite de 1000)
+          let allRefeicoes: any[] = [];
+          let refPage = 0;
+          const REF_PAGE_SIZE = 1000;
+          let refHasMore = true;
+
+          while (refHasMore) {
+            const from = refPage * REF_PAGE_SIZE;
+            const to = from + REF_PAGE_SIZE - 1;
+            const { data: batch, error: batchError } = await supabase
+              .from("refeicoes_registros")
+              .select("*")
+              .order("created_at", { ascending: false })
+              .range(from, to);
+
+            if (batchError) throw batchError;
+
+            if (batch && batch.length > 0) {
+              allRefeicoes = allRefeicoes.concat(batch);
+              refHasMore = batch.length === REF_PAGE_SIZE;
+              refPage++;
+            } else {
+              refHasMore = false;
+            }
+          }
+          setRegistrosRefeicoes(allRefeicoes);
         }
       }
     } catch (error) {
