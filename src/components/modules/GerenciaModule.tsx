@@ -3,13 +3,20 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Building2, AlertTriangle, Clock, CheckCircle2, Plus,
-  Filter, Users, TrendingUp, Search, History, CalendarClock, FileText, Brain, ReceiptText, GitBranch
+  Filter, Users, TrendingUp, Search, History, CalendarClock, FileText, Brain, ReceiptText, GitBranch,
+  Stethoscope, Shield, ClipboardCheck, BedDouble, GraduationCap, Wrench
 } from 'lucide-react';
 import { DISCFormModule } from '@/components/disc/DISCFormModule';
 import { LancamentoNotas } from '@/components/gerencia/LancamentoNotas';
 import { GestaoTalentos } from '@/components/gerencia/GestaoTalentos';
 import { DashboardFaturamento } from '@/components/faturamento/DashboardFaturamento';
 import { FluxogramaSetores } from '@/components/admin/FluxogramaSetores';
+import { ChamadosDashboard } from '@/components/chamados/ChamadosDashboard';
+import { IndicadoresUPA } from '@/components/indicadores/IndicadoresUPA';
+import { IndicadoresNSP } from '@/components/indicadores/IndicadoresNSP';
+import { DashboardConformidade } from '@/components/qualidade/DashboardConformidade';
+import { NirDashboardModule } from '@/components/modules/NirDashboardModule';
+import DashboardIndicadores from '@/components/lms/DashboardIndicadores';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -659,22 +666,45 @@ export function GerenciaModule() {
         {/* -- Tab: Visão por Setor -- */}
         <TabsContent value="setores" className="mt-4">
           <Tabs defaultValue="geral">
-            <TabsList className="mb-4">
-              <TabsTrigger value="geral" className="gap-2">
+            <TabsList className="flex flex-wrap h-auto gap-1">
+              <TabsTrigger value="geral" className="gap-1 text-xs sm:text-sm">
                 <Building2 className="h-4 w-4" />
-                Geral (Planos)
+                Geral
               </TabsTrigger>
-              <TabsTrigger value="faturamento" className="gap-2">
+              <TabsTrigger value="chamados" className="gap-1 text-xs sm:text-sm">
+                <Wrench className="h-4 w-4" />
+                Chamados
+              </TabsTrigger>
+              <TabsTrigger value="faturamento" className="gap-1 text-xs sm:text-sm">
                 <ReceiptText className="h-4 w-4" />
                 Faturamento
               </TabsTrigger>
-              <TabsTrigger value="fluxograma" className="gap-2">
+              <TabsTrigger value="indicadores-upa" className="gap-1 text-xs sm:text-sm">
+                <Stethoscope className="h-4 w-4" />
+                Indicadores UPA
+              </TabsTrigger>
+              <TabsTrigger value="indicadores-nsp" className="gap-1 text-xs sm:text-sm">
+                <Shield className="h-4 w-4" />
+                Indicadores NSP
+              </TabsTrigger>
+              <TabsTrigger value="qualidade" className="gap-1 text-xs sm:text-sm">
+                <ClipboardCheck className="h-4 w-4" />
+                Qualidade
+              </TabsTrigger>
+              <TabsTrigger value="nir" className="gap-1 text-xs sm:text-sm">
+                <BedDouble className="h-4 w-4" />
+                NIR
+              </TabsTrigger>
+              <TabsTrigger value="capacitacao" className="gap-1 text-xs sm:text-sm">
+                <GraduationCap className="h-4 w-4" />
+                Capacitação
+              </TabsTrigger>
+              <TabsTrigger value="fluxograma" className="gap-1 text-xs sm:text-sm">
                 <GitBranch className="h-4 w-4" />
                 Fluxograma
               </TabsTrigger>
             </TabsList>
 
-            {/* Sub-tab: Visão geral dos planos por setor */}
             <TabsContent value="geral">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {resumoSetores.map(([setor, data]) => (
@@ -715,12 +745,34 @@ export function GerenciaModule() {
               </div>
             </TabsContent>
 
-            {/* Sub-tab: Dashboard de Faturamento */}
+            <TabsContent value="chamados">
+              <ChamadosDashboard />
+            </TabsContent>
+
             <TabsContent value="faturamento">
               <DashboardFaturamento />
             </TabsContent>
 
-            {/* Sub-tab: Fluxograma de Setores */}
+            <TabsContent value="indicadores-upa">
+              <IndicadoresUPA />
+            </TabsContent>
+
+            <TabsContent value="indicadores-nsp">
+              <IndicadoresNSP />
+            </TabsContent>
+
+            <TabsContent value="qualidade">
+              <DashboardConformidade />
+            </TabsContent>
+
+            <TabsContent value="nir">
+              <NirDashboardModule />
+            </TabsContent>
+
+            <TabsContent value="capacitacao">
+              <DashboardIndicadores />
+            </TabsContent>
+
             <TabsContent value="fluxograma">
               <FluxogramaSetores />
             </TabsContent>
