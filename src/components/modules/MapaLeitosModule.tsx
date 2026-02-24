@@ -6,6 +6,7 @@ import { useBeds } from '@/hooks/useBeds';
 import { useBedRecords } from '@/hooks/useBedRecords';
 import { useShiftConfig } from '@/hooks/useShiftConfig';
 import { useLogAccess } from '@/hooks/useLogAccess';
+import { useRealtimeSync, REALTIME_PRESETS } from '@/hooks/useRealtimeSync';
 import { 
   BedGrid, 
   BedModal, 
@@ -18,6 +19,7 @@ import { Bed, Patient, Sector, SECTORS } from '@/types/bed';
 export const MapaLeitosModule = () => {
   const { isAdmin, isNir, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
+  useRealtimeSync(REALTIME_PRESETS.mapaLeitos);
   
   const { shiftInfo, isLoading: isShiftLoading, updateShiftInfo, saveShiftConfig } = useShiftConfig();
   

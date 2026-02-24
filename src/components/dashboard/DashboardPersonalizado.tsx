@@ -8,6 +8,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeSync, REALTIME_PRESETS } from "@/hooks/useRealtimeSync";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MetricasSegurancaWidget } from "@/components/seguranca";
@@ -116,6 +117,7 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
     isEngenhariaCinica, isLaboratorio, isFaturamento, 
     isRecepcao, isClassificacao, isNir, isTecnico 
   } = useUserRole();
+  useRealtimeSync(REALTIME_PRESETS.dashboard);
 
   const fetchStats = async () => {
     if (!userId) return;

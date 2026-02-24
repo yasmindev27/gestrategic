@@ -20,6 +20,7 @@ import { TentativasDuplicidade } from "@/components/restaurante/TentativasDuplic
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
+import { useRealtimeSync, REALTIME_PRESETS } from "@/hooks/useRealtimeSync";
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, addDays, startOfMonth, endOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
@@ -140,6 +141,9 @@ export const RestauranteModule = () => {
   const isRestaurante = hasRole("restaurante");
   const canManage = isAdmin || isRestaurante;
   const [activeTab, setActiveTab] = useState("cardapio");
+
+  // Sincronização em tempo real com outros módulos
+  useRealtimeSync(REALTIME_PRESETS.restaurante);
 
   useEffect(() => {
     logAction("acesso_modulo", "restaurante");
