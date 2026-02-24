@@ -279,10 +279,12 @@ export function DashboardFaturamento() {
 
   // ── Tabela de Performance (filtrável por período clicado) ────────────────
   const performanceData = useMemo(() => {
-    // Filtrar por período do gráfico clicado
+    // Filtrar por período do gráfico clicado — usa data_conclusao para finalizadas (igual ao gráfico)
     let filteredAvaliacoes = selectedPeriod
       ? avaliacoes.filter((a) => {
-          const dateStr = a.data_conclusao || a.data_inicio;
+          // Para finalizadas, usa data_conclusao (mesma lógica do gráfico)
+          // Para não finalizadas, usa data_inicio
+          const dateStr = a.is_finalizada ? a.data_conclusao : a.data_inicio;
           if (!dateStr) return false;
           return groupByKey(dateStr, granularity) === selectedPeriod;
         })
@@ -291,7 +293,7 @@ export function DashboardFaturamento() {
     // Filtrar por período (dia/semana/mês/custom) da tabela
     if (perfFilterPeriodo === "custom") {
       filteredAvaliacoes = filteredAvaliacoes.filter((a) => {
-        const dateStr = a.data_conclusao || a.data_inicio;
+        const dateStr = a.is_finalizada ? (a.data_conclusao || a.data_inicio) : a.data_inicio;
         if (!dateStr) return false;
         const d = new Date(dateStr);
         if (perfDateFrom && d < startOfDay(perfDateFrom)) return false;
@@ -306,7 +308,7 @@ export function DashboardFaturamento() {
           ? startOfWeek(now, { locale: ptBR })
           : startOfMonth(now);
       filteredAvaliacoes = filteredAvaliacoes.filter((a) => {
-        const dateStr = a.data_conclusao || a.data_inicio;
+        const dateStr = a.is_finalizada ? (a.data_conclusao || a.data_inicio) : a.data_inicio;
         if (!dateStr) return false;
         return new Date(dateStr) >= startDate;
       });
