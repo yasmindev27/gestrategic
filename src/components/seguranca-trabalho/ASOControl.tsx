@@ -57,6 +57,9 @@ export function ASOControl() {
   const [filtroTipo, setFiltroTipo] = useState("todos");
   const [filtroResultado, setFiltroResultado] = useState("todos");
   const [nomeUsuario, setNomeUsuario] = useState("Sistema");
+  const [colaboradores, setColaboradores] = useState<{ id: string; nome: string; cargo: string | null; setor: string | null }[]>([]);
+  const [buscaColab, setBuscaColab] = useState("");
+  const [showColabList, setShowColabList] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -66,6 +69,11 @@ export function ASOControl() {
           .then(({ data: p }) => { if (p?.full_name) setNomeUsuario(p.full_name); });
       }
     });
+    // Carregar colaboradores do RH (profiles)
+    supabase.from("profiles").select("user_id, full_name, cargo, setor").order("full_name")
+      .then(({ data }) => {
+        if (data) setColaboradores(data.filter(d => d.full_name).map(d => ({ id: d.user_id, nome: d.full_name!, cargo: d.cargo, setor: d.setor })));
+      });
   }, []);
 
   const [form, setForm] = useState({
@@ -240,9 +248,43 @@ export function ASOControl() {
               <DialogTitle>Registrar ASO</DialogTitle>
             </DialogHeader>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 relative">
                 <Label>Colaborador *</Label>
-                <Input value={form.colaborador_nome} onChange={(e) => setForm({ ...form, colaborador_nome: e.target.value })} />
+                <Input
+                  value={buscaColab || form.colaborador_nome}
+                  onChange={(e) => {
+                    setBuscaColab(e.target.value);
+                    setForm({ ...form, colaborador_nome: e.target.value, cargo_atual: "", setor: "" });
+                    setShowColabList(true);
+                  }}
+                  onFocus={() => setShowColabList(true)}
+                  placeholder="Digite para buscar colaborador..."
+                />
+                {showColabList && buscaColab.length >= 2 && (
+                  <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {colaboradores
+                      .filter(c => c.nome.toLowerCase().includes(buscaColab.toLowerCase()))
+                      .slice(0, 20)
+                      .map(c => (
+                        <button
+                          key={c.id}
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex justify-between"
+                          onClick={() => {
+                            setForm({ ...form, colaborador_nome: c.nome, cargo_atual: c.cargo || "", setor: c.setor || "" });
+                            setBuscaColab("");
+                            setShowColabList(false);
+                          }}
+                        >
+                          <span className="font-medium">{c.nome}</span>
+                          <span className="text-muted-foreground text-xs">{c.cargo || ""} · {c.setor || ""}</span>
+                        </button>
+                      ))}
+                    {colaboradores.filter(c => c.nome.toLowerCase().includes(buscaColab.toLowerCase())).length === 0 && (
+                      <p className="px-3 py-2 text-sm text-muted-foreground">Nenhum colaborador encontrado</p>
+                    )}
+                  </div>
+                )}
               </div>
               <div>
                 <Label>Tipo de ASO *</Label>
@@ -284,7 +326,7 @@ export function ASOControl() {
               </div>
               <div>
                 <Label>Cargo Atual</Label>
-                <Input value={form.cargo_atual} onChange={(e) => setForm({ ...form, cargo_atual: e.target.value })} />
+                <Input value={form.cargo_atual} readOnly className="bg-muted" />
               </div>
               {form.tipo_aso === "mudanca_funcao" && (
                 <div>
@@ -294,7 +336,7 @@ export function ASOControl() {
               )}
               <div>
                 <Label>Setor</Label>
-                <Input value={form.setor} onChange={(e) => setForm({ ...form, setor: e.target.value })} />
+                <Input value={form.setor} readOnly className="bg-muted" />
               </div>
               <div className="md:col-span-2">
                 <Label>Riscos Ocupacionais</Label>
