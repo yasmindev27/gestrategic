@@ -353,14 +353,38 @@ export function DashboardFaturamento() {
       }
     });
 
+    // Multiplicador de dias úteis conforme período selecionado
+    const getMultiplicadorDias = (): number => {
+      if (perfFilterPeriodo === "day") return 1;
+      if (perfFilterPeriodo === "week") return 5; // dias úteis na semana
+      if (perfFilterPeriodo === "month") return 22; // dias úteis no mês
+      if (perfFilterPeriodo === "custom" && perfDateFrom && perfDateTo) {
+        // Contar dias úteis (seg-sex) no intervalo
+        let count = 0;
+        const start = startOfDay(perfDateFrom);
+        const end = startOfDay(perfDateTo);
+        const cursor = new Date(start);
+        while (cursor <= end) {
+          const dow = cursor.getDay();
+          if (dow !== 0 && dow !== 6) count++;
+          cursor.setDate(cursor.getDate() + 1);
+        }
+        return Math.max(count, 1);
+      }
+      // "all" — usa dias do range global
+      return Math.max(rangeToDays[dateRange], 1);
+    };
+    const multiplicadorDias = getMultiplicadorDias();
+
     return Object.values(map)
       .map((item) => {
         const profile = profiles.find((p) => p.user_id === item.avaliador_id);
 
         const nome = profile?.full_name || `ID:${item.avaliador_id.slice(0, 8)}`;
-        const META_AVALIADOS = getMetaProfissional(nome);
+        const metaDiaria = getMetaProfissional(nome);
+        const META_AVALIADOS = metaDiaria * multiplicadorDias;
 
-        // Fator 1 — Meta de avaliações (35%): avaliados >= meta individual
+        // Fator 1 — Meta de avaliações (35%): avaliados >= meta do período
         const fatorMeta = Math.min(item.avaliados / META_AVALIADOS, 1);
 
         // Fator 2 — Taxa de conclusão (30%): avaliados / iniciadas
@@ -374,7 +398,7 @@ export function DashboardFaturamento() {
         // Fator 4 — Dias produtivos (20%): dias em que avaliou / dias com qualquer atividade
         const totalDiasAtivos = Object.keys(item.diasAtividade).length;
         const diasComAvaliacao = Object.values(item.diasAtividade).filter((d) => d.avaliou).length;
-        const diasSoLancou = totalDiasAtivos - diasComAvaliacao; // dias sem avaliação
+        const diasSoLancou = totalDiasAtivos - diasComAvaliacao;
         const fatorDiasProdutivos = totalDiasAtivos > 0
           ? diasComAvaliacao / totalDiasAtivos
           : 0;
@@ -395,6 +419,7 @@ export function DashboardFaturamento() {
           nome,
           cargo: profile?.cargo || "—",
           meta: META_AVALIADOS,
+          metaDiaria,
           score,
           metaAvaliados,
           progressoMeta,
