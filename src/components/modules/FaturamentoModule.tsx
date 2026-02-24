@@ -99,6 +99,7 @@ interface Avaliacao {
   is_finalizada: boolean;
   data_inicio: string;
   data_conclusao: string | null;
+  data_atendimento?: string | null;
   avaliador_id: string;
 }
 
@@ -329,19 +330,23 @@ export const FaturamentoModule = () => {
         const { data, error } = await query;
         if (error) throw error;
 
-        // If paciente_nome is null, try to enrich from saida_prontuarios
+        // Enrich from saida_prontuarios (paciente_nome + data_atendimento)
         const rows = (data || []) as Avaliacao[];
-        const missingNames = rows.filter(r => !r.paciente_nome && r.saida_prontuario_id);
-        if (missingNames.length > 0) {
-          const saidaIds = missingNames.map(r => r.saida_prontuario_id!);
+        const needsEnrichment = rows.filter(r => r.saida_prontuario_id);
+        if (needsEnrichment.length > 0) {
+          const saidaIds = needsEnrichment.map(r => r.saida_prontuario_id!);
           const { data: saidasData } = await supabase
             .from("saida_prontuarios")
-            .select("id, paciente_nome")
+            .select("id, paciente_nome, data_atendimento")
             .in("id", saidaIds);
-          const nameMap = new Map((saidasData || []).map((s: any) => [s.id, s.paciente_nome]));
+          const saidaMap = new Map((saidasData || []).map((s: any) => [s.id, s]));
           rows.forEach(r => {
-            if (!r.paciente_nome && r.saida_prontuario_id) {
-              (r as any).paciente_nome = nameMap.get(r.saida_prontuario_id) || null;
+            if (r.saida_prontuario_id) {
+              const saida = saidaMap.get(r.saida_prontuario_id);
+              if (saida) {
+                if (!r.paciente_nome) (r as any).paciente_nome = saida.paciente_nome || null;
+                (r as any).data_atendimento = saida.data_atendimento || null;
+              }
             }
           });
         }
@@ -875,12 +880,13 @@ export const FaturamentoModule = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Nº Prontuário</TableHead>
-                    <TableHead>Setor</TableHead>
-                    <TableHead>Resultado</TableHead>
-                    <TableHead>Data Avaliação</TableHead>
-                    <TableHead>Ações</TableHead>
+                     <TableHead>Paciente</TableHead>
+                     <TableHead>Nº Prontuário</TableHead>
+                     <TableHead>Setor</TableHead>
+                     <TableHead>Data Atendimento</TableHead>
+                     <TableHead>Resultado</TableHead>
+                     <TableHead>Data Avaliação</TableHead>
+                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -889,6 +895,7 @@ export const FaturamentoModule = () => {
                       <TableCell className="font-medium uppercase">{av.paciente_nome || "-"}</TableCell>
                       <TableCell>{av.numero_prontuario || "-"}</TableCell>
                       <TableCell>{(av.unidade_setor && setorLabelMap[av.unidade_setor]) || av.unidade_setor || "-"}</TableCell>
+                      <TableCell>{safeFormatDate(av.data_atendimento, "dd/MM/yyyy")}</TableCell>
                       <TableCell>{getResultadoBadge(av.resultado_final)}</TableCell>
                       <TableCell>{safeFormatDate(av.data_inicio, "dd/MM/yyyy")}</TableCell>
                       <TableCell>
