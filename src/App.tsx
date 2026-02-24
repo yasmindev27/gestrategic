@@ -54,7 +54,6 @@ const App = () => (
             <Route path="/transporte" element={<Transporte />} />
             {/* Rota /controledefichas removida - medida provisória desativada */}
             <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
-            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
