@@ -4,7 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import {
   Building2, AlertTriangle, Clock, CheckCircle2, Plus,
   Filter, Users, TrendingUp, Search, History, CalendarClock, FileText, Brain, ReceiptText, GitBranch,
-  Stethoscope, Shield, ClipboardCheck, BedDouble, GraduationCap, Wrench
+  Stethoscope, Shield, ClipboardCheck, BedDouble, GraduationCap, Wrench,
+  ShieldAlert, HardHat, Skull, UtensilsCrossed, Shirt, Activity
 } from 'lucide-react';
 import { DISCFormModule } from '@/components/disc/DISCFormModule';
 import { LancamentoNotas } from '@/components/gerencia/LancamentoNotas';
@@ -17,6 +18,11 @@ import { IndicadoresNSP } from '@/components/indicadores/IndicadoresNSP';
 import { DashboardConformidade } from '@/components/qualidade/DashboardConformidade';
 import { NirDashboardModule } from '@/components/modules/NirDashboardModule';
 import DashboardIndicadores from '@/components/lms/DashboardIndicadores';
+import { SegurancaPatrimonialModule } from '@/components/modules/SegurancaPatrimonialModule';
+import { SegurancaTrabalhoModule } from '@/components/modules/SegurancaTrabalhoModule';
+import { DashboardIAIncidentes } from '@/components/gestao-incidentes/DashboardIAIncidentes';
+import { RoupariaModule } from '@/components/modules/RoupariaModule';
+import { RestauranteModule } from '@/components/modules/RestauranteModule';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -699,6 +705,26 @@ export function GerenciaModule() {
                 <GraduationCap className="h-4 w-4" />
                 Capacitação
               </TabsTrigger>
+              <TabsTrigger value="seg-patrimonial" className="gap-1 text-xs sm:text-sm">
+                <ShieldAlert className="h-4 w-4" />
+                Seg. Patrimonial
+              </TabsTrigger>
+              <TabsTrigger value="seg-trabalho" className="gap-1 text-xs sm:text-sm">
+                <HardHat className="h-4 w-4" />
+                Seg. Trabalho
+              </TabsTrigger>
+              <TabsTrigger value="incidentes" className="gap-1 text-xs sm:text-sm">
+                <Skull className="h-4 w-4" />
+                Incidentes
+              </TabsTrigger>
+              <TabsTrigger value="rouparia" className="gap-1 text-xs sm:text-sm">
+                <Shirt className="h-4 w-4" />
+                Rouparia
+              </TabsTrigger>
+              <TabsTrigger value="restaurante" className="gap-1 text-xs sm:text-sm">
+                <UtensilsCrossed className="h-4 w-4" />
+                Restaurante
+              </TabsTrigger>
               <TabsTrigger value="fluxograma" className="gap-1 text-xs sm:text-sm">
                 <GitBranch className="h-4 w-4" />
                 Fluxograma
@@ -771,6 +797,26 @@ export function GerenciaModule() {
 
             <TabsContent value="capacitacao">
               <DashboardIndicadores />
+            </TabsContent>
+
+            <TabsContent value="seg-patrimonial">
+              <SegurancaPatrimonialModule />
+            </TabsContent>
+
+            <TabsContent value="seg-trabalho">
+              <SegurancaTrabalhoModule />
+            </TabsContent>
+
+            <TabsContent value="incidentes">
+              <DashboardIAIncidentes />
+            </TabsContent>
+
+            <TabsContent value="rouparia">
+              <RoupariaModule />
+            </TabsContent>
+
+            <TabsContent value="restaurante">
+              <RestauranteModule />
             </TabsContent>
 
             <TabsContent value="fluxograma">
