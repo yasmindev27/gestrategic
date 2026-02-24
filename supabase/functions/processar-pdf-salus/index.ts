@@ -83,9 +83,15 @@ Deno.serve(async (req) => {
 
     console.log(`Processando arquivo: ${file.name}, tipo: ${file.type}, tamanho: ${file.size}`);
 
-    // Convert file to base64
+    // Convert file to base64 (chunk-based to avoid stack overflow on large files)
     const arrayBuffer = await file.arrayBuffer();
-    const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+    const bytes = new Uint8Array(arrayBuffer);
+    const CHUNK = 8192;
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + CHUNK));
+    }
+    const base64 = btoa(binary);
 
     // Use Lovable AI to extract patient data from the PDF
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
