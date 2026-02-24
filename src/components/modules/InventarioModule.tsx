@@ -192,13 +192,24 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      const insertData = setor === 'seguranca_uniformes' 
+        ? {
+            ...productForm,
+            unidade_medida: "UN",
+            localizacao: "Armário de Uniformes",
+            quantidade_minima: 0,
+            setor_responsavel: setor,
+            created_by: user?.id,
+          }
+        : {
+            ...productForm,
+            setor_responsavel: setor,
+            created_by: user?.id,
+          };
+
       const { error } = await supabase
         .from("produtos")
-        .insert({
-          ...productForm,
-          setor_responsavel: setor,
-          created_by: user?.id,
-        });
+        .insert(insertData);
 
       if (error) throw error;
 
@@ -579,91 +590,118 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
       <Dialog open={addProductDialog} onOpenChange={setAddProductDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Novo Produto</DialogTitle>
-            <DialogDescription>Cadastre um novo produto no inventário.</DialogDescription>
+            <DialogTitle>{setor === 'seguranca_uniformes' ? 'Novo Item de Uniforme' : 'Novo Produto'}</DialogTitle>
+            <DialogDescription>
+              {setor === 'seguranca_uniformes' 
+                ? 'Cadastre um novo item no inventário de uniformes.' 
+                : 'Cadastre um novo produto no inventário.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Nome *</Label>
-                <Input
-                  value={productForm.nome}
-                  onChange={(e) => setProductForm({ ...productForm, nome: e.target.value })}
-                  placeholder="Nome do produto"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Código</Label>
-                <Input
-                  value={productForm.codigo}
-                  onChange={(e) => setProductForm({ ...productForm, codigo: e.target.value })}
-                  placeholder="Código"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Descrição</Label>
-              <Textarea
-                value={productForm.descricao}
-                onChange={(e) => setProductForm({ ...productForm, descricao: e.target.value })}
-                placeholder="Descrição do produto"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Categoria</Label>
-                <Input
-                  value={productForm.categoria}
-                  onChange={(e) => setProductForm({ ...productForm, categoria: e.target.value })}
-                  placeholder="Categoria"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Unidade</Label>
-                <Select 
-                  value={productForm.unidade_medida}
-                  onValueChange={(v) => setProductForm({ ...productForm, unidade_medida: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UN">Unidade</SelectItem>
-                    <SelectItem value="CX">Caixa</SelectItem>
-                    <SelectItem value="PC">Peça</SelectItem>
-                    <SelectItem value="KG">Quilograma</SelectItem>
-                    <SelectItem value="L">Litro</SelectItem>
-                    <SelectItem value="M">Metro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Qtd. Inicial</Label>
-                <Input
-                  type="number"
-                  value={productForm.quantidade_atual}
-                  onChange={(e) => setProductForm({ ...productForm, quantidade_atual: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Qtd. Mínima</Label>
-                <Input
-                  type="number"
-                  value={productForm.quantidade_minima}
-                  onChange={(e) => setProductForm({ ...productForm, quantidade_minima: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Localização</Label>
-              <Input
-                value={productForm.localizacao}
-                onChange={(e) => setProductForm({ ...productForm, localizacao: e.target.value })}
-                placeholder="Ex: Almoxarifado A, Prateleira 3"
-              />
-            </div>
+            {setor === 'seguranca_uniformes' ? (
+              <>
+                <div className="space-y-2">
+                  <Label>Nome do Item *</Label>
+                  <Input
+                    value={productForm.nome}
+                    onChange={(e) => setProductForm({ ...productForm, nome: e.target.value })}
+                    placeholder="Ex: Camisa P, Calça G, Jaleco M..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Quantidade Inicial</Label>
+                  <Input
+                    type="number"
+                    value={productForm.quantidade_atual}
+                    onChange={(e) => setProductForm({ ...productForm, quantidade_atual: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Nome *</Label>
+                    <Input
+                      value={productForm.nome}
+                      onChange={(e) => setProductForm({ ...productForm, nome: e.target.value })}
+                      placeholder="Nome do produto"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Código</Label>
+                    <Input
+                      value={productForm.codigo}
+                      onChange={(e) => setProductForm({ ...productForm, codigo: e.target.value })}
+                      placeholder="Código"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Descrição</Label>
+                  <Textarea
+                    value={productForm.descricao}
+                    onChange={(e) => setProductForm({ ...productForm, descricao: e.target.value })}
+                    placeholder="Descrição do produto"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Categoria</Label>
+                    <Input
+                      value={productForm.categoria}
+                      onChange={(e) => setProductForm({ ...productForm, categoria: e.target.value })}
+                      placeholder="Categoria"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Unidade</Label>
+                    <Select 
+                      value={productForm.unidade_medida}
+                      onValueChange={(v) => setProductForm({ ...productForm, unidade_medida: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="UN">Unidade</SelectItem>
+                        <SelectItem value="CX">Caixa</SelectItem>
+                        <SelectItem value="PC">Peça</SelectItem>
+                        <SelectItem value="KG">Quilograma</SelectItem>
+                        <SelectItem value="L">Litro</SelectItem>
+                        <SelectItem value="M">Metro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Qtd. Inicial</Label>
+                    <Input
+                      type="number"
+                      value={productForm.quantidade_atual}
+                      onChange={(e) => setProductForm({ ...productForm, quantidade_atual: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Qtd. Mínima</Label>
+                    <Input
+                      type="number"
+                      value={productForm.quantidade_minima}
+                      onChange={(e) => setProductForm({ ...productForm, quantidade_minima: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Localização</Label>
+                  <Input
+                    value={productForm.localizacao}
+                    onChange={(e) => setProductForm({ ...productForm, localizacao: e.target.value })}
+                    placeholder="Ex: Almoxarifado A, Prateleira 3"
+                  />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddProductDialog(false)}>
