@@ -149,7 +149,7 @@ export function DashboardFaturamento() {
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
   const kpis = useMemo(() => {
-    const META_DIARIA = 250;
+    const META_POR_PROFISSIONAL = 200;
     const total = saidas.length;
     const avaliados = avaliacoes.filter((a) => a.is_finalizada).length;
     const avaliadoIds = new Set(
@@ -158,13 +158,18 @@ export function DashboardFaturamento() {
     const pendentes = saidas.filter((s) => !avaliadoIds.has(s.id)).length;
     const taxaPendencia = total > 0 ? ((pendentes / total) * 100).toFixed(1) : "0.0";
 
-    // Meta diária: só é atingida quando lançamentos E avaliações >= META
+    // Conta profissionais ativos (que fizeram pelo menos 1 avaliação no período)
+    const profissionaisAtivos = new Set(avaliacoes.filter(a => a.avaliador_id).map(a => a.avaliador_id)).size;
+    const numProfissionais = Math.max(profissionaisAtivos, 1);
+    const META_DIARIA_TOTAL = META_POR_PROFISSIONAL * numProfissionais;
+
+    // Meta diária: só é atingida quando lançamentos E avaliações >= META_DIARIA_TOTAL
     const dias = rangeToDays[dateRange];
     const mediaLancamentosDia = dias > 0 ? (total / dias) : 0;
     const mediaAvaliacoesDia = dias > 0 ? (avaliados / dias) : 0;
     const menorMedia = Math.min(mediaLancamentosDia, mediaAvaliacoesDia);
-    const progressoMetaDiaria = Math.min((menorMedia / META_DIARIA) * 100, 100);
-    const metaDiariaAtingida = mediaLancamentosDia >= META_DIARIA && mediaAvaliacoesDia >= META_DIARIA;
+    const progressoMetaDiaria = Math.min((menorMedia / META_DIARIA_TOTAL) * 100, 100);
+    const metaDiariaAtingida = mediaLancamentosDia >= META_DIARIA_TOTAL && mediaAvaliacoesDia >= META_DIARIA_TOTAL;
 
     // Tempo médio em horas
     const tempos = avaliacoes
@@ -187,6 +192,8 @@ export function DashboardFaturamento() {
       mediaAvaliacoesDia: mediaAvaliacoesDia.toFixed(0),
       progressoMetaDiaria: Math.round(progressoMetaDiaria),
       metaDiariaAtingida,
+      metaDiariaTotal: META_DIARIA_TOTAL,
+      numProfissionais,
     };
   }, [saidas, avaliacoes, dateRange]);
 
@@ -233,7 +240,7 @@ export function DashboardFaturamento() {
         })
       : avaliacoes;
 
-    const META_AVALIADOS = 100;
+    const META_AVALIADOS = 200;
 
     const map: Record<string, {
       avaliador_id: string;
@@ -278,7 +285,7 @@ export function DashboardFaturamento() {
       .map((item) => {
         const profile = profiles.find((p) => p.user_id === item.avaliador_id);
 
-        // Fator 1 — Meta de avaliações (35%): avaliados >= 100
+        // Fator 1 — Meta de avaliações (35%): avaliados >= 200
         const fatorMeta = Math.min(item.avaliados / META_AVALIADOS, 1);
 
         // Fator 2 — Taxa de conclusão (30%): avaliados / iniciadas
@@ -378,7 +385,7 @@ export function DashboardFaturamento() {
                 <p className="text-xs text-muted-foreground mt-1">
                   Lanç: <span className="font-medium">{kpis.mediaLancamentosDia}/dia</span>
                   {" · "}Aval: <span className="font-medium">{kpis.mediaAvaliacoesDia}/dia</span>
-                  {" · "}meta: 250/dia (ambos)
+                  {" · "}meta: {kpis.metaDiariaTotal}/dia ({kpis.numProfissionais} prof × 200)
                 </p>
                 {/* Barra de progresso da meta */}
                 <div className="mt-2 w-full bg-muted rounded-full h-1.5">
