@@ -5,11 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
-import { Bell, CheckCircle, Eye, Trash2 } from "lucide-react";
+import { Bell, Eye, Trash2 } from "lucide-react";
 import { format } from "date-fns";
 
 interface Notificacao {
@@ -30,12 +28,8 @@ export function NotificacoesControl() {
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
-  const [resolveDialogOpen, setResolveDialogOpen] = useState(false);
   const [selectedNotificacao, setSelectedNotificacao] = useState<Notificacao | null>(null);
   const [filterStatus, setFilterStatus] = useState<string>("todos");
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [currentUserName, setCurrentUserName] = useState<string>("");
-  const [resolucao, setResolucao] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -44,19 +38,6 @@ export function NotificacoesControl() {
 
   const fetchData = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setCurrentUserId(user.id);
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("user_id", user.id)
-          .single();
-        if (profile) {
-          setCurrentUserName(profile.full_name);
-        }
-      }
-
       const { data, error } = await supabase
         .from("notificacoes_seguranca")
         .select("*")
@@ -73,38 +54,6 @@ export function NotificacoesControl() {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleResolve = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!selectedNotificacao || !currentUserId) return;
-
-    try {
-      const { error } = await supabase
-        .from("notificacoes_seguranca")
-        .update({
-          status: "resolvida",
-          resolvido_em: new Date().toISOString(),
-          resolvido_por: currentUserId,
-          resolvido_por_nome: currentUserName
-        })
-        .eq("id", selectedNotificacao.id);
-      
-      if (error) throw error;
-      
-      toast({ title: "Sucesso", description: "Notificação resolvida!" });
-      setResolveDialogOpen(false);
-      setResolucao("");
-      fetchData();
-    } catch (error) {
-      console.error("Erro ao resolver:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível resolver a notificação.",
-        variant: "destructive"
-      });
     }
   };
 
@@ -256,18 +205,6 @@ export function NotificacoesControl() {
                           >
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {notificacao.status !== "resolvida" && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              onClick={() => {
-                                setSelectedNotificacao(notificacao);
-                                setResolveDialogOpen(true);
-                              }}
-                            >
-                              <CheckCircle className="h-4 w-4 text-green-500" />
-                            </Button>
-                          )}
                           <Button size="icon" variant="ghost" onClick={() => handleDelete(notificacao.id)}>
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
@@ -338,37 +275,6 @@ export function NotificacoesControl() {
         </DialogContent>
       </Dialog>
 
-      {/* Resolve Dialog */}
-      <Dialog open={resolveDialogOpen} onOpenChange={setResolveDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CheckCircle className="h-5 w-5 text-green-500" />
-              Resolver Notificação
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleResolve} className="space-y-4">
-            <div className="space-y-2">
-              <Label>Observações da Resolução (opcional)</Label>
-              <Textarea
-                value={resolucao}
-                onChange={(e) => setResolucao(e.target.value)}
-                placeholder="Descreva como o problema foi resolvido..."
-                rows={4}
-              />
-            </div>
-
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="outline" onClick={() => setResolveDialogOpen(false)}>
-                Cancelar
-              </Button>
-              <Button type="submit" className="bg-green-600 hover:bg-green-700">
-                Marcar como Resolvida
-              </Button>
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
