@@ -557,16 +557,6 @@ export function RondasControl() {
                 </SelectContent>
               </Select>
             </div>
-
-            <div className="space-y-2">
-              <Label>Responsável a Notificar</Label>
-              <Input
-                value={notificacaoData.responsavel_notificado}
-                onChange={(e) => setNotificacaoData({ ...notificacaoData, responsavel_notificado: e.target.value })}
-                placeholder="Nome do responsável"
-              />
-            </div>
-
             <div className="space-y-2">
               <Label>Descrição</Label>
               <Textarea
