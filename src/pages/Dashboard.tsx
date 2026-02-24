@@ -1,50 +1,48 @@
-import { useState, useEffect, lazy, Suspense, useMemo, useCallback, memo } from "react";
+import { useState, useEffect, lazy, Suspense, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import ExternalViewer from "@/components/ExternalViewer";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
 import DashboardLayout, { PageLoader } from "@/components/layout/DashboardLayout";
-import DashboardPersonalizado from "@/components/dashboard/DashboardPersonalizado";
-import TeamSection from "@/components/TeamSection";
-import { FaturamentoUnificadoModule } from "@/components/modules/FaturamentoUnificadoModule";
-import { ControleFichasModule } from "@/components/modules/ControleFichasModule";
-import { AdminModule } from "@/components/modules/AdminModule";
-import { TecnicoModule } from "@/components/modules/TecnicoModule";
-import { AbrirChamadoModule } from "@/components/modules/AbrirChamadoModule";
-import { LaboratorioModule } from "@/components/modules/LaboratorioModule";
-import { AgendaModule } from "@/components/agenda";
-import { LogsAuditoriaModule } from "@/components/modules/LogsAuditoriaModule";
-import { RestauranteModule } from "@/components/modules/RestauranteModule";
-
-import { NirModule } from "@/components/modules/NirModule";
-import { RecepcaoModule } from "@/components/modules/RecepcaoModule";
-import { RHDPModule } from "@/components/modules/RHDPModule";
-import { ChatModule } from "@/components/modules/ChatModule";
-import { RoupariaModule } from "@/components/modules/RoupariaModule";
-import { SegurancaTrabalhoModule } from "@/components/modules/SegurancaTrabalhoModule";
-import { SegurancaPatrimonialModule } from "@/components/modules/SegurancaPatrimonialModule";
-import { AssistenciaSocialModule } from "@/components/modules/AssistenciaSocialModule";
-import { QualidadeModule } from "@/components/modules/QualidadeModule";
-import { ReportarIncidenteDialog } from "@/components/gestao-incidentes";
-import { ProfissionaisSaude } from "@/components/rh";
-import LMSModule from "@/components/lms/LMSModule";
-import ReuniaoModule from "@/components/modules/ReuniaoModule";
 import CookieBanner from "@/components/CookieBanner";
-import { GerenciaModule } from "@/components/modules/GerenciaModule";
-import { PainelSeguranca } from "@/components/seguranca";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
 
-// Lazy load heavy modules
+// Lazy load ALL modules for optimal code splitting
+const DashboardPersonalizado = lazy(() => import("@/components/dashboard/DashboardPersonalizado"));
+const FaturamentoUnificadoModule = lazy(() => import("@/components/modules/FaturamentoUnificadoModule").then(m => ({ default: m.FaturamentoUnificadoModule })));
+const ControleFichasModule = lazy(() => import("@/components/modules/ControleFichasModule").then(m => ({ default: m.ControleFichasModule })));
+const AdminModule = lazy(() => import("@/components/modules/AdminModule").then(m => ({ default: m.AdminModule })));
+const TecnicoModule = lazy(() => import("@/components/modules/TecnicoModule").then(m => ({ default: m.TecnicoModule })));
+const LaboratorioModule = lazy(() => import("@/components/modules/LaboratorioModule").then(m => ({ default: m.LaboratorioModule })));
+const AgendaModule = lazy(() => import("@/components/agenda").then(m => ({ default: m.AgendaModule })));
+const LogsAuditoriaModule = lazy(() => import("@/components/modules/LogsAuditoriaModule").then(m => ({ default: m.LogsAuditoriaModule })));
+const RestauranteModule = lazy(() => import("@/components/modules/RestauranteModule").then(m => ({ default: m.RestauranteModule })));
+const NirModule = lazy(() => import("@/components/modules/NirModule").then(m => ({ default: m.NirModule })));
+const RecepcaoModule = lazy(() => import("@/components/modules/RecepcaoModule").then(m => ({ default: m.RecepcaoModule })));
+const RHDPModule = lazy(() => import("@/components/modules/RHDPModule").then(m => ({ default: m.RHDPModule })));
+const ChatModule = lazy(() => import("@/components/modules/ChatModule").then(m => ({ default: m.ChatModule })));
+const RoupariaModule = lazy(() => import("@/components/modules/RoupariaModule").then(m => ({ default: m.RoupariaModule })));
+const SegurancaTrabalhoModule = lazy(() => import("@/components/modules/SegurancaTrabalhoModule").then(m => ({ default: m.SegurancaTrabalhoModule })));
+const SegurancaPatrimonialModule = lazy(() => import("@/components/modules/SegurancaPatrimonialModule").then(m => ({ default: m.SegurancaPatrimonialModule })));
+const AssistenciaSocialModule = lazy(() => import("@/components/modules/AssistenciaSocialModule").then(m => ({ default: m.AssistenciaSocialModule })));
+const QualidadeModule = lazy(() => import("@/components/modules/QualidadeModule").then(m => ({ default: m.QualidadeModule })));
+const ReportarIncidenteDialog = lazy(() => import("@/components/gestao-incidentes").then(m => ({ default: m.ReportarIncidenteDialog })));
+const LMSModule = lazy(() => import("@/components/lms/LMSModule"));
+const ReuniaoModule = lazy(() => import("@/components/modules/ReuniaoModule"));
+const GerenciaModule = lazy(() => import("@/components/modules/GerenciaModule").then(m => ({ default: m.GerenciaModule })));
 const EnfermagemModule = lazy(() => import("@/components/modules/EnfermagemModule"));
 const SalusModule = lazy(() => import("@/components/modules/SalusModule"));
 const MedicosModule = lazy(() => import("@/components/modules/MedicosModule"));
 const EquipeModule = lazy(() => import("@/components/modules/EquipeModule"));
 
-// Memoized module components for performance
-const MemoizedTecnicoModule = memo(TecnicoModule);
-const MemoizedDashboardPersonalizado = memo(DashboardPersonalizado);
+// Module loading fallback
+const ModuleLoader = () => (
+  <div className="flex items-center justify-center h-64">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -117,87 +115,76 @@ const Dashboard = () => {
     return null;
   }
 
-  // Render active module content
+  // Render active module content - all wrapped in Suspense for lazy loading
   const renderContent = () => {
-    switch (activeSection) {
-      case "dashboard":
-        return <MemoizedDashboardPersonalizado onNavigate={handleSectionChange} />;
-      // abrir-chamado now opens GLPI externally via Sidebar
-      case "faturamento":
-        return <FaturamentoUnificadoModule />;
-      case "controle-fichas":
-        return <ControleFichasModule />;
-      case "equipe":
-        return <RHDPModule />;
+    const content = (() => {
+      switch (activeSection) {
+        case "dashboard":
+          return <DashboardPersonalizado onNavigate={handleSectionChange} />;
+        case "faturamento":
+          return <FaturamentoUnificadoModule />;
+        case "controle-fichas":
+          return <ControleFichasModule />;
+        case "equipe":
+          return <RHDPModule />;
+        case "agenda":
+          return <AgendaModule />;
+        case "admin":
+          return <AdminModule />;
+        case "logs":
+          return <LogsAuditoriaModule />;
+        case "tecnico-ti":
+          return <TecnicoModule setor="ti" onOpenExternal={handleOpenExternal} />;
+        case "tecnico-manutencao":
+          return <TecnicoModule setor="manutencao" onOpenExternal={handleOpenExternal} />;
+        case "tecnico-engenharia":
+          return <TecnicoModule setor="engenharia_clinica" onOpenExternal={handleOpenExternal} />;
+        case "nir":
+        case "dashboard-nir":
+          return <NirModule onOpenExternal={handleOpenExternal} />;
+        case "laboratorio":
+          return <LaboratorioModule />;
+        case "restaurante":
+          return <RestauranteModule />;
+        case "recepcao":
+          return <RecepcaoModule />;
+        case "rhdp":
+          return <RHDPModule />;
+        case "rouparia":
+          return <RoupariaModule />;
+        case "seguranca-trabalho":
+          return <SegurancaTrabalhoModule />;
+        case "assistencia-social":
+          return <AssistenciaSocialModule />;
+        case "qualidade":
+          return <QualidadeModule />;
+        case "reportar-incidente":
+          return <ReportarIncidenteDialog onSectionChange={handleSectionChange} />;
+        case "enfermagem":
+          return <EnfermagemModule />;
+        case "chat":
+          return <ChatModule />;
+        case "medicos":
+          return <MedicosModule onOpenExternal={handleOpenExternal} />;
+        case "profissionais-saude":
+          return <RHDPModule />;
+        case "lms":
+          return <LMSModule />;
+        case "reuniao":
+          return <ReuniaoModule />;
+        case "salus":
+          return <SalusModule onOpenExternal={handleOpenExternal} />;
+        case "gerencia":
+          return <GerenciaModule />;
+        case "painel-seguranca":
+        case "seguranca-patrimonial":
+          return <SegurancaPatrimonialModule />;
+        default:
+          return <DashboardPersonalizado onNavigate={handleSectionChange} />;
+      }
+    })();
 
-      case "agenda":
-        return <AgendaModule />;
-      case "admin":
-        return <AdminModule />;
-      case "logs":
-        return <LogsAuditoriaModule />;
-      case "tecnico-ti":
-        return <MemoizedTecnicoModule setor="ti" onOpenExternal={handleOpenExternal} />;
-      case "tecnico-manutencao":
-        return <MemoizedTecnicoModule setor="manutencao" onOpenExternal={handleOpenExternal} />;
-      case "tecnico-engenharia":
-        return <MemoizedTecnicoModule setor="engenharia_clinica" onOpenExternal={handleOpenExternal} />;
-      case "nir":
-      case "dashboard-nir":
-        return <NirModule onOpenExternal={handleOpenExternal} />;
-      case "laboratorio":
-        return <LaboratorioModule />;
-      case "restaurante":
-        return <RestauranteModule />;
-      case "recepcao":
-        return <RecepcaoModule />;
-      case "rhdp":
-        return <RHDPModule />;
-      case "rouparia":
-        return <RoupariaModule />;
-      case "seguranca-trabalho":
-        return <SegurancaTrabalhoModule />;
-      case "assistencia-social":
-        return <AssistenciaSocialModule />;
-      case "qualidade":
-        return <QualidadeModule />;
-      case "reportar-incidente":
-        return <ReportarIncidenteDialog onSectionChange={handleSectionChange} />;
-      case "enfermagem":
-        return (
-          <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-            <EnfermagemModule />
-          </Suspense>
-        );
-      case "chat":
-        return <ChatModule />;
-      case "medicos":
-        return (
-          <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-            <MedicosModule onOpenExternal={handleOpenExternal} />
-          </Suspense>
-        );
-      case "profissionais-saude":
-        return <RHDPModule />;
-      case "lms":
-        return <LMSModule />;
-      case "reuniao":
-        return <ReuniaoModule />;
-      case "salus":
-        return (
-          <Suspense fallback={<div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
-            <SalusModule onOpenExternal={handleOpenExternal} />
-          </Suspense>
-        );
-      case "gerencia":
-        return <GerenciaModule />;
-      case "painel-seguranca":
-        return <SegurancaPatrimonialModule />;
-      case "seguranca-patrimonial":
-        return <SegurancaPatrimonialModule />;
-      default:
-        return <MemoizedDashboardPersonalizado onNavigate={handleSectionChange} />;
-    }
+    return <Suspense fallback={<ModuleLoader />}>{content}</Suspense>;
   };
 
   return (
