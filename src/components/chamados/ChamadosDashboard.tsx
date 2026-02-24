@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { useToast } from "@/hooks/use-toast";
-import { subDays, differenceInHours, parseISO, format } from "date-fns";
+import { subDays, differenceInMinutes, parseISO, format } from "date-fns";
 
 import { DashboardFiltersComponent } from "./DashboardFilters";
 import { KPICards } from "./KPICards";
@@ -107,7 +107,7 @@ export const ChamadosDashboard = () => {
     let maiorTempoResolucao = 0;
     if (resolvidos.length > 0) {
       const tempos = resolvidos.map((c) =>
-        differenceInHours(parseISO(c.data_resolucao!), parseISO(c.data_abertura))
+        differenceInMinutes(parseISO(c.data_resolucao!), parseISO(c.data_abertura)) / 60
       );
       tempoMedioResolucao = tempos.reduce((a, b) => a + b, 0) / tempos.length;
       maiorTempoResolucao = Math.max(...tempos, 0);
@@ -116,10 +116,10 @@ export const ChamadosDashboard = () => {
     // Percentual SLA
     let dentroDeSLA = 0;
     resolvidos.forEach((c) => {
-      const horasResolucao = differenceInHours(
+      const horasResolucao = differenceInMinutes(
         parseISO(c.data_resolucao!),
         parseISO(c.data_abertura)
-      );
+      ) / 60;
       const slaHoras = SLA_HORAS[c.prioridade] || 24;
       if (horasResolucao <= slaHoras) {
         dentroDeSLA++;
@@ -146,7 +146,7 @@ export const ChamadosDashboard = () => {
     let tempoMedioPrimeiroAtendimento = 0;
     if (emAndamentoOuResolvidos.length > 0) {
       const tempos = emAndamentoOuResolvidos.map((c) =>
-        Math.max(0, differenceInHours(parseISO(c.updated_at), parseISO(c.data_abertura)))
+        Math.max(0, differenceInMinutes(parseISO(c.updated_at), parseISO(c.data_abertura)) / 60)
       );
       tempoMedioPrimeiroAtendimento = tempos.reduce((a, b) => a + b, 0) / tempos.length;
     }
@@ -193,15 +193,15 @@ export const ChamadosDashboard = () => {
       
       if (resolvidos.length > 0) {
         const tempos = resolvidos.map((c) =>
-          differenceInHours(parseISO(c.data_resolucao!), parseISO(c.data_abertura))
+          differenceInMinutes(parseISO(c.data_resolucao!), parseISO(c.data_abertura)) / 60
         );
         tempoMedio = tempos.reduce((a, b) => a + b, 0) / tempos.length;
         
         resolvidos.forEach((c) => {
-          const horas = differenceInHours(
+          const horas = differenceInMinutes(
             parseISO(c.data_resolucao!),
             parseISO(c.data_abertura)
-          );
+          ) / 60;
           if (horas <= (SLA_HORAS[c.prioridade] || 24)) {
             slaCumprido++;
           }
