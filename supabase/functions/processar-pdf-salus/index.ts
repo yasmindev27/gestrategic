@@ -149,7 +149,7 @@ REGRAS:
           }
         ],
         temperature: 0.1,
-        max_tokens: 4000,
+        max_tokens: 16000,
       }),
     });
 
@@ -164,17 +164,19 @@ REGRAS:
     
     console.log('Resposta da IA recebida, parseando JSON...');
 
-    // Parse the JSON response
+    // Parse the JSON response - handle markdown code blocks
     let pacientes: PatientInfo[] = [];
     try {
-      const jsonMatch = content.match(/\{[\s\S]*\}/);
+      // Remove markdown code block if present
+      let jsonStr = content.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+      const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
         const parsed = JSON.parse(jsonMatch[0]);
         pacientes = parsed.pacientes || [];
       }
     } catch (parseError) {
       console.error('Erro ao parsear resposta da IA:', parseError);
-      console.log('Conteúdo recebido:', content);
+      console.log('Conteúdo recebido (primeiros 500 chars):', content.substring(0, 500));
     }
 
     console.log(`Encontrados ${pacientes.length} pacientes no PDF`);
@@ -200,7 +202,8 @@ REGRAS:
     
     const existingProntuarios = new Set(
       (existingRecords || [])
-        .map(r => normalizeString(r.numero_prontuario))
+        .filter(r => r.numero_prontuario)
+        .map(r => normalizeString(r.numero_prontuario!))
     );
 
     const resultado = pacientes.map((paciente, index) => {
