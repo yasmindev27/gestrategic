@@ -269,27 +269,6 @@ export function UniformesControl() {
 
   return (
     <div className="space-y-6">
-      <SectionHeader
-        title="Controle de Uniformes"
-        description="Gestão de entregas, devoluções e inventário de uniformes"
-      >
-        <ActionButton
-          type="add"
-          label="Novo Registro"
-          onClick={() => {
-            resetForm();
-            setDialogOpen(true);
-          }}
-        />
-      </SectionHeader>
-
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <StatCard title="Total de Registros" value={totalRegistros} icon={Package} variant="primary" />
-        <StatCard title="Entregues" value={totalEntregues} icon={CheckCircle2} variant="success" />
-        <StatCard title="Devolvidos" value={totalDevolvidos} icon={Clock} variant="default" />
-        <StatCard title="Extraviados / Desgastados" value={totalExtraviados} icon={AlertCircle} variant="warning" />
-      </div>
 
       <Tabs defaultValue="inventario">
         <TabsList>
