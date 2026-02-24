@@ -86,6 +86,8 @@ export function DashboardFaturamento() {
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   const [granularity, setGranularity] = useState<Granularity>("day");
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
+  const [perfFilterNome, setPerfFilterNome] = useState("");
+  const [perfFilterPeriodo, setPerfFilterPeriodo] = useState<"all" | "day" | "week" | "month">("all");
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -271,7 +273,8 @@ export function DashboardFaturamento() {
 
   // ── Tabela de Performance (filtrável por período clicado) ────────────────
   const performanceData = useMemo(() => {
-    const filteredAvaliacoes = selectedPeriod
+    // Filtrar por período do gráfico clicado
+    let filteredAvaliacoes = selectedPeriod
       ? avaliacoes.filter((a) => {
           const dateStr = a.data_conclusao || a.data_inicio;
           if (!dateStr) return false;
@@ -279,7 +282,20 @@ export function DashboardFaturamento() {
         })
       : avaliacoes;
 
-    // Meta individual removida daqui — será calculada por profissional abaixo
+    // Filtrar por período (dia/semana/mês) da tabela
+    if (perfFilterPeriodo !== "all") {
+      const now = new Date();
+      const startDate = perfFilterPeriodo === "day"
+        ? startOfDay(now)
+        : perfFilterPeriodo === "week"
+          ? startOfWeek(now, { locale: ptBR })
+          : startOfMonth(now);
+      filteredAvaliacoes = filteredAvaliacoes.filter((a) => {
+        const dateStr = a.data_conclusao || a.data_inicio;
+        if (!dateStr) return false;
+        return new Date(dateStr) >= startDate;
+      });
+    }
 
     const map: Record<string, {
       avaliador_id: string;
@@ -371,8 +387,9 @@ export function DashboardFaturamento() {
           diasComAvaliacao,
         };
       })
+      .filter((item) => !perfFilterNome || item.nome.toLowerCase().includes(perfFilterNome.toLowerCase()))
       .sort((a, b) => b.score - a.score);
-  }, [avaliacoes, profiles, selectedPeriod, granularity]);
+  }, [avaliacoes, profiles, selectedPeriod, granularity, perfFilterPeriodo, perfFilterNome]);
 
   if (isLoading) {
     return (
@@ -640,6 +657,34 @@ export function DashboardFaturamento() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {/* Filtros da tabela */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-4">
+            <input
+              type="text"
+              placeholder="Buscar avaliador..."
+              value={perfFilterNome}
+              onChange={(e) => setPerfFilterNome(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-full sm:w-56"
+            />
+            <div className="flex gap-1">
+              {[
+                { value: "all" as const, label: "Todos" },
+                { value: "day" as const, label: "Hoje" },
+                { value: "week" as const, label: "Semana" },
+                { value: "month" as const, label: "Mês" },
+              ].map((opt) => (
+                <Button
+                  key={opt.value}
+                  variant={perfFilterPeriodo === opt.value ? "default" : "outline"}
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => setPerfFilterPeriodo(opt.value)}
+                >
+                  {opt.label}
+                </Button>
+              ))}
+            </div>
+          </div>
           {performanceData.length === 0 ? (
             <div className="flex items-center justify-center py-10 text-muted-foreground">
               <Users className="h-5 w-5 mr-2" />
