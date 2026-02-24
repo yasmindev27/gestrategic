@@ -538,7 +538,7 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow>
+                     <TableRow>
                       <TableHead>Data/Hora</TableHead>
                       <TableHead>Produto</TableHead>
                       <TableHead>Colaborador</TableHead>
@@ -550,13 +550,16 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {movimentacoes.map((mov) => (
+                    {movimentacoes.map((mov) => {
+                      const colabMatch = (mov.observacao || "").match(/\[COLAB:(.+?)\]/);
+                      const colabName = colabMatch ? colabMatch[1] : mov.usuario_nome || "-";
+                      return (
                       <TableRow key={mov.id}>
                         <TableCell>
                           {format(new Date(mov.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}
                         </TableCell>
                         <TableCell className="font-medium">{mov.produtos?.nome || "-"}</TableCell>
-                        <TableCell>{mov.usuario_nome || "-"}</TableCell>
+                        <TableCell>{colabName}</TableCell>
                         <TableCell>
                           <Badge variant={mov.tipo === 'entrada' ? 'default' : 'destructive'}>
                             {mov.tipo === 'entrada' ? 'Entrada' : 'Saída'}
@@ -567,7 +570,8 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
                         <TableCell>{mov.quantidade_nova}</TableCell>
                         <TableCell className="max-w-xs truncate">{mov.motivo || "-"}</TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
