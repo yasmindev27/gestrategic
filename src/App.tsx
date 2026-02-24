@@ -18,6 +18,7 @@ const Transporte = lazy(() => import("./pages/Transporte"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PoliticaPrivacidade = lazy(() => import("./pages/PoliticaPrivacidade"));
 
+
 // Loading fallback component
 const PageLoader = () => (
   <div className="min-h-screen bg-background flex items-center justify-center">
@@ -53,6 +54,7 @@ const App = () => (
             <Route path="/transporte" element={<Transporte />} />
             {/* Rota /controledefichas removida - medida provisória desativada */}
             <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
