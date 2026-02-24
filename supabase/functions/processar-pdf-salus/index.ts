@@ -181,17 +181,36 @@ REGRAS:
 
     console.log(`Encontrados ${pacientes.length} pacientes no PDF`);
 
-    // Fetch existing records from database
-    const { data: existingRecords, error: dbError } = await supabaseService
-      .from('saida_prontuarios')
-      .select('numero_prontuario, paciente_nome');
+    // Fetch ALL existing records from database using pagination (limit 1000 per query)
+    let allRecords: ExistingRecord[] = [];
+    let page = 0;
+    const PAGE_SIZE = 1000;
+    let hasMore = true;
 
-    if (dbError) {
-      console.error('Erro ao buscar registros existentes:', dbError);
-      throw dbError;
+    while (hasMore) {
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const { data: batch, error: dbError } = await supabaseService
+        .from('saida_prontuarios')
+        .select('numero_prontuario, paciente_nome')
+        .range(from, to);
+
+      if (dbError) {
+        console.error('Erro ao buscar registros existentes:', dbError);
+        throw dbError;
+      }
+
+      if (batch && batch.length > 0) {
+        allRecords = allRecords.concat(batch);
+        hasMore = batch.length === PAGE_SIZE;
+        page++;
+      } else {
+        hasMore = false;
+      }
     }
 
-    console.log(`Encontrados ${existingRecords?.length || 0} registros existentes no sistema`);
+    const existingRecords = allRecords;
+    console.log(`Encontrados ${existingRecords.length} registros existentes no sistema (${page} páginas)`);
 
     // Compare and find missing patients
     const existingNomes = new Set(
