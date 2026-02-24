@@ -337,7 +337,7 @@ export const FaturamentoModule = () => {
           const saidaIds = needsEnrichment.map(r => r.saida_prontuario_id!);
           const { data: saidasData } = await supabase
             .from("saida_prontuarios")
-            .select("id, paciente_nome, data_atendimento")
+            .select("id, paciente_nome, data_atendimento, nascimento_mae")
             .in("id", saidaIds);
           const saidaMap = new Map((saidasData || []).map((s: any) => [s.id, s]));
           rows.forEach(r => {
@@ -346,6 +346,7 @@ export const FaturamentoModule = () => {
               if (saida) {
                 if (!r.paciente_nome) (r as any).paciente_nome = saida.paciente_nome || null;
                 (r as any).data_atendimento = saida.data_atendimento || null;
+                (r as any).nascimento_mae = saida.nascimento_mae || null;
               }
             }
           });
@@ -881,7 +882,7 @@ export const FaturamentoModule = () => {
                 <TableHeader>
                   <TableRow>
                      <TableHead>Paciente</TableHead>
-                     <TableHead>Nº Prontuário</TableHead>
+                     <TableHead>Data Nasc.</TableHead>
                      <TableHead>Setor</TableHead>
                      <TableHead>Data Atendimento</TableHead>
                      <TableHead>Resultado</TableHead>
@@ -893,7 +894,7 @@ export const FaturamentoModule = () => {
                   {avaliacoes.map((av) => (
                     <TableRow key={av.id}>
                       <TableCell className="font-medium uppercase">{av.paciente_nome || "-"}</TableCell>
-                      <TableCell>{av.numero_prontuario || "-"}</TableCell>
+                      <TableCell>{safeFormatDate((av as any).nascimento_mae, "dd/MM/yyyy")}</TableCell>
                       <TableCell>{(av.unidade_setor && setorLabelMap[av.unidade_setor]) || av.unidade_setor || "-"}</TableCell>
                       <TableCell>{safeFormatDate(av.data_atendimento, "dd/MM/yyyy")}</TableCell>
                       <TableCell>{getResultadoBadge(av.resultado_final)}</TableCell>
