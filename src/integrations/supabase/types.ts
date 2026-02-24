@@ -314,6 +314,78 @@ export type Database = {
           },
         ]
       }
+      asos_seguranca: {
+        Row: {
+          cargo_atual: string | null
+          cargo_novo: string | null
+          colaborador_nome: string
+          colaborador_user_id: string | null
+          created_at: string
+          crm: string | null
+          data_exame: string
+          data_validade: string | null
+          exames_realizados: string | null
+          id: string
+          medico_nome: string | null
+          observacoes: string | null
+          registrado_por: string | null
+          registrado_por_nome: string
+          restricoes: string | null
+          resultado: string
+          riscos_ocupacionais: string | null
+          setor: string | null
+          status: string
+          tipo_aso: string
+          updated_at: string
+        }
+        Insert: {
+          cargo_atual?: string | null
+          cargo_novo?: string | null
+          colaborador_nome: string
+          colaborador_user_id?: string | null
+          created_at?: string
+          crm?: string | null
+          data_exame: string
+          data_validade?: string | null
+          exames_realizados?: string | null
+          id?: string
+          medico_nome?: string | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome: string
+          restricoes?: string | null
+          resultado?: string
+          riscos_ocupacionais?: string | null
+          setor?: string | null
+          status?: string
+          tipo_aso: string
+          updated_at?: string
+        }
+        Update: {
+          cargo_atual?: string | null
+          cargo_novo?: string | null
+          colaborador_nome?: string
+          colaborador_user_id?: string | null
+          created_at?: string
+          crm?: string | null
+          data_exame?: string
+          data_validade?: string | null
+          exames_realizados?: string | null
+          id?: string
+          medico_nome?: string | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string
+          restricoes?: string | null
+          resultado?: string
+          riscos_ocupacionais?: string | null
+          setor?: string | null
+          status?: string
+          tipo_aso?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       assistencia_social_atendimentos: {
         Row: {
           created_at: string
