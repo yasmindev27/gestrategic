@@ -542,6 +542,7 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
                       <TableHead>Data/Hora</TableHead>
                       <TableHead>Produto</TableHead>
                       <TableHead>Colaborador</TableHead>
+                      <TableHead>Responsável</TableHead>
                       <TableHead>Tipo</TableHead>
                       <TableHead>Quantidade</TableHead>
                       <TableHead>Estoque Anterior</TableHead>
@@ -552,7 +553,7 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
                   <TableBody>
                     {movimentacoes.map((mov) => {
                       const colabMatch = (mov.observacao || "").match(/\[COLAB:(.+?)\]/);
-                      const colabName = colabMatch ? colabMatch[1] : mov.usuario_nome || "-";
+                      const colabName = colabMatch ? colabMatch[1] : "-";
                       return (
                       <TableRow key={mov.id}>
                         <TableCell>
@@ -560,6 +561,7 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
                         </TableCell>
                         <TableCell className="font-medium">{mov.produtos?.nome || "-"}</TableCell>
                         <TableCell>{colabName}</TableCell>
+                        <TableCell>{mov.usuario_nome || "-"}</TableCell>
                         <TableCell>
                           <Badge variant={mov.tipo === 'entrada' ? 'default' : 'destructive'}>
                             {mov.tipo === 'entrada' ? 'Entrada' : 'Saída'}
