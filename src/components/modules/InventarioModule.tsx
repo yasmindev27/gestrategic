@@ -112,6 +112,12 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
   const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
   const [movimentacaoTipo, setMovimentacaoTipo] = useState<'entrada' | 'saida'>('entrada');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Colaborador selection for uniformes
+  const [colaboradores, setColaboradores] = useState<{ user_id: string; full_name: string }[]>([]);
+  const [buscaColab, setBuscaColab] = useState("");
+  const [showColabList, setShowColabList] = useState(false);
+  const [selectedColab, setSelectedColab] = useState<{ user_id: string; full_name: string } | null>(null);
   
   const [productForm, setProductForm] = useState({
     nome: "",
@@ -135,8 +141,17 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
   useEffect(() => {
     fetchProdutos();
     fetchMovimentacoes();
+    if (setor === 'seguranca_uniformes') fetchColaboradores();
     logAction("acesso", `inventario_${setor}`);
   }, [setor]);
+
+  const fetchColaboradores = async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .order("full_name");
+    if (data) setColaboradores(data);
+  };
 
   const fetchProdutos = async () => {
     setIsLoading(true);
@@ -310,6 +325,8 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
       
       setMovimentacaoDialog(false);
       setSelectedProduto(null);
+      setSelectedColab(null);
+      setBuscaColab("");
       setMovForm({ quantidade: 1, motivo: "", observacao: "" });
       fetchProdutos();
       fetchMovimentacoes();
@@ -729,6 +746,45 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {setor === 'seguranca_uniformes' && (
+              <div className="space-y-2 relative">
+                <Label>Colaborador *</Label>
+                <Input
+                  value={buscaColab}
+                  onChange={(e) => {
+                    setBuscaColab(e.target.value);
+                    setShowColabList(true);
+                    if (!e.target.value) setSelectedColab(null);
+                  }}
+                  onFocus={() => buscaColab && setShowColabList(true)}
+                  placeholder="Digite o nome do colaborador..."
+                />
+                {showColabList && buscaColab.length >= 2 && (
+                  <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {colaboradores
+                      .filter(c => c.full_name.toLowerCase().includes(buscaColab.toLowerCase()))
+                      .slice(0, 10)
+                      .map((c) => (
+                        <button
+                          key={c.user_id}
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-accent text-sm"
+                          onClick={() => {
+                            setSelectedColab(c);
+                            setBuscaColab(c.full_name);
+                            setShowColabList(false);
+                          }}
+                        >
+                          {c.full_name}
+                        </button>
+                      ))}
+                    {colaboradores.filter(c => c.full_name.toLowerCase().includes(buscaColab.toLowerCase())).length === 0 && (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">Nenhum colaborador encontrado</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Quantidade *</Label>
               <Input
