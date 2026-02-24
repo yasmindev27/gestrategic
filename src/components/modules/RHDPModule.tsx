@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, FileText, ShieldX, ClipboardList, Users, UserCog, AlertTriangle } from "lucide-react";
+import { Clock, FileText, ShieldX, ClipboardList, Users, UserCog, AlertTriangle, Stethoscope } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { BancoHorasSection } from "@/components/rhdp/BancoHorasSection";
@@ -9,6 +9,7 @@ import { CentralAtestadosSection } from "@/components/rhdp/CentralAtestadosSecti
 import { FormulariosSection } from "@/components/rhdp/FormulariosSection";
 import { MovimentacoesDisciplinarSection } from "@/components/rhdp/MovimentacoesDisciplinarSection";
 import { ProfissionaisSaude } from "@/components/rh";
+import { ASOControl } from "@/components/seguranca-trabalho";
 
 export const RHDPModule = () => {
   const { isAdmin, hasRole, isLoading } = useUserRole();
@@ -60,7 +61,7 @@ export const RHDPModule = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="banco-horas" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 <span className="hidden sm:inline">Banco de Horas</span>
@@ -70,6 +71,10 @@ export const RHDPModule = () => {
                 <FileText className="h-4 w-4" />
                 <span className="hidden sm:inline">Atestados</span>
                 <span className="sm:hidden">Atest.</span>
+              </TabsTrigger>
+              <TabsTrigger value="aso" className="flex items-center gap-2">
+                <Stethoscope className="h-4 w-4" />
+                <span className="hidden sm:inline">ASO</span>
               </TabsTrigger>
               <TabsTrigger value="formularios" className="flex items-center gap-2">
                 <ClipboardList className="h-4 w-4" />
@@ -94,6 +99,10 @@ export const RHDPModule = () => {
 
             <TabsContent value="atestados" className="mt-6">
               <CentralAtestadosSection />
+            </TabsContent>
+
+            <TabsContent value="aso" className="mt-6">
+              <ASOControl />
             </TabsContent>
 
             <TabsContent value="formularios" className="mt-6">
