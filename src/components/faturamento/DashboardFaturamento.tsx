@@ -53,9 +53,10 @@ interface Profile {
 }
 
 type Granularity = "day" | "week" | "month";
-type DateRange = "7d" | "30d" | "90d";
+type DateRange = "1d" | "7d" | "30d" | "90d";
 
 const RANGE_OPTIONS: { value: DateRange; label: string }[] = [
+  { value: "1d", label: "Hoje" },
   { value: "7d", label: "Últimos 7 dias" },
   { value: "30d", label: "Últimos 30 dias" },
   { value: "90d", label: "Últimos 90 dias" },
@@ -67,7 +68,7 @@ const GRAN_OPTIONS: { value: Granularity; label: string }[] = [
   { value: "month", label: "Mês" },
 ];
 
-const rangeToDays: Record<DateRange, number> = { "7d": 7, "30d": 30, "90d": 90 };
+const rangeToDays: Record<DateRange, number> = { "1d": 1, "7d": 7, "30d": 30, "90d": 90 };
 
 function groupByKey(date: string, gran: Granularity): string {
   const d = parseISO(date);
@@ -89,7 +90,9 @@ export function DashboardFaturamento() {
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      const since = subDays(new Date(), rangeToDays[dateRange]).toISOString();
+      const since = dateRange === "1d"
+        ? startOfDay(new Date()).toISOString()
+        : subDays(new Date(), rangeToDays[dateRange]).toISOString();
 
       const pageSize = 1000;
 
