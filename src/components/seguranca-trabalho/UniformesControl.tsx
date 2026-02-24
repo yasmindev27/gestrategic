@@ -75,6 +75,7 @@ export function UniformesControl() {
   const [buscaColab, setBuscaColab] = useState("");
   const [showColabList, setShowColabList] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [movResumo, setMovResumo] = useState<{ usuario_nome: string; produto: string; entradas: number; saidas: number }[]>([]);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
@@ -121,6 +122,36 @@ export function UniformesControl() {
 
       if (error) throw error;
       setUniformes(uniformesData || []);
+
+      // Fetch movimentações for resumo
+      const { data: movData } = await supabase
+        .from("movimentacoes_estoque")
+        .select("*, produtos(nome)")
+        .eq("setor", "seguranca_uniformes");
+
+      if (movData && movData.length > 0) {
+        const userIds = [...new Set(movData.map(m => m.usuario_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", userIds);
+        const nameMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+
+        const resumoMap = new Map<string, { usuario_nome: string; produto: string; entradas: number; saidas: number }>();
+        movData.forEach(m => {
+          const key = `${m.usuario_id}_${m.produto_id}`;
+          const existing = resumoMap.get(key) || {
+            usuario_nome: nameMap.get(m.usuario_id) || "-",
+            produto: (m.produtos as any)?.nome || "-",
+            entradas: 0,
+            saidas: 0,
+          };
+          if (m.tipo === 'entrada') existing.entradas += m.quantidade;
+          else existing.saidas += m.quantidade;
+          resumoMap.set(key, existing);
+        });
+        setMovResumo(Array.from(resumoMap.values()).sort((a, b) => a.usuario_nome.localeCompare(b.usuario_nome)));
+      }
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({ title: "Erro", description: "Não foi possível carregar os uniformes.", variant: "destructive" });
@@ -291,34 +322,43 @@ export function UniformesControl() {
           <Card>
             <CardHeader>
               <CardTitle>Resumo por Colaborador</CardTitle>
-              <CardDescription>Quantidade de uniformes entregues por colaborador</CardDescription>
+              <CardDescription>Movimentações de uniformes por colaborador e tipo de produto</CardDescription>
             </CardHeader>
             <CardContent>
-              {(() => {
-                const porColab = uniformes
-                  .filter(u => u.status === "entregue")
-                  .reduce((acc, u) => {
-                    acc[u.usuario_nome] = (acc[u.usuario_nome] || 0) + u.quantidade;
-                    return acc;
-                  }, {} as Record<string, number>);
-
-                const entries = Object.entries(porColab).sort((a, b) => b[1] - a[1]);
-
-                if (entries.length === 0) {
-                  return <p className="text-muted-foreground text-sm text-center py-4">Nenhum dado disponível.</p>;
-                }
-
-                return (
-                  <div className="space-y-2">
-                    {entries.map(([nome, qtd]) => (
-                      <div key={nome} className="flex justify-between items-center p-3 rounded-lg border">
-                        <span className="font-medium">{nome}</span>
-                        <Badge variant="secondary">{qtd} peça(s)</Badge>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
+              {movResumo.length === 0 ? (
+                <p className="text-muted-foreground text-sm text-center py-4">Nenhuma movimentação registrada.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Colaborador</TableHead>
+                        <TableHead>Produto / Uniforme</TableHead>
+                        <TableHead className="text-center">Entradas</TableHead>
+                        <TableHead className="text-center">Saídas</TableHead>
+                        <TableHead className="text-center">Saldo</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {movResumo.map((r, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium">{r.usuario_nome}</TableCell>
+                          <TableCell>{r.produto}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="default">{r.entradas}</Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="destructive">{r.saidas}</Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="secondary">{r.entradas - r.saidas}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
