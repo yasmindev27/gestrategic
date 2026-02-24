@@ -276,10 +276,6 @@ export function UniformesControl() {
             <Warehouse className="h-4 w-4 mr-2" />
             Inventário
           </TabsTrigger>
-          <TabsTrigger value="registros">
-            <Shirt className="h-4 w-4 mr-2" />
-            Entregas
-          </TabsTrigger>
           <TabsTrigger value="resumo">
             <Package className="h-4 w-4 mr-2" />
             Resumo por Colaborador
@@ -290,84 +286,6 @@ export function UniformesControl() {
           <InventarioModule setor="seguranca_uniformes" />
         </TabsContent>
 
-        <TabsContent value="registros" className="space-y-4 mt-4">
-          <Card>
-            <CardContent className="pt-6">
-              <SearchInput
-                value={searchTerm}
-                onChange={setSearchTerm}
-                placeholder="Buscar por colaborador ou tipo de uniforme..."
-              />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Registros de Uniformes</CardTitle>
-              <CardDescription>{filteredUniformes.length} registro(s) encontrado(s)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {filteredUniformes.length === 0 ? (
-                <EmptyState
-                  icon={Shirt}
-                  title="Nenhum uniforme registrado"
-                  description="Cadastre uma entrega de uniforme para começar"
-                  action={{ label: "Novo Registro", onClick: () => { resetForm(); setDialogOpen(true); } }}
-                />
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Colaborador</TableHead>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Tamanho</TableHead>
-                        <TableHead>Qtd</TableHead>
-                        <TableHead>Data Entrega</TableHead>
-                        <TableHead>Devolução</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Registrado por</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredUniformes.map((uniforme) => (
-                        <TableRow key={uniforme.id}>
-                          <TableCell className="font-medium">{uniforme.usuario_nome}</TableCell>
-                          <TableCell>{uniforme.tipo_uniforme}</TableCell>
-                          <TableCell>
-                            <Badge variant="secondary">{uniforme.tamanho}</Badge>
-                          </TableCell>
-                          <TableCell>{uniforme.quantidade}</TableCell>
-                          <TableCell>{format(new Date(uniforme.data_entrega), "dd/MM/yyyy")}</TableCell>
-                          <TableCell>
-                            {uniforme.data_devolucao
-                              ? format(new Date(uniforme.data_devolucao), "dd/MM/yyyy")
-                              : "-"}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(uniforme.status)}</TableCell>
-                          <TableCell className="text-muted-foreground text-xs">
-                            {uniforme.registrado_por_nome}
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-1 justify-end">
-                              <Button size="icon" variant="ghost" onClick={() => handleEdit(uniforme)}>
-                                <Edit className="h-4 w-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" onClick={() => handleDelete(uniforme.id)}>
-                                <Trash2 className="h-4 w-4 text-destructive" />
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
 
         <TabsContent value="resumo" className="space-y-4 mt-4">
           <Card>
