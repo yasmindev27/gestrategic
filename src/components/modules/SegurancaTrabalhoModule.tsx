@@ -1,18 +1,17 @@
 import { useState, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Shirt, HardHat, Syringe, ClipboardCheck, Bell, Stethoscope } from "lucide-react";
+import { Shirt, HardHat, Syringe, ClipboardCheck, Bell } from "lucide-react";
 import {
   UniformesControl,
   EPIsControl,
   VacinasControl,
   RondasControl,
-  NotificacoesControl,
-  ASOControl
+  NotificacoesControl
 } from "@/components/seguranca-trabalho";
 import { useLogAccess } from "@/hooks/useLogAccess";
 
 export function SegurancaTrabalhoModule() {
-  const [activeTab, setActiveTab] = useState("aso");
+  const [activeTab, setActiveTab] = useState("uniformes");
   const { logAction } = useLogAccess();
 
   useEffect(() => {
@@ -29,16 +28,12 @@ export function SegurancaTrabalhoModule() {
       <div>
         <h1 className="text-2xl font-bold">Segurança do Trabalho</h1>
         <p className="text-muted-foreground">
-          Gestão de ASOs, uniformes, EPIs, vacinação e rondas de segurança
+          Gestão de uniformes, EPIs, vacinação e rondas de segurança
         </p>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="grid w-full grid-cols-6">
-          <TabsTrigger value="aso" className="flex items-center gap-2">
-            <Stethoscope className="h-4 w-4" />
-            <span className="hidden sm:inline">ASO</span>
-          </TabsTrigger>
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="uniformes" className="flex items-center gap-2">
             <Shirt className="h-4 w-4" />
             <span className="hidden sm:inline">Uniformes</span>
@@ -60,10 +55,6 @@ export function SegurancaTrabalhoModule() {
             <span className="hidden sm:inline">Notificações</span>
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="aso" className="mt-6">
-          <ASOControl />
-        </TabsContent>
 
         <TabsContent value="uniformes" className="mt-6">
           <UniformesControl />
