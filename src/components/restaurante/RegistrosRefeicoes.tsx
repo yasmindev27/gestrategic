@@ -126,27 +126,46 @@ export const RegistrosRefeicoes = ({ isAdmin = false }: RegistrosRefeicoesProps)
   const fetchRegistros = async () => {
     setIsLoading(true);
     try {
-      let query = supabase
-        .from("refeicoes_registros")
-        .select("*")
-        .gte("data_registro", dataInicio)
-        .lte("data_registro", dataFim)
-        .order("data_registro", { ascending: false })
-        .order("hora_registro", { ascending: false });
-      
-      if (filtroTipoRefeicao !== "todos") {
-        query = query.eq("tipo_refeicao", filtroTipoRefeicao);
-      }
-      if (filtroTipoPessoa !== "todos") {
-        query = query.eq("tipo_pessoa", filtroTipoPessoa);
-      }
+      // Paginação para superar limite de 1000 registros por request
+      const PAGE_SIZE = 1000;
+      let allData: any[] = [];
+      let page = 0;
+      let hasMore = true;
 
-      const { data, error } = await query;
-      
-      if (error) throw error;
+      while (hasMore) {
+        const from = page * PAGE_SIZE;
+        const to = from + PAGE_SIZE - 1;
+
+        let query = supabase
+          .from("refeicoes_registros")
+          .select("*")
+          .gte("data_registro", dataInicio)
+          .lte("data_registro", dataFim)
+          .order("data_registro", { ascending: false })
+          .order("hora_registro", { ascending: false })
+          .range(from, to);
+        
+        if (filtroTipoRefeicao !== "todos") {
+          query = query.eq("tipo_refeicao", filtroTipoRefeicao);
+        }
+        if (filtroTipoPessoa !== "todos") {
+          query = query.eq("tipo_pessoa", filtroTipoPessoa);
+        }
+
+        const { data: batch, error } = await query;
+        if (error) throw error;
+
+        if (batch && batch.length > 0) {
+          allData = allData.concat(batch);
+          hasMore = batch.length === PAGE_SIZE;
+          page++;
+        } else {
+          hasMore = false;
+        }
+      }
       
       // Filtrar por nome localmente
-      let registrosFiltrados = data || [];
+      let registrosFiltrados = allData;
       if (buscaNome.trim()) {
         registrosFiltrados = registrosFiltrados.filter(r =>
           r.colaborador_nome.toLowerCase().includes(buscaNome.toLowerCase())
