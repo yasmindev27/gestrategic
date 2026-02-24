@@ -606,21 +606,23 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
 
           <Card>
             <CardHeader>
-              <CardTitle>Por Categoria</CardTitle>
+              <CardTitle>Estoque por Produto</CardTitle>
             </CardHeader>
             <CardContent>
-              {Object.entries(
-                produtos.reduce((acc, p) => {
-                  const cat = p.categoria || 'Sem categoria';
-                  acc[cat] = (acc[cat] || 0) + 1;
-                  return acc;
-                }, {} as Record<string, number>)
-              ).map(([cat, count]) => (
-                <div key={cat} className="flex justify-between items-center p-2 border-b">
-                  <span>{cat}</span>
-                  <Badge variant="secondary">{count}</Badge>
+              {produtos.length === 0 ? (
+                <p className="text-muted-foreground text-sm text-center py-4">Nenhum produto cadastrado.</p>
+              ) : (
+                <div className="space-y-2">
+                  {produtos
+                    .sort((a, b) => (b.quantidade_atual || 0) - (a.quantidade_atual || 0))
+                    .map(p => (
+                      <div key={p.id} className="flex justify-between items-center p-3 rounded-lg border">
+                        <span className="font-medium">{p.nome}</span>
+                        <Badge variant="secondary">{p.quantidade_atual || 0} {p.unidade_medida || "UN"}</Badge>
+                      </div>
+                    ))}
                 </div>
-              ))}
+              )}
             </CardContent>
           </Card>
         </TabsContent>
