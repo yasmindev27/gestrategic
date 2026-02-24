@@ -75,9 +75,13 @@ interface Usuario {
 
 const CANAL_GERAL_ID = "00000000-0000-0000-0000-000000000001";
 
-export const ChatCorporativo = () => {
+interface ChatCorporativoProps {
+  initialConversaId?: string | null;
+}
+
+export const ChatCorporativo = ({ initialConversaId }: ChatCorporativoProps = {}) => {
   const { isAdmin } = useUserRole();
-  const [conversaSelecionada, setConversaSelecionada] = useState<string | null>(null);
+  const [conversaSelecionada, setConversaSelecionada] = useState<string | null>(initialConversaId ?? null);
   const [novaMensagem, setNovaMensagem] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [novaConversaNome, setNovaConversaNome] = useState("");
@@ -120,6 +124,13 @@ export const ChatCorporativo = () => {
     };
     getUser();
   }, []);
+
+  // Reagir a mudança de initialConversaId (ex: clique em notificação)
+  useEffect(() => {
+    if (initialConversaId) {
+      setConversaSelecionada(initialConversaId);
+    }
+  }, [initialConversaId]);
 
   // Auto-join no canal geral
   useEffect(() => {
