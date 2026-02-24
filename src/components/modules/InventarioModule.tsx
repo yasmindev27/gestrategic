@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
@@ -48,7 +48,8 @@ import {
   History,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, subDays, parseISO } from "date-fns";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { ptBR } from "date-fns/locale";
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
 import { StatCard } from "@/components/ui/stat-card";
@@ -568,45 +569,58 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
         <TabsContent value="dashboard" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Dashboard do Inventário</CardTitle>
-              <CardDescription>Visão geral do estoque</CardDescription>
+              <CardTitle>Evolução de Entradas e Saídas</CardTitle>
+              <CardDescription>Movimentações dos últimos 30 dias</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold mb-4">Produtos com Estoque Baixo</h4>
-                  {produtos.filter(p => (p.quantidade_atual || 0) <= (p.quantidade_minima || 0)).length === 0 ? (
-                    <p className="text-muted-foreground text-sm">Nenhum produto com estoque baixo.</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {produtos
-                        .filter(p => (p.quantidade_atual || 0) <= (p.quantidade_minima || 0))
-                        .map(p => (
-                          <li key={p.id} className="flex justify-between items-center p-2 bg-destructive/10 rounded">
-                            <span>{p.nome}</span>
-                            <Badge variant="destructive">{p.quantidade_atual || 0} {p.unidade_medida}</Badge>
-                          </li>
-                        ))
-                      }
-                    </ul>
-                  )}
+              {(() => {
+                const last30 = Array.from({ length: 30 }, (_, i) => {
+                  const d = subDays(new Date(), 29 - i);
+                  const key = format(d, "yyyy-MM-dd");
+                  const label = format(d, "dd/MM");
+                  const entradas = movimentacoes
+                    .filter(m => m.tipo === 'entrada' && m.created_at.startsWith(key))
+                    .reduce((sum, m) => sum + m.quantidade, 0);
+                  const saidas = movimentacoes
+                    .filter(m => m.tipo === 'saida' && m.created_at.startsWith(key))
+                    .reduce((sum, m) => sum + m.quantidade, 0);
+                  return { data: label, Entradas: entradas, Saídas: saidas };
+                });
+
+                return (
+                  <ResponsiveContainer width="100%" height={320}>
+                    <LineChart data={last30}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="data" fontSize={12} />
+                      <YAxis fontSize={12} allowDecimals={false} />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="Entradas" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="Saídas" stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Por Categoria</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {Object.entries(
+                produtos.reduce((acc, p) => {
+                  const cat = p.categoria || 'Sem categoria';
+                  acc[cat] = (acc[cat] || 0) + 1;
+                  return acc;
+                }, {} as Record<string, number>)
+              ).map(([cat, count]) => (
+                <div key={cat} className="flex justify-between items-center p-2 border-b">
+                  <span>{cat}</span>
+                  <Badge variant="secondary">{count}</Badge>
                 </div>
-                <div>
-                  <h4 className="font-semibold mb-4">Por Categoria</h4>
-                  {Object.entries(
-                    produtos.reduce((acc, p) => {
-                      const cat = p.categoria || 'Sem categoria';
-                      acc[cat] = (acc[cat] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>)
-                  ).map(([cat, count]) => (
-                    <div key={cat} className="flex justify-between items-center p-2 border-b">
-                      <span>{cat}</span>
-                      <Badge variant="secondary">{count}</Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              ))}
             </CardContent>
           </Card>
         </TabsContent>
