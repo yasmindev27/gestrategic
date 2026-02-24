@@ -149,12 +149,6 @@ export const SaidaProntuariosModule = () => {
   const [editNascimentoMae, setEditNascimentoMae] = useState("");
   const [editDataAtendimento, setEditDataAtendimento] = useState("");
 
-  // Import list states
-  const [importListOpen, setImportListOpen] = useState(false);
-  const [importListText, setImportListText] = useState("");
-  const [importListDate, setImportListDate] = useState("");
-  const [isImporting, setIsImporting] = useState(false);
-
   const canAccess = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
   const canInsert = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
   const canValidateClassificacao = isClassificacao || isAdmin;
@@ -537,54 +531,6 @@ export const SaidaProntuariosModule = () => {
     }
   };
 
-  const handleImportList = async () => {
-    if (!importListText.trim() || !importListDate || !userId) return;
-
-    const names = importListText
-      .split("\n")
-      .map(n => n.trim())
-      .filter(n => n.length > 0);
-
-    if (names.length === 0) {
-      toast({ title: "Aviso", description: "Nenhum nome válido encontrado.", variant: "destructive" });
-      return;
-    }
-
-    setIsImporting(true);
-    try {
-      const records = names.map(name => ({
-        paciente_nome: name,
-        data_atendimento: importListDate,
-        registrado_recepcao_por: userId,
-        registrado_recepcao_em: new Date().toISOString(),
-        status: "aguardando_classificacao",
-      }));
-
-      const { error } = await supabase.from("saida_prontuarios").insert(records);
-      if (error) throw error;
-
-      await logAction("importar_lista_saida", "saida_prontuarios", {
-        quantidade: names.length,
-        data_atendimento: importListDate,
-      });
-
-      toast({
-        title: "Importação concluída!",
-        description: `${names.length} prontuário(s) registrado(s) com sucesso.`,
-      });
-
-      setImportListOpen(false);
-      setImportListText("");
-      setImportListDate("");
-      fetchSaidas();
-    } catch (error) {
-      console.error("Import error:", error);
-      toast({ title: "Erro", description: "Erro ao importar lista.", variant: "destructive" });
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
       aguardando_classificacao: { label: "Aguardando Classificação", className: "bg-warning text-warning-foreground" },
@@ -910,55 +856,6 @@ export const SaidaProntuariosModule = () => {
           </DropdownMenu>
           {canInsert && (
             <>
-              {/* Import List Dialog */}
-              <Dialog open={importListOpen} onOpenChange={setImportListOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="outline">
-                    <FileStack className="h-4 w-4 mr-2" />
-                    Importar Lista
-                  </Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader>
-                    <DialogTitle>Importar Lista de Prontuários</DialogTitle>
-                  </DialogHeader>
-                  <div className="space-y-4 pt-4">
-                    <div>
-                      <label className="text-sm font-medium">Data de Atendimento <span className="text-destructive">*</span></label>
-                      <Input
-                        type="date"
-                        value={importListDate}
-                        onChange={(e) => setImportListDate(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Nomes dos Pacientes (um por linha) <span className="text-destructive">*</span></label>
-                      <Textarea
-                        value={importListText}
-                        onChange={(e) => setImportListText(e.target.value)}
-                        placeholder={"João da Silva\nMaria de Souza\nAna Santos"}
-                        rows={10}
-                        className="font-mono text-sm"
-                      />
-                      {importListText.trim() && (
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {importListText.split("\n").filter(n => n.trim()).length} nome(s) detectado(s)
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setImportListOpen(false)}>Cancelar</Button>
-                    <Button
-                      onClick={handleImportList}
-                      disabled={isImporting || !importListText.trim() || !importListDate}
-                    >
-                      {isImporting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <FileStack className="h-4 w-4 mr-2" />}
-                      Importar {importListText.trim() ? `(${importListText.split("\n").filter(n => n.trim()).length})` : ""}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
               <Dialog open={newProntuarioOpen} onOpenChange={setNewProntuarioOpen}>
                 <DialogTrigger asChild>
                   <Button>
