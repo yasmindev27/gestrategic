@@ -26,9 +26,13 @@ import {
   Loader2,
   RefreshCw,
   Trophy,
+  CalendarIcon,
 } from "lucide-react";
 import { format, subDays, parseISO, startOfDay, startOfWeek, startOfMonth } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 interface SaidaProntuario {
   id: string;
@@ -87,7 +91,9 @@ export function DashboardFaturamento() {
   const [granularity, setGranularity] = useState<Granularity>("day");
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
   const [perfFilterNome, setPerfFilterNome] = useState("");
-  const [perfFilterPeriodo, setPerfFilterPeriodo] = useState<"all" | "day" | "week" | "month">("all");
+  const [perfFilterPeriodo, setPerfFilterPeriodo] = useState<"all" | "day" | "week" | "month" | "custom">("all");
+  const [perfDateFrom, setPerfDateFrom] = useState<Date | undefined>(undefined);
+  const [perfDateTo, setPerfDateTo] = useState<Date | undefined>(undefined);
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -282,8 +288,17 @@ export function DashboardFaturamento() {
         })
       : avaliacoes;
 
-    // Filtrar por período (dia/semana/mês) da tabela
-    if (perfFilterPeriodo !== "all") {
+    // Filtrar por período (dia/semana/mês/custom) da tabela
+    if (perfFilterPeriodo === "custom") {
+      filteredAvaliacoes = filteredAvaliacoes.filter((a) => {
+        const dateStr = a.data_conclusao || a.data_inicio;
+        if (!dateStr) return false;
+        const d = new Date(dateStr);
+        if (perfDateFrom && d < startOfDay(perfDateFrom)) return false;
+        if (perfDateTo && d > new Date(startOfDay(perfDateTo).getTime() + 86400000 - 1)) return false;
+        return true;
+      });
+    } else if (perfFilterPeriodo !== "all") {
       const now = new Date();
       const startDate = perfFilterPeriodo === "day"
         ? startOfDay(now)
@@ -389,7 +404,7 @@ export function DashboardFaturamento() {
       })
       .filter((item) => !perfFilterNome || item.nome.toLowerCase().includes(perfFilterNome.toLowerCase()))
       .sort((a, b) => b.score - a.score);
-  }, [avaliacoes, profiles, selectedPeriod, granularity, perfFilterPeriodo, perfFilterNome]);
+  }, [avaliacoes, profiles, selectedPeriod, granularity, perfFilterPeriodo, perfFilterNome, perfDateFrom, perfDateTo]);
 
   if (isLoading) {
     return (
@@ -658,32 +673,86 @@ export function DashboardFaturamento() {
         </CardHeader>
         <CardContent>
           {/* Filtros da tabela */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 mb-4">
-            <input
-              type="text"
-              placeholder="Buscar avaliador..."
-              value={perfFilterNome}
-              onChange={(e) => setPerfFilterNome(e.target.value)}
-              className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-full sm:w-56"
-            />
-            <div className="flex gap-1">
-              {[
-                { value: "all" as const, label: "Todos" },
-                { value: "day" as const, label: "Hoje" },
-                { value: "week" as const, label: "Semana" },
-                { value: "month" as const, label: "Mês" },
-              ].map((opt) => (
-                <Button
-                  key={opt.value}
-                  variant={perfFilterPeriodo === opt.value ? "default" : "outline"}
-                  size="sm"
-                  className="h-8 text-xs"
-                  onClick={() => setPerfFilterPeriodo(opt.value)}
-                >
-                  {opt.label}
-                </Button>
-              ))}
+          <div className="flex flex-col gap-3 mb-4">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
+              <input
+                type="text"
+                placeholder="Buscar avaliador..."
+                value={perfFilterNome}
+                onChange={(e) => setPerfFilterNome(e.target.value)}
+                className="h-9 rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring w-full sm:w-56"
+              />
+              <div className="flex gap-1 flex-wrap">
+                {[
+                  { value: "all" as const, label: "Todos" },
+                  { value: "day" as const, label: "Hoje" },
+                  { value: "week" as const, label: "Semana" },
+                  { value: "month" as const, label: "Mês" },
+                  { value: "custom" as const, label: "📅 Período" },
+                ].map((opt) => (
+                  <Button
+                    key={opt.value}
+                    variant={perfFilterPeriodo === opt.value ? "default" : "outline"}
+                    size="sm"
+                    className="h-8 text-xs"
+                    onClick={() => setPerfFilterPeriodo(opt.value)}
+                  >
+                    {opt.label}
+                  </Button>
+                ))}
+              </div>
             </div>
+            {perfFilterPeriodo === "custom" && (
+              <div className="flex items-center gap-2 flex-wrap">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1", !perfDateFrom && "text-muted-foreground")}>
+                      <CalendarIcon className="h-3.5 w-3.5" />
+                      {perfDateFrom ? format(perfDateFrom, "dd/MM/yyyy") : "Data início"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={perfDateFrom}
+                      onSelect={setPerfDateFrom}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
+                <span className="text-xs text-muted-foreground">até</span>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" size="sm" className={cn("h-8 text-xs gap-1", !perfDateTo && "text-muted-foreground")}>
+                      <CalendarIcon className="h-3.5 w-3.5" />
+                      {perfDateTo ? format(perfDateTo, "dd/MM/yyyy") : "Data fim"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={perfDateTo}
+                      onSelect={setPerfDateTo}
+                      initialFocus
+                      className={cn("p-3 pointer-events-auto")}
+                      locale={ptBR}
+                    />
+                  </PopoverContent>
+                </Popover>
+                {(perfDateFrom || perfDateTo) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-8 text-xs text-muted-foreground"
+                    onClick={() => { setPerfDateFrom(undefined); setPerfDateTo(undefined); }}
+                  >
+                    ✕ Limpar datas
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
           {performanceData.length === 0 ? (
             <div className="flex items-center justify-center py-10 text-muted-foreground">
