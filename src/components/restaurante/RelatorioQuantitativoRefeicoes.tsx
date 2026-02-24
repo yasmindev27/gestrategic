@@ -120,16 +120,26 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Buscar registros do totem
-      const { data: refeicoes, error: refeicoesError } = await supabase
-        .from("refeicoes_registros")
-        .select("id, tipo_pessoa, colaborador_nome, tipo_refeicao, data_registro, hora_registro")
-        .gte("data_registro", dataInicio)
-        .lte("data_registro", dataFim)
-        .order("data_registro", { ascending: true });
+      // Buscar TODOS os registros do totem com paginação (limite de 1000 por request)
+      let allRefeicoes: RegistroRefeicao[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data: refeicoes, error: refeicoesError } = await supabase
+          .from("refeicoes_registros")
+          .select("id, tipo_pessoa, colaborador_nome, tipo_refeicao, data_registro, hora_registro")
+          .gte("data_registro", dataInicio)
+          .lte("data_registro", dataFim)
+          .order("data_registro", { ascending: true })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
 
-      if (refeicoesError) throw refeicoesError;
-      setRegistrosRefeicoes(refeicoes || []);
+        if (refeicoesError) throw refeicoesError;
+        allRefeicoes = [...allRefeicoes, ...(refeicoes || [])];
+        if (!refeicoes || refeicoes.length < pageSize) break;
+        page++;
+      }
+
+      setRegistrosRefeicoes(allRefeicoes);
 
       // Buscar solicitações de dieta aprovadas no período
       const { data: dietas, error: dietasError } = await supabase
@@ -185,7 +195,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       setValoresInputs(inputsValores);
 
       // Processar quantitativos por dia
-      processarQuantitativos(refeicoes || [], dietasNoPeriodo, cafeLitro || []);
+      processarQuantitativos(allRefeicoes, dietasNoPeriodo, cafeLitro || []);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
