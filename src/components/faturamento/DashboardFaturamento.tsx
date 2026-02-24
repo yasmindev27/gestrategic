@@ -81,6 +81,7 @@ export function DashboardFaturamento() {
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [totalPendentesGeral, setTotalPendentesGeral] = useState(0);
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   const [granularity, setGranularity] = useState<Granularity>("day");
   const [selectedPeriod, setSelectedPeriod] = useState<string | null>(null);
@@ -132,6 +133,39 @@ export function DashboardFaturamento() {
           .in("user_id", avaliadorIds);
         profilesData = (data || []) as Profile[];
       }
+
+      // Fetch ALL saidas (sem filtro de data) para calcular pendentes gerais
+      const allSaidasIds: string[] = [];
+      let fromAll = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("saida_prontuarios")
+          .select("id")
+          .range(fromAll, fromAll + pageSize - 1);
+        if (error) throw error;
+        allSaidasIds.push(...(data || []).map(d => d.id));
+        if ((data || []).length < pageSize) break;
+        fromAll += pageSize;
+      }
+
+      // Fetch ALL avaliacoes finalizadas (sem filtro de data)
+      const allAvalFinIds = new Set<string>();
+      let fromAval = 0;
+      while (true) {
+        const { data, error } = await supabase
+          .from("avaliacoes_prontuarios")
+          .select("saida_prontuario_id")
+          .eq("is_finalizada", true)
+          .not("saida_prontuario_id", "is", null)
+          .range(fromAval, fromAval + pageSize - 1);
+        if (error) throw error;
+        (data || []).forEach(d => { if (d.saida_prontuario_id) allAvalFinIds.add(d.saida_prontuario_id); });
+        if ((data || []).length < pageSize) break;
+        fromAval += pageSize;
+      }
+
+      const pendentesGeral = allSaidasIds.filter(id => !allAvalFinIds.has(id)).length;
+      setTotalPendentesGeral(pendentesGeral);
 
       setSaidas(allSaidas);
       setAvaliacoes(allAvaliacoes);
@@ -185,8 +219,8 @@ export function DashboardFaturamento() {
     return {
       total,
       avaliados,
-      pendentes,
-      taxaPendencia,
+      pendentes: totalPendentesGeral,
+      taxaPendencia: total > 0 ? ((totalPendentesGeral / total) * 100).toFixed(1) : "0.0",
       tempoMedio,
       mediaLancamentosDia: mediaLancamentosDia.toFixed(0),
       mediaAvaliacoesDia: mediaAvaliacoesDia.toFixed(0),
@@ -195,7 +229,7 @@ export function DashboardFaturamento() {
       metaDiariaTotal: META_DIARIA_TOTAL,
       numProfissionais,
     };
-  }, [saidas, avaliacoes, dateRange]);
+  }, [saidas, avaliacoes, dateRange, totalPendentesGeral]);
 
   // ── Gráfico de Tendências ─────────────────────────────────────────────────
   const chartData = useMemo(() => {
