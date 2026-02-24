@@ -144,6 +144,10 @@ const unidadeSetorOptions = [
   { value: "atendimento_medico_pa", label: "Atendimento Médico – P.A" },
 ];
 
+const setorLabelMap: Record<string, string> = Object.fromEntries(
+  unidadeSetorOptions.map(o => [o.value, o.label])
+);
+
 const conformeOptions = [
   { value: "conforme", label: "Conforme" },
   { value: "nao_conforme", label: "Não Conforme" },
@@ -313,9 +317,36 @@ export const FaturamentoModule = () => {
           query = query.ilike("paciente_nome", `%${debouncedSearch}%`);
         }
 
+        if (statusFilter !== "todos") {
+          query = query.eq("resultado_final", statusFilter === "concluido" ? "completo" : statusFilter);
+        }
+
+        const range = getDateRangeForQuery();
+        if (range) {
+          query = query.gte("data_inicio", range.start).lte("data_inicio", range.end);
+        }
+
         const { data, error } = await query;
         if (error) throw error;
-        setAvaliacoes((data || []) as Avaliacao[]);
+
+        // If paciente_nome is null, try to enrich from saida_prontuarios
+        const rows = (data || []) as Avaliacao[];
+        const missingNames = rows.filter(r => !r.paciente_nome && r.saida_prontuario_id);
+        if (missingNames.length > 0) {
+          const saidaIds = missingNames.map(r => r.saida_prontuario_id!);
+          const { data: saidasData } = await supabase
+            .from("saida_prontuarios")
+            .select("id, paciente_nome")
+            .in("id", saidaIds);
+          const nameMap = new Map((saidasData || []).map((s: any) => [s.id, s.paciente_nome]));
+          rows.forEach(r => {
+            if (!r.paciente_nome && r.saida_prontuario_id) {
+              (r as any).paciente_nome = nameMap.get(r.saida_prontuario_id) || null;
+            }
+          });
+        }
+
+        setAvaliacoes(rows);
         setSaidas([]);
         setProntuariosFaltantes([]);
       } else if (activeTab === "faltantes") {
@@ -461,6 +492,7 @@ export const FaturamentoModule = () => {
           prontuario_id: prontuarioId,
           saida_prontuario_id: selectedProntuario.id,
           avaliador_id: userId,
+          paciente_nome: selectedProntuario.paciente_nome || null,
           numero_prontuario: selectedProntuario.numero_prontuario,
           unidade_setor: formData.unidade_setor,
           identificacao_paciente: formData.identificacao_paciente,
@@ -780,18 +812,28 @@ export const FaturamentoModule = () => {
           {/* Status filter */}
           <div className="flex items-center gap-2">
             <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm text-muted-foreground">Status:</span>
+            <span className="text-sm text-muted-foreground">{activeTab === "avaliados" ? "Resultado:" : "Status:"}</span>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="h-8 w-48 text-xs">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
-                <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
-                <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
-                <SelectItem value="concluido">Concluído</SelectItem>
+                {activeTab === "avaliados" ? (
+                  <>
+                    <SelectItem value="completo">Completo</SelectItem>
+                    <SelectItem value="com_pendencias">Com Pendências</SelectItem>
+                    <SelectItem value="incompleto">Incompleto</SelectItem>
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
+                    <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
+                    <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
+                    <SelectItem value="concluido">Concluído</SelectItem>
+                  </>
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -846,7 +888,7 @@ export const FaturamentoModule = () => {
                     <TableRow key={av.id}>
                       <TableCell className="font-medium uppercase">{av.paciente_nome || "-"}</TableCell>
                       <TableCell>{av.numero_prontuario || "-"}</TableCell>
-                      <TableCell>{av.unidade_setor || "-"}</TableCell>
+                      <TableCell>{(av.unidade_setor && setorLabelMap[av.unidade_setor]) || av.unidade_setor || "-"}</TableCell>
                       <TableCell>{getResultadoBadge(av.resultado_final)}</TableCell>
                       <TableCell>{safeFormatDate(av.data_inicio, "dd/MM/yyyy")}</TableCell>
                       <TableCell>
