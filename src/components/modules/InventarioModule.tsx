@@ -57,7 +57,7 @@ import { LoadingState, LoadingSpinner } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
 
 interface InventarioModuleProps {
-  setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'laboratorio' | 'nir';
+  setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'laboratorio' | 'nir' | 'seguranca_uniformes';
 }
 
 interface Produto {
@@ -94,6 +94,7 @@ const setorLabels: Record<string, string> = {
   engenharia_clinica: "Engenharia Clínica",
   laboratorio: "Laboratório",
   nir: "NIR",
+  seguranca_uniformes: "Uniformes",
 };
 
 export const InventarioModule = ({ setor }: InventarioModuleProps) => {
@@ -129,7 +130,7 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
     observacao: "",
   });
 
-  const hasAccess = role === 'admin' || role === setor;
+  const hasAccess = role === 'admin' || role === setor || (setor === 'seguranca_uniformes' && role === 'seguranca');
 
   useEffect(() => {
     fetchProdutos();

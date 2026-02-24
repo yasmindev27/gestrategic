@@ -18,7 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Shirt, Plus, Trash2, Edit, AlertCircle, Package, CheckCircle2, Clock } from "lucide-react";
+import { Shirt, Plus, Trash2, Edit, AlertCircle, Package, CheckCircle2, Clock, Warehouse } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
@@ -26,6 +26,7 @@ import { StatCard } from "@/components/ui/stat-card";
 import { SearchInput } from "@/components/ui/search-input";
 import { LoadingState, LoadingSpinner } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
+import { InventarioModule } from "@/components/modules/InventarioModule";
 
 interface Uniforme {
   id: string;
@@ -290,17 +291,25 @@ export function UniformesControl() {
         <StatCard title="Extraviados / Desgastados" value={totalExtraviados} icon={AlertCircle} variant="warning" />
       </div>
 
-      <Tabs defaultValue="registros">
+      <Tabs defaultValue="inventario">
         <TabsList>
+          <TabsTrigger value="inventario">
+            <Warehouse className="h-4 w-4 mr-2" />
+            Inventário
+          </TabsTrigger>
           <TabsTrigger value="registros">
             <Shirt className="h-4 w-4 mr-2" />
-            Registros
+            Entregas
           </TabsTrigger>
           <TabsTrigger value="resumo">
             <Package className="h-4 w-4 mr-2" />
             Resumo por Colaborador
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="inventario" className="mt-4">
+          <InventarioModule setor="seguranca_uniformes" />
+        </TabsContent>
 
         <TabsContent value="registros" className="space-y-4 mt-4">
           <Card>
