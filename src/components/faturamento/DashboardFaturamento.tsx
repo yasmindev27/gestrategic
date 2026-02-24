@@ -158,11 +158,13 @@ export function DashboardFaturamento() {
     const pendentes = saidas.filter((s) => !avaliadoIds.has(s.id)).length;
     const taxaPendencia = total > 0 ? ((pendentes / total) * 100).toFixed(1) : "0.0";
 
-    // Meta diária: calcula média de lançamentos por dia no período
+    // Meta diária: só é atingida quando lançamentos E avaliações >= META
     const dias = rangeToDays[dateRange];
     const mediaLancamentosDia = dias > 0 ? (total / dias) : 0;
-    const progressoMetaDiaria = Math.min((mediaLancamentosDia / META_DIARIA) * 100, 100);
-    const metaDiariaAtingida = mediaLancamentosDia >= META_DIARIA;
+    const mediaAvaliacoesDia = dias > 0 ? (avaliados / dias) : 0;
+    const menorMedia = Math.min(mediaLancamentosDia, mediaAvaliacoesDia);
+    const progressoMetaDiaria = Math.min((menorMedia / META_DIARIA) * 100, 100);
+    const metaDiariaAtingida = mediaLancamentosDia >= META_DIARIA && mediaAvaliacoesDia >= META_DIARIA;
 
     // Tempo médio em horas
     const tempos = avaliacoes
@@ -182,6 +184,7 @@ export function DashboardFaturamento() {
       taxaPendencia,
       tempoMedio,
       mediaLancamentosDia: mediaLancamentosDia.toFixed(0),
+      mediaAvaliacoesDia: mediaAvaliacoesDia.toFixed(0),
       progressoMetaDiaria: Math.round(progressoMetaDiaria),
       metaDiariaAtingida,
     };
@@ -373,8 +376,9 @@ export function DashboardFaturamento() {
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Média: <span className="font-medium">{kpis.mediaLancamentosDia}/dia</span>
-                  {" · "}meta: 250/dia
+                  Lanç: <span className="font-medium">{kpis.mediaLancamentosDia}/dia</span>
+                  {" · "}Aval: <span className="font-medium">{kpis.mediaAvaliacoesDia}/dia</span>
+                  {" · "}meta: 250/dia (ambos)
                 </p>
                 {/* Barra de progresso da meta */}
                 <div className="mt-2 w-full bg-muted rounded-full h-1.5">
