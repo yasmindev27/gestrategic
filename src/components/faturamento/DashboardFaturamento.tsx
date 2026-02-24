@@ -182,8 +182,22 @@ export function DashboardFaturamento() {
   }, [dateRange]);
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
+  // Metas individuais por profissional (nome → meta diária)
+  const METAS_INDIVIDUAIS: Record<string, number> = {
+    "Maxuel": 200,
+    "Emily": 200,
+    "Carolynna": 100,
+  };
+  const META_PADRAO = 200;
+
+  const getMetaProfissional = (nome: string): number => {
+    const found = Object.entries(METAS_INDIVIDUAIS).find(([key]) =>
+      nome.toLowerCase().includes(key.toLowerCase())
+    );
+    return found ? found[1] : META_PADRAO;
+  };
+
   const kpis = useMemo(() => {
-    const META_POR_PROFISSIONAL = 200;
     const total = saidas.length;
     const avaliados = avaliacoes.filter((a) => a.is_finalizada).length;
     const avaliadoIds = new Set(
@@ -192,10 +206,14 @@ export function DashboardFaturamento() {
     const pendentes = saidas.filter((s) => !avaliadoIds.has(s.id)).length;
     const taxaPendencia = total > 0 ? ((pendentes / total) * 100).toFixed(1) : "0.0";
 
-    // Conta profissionais ativos (que fizeram pelo menos 1 avaliação no período)
-    const profissionaisAtivos = new Set(avaliacoes.filter(a => a.avaliador_id).map(a => a.avaliador_id)).size;
-    const numProfissionais = Math.max(profissionaisAtivos, 1);
-    const META_DIARIA_TOTAL = META_POR_PROFISSIONAL * numProfissionais;
+    // Calcula meta diária total baseada nas metas individuais de cada profissional ativo
+    const profissionaisAtivosIds = [...new Set(avaliacoes.filter(a => a.avaliador_id).map(a => a.avaliador_id))];
+    const numProfissionais = Math.max(profissionaisAtivosIds.length, 1);
+    const META_DIARIA_TOTAL = profissionaisAtivosIds.reduce((sum, id) => {
+      const profile = profiles.find(p => p.user_id === id);
+      const nome = profile?.full_name || "";
+      return sum + getMetaProfissional(nome);
+    }, 0) || META_PADRAO;
 
     // Meta diária: só é atingida quando lançamentos E avaliações >= META_DIARIA_TOTAL
     const dias = rangeToDays[dateRange];
@@ -274,7 +292,7 @@ export function DashboardFaturamento() {
         })
       : avaliacoes;
 
-    const META_AVALIADOS = 200;
+    // Meta individual removida daqui — será calculada por profissional abaixo
 
     const map: Record<string, {
       avaliador_id: string;
@@ -319,7 +337,10 @@ export function DashboardFaturamento() {
       .map((item) => {
         const profile = profiles.find((p) => p.user_id === item.avaliador_id);
 
-        // Fator 1 — Meta de avaliações (35%): avaliados >= 200
+        const nome = profile?.full_name || `ID:${item.avaliador_id.slice(0, 8)}`;
+        const META_AVALIADOS = getMetaProfissional(nome);
+
+        // Fator 1 — Meta de avaliações (35%): avaliados >= meta individual
         const fatorMeta = Math.min(item.avaliados / META_AVALIADOS, 1);
 
         // Fator 2 — Taxa de conclusão (30%): avaliados / iniciadas
@@ -351,8 +372,9 @@ export function DashboardFaturamento() {
 
         return {
           ...item,
-          nome: profile?.full_name || `ID:${item.avaliador_id.slice(0, 8)}`,
+          nome,
           cargo: profile?.cargo || "—",
+          meta: META_AVALIADOS,
           score,
           metaAvaliados,
           progressoMeta,
@@ -419,7 +441,7 @@ export function DashboardFaturamento() {
                 <p className="text-xs text-muted-foreground mt-1">
                   Lanç: <span className="font-medium">{kpis.mediaLancamentosDia}/dia</span>
                   {" · "}Aval: <span className="font-medium">{kpis.mediaAvaliacoesDia}/dia</span>
-                  {" · "}meta: {kpis.metaDiariaTotal}/dia ({kpis.numProfissionais} prof × 200)
+                  {" · "}meta: {kpis.metaDiariaTotal}/dia ({kpis.numProfissionais} prof)
                 </p>
                 {/* Barra de progresso da meta */}
                 <div className="mt-2 w-full bg-muted rounded-full h-1.5">
@@ -674,7 +696,7 @@ export function DashboardFaturamento() {
                         >
                           {item.avaliados}{item.metaAvaliados && " ✓"}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">{item.progressoMeta}% da meta</span>
+                        <span className="text-xs text-muted-foreground">{item.progressoMeta}% da meta ({item.meta})</span>
                       </div>
                     </TableCell>
 
