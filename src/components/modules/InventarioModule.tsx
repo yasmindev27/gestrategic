@@ -58,7 +58,7 @@ import { LoadingState, LoadingSpinner } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
 
 interface InventarioModuleProps {
-  setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'laboratorio' | 'nir' | 'seguranca_uniformes';
+  setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'laboratorio' | 'nir' | 'seguranca_uniformes' | 'seguranca_epis';
 }
 
 interface Produto {
@@ -98,7 +98,10 @@ const setorLabels: Record<string, string> = {
   laboratorio: "Laboratório",
   nir: "NIR",
   seguranca_uniformes: "Uniformes",
+  seguranca_epis: "EPIs",
 };
+
+const isSegurancaSetor = (s: string) => s === 'seguranca_uniformes' || s === 'seguranca_epis';
 
 export const InventarioModule = ({ setor }: InventarioModuleProps) => {
   const { role, isLoading: isLoadingRole } = useUserRole();
@@ -139,12 +142,12 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
     observacao: "",
   });
 
-  const hasAccess = role === 'admin' || role === setor || (setor === 'seguranca_uniformes' && role === 'seguranca');
+  const hasAccess = role === 'admin' || role === setor || (isSegurancaSetor(setor) && role === 'seguranca');
 
   useEffect(() => {
     fetchProdutos();
     fetchMovimentacoes();
-    if (setor === 'seguranca_uniformes') fetchColaboradores();
+    if (isSegurancaSetor(setor)) fetchColaboradores();
     logAction("acesso", `inventario_${setor}`);
   }, [setor]);
 
@@ -221,7 +224,7 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
-      const insertData = setor === 'seguranca_uniformes' 
+      const insertData = isSegurancaSetor(setor) 
         ? {
             ...productForm,
             unidade_medida: "UN",
@@ -302,9 +305,9 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
         ? quantidadeAtual + movForm.quantidade
         : quantidadeAtual - movForm.quantidade;
 
-      // Build observacao with collaborator name for seguranca_uniformes
+      // Build observacao with collaborator name for seguranca setors
       let obsText = movForm.observacao || "";
-      if (setor === 'seguranca_uniformes' && selectedColab) {
+      if (isSegurancaSetor(setor) && selectedColab) {
         obsText = `[COLAB:${selectedColab.full_name}]${obsText ? ' ' + obsText : ''}`;
       }
 
@@ -638,15 +641,15 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
       <Dialog open={addProductDialog} onOpenChange={setAddProductDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{setor === 'seguranca_uniformes' ? 'Novo Item de Uniforme' : 'Novo Produto'}</DialogTitle>
+            <DialogTitle>{isSegurancaSetor(setor) ? (setor === 'seguranca_epis' ? 'Novo Item de EPI' : 'Novo Item de Uniforme') : 'Novo Produto'}</DialogTitle>
             <DialogDescription>
-              {setor === 'seguranca_uniformes' 
-                ? 'Cadastre um novo item no inventário de uniformes.' 
+              {isSegurancaSetor(setor) 
+                ? 'Cadastre um novo item no inventário.' 
                 : 'Cadastre um novo produto no inventário.'}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            {setor === 'seguranca_uniformes' ? (
+            {isSegurancaSetor(setor) ? (
               <>
                 <div className="space-y-2">
                   <Label>Nome do Item *</Label>
@@ -777,7 +780,7 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            {setor === 'seguranca_uniformes' && (
+            {isSegurancaSetor(setor) && (
               <div className="space-y-2 relative">
                 <Label>Colaborador *</Label>
                 <Input
