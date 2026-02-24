@@ -30,6 +30,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { getBrasiliaDate, getBrasiliaDateString, getBrasiliaTimeString } from "@/lib/brasilia-time";
 
 interface Colaborador {
   id: string;
@@ -102,9 +103,7 @@ const hashCPF = async (cpf: string): Promise<string> => {
 
 // Determinar tipo de refeição com base no horário (fuso de Brasília)
 const determinarTipoRefeicao = (): TipoRefeicao => {
-  // Usar horário de Brasília (America/Sao_Paulo)
-  const now = new Date();
-  const brasiliaTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const brasiliaTime = getBrasiliaDate();
   const horas = brasiliaTime.getHours();
   const minutos = brasiliaTime.getMinutes();
   const tempoTotal = horas * 60 + minutos;
@@ -251,9 +250,8 @@ const TotemRefeicoes = () => {
     setIsRegistrando(true);
     try {
       // Obter data e hora no fuso de Brasília
-      const now = new Date();
-      const brasiliaTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-      const dataRegistro = `${brasiliaTime.getFullYear()}-${String(brasiliaTime.getMonth() + 1).padStart(2, "0")}-${String(brasiliaTime.getDate()).padStart(2, "0")}`;
+      const dataRegistro = getBrasiliaDateString();
+      const brasiliaTime = getBrasiliaDate();
       const horaRegistro = `${String(brasiliaTime.getHours()).padStart(2, "0")}:${String(brasiliaTime.getMinutes()).padStart(2, "0")}:${String(brasiliaTime.getSeconds()).padStart(2, "0")}`;
       
       // Verificar se já existe um registro para este colaborador, nesta data e tipo de refeição
@@ -397,9 +395,8 @@ const TotemRefeicoes = () => {
       }
       
       // Obter data e hora no fuso de Brasília
-      const now = new Date();
-      const brasiliaTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-      const dataRegistro = `${brasiliaTime.getFullYear()}-${String(brasiliaTime.getMonth() + 1).padStart(2, "0")}-${String(brasiliaTime.getDate()).padStart(2, "0")}`;
+      const dataRegistro = getBrasiliaDateString();
+      const brasiliaTime = getBrasiliaDate();
       const horaRegistro = `${String(brasiliaTime.getHours()).padStart(2, "0")}:${String(brasiliaTime.getMinutes()).padStart(2, "0")}:${String(brasiliaTime.getSeconds()).padStart(2, "0")}`;
       
       // Verificar se já existe um registro para este visitante (por CPF hash), nesta data e tipo de refeição
