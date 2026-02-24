@@ -84,8 +84,10 @@ interface Movimentacao {
   motivo: string | null;
   observacao: string | null;
   setor: string;
+  usuario_id: string;
   created_at: string;
   produtos?: { nome: string };
+  usuario_nome?: string;
 }
 
 const setorLabels: Record<string, string> = {
@@ -187,7 +189,18 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
         .limit(50);
 
       if (error) throw error;
-      setMovimentacoes(data || []);
+      
+      // Fetch user names for movimentações
+      const userIds = [...new Set((data || []).map(m => m.usuario_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", userIds);
+      
+      const nameMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+      const enriched = (data || []).map(m => ({ ...m, usuario_nome: nameMap.get(m.usuario_id) || "-" }));
+      
+      setMovimentacoes(enriched);
     } catch (error) {
       console.error("Error fetching movimentacoes:", error);
     }
@@ -518,6 +531,7 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
                     <TableRow>
                       <TableHead>Data/Hora</TableHead>
                       <TableHead>Produto</TableHead>
+                      <TableHead>Colaborador</TableHead>
                       <TableHead>Tipo</TableHead>
                       <TableHead>Quantidade</TableHead>
                       <TableHead>Estoque Anterior</TableHead>
@@ -532,6 +546,7 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
                           {format(new Date(mov.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}
                         </TableCell>
                         <TableCell className="font-medium">{mov.produtos?.nome || "-"}</TableCell>
+                        <TableCell>{mov.usuario_nome || "-"}</TableCell>
                         <TableCell>
                           <Badge variant={mov.tipo === 'entrada' ? 'default' : 'destructive'}>
                             {mov.tipo === 'entrada' ? 'Entrada' : 'Saída'}
