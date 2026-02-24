@@ -92,7 +92,7 @@ export const FloatingChatButton = ({ showOnModules, currentModule }: FloatingCha
               
               toast({
                 title: `Nova mensagem de ${remetenteName}`,
-                description: newMessage.conteudo.substring(0, 50) + (newMessage.conteudo.length > 50 ? "..." : ""),
+                description: "Clique para abrir a conversa",
                 action: (
                   <ToastAction altText="Abrir conversa" onClick={() => openChatOnConversa(conversaId)}>
                     Abrir
