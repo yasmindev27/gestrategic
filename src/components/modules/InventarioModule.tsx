@@ -302,6 +302,12 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
         ? quantidadeAtual + movForm.quantidade
         : quantidadeAtual - movForm.quantidade;
 
+      // Build observacao with collaborator name for seguranca_uniformes
+      let obsText = movForm.observacao || "";
+      if (setor === 'seguranca_uniformes' && selectedColab) {
+        obsText = `[COLAB:${selectedColab.full_name}]${obsText ? ' ' + obsText : ''}`;
+      }
+
       // Insert movimentação
       const { error: movError } = await supabase
         .from("movimentacoes_estoque")
@@ -312,7 +318,7 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
           quantidade_anterior: quantidadeAtual,
           quantidade_nova: novaQuantidade,
           motivo: movForm.motivo,
-          observacao: movForm.observacao,
+          observacao: obsText,
           usuario_id: user?.id,
           setor: setor,
         });

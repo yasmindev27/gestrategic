@@ -123,22 +123,45 @@ export function UniformesControl() {
       if (error) throw error;
       setUniformes(uniformesData || []);
 
-      // Build resumo from uniformes_seguranca table
-      if (uniformesData && uniformesData.length > 0) {
+      // Build resumo from movimentacoes_estoque for seguranca_uniformes
+      const { data: movData } = await supabase
+        .from("movimentacoes_estoque")
+        .select("*, produtos(nome)")
+        .eq("setor", "seguranca_uniformes");
+
+      if (movData && movData.length > 0) {
+        // Resolve usuario_id -> profile name (responsável pela entrega)
+        const userIds = [...new Set(movData.map(m => m.usuario_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", userIds);
+        const nameMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+
         const resumoMap = new Map<string, { usuario_nome: string; responsavel_entrega: string; produto: string; entradas: number; saidas: number }>();
-        uniformesData.forEach(u => {
-          const key = `${u.usuario_id}_${u.tipo_uniforme}`;
+        movData.forEach(m => {
+          // Extract collaborator name from observacao: [COLAB:Name] or fallback to observacao text
+          let colabName = "-";
+          const colabMatch = (m.observacao || "").match(/\[COLAB:(.+?)\]/);
+          if (colabMatch) {
+            colabName = colabMatch[1];
+          } else if (m.observacao && m.observacao.trim()) {
+            colabName = m.observacao.trim();
+          }
+
+          const responsavel = nameMap.get(m.usuario_id) || "-";
+          const produto = (m.produtos as any)?.nome || "-";
+          const key = `${colabName}_${m.produto_id}`;
           const existing = resumoMap.get(key) || {
-            usuario_nome: u.usuario_nome,
-            responsavel_entrega: u.registrado_por_nome,
-            produto: u.tipo_uniforme,
+            usuario_nome: colabName,
+            responsavel_entrega: responsavel,
+            produto,
             entradas: 0,
             saidas: 0,
           };
-          if (u.status === 'entregue') existing.entradas += u.quantidade;
-          if (u.status === 'devolvido') existing.saidas += u.quantidade;
-          // Keep latest registrado_por_nome
-          existing.responsavel_entrega = u.registrado_por_nome;
+          if (m.tipo === 'entrada') existing.entradas += m.quantidade;
+          else existing.saidas += m.quantidade;
+          existing.responsavel_entrega = responsavel;
           resumoMap.set(key, existing);
         });
         setMovResumo(Array.from(resumoMap.values()).sort((a, b) => a.usuario_nome.localeCompare(b.usuario_nome)));
