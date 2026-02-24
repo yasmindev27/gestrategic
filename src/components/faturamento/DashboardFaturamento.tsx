@@ -414,6 +414,16 @@ export function DashboardFaturamento() {
         const metaAvaliados = item.avaliados >= META_AVALIADOS;
         const progressoMeta = Math.min(Math.round((item.avaliados / META_AVALIADOS) * 100), 100);
 
+        // Conclusão não pode ser 100% se a meta não foi batida
+        let taxaConclusao = Math.round(fatorConclusao * 100);
+        if (!metaAvaliados && taxaConclusao === 100) {
+          taxaConclusao = progressoMeta;
+        }
+
+        // Faltante para meta do período e meta diária
+        const faltantePeriodo = Math.max(META_AVALIADOS - item.avaliados, 0);
+        const faltanteDiario = Math.max(metaDiaria - item.avaliados, 0);
+
         return {
           ...item,
           nome,
@@ -423,10 +433,12 @@ export function DashboardFaturamento() {
           score,
           metaAvaliados,
           progressoMeta,
-          taxaConclusao: Math.round(fatorConclusao * 100),
+          taxaConclusao,
           diasSoLancou,
           totalDiasAtivos,
           diasComAvaliacao,
+          faltantePeriodo,
+          faltanteDiario,
         };
       })
       .filter((item) => !perfFilterNome || item.nome.toLowerCase().includes(perfFilterNome.toLowerCase()))
@@ -794,7 +806,7 @@ export function DashboardFaturamento() {
                   <TableHead>Profissional</TableHead>
                   <TableHead>Cargo</TableHead>
                   <TableHead className="text-center">Avaliados</TableHead>
-                  <TableHead className="text-center">Pendentes</TableHead>
+                  <TableHead className="text-center">Faltam p/ Meta</TableHead>
                   <TableHead className="text-center">Dias s/ Avaliação</TableHead>
                   <TableHead className="text-center">Conclusão</TableHead>
                   <TableHead className="text-center">Score</TableHead>
@@ -828,20 +840,27 @@ export function DashboardFaturamento() {
                       </div>
                     </TableCell>
 
-                    {/* Pendentes */}
+                    {/* Pendentes — faltante para meta */}
                     <TableCell className="text-center">
-                      <Badge
-                        variant="outline"
-                        className={
-                          item.pendentes === 0
-                            ? "border-green-400 text-green-700"
-                            : item.pendentes <= 5
-                            ? "border-amber-400 text-amber-700"
-                            : "border-destructive text-destructive"
-                        }
-                      >
-                        {item.pendentes}
-                      </Badge>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <Badge
+                          variant="outline"
+                          className={
+                            item.faltantePeriodo === 0
+                              ? "border-green-400 text-green-700"
+                              : item.faltantePeriodo <= 50
+                              ? "border-amber-400 text-amber-700"
+                              : "border-destructive text-destructive"
+                          }
+                        >
+                          {item.faltantePeriodo === 0 ? "✓ Meta batida" : `-${item.faltantePeriodo}`}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {item.faltanteDiario === 0
+                            ? "Meta diária OK"
+                            : `Faltam ${item.faltanteDiario} hoje (${item.metaDiaria}/dia)`}
+                        </span>
+                      </div>
                     </TableCell>
 
                     {/* Dias que só lançou, não avaliou */}
