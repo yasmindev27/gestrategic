@@ -74,7 +74,7 @@ export function EPIsControl() {
 
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="inventario">
+      <Tabs defaultValue="inventario" onValueChange={(v) => { if (v === 'resumo') fetchResumo(); }}>
         <TabsList>
           <TabsTrigger value="inventario">
             <Warehouse className="h-4 w-4 mr-2" />
