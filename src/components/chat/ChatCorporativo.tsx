@@ -403,7 +403,7 @@ export const ChatCorporativo = ({ initialConversaId }: ChatCorporativoProps = {}
     };
   }, [userId, conversaSelecionada, queryClient]);
 
-  // Realtime para mensagens
+  // Realtime para mensagens - append instantâneo
   useEffect(() => {
     if (!conversaSelecionada) return;
 
@@ -412,7 +412,55 @@ export const ChatCorporativo = ({ initialConversaId }: ChatCorporativoProps = {}
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_mensagens',
+          filter: `conversa_id=eq.${conversaSelecionada}`
+        },
+        async (payload) => {
+          const newMsg = payload.new as Mensagem;
+          // Buscar nome do remetente
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("full_name")
+            .eq("user_id", newMsg.remetente_id)
+            .single();
+
+          const msgComNome: Mensagem = {
+            ...newMsg,
+            remetente_nome: profile?.full_name || "Usuário",
+            lido: false,
+            lidoPorTodos: false,
+          };
+
+          // Append à lista existente sem refetch completo
+          queryClient.setQueryData(
+            ["chat-mensagens", conversaSelecionada],
+            (old: Mensagem[] | undefined) => {
+              if (!old) return [msgComNome];
+              // Evitar duplicatas
+              if (old.some(m => m.id === newMsg.id)) return old;
+              return [...old, msgComNome];
+            }
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_mensagens',
+          filter: `conversa_id=eq.${conversaSelecionada}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["chat-mensagens", conversaSelecionada] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
           schema: 'public',
           table: 'chat_mensagens',
           filter: `conversa_id=eq.${conversaSelecionada}`
