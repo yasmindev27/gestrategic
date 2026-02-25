@@ -74,7 +74,7 @@ export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
           </h2>
           <p className="text-muted-foreground">Gestão de leitos e regulação hospitalar</p>
         </div>
-        <SalusImportModule />
+        
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

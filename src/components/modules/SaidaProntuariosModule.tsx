@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { SalusImportModule } from "@/components/nir";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -978,6 +979,7 @@ export const SaidaProntuariosModule = () => {
           <p className="text-muted-foreground">Controle de fluxo entre setores</p>
         </div>
         <div className="flex flex-wrap gap-2">
+          {isNir && <SalusImportModule />}
           {!isRecepcao && !isClassificacao && (
             <>
               <TooltipProvider>
