@@ -13,8 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Pencil, Trash2, Save, ChevronLeft, Settings2,
-  ClipboardList, FileText, ToggleLeft, List, AlignLeft, Hash,
-  GripVertical, Copy, X, Type, Calendar, CheckSquare, CircleDot
+  ClipboardList, FileText, ToggleLeft, AlignLeft, Hash,
+  GripVertical, CircleDot
 } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading-state";
 import { cn } from "@/lib/utils";
@@ -281,7 +281,6 @@ export const EditorFormulariosAuditoria = () => {
   // Inline editing
   const [selectedPerguntaId, setSelectedPerguntaId] = useState<string | null>(null);
   const [addingToSecaoId, setAddingToSecaoId] = useState<string | null>(null);
-  const [newQuestionTipo, setNewQuestionTipo] = useState<TipoPergunta>("multipla_escolha");
 
   // Seção form
   const [secaoNome, setSecaoNome] = useState("");
