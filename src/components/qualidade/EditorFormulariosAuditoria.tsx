@@ -378,6 +378,28 @@ export const EditorFormulariosAuditoria = () => {
   };
 
   // ---- Formulário CRUD ----
+  const criarFormularioRapido = async () => {
+    const maxOrdem = formularios.length > 0 ? Math.max(...formularios.map(f => f.ordem ?? 0)) : 0;
+    const { data, error } = await supabase
+      .from("auditoria_formularios_config")
+      .insert({
+        nome: "Novo Formulário", tipo: `custom_${Date.now()}`, icone: "clipboard-check",
+        setores: ["Todos"], ordem: maxOrdem + 1, ativo: true,
+      })
+      .select("*")
+      .single();
+
+    if (error) {
+      toast({ title: "Erro", description: "Falha ao criar formulário", variant: "destructive" });
+      return;
+    }
+
+    toast({ title: "Formulário criado!" });
+    await loadAll();
+    // Navigate directly to the editor
+    setSelectedFormulario(data as FormularioConfig);
+  };
+
   const saveFormulario = async () => {
     if (!formularioForm.nome.trim()) {
       toast({ title: "Campo obrigatório", description: "Digite o nome do formulário.", variant: "destructive" });
@@ -386,11 +408,23 @@ export const EditorFormulariosAuditoria = () => {
     const setoresArr = formularioForm.setores.split(",").map(s => s.trim()).filter(Boolean);
     if (isCreatingFormulario) {
       const maxOrdem = formularios.length > 0 ? Math.max(...formularios.map(f => f.ordem ?? 0)) : 0;
-      await supabase.from("auditoria_formularios_config").insert({
-        nome: formularioForm.nome, tipo: `custom_${Date.now()}`, icone: "clipboard-check",
-        setores: setoresArr.length > 0 ? setoresArr : ["Todos"], ordem: maxOrdem + 1, ativo: true,
-      });
+      const { data, error } = await supabase
+        .from("auditoria_formularios_config")
+        .insert({
+          nome: formularioForm.nome, tipo: `custom_${Date.now()}`, icone: "clipboard-check",
+          setores: setoresArr.length > 0 ? setoresArr : ["Todos"], ordem: maxOrdem + 1, ativo: true,
+        })
+        .select("*")
+        .single();
+      if (error) {
+        toast({ title: "Erro", description: "Falha ao criar formulário", variant: "destructive" });
+        return;
+      }
       toast({ title: "Formulário criado!" });
+      setEditFormularioDialog(false);
+      await loadAll();
+      setSelectedFormulario(data as FormularioConfig);
+      return;
     } else if (selectedFormulario) {
       await supabase.from("auditoria_formularios_config").update({ nome: formularioForm.nome, setores: setoresArr }).eq("id", selectedFormulario.id);
       toast({ title: "Formulário atualizado!" });
@@ -410,7 +444,7 @@ export const EditorFormulariosAuditoria = () => {
             <h3 className="font-semibold text-lg">Formulários de Auditoria</h3>
             <p className="text-sm text-muted-foreground mt-0.5">Clique em um formulário para editar suas seções e perguntas</p>
           </div>
-          <Button onClick={() => { setIsCreatingFormulario(true); setFormularioForm({ nome: "", setores: "", destino: "seg_paciente" }); setEditFormularioDialog(true); }}>
+          <Button onClick={criarFormularioRapido}>
             <Plus className="h-4 w-4 mr-2" /> Novo Formulário
           </Button>
         </div>
@@ -489,24 +523,34 @@ export const EditorFormulariosAuditoria = () => {
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <Button variant="ghost" size="sm" onClick={() => setSelectedFormulario(null)}>
-          <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
-        </Button>
-        <div className="flex-1">
-          <h3 className="font-semibold text-lg">{selectedFormulario.nome}</h3>
+      {/* Header - Google Forms style with inline title */}
+      <Card className="bg-primary/5 border-primary/20">
+        <CardContent className="p-5 space-y-3">
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="sm" onClick={() => setSelectedFormulario(null)}>
+              <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
+            </Button>
+            <div className="flex-1" />
+            <Button size="sm" onClick={openAddSecao}>
+              <Plus className="h-4 w-4 mr-1" /> Nova Seção
+            </Button>
+          </div>
+          <Input
+            value={selectedFormulario.nome}
+            onChange={async (e) => {
+              const newName = e.target.value;
+              setSelectedFormulario({ ...selectedFormulario, nome: newName });
+            }}
+            onBlur={async () => {
+              await supabase.from("auditoria_formularios_config").update({ nome: selectedFormulario.nome }).eq("id", selectedFormulario.id);
+              loadAll();
+            }}
+            placeholder="Título do formulário"
+            className="text-xl font-bold border-0 border-b-2 border-transparent focus-visible:border-primary rounded-none px-0 bg-transparent focus-visible:ring-0 h-auto py-1"
+          />
           <p className="text-xs text-muted-foreground">{formSecoes.length} seções · {formSecoes.flatMap(s => perguntas.filter(p => p.secao_id === s.id)).length} perguntas</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => { setIsCreatingFormulario(false); setFormularioForm({ nome: selectedFormulario.nome, setores: selectedFormulario.setores.join(", "), destino: selectedFormulario.tipo }); setEditFormularioDialog(true); }}>
-            <Pencil className="h-4 w-4 mr-1" /> Editar Nome
-          </Button>
-          <Button size="sm" onClick={openAddSecao}>
-            <Plus className="h-4 w-4 mr-1" /> Nova Seção
-          </Button>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* Seções with inline question cards */}
       {formSecoes.length === 0 ? (
