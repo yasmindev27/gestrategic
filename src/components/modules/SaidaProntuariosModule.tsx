@@ -49,7 +49,8 @@ import {
   XCircle,
   Pencil,
   Save,
-  FileStack
+  FileStack,
+  Send
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -58,6 +59,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PdfPatientCounter } from "./PdfPatientCounter";
+import { EntregaProntuariosDialog } from "./EntregaProntuariosDialog";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 import { safeFormatDate, getBrasiliaDateString } from "@/lib/brasilia-time";
@@ -166,6 +168,7 @@ export const SaidaProntuariosModule = () => {
   const [editPacienteNome, setEditPacienteNome] = useState("");
   const [editNascimentoMae, setEditNascimentoMae] = useState("");
   const [editDataAtendimento, setEditDataAtendimento] = useState("");
+  const [entregaDialogOpen, setEntregaDialogOpen] = useState(false);
 
   const canAccess = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
   const canInsert = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
@@ -1123,6 +1126,13 @@ export const SaidaProntuariosModule = () => {
                   </DialogFooter>
                 </DialogContent>
               </Dialog>
+
+              {(isRecepcao || isClassificacao || isNir || isAdmin) && (
+                <Button variant="outline" onClick={() => setEntregaDialogOpen(true)}>
+                  <Send className="h-4 w-4 mr-2" />
+                  Registrar Entrega
+                </Button>
+              )}
             </>
           )}
         </div>
@@ -1970,6 +1980,12 @@ export const SaidaProntuariosModule = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EntregaProntuariosDialog
+        open={entregaDialogOpen}
+        onOpenChange={setEntregaDialogOpen}
+        onSuccess={() => fetchCounts()}
+      />
     </div>
   );
 };
