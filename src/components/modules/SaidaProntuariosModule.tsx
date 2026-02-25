@@ -1380,7 +1380,7 @@ export const SaidaProntuariosModule = () => {
                     <TableHead>Classificação</TableHead>
                     <TableHead>Entrega Class.</TableHead>
                     <TableHead>NIR</TableHead>
-                    <TableHead>Entrega NIR</TableHead>
+                    <TableHead>Entrega Fat.</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
