@@ -128,13 +128,13 @@ const PoliticaPrivacidade = () => {
 
           <h2 className="text-xl font-semibold mt-8">7. Segurança da Informação</h2>
           <ul className="list-disc pl-6 space-y-1 text-muted-foreground">
-            <li>🔒 Criptografia de ponta a ponta em reuniões e transmissões de dados sensíveis.</li>
-            <li>🔒 Armazenamento em nuvem segura com controle de acesso baseado em funções (RBAC).</li>
-            <li>🔒 Backup automático em tempo real, garantindo integridade e disponibilidade contínua dos dados.</li>
-            <li>🔒 Autenticação multifator (MFA) disponível para usuários.</li>
-            <li>🔒 Monitoramento contínuo de ameaças e vulnerabilidades.</li>
-            <li>🔒 Plano de continuidade de negócios com recuperação de desastres.</li>
-            <li>🔒 Treinamento periódico de colaboradores sobre boas práticas de segurança.</li>
+            <li>Criptografia de ponta a ponta em reuniões e transmissões de dados sensíveis.</li>
+            <li>Armazenamento em nuvem segura com controle de acesso baseado em funções (RBAC).</li>
+            <li>Backup automático em tempo real, garantindo integridade e disponibilidade contínua dos dados.</li>
+            <li>Autenticação multifator (MFA) disponível para usuários.</li>
+            <li>Monitoramento contínuo de ameaças e vulnerabilidades.</li>
+            <li>Plano de continuidade de negócios com recuperação de desastres.</li>
+            <li>Treinamento periódico de colaboradores sobre boas práticas de segurança.</li>
           </ul>
 
           <h3 className="text-lg font-medium mt-4">7.1. Infraestrutura de Backup</h3>

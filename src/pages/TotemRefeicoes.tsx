@@ -292,7 +292,7 @@ const TotemRefeicoes = () => {
         });
         
         toast({
-          title: "⚠️ Refeição já registrada",
+          title: "Refeição já registrada",
           description: `${colaborador.nome} já registrou ${tipoRefeicaoInfo[tipoRefeicao].label} hoje.`,
           variant: "destructive",
         });
@@ -438,7 +438,7 @@ const TotemRefeicoes = () => {
         });
         
         toast({
-          title: "⚠️ Refeição já registrada",
+          title: "Refeição já registrada",
           description: `${nomeVisitante} já registrou ${tipoRefeicaoInfo[tipoRefeicao].label} hoje.`,
           variant: "destructive",
         });
