@@ -902,7 +902,7 @@ export const SaidaProntuariosModule = () => {
           <p className="text-muted-foreground">Controle de fluxo entre setores</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {!isRecepcao && (
+          {!isRecepcao && !isClassificacao && (
             <>
               <PdfPatientCounter onAnalysisComplete={setSalusAnalysis} onLaunchComplete={fetchSaidas} />
               <DropdownMenu>

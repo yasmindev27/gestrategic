@@ -7,10 +7,10 @@ import { useUserRole } from "@/hooks/useUserRole";
 
 export const FaturamentoUnificadoModule = () => {
   const [activeTab, setActiveTab] = useState("saida");
-  const { isRecepcao } = useUserRole();
+  const { isRecepcao, isClassificacao } = useUserRole();
 
-  // Recepção só vê a aba de Saída de Prontuários
-  if (isRecepcao) {
+  // Recepção e Classificação só veem a aba de Saída de Prontuários
+  if (isRecepcao || isClassificacao) {
     return (
       <div className="space-y-6">
         <div>
