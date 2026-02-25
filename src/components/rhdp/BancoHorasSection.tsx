@@ -49,6 +49,7 @@ export const BancoHorasSection = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTipo, setFilterTipo] = useState("todos");
+  const [cardFilter, setCardFilter] = useState<"todos" | "credito" | "debito">("todos");
   const [filterDataInicio, setFilterDataInicio] = useState("");
   const [filterDataFim, setFilterDataFim] = useState("");
 
@@ -238,7 +239,8 @@ export const BancoHorasSection = () => {
     const matchesTipo = filterTipo === "todos" || r.tipo === filterTipo;
     const matchesDataInicio = !filterDataInicio || r.data >= filterDataInicio;
     const matchesDataFim = !filterDataFim || r.data <= filterDataFim;
-    return matchesSearch && matchesTipo && matchesDataInicio && matchesDataFim;
+    const matchesCard = cardFilter === "todos" || r.tipo === cardFilter;
+    return matchesSearch && matchesTipo && matchesDataInicio && matchesDataFim && matchesCard;
   });
 
   const totalCreditos = registros
@@ -498,7 +500,10 @@ export const BancoHorasSection = () => {
     <div className="space-y-6">
       {/* Cards de resumo */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'credito' ? 'ring-2 ring-green-500' : ''}`}
+          onClick={() => setCardFilter(cardFilter === 'credito' ? 'todos' : 'credito')}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Créditos</CardTitle>
             <TrendingUp className="h-4 w-4 text-green-500" />
@@ -508,7 +513,10 @@ export const BancoHorasSection = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'debito' ? 'ring-2 ring-red-500' : ''}`}
+          onClick={() => setCardFilter(cardFilter === 'debito' ? 'todos' : 'debito')}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Débitos</CardTitle>
             <TrendingDown className="h-4 w-4 text-red-500" />
@@ -518,7 +526,10 @@ export const BancoHorasSection = () => {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${cardFilter === 'todos' ? 'ring-2 ring-primary' : ''}`}
+          onClick={() => setCardFilter('todos')}
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Saldo Geral</CardTitle>
             <Clock className="h-4 w-4 text-primary" />
