@@ -865,8 +865,9 @@ export const RestauranteModule = () => {
       if (!h || h.length === 0 || h.length === 4) return "Todos";
       return h.map(x => horarioLabels[x] || x).join(", ");
     };
+    const isExtraDieta = (s: SolicitacaoDieta) => s.observacoes?.includes("[DIETA EXTRA]");
     const tableData = minhasSolicitacoesFiltradas.map(s => [
-      s.paciente_nome || "-",
+      isExtraDieta(s) ? "-" : (s.paciente_nome || "-"),
       s.quarto_leito || "-",
       tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
       formatHorarios(s.horarios_refeicoes),
