@@ -765,7 +765,6 @@ export const RestauranteModule = () => {
       "Restrições Alimentares": s.restricoes_alimentares || "-",
       "Horários": s.horarios_refeicoes?.map(h => horariosRefeicaoOptions.find(o => o.value === h)?.label).join(", ") || "-",
       "Solicitado em": format(new Date(s.created_at), "dd/MM/yyyy HH:mm"),
-      "Entregue": s.entregue ? "Sim" : "Não",
       "Observações": s.observacoes || "-"
     }));
     const ws = XLSX.utils.json_to_sheet(dataToExport);
@@ -787,10 +786,10 @@ export const RestauranteModule = () => {
     doc.text(`Período: ${format(new Date(dashboardDataInicio), "dd/MM/yyyy")} a ${format(new Date(dashboardDataFim), "dd/MM/yyyy")}`, 14, 32);
     doc.text(`Total de Dietas: ${dashboardStats.total}`, 14, 38);
 
-    const tableData = dashboardSolicitacoes.map(s => [s.paciente_nome || "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.restricoes_alimentares || "-", s.entregue ? "Sim" : "Não", s.solicitante_nome]);
+    const tableData = dashboardSolicitacoes.map(s => [s.paciente_nome || "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.restricoes_alimentares || "-", s.solicitante_nome]);
     autoTable(doc, {
       startY: 44,
-      head: [["Paciente", "Quarto/Leito", "Tipo de Dieta", "Restrições", "Entregue", "Solicitante"]],
+      head: [["Paciente", "Quarto/Leito", "Tipo de Dieta", "Restrições", "Solicitante"]],
       body: tableData,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [59, 130, 246] },
@@ -833,7 +832,7 @@ export const RestauranteModule = () => {
       "Restrições Alimentares": s.restricoes_alimentares || "-",
       "Horários": s.horarios_refeicoes?.map(h => horariosRefeicaoOptions.find(o => o.value === h)?.label).join(", ") || "Todos",
       "Solicitado em": format(new Date(s.created_at), "dd/MM/yyyy HH:mm"),
-      "Entregue": s.entregue ? "Sim" : "Não",
+      
       "Observações": s.observacoes || "-"
     }));
     const ws = XLSX.utils.json_to_sheet(dataToExport);
@@ -856,10 +855,10 @@ export const RestauranteModule = () => {
     doc.setFont('helvetica', 'normal');
     doc.text(`Total: ${minhasSolicitacoesFiltradas.length} dietas`, 14, 32);
     
-    const tableData = minhasSolicitacoesFiltradas.map(s => [s.paciente_nome || "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.tem_acompanhante ? "Sim" : "Não", s.entregue ? "Sim" : "Não", format(new Date(s.created_at), "dd/MM/yyyy")]);
+    const tableData = minhasSolicitacoesFiltradas.map(s => [s.paciente_nome || "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.tem_acompanhante ? "Sim" : "Não", format(new Date(s.created_at), "dd/MM/yyyy")]);
     autoTable(doc, {
       startY: 38,
-      head: [["Paciente", "Quarto/Leito", "Tipo", "Acomp.", "Entregue", "Solicitado em"]],
+      head: [["Paciente", "Quarto/Leito", "Tipo", "Acomp.", "Solicitado em"]],
       body: tableData,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [59, 130, 246] },
@@ -1042,7 +1041,6 @@ export const RestauranteModule = () => {
                       <TableHead>Horários</TableHead>
                       <TableHead>Acompanhante</TableHead>
                       <TableHead>Solicitado em</TableHead>
-                      <TableHead>Entregue</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1074,16 +1072,6 @@ export const RestauranteModule = () => {
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant={s.entregue ? "default" : "outline"}
-                            size="sm"
-                            className={s.entregue ? "bg-green-600 hover:bg-green-700" : ""}
-                            onClick={() => handleToggleEntregue(s)}
-                          >
-                            {s.entregue ? "✓ Entregue" : "Marcar Entregue"}
-                          </Button>
                         </TableCell>
                       </TableRow>)}
                   </TableBody>
@@ -1155,7 +1143,6 @@ export const RestauranteModule = () => {
                             <TableHead>Tipo de Dieta</TableHead>
                             <TableHead>Solicitante</TableHead>
                             <TableHead>Solicitado em</TableHead>
-                            <TableHead>Entregue</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1178,11 +1165,6 @@ export const RestauranteModule = () => {
                               </TableCell>
                               <TableCell className="text-muted-foreground text-sm">
                                 {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
-                              </TableCell>
-                              <TableCell>
-                                <Badge variant={s.entregue ? "default" : "outline"} className={s.entregue ? "bg-green-600" : ""}>
-                                  {s.entregue ? "Sim" : "Não"}
-                                </Badge>
                               </TableCell>
                             </TableRow>)}
                         </TableBody>
@@ -1448,7 +1430,7 @@ export const RestauranteModule = () => {
                                 <TableHead>Quarto/Leito</TableHead>
                                 <TableHead>Solicitante</TableHead>
                                 <TableHead>Solicitado em</TableHead>
-                                <TableHead>Entregue</TableHead>
+                                
                                 {isAdmin && <TableHead className="w-[100px]">Ações</TableHead>}
                               </TableRow>
                             </TableHeader>
@@ -1486,11 +1468,6 @@ export const RestauranteModule = () => {
                                   </TableCell>
                                   <TableCell className="text-muted-foreground text-sm">
                                     {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Badge variant={s.entregue ? "default" : "outline"} className={s.entregue ? "bg-green-600" : ""}>
-                                      {s.entregue ? "Sim" : "Não"}
-                                    </Badge>
                                   </TableCell>
                                   {isAdmin && (
                                     <TableCell>
