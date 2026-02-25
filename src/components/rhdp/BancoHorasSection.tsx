@@ -313,6 +313,47 @@ export const BancoHorasSection = () => {
     });
   };
 
+  // Helper: parse HH:MM or -HH:MM time string to decimal hours
+  const parseTimeToDecimal = (timeStr: string): number => {
+    if (!timeStr) return 0;
+    const cleaned = String(timeStr).trim();
+    const isNegative = cleaned.startsWith("-");
+    const abs = cleaned.replace(/^-/, "");
+    const parts = abs.split(":");
+    if (parts.length === 2) {
+      const h = parseInt(parts[0], 10) || 0;
+      const m = parseInt(parts[1], 10) || 0;
+      const decimal = h + m / 60;
+      return isNegative ? -decimal : decimal;
+    }
+    return parseFloat(cleaned.replace(",", ".")) || 0;
+  };
+
+  // Helper: format date from various formats to yyyy-MM-dd
+  const parseDateValue = (dataValue: unknown): string => {
+    if (!dataValue) return format(new Date(), "yyyy-MM-dd");
+    if (typeof dataValue === "number") {
+      const date = XLSX.SSF.parse_date_code(dataValue);
+      return `${date.y}-${String(date.m).padStart(2, "0")}-${String(date.d).padStart(2, "0")}`;
+    }
+    const dateStr = String(dataValue).trim();
+    // MM/DD/YY or M/D/YY format (US)
+    const slashParts = dateStr.split("/");
+    if (slashParts.length === 3) {
+      let month = slashParts[0].padStart(2, "0");
+      let day = slashParts[1].padStart(2, "0");
+      let year = slashParts[2];
+      if (year.length === 2) year = "20" + year;
+      return `${year}-${month}-${day}`;
+    }
+    return dateStr;
+  };
+
+  // Detect format: "Saldo Final" column = banco de horas format from external system
+  const isBancoHorasExternalFormat = (row: Record<string, unknown>): boolean => {
+    return "Saldo Final" in row || "Funcionario" in row || "Matricula" in row;
+  };
+
   // Importar do Excel
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -330,64 +371,103 @@ export const BancoHorasSection = () => {
         const worksheet = workbook.Sheets[sheetName];
         const jsonData = XLSX.utils.sheet_to_json(worksheet) as Record<string, unknown>[];
 
+        if (jsonData.length === 0) {
+          toast({ title: "Erro", description: "Planilha vazia.", variant: "destructive" });
+          return;
+        }
+
         let importados = 0;
         let erros = 0;
+        const naoEncontrados: string[] = [];
+        const isExternal = isBancoHorasExternalFormat(jsonData[0]);
 
         for (const row of jsonData) {
-          const colaboradorNome = String(row["Colaborador"] || row["colaborador"] || "");
-          const profile = profiles.find(p => 
-            p.full_name.toLowerCase() === colaboradorNome.toLowerCase()
-          );
+          if (isExternal) {
+            // External banco de horas format: Matricula, Funcionario, Saldo Final, Data Final
+            const nome = String(row["Funcionario"] || "").trim().toUpperCase();
+            const matricula = String(row["Matricula"] || "").trim();
+            const saldoFinalStr = String(row["Saldo Final"] || "0");
+            const dataFinal = row["Data Final"];
 
-          if (!profile) {
-            erros++;
-            continue;
-          }
+            if (!nome) { erros++; continue; }
 
-          const tipoRaw = String(row["Tipo"] || row["tipo"] || "").toLowerCase();
-          const tipo = tipoRaw.includes("créd") || tipoRaw.includes("cred") ? "credito" : "debito";
+            // Try to find profile by name (case-insensitive)
+            const profile = profiles.find(p =>
+              p.full_name.toUpperCase() === nome ||
+              p.full_name.toUpperCase().includes(nome) ||
+              nome.includes(p.full_name.toUpperCase())
+            );
 
-          let dataValue = row["Data"] || row["data"];
-          let dataFormatted: string;
-          
-          if (typeof dataValue === "number") {
-            // Excel date serial number
-            const date = XLSX.SSF.parse_date_code(dataValue);
-            dataFormatted = `${date.y}-${String(date.m).padStart(2, "0")}-${String(date.d).padStart(2, "0")}`;
-          } else {
-            const dateStr = String(dataValue);
-            const parts = dateStr.split("/");
-            if (parts.length === 3) {
-              dataFormatted = `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
-            } else {
-              dataFormatted = dateStr;
+            if (!profile) {
+              erros++;
+              if (!naoEncontrados.includes(nome)) naoEncontrados.push(nome);
+              continue;
             }
-          }
 
-          const horas = parseFloat(String(row["Horas"] || row["horas"] || "0").replace(",", "."));
+            const horasDecimal = parseTimeToDecimal(saldoFinalStr);
+            const tipo = horasDecimal >= 0 ? "credito" : "debito";
+            const horasAbs = Math.abs(horasDecimal);
+            const dataFormatted = parseDateValue(dataFinal);
 
-          const { error } = await supabase.from("banco_horas").insert({
-            funcionario_user_id: profile.user_id,
-            funcionario_nome: profile.full_name,
-            data: dataFormatted,
-            tipo,
-            horas,
-            motivo: String(row["Motivo"] || row["motivo"] || "") || null,
-            observacao: String(row["Observação"] || row["observacao"] || row["Observacao"] || "") || null,
-            registrado_por: user.id,
-            status: "aprovado",
-          });
+            const motivo = row["Tipo de saldo"] ? String(row["Tipo de saldo"]) : null;
 
-          if (error) {
-            erros++;
+            const { error } = await supabase.from("banco_horas").insert({
+              funcionario_user_id: profile.user_id,
+              funcionario_nome: profile.full_name,
+              data: dataFormatted,
+              tipo,
+              horas: Math.round(horasAbs * 100) / 100,
+              motivo,
+              observacao: matricula ? `Matrícula: ${matricula}` : null,
+              registrado_por: user.id,
+              status: "aprovado",
+            });
+
+            if (error) { erros++; } else { importados++; }
           } else {
-            importados++;
+            // Original format: Colaborador, Tipo, Data, Horas
+            const colaboradorNome = String(row["Colaborador"] || row["colaborador"] || "");
+            const profile = profiles.find(p =>
+              p.full_name.toLowerCase() === colaboradorNome.toLowerCase()
+            );
+
+            if (!profile) {
+              erros++;
+              if (colaboradorNome && !naoEncontrados.includes(colaboradorNome)) naoEncontrados.push(colaboradorNome);
+              continue;
+            }
+
+            const tipoRaw = String(row["Tipo"] || row["tipo"] || "").toLowerCase();
+            const tipo = tipoRaw.includes("créd") || tipoRaw.includes("cred") ? "credito" : "debito";
+            const dataFormatted = parseDateValue(row["Data"] || row["data"]);
+            const horas = parseFloat(String(row["Horas"] || row["horas"] || "0").replace(",", "."));
+
+            const { error } = await supabase.from("banco_horas").insert({
+              funcionario_user_id: profile.user_id,
+              funcionario_nome: profile.full_name,
+              data: dataFormatted,
+              tipo,
+              horas,
+              motivo: String(row["Motivo"] || row["motivo"] || "") || null,
+              observacao: String(row["Observação"] || row["observacao"] || row["Observacao"] || "") || null,
+              registrado_por: user.id,
+              status: "aprovado",
+            });
+
+            if (error) { erros++; } else { importados++; }
           }
+        }
+
+        const descParts = [`${importados} registros importados.`];
+        if (erros > 0) descParts.push(`${erros} erros.`);
+        if (naoEncontrados.length > 0) {
+          descParts.push(`Colaboradores não encontrados: ${naoEncontrados.slice(0, 5).join(", ")}${naoEncontrados.length > 5 ? ` e mais ${naoEncontrados.length - 5}` : ""}`);
         }
 
         toast({
           title: "Importação concluída",
-          description: `${importados} registros importados. ${erros > 0 ? `${erros} erros.` : ""}`,
+          description: descParts.join(" "),
+          variant: erros > 0 && importados === 0 ? "destructive" : "default",
         });
 
         loadData();
