@@ -1670,7 +1670,7 @@ export const SaidaProntuariosModule = () => {
 
       {/* Validation Dialog */}
       <Dialog open={validarOpen} onOpenChange={setValidarOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedSaida?.status === "aguardando_classificacao" 
@@ -1678,42 +1678,47 @@ export const SaidaProntuariosModule = () => {
                 : "Conferência NIR"}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div>
-              <label className="text-sm font-medium">Nome do Paciente</label>
-              <Input value={selectedSaida?.paciente_nome || "-"} disabled />
+          <div className="space-y-3 pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Paciente</label>
+                <Input value={selectedSaida?.paciente_nome || "-"} disabled className="h-8 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Dt. Nascimento</label>
+                <Input 
+                  value={safeFormatDate(selectedSaida?.nascimento_mae, "dd/MM/yyyy")} 
+                  disabled className="h-8 text-sm"
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium">Data de Nascimento</label>
-              <Input 
-                value={safeFormatDate(selectedSaida?.nascimento_mae, "dd/MM/yyyy")} 
-                disabled 
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Data de Atendimento</label>
-              <Input 
-                value={safeFormatDate(selectedSaida?.data_atendimento, "dd/MM/yyyy")} 
-                disabled 
-              />
-            </div>
-            
-            {selectedSaida?.status === "aguardando_classificacao" && (
-              <>
-                <div className="flex items-center space-x-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Dt. Atendimento</label>
+                <Input 
+                  value={safeFormatDate(selectedSaida?.data_atendimento, "dd/MM/yyyy")} 
+                  disabled className="h-8 text-sm"
+                />
+              </div>
+              {selectedSaida?.status === "aguardando_classificacao" && (
+                <div className="flex items-center pt-5">
                   <Checkbox
                     id="existeFisicamente"
                     checked={existeFisicamente}
                     onCheckedChange={(checked) => setExisteFisicamente(checked as boolean)}
                   />
-                  <label htmlFor="existeFisicamente" className="text-sm font-medium cursor-pointer">
-                    Prontuário existe fisicamente
+                  <label htmlFor="existeFisicamente" className="text-sm font-medium cursor-pointer ml-2">
+                    Existe fisicamente
                   </label>
                 </div>
-
-                <div className="border rounded-lg p-4 bg-muted/30">
-                  <p className="text-sm font-medium mb-3">Checklist de Verificação</p>
-                  <div className="space-y-3">
+              )}
+            </div>
+            
+            {selectedSaida?.status === "aguardando_classificacao" && (
+              <>
+                <div className="border rounded-lg p-3 bg-muted/30">
+                  <p className="text-sm font-medium mb-2">Checklist de Verificação</p>
+                  <div className="space-y-2">
                     {[
                       { key: "carimbo_enfermagem", label: "Carimbo e assinatura Enfermagem" },
                       { key: "evolucao", label: "Evolução" },
@@ -1721,7 +1726,7 @@ export const SaidaProntuariosModule = () => {
                       { key: "pedidos_exames", label: "Pedidos de exames" },
                       { key: "alta_medica", label: "Alta médica" },
                     ].map((item) => (
-                      <div key={item.key} className="flex items-center justify-between gap-3">
+                      <div key={item.key} className="flex items-center justify-between gap-2">
                         <span className="text-sm">{item.label}</span>
                         <Select
                           value={checklistValidacao[item.key as keyof typeof checklistValidacao]}
@@ -1729,7 +1734,7 @@ export const SaidaProntuariosModule = () => {
                             setChecklistValidacao((prev) => ({ ...prev, [item.key]: val }))
                           }
                         >
-                          <SelectTrigger className="w-[160px] h-8 text-xs">
+                          <SelectTrigger className="w-[140px] h-7 text-xs">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
@@ -1744,22 +1749,24 @@ export const SaidaProntuariosModule = () => {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium">Observação do checklist (opcional)</label>
+                  <label className="text-xs font-medium text-muted-foreground">Observação do checklist (opcional)</label>
                   <Textarea
                     value={observacaoChecklist}
                     onChange={(e) => setObservacaoChecklist(e.target.value)}
                     placeholder="Observações sobre os itens verificados..."
+                    className="min-h-[60px]"
                   />
                 </div>
               </>
             )}
             
             <div>
-              <label className="text-sm font-medium">Observações gerais (opcional)</label>
+              <label className="text-xs font-medium text-muted-foreground">Observações gerais (opcional)</label>
               <Textarea
                 value={observacao}
                 onChange={(e) => setObservacao(e.target.value)}
                 placeholder="Adicione observações..."
+                className="min-h-[60px]"
               />
             </div>
           </div>
