@@ -135,6 +135,7 @@ export const SaidaProntuariosModule = () => {
   const [nascimentoMae, setNascimentoMae] = useState("");
   const [dataAtendimento, setDataAtendimento] = useState("");
   const [possuiCarimboMedico, setPossuiCarimboMedico] = useState(false);
+  const [observacaoSaida, setObservacaoSaida] = useState("");
   const [existeFisicamente, setExisteFisicamente] = useState(true);
   const [observacao, setObservacao] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -319,6 +320,7 @@ export const SaidaProntuariosModule = () => {
           nascimento_mae: nascimentoMae || null,
           data_atendimento: dataAtendimento,
           possui_carimbo_medico: possuiCarimboMedico,
+          observacao_classificacao: observacaoSaida.trim() || null,
           registrado_recepcao_por: userId,
           registrado_recepcao_em: new Date().toISOString(),
           status: "aguardando_classificacao",
@@ -341,6 +343,7 @@ export const SaidaProntuariosModule = () => {
       setNascimentoMae("");
       setDataAtendimento("");
       setPossuiCarimboMedico(false);
+      setObservacaoSaida("");
       fetchSaidas();
     } catch (error) {
       console.error("Error:", error);
@@ -929,6 +932,15 @@ export const SaidaProntuariosModule = () => {
                       {!possuiCarimboMedico && (
                         <p className="text-xs text-destructive mt-2">⚠ É obrigatório confirmar o carimbo médico para registrar.</p>
                       )}
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Observação</label>
+                      <Textarea
+                        value={observacaoSaida}
+                        onChange={(e) => setObservacaoSaida(e.target.value)}
+                        placeholder="Observações adicionais (opcional)..."
+                        rows={2}
+                      />
                     </div>
                   </div>
                   <DialogFooter>
