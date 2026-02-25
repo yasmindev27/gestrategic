@@ -161,10 +161,10 @@ export const SaidaProntuariosModule = () => {
   const canValidateNir = isNir || isAdmin;
   const isFullAccessRole = isFaturamento || isAdmin || isNir;
 
-  // Data de referência no fuso de Brasília
+  // Data de referência no fuso de Brasília (UTC-3) com offset explícito para filtros de created_at
   const hoje = getBrasiliaDateString();
-  const inicioHoje = `${hoje}T00:00:00`;
-  const fimHoje = `${hoje}T23:59:59`;
+  const inicioHoje = `${hoje}T00:00:00-03:00`;
+  const fimHoje = `${hoje}T23:59:59-03:00`;
 
   // Pagination
   const PAGE_SIZE = 100;
