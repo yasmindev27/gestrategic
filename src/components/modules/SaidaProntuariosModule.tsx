@@ -1102,7 +1102,7 @@ export const SaidaProntuariosModule = () => {
                 </DialogContent>
               </Dialog>
 
-              <Dialog open={newFolhaAvulsaOpen} onOpenChange={setNewFolhaAvulsaOpen}>
+              {!isRecepcao && !isClassificacao && <Dialog open={newFolhaAvulsaOpen} onOpenChange={setNewFolhaAvulsaOpen}>
                 <DialogTrigger asChild>
                   <Button variant="secondary">
                     <FileStack className="h-4 w-4 mr-2" />
@@ -1176,9 +1176,9 @@ export const SaidaProntuariosModule = () => {
                     </Button>
                   </DialogFooter>
                 </DialogContent>
-              </Dialog>
+              </Dialog>}
 
-              {(isRecepcao || isClassificacao || isNir || isAdmin) && (
+              {(isNir || isAdmin) && (
                 <Button variant="outline" onClick={() => setEntregaDialogOpen(true)}>
                   <Send className="h-4 w-4 mr-2" />
                   Registrar Entrega
