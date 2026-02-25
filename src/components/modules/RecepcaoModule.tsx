@@ -50,40 +50,6 @@ export const RecepcaoModule = () => {
             </Button>
           </CardContent>
         </Card>
-
-        <Card className="opacity-60 cursor-not-allowed">
-          <CardHeader className="text-center pb-2">
-            <div className="mx-auto p-4 bg-muted rounded-full w-fit">
-              <UserCheck className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <CardTitle className="mt-4 text-muted-foreground">Check-in Pacientes</CardTitle>
-            <CardDescription>
-              Registro de entrada de pacientes (em breve)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Button variant="outline" className="w-full" disabled>
-              Em Breve
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="opacity-60 cursor-not-allowed">
-          <CardHeader className="text-center pb-2">
-            <div className="mx-auto p-4 bg-muted rounded-full w-fit">
-              <FileText className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <CardTitle className="mt-4 text-muted-foreground">Documentação</CardTitle>
-            <CardDescription>
-              Gestão de documentos e formulários (em breve)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Button variant="outline" className="w-full" disabled>
-              Em Breve
-            </Button>
-          </CardContent>
-        </Card>
       </div>
     </div>
   );
