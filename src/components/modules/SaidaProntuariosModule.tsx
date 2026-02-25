@@ -1577,12 +1577,11 @@ export const SaidaProntuariosModule = () => {
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <Button variant="outline" size="sm" className="text-xs h-7 gap-1">
-                                    <Send className="h-3 w-3" />
                                     {safeFormatDate(entrega.data_hora, "dd/MM HH:mm")}
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-56 p-3">
-                                  <p className="text-sm font-medium mb-2">Entrega Recepção → Classificação</p>
+                                  <p className="text-sm font-medium mb-2">Entrega Recepção - Classificação</p>
                                   <div className="space-y-1 text-sm">
                                     <p><strong>Entregador:</strong> {entrega.entregador_nome}</p>
                                     <p><strong>Recebido por:</strong> {entrega.responsavel_recebimento_nome}</p>
@@ -1611,12 +1610,11 @@ export const SaidaProntuariosModule = () => {
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <Button variant="outline" size="sm" className="text-xs h-7 gap-1">
-                                    <Send className="h-3 w-3" />
                                     {safeFormatDate(entrega.data_hora, "dd/MM HH:mm")}
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-56 p-3">
-                                  <p className="text-sm font-medium mb-2">Entrega Classificação → NIR</p>
+                                  <p className="text-sm font-medium mb-2">Entrega Classificação - NIR</p>
                                   <div className="space-y-1 text-sm">
                                     <p><strong>Entregador:</strong> {entrega.entregador_nome}</p>
                                     <p><strong>Recebido por:</strong> {entrega.responsavel_recebimento_nome}</p>
@@ -1638,12 +1636,11 @@ export const SaidaProntuariosModule = () => {
                               <Popover>
                                 <PopoverTrigger asChild>
                                   <Button variant="outline" size="sm" className="text-xs h-7 gap-1">
-                                    <Send className="h-3 w-3" />
                                     {safeFormatDate(entrega.data_hora, "dd/MM HH:mm")}
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-56 p-3">
-                                  <p className="text-sm font-medium mb-2">Entrega NIR → Faturamento</p>
+                                  <p className="text-sm font-medium mb-2">Entrega NIR - Faturamento</p>
                                   <div className="space-y-1 text-sm">
                                     <p><strong>Entregador:</strong> {entrega.entregador_nome}</p>
                                     <p><strong>Recebido por:</strong> {entrega.responsavel_recebimento_nome}</p>
