@@ -187,8 +187,8 @@ export const SaidaProntuariosModule = () => {
         supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
           .eq("is_folha_avulsa", false)
           .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%")
-          .gte("data_atendimento", hoje)
-          .lte("data_atendimento", hoje),
+          .gte("created_at", hoje + "T00:00:00")
+          .lte("created_at", hoje + "T23:59:59"),
         supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
           .eq("is_folha_avulsa", true),
         supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
@@ -219,9 +219,10 @@ export const SaidaProntuariosModule = () => {
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
-    // Recepção e Classificação veem somente registros do dia
+    // Recepção e Classificação veem somente registros lançados no dia
     if (!isFullAccessRole) {
-      query = query.eq("data_atendimento", hoje);
+      query = query.gte("created_at", hoje + "T00:00:00")
+                   .lte("created_at", hoje + "T23:59:59");
     }
 
     if (debouncedSearchTerm) query = query.ilike("paciente_nome", `%${debouncedSearchTerm}%`);
@@ -248,9 +249,10 @@ export const SaidaProntuariosModule = () => {
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
-    // Recepção e Classificação veem somente registros do dia
+    // Recepção e Classificação veem somente registros lançados no dia
     if (!isFullAccessRole) {
-      query = query.eq("data_atendimento", hoje);
+      query = query.gte("created_at", hoje + "T00:00:00")
+                   .lte("created_at", hoje + "T23:59:59");
     }
 
     if (debouncedFolhasSearch) query = query.ilike("paciente_nome", `%${debouncedFolhasSearch}%`);
@@ -271,9 +273,10 @@ export const SaidaProntuariosModule = () => {
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
-    // Recepção e Classificação veem somente registros do dia
+    // Recepção e Classificação veem somente registros lançados no dia
     if (!isFullAccessRole) {
-      query = query.eq("data_atendimento", hoje);
+      query = query.gte("created_at", hoje + "T00:00:00")
+                   .lte("created_at", hoje + "T23:59:59");
     }
 
     if (debouncedFaltantesSearch) query = query.ilike("paciente_nome", `%${debouncedFaltantesSearch}%`);
