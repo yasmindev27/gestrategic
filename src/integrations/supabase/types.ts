@@ -4738,6 +4738,7 @@ export type Database = {
       saida_prontuarios: {
         Row: {
           cadastro_conferido: boolean | null
+          checklist_validacao: Json | null
           conferido_nir_em: string | null
           conferido_nir_por: string | null
           created_at: string
@@ -4761,6 +4762,7 @@ export type Database = {
         }
         Insert: {
           cadastro_conferido?: boolean | null
+          checklist_validacao?: Json | null
           conferido_nir_em?: string | null
           conferido_nir_por?: string | null
           created_at?: string
@@ -4784,6 +4786,7 @@ export type Database = {
         }
         Update: {
           cadastro_conferido?: boolean | null
+          checklist_validacao?: Json | null
           conferido_nir_em?: string | null
           conferido_nir_por?: string | null
           created_at?: string
