@@ -1380,6 +1380,7 @@ export const SaidaProntuariosModule = () => {
                     <TableHead>Classificação</TableHead>
                     <TableHead>Entrega Class.</TableHead>
                     <TableHead>NIR</TableHead>
+                    <TableHead>Entrega NIR</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -1588,6 +1589,29 @@ export const SaidaProntuariosModule = () => {
                         </TableCell>
                         <TableCell>
                           {safeFormatDate(saida.conferido_nir_em, "dd/MM/yy HH:mm")}
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const entrega = entregasMap[saida.id]?.find(e => e.setor_origem === "NIR");
+                            if (!entrega) return <span className="text-xs text-muted-foreground">-</span>;
+                            return (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="text-xs h-auto py-1 px-2">
+                                    {safeFormatDate(entrega.data_hora, "dd/MM/yy HH:mm")}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-56 p-3">
+                                  <p className="text-sm font-medium mb-2">Entrega NIR → Faturamento</p>
+                                  <div className="space-y-1 text-sm">
+                                    <p><strong>Entregador:</strong> {entrega.entregador_nome}</p>
+                                    <p><strong>Recebido por:</strong> {entrega.responsavel_recebimento_nome}</p>
+                                    <p className="text-xs text-muted-foreground">{safeFormatDate(entrega.data_hora, "dd/MM/yyyy HH:mm:ss")}</p>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           {getActionButton(saida)}
