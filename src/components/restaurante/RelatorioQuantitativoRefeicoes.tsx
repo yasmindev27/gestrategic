@@ -534,87 +534,103 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
     doc.text("Dashboard - Resumo por Tipo de Refeição", 14, 40);
 
     // Cards do Dashboard
-    const cardWidth = 52;
+    const cardWidth = 43;
     const cardHeight = 22;
     const cardStartY = 45;
-    const cardGap = 4;
+    const cardGap = 3;
 
-    // Card Café (Amber)
-    doc.setFillColor(255, 243, 224);
+    // Card Café Litro (Cyan)
+    doc.setFillColor(207, 250, 254);
     doc.roundedRect(14, cardStartY, cardWidth, cardHeight, 2, 2, "F");
-    doc.setDrawColor(245, 158, 11);
+    doc.setDrawColor(6, 182, 212);
     doc.setLineWidth(0.8);
     doc.line(14, cardStartY, 14, cardStartY + cardHeight);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
-    doc.setTextColor(120, 53, 15);
-    doc.text("Total Cafe", 18, cardStartY + 6);
+    doc.setTextColor(14, 116, 144);
+    doc.text("Cafe Litro", 18, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(String(totaisGerais.cafe + totaisDietas.dietasCafe), 18, cardStartY + 14);
+    doc.text(totaisGerais.cafeLitro.toFixed(1) + "L", 18, cardStartY + 14);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Totem: ${totaisGerais.cafe} | Dietas: ${totaisDietas.dietasCafe}`, 18, cardStartY + 19);
+    doc.text(`${quantitativos.filter(q => q.cafeLitro > 0).length} dias`, 18, cardStartY + 19);
+
+    // Card Café (Amber)
+    doc.setFillColor(255, 243, 224);
+    doc.roundedRect(14 + cardWidth + cardGap, cardStartY, cardWidth, cardHeight, 2, 2, "F");
+    doc.setDrawColor(245, 158, 11);
+    doc.line(14 + cardWidth + cardGap, cardStartY, 14 + cardWidth + cardGap, cardStartY + cardHeight);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(120, 53, 15);
+    doc.text("Total Cafe", 18 + cardWidth + cardGap, cardStartY + 6);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(String(totaisGerais.cafe + totaisDietas.dietasCafe), 18 + cardWidth + cardGap, cardStartY + 14);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Totem: ${totaisGerais.cafe} | Dietas: ${totaisDietas.dietasCafe}`, 18 + cardWidth + cardGap, cardStartY + 19);
 
     // Card Almoço (Orange)
     doc.setFillColor(255, 237, 213);
-    doc.roundedRect(14 + cardWidth + cardGap, cardStartY, cardWidth, cardHeight, 2, 2, "F");
+    doc.roundedRect(14 + (cardWidth + cardGap) * 2, cardStartY, cardWidth, cardHeight, 2, 2, "F");
     doc.setDrawColor(249, 115, 22);
-    doc.line(14 + cardWidth + cardGap, cardStartY, 14 + cardWidth + cardGap, cardStartY + cardHeight);
+    doc.line(14 + (cardWidth + cardGap) * 2, cardStartY, 14 + (cardWidth + cardGap) * 2, cardStartY + cardHeight);
     doc.setFontSize(8);
     doc.setTextColor(154, 52, 18);
-    doc.text("Total Almoco", 18 + cardWidth + cardGap, cardStartY + 6);
+    doc.text("Total Almoco", 18 + (cardWidth + cardGap) * 2, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(String(totaisGerais.almoco + totaisDietas.dietasAlmoco), 18 + cardWidth + cardGap, cardStartY + 14);
+    doc.text(String(totaisGerais.almoco + totaisDietas.dietasAlmoco), 18 + (cardWidth + cardGap) * 2, cardStartY + 14);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Totem: ${totaisGerais.almoco} | Dietas: ${totaisDietas.dietasAlmoco}`, 18 + cardWidth + cardGap, cardStartY + 19);
+    doc.text(`Totem: ${totaisGerais.almoco} | Dietas: ${totaisDietas.dietasAlmoco}`, 18 + (cardWidth + cardGap) * 2, cardStartY + 19);
 
     // Card Lanche (Pink)
     doc.setFillColor(252, 231, 243);
-    doc.roundedRect(14 + (cardWidth + cardGap) * 2, cardStartY, cardWidth, cardHeight, 2, 2, "F");
+    doc.roundedRect(14 + (cardWidth + cardGap) * 3, cardStartY, cardWidth, cardHeight, 2, 2, "F");
     doc.setDrawColor(236, 72, 153);
-    doc.line(14 + (cardWidth + cardGap) * 2, cardStartY, 14 + (cardWidth + cardGap) * 2, cardStartY + cardHeight);
+    doc.line(14 + (cardWidth + cardGap) * 3, cardStartY, 14 + (cardWidth + cardGap) * 3, cardStartY + cardHeight);
     doc.setFontSize(8);
     doc.setTextColor(157, 23, 77);
-    doc.text("Total Lanche", 18 + (cardWidth + cardGap) * 2, cardStartY + 6);
+    doc.text("Total Lanche", 18 + (cardWidth + cardGap) * 3, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(String(totaisGerais.lanche + totaisDietas.dietasLanche), 18 + (cardWidth + cardGap) * 2, cardStartY + 14);
+    doc.text(String(totaisGerais.lanche + totaisDietas.dietasLanche), 18 + (cardWidth + cardGap) * 3, cardStartY + 14);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Totem: ${totaisGerais.lanche} | Dietas: ${totaisDietas.dietasLanche}`, 18 + (cardWidth + cardGap) * 2, cardStartY + 19);
+    doc.text(`Totem: ${totaisGerais.lanche} | Dietas: ${totaisDietas.dietasLanche}`, 18 + (cardWidth + cardGap) * 3, cardStartY + 19);
 
     // Card Jantar (Indigo)
     doc.setFillColor(224, 231, 255);
-    doc.roundedRect(14 + (cardWidth + cardGap) * 3, cardStartY, cardWidth, cardHeight, 2, 2, "F");
+    doc.roundedRect(14 + (cardWidth + cardGap) * 4, cardStartY, cardWidth, cardHeight, 2, 2, "F");
     doc.setDrawColor(99, 102, 241);
-    doc.line(14 + (cardWidth + cardGap) * 3, cardStartY, 14 + (cardWidth + cardGap) * 3, cardStartY + cardHeight);
+    doc.line(14 + (cardWidth + cardGap) * 4, cardStartY, 14 + (cardWidth + cardGap) * 4, cardStartY + cardHeight);
     doc.setFontSize(8);
     doc.setTextColor(55, 48, 163);
-    doc.text("Total Jantar", 18 + (cardWidth + cardGap) * 3, cardStartY + 6);
+    doc.text("Total Jantar", 18 + (cardWidth + cardGap) * 4, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(String(totaisGerais.jantar + totaisDietas.dietasJantar), 18 + (cardWidth + cardGap) * 3, cardStartY + 14);
+    doc.text(String(totaisGerais.jantar + totaisDietas.dietasJantar), 18 + (cardWidth + cardGap) * 4, cardStartY + 14);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Totem: ${totaisGerais.jantar} | Dietas: ${totaisDietas.dietasJantar}`, 18 + (cardWidth + cardGap) * 3, cardStartY + 19);
+    doc.text(`Totem: ${totaisGerais.jantar} | Dietas: ${totaisDietas.dietasJantar}`, 18 + (cardWidth + cardGap) * 4, cardStartY + 19);
 
     // Card Total Geral (Emerald)
     doc.setFillColor(209, 250, 229);
-    doc.roundedRect(14 + (cardWidth + cardGap) * 4, cardStartY, cardWidth, cardHeight, 2, 2, "F");
+    doc.roundedRect(14 + (cardWidth + cardGap) * 5, cardStartY, cardWidth, cardHeight, 2, 2, "F");
     doc.setDrawColor(5, 150, 105);
-    doc.line(14 + (cardWidth + cardGap) * 4, cardStartY, 14 + (cardWidth + cardGap) * 4, cardStartY + cardHeight);
+    doc.line(14 + (cardWidth + cardGap) * 5, cardStartY, 14 + (cardWidth + cardGap) * 5, cardStartY + cardHeight);
     doc.setFontSize(8);
     doc.setTextColor(6, 95, 70);
-    doc.text("Total Geral", 18 + (cardWidth + cardGap) * 4, cardStartY + 6);
+    doc.text("Total Geral", 18 + (cardWidth + cardGap) * 5, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(String(totaisGeraisCombinados.totalGeral), 18 + (cardWidth + cardGap) * 4, cardStartY + 14);
+    doc.text(String(totaisGeraisCombinados.totalGeral), 18 + (cardWidth + cardGap) * 5, cardStartY + 14);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Totem: ${totaisGerais.totalRefeicoes} | Dietas: ${totaisDietas.totalDietas}`, 18 + (cardWidth + cardGap) * 4, cardStartY + 19);
+    doc.text(`Totem: ${totaisGerais.totalRefeicoes} | Dietas: ${totaisDietas.totalDietas}`, 18 + (cardWidth + cardGap) * 5, cardStartY + 19);
 
     // Reset text color
     doc.setTextColor(0, 0, 0);
