@@ -1266,7 +1266,7 @@ export const SaidaProntuariosModule = () => {
                 </DialogContent>
               </Dialog>}
 
-              {(isNir || isAdmin || isClassificacao || isFaturamento) && (
+              {(isNir || isAdmin || isRecepcao || isClassificacao || isFaturamento) && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
