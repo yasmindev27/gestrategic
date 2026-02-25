@@ -309,7 +309,10 @@ export const CentralAtestadosSection = () => {
     return filePath;
   };
 
-  const calculateDays = (inicio: string, fim: string) => differenceInDays(new Date(fim), new Date(inicio)) + 1;
+  // Parse date-only strings as local time (avoids UTC midnight shift in BRT)
+  const parseLocalDate = (dateStr: string) => new Date(dateStr + 'T00:00:00');
+
+  const calculateDays = (inicio: string, fim: string) => differenceInDays(parseLocalDate(fim), parseLocalDate(inicio)) + 1;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -419,7 +422,7 @@ export const CentralAtestadosSection = () => {
     const rows = filteredAtestados.map(a => [
       a.funcionario_nome,
       a.tipo === "medico" ? "Atestado Médico" : a.tipo === "acompanhante" ? "Acompanhante" : "Declaração",
-      format(new Date(a.data_inicio), "dd/MM/yyyy"), format(new Date(a.data_fim), "dd/MM/yyyy"),
+      format(parseLocalDate(a.data_inicio), "dd/MM/yyyy"), format(parseLocalDate(a.data_fim), "dd/MM/yyyy"),
       a.dias_afastamento, a.cid || "", a.medico_nome || "", a.crm || "", a.observacao || "",
     ]);
     return { headers, rows };
@@ -428,7 +431,7 @@ export const CentralAtestadosSection = () => {
   const handleExportCSV = () => { const { headers, rows } = getExportData(); exportToCSV({ title: 'Central de Atestados', headers, rows, fileName: 'atestados' }); toast({ title: "Exportado", description: "CSV exportado." }); };
   const handleExportPDF = () => { const { headers, rows } = getExportData(); exportToPDF({ title: 'Central de Atestados', headers, rows, fileName: 'atestados', orientation: 'landscape' }); toast({ title: "Exportado", description: "PDF exportado." }); };
   const handleExportExcel = () => {
-    const data = filteredAtestados.map(a => ({ "Colaborador": a.funcionario_nome, "Tipo": a.tipo === "medico" ? "Atestado Médico" : a.tipo === "acompanhante" ? "Acompanhante" : "Declaração", "Data Início": format(new Date(a.data_inicio), "dd/MM/yyyy"), "Data Fim": format(new Date(a.data_fim), "dd/MM/yyyy"), "Dias": a.dias_afastamento, "CID": a.cid || "", "Médico": a.medico_nome || "", "CRM": a.crm || "", "Observação": a.observacao || "" }));
+    const data = filteredAtestados.map(a => ({ "Colaborador": a.funcionario_nome, "Tipo": a.tipo === "medico" ? "Atestado Médico" : a.tipo === "acompanhante" ? "Acompanhante" : "Declaração", "Data Início": format(parseLocalDate(a.data_inicio), "dd/MM/yyyy"), "Data Fim": format(parseLocalDate(a.data_fim), "dd/MM/yyyy"), "Dias": a.dias_afastamento, "CID": a.cid || "", "Médico": a.medico_nome || "", "CRM": a.crm || "", "Observação": a.observacao || "" }));
     const ws = XLSX.utils.json_to_sheet(data); const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Atestados"); XLSX.writeFile(wb, `atestados_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
     toast({ title: "Exportado", description: "Excel exportado." });
   };
@@ -731,8 +734,8 @@ export const CentralAtestadosSection = () => {
                       <TableRow key={a.id} className="hover:bg-muted/50">
                         <TableCell className="font-medium">{a.funcionario_nome}</TableCell>
                         <TableCell>{getTipoBadge(a.tipo)}</TableCell>
-                        <TableCell>{format(new Date(a.data_inicio), "dd/MM/yyyy")}</TableCell>
-                        <TableCell>{format(new Date(a.data_fim), "dd/MM/yyyy")}</TableCell>
+                        <TableCell>{format(parseLocalDate(a.data_inicio), "dd/MM/yyyy")}</TableCell>
+                        <TableCell>{format(parseLocalDate(a.data_fim), "dd/MM/yyyy")}</TableCell>
                         <TableCell className="text-center">
                           <Badge variant={a.dias_afastamento > 10 ? "destructive" : "secondary"}>{a.dias_afastamento}</Badge>
                         </TableCell>
