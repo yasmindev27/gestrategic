@@ -33,6 +33,7 @@ interface BancoHora {
 interface Profile {
   user_id: string;
   full_name: string;
+  matricula: string | null;
 }
 
 export const BancoHorasSection = () => {
@@ -83,7 +84,7 @@ export const BancoHorasSection = () => {
           .order("created_at", { ascending: false }),
         supabase
           .from("profiles")
-          .select("user_id, full_name")
+          .select("user_id, full_name, matricula")
           .order("full_name"),
       ]);
 
@@ -391,11 +392,11 @@ export const BancoHorasSection = () => {
 
             if (!nome) { erros++; continue; }
 
-            // Try to find profile by name (case-insensitive)
-            const profile = profiles.find(p =>
-              p.full_name.toUpperCase() === nome ||
-              p.full_name.toUpperCase().includes(nome) ||
-              nome.includes(p.full_name.toUpperCase())
+            // Try to find profile by matricula first, then by name
+            const profile = profiles.find(p => 
+              p.matricula === matricula
+            ) || profiles.find(p =>
+              p.full_name.toUpperCase() === nome
             );
 
             if (!profile) {
