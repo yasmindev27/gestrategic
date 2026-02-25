@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -90,6 +91,7 @@ interface SaidaProntuario {
   is_folha_avulsa: boolean | null;
   possui_carimbo_medico: boolean | null;
   cadastro_conferido: boolean | null;
+  checklist_validacao: Record<string, string> | null;
   created_at: string;
 }
 
@@ -477,7 +479,7 @@ export const SaidaProntuariosModule = () => {
           existe_fisicamente: existeFisicamente,
           observacao_classificacao: observacao || null,
           checklist_validacao: { ...checklistValidacao, observacao: observacaoChecklist || null } as any,
-          status: "aguardando_nir",
+          status: Object.values(checklistValidacao).some(v => v === "pendente") ? "aguardando_pendencia" : "aguardando_nir",
         })
         .eq("id", selectedSaida.id);
 
@@ -613,6 +615,7 @@ export const SaidaProntuariosModule = () => {
     const statusConfig: Record<string, { label: string; className: string }> = {
       aguardando_classificacao: { label: "Aguardando Classificação", className: "bg-warning text-warning-foreground" },
       aguardando_nir: { label: "Aguardando NIR", className: "bg-info text-info-foreground" },
+      aguardando_pendencia: { label: "Aguardando Resolução de Pendência", className: "bg-orange-500 text-white" },
       aguardando_faturamento: { label: "Aguardando Faturamento", className: "bg-primary text-primary-foreground" },
       em_avaliacao: { label: "Em Avaliação", className: "bg-secondary text-secondary-foreground" },
       concluido: { label: "Concluído", className: "bg-success text-success-foreground" },
@@ -822,17 +825,21 @@ export const SaidaProntuariosModule = () => {
   };
 
   const getExportData = () => {
-    const headers = ['Paciente', 'Data Nasc.', 'Data Atendimento', 'Carimbo Médico', 'Status', 'Recepção', 'Classificação', 'NIR'];
-    const rows = filteredSaidas.map(s => [
+    const headers = ['Paciente', 'Data Nasc.', 'Data Atendimento', 'Pendências', 'Status', 'Recepção', 'Classificação', 'NIR'];
+    const rows = filteredSaidas.map(s => {
+      const cl = s.checklist_validacao as Record<string, string> | null;
+      const pendCount = cl ? Object.entries(cl).filter(([k, v]) => k !== "observacao" && v === "pendente").length : 0;
+      return [
       s.paciente_nome || '-',
       safeFormatDate(s.nascimento_mae, "dd/MM/yyyy"),
       safeFormatDate(s.data_atendimento, "dd/MM/yyyy"),
-      s.possui_carimbo_medico ? 'Sim' : 'Não',
+      pendCount > 0 ? `${pendCount} pendência(s)` : 'Nenhuma',
       s.status,
       safeFormatDate(s.registrado_recepcao_em, "dd/MM/yy HH:mm"),
       safeFormatDate(s.validado_classificacao_em, "dd/MM/yy HH:mm"),
       safeFormatDate(s.conferido_nir_em, "dd/MM/yy HH:mm"),
-    ]);
+      ];
+    });
     return { headers, rows };
   };
 
@@ -1184,6 +1191,7 @@ export const SaidaProntuariosModule = () => {
                       <SelectItem value="todos">Todos</SelectItem>
                       <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
                       <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
+                      <SelectItem value="aguardando_pendencia">Aguardando Resolução de Pendência</SelectItem>
                       <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
                       <SelectItem value="em_avaliacao">Em Avaliação</SelectItem>
                       <SelectItem value="concluido">Concluído</SelectItem>
@@ -1301,7 +1309,7 @@ export const SaidaProntuariosModule = () => {
                     <TableHead>Paciente</TableHead>
                     <TableHead>Data Nasc.</TableHead>
                     <TableHead>Data Atendimento</TableHead>
-                    <TableHead>Carimbo</TableHead>
+                    <TableHead>Pendências</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Recepção</TableHead>
                     <TableHead>Classificação</TableHead>
@@ -1334,11 +1342,51 @@ export const SaidaProntuariosModule = () => {
                           {safeFormatDate(saida.data_atendimento, "dd/MM/yyyy")}
                         </TableCell>
                         <TableCell>
-                          {saida.possui_carimbo_medico ? (
-                            <Badge className="bg-success text-success-foreground text-xs">✓ Sim</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-destructive border-destructive text-xs">✗ Não</Badge>
-                          )}
+                          {(() => {
+                            const cl = saida.checklist_validacao as Record<string, string> | null;
+                            if (!cl) return <span className="text-xs text-muted-foreground">-</span>;
+                            const pendencias = Object.entries(cl)
+                              .filter(([k, v]) => k !== "observacao" && v === "pendente")
+                              .map(([k]) => {
+                                const labels: Record<string, string> = {
+                                  carimbo_enfermagem: "Carimbo Enfermagem",
+                                  evolucao: "Evolução",
+                                  ficha_medicacao: "Ficha de medicação",
+                                  pedidos_exames: "Pedidos de exames",
+                                  alta_medica: "Alta médica",
+                                };
+                                return labels[k] || k;
+                              });
+                            if (pendencias.length === 0) {
+                              return <Badge className="bg-success text-success-foreground text-xs">✓ Nenhuma</Badge>;
+                            }
+                            return (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" size="sm" className="text-xs text-destructive border-destructive h-7">
+                                    <AlertCircle className="h-3 w-3 mr-1" />
+                                    {pendencias.length} pendência{pendencias.length > 1 ? "s" : ""}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-64 p-3">
+                                  <p className="text-sm font-medium mb-2">Itens Pendentes</p>
+                                  <ul className="space-y-1">
+                                    {pendencias.map((p, i) => (
+                                      <li key={i} className="text-sm flex items-center gap-1.5">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
+                                        {p}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                  {cl.observacao && (
+                                    <p className="text-xs text-muted-foreground mt-2 border-t pt-2">
+                                      <strong>Obs:</strong> {cl.observacao}
+                                    </p>
+                                  )}
+                                </PopoverContent>
+                              </Popover>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>{getStatusBadge(saida.status)}</TableCell>
                         <TableCell>
