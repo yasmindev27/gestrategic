@@ -141,6 +141,14 @@ export const SaidaProntuariosModule = () => {
   const [existeFisicamente, setExisteFisicamente] = useState(true);
   const [observacao, setObservacao] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checklistValidacao, setChecklistValidacao] = useState({
+    carimbo_enfermagem: "pendente",
+    evolucao: "pendente",
+    ficha_medicacao: "pendente",
+    pedidos_exames: "pendente",
+    alta_medica: "pendente",
+  });
+  const [observacaoChecklist, setObservacaoChecklist] = useState("");
 
   // Folha Avulsa form states
   const [folhaAvulsaPaciente, setFolhaAvulsaPaciente] = useState("");
@@ -468,6 +476,7 @@ export const SaidaProntuariosModule = () => {
           validado_classificacao_em: new Date().toISOString(),
           existe_fisicamente: existeFisicamente,
           observacao_classificacao: observacao || null,
+          checklist_validacao: { ...checklistValidacao, observacao: observacaoChecklist || null } as any,
           status: "aguardando_nir",
         })
         .eq("id", selectedSaida.id);
@@ -488,6 +497,9 @@ export const SaidaProntuariosModule = () => {
       setValidarOpen(false);
       setSelectedSaida(null);
       setObservacao("");
+      setExisteFisicamente(true);
+      setChecklistValidacao({ carimbo_enfermagem: "pendente", evolucao: "pendente", ficha_medicacao: "pendente", pedidos_exames: "pendente", alta_medica: "pendente" });
+      setObservacaoChecklist("");
       setExisteFisicamente(true);
       fetchSaidas();
     } catch (error) {
@@ -1687,20 +1699,63 @@ export const SaidaProntuariosModule = () => {
             </div>
             
             {selectedSaida?.status === "aguardando_classificacao" && (
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="existeFisicamente"
-                  checked={existeFisicamente}
-                  onCheckedChange={(checked) => setExisteFisicamente(checked as boolean)}
-                />
-                <label htmlFor="existeFisicamente" className="text-sm font-medium cursor-pointer">
-                  Prontuário existe fisicamente
-                </label>
-              </div>
+              <>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="existeFisicamente"
+                    checked={existeFisicamente}
+                    onCheckedChange={(checked) => setExisteFisicamente(checked as boolean)}
+                  />
+                  <label htmlFor="existeFisicamente" className="text-sm font-medium cursor-pointer">
+                    Prontuário existe fisicamente
+                  </label>
+                </div>
+
+                <div className="border rounded-lg p-4 bg-muted/30">
+                  <p className="text-sm font-medium mb-3">Checklist de Verificação</p>
+                  <div className="space-y-3">
+                    {[
+                      { key: "carimbo_enfermagem", label: "Carimbo e assinatura Enfermagem" },
+                      { key: "evolucao", label: "Evolução" },
+                      { key: "ficha_medicacao", label: "Ficha de medicação" },
+                      { key: "pedidos_exames", label: "Pedidos de exames" },
+                      { key: "alta_medica", label: "Alta médica" },
+                    ].map((item) => (
+                      <div key={item.key} className="flex items-center justify-between gap-3">
+                        <span className="text-sm">{item.label}</span>
+                        <Select
+                          value={checklistValidacao[item.key as keyof typeof checklistValidacao]}
+                          onValueChange={(val) =>
+                            setChecklistValidacao((prev) => ({ ...prev, [item.key]: val }))
+                          }
+                        >
+                          <SelectTrigger className="w-[160px] h-8 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sim">Sim</SelectItem>
+                            <SelectItem value="nao_se_aplica">Não se aplica</SelectItem>
+                            <SelectItem value="pendente">Pendente</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium">Observação do checklist (opcional)</label>
+                  <Textarea
+                    value={observacaoChecklist}
+                    onChange={(e) => setObservacaoChecklist(e.target.value)}
+                    placeholder="Observações sobre os itens verificados..."
+                  />
+                </div>
+              </>
             )}
             
             <div>
-              <label className="text-sm font-medium">Observações (opcional)</label>
+              <label className="text-sm font-medium">Observações gerais (opcional)</label>
               <Textarea
                 value={observacao}
                 onChange={(e) => setObservacao(e.target.value)}
