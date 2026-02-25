@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Bug, BarChart3, FlaskConical, Pill, Bell, Microscope, HeartPulse, Activity } from 'lucide-react';
+import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Bug, BarChart3, FlaskConical, Pill, Bell, Microscope, HeartPulse, Activity, Upload } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +36,7 @@ import {
 import { IndicadoresUPA } from '@/components/indicadores';
 import { useTrocasDisponiveis, useTrocasPendentes, useMinhasEscalas } from '@/hooks/useEnfermagem';
 import type { Escala } from '@/components/enfermagem/types';
+import ImportEquipeDialog from '@/components/modules/equipe/ImportEquipeDialog';
 
 export default function EnfermagemModule() {
   const navigate = useNavigate();
@@ -47,6 +48,7 @@ export default function EnfermagemModule() {
   const [setores, setSetores] = useState<string[]>([]);
   const [selectedSetor, setSelectedSetor] = useState<string>('todos');
   const [novaEscalaOpen, setNovaEscalaOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [mainTab, setMainTab] = useState('operacional');
   const [operacionalTab, setOperacionalTab] = useState('meus-plantoes');
@@ -164,12 +166,22 @@ export default function EnfermagemModule() {
                   ))}
                 </SelectContent>
               </Select>
+              <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Importar Escala
+              </Button>
               <Button onClick={() => setNovaEscalaOpen(true)}>
                 <Calendar className="h-4 w-4 mr-2" />
                 Nova Escala
               </Button>
             </div>
           )}
+
+          <ImportEquipeDialog
+            open={importDialogOpen}
+            onOpenChange={setImportDialogOpen}
+            type="escala"
+          />
 
           {/* Cards de estatísticas */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
