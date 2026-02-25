@@ -5,11 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Switch } from "@/components/ui/switch";
-import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Pencil, Trash2, Save, ChevronLeft, Settings2,
@@ -76,7 +73,7 @@ const detectTipoPergunta = (opcoes: string[]): TipoPergunta => {
   return "multipla_escolha";
 };
 
-// ──────── Inline Question Card for Qualidade ────────
+// ──────── Inline Question Card ────────
 const InlineQuestionCard = ({
   pergunta,
   index,
@@ -141,17 +138,14 @@ const InlineQuestionCard = ({
           <div className="flex-1 min-w-0">
             {isSelected ? (
               <>
-                <div className="flex flex-col sm:flex-row gap-3 mb-3">
-                  <Input
-                    value={label}
-                    onChange={(e) => { setLabel(e.target.value); setDirty(true); }}
-                    placeholder="Texto da pergunta"
-                    className="flex-1 text-base font-medium border-0 border-b-2 border-muted rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary bg-transparent"
-                    onClick={e => e.stopPropagation()}
-                  />
-                </div>
+                <Input
+                  value={label}
+                  onChange={(e) => { setLabel(e.target.value); setDirty(true); }}
+                  placeholder="Texto da pergunta"
+                  className="flex-1 text-base font-medium border-0 border-b-2 border-muted rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary bg-transparent mb-3"
+                  onClick={e => e.stopPropagation()}
+                />
 
-                {/* Type selector as cards */}
                 <div className="grid grid-cols-2 gap-2 mb-3">
                   {(Object.entries(TIPO_PERGUNTA_INFO) as [TipoPergunta, typeof TIPO_PERGUNTA_INFO[TipoPergunta]][]).map(([key, inf]) => (
                     <button
@@ -164,14 +158,11 @@ const InlineQuestionCard = ({
                       )}
                     >
                       <span className={cn("mt-0.5", currentTipo === key ? "text-primary" : "text-muted-foreground")}>{inf.icon}</span>
-                      <div>
-                        <p className="font-medium text-xs">{inf.label}</p>
-                      </div>
+                      <p className="font-medium text-xs">{inf.label}</p>
                     </button>
                   ))}
                 </div>
 
-                {/* Options for multipla_escolha */}
                 {currentTipo === "multipla_escolha" && (
                   <div className="space-y-2" onClick={e => e.stopPropagation()}>
                     <div className="flex flex-wrap gap-1.5 min-h-[36px] p-2 border rounded-lg bg-muted/20">
@@ -223,7 +214,6 @@ const InlineQuestionCard = ({
                   </div>
                 )}
 
-                {/* Bottom toolbar */}
                 <div className="flex items-center justify-between pt-3 border-t mt-3" onClick={e => e.stopPropagation()}>
                   <div className="flex gap-1">
                     {dirty && (
@@ -239,7 +229,7 @@ const InlineQuestionCard = ({
               </>
             ) : (
               <>
-                <p className="text-sm font-medium leading-relaxed">{pergunta.label}</p>
+                <p className="text-sm font-medium leading-relaxed">{pergunta.label || <span className="text-muted-foreground italic">Sem título</span>}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <Badge variant="outline" className="text-xs flex items-center gap-1">
                     {info.icon}
@@ -274,9 +264,7 @@ export const EditorFormulariosAuditoria = () => {
 
   // Dialogs
   const [editSecaoDialog, setEditSecaoDialog] = useState(false);
-  const [editFormularioDialog, setEditFormularioDialog] = useState(false);
   const [editingSecao, setEditingSecao] = useState<SecaoConfig | null>(null);
-  const [isCreatingFormulario, setIsCreatingFormulario] = useState(false);
 
   // Inline editing
   const [selectedPerguntaId, setSelectedPerguntaId] = useState<string | null>(null);
@@ -284,9 +272,6 @@ export const EditorFormulariosAuditoria = () => {
 
   // Seção form
   const [secaoNome, setSecaoNome] = useState("");
-
-  // Formulário form
-  const [formularioForm, setFormularioForm] = useState({ nome: "", setores: "", destino: "seg_paciente" });
 
   useEffect(() => { loadAll(); }, []);
 
@@ -376,10 +361,10 @@ export const EditorFormulariosAuditoria = () => {
     loadAll();
   };
 
-  // ---- Formulário CRUD ----
+  // ---- Formulário: criação rápida (1 click) ----
   const criarFormularioRapido = async () => {
     const maxOrdem = formularios.length > 0 ? Math.max(...formularios.map(f => f.ordem ?? 0)) : 0;
-    const { data, error } = await supabase
+    const { data: formData, error: formError } = await supabase
       .from("auditoria_formularios_config")
       .insert({
         nome: "Novo Formulário", tipo: `custom_${Date.now()}`, icone: "clipboard-check",
@@ -388,47 +373,27 @@ export const EditorFormulariosAuditoria = () => {
       .select("*")
       .single();
 
-    if (error) {
+    if (formError || !formData) {
       toast({ title: "Erro", description: "Falha ao criar formulário", variant: "destructive" });
       return;
     }
 
-    toast({ title: "Formulário criado!" });
+    // Auto-create a default first section
+    await supabase
+      .from("auditoria_secoes_config")
+      .insert({ formulario_id: formData.id, nome: "Seção 1", ordem: 1 });
+
+    toast({ title: "Formulário criado!", description: "Edite o título e adicione suas perguntas." });
     await loadAll();
-    // Navigate directly to the editor
-    setSelectedFormulario(data as FormularioConfig);
+    setSelectedFormulario(formData as FormularioConfig);
   };
 
-  const saveFormulario = async () => {
-    if (!formularioForm.nome.trim()) {
-      toast({ title: "Campo obrigatório", description: "Digite o nome do formulário.", variant: "destructive" });
-      return;
-    }
-    const setoresArr = formularioForm.setores.split(",").map(s => s.trim()).filter(Boolean);
-    if (isCreatingFormulario) {
-      const maxOrdem = formularios.length > 0 ? Math.max(...formularios.map(f => f.ordem ?? 0)) : 0;
-      const { data, error } = await supabase
-        .from("auditoria_formularios_config")
-        .insert({
-          nome: formularioForm.nome, tipo: `custom_${Date.now()}`, icone: "clipboard-check",
-          setores: setoresArr.length > 0 ? setoresArr : ["Todos"], ordem: maxOrdem + 1, ativo: true,
-        })
-        .select("*")
-        .single();
-      if (error) {
-        toast({ title: "Erro", description: "Falha ao criar formulário", variant: "destructive" });
-        return;
-      }
-      toast({ title: "Formulário criado!" });
-      setEditFormularioDialog(false);
-      await loadAll();
-      setSelectedFormulario(data as FormularioConfig);
-      return;
-    } else if (selectedFormulario) {
-      await supabase.from("auditoria_formularios_config").update({ nome: formularioForm.nome, setores: setoresArr }).eq("id", selectedFormulario.id);
-      toast({ title: "Formulário atualizado!" });
-    }
-    setEditFormularioDialog(false);
+  const deleteFormulario = async () => {
+    if (!selectedFormulario) return;
+    if (!confirm("Excluir este formulário e todo seu conteúdo?")) return;
+    await supabase.from("auditoria_formularios_config").delete().eq("id", selectedFormulario.id);
+    toast({ title: "Formulário excluído" });
+    setSelectedFormulario(null);
     loadAll();
   };
 
@@ -441,7 +406,7 @@ export const EditorFormulariosAuditoria = () => {
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-lg">Formulários de Auditoria</h3>
-            <p className="text-sm text-muted-foreground mt-0.5">Clique em um formulário para editar suas seções e perguntas</p>
+            <p className="text-sm text-muted-foreground mt-0.5">Clique em um formulário para editar</p>
           </div>
           <Button onClick={criarFormularioRapido}>
             <Plus className="h-4 w-4 mr-2" /> Novo Formulário
@@ -474,45 +439,11 @@ export const EditorFormulariosAuditoria = () => {
               <CardContent className="py-12 text-center text-muted-foreground">
                 <FileText className="h-10 w-10 mx-auto mb-3 opacity-30" />
                 <p>Nenhum formulário cadastrado.</p>
-                <p className="text-sm">Clique em "Novo Formulário" para começar.</p>
+                <p className="text-sm mt-1">Clique em "Novo Formulário" para começar.</p>
               </CardContent>
             </Card>
           )}
         </div>
-
-        {/* Dialog novo formulário */}
-        <Dialog open={editFormularioDialog} onOpenChange={setEditFormularioDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Novo Formulário</DialogTitle>
-              <DialogDescription>Configure o nome e onde este formulário estará disponível</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="space-y-1.5">
-                <Label>Nome do Formulário *</Label>
-                <Input value={formularioForm.nome} onChange={e => setFormularioForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Checklist de Higienização" />
-              </div>
-              <div className="space-y-1.5">
-                <Label>Destino</Label>
-                <Select value={formularioForm.destino} onValueChange={v => setFormularioForm(p => ({ ...p, destino: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="seg_paciente">Auditorias de Segurança do Paciente</SelectItem>
-                    <SelectItem value="auditoria">Auditorias da Qualidade</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1.5">
-                <Label>Setores <span className="text-muted-foreground text-xs">(separados por vírgula, ou vazio para todos)</span></Label>
-                <Input value={formularioForm.setores} onChange={e => setFormularioForm(p => ({ ...p, setores: e.target.value }))} placeholder="Internação, Urgência, Laboratório" />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setEditFormularioDialog(false)}>Cancelar</Button>
-              <Button onClick={saveFormulario}><Save className="h-4 w-4 mr-1" /> Criar Formulário</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
       </div>
     );
   }
@@ -522,7 +453,7 @@ export const EditorFormulariosAuditoria = () => {
 
   return (
     <div className="space-y-5">
-      {/* Header - Google Forms style with inline title */}
+      {/* Header */}
       <Card className="bg-primary/5 border-primary/20">
         <CardContent className="p-5 space-y-3">
           <div className="flex items-center gap-3">
@@ -530,15 +461,17 @@ export const EditorFormulariosAuditoria = () => {
               <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
             </Button>
             <div className="flex-1" />
+            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={deleteFormulario}>
+              <Trash2 className="h-4 w-4 mr-1" /> Excluir
+            </Button>
             <Button size="sm" onClick={openAddSecao}>
               <Plus className="h-4 w-4 mr-1" /> Nova Seção
             </Button>
           </div>
           <Input
             value={selectedFormulario.nome}
-            onChange={async (e) => {
-              const newName = e.target.value;
-              setSelectedFormulario({ ...selectedFormulario, nome: newName });
+            onChange={(e) => {
+              setSelectedFormulario({ ...selectedFormulario, nome: e.target.value });
             }}
             onBlur={async () => {
               await supabase.from("auditoria_formularios_config").update({ nome: selectedFormulario.nome }).eq("id", selectedFormulario.id);
@@ -551,7 +484,7 @@ export const EditorFormulariosAuditoria = () => {
         </CardContent>
       </Card>
 
-      {/* Seções with inline question cards */}
+      {/* Seções */}
       {formSecoes.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
@@ -573,7 +506,6 @@ export const EditorFormulariosAuditoria = () => {
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="px-5 py-4 space-y-3">
-                  {/* Section actions */}
                   <div className="flex gap-2 mb-2">
                     <Button variant="outline" size="sm" onClick={() => openEditSecao(secao)}>
                       <Pencil className="h-3 w-3 mr-1" /> Renomear
@@ -583,7 +515,6 @@ export const EditorFormulariosAuditoria = () => {
                     </Button>
                   </div>
 
-                  {/* Inline editable question cards */}
                   <div className="space-y-3">
                     {secaoPerguntas.map((p, idx) => (
                       <InlineQuestionCard
@@ -598,7 +529,7 @@ export const EditorFormulariosAuditoria = () => {
                     ))}
                   </div>
 
-                  {/* Add question - type selector */}
+                  {/* Add question */}
                   {addingToSecaoId === secao.id ? (
                     <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
                       <CardContent className="p-4 space-y-3">
@@ -639,7 +570,7 @@ export const EditorFormulariosAuditoria = () => {
         </Accordion>
       )}
 
-      {/* ───── Dialog: Seção ───── */}
+      {/* Dialog: Seção */}
       <Dialog open={editSecaoDialog} onOpenChange={setEditSecaoDialog}>
         <DialogContent>
           <DialogHeader>
@@ -658,42 +589,6 @@ export const EditorFormulariosAuditoria = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditSecaoDialog(false)}>Cancelar</Button>
             <Button onClick={saveSecao}><Save className="h-4 w-4 mr-1" /> Salvar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ───── Dialog: Formulário ───── */}
-      <Dialog open={editFormularioDialog} onOpenChange={setEditFormularioDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{isCreatingFormulario ? "Novo Formulário" : "Editar Formulário"}</DialogTitle>
-            <DialogDescription>Altere as configurações básicas do formulário</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <Label>Nome do Formulário *</Label>
-              <Input value={formularioForm.nome} onChange={e => setFormularioForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Checklist de Higienização" />
-            </div>
-            {isCreatingFormulario && (
-              <div className="space-y-1.5">
-                <Label>Destino</Label>
-                <Select value={formularioForm.destino} onValueChange={v => setFormularioForm(p => ({ ...p, destino: v }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="seg_paciente">Auditorias de Segurança do Paciente</SelectItem>
-                    <SelectItem value="auditoria">Auditorias da Qualidade</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div className="space-y-1.5">
-              <Label>Setores <span className="text-muted-foreground text-xs">(separados por vírgula)</span></Label>
-              <Input value={formularioForm.setores} onChange={e => setFormularioForm(p => ({ ...p, setores: e.target.value }))} placeholder="Internação, Urgência, Laboratório" />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditFormularioDialog(false)}>Cancelar</Button>
-            <Button onClick={saveFormulario}><Save className="h-4 w-4 mr-1" /> Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
