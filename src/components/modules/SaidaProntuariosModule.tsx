@@ -1019,7 +1019,7 @@ export const SaidaProntuariosModule = () => {
                         </div>
                       </div>
                       {(!cadastroConferido || !possuiCarimboMedico) && (
-                        <p className="text-xs text-destructive mt-2">⚠ É obrigatório confirmar todos os itens para registrar.</p>
+                        <p className="text-xs text-destructive mt-2">É obrigatório confirmar todos os itens para registrar.</p>
                       )}
                     </div>
                     <div>
@@ -1189,7 +1189,7 @@ export const SaidaProntuariosModule = () => {
                       <SelectValue placeholder="Em Fluxo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="em_fluxo">⚡ Em Fluxo (não concluídos)</SelectItem>
+                      <SelectItem value="em_fluxo">Em Fluxo (não concluídos)</SelectItem>
                       <SelectItem value="todos">Todos</SelectItem>
                       <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
                       <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
@@ -1361,7 +1361,7 @@ export const SaidaProntuariosModule = () => {
                                 return labels[k] || k;
                               });
                             if (pendencias.length === 0) {
-                              return <Badge className="bg-success text-success-foreground text-xs">✓ Nenhuma</Badge>;
+                              return <Badge className="bg-success text-success-foreground text-xs">Nenhuma</Badge>;
                             }
                             return (
                               <Popover>
@@ -1399,7 +1399,7 @@ export const SaidaProntuariosModule = () => {
                             if (saida.pendencia_resolvida_em) {
                               return (
                                 <div className="flex flex-col">
-                                  <Badge className="bg-success text-success-foreground text-xs w-fit">✓ Resolvida</Badge>
+                                  <Badge className="bg-success text-success-foreground text-xs w-fit">Resolvida</Badge>
                                   <span className="text-xs text-muted-foreground mt-0.5">
                                     {safeFormatDate(saida.pendencia_resolvida_em, "dd/MM/yy HH:mm")}
                                   </span>
@@ -1445,7 +1445,7 @@ export const SaidaProntuariosModule = () => {
                             {safeFormatDate(saida.validado_classificacao_em, "dd/MM/yy HH:mm")}
                             {saida.existe_fisicamente !== null && (
                               <span className={`text-xs ${saida.existe_fisicamente ? "text-success" : "text-destructive"}`}>
-                                {saida.existe_fisicamente ? "✓ Existe" : "✗ Não existe"}
+                                {saida.existe_fisicamente ? "Existe" : "Não existe"}
                               </span>
                             )}
                           </div>
