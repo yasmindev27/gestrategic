@@ -900,25 +900,29 @@ export const SaidaProntuariosModule = () => {
           <p className="text-muted-foreground">Controle de fluxo entre setores</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <PdfPatientCounter onAnalysisComplete={setSalusAnalysis} onLaunchComplete={fetchSaidas} />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExportCSV}>
-                <FileText className="h-4 w-4 mr-2" />
-                Exportar CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPDF}>
-                <FileText className="h-4 w-4 mr-2" />
-                Exportar PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {!isRecepcao && (
+            <>
+              <PdfPatientCounter onAnalysisComplete={setSalusAnalysis} onLaunchComplete={fetchSaidas} />
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline">
+                    <Download className="h-4 w-4 mr-2" />
+                    Exportar
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleExportCSV}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Exportar CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportPDF}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Exportar PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          )}
           {canInsert && (
             <>
               <Dialog open={newProntuarioOpen} onOpenChange={setNewProntuarioOpen}>

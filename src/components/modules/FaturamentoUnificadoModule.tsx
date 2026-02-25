@@ -3,9 +3,24 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { FileOutput, Receipt } from "lucide-react";
 import { SaidaProntuariosModule } from "./SaidaProntuariosModule";
 import { FaturamentoModule } from "./FaturamentoModule";
+import { useUserRole } from "@/hooks/useUserRole";
 
 export const FaturamentoUnificadoModule = () => {
   const [activeTab, setActiveTab] = useState("saida");
+  const { isRecepcao } = useUserRole();
+
+  // Recepção só vê a aba de Saída de Prontuários
+  if (isRecepcao) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-2xl font-bold text-foreground">Faturamento</h2>
+          <p className="text-muted-foreground">Gestão de prontuários e faturamento</p>
+        </div>
+        <SaidaProntuariosModule />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
