@@ -940,7 +940,20 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
               )}
 
               {/* KPIs Resumo Geral */}
-              <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-7 gap-4 mb-6">
+                {/* Café Litro */}
+                <div className="p-4 bg-cyan-50 rounded-lg border-l-4 border-cyan-500">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Droplets className="h-4 w-4 text-cyan-600" />
+                    <p className="text-sm text-muted-foreground">Total Café Litro</p>
+                  </div>
+                  <p className="text-2xl font-bold text-cyan-700">
+                    {totaisGerais.cafeLitro.toFixed(1)}L
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {quantitativos.filter(q => q.cafeLitro > 0).length} dias registrados
+                  </p>
+                </div>
                 <div className="p-4 bg-amber-50 rounded-lg border-l-4 border-amber-500">
                   <div className="flex items-center gap-2 mb-1">
                     <Coffee className="h-4 w-4 text-amber-600" />
