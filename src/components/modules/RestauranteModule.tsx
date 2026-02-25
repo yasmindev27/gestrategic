@@ -682,7 +682,7 @@ export const RestauranteModule = () => {
     const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
     const { doc, logoImg } = await createStandardPdf('Solicitações de Dieta para Pacientes', 'landscape');
     const hrLabels: Record<string, string> = { cafe: "Café da Manhã", almoco: "Almoço", lanche: "Café da Tarde", jantar: "Jantar" };
-    const fmtHr = (h: string[] | null) => (!h || h.length === 0 || h.length === 4) ? "Todos" : h.map(x => hrLabels[x] || x).join(", ");
+    const fmtHr = (h: string[] | null) => (!h || h.length === 0) ? "Café da Manhã, Almoço, Café da Tarde, Jantar" : h.map(x => hrLabels[x] || x).join(", ");
     autoTable(doc, {
       head: [["Paciente", "Quarto", "Dieta", "Refeições", "Período", "Status"]],
       body: todasSolicitacoes.map(s => [
@@ -796,7 +796,7 @@ export const RestauranteModule = () => {
     doc.text(`Total de Dietas: ${dashboardStats.total}`, 14, 38);
 
     const hrLabels2: Record<string, string> = { cafe: "Café da Manhã", almoco: "Almoço", lanche: "Café da Tarde", jantar: "Jantar" };
-    const fmtHr2 = (h: string[] | null) => (!h || h.length === 0 || h.length === 4) ? "Todos" : h.map(x => hrLabels2[x] || x).join(", ");
+    const fmtHr2 = (h: string[] | null) => (!h || h.length === 0) ? "Café da Manhã, Almoço, Café da Tarde, Jantar" : h.map(x => hrLabels2[x] || x).join(", ");
     const tableData = dashboardSolicitacoes.map(s => [
       s.paciente_nome || "-",
       s.quarto_leito || "-",
@@ -880,7 +880,7 @@ export const RestauranteModule = () => {
       jantar: "Jantar",
     };
     const formatHorarios = (h: string[] | null) => {
-      if (!h || h.length === 0 || h.length === 4) return "Todos";
+      if (!h || h.length === 0) return "Café da Manhã, Almoço, Café da Tarde, Jantar";
       return h.map(x => horarioLabels[x] || x).join(", ");
     };
     const isExtraDieta = (s: SolicitacaoDieta) => s.observacoes?.includes("[DIETA EXTRA]");
