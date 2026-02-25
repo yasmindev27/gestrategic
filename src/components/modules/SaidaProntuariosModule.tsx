@@ -52,7 +52,6 @@ import {
   Pencil,
   Save,
   FileStack,
-  Send,
   Trash2
 } from "lucide-react";
 import {
@@ -1270,7 +1269,7 @@ export const SaidaProntuariosModule = () => {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button variant="outline" onClick={() => setEntregaDialogOpen(true)}>
-                        <Send className="h-4 w-4 mr-2" />
+                        <FileOutput className="h-4 w-4 mr-2" />
                         Registrar Entrega
                       </Button>
                     </TooltipTrigger>
