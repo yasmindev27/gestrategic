@@ -1183,7 +1183,7 @@ export const SaidaProntuariosModule = () => {
                 </DialogContent>
               </Dialog>
 
-              {!isRecepcao && !isClassificacao && <Dialog open={newFolhaAvulsaOpen} onOpenChange={setNewFolhaAvulsaOpen}>
+              {!isClassificacao && <Dialog open={newFolhaAvulsaOpen} onOpenChange={setNewFolhaAvulsaOpen}>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1266,7 +1266,7 @@ export const SaidaProntuariosModule = () => {
                 </DialogContent>
               </Dialog>}
 
-              {(isNir || isAdmin || isRecepcao || isClassificacao || isFaturamento) && (
+              {(isNir || isAdmin || isClassificacao || isFaturamento) && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
