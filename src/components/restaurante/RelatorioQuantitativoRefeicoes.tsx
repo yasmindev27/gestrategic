@@ -795,10 +795,10 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
         ],
         [
           { content: "Cafe Litro", styles: { halign: "center", fillColor: [147, 197, 253] as [number, number, number], textColor: [30, 58, 138], fontStyle: "bold" } },
-          { content: "Café Manhã", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
-          { content: "Almoco", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
-          { content: "Café Tarde", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
-          { content: "Jantar", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
+          { content: "Café Manhã\n05:30-09:59", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
+          { content: "Almoço\n10:00-14:59", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
+          { content: "Café Tarde\n15:00-17:59", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
+          { content: "Jantar\n18:00-23:59", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
           { content: "Subtotal", styles: { halign: "center", fillColor: [147, 197, 253] as [number, number, number], textColor: [30, 58, 138], fontStyle: "bold" } },
           { content: "Café Manhã", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
           { content: "Almoco", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
@@ -1160,27 +1160,39 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                           </div>
                         </TableHead>
                         <TableHead className="text-center bg-blue-100 text-blue-800">
-                          <div className="flex items-center justify-center gap-1">
-                            <Coffee className="h-3 w-3" />
-                            Café
+                          <div className="flex flex-col items-center justify-center gap-0.5">
+                            <div className="flex items-center gap-1">
+                              <Coffee className="h-3 w-3" />
+                              Café
+                            </div>
+                            <span className="text-[10px] font-normal opacity-70">05:30–09:59</span>
                           </div>
                         </TableHead>
                         <TableHead className="text-center bg-blue-100 text-blue-800">
-                          <div className="flex items-center justify-center gap-1">
-                            <Sun className="h-3 w-3" />
-                            Almoço
+                          <div className="flex flex-col items-center justify-center gap-0.5">
+                            <div className="flex items-center gap-1">
+                              <Sun className="h-3 w-3" />
+                              Almoço
+                            </div>
+                            <span className="text-[10px] font-normal opacity-70">10:00–14:59</span>
                           </div>
                         </TableHead>
                         <TableHead className="text-center bg-blue-100 text-blue-800">
-                          <div className="flex items-center justify-center gap-1">
-                            <Cookie className="h-3 w-3" />
-                            Lanche
+                          <div className="flex flex-col items-center justify-center gap-0.5">
+                            <div className="flex items-center gap-1">
+                              <Cookie className="h-3 w-3" />
+                              Lanche
+                            </div>
+                            <span className="text-[10px] font-normal opacity-70">15:00–17:59</span>
                           </div>
                         </TableHead>
                         <TableHead className="text-center bg-blue-100 text-blue-800">
-                          <div className="flex items-center justify-center gap-1">
-                            <Moon className="h-3 w-3" />
-                            Jantar
+                          <div className="flex flex-col items-center justify-center gap-0.5">
+                            <div className="flex items-center gap-1">
+                              <Moon className="h-3 w-3" />
+                              Jantar
+                            </div>
+                            <span className="text-[10px] font-normal opacity-70">18:00–23:59</span>
                           </div>
                         </TableHead>
                         <TableHead className="text-center bg-gray-200 text-gray-800">
