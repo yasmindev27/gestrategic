@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Bug, BarChart3, FlaskConical, Pill, Bell, Microscope, HeartPulse, Activity, Upload } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -166,14 +167,28 @@ export default function EnfermagemModule() {
                   ))}
                 </SelectContent>
               </Select>
-              <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
-                <Upload className="h-4 w-4 mr-2" />
-                Importar Escala
-              </Button>
-              <Button onClick={() => setNovaEscalaOpen(true)}>
-                <Calendar className="h-4 w-4 mr-2" />
-                Nova Escala
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+                      <Upload className="h-4 w-4 mr-2" />
+                      Importar Escala
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Importar escalas de enfermagem a partir de planilha Excel</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button onClick={() => setNovaEscalaOpen(true)}>
+                      <Calendar className="h-4 w-4 mr-2" />
+                      Nova Escala
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Criar uma nova escala de plantão manualmente</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           )}
 

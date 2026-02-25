@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { AlertTriangle, ArrowLeft, CheckCircle2 } from "lucide-react";
 import { ReportarIncidenteRapido } from "./ReportarIncidenteRapido";
 
@@ -31,15 +32,29 @@ export function ReportarIncidenteDialog({ onSectionChange }: ReportarIncidenteDi
                 </p>
               </div>
               <div className="flex gap-3 pt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setReporteEnviado(false)}
-                >
-                  Reportar outro incidente
-                </Button>
-                <Button onClick={() => onSectionChange?.("dashboard")}>
-                  Voltar ao Dashboard
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setReporteEnviado(false)}
+                      >
+                        Reportar outro incidente
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Abrir um novo formulário de notificação</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button onClick={() => onSectionChange?.("dashboard")}>
+                        Voltar ao Dashboard
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Retornar à tela principal</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
           </CardContent>
@@ -52,13 +67,20 @@ export function ReportarIncidenteDialog({ onSectionChange }: ReportarIncidenteDi
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button 
-          variant="ghost" 
-          size="icon"
-          onClick={() => onSectionChange?.("dashboard")}
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => onSectionChange?.("dashboard")}
+              >
+                <ArrowLeft className="h-5 w-5" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Voltar ao Dashboard</TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <AlertTriangle className="h-6 w-6 text-primary" />
