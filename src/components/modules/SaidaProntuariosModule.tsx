@@ -59,7 +59,7 @@ import {
 import { PdfPatientCounter } from "./PdfPatientCounter";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCSV, exportToPDF } from "@/lib/export-utils";
-import { safeFormatDate } from "@/lib/brasilia-time";
+import { safeFormatDate, getBrasiliaDateString } from "@/lib/brasilia-time";
 
 interface AnalysisResult {
   success: boolean;
@@ -157,6 +157,12 @@ export const SaidaProntuariosModule = () => {
   const canInsert = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
   const canValidateClassificacao = isClassificacao || isAdmin;
   const canValidateNir = isNir || isAdmin;
+  const isFullAccessRole = isFaturamento || isAdmin || isNir;
+
+  // Data de referência no fuso de Brasília
+  const hoje = getBrasiliaDateString();
+  const inicioHoje = `${hoje}T00:00:00`;
+  const fimHoje = `${hoje}T23:59:59`;
 
   // Pagination
   const PAGE_SIZE = 100;
@@ -179,20 +185,41 @@ export const SaidaProntuariosModule = () => {
   const fetchCounts = async () => {
     setIsLoading(true);
     try {
-      const hoje = new Date().toISOString().split('T')[0];
+      const restrictedToToday = !isFullAccessRole;
+
+      const regularCountQuery = supabase
+        .from("saida_prontuarios")
+        .select("*", { count: "exact", head: true })
+        .eq("is_folha_avulsa", false)
+        .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%");
+
+      const regularHojeQuery = supabase
+        .from("saida_prontuarios")
+        .select("*", { count: "exact", head: true })
+        .eq("is_folha_avulsa", false)
+        .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%")
+        .gte("created_at", inicioHoje)
+        .lte("created_at", fimHoje);
+
+      const folhasCountQueryBase = supabase
+        .from("saida_prontuarios")
+        .select("*", { count: "exact", head: true })
+        .eq("is_folha_avulsa", true);
+
+      const faltantesCountQueryBase = supabase
+        .from("saida_prontuarios")
+        .select("*", { count: "exact", head: true })
+        .ilike("observacao_classificacao", "%importado via salus%");
+
       const [regularCount, regularHojeCount, folhasCount, salusCount] = await Promise.all([
-        supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
-          .eq("is_folha_avulsa", false)
-          .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%"),
-        supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
-          .eq("is_folha_avulsa", false)
-          .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%")
-          .gte("created_at", hoje + "T00:00:00")
-          .lte("created_at", hoje + "T23:59:59"),
-        supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
-          .eq("is_folha_avulsa", true),
-        supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
-          .ilike("observacao_classificacao", "%importado via salus%"),
+        regularCountQuery,
+        regularHojeQuery,
+        restrictedToToday
+          ? folhasCountQueryBase.gte("created_at", inicioHoje).lte("created_at", fimHoje)
+          : folhasCountQueryBase,
+        restrictedToToday
+          ? faltantesCountQueryBase.gte("created_at", inicioHoje).lte("created_at", fimHoje)
+          : faltantesCountQueryBase,
       ]);
       setTotalSaidasCount(regularCount.count ?? 0);
       setTotalSaidasHojeCount(regularHojeCount.count ?? 0);
@@ -206,9 +233,6 @@ export const SaidaProntuariosModule = () => {
     fetchFaltantesPage(0);
   };
 
-  const isFullAccessRole = isFaturamento || isAdmin || isNir;
-  const hoje = new Date().toISOString().split('T')[0];
-
   const fetchSaidasPage = async (page: number) => {
     const from = page * PAGE_SIZE;
     let query = supabase
@@ -221,8 +245,8 @@ export const SaidaProntuariosModule = () => {
 
     // Recepção e Classificação veem somente registros lançados no dia
     if (!isFullAccessRole) {
-      query = query.gte("created_at", hoje + "T00:00:00")
-                   .lte("created_at", hoje + "T23:59:59");
+      query = query.gte("created_at", inicioHoje)
+                   .lte("created_at", fimHoje);
     }
 
     if (debouncedSearchTerm) query = query.ilike("paciente_nome", `%${debouncedSearchTerm}%`);
@@ -251,8 +275,8 @@ export const SaidaProntuariosModule = () => {
 
     // Recepção e Classificação veem somente registros lançados no dia
     if (!isFullAccessRole) {
-      query = query.gte("created_at", hoje + "T00:00:00")
-                   .lte("created_at", hoje + "T23:59:59");
+      query = query.gte("created_at", inicioHoje)
+                   .lte("created_at", fimHoje);
     }
 
     if (debouncedFolhasSearch) query = query.ilike("paciente_nome", `%${debouncedFolhasSearch}%`);
@@ -275,8 +299,8 @@ export const SaidaProntuariosModule = () => {
 
     // Recepção e Classificação veem somente registros lançados no dia
     if (!isFullAccessRole) {
-      query = query.gte("created_at", hoje + "T00:00:00")
-                   .lte("created_at", hoje + "T23:59:59");
+      query = query.gte("created_at", inicioHoje)
+                   .lte("created_at", fimHoje);
     }
 
     if (debouncedFaltantesSearch) query = query.ilike("paciente_nome", `%${debouncedFaltantesSearch}%`);
