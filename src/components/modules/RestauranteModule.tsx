@@ -403,7 +403,7 @@ export const RestauranteModule = () => {
         solicitante_id: user.id,
         solicitante_nome: userName,
         tipo_dieta: formData.tipo_dieta,
-        paciente_nome: formData.paciente_nome || null,
+        paciente_nome: formData.is_dieta_extra ? formData.observacao_dieta_extra.trim() : (formData.paciente_nome || null),
         paciente_data_nascimento: formData.paciente_data_nascimento || null,
         quarto_leito: formData.quarto_leito || null,
         tem_acompanhante: formData.tem_acompanhante,
