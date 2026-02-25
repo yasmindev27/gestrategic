@@ -107,7 +107,25 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setProntuariosDia(data || []);
+
+      // Filtrar prontuários que já foram entregues por este setor
+      if (data && data.length > 0 && setorInfo) {
+        const ids = data.map(d => d.id);
+        const { data: jaEntregues } = await supabase
+          .from("entregas_prontuarios_itens")
+          .select("saida_prontuario_id, entrega:entregas_prontuarios!inner(setor_origem)")
+          .in("saida_prontuario_id", ids);
+
+        const entreguesDoSetor = new Set(
+          (jaEntregues || [])
+            .filter((e: any) => e.entrega?.setor_origem === setorInfo.origem)
+            .map((e: any) => e.saida_prontuario_id)
+        );
+
+        setProntuariosDia(data.filter(d => !entreguesDoSetor.has(d.id)));
+      } else {
+        setProntuariosDia(data || []);
+      }
     } catch {
       toast({ title: "Erro", description: "Falha ao carregar prontuários do dia.", variant: "destructive" });
     } finally {
