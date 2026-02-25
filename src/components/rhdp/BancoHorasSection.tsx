@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
@@ -10,13 +10,17 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Search, Clock, TrendingUp, TrendingDown, Download, Upload, Filter, FileText, Pencil, Trash2 } from "lucide-react";
+import { Plus, Search, Clock, TrendingUp, TrendingDown, Download, Upload, Filter, FileText, Pencil, Trash2, BarChart3, Trophy, Medal, Award, Users } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
 import { exportToCSV, exportToPDF } from "@/lib/export-utils";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--info))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--accent))'];
 
 interface BancoHora {
   id: string;
@@ -44,6 +48,7 @@ export const BancoHorasSection = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [activeView, setActiveView] = useState("dashboard");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedRegistro, setSelectedRegistro] = useState<BancoHora | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -251,7 +256,63 @@ export const BancoHorasSection = () => {
     .filter(r => r.tipo === "debito")
     .reduce((sum, r) => sum + Number(r.horas), 0);
 
-  // Get export data
+  // Dashboard computed data
+  const top5Creditos = useMemo(() => {
+    const grouped: Record<string, { nome: string; total: number }> = {};
+    registros.filter(r => r.tipo === 'credito').forEach(r => {
+      const key = r.funcionario_user_id;
+      if (!grouped[key]) grouped[key] = { nome: r.funcionario_nome, total: 0 };
+      grouped[key].total += Number(r.horas);
+    });
+    return Object.values(grouped).sort((a, b) => b.total - a.total).slice(0, 5);
+  }, [registros]);
+
+  const top5Debitos = useMemo(() => {
+    const grouped: Record<string, { nome: string; total: number }> = {};
+    registros.filter(r => r.tipo === 'debito').forEach(r => {
+      const key = r.funcionario_user_id;
+      if (!grouped[key]) grouped[key] = { nome: r.funcionario_nome, total: 0 };
+      grouped[key].total += Number(r.horas);
+    });
+    return Object.values(grouped).sort((a, b) => b.total - a.total).slice(0, 5);
+  }, [registros]);
+
+  const saldoPorColaborador = useMemo(() => {
+    const grouped: Record<string, { nome: string; credito: number; debito: number; saldo: number }> = {};
+    registros.forEach(r => {
+      const key = r.funcionario_user_id;
+      if (!grouped[key]) grouped[key] = { nome: r.funcionario_nome, credito: 0, debito: 0, saldo: 0 };
+      if (r.tipo === 'credito') {
+        grouped[key].credito += Number(r.horas);
+      } else {
+        grouped[key].debito += Number(r.horas);
+      }
+      grouped[key].saldo = grouped[key].credito - grouped[key].debito;
+    });
+    return Object.values(grouped).sort((a, b) => b.saldo - a.saldo);
+  }, [registros]);
+
+  const chartDistribuicao = useMemo(() => {
+    const credCount = registros.filter(r => r.tipo === 'credito').length;
+    const debCount = registros.filter(r => r.tipo === 'debito').length;
+    return [
+      { name: 'Créditos', value: credCount },
+      { name: 'Débitos', value: debCount },
+    ].filter(d => d.value > 0);
+  }, [registros]);
+
+  const colaboradoresComCredito = saldoPorColaborador.filter(c => c.saldo > 0).length;
+  const colaboradoresComDebito = saldoPorColaborador.filter(c => c.saldo < 0).length;
+
+  const getRankingIcon = (index: number) => {
+    switch (index) {
+      case 0: return <Trophy className="h-5 w-5 text-yellow-500" />;
+      case 1: return <Medal className="h-5 w-5 text-muted-foreground" />;
+      case 2: return <Award className="h-5 w-5 text-amber-700" />;
+      default: return null;
+    }
+  };
+
   const getExportData = () => {
     const headers = ["Colaborador", "Data", "Tipo", "Horas", "Motivo", "Observação", "Saldo Atual"];
     const rows = filteredRegistros.map(r => [
@@ -498,6 +559,252 @@ export const BancoHorasSection = () => {
 
   return (
     <div className="space-y-6">
+      {/* Tabs Dashboard / Registros */}
+      <Tabs value={activeView} onValueChange={setActiveView}>
+        <TabsList>
+          <TabsTrigger value="dashboard">
+            <BarChart3 className="h-4 w-4 mr-2" />
+            Dashboard
+          </TabsTrigger>
+          <TabsTrigger value="registros">
+            <FileText className="h-4 w-4 mr-2" />
+            Registros
+          </TabsTrigger>
+        </TabsList>
+
+        {/* ===== DASHBOARD TAB ===== */}
+        <TabsContent value="dashboard" className="space-y-6 mt-4">
+          {/* KPI Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <Card className="bg-gradient-to-br from-primary to-primary/80 text-primary-foreground border-0 shadow-lg">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium mb-1 text-primary-foreground/80">Total Registros</p>
+                    <p className="text-3xl font-bold">{registros.length}</p>
+                    <p className="text-sm mt-2 text-primary-foreground/70">{saldoPorColaborador.length} colaboradores</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-primary-foreground/20">
+                    <Users className="h-6 w-6" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium mb-1 text-muted-foreground">Total Créditos</p>
+                    <p className="text-3xl font-bold text-green-600">+{formatHM(totalCreditos)}</p>
+                    <p className="text-sm mt-2 text-muted-foreground">{colaboradoresComCredito} com saldo positivo</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-green-500/10">
+                    <TrendingUp className="h-6 w-6 text-green-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium mb-1 text-muted-foreground">Total Débitos</p>
+                    <p className="text-3xl font-bold text-red-600">-{formatHM(totalDebitos)}</p>
+                    <p className="text-sm mt-2 text-muted-foreground">{colaboradoresComDebito} com saldo negativo</p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-red-500/10">
+                    <TrendingDown className="h-6 w-6 text-red-600" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="shadow-sm">
+              <CardContent className="p-6">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-sm font-medium mb-1 text-muted-foreground">Saldo Geral</p>
+                    <p className={`text-3xl font-bold ${totalCreditos - totalDebitos >= 0 ? "text-green-600" : "text-red-600"}`}>
+                      {totalCreditos - totalDebitos >= 0 ? '+' : ''}{formatHM(totalCreditos - totalDebitos)}
+                    </p>
+                  </div>
+                  <div className="p-3 rounded-xl bg-primary/10">
+                    <Clock className="h-6 w-6 text-primary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Rankings + Chart */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Top 5 Créditos */}
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Trophy className="h-5 w-5 text-green-600" />
+                  Top 5 — Mais Créditos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {top5Creditos.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">Nenhum dado disponível</p>
+                ) : (
+                  top5Creditos.map((item, index) => (
+                    <div
+                      key={item.nome}
+                      className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                        index === 0 ? "bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800" : "bg-muted/50"
+                      }`}
+                    >
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
+                        index === 0 ? "bg-green-400 text-green-900" :
+                        index === 1 ? "bg-muted-foreground/20 text-muted-foreground" :
+                        index === 2 ? "bg-amber-700/20 text-amber-700" :
+                        "bg-muted text-muted-foreground"
+                      }`}>
+                        {index + 1}
+                      </div>
+                      {getRankingIcon(index)}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate text-sm">{item.nome}</p>
+                      </div>
+                      <Badge variant="outline" className="text-green-600 border-green-300">
+                        +{formatHM(item.total)}
+                      </Badge>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Top 5 Débitos */}
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Trophy className="h-5 w-5 text-red-600" />
+                  Top 5 — Mais Débitos
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {top5Debitos.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">Nenhum dado disponível</p>
+                ) : (
+                  top5Debitos.map((item, index) => (
+                    <div
+                      key={item.nome}
+                      className={`flex items-center gap-3 p-3 rounded-lg transition-colors ${
+                        index === 0 ? "bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800" : "bg-muted/50"
+                      }`}
+                    >
+                      <div className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
+                        index === 0 ? "bg-red-400 text-red-900" :
+                        index === 1 ? "bg-muted-foreground/20 text-muted-foreground" :
+                        index === 2 ? "bg-amber-700/20 text-amber-700" :
+                        "bg-muted text-muted-foreground"
+                      }`}>
+                        {index + 1}
+                      </div>
+                      {getRankingIcon(index)}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium truncate text-sm">{item.nome}</p>
+                      </div>
+                      <Badge variant="outline" className="text-red-600 border-red-300">
+                        -{formatHM(item.total)}
+                      </Badge>
+                    </div>
+                  ))
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Distribuição chart */}
+            <Card className="shadow-sm">
+              <CardHeader className="pb-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <BarChart3 className="h-5 w-5 text-primary" />
+                  Distribuição
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {chartDistribuicao.length === 0 ? (
+                  <p className="text-muted-foreground text-center py-4">Nenhum dado disponível</p>
+                ) : (
+                  <ResponsiveContainer width="100%" height={200}>
+                    <PieChart>
+                      <Pie
+                        data={chartDistribuicao}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={80}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ name, value }) => `${name}: ${value}`}
+                      >
+                        {chartDistribuicao.map((_, index) => (
+                          <Cell key={`cell-${index}`} fill={index === 0 ? 'hsl(142, 76%, 36%)' : 'hsl(0, 84%, 60%)'} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+
+                {/* Saldo summary bar */}
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Colaboradores c/ crédito</span>
+                    <span className="font-medium text-green-600">{colaboradoresComCredito}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Colaboradores c/ débito</span>
+                    <span className="font-medium text-red-600">{colaboradoresComDebito}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Saldo zerado</span>
+                    <span className="font-medium">{saldoPorColaborador.filter(c => c.saldo === 0).length}</span>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Top saldos table */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">Saldo por Colaborador</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Colaborador</TableHead>
+                    <TableHead className="text-right">Créditos</TableHead>
+                    <TableHead className="text-right">Débitos</TableHead>
+                    <TableHead className="text-right">Saldo</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {saldoPorColaborador.slice(0, 15).map(c => (
+                    <TableRow key={c.nome}>
+                      <TableCell className="font-medium">{c.nome}</TableCell>
+                      <TableCell className="text-right text-green-600">+{formatHM(c.credito)}</TableCell>
+                      <TableCell className="text-right text-red-600">-{formatHM(c.debito)}</TableCell>
+                      <TableCell className="text-right">
+                        <Badge variant={c.saldo >= 0 ? "outline" : "destructive"} className={c.saldo >= 0 ? "text-green-600 border-green-300" : ""}>
+                          {c.saldo >= 0 ? '+' : ''}{formatHM(c.saldo)}
+                        </Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ===== REGISTROS TAB ===== */}
+        <TabsContent value="registros" className="space-y-6 mt-4">
       {/* Cards de resumo */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card 
@@ -895,6 +1202,8 @@ export const BancoHorasSection = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
