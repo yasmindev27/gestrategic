@@ -1359,8 +1359,8 @@ export const SaidaProntuariosModule = () => {
           </CardContent>
         </Card>
 
-        {/* Prontuários Faltantes */}
-        <Card 
+        {/* Prontuários Faltantes - oculto para NIR */}
+        {!isNir && <Card 
           className={`cursor-pointer hover:bg-destructive/10 transition-colors ${visibleSection === "faltantes" ? "bg-destructive/10 border-destructive ring-2 ring-destructive/30" : "bg-destructive/5 border-destructive/20"}`}
           onClick={() => setVisibleSection(visibleSection === "faltantes" ? null : "faltantes")}
         >
@@ -1375,7 +1375,7 @@ export const SaidaProntuariosModule = () => {
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card>}
       </div>
 
       {/* Table - Prontuários em Fluxo */}
@@ -1824,7 +1824,7 @@ export const SaidaProntuariosModule = () => {
       )}
 
       {/* Prontuários Faltantes - Importados via Salus */}
-      {visibleSection === "faltantes" && (
+      {visibleSection === "faltantes" && !isNir && (
       <Card id="prontuarios-faltantes" className="bg-destructive/5 border-destructive/30">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-4">
