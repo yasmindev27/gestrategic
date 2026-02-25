@@ -769,38 +769,8 @@ export const BancoHorasSection = () => {
             </Card>
           </div>
 
-          {/* Top saldos table */}
-          <Card className="shadow-sm">
-            <CardHeader className="pb-3">
-              <CardTitle className="text-lg">Saldo por Colaborador</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Colaborador</TableHead>
-                    <TableHead className="text-right">Créditos</TableHead>
-                    <TableHead className="text-right">Débitos</TableHead>
-                    <TableHead className="text-right">Saldo</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {saldoPorColaborador.slice(0, 15).map(c => (
-                    <TableRow key={c.nome}>
-                      <TableCell className="font-medium">{c.nome}</TableCell>
-                      <TableCell className="text-right text-green-600">+{formatHM(c.credito)}</TableCell>
-                      <TableCell className="text-right text-red-600">-{formatHM(c.debito)}</TableCell>
-                      <TableCell className="text-right">
-                        <Badge variant={c.saldo >= 0 ? "outline" : "destructive"} className={c.saldo >= 0 ? "text-green-600 border-green-300" : ""}>
-                          {c.saldo >= 0 ? '+' : ''}{formatHM(c.saldo)}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
+
+
         </TabsContent>
 
         {/* ===== REGISTROS TAB ===== */}
