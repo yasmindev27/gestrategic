@@ -53,10 +53,17 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
   const [showColabResults, setShowColabResults] = useState(false);
 
   const getSetorInfo = () => {
-    if (isRecepcao && !isAdmin && !isNir && !isFaturamento) return { origem: "Recepção", destino: "Classificação" };
-    if (isClassificacao && !isAdmin && !isNir && !isFaturamento) return { origem: "Classificação", destino: "NIR" };
-    if (isNir && !isAdmin) return { origem: "NIR", destino: "Faturamento" };
-    if (isAdmin) return { origem: "Admin", destino: "Todos" };
+    if (isAdmin) {
+      // Admin segue o fluxo baseado no setor que ele está operando
+      if (isNir) return { origem: "NIR", destino: "Faturamento" };
+      if (isClassificacao) return { origem: "Classificação", destino: "NIR" };
+      if (isRecepcao) return { origem: "Recepção", destino: "Classificação" };
+      // Admin puro: padrão NIR → Faturamento
+      return { origem: "NIR", destino: "Faturamento" };
+    }
+    if (isRecepcao) return { origem: "Recepção", destino: "Classificação" };
+    if (isClassificacao) return { origem: "Classificação", destino: "NIR" };
+    if (isNir) return { origem: "NIR", destino: "Faturamento" };
     return null;
   };
 
