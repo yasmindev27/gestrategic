@@ -99,6 +99,14 @@ interface SaidaProntuario {
   created_at: string;
 }
 
+interface EntregaInfo {
+  data_hora: string;
+  entregador_nome: string;
+  responsavel_recebimento_nome: string;
+  setor_origem: string;
+  setor_destino: string;
+}
+
 export const SaidaProntuariosModule = () => {
   const { isRecepcao, isClassificacao, isNir, isAdmin, isFaturamento, userId, role, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
@@ -108,6 +116,9 @@ export const SaidaProntuariosModule = () => {
   const [folhasAvulsas, setFolhasAvulsas] = useState<SaidaProntuario[]>([]);
   const [faltantesSalus, setFaltantesSalus] = useState<SaidaProntuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  
+  // Entregas lookup: saida_prontuario_id -> array of EntregaInfo
+  const [entregasMap, setEntregasMap] = useState<Record<string, EntregaInfo[]>>({});
   
   // Contagens reais (independente do limite de 1000 linhas)
   const [totalSaidasCount, setTotalSaidasCount] = useState(0);
@@ -280,8 +291,45 @@ export const SaidaProntuariosModule = () => {
     }
 
     const { data, error } = await query;
-    if (!error && data) setSaidas(data as SaidaProntuario[]);
+    if (!error && data) {
+      setSaidas(data as SaidaProntuario[]);
+      // Fetch entregas for these saidas
+      fetchEntregas(data.map((d: any) => d.id));
+    }
     setSaidasPage(page);
+  };
+
+  const fetchEntregas = async (saidaIds: string[]) => {
+    if (saidaIds.length === 0) { setEntregasMap({}); return; }
+    const { data, error } = await supabase
+      .from("entregas_prontuarios_itens")
+      .select("saida_prontuario_id, entrega_id")
+      .in("saida_prontuario_id", saidaIds);
+    if (error || !data || data.length === 0) { setEntregasMap({}); return; }
+
+    const entregaIds = [...new Set(data.map(d => d.entrega_id))];
+    const { data: entregas } = await supabase
+      .from("entregas_prontuarios")
+      .select("id, data_hora, entregador_nome, responsavel_recebimento_nome, setor_origem, setor_destino")
+      .in("id", entregaIds);
+
+    if (!entregas) { setEntregasMap({}); return; }
+    const entregaById = Object.fromEntries(entregas.map(e => [e.id, e]));
+
+    const map: Record<string, EntregaInfo[]> = {};
+    for (const item of data) {
+      const e = entregaById[item.entrega_id];
+      if (!e) continue;
+      if (!map[item.saida_prontuario_id]) map[item.saida_prontuario_id] = [];
+      map[item.saida_prontuario_id].push({
+        data_hora: e.data_hora,
+        entregador_nome: e.entregador_nome,
+        responsavel_recebimento_nome: e.responsavel_recebimento_nome,
+        setor_origem: e.setor_origem,
+        setor_destino: e.setor_destino,
+      });
+    }
+    setEntregasMap(map);
   };
 
   const fetchFolhasPage = async (page: number) => {
@@ -1328,7 +1376,9 @@ export const SaidaProntuariosModule = () => {
                     <TableHead>Resolução</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Recepção</TableHead>
+                    <TableHead>Entrega Rec.</TableHead>
                     <TableHead>Classificação</TableHead>
+                    <TableHead>Entrega Class.</TableHead>
                     <TableHead>NIR</TableHead>
                     <TableHead>Ações</TableHead>
                   </TableRow>
@@ -1481,6 +1531,29 @@ export const SaidaProntuariosModule = () => {
                           {safeFormatDate(saida.registrado_recepcao_em, "dd/MM/yy HH:mm")}
                         </TableCell>
                         <TableCell>
+                          {(() => {
+                            const entrega = entregasMap[saida.id]?.find(e => e.setor_origem === "Recepção");
+                            if (!entrega) return <span className="text-xs text-muted-foreground">-</span>;
+                            return (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="text-xs h-auto py-1 px-2">
+                                    {safeFormatDate(entrega.data_hora, "dd/MM/yy HH:mm")}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-56 p-3">
+                                  <p className="text-sm font-medium mb-2">Entrega Recepção → Classificação</p>
+                                  <div className="space-y-1 text-sm">
+                                    <p><strong>Entregador:</strong> {entrega.entregador_nome}</p>
+                                    <p><strong>Recebido por:</strong> {entrega.responsavel_recebimento_nome}</p>
+                                    <p className="text-xs text-muted-foreground">{safeFormatDate(entrega.data_hora, "dd/MM/yyyy HH:mm:ss")}</p>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            );
+                          })()}
+                        </TableCell>
+                        <TableCell>
                           <div className="flex flex-col">
                             {safeFormatDate(saida.validado_classificacao_em, "dd/MM/yy HH:mm")}
                             {saida.existe_fisicamente !== null && (
@@ -1489,6 +1562,29 @@ export const SaidaProntuariosModule = () => {
                               </span>
                             )}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const entrega = entregasMap[saida.id]?.find(e => e.setor_origem === "Classificação");
+                            if (!entrega) return <span className="text-xs text-muted-foreground">-</span>;
+                            return (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="text-xs h-auto py-1 px-2">
+                                    {safeFormatDate(entrega.data_hora, "dd/MM/yy HH:mm")}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-56 p-3">
+                                  <p className="text-sm font-medium mb-2">Entrega Classificação → NIR</p>
+                                  <div className="space-y-1 text-sm">
+                                    <p><strong>Entregador:</strong> {entrega.entregador_nome}</p>
+                                    <p><strong>Recebido por:</strong> {entrega.responsavel_recebimento_nome}</p>
+                                    <p className="text-xs text-muted-foreground">{safeFormatDate(entrega.data_hora, "dd/MM/yyyy HH:mm:ss")}</p>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
                           {safeFormatDate(saida.conferido_nir_em, "dd/MM/yy HH:mm")}
