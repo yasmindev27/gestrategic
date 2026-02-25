@@ -680,12 +680,21 @@ export const RestauranteModule = () => {
   };
   const exportSolicitacoesPDF = async () => {
     const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
-    const { doc, logoImg } = await createStandardPdf('Solicitações de Dieta para Pacientes');
+    const { doc, logoImg } = await createStandardPdf('Solicitações de Dieta para Pacientes', 'landscape');
+    const hrLabels: Record<string, string> = { cafe: "Café da Manhã", almoco: "Almoço", lanche: "Café da Tarde", jantar: "Jantar" };
+    const fmtHr = (h: string[] | null) => (!h || h.length === 0 || h.length === 4) ? "Todos" : h.map(x => hrLabels[x] || x).join(", ");
     autoTable(doc, {
-      head: [["Paciente", "Quarto", "Dieta", "Período", "Status"]],
-      body: todasSolicitacoes.map(s => [s.paciente_nome || "N/A", s.quarto_leito || "N/A", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, format(new Date(s.data_inicio), "dd/MM") + (s.data_fim ? ` - ${format(new Date(s.data_fim), "dd/MM")}` : ""), s.status.charAt(0).toUpperCase() + s.status.slice(1)]),
+      head: [["Paciente", "Quarto", "Dieta", "Refeições", "Período", "Status"]],
+      body: todasSolicitacoes.map(s => [
+        s.paciente_nome || "N/A",
+        s.quarto_leito || "N/A",
+        tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
+        fmtHr(s.horarios_refeicoes),
+        format(new Date(s.data_inicio), "dd/MM") + (s.data_fim ? ` - ${format(new Date(s.data_fim), "dd/MM")}` : ""),
+        s.status.charAt(0).toUpperCase() + s.status.slice(1),
+      ]),
       startY: 32,
-      styles: { fontSize: 8 },
+      styles: { fontSize: 7 },
       margin: { top: 32, bottom: 28 },
     });
     savePdfWithFooter(doc, 'Solicitações de Dieta para Pacientes', `solicitacoes_dieta_${format(new Date(), "yyyyMMdd_HHmm")}`, logoImg);
@@ -786,12 +795,21 @@ export const RestauranteModule = () => {
     doc.text(`Período: ${format(new Date(dashboardDataInicio), "dd/MM/yyyy")} a ${format(new Date(dashboardDataFim), "dd/MM/yyyy")}`, 14, 32);
     doc.text(`Total de Dietas: ${dashboardStats.total}`, 14, 38);
 
-    const tableData = dashboardSolicitacoes.map(s => [s.paciente_nome || "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.restricoes_alimentares || "-", s.solicitante_nome]);
+    const hrLabels2: Record<string, string> = { cafe: "Café da Manhã", almoco: "Almoço", lanche: "Café da Tarde", jantar: "Jantar" };
+    const fmtHr2 = (h: string[] | null) => (!h || h.length === 0 || h.length === 4) ? "Todos" : h.map(x => hrLabels2[x] || x).join(", ");
+    const tableData = dashboardSolicitacoes.map(s => [
+      s.paciente_nome || "-",
+      s.quarto_leito || "-",
+      tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
+      fmtHr2(s.horarios_refeicoes),
+      s.restricoes_alimentares || "-",
+      s.solicitante_nome,
+    ]);
     autoTable(doc, {
       startY: 44,
-      head: [["Paciente", "Quarto/Leito", "Tipo de Dieta", "Restrições", "Solicitante"]],
+      head: [["Paciente", "Quarto/Leito", "Tipo de Dieta", "Refeições", "Restrições", "Solicitante"]],
       body: tableData,
-      styles: { fontSize: 8 },
+      styles: { fontSize: 7 },
       headStyles: { fillColor: [59, 130, 246] },
       margin: { top: 32, bottom: 28 },
     });
