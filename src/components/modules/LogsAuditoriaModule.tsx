@@ -953,10 +953,10 @@ export const LogsAuditoriaModule = () => {
                 {/* Trilha */}
                 <div className="grid grid-cols-2 gap-3 p-4 rounded-lg bg-muted/40 border">
                   {[
-                    { label: "👤 Quem fez",       value: trilhaItem.quem },
-                    { label: "⚡ O que fez",       value: trilhaItem.o_que },
-                    { label: "📄 Em qual registro", value: trilhaItem.em_qual },
-                    { label: "🕐 Data/Hora",       value: format(new Date(selectedLog.created_at), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR }) },
+                    { label: "Quem fez",       value: trilhaItem.quem },
+                    { label: "O que fez",       value: trilhaItem.o_que },
+                    { label: "Em qual registro", value: trilhaItem.em_qual },
+                    { label: "Data/Hora",       value: format(new Date(selectedLog.created_at), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR }) },
                   ].map(({ label, value }) => (
                     <div key={label}>
                       <p className="text-xs text-muted-foreground">{label}</p>
