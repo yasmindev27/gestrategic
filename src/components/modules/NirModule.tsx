@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Ambulance, LayoutDashboard, BedDouble, ExternalLink, Truck, Navigation } from "lucide-react";
 import { NirDashboardModule } from "./NirDashboardModule";
 import { MapaLeitosModule } from "./MapaLeitosModule";
-import { SalusImportModule, ListaFaltantesSalus } from "@/components/nir";
+
 import { TransferenciasModule } from "@/components/nir/TransferenciasModule";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { useRealtimeSync, REALTIME_PRESETS } from "@/hooks/useRealtimeSync";
@@ -184,8 +184,6 @@ export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
         </Card>
       </div>
 
-      {/* Lista de Prontuários Faltantes - Salus */}
-      <ListaFaltantesSalus />
     </div>
   );
 };
