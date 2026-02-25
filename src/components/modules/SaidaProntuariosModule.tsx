@@ -195,13 +195,15 @@ export const SaidaProntuariosModule = () => {
         .eq("is_folha_avulsa", false)
         .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%");
 
-      const regularHojeQuery = supabase
+      // Contagem "Registros do Dia" para Recepção: hoje + em fluxo (não concluído)
+      const regularHojeQueryBuilder = supabase
         .from("saida_prontuarios")
         .select("*", { count: "exact", head: true })
         .eq("is_folha_avulsa", false)
         .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%")
         .gte("created_at", inicioHoje)
-        .lte("created_at", fimHoje);
+        .lte("created_at", fimHoje)
+        .neq("status", "concluido");
 
       const folhasCountQueryBase = supabase
         .from("saida_prontuarios")
@@ -215,7 +217,7 @@ export const SaidaProntuariosModule = () => {
 
       const [regularCount, regularHojeCount, folhasCount, salusCount] = await Promise.all([
         regularCountQuery,
-        regularHojeQuery,
+        regularHojeQueryBuilder,
         restrictedToToday
           ? folhasCountQueryBase.gte("created_at", inicioHoje).lte("created_at", fimHoje)
           : folhasCountQueryBase,
@@ -1209,7 +1211,7 @@ export const SaidaProntuariosModule = () => {
                 <p className="text-2xl font-bold text-primary">
                   {isFaturamento || isAdmin
                     ? (hasActiveFilters ? filteredSaidas.length : totalSaidasCount)
-                    : filteredSaidas.length
+                    : totalSaidasHojeCount
                   }
                 </p>
                 {(isFaturamento || isAdmin) && hasActiveFilters && (
