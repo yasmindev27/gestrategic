@@ -92,6 +92,8 @@ interface SaidaProntuario {
   possui_carimbo_medico: boolean | null;
   cadastro_conferido: boolean | null;
   checklist_validacao: Record<string, string> | null;
+  pendencia_resolvida_em: string | null;
+  pendencia_resolvida_por: string | null;
   created_at: string;
 }
 
@@ -1310,6 +1312,7 @@ export const SaidaProntuariosModule = () => {
                     <TableHead>Data Nasc.</TableHead>
                     <TableHead>Data Atendimento</TableHead>
                     <TableHead>Pendências</TableHead>
+                    <TableHead>Resolução</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Recepção</TableHead>
                     <TableHead>Classificação</TableHead>
@@ -1385,6 +1388,51 @@ export const SaidaProntuariosModule = () => {
                                   )}
                                 </PopoverContent>
                               </Popover>
+                            );
+                          })()}
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const cl = saida.checklist_validacao as Record<string, string> | null;
+                            const hasPendencias = cl && Object.entries(cl).some(([k, v]) => k !== "observacao" && v === "pendente");
+                            if (!hasPendencias) return <span className="text-xs text-muted-foreground">-</span>;
+                            if (saida.pendencia_resolvida_em) {
+                              return (
+                                <div className="flex flex-col">
+                                  <Badge className="bg-success text-success-foreground text-xs w-fit">✓ Resolvida</Badge>
+                                  <span className="text-xs text-muted-foreground mt-0.5">
+                                    {safeFormatDate(saida.pendencia_resolvida_em, "dd/MM/yy HH:mm")}
+                                  </span>
+                                </div>
+                              );
+                            }
+                            return (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7"
+                                onClick={async () => {
+                                  try {
+                                    const { error } = await supabase
+                                      .from("saida_prontuarios")
+                                      .update({
+                                        pendencia_resolvida_em: new Date().toISOString(),
+                                        pendencia_resolvida_por: userId,
+                                        status: "aguardando_nir",
+                                      } as any)
+                                      .eq("id", saida.id);
+                                    if (error) throw error;
+                                    toast({ title: "Sucesso", description: "Pendência marcada como resolvida!" });
+                                    fetchSaidas();
+                                  } catch (err) {
+                                    console.error(err);
+                                    toast({ title: "Erro", description: "Erro ao resolver pendência.", variant: "destructive" });
+                                  }
+                                }}
+                              >
+                                <Check className="h-3 w-3 mr-1" />
+                                Resolver
+                              </Button>
                             );
                           })()}
                         </TableCell>

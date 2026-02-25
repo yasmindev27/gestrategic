@@ -4751,6 +4751,8 @@ export type Database = {
           observacao_classificacao: string | null
           observacao_nir: string | null
           paciente_nome: string | null
+          pendencia_resolvida_em: string | null
+          pendencia_resolvida_por: string | null
           possui_carimbo_medico: boolean | null
           prontuario_id: string | null
           registrado_recepcao_em: string | null
@@ -4775,6 +4777,8 @@ export type Database = {
           observacao_classificacao?: string | null
           observacao_nir?: string | null
           paciente_nome?: string | null
+          pendencia_resolvida_em?: string | null
+          pendencia_resolvida_por?: string | null
           possui_carimbo_medico?: boolean | null
           prontuario_id?: string | null
           registrado_recepcao_em?: string | null
@@ -4799,6 +4803,8 @@ export type Database = {
           observacao_classificacao?: string | null
           observacao_nir?: string | null
           paciente_nome?: string | null
+          pendencia_resolvida_em?: string | null
+          pendencia_resolvida_por?: string | null
           possui_carimbo_medico?: boolean | null
           prontuario_id?: string | null
           registrado_recepcao_em?: string | null
