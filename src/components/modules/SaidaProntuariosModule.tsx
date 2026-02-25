@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -979,13 +980,27 @@ export const SaidaProntuariosModule = () => {
         <div className="flex flex-wrap gap-2">
           {!isRecepcao && !isClassificacao && (
             <>
-              <PdfPatientCounter onAnalysisComplete={setSalusAnalysis} onLaunchComplete={fetchSaidas} />
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span><PdfPatientCounter onAnalysisComplete={setSalusAnalysis} onLaunchComplete={fetchSaidas} /></span>
+                  </TooltipTrigger>
+                  <TooltipContent>Importar lista de pacientes a partir de PDF do Salus</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="outline">
-                    <Download className="h-4 w-4 mr-2" />
-                    Exportar
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline">
+                          <Download className="h-4 w-4 mr-2" />
+                          Exportar
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Exportar registros em CSV ou PDF</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem onClick={handleExportCSV}>
@@ -1004,10 +1019,17 @@ export const SaidaProntuariosModule = () => {
             <>
               <Dialog open={newProntuarioOpen} onOpenChange={setNewProntuarioOpen}>
                 <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Registrar Saída
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Registrar Saída
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Registrar a saída de um prontuário do setor</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -1104,10 +1126,17 @@ export const SaidaProntuariosModule = () => {
 
               {!isRecepcao && !isClassificacao && <Dialog open={newFolhaAvulsaOpen} onOpenChange={setNewFolhaAvulsaOpen}>
                 <DialogTrigger asChild>
-                  <Button variant="secondary">
-                    <FileStack className="h-4 w-4 mr-2" />
-                    Folha Avulsa
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="secondary">
+                          <FileStack className="h-4 w-4 mr-2" />
+                          Folha Avulsa
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Registrar folha avulsa de prontuário incompleto</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
@@ -1179,10 +1208,17 @@ export const SaidaProntuariosModule = () => {
               </Dialog>}
 
               {(isNir || isAdmin) && (
-                <Button variant="outline" onClick={() => setEntregaDialogOpen(true)}>
-                  <Send className="h-4 w-4 mr-2" />
-                  Registrar Entrega
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" onClick={() => setEntregaDialogOpen(true)}>
+                        <Send className="h-4 w-4 mr-2" />
+                        Registrar Entrega
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Registrar entrega de prontuários entre setores</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </>
           )}
