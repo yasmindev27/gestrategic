@@ -81,7 +81,7 @@ export const BancoHorasSection = () => {
         supabase
           .from("banco_horas")
           .select("*")
-          .order("created_at", { ascending: false }),
+          .order("funcionario_nome", { ascending: true }),
         supabase
           .from("profiles")
           .select("user_id, full_name, matricula")
