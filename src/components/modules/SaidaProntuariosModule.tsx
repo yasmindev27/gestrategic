@@ -202,7 +202,7 @@ export const SaidaProntuariosModule = () => {
   const fetchCounts = async () => {
     setIsLoading(true);
     try {
-      const restrictedToToday = !isFullAccessRole;
+      const restrictedToToday = (isRecepcao || isClassificacao) && !isAdmin && !isNir && !isFaturamento;
 
       const regularCountQuery = supabase
         .from("saida_prontuarios")
@@ -263,7 +263,8 @@ export const SaidaProntuariosModule = () => {
       .range(from, from + PAGE_SIZE - 1);
 
     // Recepção e Classificação veem somente registros lançados no dia
-    if (!isFullAccessRole) {
+    const restrictToToday = (isRecepcao || isClassificacao) && !isAdmin && !isNir && !isFaturamento;
+    if (restrictToToday) {
       query = query.gte("created_at", inicioHoje)
                    .lte("created_at", fimHoje);
     }
@@ -293,7 +294,8 @@ export const SaidaProntuariosModule = () => {
       .range(from, from + PAGE_SIZE - 1);
 
     // Recepção e Classificação veem somente registros lançados no dia
-    if (!isFullAccessRole) {
+    const restrictToToday = (isRecepcao || isClassificacao) && !isAdmin && !isNir && !isFaturamento;
+    if (restrictToToday) {
       query = query.gte("created_at", inicioHoje)
                    .lte("created_at", fimHoje);
     }
@@ -317,7 +319,8 @@ export const SaidaProntuariosModule = () => {
       .range(from, from + PAGE_SIZE - 1);
 
     // Recepção e Classificação veem somente registros lançados no dia
-    if (!isFullAccessRole) {
+    const restrictToToday = (isRecepcao || isClassificacao) && !isAdmin && !isNir && !isFaturamento;
+    if (restrictToToday) {
       query = query.gte("created_at", inicioHoje)
                    .lte("created_at", fimHoje);
     }
