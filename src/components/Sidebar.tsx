@@ -108,7 +108,11 @@ const Sidebar = ({
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Syringe, label: "Enfermagem", id: "enfermagem" },
-        { icon: Calendar, label: "Agenda", id: "agenda" }
+        { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante" },
+        { icon: Calendar, label: "Agenda", id: "agenda" },
+        { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
+        { icon: GraduationCap, label: "Treinamentos", id: "lms" },
+        { icon: MessageSquare, label: "Chat", id: "chat" }
       );
       return items;
     }
