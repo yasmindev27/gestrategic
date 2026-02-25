@@ -855,12 +855,21 @@ export const RestauranteModule = () => {
     doc.setFont('helvetica', 'normal');
     doc.text(`Total: ${minhasSolicitacoesFiltradas.length} dietas`, 14, 32);
     
-    const tableData = minhasSolicitacoesFiltradas.map(s => [s.paciente_nome || "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.tem_acompanhante ? "Sim" : "Não", format(new Date(s.created_at), "dd/MM/yyyy")]);
+    const tableData = minhasSolicitacoesFiltradas.map(s => [
+      s.paciente_nome || "-",
+      s.quarto_leito || "-",
+      tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
+      s.descricao_especifica || "-",
+      s.restricoes_alimentares || "-",
+      s.tem_acompanhante ? "Sim" : "Não",
+      s.observacoes || "-",
+      format(new Date(s.created_at), "dd/MM/yyyy"),
+    ]);
     autoTable(doc, {
       startY: 38,
-      head: [["Paciente", "Quarto/Leito", "Tipo", "Acomp.", "Solicitado em"]],
+      head: [["Paciente", "Quarto/Leito", "Tipo", "Descrição", "Restrições", "Acomp.", "Observações", "Solicitado em"]],
       body: tableData,
-      styles: { fontSize: 8 },
+      styles: { fontSize: 7 },
       headStyles: { fillColor: [59, 130, 246] },
       margin: { top: 32, bottom: 28 },
     });
