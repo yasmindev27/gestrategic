@@ -171,7 +171,8 @@ export const RestauranteModule = () => {
     horarios_refeicoes: ["cafe", "almoco", "lanche", "jantar"] as string[],
     observacoes: "",
     is_dieta_extra: false,
-    observacao_dieta_extra: ""
+    observacao_dieta_extra: "",
+    data_solicitacao: format(new Date(), "yyyy-MM-dd")
   });
 
   // Cardápio management states (for admin/restaurante)
@@ -409,7 +410,7 @@ export const RestauranteModule = () => {
         tem_acompanhante: formData.tem_acompanhante,
         restricoes_alimentares: formData.restricoes_alimentares || null,
         horarios_refeicoes: formData.horarios_refeicoes,
-        data_inicio: format(new Date(), "yyyy-MM-dd"),
+        data_inicio: formData.data_solicitacao || format(new Date(), "yyyy-MM-dd"),
         observacoes: observacoesCompletas,
         status: "aprovada" // Dietas são automaticamente aceitas
       });
@@ -597,7 +598,8 @@ export const RestauranteModule = () => {
       horarios_refeicoes: ["cafe", "almoco", "lanche", "jantar"],
       observacoes: "",
       is_dieta_extra: false,
-      observacao_dieta_extra: ""
+      observacao_dieta_extra: "",
+      data_solicitacao: format(new Date(), "yyyy-MM-dd")
     });
   };
   const resetCardapioForm = () => {
@@ -1619,6 +1621,16 @@ export const RestauranteModule = () => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {/* Data da Solicitação */}
+            <div className="space-y-2 p-4 border rounded-lg bg-blue-50/50 border-blue-200">
+              <Label className="font-medium text-sm">Data da Solicitação *</Label>
+              <Input type="date" value={formData.data_solicitacao} onChange={e => setFormData({
+                ...formData,
+                data_solicitacao: e.target.value
+              })} />
+              <p className="text-xs text-muted-foreground">Altere para registrar dietas retroativas.</p>
+            </div>
+
             {/* Dados do Paciente */}
             <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
               <h4 className="font-medium text-sm">Dados do Paciente</h4>
