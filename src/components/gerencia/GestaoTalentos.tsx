@@ -72,21 +72,31 @@ function getInitials(name: string) {
   return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2);
 }
 
-function getStatusBadge(c: ColaboradorData) {
+function getStatusBadges(c: ColaboradorData) {
+  const badges: React.ReactNode[] = [];
   const vencidos = c.capacitacoes.filter(cap => cap.prazoVencido).length;
   const pdiPendentes = c.pdi.filter(p => p.status === 'pendente').length;
   const totalPendencias = vencidos + pdiPendentes;
 
   if (totalPendencias > 0) {
-    return <Badge variant="destructive" className="text-xs">{totalPendencias} Pendência{totalPendencias > 1 ? 's' : ''}</Badge>;
+    badges.push(<Badge key="pend" variant="destructive" className="text-xs">{totalPendencias} Pendência{totalPendencias > 1 ? 's' : ''}</Badge>);
   }
   if (c.atestados.length > 0 && c.capacitacoes.every(cap => !cap.prazoVencido)) {
-    return <Badge className="text-xs bg-amber-500/15 text-amber-700 border-amber-300">Atenção: Atestado recente</Badge>;
+    badges.push(<Badge key="atest" className="text-xs bg-amber-500/15 text-amber-700 border-amber-300">Atenção: Atestado recente</Badge>);
   }
-  if (c.capacitacoes.length > 0 && c.capacitacoes.every(cap => cap.progresso >= 100)) {
-    return <Badge className="text-xs bg-emerald-500/15 text-emerald-700 border-emerald-300">100% Concluído</Badge>;
+  if (c.saldoHoras > 0) {
+    badges.push(<Badge key="bh-cred" className="text-xs bg-emerald-500/15 text-emerald-700 border-emerald-300">BH: +{c.saldoHoras.toFixed(1)}h crédito</Badge>);
+  } else if (c.saldoHoras < 0) {
+    badges.push(<Badge key="bh-deb" className="text-xs bg-red-500/15 text-red-700 border-red-300">BH: {c.saldoHoras.toFixed(1)}h débito</Badge>);
   }
-  return <Badge variant="secondary" className="text-xs">Em dia</Badge>;
+  if (badges.length === 0) {
+    if (c.capacitacoes.length > 0 && c.capacitacoes.every(cap => cap.progresso >= 100)) {
+      badges.push(<Badge key="ok" className="text-xs bg-emerald-500/15 text-emerald-700 border-emerald-300">100% Concluído</Badge>);
+    } else {
+      badges.push(<Badge key="dia" variant="secondary" className="text-xs">Em dia</Badge>);
+    }
+  }
+  return <div className="flex flex-wrap gap-1">{badges}</div>;
 }
 
 // ─── Deep Dive Profile ────────────────────────────────────────
@@ -119,7 +129,7 @@ function PerfilDetalhado({ colaborador, mediaGeral, onBack }: { colaborador: Col
           <div className="flex-1">
             <div className="flex flex-wrap items-center gap-3 mb-1">
               <h2 className="text-2xl font-bold">{colaborador.full_name}</h2>
-              {getStatusBadge(colaborador)}
+              {getStatusBadges(colaborador)}
             </div>
             <p className="text-muted-foreground">{colaborador.cargo || 'Sem cargo'} — {colaborador.setor || 'Sem setor'}</p>
             {discLabel && (
@@ -672,7 +682,7 @@ export function GestaoTalentos() {
                     <h3 className="font-semibold truncate">{c.full_name}</h3>
                     <p className="text-sm text-muted-foreground truncate">{c.cargo || 'Sem cargo'}</p>
                     <p className="text-xs text-muted-foreground">{c.setor || 'Sem setor'}</p>
-                    <div className="mt-2">{getStatusBadge(c)}</div>
+                    <div className="mt-2">{getStatusBadges(c)}</div>
                   </div>
                 </div>
 
