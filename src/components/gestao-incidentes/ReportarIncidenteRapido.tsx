@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { AlertTriangle, Send, Shield, User, Calendar, Clock, MapPin } from "lucide-react";
@@ -279,15 +280,22 @@ export function ReportarIncidenteRapido({ onIncidenteRegistrado }: ReportarIncid
 
         {/* Submit */}
         <div className="flex justify-end pt-2">
-          <Button 
-            onClick={handleSubmit} 
-            disabled={isSubmitting}
-            size="lg"
-            className="gap-2"
-          >
-            <Send className="h-4 w-4" />
-            {isSubmitting ? "Enviando..." : "Enviar Notificação"}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={handleSubmit} 
+                  disabled={isSubmitting}
+                  size="lg"
+                  className="gap-2"
+                >
+                  <Send className="h-4 w-4" />
+                  {isSubmitting ? "Enviando..." : "Enviar Notificação"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Registrar a notificação para análise da equipe de Qualidade/NSP</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </CardContent>
     </Card>
