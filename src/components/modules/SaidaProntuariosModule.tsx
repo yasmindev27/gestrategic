@@ -206,6 +206,9 @@ export const SaidaProntuariosModule = () => {
     fetchFaltantesPage(0);
   };
 
+  const isFullAccessRole = isFaturamento || isAdmin || isNir;
+  const hoje = new Date().toISOString().split('T')[0];
+
   const fetchSaidasPage = async (page: number) => {
     const from = page * PAGE_SIZE;
     let query = supabase
@@ -215,6 +218,11 @@ export const SaidaProntuariosModule = () => {
       .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%")
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
+
+    // Recepção e Classificação veem somente registros do dia
+    if (!isFullAccessRole) {
+      query = query.eq("data_atendimento", hoje);
+    }
 
     if (debouncedSearchTerm) query = query.ilike("paciente_nome", `%${debouncedSearchTerm}%`);
     if (dataInicio) query = query.gte("data_atendimento", dataInicio);
@@ -240,6 +248,11 @@ export const SaidaProntuariosModule = () => {
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
+    // Recepção e Classificação veem somente registros do dia
+    if (!isFullAccessRole) {
+      query = query.eq("data_atendimento", hoje);
+    }
+
     if (debouncedFolhasSearch) query = query.ilike("paciente_nome", `%${debouncedFolhasSearch}%`);
     if (folhasDataInicio) query = query.gte("data_atendimento", folhasDataInicio);
     if (folhasDataFim) query = query.lte("data_atendimento", folhasDataFim);
@@ -257,6 +270,11 @@ export const SaidaProntuariosModule = () => {
       .ilike("observacao_classificacao", "%importado via salus%")
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
+
+    // Recepção e Classificação veem somente registros do dia
+    if (!isFullAccessRole) {
+      query = query.eq("data_atendimento", hoje);
+    }
 
     if (debouncedFaltantesSearch) query = query.ilike("paciente_nome", `%${debouncedFaltantesSearch}%`);
     if (faltantesDataInicio) query = query.gte("data_atendimento", faltantesDataInicio);
