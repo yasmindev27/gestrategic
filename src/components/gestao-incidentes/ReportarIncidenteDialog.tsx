@@ -62,7 +62,7 @@ export function ReportarIncidenteDialog({ onSectionChange }: ReportarIncidenteDi
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <AlertTriangle className="h-6 w-6 text-primary" />
-            Reportar Incidente
+            Abrir Notificação
           </h1>
           <p className="text-muted-foreground">
             Notifique quase-erros, incidentes ou eventos adversos de forma rápida e confidencial

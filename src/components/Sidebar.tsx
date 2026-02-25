@@ -222,7 +222,7 @@ const Sidebar = ({
 
   const addCommonMenuItems = (items: MenuItem[]): MenuItem[] => {
     if (!isAdmin && !items.some(item => item.id === "reportar-incidente")) {
-      items.push({ icon: AlertTriangle, label: "Reportar Incidente", id: "reportar-incidente" });
+      items.push({ icon: AlertTriangle, label: "Abrir Notificação", id: "reportar-incidente" });
     }
     if (!isAdmin && !items.some(item => item.id === "abrir-chamado")) {
       items.push({ icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" });
