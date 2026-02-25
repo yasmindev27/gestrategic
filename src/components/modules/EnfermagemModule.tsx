@@ -134,14 +134,18 @@ export default function EnfermagemModule() {
             <Users className="h-4 w-4" />
             Gestão Operacional
           </TabsTrigger>
-          <TabsTrigger value="sciras" className="gap-2 text-sm px-4 py-2">
-            <Microscope className="h-4 w-4" />
-            SCIRAS & Epidemiologia
-          </TabsTrigger>
-          <TabsTrigger value="indicadores-upa" className="gap-2 text-sm px-4 py-2">
-            <Activity className="h-4 w-4" />
-            Indicadores UPA
-          </TabsTrigger>
+          {isGestor && (
+            <>
+              <TabsTrigger value="sciras" className="gap-2 text-sm px-4 py-2">
+                <Microscope className="h-4 w-4" />
+                SCIRAS & Epidemiologia
+              </TabsTrigger>
+              <TabsTrigger value="indicadores-upa" className="gap-2 text-sm px-4 py-2">
+                <Activity className="h-4 w-4" />
+                Indicadores UPA
+              </TabsTrigger>
+            </>
+          )}
         </TabsList>
 
         {/* ── Gestão Operacional ── */}
