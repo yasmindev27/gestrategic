@@ -135,14 +135,18 @@ export function DashboardFaturamento() {
       }
 
       // Fetch profiles for avaliadores
-      const avaliadorIds = [...new Set(allAvaliacoes.map((a) => a.avaliador_id))];
+      const avaliadorIds = [...new Set(allAvaliacoes.map((a) => a.avaliador_id).filter(Boolean))];
       let profilesData: Profile[] = [];
       if (avaliadorIds.length > 0) {
-        const { data } = await supabase
+        const { data, error: profilesError } = await supabase
           .from("profiles")
           .select("user_id, full_name, cargo")
           .in("user_id", avaliadorIds);
+        if (profilesError) {
+          console.error("[Dashboard Fat] Erro ao buscar profiles:", profilesError);
+        }
         profilesData = (data || []) as Profile[];
+        console.log("[Dashboard Fat] Profiles carregados:", profilesData.length, "de", avaliadorIds.length, "IDs");
       }
 
       // Calcular pendentes gerais usando contagem eficiente
