@@ -488,7 +488,7 @@ export const BancoHorasSection = () => {
               tipo,
               horas: Math.round(horasAbs * 100) / 100,
               motivo,
-              observacao: matricula ? `Matrícula: ${matricula}` : null,
+              observacao: null,
               registrado_por: user.id,
               status: "aprovado",
             });
@@ -985,15 +985,8 @@ export const BancoHorasSection = () => {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="motivo">Motivo</Label>
-                    <Input
-                      id="motivo"
-                      value={formData.motivo}
-                      onChange={(e) => setFormData({ ...formData, motivo: e.target.value })}
-                      placeholder="Hora extra, compensação, etc."
-                    />
-                  </div>
+
+
 
                   <div className="space-y-2">
                     <Label htmlFor="observacao">Observação</Label>
@@ -1171,10 +1164,8 @@ export const BancoHorasSection = () => {
               <Label>Horas</Label>
               <Input type="number" step="0.5" min="0.5" value={editFormData.horas} onChange={(e) => setEditFormData({ ...editFormData, horas: e.target.value })} required />
             </div>
-            <div className="space-y-2">
-              <Label>Motivo</Label>
-              <Input value={editFormData.motivo} onChange={(e) => setEditFormData({ ...editFormData, motivo: e.target.value })} />
-            </div>
+
+
             <div className="space-y-2">
               <Label>Observação</Label>
               <Textarea value={editFormData.observacao} onChange={(e) => setEditFormData({ ...editFormData, observacao: e.target.value })} />
