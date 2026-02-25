@@ -1289,15 +1289,15 @@ export const SaidaProntuariosModule = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">
-                  {isFaturamento || isAdmin ? "Total de Registros" : "Registros do Dia"}
+                  {isFullAccessRole ? "Total de Registros" : "Registros do Dia"}
                 </p>
                 <p className="text-2xl font-bold text-primary">
-                  {isFaturamento || isAdmin
+                  {isFullAccessRole
                     ? (hasActiveFilters ? filteredSaidas.length : totalSaidasCount)
                     : totalSaidasHojeCount
                   }
                 </p>
-                {(isFaturamento || isAdmin) && hasActiveFilters && (
+                {isFullAccessRole && hasActiveFilters && (
                   <p className="text-xs text-muted-foreground">de {totalSaidasCount} totais</p>
                 )}
               </div>
