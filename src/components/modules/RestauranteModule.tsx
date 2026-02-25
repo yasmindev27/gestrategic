@@ -855,10 +855,21 @@ export const RestauranteModule = () => {
     doc.setFont('helvetica', 'normal');
     doc.text(`Total: ${minhasSolicitacoesFiltradas.length} dietas`, 14, 32);
     
+    const horarioLabels: Record<string, string> = {
+      cafe: "Café da Manhã",
+      almoco: "Almoço",
+      lanche: "Café da Tarde",
+      jantar: "Jantar",
+    };
+    const formatHorarios = (h: string[] | null) => {
+      if (!h || h.length === 0 || h.length === 4) return "Todos";
+      return h.map(x => horarioLabels[x] || x).join(", ");
+    };
     const tableData = minhasSolicitacoesFiltradas.map(s => [
       s.paciente_nome || "-",
       s.quarto_leito || "-",
       tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
+      formatHorarios(s.horarios_refeicoes),
       s.descricao_especifica || "-",
       s.restricoes_alimentares || "-",
       s.tem_acompanhante ? "Sim" : "Não",
@@ -867,9 +878,9 @@ export const RestauranteModule = () => {
     ]);
     autoTable(doc, {
       startY: 38,
-      head: [["Paciente", "Quarto/Leito", "Tipo", "Descrição", "Restrições", "Acomp.", "Observações", "Solicitado em"]],
+      head: [["Paciente", "Quarto/Leito", "Tipo Dieta", "Refeições", "Descrição", "Restrições", "Acomp.", "Obs.", "Solicitado"]],
       body: tableData,
-      styles: { fontSize: 7 },
+      styles: { fontSize: 6.5 },
       headStyles: { fillColor: [59, 130, 246] },
       margin: { top: 32, bottom: 28 },
     });
