@@ -52,7 +52,8 @@ import {
   Pencil,
   Save,
   FileStack,
-  Send
+  Send,
+  Trash2
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -61,6 +62,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PdfPatientCounter } from "./PdfPatientCounter";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { EntregaProntuariosDialog } from "./EntregaProntuariosDialog";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCSV, exportToPDF } from "@/lib/export-utils";
@@ -182,6 +193,8 @@ export const SaidaProntuariosModule = () => {
   const [editNascimentoMae, setEditNascimentoMae] = useState("");
   const [editDataAtendimento, setEditDataAtendimento] = useState("");
   const [entregaDialogOpen, setEntregaDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deletingSaida, setDeletingSaida] = useState<SaidaProntuario | null>(null);
 
   const canAccess = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
   const canInsert = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
@@ -669,6 +682,36 @@ export const SaidaProntuariosModule = () => {
     }
   };
 
+  // Delete prontuário (admin only)
+  const handleDeleteSaida = async () => {
+    if (!deletingSaida) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("saida_prontuarios")
+        .delete()
+        .eq("id", deletingSaida.id);
+
+      if (error) throw error;
+
+      await logAction("excluir_prontuario", "saida_prontuarios", {
+        id: deletingSaida.id,
+        paciente: deletingSaida.paciente_nome,
+      });
+
+      toast({ title: "Sucesso", description: "Registro excluído com sucesso!" });
+      setDeleteConfirmOpen(false);
+      setDeletingSaida(null);
+      fetchSaidas();
+      fetchCounts();
+    } catch (error) {
+      console.error("Error deleting:", error);
+      toast({ title: "Erro", description: "Erro ao excluir registro.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
       aguardando_classificacao: { label: "Aguardando Classificação", className: "bg-warning text-warning-foreground" },
@@ -698,6 +741,21 @@ export const SaidaProntuariosModule = () => {
           title="Editar registro"
         >
           <Pencil className="h-4 w-4" />
+        </Button>
+      );
+      buttons.push(
+        <Button 
+          key="delete"
+          size="sm" 
+          variant="ghost"
+          className="text-destructive hover:text-destructive"
+          onClick={() => {
+            setDeletingSaida(saida);
+            setDeleteConfirmOpen(true);
+          }}
+          title="Excluir registro"
+        >
+          <Trash2 className="h-4 w-4" />
         </Button>
       );
     }
@@ -2147,6 +2205,29 @@ export const SaidaProntuariosModule = () => {
         onOpenChange={setEntregaDialogOpen}
         onSuccess={() => fetchCounts()}
       />
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o registro de{" "}
+              <strong>{deletingSaida?.paciente_nome}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSaida}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
