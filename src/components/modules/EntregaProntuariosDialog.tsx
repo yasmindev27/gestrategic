@@ -112,17 +112,29 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
   useEffect(() => {
     if (searchColab.length < 2) {
       setColabResults([]);
+      setShowColabResults(false);
       return;
     }
     const timer = setTimeout(async () => {
-      const { data } = await supabase
-        .from("profiles")
-        .select("user_id, full_name, cargo, setor")
-        .ilike("full_name", `%${searchColab}%`)
-        .order("full_name")
-        .limit(10);
-      setColabResults(data || []);
-      setShowColabResults(true);
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("user_id, full_name, cargo, setor")
+          .ilike("full_name", `%${searchColab}%`)
+          .order("full_name")
+          .limit(10);
+        if (error) {
+          console.error("Erro ao buscar funcionários:", error);
+          setColabResults([]);
+        } else {
+          setColabResults((data as ColabResult[]) || []);
+        }
+        setShowColabResults(true);
+      } catch (err) {
+        console.error("Erro na busca:", err);
+        setColabResults([]);
+        setShowColabResults(true);
+      }
     }, 300);
     return () => clearTimeout(timer);
   }, [searchColab]);
