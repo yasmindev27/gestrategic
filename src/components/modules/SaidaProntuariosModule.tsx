@@ -1037,6 +1037,7 @@ export const SaidaProntuariosModule = () => {
           {isNir && <SalusImportModule />}
           {!isRecepcao && !isClassificacao && (
             <>
+              {isAdmin && (
               <TooltipProvider>
                 <Tooltip>
                   <TooltipTrigger asChild>
@@ -1045,6 +1046,7 @@ export const SaidaProntuariosModule = () => {
                   <TooltipContent>Importar lista de pacientes a partir de PDF do Salus</TooltipContent>
                 </Tooltip>
               </TooltipProvider>
+              )}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <TooltipProvider>
