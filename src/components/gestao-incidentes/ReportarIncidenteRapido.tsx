@@ -146,7 +146,7 @@ export function ReportarIncidenteRapido({ onIncidenteRegistrado }: ReportarIncid
       <CardHeader className="bg-primary/5 pb-4">
         <CardTitle className="flex items-center gap-2 text-xl">
           <AlertTriangle className="h-5 w-5 text-primary" />
-          Reportar Incidente
+          Abrir Notificação
         </CardTitle>
         <CardDescription>
           Notifique quase-erros, incidentes ou eventos adversos de forma rápida
