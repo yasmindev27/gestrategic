@@ -2158,6 +2158,81 @@ export type Database = {
           },
         ]
       }
+      entregas_prontuarios: {
+        Row: {
+          created_at: string
+          data_hora: string
+          entregador_id: string
+          entregador_nome: string
+          id: string
+          observacao: string | null
+          responsavel_recebimento_id: string | null
+          responsavel_recebimento_nome: string
+          setor_destino: string
+          setor_origem: string
+        }
+        Insert: {
+          created_at?: string
+          data_hora?: string
+          entregador_id: string
+          entregador_nome: string
+          id?: string
+          observacao?: string | null
+          responsavel_recebimento_id?: string | null
+          responsavel_recebimento_nome: string
+          setor_destino: string
+          setor_origem: string
+        }
+        Update: {
+          created_at?: string
+          data_hora?: string
+          entregador_id?: string
+          entregador_nome?: string
+          id?: string
+          observacao?: string | null
+          responsavel_recebimento_id?: string | null
+          responsavel_recebimento_nome?: string
+          setor_destino?: string
+          setor_origem?: string
+        }
+        Relationships: []
+      }
+      entregas_prontuarios_itens: {
+        Row: {
+          created_at: string
+          entrega_id: string
+          id: string
+          saida_prontuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          entrega_id: string
+          id?: string
+          saida_prontuario_id: string
+        }
+        Update: {
+          created_at?: string
+          entrega_id?: string
+          id?: string
+          saida_prontuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entregas_prontuarios_itens_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas_prontuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_prontuarios_itens_saida_prontuario_id_fkey"
+            columns: ["saida_prontuario_id"]
+            isOneToOne: false
+            referencedRelation: "saida_prontuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       epis_seguranca: {
         Row: {
           ca_numero: string | null
