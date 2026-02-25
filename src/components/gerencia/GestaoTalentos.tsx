@@ -72,6 +72,14 @@ function getInitials(name: string) {
   return name.split(' ').filter(Boolean).map(n => n[0]).join('').toUpperCase().slice(0, 2);
 }
 
+function formatHM(decimal: number): string {
+  const abs = Math.abs(decimal);
+  const h = Math.floor(abs);
+  const m = Math.round((abs - h) * 60);
+  const sign = decimal < 0 ? '-' : '';
+  return `${sign}${h}h${String(m).padStart(2, '0')}min`;
+}
+
 function getStatusBadges(c: ColaboradorData) {
   const badges: React.ReactNode[] = [];
   const vencidos = c.capacitacoes.filter(cap => cap.prazoVencido).length;
@@ -85,9 +93,9 @@ function getStatusBadges(c: ColaboradorData) {
     badges.push(<Badge key="atest" className="text-xs bg-amber-500/15 text-amber-700 border-amber-300">Atenção: Atestado recente</Badge>);
   }
   if (c.saldoHoras > 0) {
-    badges.push(<Badge key="bh-cred" className="text-xs bg-emerald-500/15 text-emerald-700 border-emerald-300">BH: +{c.saldoHoras.toFixed(1)}h crédito</Badge>);
+    badges.push(<Badge key="bh-cred" className="text-xs bg-emerald-500/15 text-emerald-700 border-emerald-300">BH: +{formatHM(c.saldoHoras)} crédito</Badge>);
   } else if (c.saldoHoras < 0) {
-    badges.push(<Badge key="bh-deb" className="text-xs bg-red-500/15 text-red-700 border-red-300">BH: {c.saldoHoras.toFixed(1)}h débito</Badge>);
+    badges.push(<Badge key="bh-deb" className="text-xs bg-red-500/15 text-red-700 border-red-300">BH: {formatHM(c.saldoHoras)} débito</Badge>);
   }
   if (badges.length === 0) {
     if (c.capacitacoes.length > 0 && c.capacitacoes.every(cap => cap.progresso >= 100)) {
@@ -148,7 +156,7 @@ function PerfilDetalhado({ colaborador, mediaGeral, onBack }: { colaborador: Col
           <CardTitle className="text-base flex items-center gap-2">
             <Clock className="h-4 w-4" /> Banco de Horas
             <Badge variant={colaborador.saldoHoras >= 0 ? 'secondary' : 'destructive'} className="ml-auto text-xs">
-              Saldo: {colaborador.saldoHoras >= 0 ? '+' : ''}{colaborador.saldoHoras.toFixed(1)}h
+              Saldo: {colaborador.saldoHoras >= 0 ? '+' : ''}{formatHM(colaborador.saldoHoras)}
             </Badge>
           </CardTitle>
         </CardHeader>
@@ -175,7 +183,7 @@ function PerfilDetalhado({ colaborador, mediaGeral, onBack }: { colaborador: Col
                       </Badge>
                     </TableCell>
                     <TableCell className={`text-sm font-medium ${b.tipo === 'credito' ? 'text-emerald-600' : 'text-red-600'}`}>
-                      {b.tipo === 'credito' ? '+' : '-'}{b.horas.toFixed(1)}h
+                      {b.tipo === 'credito' ? '+' : '-'}{formatHM(b.horas)}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground truncate max-w-[150px]">{b.motivo || '—'}</TableCell>
                   </TableRow>
@@ -704,7 +712,7 @@ export function GestaoTalentos() {
                     <>
                       <span>•</span>
                       <span className={c.saldoHoras >= 0 ? 'text-emerald-600' : 'text-red-600'}>
-                        BH: {c.saldoHoras >= 0 ? '+' : ''}{c.saldoHoras.toFixed(1)}h
+                        BH: {c.saldoHoras >= 0 ? '+' : ''}{formatHM(c.saldoHoras)}
                       </span>
                     </>
                   )}
