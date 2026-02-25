@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   Users, Award, BookOpen, AlertTriangle, ChevronLeft,
-  TrendingUp, Star, Target, UserCheck, BarChart3, Loader2
+  TrendingUp, TrendingDown, Star, Target, UserCheck, BarChart3, Loader2, Clock
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -27,6 +27,8 @@ interface ColaboradorData {
   capacitacoes: { titulo: string; progresso: number; prazoVencido: boolean; data_limite: string | null; status: string }[];
   pdi: { titulo: string; data_inicio: string; data_fim: string | null; status: string; prioridade: string | null }[];
   disc: { perfil_predominante: string; perfil_secundario: string; score_d: number; score_i: number; score_s: number; score_c: number; leadership_score: number } | null;
+  bancoHoras: { data: string; tipo: string; horas: number; motivo: string | null }[];
+  saldoHoras: number;
 }
 
 const DISC_LABEL: Record<string, string> = {
@@ -127,6 +129,53 @@ function PerfilDetalhado({ colaborador, mediaGeral, onBack }: { colaborador: Col
               </div>
             )}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Banco de Horas */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base flex items-center gap-2">
+            <Clock className="h-4 w-4" /> Banco de Horas
+            <Badge variant={colaborador.saldoHoras >= 0 ? 'secondary' : 'destructive'} className="ml-auto text-xs">
+              Saldo: {colaborador.saldoHoras >= 0 ? '+' : ''}{colaborador.saldoHoras.toFixed(1)}h
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {colaborador.bancoHoras.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">Nenhum registro de banco de horas.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Tipo</TableHead>
+                  <TableHead>Horas</TableHead>
+                  <TableHead>Motivo</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {colaborador.bancoHoras.slice(0, 10).map((b, i) => (
+                  <TableRow key={i}>
+                    <TableCell className="text-sm">{format(new Date(b.data + 'T00:00:00'), 'dd/MM/yy')}</TableCell>
+                    <TableCell>
+                      <Badge variant={b.tipo === 'credito' ? 'secondary' : 'outline'} className={`text-xs ${b.tipo === 'credito' ? 'bg-emerald-500/15 text-emerald-700 border-emerald-300' : 'bg-red-500/15 text-red-700 border-red-300'}`}>
+                        {b.tipo === 'credito' ? 'Crédito' : 'Débito'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className={`text-sm font-medium ${b.tipo === 'credito' ? 'text-emerald-600' : 'text-red-600'}`}>
+                      {b.tipo === 'credito' ? '+' : '-'}{b.horas.toFixed(1)}h
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground truncate max-w-[150px]">{b.motivo || '—'}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+          {colaborador.bancoHoras.length > 10 && (
+            <p className="text-xs text-muted-foreground text-center mt-2">Mostrando 10 de {colaborador.bancoHoras.length} registros</p>
+          )}
         </CardContent>
       </Card>
 
@@ -398,6 +447,19 @@ export function GestaoTalentos() {
     },
   });
 
+  // Fetch Banco de Horas
+  const { data: bancoHoras = [] } = useQuery({
+    queryKey: ['gestao_talentos_banco_horas'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('banco_horas')
+        .select('funcionario_user_id, data, tipo, horas, motivo')
+        .order('data', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
   // Build treinamento map
   const treinamentoMap = useMemo(() => {
     const m = new Map<string, typeof treinamentos[0]>();
@@ -463,6 +525,18 @@ export function GestaoTalentos() {
         d.nome_completo?.toUpperCase() === p.full_name?.toUpperCase()
       );
 
+      // Banco de Horas
+      const userBH = bancoHoras.filter(b => b.funcionario_user_id === p.user_id);
+      const userBancoHoras = userBH.map(b => ({
+        data: b.data,
+        tipo: b.tipo,
+        horas: Number(b.horas),
+        motivo: b.motivo,
+      }));
+      const saldoHoras = userBH.reduce((sum, b) => {
+        return sum + (b.tipo === 'credito' ? Number(b.horas) : -Number(b.horas));
+      }, 0);
+
       return {
         user_id: p.user_id,
         full_name: p.full_name,
@@ -472,6 +546,8 @@ export function GestaoTalentos() {
         atestados: userAtestados,
         capacitacoes: userCapacitacoes,
         pdi: userPdi,
+        bancoHoras: userBancoHoras,
+        saldoHoras: Math.round(saldoHoras * 100) / 100,
         disc: discMatch ? {
           perfil_predominante: discMatch.perfil_predominante,
           perfil_secundario: discMatch.perfil_secundario,
@@ -483,7 +559,7 @@ export function GestaoTalentos() {
         } : null,
       };
     });
-  }, [profiles, atestados, inscricoes, treinamentoMap, agendaPerUser, discResults]);
+  }, [profiles, atestados, inscricoes, treinamentoMap, agendaPerUser, discResults, bancoHoras]);
 
   // Média geral de conclusão de tarefas
   const mediaGeral = useMemo(() => {
@@ -608,12 +684,20 @@ export function GestaoTalentos() {
                   </div>
                 )}
 
-                <div className="mt-3 flex gap-3 text-xs text-muted-foreground">
+                <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
                   <span>{c.atestados.length} atestado{c.atestados.length !== 1 ? 's' : ''}</span>
                   <span>•</span>
                   <span>{c.capacitacoes.length} curso{c.capacitacoes.length !== 1 ? 's' : ''}</span>
                   <span>•</span>
                   <span>{c.pdi.length} tarefa{c.pdi.length !== 1 ? 's' : ''}</span>
+                  {c.bancoHoras.length > 0 && (
+                    <>
+                      <span>•</span>
+                      <span className={c.saldoHoras >= 0 ? 'text-emerald-600' : 'text-red-600'}>
+                        BH: {c.saldoHoras >= 0 ? '+' : ''}{c.saldoHoras.toFixed(1)}h
+                      </span>
+                    </>
+                  )}
                 </div>
               </CardContent>
             </Card>
