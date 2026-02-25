@@ -209,6 +209,12 @@ export const BancoHorasSection = () => {
     setDeleteDialogOpen(false);
     setSelectedRegistro(null);
   };
+  const formatHM = (decimal: number): string => {
+    const abs = Math.abs(decimal);
+    const h = Math.floor(abs);
+    const m = Math.round((abs - h) * 60);
+    return `${h}h${String(m).padStart(2, '0')}min`;
+  };
 
   const calcularSaldo = (funcionarioId: string) => {
     const registrosFuncionario = registros.filter(
@@ -253,7 +259,7 @@ export const BancoHorasSection = () => {
       Number(r.horas).toFixed(1),
       r.motivo || "",
       r.observacao || "",
-      calcularSaldo(r.funcionario_user_id).toFixed(1) + "h",
+      formatHM(calcularSaldo(r.funcionario_user_id)),
     ]);
     return { headers, rows };
   };
@@ -300,7 +306,7 @@ export const BancoHorasSection = () => {
       "Horas": Number(r.horas).toFixed(1),
       "Motivo": r.motivo || "",
       "Observação": r.observacao || "",
-      "Saldo Atual": calcularSaldo(r.funcionario_user_id).toFixed(1) + "h",
+      "Saldo Atual": formatHM(calcularSaldo(r.funcionario_user_id)),
     }));
 
     const ws = XLSX.utils.json_to_sheet(dataToExport);
@@ -498,7 +504,7 @@ export const BancoHorasSection = () => {
             <TrendingUp className="h-4 w-4 text-green-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">+{totalCreditos.toFixed(1)}h</div>
+            <div className="text-2xl font-bold text-green-600">+{formatHM(totalCreditos)}</div>
           </CardContent>
         </Card>
 
@@ -508,7 +514,7 @@ export const BancoHorasSection = () => {
             <TrendingDown className="h-4 w-4 text-red-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">-{totalDebitos.toFixed(1)}h</div>
+            <div className="text-2xl font-bold text-red-600">-{formatHM(totalDebitos)}</div>
           </CardContent>
         </Card>
 
@@ -519,7 +525,7 @@ export const BancoHorasSection = () => {
           </CardHeader>
           <CardContent>
             <div className={`text-2xl font-bold ${totalCreditos - totalDebitos >= 0 ? "text-green-600" : "text-red-600"}`}>
-              {(totalCreditos - totalDebitos).toFixed(1)}h
+              {formatHM(totalCreditos - totalDebitos)}
             </div>
           </CardContent>
         </Card>
@@ -789,11 +795,11 @@ export const BancoHorasSection = () => {
                     </Badge>
                   </TableCell>
                   <TableCell className={registro.tipo === "credito" ? "text-green-600" : "text-red-600"}>
-                    {registro.tipo === "credito" ? "+" : "-"}{Number(registro.horas).toFixed(1)}h
+                    {registro.tipo === "credito" ? "+" : "-"}{formatHM(Number(registro.horas))}
                   </TableCell>
                   <TableCell>{registro.motivo || "-"}</TableCell>
                   <TableCell className="font-medium">
-                    {calcularSaldo(registro.funcionario_user_id).toFixed(1)}h
+                    {formatHM(calcularSaldo(registro.funcionario_user_id))}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center justify-center gap-1">
