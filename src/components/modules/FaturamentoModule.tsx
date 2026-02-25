@@ -181,7 +181,7 @@ export const FaturamentoModule = () => {
   const [prontuariosFaltantes, setProntuariosFaltantes] = useState<SaidaProntuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<"lista" | "faltantes" | "avaliados" | "dashboard">("lista");
+  const [activeTab, setActiveTab] = useState<"lista" | "faltantes" | "avaliados" | "dashboard">("faltantes");
   const [datePreset, setDatePreset] = useState<DateFilterPreset>(null);
   const [customDateStart, setCustomDateStart] = useState("");
   const [customDateEnd, setCustomDateEnd] = useState("");
@@ -697,13 +697,6 @@ export const FaturamentoModule = () => {
 
       {/* Tabs */}
       <div className="flex gap-2 flex-wrap">
-        <Button
-          variant={activeTab === "lista" ? "default" : "outline"}
-          onClick={() => setActiveTab("lista")}
-        >
-          <FileText className="h-4 w-4 mr-2" />
-          Lista Geral ({totalCount})
-        </Button>
         <Button
           variant={activeTab === "faltantes" ? "default" : "outline"}
           onClick={() => setActiveTab("faltantes")}
