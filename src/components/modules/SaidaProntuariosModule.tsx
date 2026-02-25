@@ -914,23 +914,27 @@ export const SaidaProntuariosModule = () => {
                       />
                     </div>
                     <div className="border rounded-lg p-4 bg-muted/30">
-                      <p className="text-sm font-medium mb-3">Checklist de Verificação</p>
+                      <p className="text-sm font-medium mb-3">Checklist de Verificação <span className="text-destructive">*</span></p>
                       <div className="flex items-center space-x-3">
                         <Checkbox
                           id="carimbo-medico"
                           checked={possuiCarimboMedico}
                           onCheckedChange={(checked) => setPossuiCarimboMedico(checked === true)}
+                          required
                         />
                         <label htmlFor="carimbo-medico" className="text-sm cursor-pointer">
                           O prontuário possui carimbo médico?
                         </label>
                       </div>
+                      {!possuiCarimboMedico && (
+                        <p className="text-xs text-destructive mt-2">⚠ É obrigatório confirmar o carimbo médico para registrar.</p>
+                      )}
                     </div>
                   </div>
                   <DialogFooter>
                     <Button 
                       onClick={handleAddSaida} 
-                      disabled={!pacienteNome.trim() || !dataAtendimento || isSubmitting}
+                      disabled={!pacienteNome.trim() || !dataAtendimento || !possuiCarimboMedico || isSubmitting}
                     >
                       {isSubmitting ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
