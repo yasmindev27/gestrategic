@@ -1,19 +1,23 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Pencil, Trash2, Save, ChevronLeft, Settings2,
-  ClipboardList, FileText, ToggleLeft, List, AlignLeft, Hash
+  ClipboardList, FileText, ToggleLeft, List, AlignLeft, Hash,
+  GripVertical, Copy, X, Type, Calendar, CheckSquare, CircleDot
 } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading-state";
+import { cn } from "@/lib/utils";
 
 interface FormularioConfig {
   id: string;
@@ -42,30 +46,13 @@ interface PerguntaConfig {
   ordem: number;
 }
 
-// Tipo de pergunta: controla como as opções são geradas
 type TipoPergunta = "multipla_escolha" | "sim_nao" | "escala" | "texto_livre";
 
 const TIPO_PERGUNTA_INFO: Record<TipoPergunta, { label: string; icon: React.ReactNode; desc: string }> = {
-  multipla_escolha: {
-    label: "Múltipla Escolha",
-    icon: <List className="h-4 w-4" />,
-    desc: "Selecionar uma entre várias opções",
-  },
-  sim_nao: {
-    label: "Sim / Não",
-    icon: <ToggleLeft className="h-4 w-4" />,
-    desc: "Resposta binária com opções padrão",
-  },
-  escala: {
-    label: "Escala Numérica",
-    icon: <Hash className="h-4 w-4" />,
-    desc: "Escala de 0 a 9 para avaliações qualitativas",
-  },
-  texto_livre: {
-    label: "Texto Livre",
-    icon: <AlignLeft className="h-4 w-4" />,
-    desc: "Campo aberto para o auditor escrever a resposta",
-  },
+  multipla_escolha: { label: "Múltipla Escolha", icon: <CircleDot className="h-4 w-4" />, desc: "Selecionar uma entre várias opções" },
+  sim_nao: { label: "Sim / Não", icon: <ToggleLeft className="h-4 w-4" />, desc: "Resposta binária com opções padrão" },
+  escala: { label: "Escala Numérica", icon: <Hash className="h-4 w-4" />, desc: "Escala de 0 a 9 para avaliações qualitativas" },
+  texto_livre: { label: "Texto Livre", icon: <AlignLeft className="h-4 w-4" />, desc: "Campo aberto para o auditor escrever" },
 };
 
 const PRESET_OPCOES: Record<TipoPergunta, string[]> = {
@@ -76,14 +63,8 @@ const PRESET_OPCOES: Record<TipoPergunta, string[]> = {
 };
 
 const OPCOES_LABELS: Record<string, string> = {
-  conforme: "Conforme",
-  nao_conforme: "Não Conforme",
-  nao_aplica: "Não se aplica",
-  sim: "Sim",
-  nao: "Não",
-  sim_completo: "Sim, completo",
-  parcial: "Parcialmente",
-  __texto_livre__: "Campo de texto aberto",
+  conforme: "Conforme", nao_conforme: "Não Conforme", nao_aplica: "Não se aplica",
+  sim: "Sim", nao: "Não", __texto_livre__: "Campo de texto aberto",
 };
 
 const getOpcaoLabel = (opt: string) => OPCOES_LABELS[opt] || opt.replace(/_/g, " ");
@@ -95,6 +76,194 @@ const detectTipoPergunta = (opcoes: string[]): TipoPergunta => {
   return "multipla_escolha";
 };
 
+// ──────── Inline Question Card for Qualidade ────────
+const InlineQuestionCard = ({
+  pergunta,
+  index,
+  isSelected,
+  onSelect,
+  onSave,
+  onDelete,
+}: {
+  pergunta: PerguntaConfig;
+  index: number;
+  isSelected: boolean;
+  onSelect: () => void;
+  onSave: (updated: { label: string; opcoes: string[] }) => void;
+  onDelete: () => void;
+}) => {
+  const tipo = detectTipoPergunta(pergunta.opcoes);
+  const info = TIPO_PERGUNTA_INFO[tipo];
+  const [label, setLabel] = useState(pergunta.label);
+  const [currentTipo, setCurrentTipo] = useState(tipo);
+  const [opcoes, setOpcoes] = useState([...pergunta.opcoes]);
+  const [novaOpcao, setNovaOpcao] = useState("");
+  const [dirty, setDirty] = useState(false);
+
+  useEffect(() => {
+    setLabel(pergunta.label);
+    setCurrentTipo(detectTipoPergunta(pergunta.opcoes));
+    setOpcoes([...pergunta.opcoes]);
+    setDirty(false);
+  }, [pergunta]);
+
+  const handleChangeTipo = (t: TipoPergunta) => {
+    setCurrentTipo(t);
+    if (t !== "multipla_escolha") {
+      setOpcoes(PRESET_OPCOES[t]);
+    }
+    setDirty(true);
+  };
+
+  const handleSave = () => {
+    const finalOpcoes = currentTipo === "texto_livre" ? ["__texto_livre__"] : opcoes;
+    onSave({ label, opcoes: finalOpcoes });
+    setDirty(false);
+  };
+
+  return (
+    <Card
+      className={cn(
+        "transition-all cursor-pointer group relative",
+        isSelected ? "ring-2 ring-primary border-primary shadow-md" : "hover:shadow-sm hover:border-primary/30"
+      )}
+      onClick={onSelect}
+    >
+      {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-xl" />}
+
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-start gap-3">
+          <div className="mt-2 cursor-grab opacity-30 group-hover:opacity-60">
+            <GripVertical className="h-5 w-5 text-muted-foreground" />
+          </div>
+          <span className="text-sm font-bold text-muted-foreground mt-2 w-6 shrink-0">{index + 1}</span>
+
+          <div className="flex-1 min-w-0">
+            {isSelected ? (
+              <>
+                <div className="flex flex-col sm:flex-row gap-3 mb-3">
+                  <Input
+                    value={label}
+                    onChange={(e) => { setLabel(e.target.value); setDirty(true); }}
+                    placeholder="Texto da pergunta"
+                    className="flex-1 text-base font-medium border-0 border-b-2 border-muted rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary bg-transparent"
+                    onClick={e => e.stopPropagation()}
+                  />
+                </div>
+
+                {/* Type selector as cards */}
+                <div className="grid grid-cols-2 gap-2 mb-3">
+                  {(Object.entries(TIPO_PERGUNTA_INFO) as [TipoPergunta, typeof TIPO_PERGUNTA_INFO[TipoPergunta]][]).map(([key, inf]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); handleChangeTipo(key); }}
+                      className={cn(
+                        "flex items-start gap-2 p-2.5 rounded-lg border text-left transition-all text-sm",
+                        currentTipo === key ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/40"
+                      )}
+                    >
+                      <span className={cn("mt-0.5", currentTipo === key ? "text-primary" : "text-muted-foreground")}>{inf.icon}</span>
+                      <div>
+                        <p className="font-medium text-xs">{inf.label}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+
+                {/* Options for multipla_escolha */}
+                {currentTipo === "multipla_escolha" && (
+                  <div className="space-y-2" onClick={e => e.stopPropagation()}>
+                    <div className="flex flex-wrap gap-1.5 min-h-[36px] p-2 border rounded-lg bg-muted/20">
+                      {opcoes.map(opt => (
+                        <Badge key={opt} variant="secondary" className="gap-1 pr-1 cursor-pointer hover:bg-destructive/10" onClick={() => { setOpcoes(opcoes.filter(o => o !== opt)); setDirty(true); }}>
+                          {getOpcaoLabel(opt)}
+                          <span className="text-destructive font-bold">×</span>
+                        </Badge>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <Input
+                        value={novaOpcao}
+                        onChange={e => setNovaOpcao(e.target.value)}
+                        placeholder="Nova opção..."
+                        className="text-sm"
+                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (novaOpcao.trim()) { setOpcoes([...opcoes, novaOpcao.trim()]); setNovaOpcao(""); setDirty(true); } } }}
+                      />
+                      <Button variant="outline" size="sm" onClick={() => { if (novaOpcao.trim()) { setOpcoes([...opcoes, novaOpcao.trim()]); setNovaOpcao(""); setDirty(true); } }}>
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {[
+                        { label: "Conforme/Não Conforme", v: ["conforme", "nao_conforme", "nao_aplica"] },
+                        { label: "Sim/Não/N/A", v: ["sim", "nao", "nao_aplica"] },
+                      ].map(p => (
+                        <Button key={p.label} variant="ghost" size="sm" className="text-xs h-7 text-primary" onClick={() => { setOpcoes(p.v); setDirty(true); }}>
+                          + {p.label}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {currentTipo === "sim_nao" && (
+                  <div className="p-3 rounded-lg border bg-muted/20 text-sm text-muted-foreground">
+                    Opções: <strong>Sim, Não e Não se aplica</strong>
+                  </div>
+                )}
+                {currentTipo === "escala" && (
+                  <div className="p-3 rounded-lg border bg-muted/20 text-sm text-muted-foreground">
+                    Escala <strong>0 a 9 + Não se aplica</strong>
+                  </div>
+                )}
+                {currentTipo === "texto_livre" && (
+                  <div className="p-3 rounded-lg border bg-primary/5 text-sm text-muted-foreground">
+                    Campo de <strong>texto aberto</strong>
+                  </div>
+                )}
+
+                {/* Bottom toolbar */}
+                <div className="flex items-center justify-between pt-3 border-t mt-3" onClick={e => e.stopPropagation()}>
+                  <div className="flex gap-1">
+                    {dirty && (
+                      <Button size="sm" onClick={handleSave}>
+                        <Save className="h-3.5 w-3.5 mr-1" /> Salvar
+                      </Button>
+                    )}
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={onDelete}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium leading-relaxed">{pergunta.label}</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <Badge variant="outline" className="text-xs flex items-center gap-1">
+                    {info.icon}
+                    {info.label}
+                  </Badge>
+                  {tipo !== "texto_livre" && pergunta.opcoes.slice(0, 4).map(opt => (
+                    <span key={opt} className="text-xs text-muted-foreground border rounded px-1.5 py-0.5 bg-muted/40">
+                      {getOpcaoLabel(opt)}
+                    </span>
+                  ))}
+                  {tipo !== "texto_livre" && pergunta.opcoes.length > 4 && (
+                    <span className="text-xs text-muted-foreground">+{pergunta.opcoes.length - 4}</span>
+                  )}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+};
+
+// ──────── Main Component ────────
 export const EditorFormulariosAuditoria = () => {
   const { toast } = useToast();
   const [formularios, setFormularios] = useState<FormularioConfig[]>([]);
@@ -104,20 +273,15 @@ export const EditorFormulariosAuditoria = () => {
   const [selectedFormulario, setSelectedFormulario] = useState<FormularioConfig | null>(null);
 
   // Dialogs
-  const [editPerguntaDialog, setEditPerguntaDialog] = useState(false);
   const [editSecaoDialog, setEditSecaoDialog] = useState(false);
   const [editFormularioDialog, setEditFormularioDialog] = useState(false);
-  const [editingPergunta, setEditingPergunta] = useState<PerguntaConfig | null>(null);
   const [editingSecao, setEditingSecao] = useState<SecaoConfig | null>(null);
   const [isCreatingFormulario, setIsCreatingFormulario] = useState(false);
 
-  // Pergunta form
-  const [perguntaLabel, setPerguntaLabel] = useState("");
-  const [tipoPergunta, setTipoPergunta] = useState<TipoPergunta>("multipla_escolha");
-  const [customOpcoes, setCustomOpcoes] = useState<string[]>(["conforme", "nao_conforme", "nao_aplica"]);
-  const [novaOpcao, setNovaOpcao] = useState("");
-  const [tempSecaoId, setTempSecaoId] = useState("");
-  const [tempOrdem, setTempOrdem] = useState(1);
+  // Inline editing
+  const [selectedPerguntaId, setSelectedPerguntaId] = useState<string | null>(null);
+  const [addingToSecaoId, setAddingToSecaoId] = useState<string | null>(null);
+  const [newQuestionTipo, setNewQuestionTipo] = useState<TipoPergunta>("multipla_escolha");
 
   // Seção form
   const [secaoNome, setSecaoNome] = useState("");
@@ -140,85 +304,39 @@ export const EditorFormulariosAuditoria = () => {
     setIsLoading(false);
   };
 
-  // ---- Helpers tipo pergunta ----
-  const handleChangeTipo = (tipo: TipoPergunta) => {
-    setTipoPergunta(tipo);
-    if (tipo !== "multipla_escolha") {
-      setCustomOpcoes(PRESET_OPCOES[tipo]);
-    }
-  };
-
-  const addNovaOpcao = () => {
-    const val = novaOpcao.trim();
-    if (!val) return;
-    if (!customOpcoes.includes(val)) {
-      setCustomOpcoes(prev => [...prev, val]);
-    }
-    setNovaOpcao("");
-  };
-
-  const removeOpcao = (opt: string) => {
-    setCustomOpcoes(prev => prev.filter(o => o !== opt));
-  };
-
   // ---- Pergunta CRUD ----
-  const openAddPergunta = (secaoId: string) => {
+  const addPergunta = async (secaoId: string, tipo: TipoPergunta) => {
     const secaoPerguntas = perguntas.filter(p => p.secao_id === secaoId);
     const maxOrdem = secaoPerguntas.length > 0 ? Math.max(...secaoPerguntas.map(p => p.ordem)) : 0;
-    setEditingPergunta(null);
-    setPerguntaLabel("");
-    setTipoPergunta("multipla_escolha");
-    setCustomOpcoes(PRESET_OPCOES["multipla_escolha"]);
-    setNovaOpcao("");
-    setTempSecaoId(secaoId);
-    setTempOrdem(maxOrdem + 1);
-    setEditPerguntaDialog(true);
-  };
-
-  const openEditPergunta = (pergunta: PerguntaConfig) => {
-    const tipo = detectTipoPergunta(pergunta.opcoes);
-    setEditingPergunta(pergunta);
-    setPerguntaLabel(pergunta.label);
-    setTipoPergunta(tipo);
-    setCustomOpcoes([...pergunta.opcoes]);
-    setNovaOpcao("");
-    setTempSecaoId(pergunta.secao_id);
-    setTempOrdem(pergunta.ordem);
-    setEditPerguntaDialog(true);
-  };
-
-  const savePergunta = async () => {
-    if (!perguntaLabel.trim()) {
-      toast({ title: "Campo obrigatório", description: "Digite o texto da pergunta.", variant: "destructive" });
-      return;
-    }
-
-    const opcoesFinal = tipoPergunta === "texto_livre"
-      ? ["__texto_livre__"]
-      : customOpcoes;
-
-    if (tipoPergunta !== "texto_livre" && opcoesFinal.length < 2) {
-      toast({ title: "Atenção", description: "Adicione pelo menos 2 opções de resposta.", variant: "destructive" });
-      return;
-    }
-
+    const opcoes = PRESET_OPCOES[tipo];
     const codigo = `item_${Date.now()}`;
 
-    if (editingPergunta) {
-      const { error } = await supabase
-        .from("auditoria_perguntas_config")
-        .update({ label: perguntaLabel, opcoes: opcoesFinal })
-        .eq("id", editingPergunta.id);
-      if (error) { toast({ title: "Erro", description: "Falha ao atualizar pergunta", variant: "destructive" }); return; }
-      toast({ title: "Pergunta atualizada!" });
-    } else {
-      const { error } = await supabase
-        .from("auditoria_perguntas_config")
-        .insert({ secao_id: tempSecaoId, codigo, label: perguntaLabel, opcoes: opcoesFinal, ordem: tempOrdem });
-      if (error) { toast({ title: "Erro", description: "Falha ao salvar pergunta", variant: "destructive" }); return; }
-      toast({ title: "Pergunta adicionada!" });
+    const { data, error } = await supabase
+      .from("auditoria_perguntas_config")
+      .insert({ secao_id: secaoId, codigo, label: "", opcoes, ordem: maxOrdem + 1 })
+      .select("id")
+      .single();
+
+    if (error) {
+      toast({ title: "Erro", description: "Falha ao criar pergunta", variant: "destructive" });
+      return;
     }
-    setEditPerguntaDialog(false);
+
+    await loadAll();
+    if (data) setSelectedPerguntaId(data.id);
+    setAddingToSecaoId(null);
+  };
+
+  const savePergunta = async (id: string, updates: { label: string; opcoes: string[] }) => {
+    const { error } = await supabase
+      .from("auditoria_perguntas_config")
+      .update({ label: updates.label, opcoes: updates.opcoes })
+      .eq("id", id);
+    if (error) {
+      toast({ title: "Erro", description: "Falha ao salvar", variant: "destructive" });
+      return;
+    }
+    toast({ title: "Pergunta salva!" });
     loadAll();
   };
 
@@ -226,21 +344,13 @@ export const EditorFormulariosAuditoria = () => {
     if (!confirm("Excluir esta pergunta?")) return;
     await supabase.from("auditoria_perguntas_config").delete().eq("id", id);
     toast({ title: "Pergunta excluída" });
+    setSelectedPerguntaId(null);
     loadAll();
   };
 
   // ---- Seção CRUD ----
-  const openAddSecao = () => {
-    setEditingSecao(null);
-    setSecaoNome("");
-    setEditSecaoDialog(true);
-  };
-
-  const openEditSecao = (secao: SecaoConfig) => {
-    setEditingSecao(secao);
-    setSecaoNome(secao.nome);
-    setEditSecaoDialog(true);
-  };
+  const openAddSecao = () => { setEditingSecao(null); setSecaoNome(""); setEditSecaoDialog(true); };
+  const openEditSecao = (secao: SecaoConfig) => { setEditingSecao(secao); setSecaoNome(secao.nome); setEditSecaoDialog(true); };
 
   const saveSecao = async () => {
     if (!secaoNome.trim()) {
@@ -274,22 +384,15 @@ export const EditorFormulariosAuditoria = () => {
       return;
     }
     const setoresArr = formularioForm.setores.split(",").map(s => s.trim()).filter(Boolean);
-
     if (isCreatingFormulario) {
       const maxOrdem = formularios.length > 0 ? Math.max(...formularios.map(f => f.ordem ?? 0)) : 0;
       await supabase.from("auditoria_formularios_config").insert({
-        nome: formularioForm.nome,
-        tipo: `custom_${Date.now()}`,
-        icone: "clipboard-check",
-        setores: setoresArr.length > 0 ? setoresArr : ["Todos"],
-        ordem: maxOrdem + 1,
-        ativo: true,
+        nome: formularioForm.nome, tipo: `custom_${Date.now()}`, icone: "clipboard-check",
+        setores: setoresArr.length > 0 ? setoresArr : ["Todos"], ordem: maxOrdem + 1, ativo: true,
       });
       toast({ title: "Formulário criado!" });
     } else if (selectedFormulario) {
-      await supabase.from("auditoria_formularios_config")
-        .update({ nome: formularioForm.nome, setores: setoresArr })
-        .eq("id", selectedFormulario.id);
+      await supabase.from("auditoria_formularios_config").update({ nome: formularioForm.nome, setores: setoresArr }).eq("id", selectedFormulario.id);
       toast({ title: "Formulário atualizado!" });
     }
     setEditFormularioDialog(false);
@@ -358,17 +461,16 @@ export const EditorFormulariosAuditoria = () => {
               </div>
               <div className="space-y-1.5">
                 <Label>Destino</Label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  value={formularioForm.destino}
-                  onChange={e => setFormularioForm(p => ({ ...p, destino: e.target.value }))}
-                >
-                  <option value="seg_paciente">Auditorias de Segurança do Paciente</option>
-                  <option value="auditoria">Auditorias da Qualidade</option>
-                </select>
+                <Select value={formularioForm.destino} onValueChange={v => setFormularioForm(p => ({ ...p, destino: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="seg_paciente">Auditorias de Segurança do Paciente</SelectItem>
+                    <SelectItem value="auditoria">Auditorias da Qualidade</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
-                <Label>Setores <span className="text-muted-foreground text-xs">(separados por vírgula, ou deixe vazio para todos)</span></Label>
+                <Label>Setores <span className="text-muted-foreground text-xs">(separados por vírgula, ou vazio para todos)</span></Label>
                 <Input value={formularioForm.setores} onChange={e => setFormularioForm(p => ({ ...p, setores: e.target.value }))} placeholder="Internação, Urgência, Laboratório" />
               </div>
             </div>
@@ -382,7 +484,7 @@ export const EditorFormulariosAuditoria = () => {
     );
   }
 
-  // ───────────────── DETAIL VIEW ─────────────────
+  // ───────────────── DETAIL VIEW (Google Forms-like) ─────────────────
   const formSecoes = secoes.filter(s => s.formulario_id === selectedFormulario.id).sort((a, b) => a.ordem - b.ordem);
 
   return (
@@ -406,7 +508,7 @@ export const EditorFormulariosAuditoria = () => {
         </div>
       </div>
 
-      {/* Seções */}
+      {/* Seções with inline question cards */}
       {formSecoes.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">
@@ -427,9 +529,9 @@ export const EditorFormulariosAuditoria = () => {
                     <Badge variant="secondary">{secaoPerguntas.length} pergunta{secaoPerguntas.length !== 1 ? "s" : ""}</Badge>
                   </div>
                 </AccordionTrigger>
-                <AccordionContent className="px-5 py-4 space-y-4">
-                  {/* Ações da seção */}
-                  <div className="flex gap-2">
+                <AccordionContent className="px-5 py-4 space-y-3">
+                  {/* Section actions */}
+                  <div className="flex gap-2 mb-2">
                     <Button variant="outline" size="sm" onClick={() => openEditSecao(secao)}>
                       <Pencil className="h-3 w-3 mr-1" /> Renomear
                     </Button>
@@ -438,163 +540,61 @@ export const EditorFormulariosAuditoria = () => {
                     </Button>
                   </div>
 
-                  {/* Perguntas */}
-                  <div className="space-y-2">
-                    {secaoPerguntas.map((p, idx) => {
-                      const tipo = detectTipoPergunta(p.opcoes);
-                      const info = TIPO_PERGUNTA_INFO[tipo];
-                      return (
-                        <div key={p.id} className="flex items-start gap-3 p-4 bg-background border rounded-lg group hover:border-primary/30 transition-colors">
-                          <span className="text-sm font-bold text-muted-foreground mt-0.5 w-6 shrink-0">{idx + 1}</span>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium leading-relaxed">{p.label}</p>
-                            <div className="flex items-center gap-2 mt-2">
-                              <Badge variant="outline" className="text-xs flex items-center gap-1">
-                                {info.icon}
-                                {info.label}
-                              </Badge>
-                              {tipo !== "texto_livre" && p.opcoes.slice(0, 4).map(opt => (
-                                <span key={opt} className="text-xs text-muted-foreground border rounded px-1.5 py-0.5 bg-muted/40">
-                                  {getOpcaoLabel(opt)}
-                                </span>
-                              ))}
-                              {tipo !== "texto_livre" && p.opcoes.length > 4 && (
-                                <span className="text-xs text-muted-foreground">+{p.opcoes.length - 4}</span>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
-                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditPergunta(p)}>
-                              <Pencil className="h-3.5 w-3.5" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => deletePergunta(p.id)}>
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
+                  {/* Inline editable question cards */}
+                  <div className="space-y-3">
+                    {secaoPerguntas.map((p, idx) => (
+                      <InlineQuestionCard
+                        key={p.id}
+                        pergunta={p}
+                        index={idx}
+                        isSelected={selectedPerguntaId === p.id}
+                        onSelect={() => setSelectedPerguntaId(selectedPerguntaId === p.id ? null : p.id)}
+                        onSave={(updates) => savePergunta(p.id, updates)}
+                        onDelete={() => deletePergunta(p.id)}
+                      />
+                    ))}
                   </div>
 
-                  <Button variant="outline" size="sm" className="w-full border-dashed" onClick={() => openAddPergunta(secao.id)}>
-                    <Plus className="h-4 w-4 mr-1" /> Adicionar Pergunta
-                  </Button>
+                  {/* Add question - type selector */}
+                  {addingToSecaoId === secao.id ? (
+                    <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
+                      <CardContent className="p-4 space-y-3">
+                        <p className="text-sm font-medium">Escolha o tipo de pergunta:</p>
+                        <div className="grid grid-cols-2 gap-2">
+                          {(Object.entries(TIPO_PERGUNTA_INFO) as [TipoPergunta, typeof TIPO_PERGUNTA_INFO[TipoPergunta]][]).map(([key, inf]) => (
+                            <button
+                              key={key}
+                              type="button"
+                              onClick={() => addPergunta(secao.id, key)}
+                              className="flex items-start gap-2 p-3 rounded-lg border bg-background text-left hover:border-primary hover:shadow-sm transition-all"
+                            >
+                              <span className="text-primary mt-0.5">{inf.icon}</span>
+                              <div>
+                                <p className="text-sm font-medium">{inf.label}</p>
+                                <p className="text-xs text-muted-foreground">{inf.desc}</p>
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                        <Button variant="ghost" size="sm" onClick={() => setAddingToSecaoId(null)}>Cancelar</Button>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full border-dashed"
+                      onClick={() => setAddingToSecaoId(secao.id)}
+                    >
+                      <Plus className="h-4 w-4 mr-1" /> Adicionar Pergunta
+                    </Button>
+                  )}
                 </AccordionContent>
               </AccordionItem>
             );
           })}
         </Accordion>
       )}
-
-      {/* ───── Dialog: Pergunta ───── */}
-      <Dialog open={editPerguntaDialog} onOpenChange={setEditPerguntaDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>{editingPergunta ? "Editar Pergunta" : "Nova Pergunta"}</DialogTitle>
-            <DialogDescription>Defina o texto e o tipo de resposta esperada</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-5">
-            {/* Texto */}
-            <div className="space-y-1.5">
-              <Label>Texto da Pergunta *</Label>
-              <Textarea
-                value={perguntaLabel}
-                onChange={e => setPerguntaLabel(e.target.value)}
-                placeholder="Ex: O paciente está identificado com pulseira e leito?"
-                rows={2}
-                className="resize-none"
-              />
-            </div>
-
-            {/* Tipo de pergunta */}
-            <div className="space-y-2">
-              <Label>Tipo de Resposta</Label>
-              <div className="grid grid-cols-2 gap-2">
-                {(Object.entries(TIPO_PERGUNTA_INFO) as [TipoPergunta, typeof TIPO_PERGUNTA_INFO[TipoPergunta]][]).map(([key, info]) => (
-                  <button
-                    key={key}
-                    type="button"
-                    onClick={() => handleChangeTipo(key)}
-                    className={`flex items-start gap-3 p-3 rounded-lg border text-left transition-all ${
-                      tipoPergunta === key
-                        ? "border-primary bg-primary/5 shadow-sm"
-                        : "border-border hover:border-primary/40 hover:bg-muted/30"
-                    }`}
-                  >
-                    <span className={`mt-0.5 ${tipoPergunta === key ? "text-primary" : "text-muted-foreground"}`}>{info.icon}</span>
-                    <div>
-                      <p className="text-sm font-medium">{info.label}</p>
-                      <p className="text-xs text-muted-foreground">{info.desc}</p>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Opções (apenas se não for texto livre) */}
-            {tipoPergunta !== "texto_livre" && tipoPergunta === "multipla_escolha" && (
-              <div className="space-y-2">
-                <Label>Opções de Resposta</Label>
-                <div className="flex flex-wrap gap-1.5 min-h-[40px] p-2.5 border rounded-lg bg-muted/20">
-                  {customOpcoes.map(opt => (
-                    <Badge key={opt} variant="secondary" className="gap-1 pr-1 cursor-pointer hover:bg-destructive/10" onClick={() => removeOpcao(opt)}>
-                      {getOpcaoLabel(opt)}
-                      <span className="text-destructive font-bold">×</span>
-                    </Badge>
-                  ))}
-                  {customOpcoes.length === 0 && <span className="text-xs text-muted-foreground">Nenhuma opção — adicione abaixo</span>}
-                </div>
-                <div className="flex gap-2">
-                  <Input
-                    value={novaOpcao}
-                    onChange={e => setNovaOpcao(e.target.value)}
-                    placeholder="Digitar nova opção e pressionar Enter..."
-                    className="text-sm"
-                    onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addNovaOpcao(); } }}
-                  />
-                  <Button variant="outline" size="sm" onClick={addNovaOpcao} disabled={!novaOpcao.trim()}>
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </div>
-                {/* Atalhos comuns */}
-                <div className="flex flex-wrap gap-1.5 pt-1">
-                  {[
-                    { label: "+ Conforme / Não Conforme / N/A", v: ["conforme", "nao_conforme", "nao_aplica"] },
-                    { label: "+ Sim / Não / N/A", v: ["sim", "nao", "nao_aplica"] },
-                    { label: "+ Sim / Não", v: ["sim", "nao"] },
-                  ].map(p => (
-                    <Button key={p.label} variant="ghost" size="sm" className="text-xs h-7 text-primary" onClick={() => setCustomOpcoes(p.v)}>
-                      {p.label}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {tipoPergunta === "sim_nao" && (
-              <div className="p-3 rounded-lg border bg-muted/20 text-sm text-muted-foreground">
-                As opções <strong>Sim, Não e Não se aplica</strong> serão adicionadas automaticamente.
-              </div>
-            )}
-            {tipoPergunta === "escala" && (
-              <div className="p-3 rounded-lg border bg-muted/20 text-sm text-muted-foreground">
-                Escala <strong>0 a 9 + Não se aplica</strong> será usada para avaliação qualitativa.
-              </div>
-            )}
-            {tipoPergunta === "texto_livre" && (
-              <div className="p-3 rounded-lg border bg-primary/5 text-sm text-muted-foreground">
-                O auditor poderá <strong>escrever livremente</strong> a resposta durante a auditoria.
-              </div>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditPerguntaDialog(false)}>Cancelar</Button>
-            <Button onClick={savePergunta}>
-              <Save className="h-4 w-4 mr-1" /> Salvar Pergunta
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* ───── Dialog: Seção ───── */}
       <Dialog open={editSecaoDialog} onOpenChange={setEditSecaoDialog}>
@@ -634,14 +634,13 @@ export const EditorFormulariosAuditoria = () => {
             {isCreatingFormulario && (
               <div className="space-y-1.5">
                 <Label>Destino</Label>
-                <select
-                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  value={formularioForm.destino}
-                  onChange={e => setFormularioForm(p => ({ ...p, destino: e.target.value }))}
-                >
-                  <option value="seg_paciente">Auditorias de Segurança do Paciente</option>
-                  <option value="auditoria">Auditorias da Qualidade</option>
-                </select>
+                <Select value={formularioForm.destino} onValueChange={v => setFormularioForm(p => ({ ...p, destino: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="seg_paciente">Auditorias de Segurança do Paciente</SelectItem>
+                    <SelectItem value="auditoria">Auditorias da Qualidade</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             )}
             <div className="space-y-1.5">
