@@ -223,7 +223,9 @@ export const SaidaProntuariosModule = () => {
       const folhasCountQueryBase = supabase
         .from("saida_prontuarios")
         .select("*", { count: "exact", head: true })
-        .eq("is_folha_avulsa", true);
+        .eq("is_folha_avulsa", true)
+        .gte("created_at", inicioHoje)
+        .lte("created_at", fimHoje);
 
       const faltantesCountQueryBase = supabase
         .from("saida_prontuarios")
@@ -233,9 +235,7 @@ export const SaidaProntuariosModule = () => {
       const [regularCount, regularHojeCount, folhasCount, salusCount] = await Promise.all([
         regularCountQuery,
         regularHojeQueryBuilder,
-        restrictedToToday
-          ? folhasCountQueryBase.gte("created_at", inicioHoje).lte("created_at", fimHoje)
-          : folhasCountQueryBase,
+        folhasCountQueryBase,
         restrictedToToday
           ? faltantesCountQueryBase.gte("created_at", inicioHoje).lte("created_at", fimHoje)
           : faltantesCountQueryBase,
