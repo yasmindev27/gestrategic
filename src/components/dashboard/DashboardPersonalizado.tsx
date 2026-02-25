@@ -145,12 +145,11 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
         supabase.from("chamados").select("status, data_abertura", { count: "exact" }),
         // Tarefas da agenda
         supabase.rpc("get_tarefas_pendentes_count", { _user_id: userId }),
-        // Prontuários pendentes - use count with head:true instead of fetching all rows
+        // Saídas registradas (total)
         supabase.from("saida_prontuarios").select("id", { count: "exact", head: true })
-          .in("status", ["pendente_classificacao", "pendente_nir", "aguardando_classificacao"]),
-        // Prontuários concluídos - separate count query
-        supabase.from("saida_prontuarios").select("id", { count: "exact", head: true })
-          .eq("status", "concluido"),
+          .eq("is_folha_avulsa", false),
+        // placeholder to keep array alignment
+        Promise.resolve({ count: 0 }),
         // Escalas de hoje
         supabase.from("escalas_laboratorio").select("id", { count: "exact", head: true })
           .eq("dia", new Date().getDate())
@@ -188,9 +187,9 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
         logsHoje = count || 0;
       }
 
-      // Prontuários stats
+      // Saídas registradas
       const prontuariosPendentes = prontuariosPendentesData.count || 0;
-      const prontuariosAvaliados = prontuariosConcluidosData.count || 0;
+      const prontuariosAvaliados = 0;
 
       // Capacitações pendentes - treinamentos onde o usuário está inscrito mas não está capacitado
       let capacitacoesPendentes = 0;
@@ -332,24 +331,13 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
     if (isFaturamento || isRecepcao || isClassificacao || isNir || isAdmin) {
       cards.push(
         {
-          title: "Prontuários Pendentes",
+          title: "Saídas Registradas",
           value: stats.prontuariosPendentes,
-          description: "Aguardando processamento",
+          description: "Total de saídas de prontuários",
           icon: FileText,
-          color: "warning",
+          color: "info",
           loading,
-          urgent: stats.prontuariosPendentes > 0,
-          tooltip: "Documentos que aguardam revisão, assinatura ou processamento para serem finalizados.",
-          onClick: () => onNavigate?.("saida-prontuarios"),
-        },
-        {
-          title: "Prontuários Concluídos",
-          value: stats.prontuariosAvaliados,
-          description: "Processados com sucesso",
-          icon: CheckCircle2,
-          color: "success",
-          loading,
-          tooltip: "Total de prontuários que já passaram por todas as etapas de validação e foram finalizados com sucesso.",
+          tooltip: "Total de saídas de prontuários registradas no sistema.",
           onClick: () => onNavigate?.("saida-prontuarios"),
         }
       );
