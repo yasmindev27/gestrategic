@@ -4737,6 +4737,7 @@ export type Database = {
       }
       saida_prontuarios: {
         Row: {
+          cadastro_conferido: boolean | null
           conferido_nir_em: string | null
           conferido_nir_por: string | null
           created_at: string
@@ -4759,6 +4760,7 @@ export type Database = {
           validado_classificacao_por: string | null
         }
         Insert: {
+          cadastro_conferido?: boolean | null
           conferido_nir_em?: string | null
           conferido_nir_por?: string | null
           created_at?: string
@@ -4781,6 +4783,7 @@ export type Database = {
           validado_classificacao_por?: string | null
         }
         Update: {
+          cadastro_conferido?: boolean | null
           conferido_nir_em?: string | null
           conferido_nir_por?: string | null
           created_at?: string

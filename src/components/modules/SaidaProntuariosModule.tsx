@@ -89,6 +89,7 @@ interface SaidaProntuario {
   observacao_nir: string | null;
   is_folha_avulsa: boolean | null;
   possui_carimbo_medico: boolean | null;
+  cadastro_conferido: boolean | null;
   created_at: string;
 }
 
@@ -134,6 +135,7 @@ export const SaidaProntuariosModule = () => {
   const [pacienteNome, setPacienteNome] = useState("");
   const [nascimentoMae, setNascimentoMae] = useState("");
   const [dataAtendimento, setDataAtendimento] = useState("");
+  const [cadastroConferido, setCadastroConferido] = useState(false);
   const [possuiCarimboMedico, setPossuiCarimboMedico] = useState(false);
   const [observacaoSaida, setObservacaoSaida] = useState("");
   const [existeFisicamente, setExisteFisicamente] = useState(true);
@@ -364,6 +366,7 @@ export const SaidaProntuariosModule = () => {
           paciente_nome: pacienteNome.trim(),
           nascimento_mae: nascimentoMae || null,
           data_atendimento: dataAtendimento,
+          cadastro_conferido: cadastroConferido,
           possui_carimbo_medico: possuiCarimboMedico,
           observacao_classificacao: observacaoSaida.trim() || null,
           registrado_recepcao_por: userId,
@@ -387,6 +390,7 @@ export const SaidaProntuariosModule = () => {
       setPacienteNome("");
       setNascimentoMae("");
       setDataAtendimento("");
+      setCadastroConferido(false);
       setPossuiCarimboMedico(false);
       setObservacaoSaida("");
       fetchSaidas();
@@ -963,19 +967,32 @@ export const SaidaProntuariosModule = () => {
                     </div>
                     <div className="border rounded-lg p-4 bg-muted/30">
                       <p className="text-sm font-medium mb-3">Checklist de Verificação <span className="text-destructive">*</span></p>
-                      <div className="flex items-center space-x-3">
-                        <Checkbox
-                          id="carimbo-medico"
-                          checked={possuiCarimboMedico}
-                          onCheckedChange={(checked) => setPossuiCarimboMedico(checked === true)}
-                          required
-                        />
-                        <label htmlFor="carimbo-medico" className="text-sm cursor-pointer">
-                          O prontuário possui carimbo médico?
-                        </label>
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
+                            id="cadastro-conferido"
+                            checked={cadastroConferido}
+                            onCheckedChange={(checked) => setCadastroConferido(checked === true)}
+                            required
+                          />
+                          <label htmlFor="cadastro-conferido" className="text-sm cursor-pointer">
+                            Cadastro conferido e identificação do paciente correta?
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
+                            id="carimbo-medico"
+                            checked={possuiCarimboMedico}
+                            onCheckedChange={(checked) => setPossuiCarimboMedico(checked === true)}
+                            required
+                          />
+                          <label htmlFor="carimbo-medico" className="text-sm cursor-pointer">
+                            O prontuário possui carimbo médico?
+                          </label>
+                        </div>
                       </div>
-                      {!possuiCarimboMedico && (
-                        <p className="text-xs text-destructive mt-2">⚠ É obrigatório confirmar o carimbo médico para registrar.</p>
+                      {(!cadastroConferido || !possuiCarimboMedico) && (
+                        <p className="text-xs text-destructive mt-2">⚠ É obrigatório confirmar todos os itens para registrar.</p>
                       )}
                     </div>
                     <div>
@@ -991,7 +1008,7 @@ export const SaidaProntuariosModule = () => {
                   <DialogFooter>
                     <Button 
                       onClick={handleAddSaida} 
-                      disabled={!pacienteNome.trim() || !dataAtendimento || !possuiCarimboMedico || isSubmitting}
+                      disabled={!pacienteNome.trim() || !dataAtendimento || !cadastroConferido || !possuiCarimboMedico || isSubmitting}
                     >
                       {isSubmitting ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
