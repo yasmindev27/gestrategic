@@ -112,6 +112,7 @@ const Sidebar = ({
         { icon: Calendar, label: "Agenda", id: "agenda" },
         { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
         { icon: GraduationCap, label: "Treinamentos", id: "lms" },
+        { icon: AlertTriangle, label: "Abrir Notificação", id: "reportar-incidente" },
         { icon: MessageSquare, label: "Chat", id: "chat" }
       );
       return items;
