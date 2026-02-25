@@ -40,6 +40,7 @@ interface Profile {
   user_id: string;
   full_name: string;
   matricula: string | null;
+  cargo: string | null;
 }
 
 export const BancoHorasSection = () => {
@@ -60,6 +61,7 @@ export const BancoHorasSection = () => {
   const [filterDataInicio, setFilterDataInicio] = useState("");
   const [filterDataFim, setFilterDataFim] = useState("");
   const [filterProfissionais, setFilterProfissionais] = useState<string[]>([]);
+  const [filterCargo, setFilterCargo] = useState("todos");
 
   // Form state
   const [formData, setFormData] = useState({
@@ -93,7 +95,7 @@ export const BancoHorasSection = () => {
           .order("funcionario_nome", { ascending: true }),
         supabase
           .from("profiles")
-          .select("user_id, full_name, matricula")
+          .select("user_id, full_name, matricula, cargo")
           .order("full_name"),
       ]);
 
@@ -249,7 +251,12 @@ export const BancoHorasSection = () => {
     const matchesDataFim = !filterDataFim || r.data <= filterDataFim;
     const matchesCard = cardFilter === "todos" || r.tipo === cardFilter;
     const matchesProfissionais = filterProfissionais.length === 0 || filterProfissionais.includes(r.funcionario_user_id);
-    return matchesSearch && matchesTipo && matchesDataInicio && matchesDataFim && matchesCard && matchesProfissionais;
+    // Cargo filter: match profile cargo
+    const matchesCargo = filterCargo === "todos" || (() => {
+      const profile = profiles.find(p => p.user_id === r.funcionario_user_id);
+      return profile?.cargo === filterCargo;
+    })();
+    return matchesSearch && matchesTipo && matchesDataInicio && matchesDataFim && matchesCard && matchesProfissionais && matchesCargo;
   });
 
   const totalCreditos = registros
@@ -367,10 +374,13 @@ export const BancoHorasSection = () => {
   // Relatório PDF de Saldo (Crédito - Débito) por colaborador
   const handleExportSaldoPDF = async () => {
     const dadosFiltrados = filteredRegistros;
-    const grouped: Record<string, { nome: string; credito: number; debito: number }> = {};
+    const grouped: Record<string, { nome: string; cargo: string; credito: number; debito: number }> = {};
     dadosFiltrados.forEach(r => {
       const key = r.funcionario_user_id;
-      if (!grouped[key]) grouped[key] = { nome: r.funcionario_nome, credito: 0, debito: 0 };
+      if (!grouped[key]) {
+        const profile = profiles.find(p => p.user_id === r.funcionario_user_id);
+        grouped[key] = { nome: r.funcionario_nome, cargo: profile?.cargo || 'N/A', credito: 0, debito: 0 };
+      }
       if (r.tipo === 'credito') grouped[key].credito += Number(r.horas);
       else grouped[key].debito += Number(r.horas);
     });
@@ -381,6 +391,7 @@ export const BancoHorasSection = () => {
         const saldo = c.credito - c.debito;
         return [
           c.nome,
+          c.cargo,
           formatHM(c.credito),
           formatHM(c.debito),
           `${saldo >= 0 ? '+' : '-'}${formatHM(Math.abs(saldo))}`,
@@ -390,7 +401,7 @@ export const BancoHorasSection = () => {
     const { doc, logoImg } = await createStandardPdf('Relatório de Saldo de Horas', 'portrait');
 
     autoTable(doc, {
-      head: [['Colaborador', 'Horas Positivas', 'Horas Negativas', 'Saldo Final']],
+      head: [['Colaborador', 'Cargo', 'Horas Positivas', 'Horas Negativas', 'Saldo Final']],
       body: saldoRows,
       startY: 32,
       styles: { fontSize: 9, cellPadding: 3 },
@@ -398,12 +409,12 @@ export const BancoHorasSection = () => {
       alternateRowStyles: { fillColor: [245, 245, 245] },
       margin: { top: 32, bottom: 28 },
       columnStyles: {
-        1: { halign: 'center' },
         2: { halign: 'center' },
-        3: { halign: 'center', fontStyle: 'bold' },
+        3: { halign: 'center' },
+        4: { halign: 'center', fontStyle: 'bold' },
       },
       didParseCell: (data) => {
-        if (data.section === 'body' && data.column.index === 3) {
+        if (data.section === 'body' && data.column.index === 4) {
           const val = String(data.cell.raw);
           if (val.startsWith('+')) {
             data.cell.styles.textColor = [22, 163, 74];
@@ -1060,6 +1071,22 @@ export const BancoHorasSection = () => {
                 </Select>
               </div>
               <div className="space-y-1">
+                <Label className="text-xs">Cargo</Label>
+                <Select value={filterCargo} onValueChange={setFilterCargo}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Cargo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os Cargos</SelectItem>
+                    {[...new Set(profiles.map(p => p.cargo).filter(Boolean))]
+                      .sort((a, b) => (a || '').localeCompare(b || ''))
+                      .map(cargo => (
+                        <SelectItem key={cargo!} value={cargo!}>{cargo}</SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
                 <Label className="text-xs">Data Início</Label>
                 <Input
                   type="date"
@@ -1083,6 +1110,7 @@ export const BancoHorasSection = () => {
                   size="sm"
                   onClick={() => {
                     setFilterTipo("todos");
+                    setFilterCargo("todos");
                     setFilterDataInicio("");
                     setFilterDataFim("");
                     setFilterProfissionais([]);
