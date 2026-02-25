@@ -88,6 +88,7 @@ interface SaidaProntuario {
   conferido_nir_por: string | null;
   observacao_nir: string | null;
   is_folha_avulsa: boolean | null;
+  possui_carimbo_medico: boolean | null;
   created_at: string;
 }
 
@@ -132,6 +133,7 @@ export const SaidaProntuariosModule = () => {
   const [pacienteNome, setPacienteNome] = useState("");
   const [nascimentoMae, setNascimentoMae] = useState("");
   const [dataAtendimento, setDataAtendimento] = useState("");
+  const [possuiCarimboMedico, setPossuiCarimboMedico] = useState(false);
   const [existeFisicamente, setExisteFisicamente] = useState(true);
   const [observacao, setObservacao] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -308,6 +310,7 @@ export const SaidaProntuariosModule = () => {
           paciente_nome: pacienteNome.trim(),
           nascimento_mae: nascimentoMae || null,
           data_atendimento: dataAtendimento,
+          possui_carimbo_medico: possuiCarimboMedico,
           registrado_recepcao_por: userId,
           registrado_recepcao_em: new Date().toISOString(),
           status: "aguardando_classificacao",
@@ -329,6 +332,7 @@ export const SaidaProntuariosModule = () => {
       setPacienteNome("");
       setNascimentoMae("");
       setDataAtendimento("");
+      setPossuiCarimboMedico(false);
       fetchSaidas();
     } catch (error) {
       console.error("Error:", error);
@@ -744,11 +748,12 @@ export const SaidaProntuariosModule = () => {
   };
 
   const getExportData = () => {
-    const headers = ['Paciente', 'Data Nasc.', 'Data Atendimento', 'Status', 'Recepção', 'Classificação', 'NIR'];
+    const headers = ['Paciente', 'Data Nasc.', 'Data Atendimento', 'Carimbo Médico', 'Status', 'Recepção', 'Classificação', 'NIR'];
     const rows = filteredSaidas.map(s => [
       s.paciente_nome || '-',
       safeFormatDate(s.nascimento_mae, "dd/MM/yyyy"),
       safeFormatDate(s.data_atendimento, "dd/MM/yyyy"),
+      s.possui_carimbo_medico ? 'Sim' : 'Não',
       s.status,
       safeFormatDate(s.registrado_recepcao_em, "dd/MM/yy HH:mm"),
       safeFormatDate(s.validado_classificacao_em, "dd/MM/yy HH:mm"),
@@ -899,6 +904,19 @@ export const SaidaProntuariosModule = () => {
                         value={dataAtendimento}
                         onChange={(e) => setDataAtendimento(e.target.value)}
                       />
+                    </div>
+                    <div className="border rounded-lg p-4 bg-muted/30">
+                      <p className="text-sm font-medium mb-3">Checklist de Verificação</p>
+                      <div className="flex items-center space-x-3">
+                        <Checkbox
+                          id="carimbo-medico"
+                          checked={possuiCarimboMedico}
+                          onCheckedChange={(checked) => setPossuiCarimboMedico(checked === true)}
+                        />
+                        <label htmlFor="carimbo-medico" className="text-sm cursor-pointer">
+                          O prontuário possui carimbo médico?
+                        </label>
+                      </div>
                     </div>
                   </div>
                   <DialogFooter>
@@ -1172,6 +1190,7 @@ export const SaidaProntuariosModule = () => {
                     <TableHead>Paciente</TableHead>
                     <TableHead>Data Nasc.</TableHead>
                     <TableHead>Data Atendimento</TableHead>
+                    <TableHead>Carimbo</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Recepção</TableHead>
                     <TableHead>Classificação</TableHead>
@@ -1202,6 +1221,13 @@ export const SaidaProntuariosModule = () => {
                         </TableCell>
                         <TableCell>
                           {safeFormatDate(saida.data_atendimento, "dd/MM/yyyy")}
+                        </TableCell>
+                        <TableCell>
+                          {saida.possui_carimbo_medico ? (
+                            <Badge className="bg-success text-success-foreground text-xs">✓ Sim</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-destructive border-destructive text-xs">✗ Não</Badge>
+                          )}
                         </TableCell>
                         <TableCell>{getStatusBadge(saida.status)}</TableCell>
                         <TableCell>
