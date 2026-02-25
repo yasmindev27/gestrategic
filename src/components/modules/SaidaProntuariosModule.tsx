@@ -1077,19 +1077,19 @@ export const SaidaProntuariosModule = () => {
           {canInsert && (
             <>
               <Dialog open={newProntuarioOpen} onOpenChange={setNewProntuarioOpen}>
-                <DialogTrigger asChild>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DialogTrigger asChild>
                         <Button>
                           <Plus className="h-4 w-4 mr-2" />
                           Registrar Saída
                         </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Registrar a saída de um prontuário do setor</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </DialogTrigger>
+                      </DialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>Registrar a saída de um prontuário do setor</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Registrar Saída de Prontuário</DialogTitle>
@@ -1184,19 +1184,19 @@ export const SaidaProntuariosModule = () => {
               </Dialog>
 
               {!isRecepcao && !isClassificacao && <Dialog open={newFolhaAvulsaOpen} onOpenChange={setNewFolhaAvulsaOpen}>
-                <DialogTrigger asChild>
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DialogTrigger asChild>
                         <Button variant="secondary">
                           <FileStack className="h-4 w-4 mr-2" />
                           Folha Avulsa
                         </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Registrar folha avulsa de prontuário incompleto</TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </DialogTrigger>
+                      </DialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>Registrar folha avulsa de prontuário incompleto</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
