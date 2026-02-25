@@ -249,9 +249,7 @@ export const SaidaProntuariosModule = () => {
       const folhasCountQueryBase = supabase
         .from("saida_prontuarios")
         .select("*", { count: "exact", head: true })
-        .eq("is_folha_avulsa", true)
-        .gte("created_at", inicioHoje)
-        .lte("created_at", fimHoje);
+        .eq("is_folha_avulsa", true);
 
       const faltantesCountQueryBase = supabase
         .from("saida_prontuarios")
