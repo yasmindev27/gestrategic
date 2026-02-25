@@ -1209,7 +1209,7 @@ export const SaidaProntuariosModule = () => {
                 <p className="text-2xl font-bold text-primary">
                   {isFaturamento || isAdmin
                     ? (hasActiveFilters ? filteredSaidas.length : totalSaidasCount)
-                    : totalSaidasHojeCount
+                    : filteredSaidas.length
                   }
                 </p>
                 {(isFaturamento || isAdmin) && hasActiveFilters && (
