@@ -13,11 +13,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Plus, Search, Clock, TrendingUp, TrendingDown, Download, Upload, Filter, FileText, Pencil, Trash2, BarChart3, Trophy, Medal, Award, Users } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Search, Clock, TrendingUp, TrendingDown, Download, Upload, Filter, FileText, Pencil, Trash2, BarChart3, Trophy, Medal, Award, Users, FileBarChart } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
-import { exportToCSV, exportToPDF } from "@/lib/export-utils";
+import { exportToCSV, exportToPDF, createStandardPdf, savePdfWithFooter } from "@/lib/export-utils";
+import autoTable from "jspdf-autotable";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--info))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--accent))'];
@@ -57,6 +59,7 @@ export const BancoHorasSection = () => {
   const [cardFilter, setCardFilter] = useState<"todos" | "credito" | "debito">("todos");
   const [filterDataInicio, setFilterDataInicio] = useState("");
   const [filterDataFim, setFilterDataFim] = useState("");
+  const [filterProfissionais, setFilterProfissionais] = useState<string[]>([]);
 
   // Form state
   const [formData, setFormData] = useState({
@@ -245,7 +248,8 @@ export const BancoHorasSection = () => {
     const matchesDataInicio = !filterDataInicio || r.data >= filterDataInicio;
     const matchesDataFim = !filterDataFim || r.data <= filterDataFim;
     const matchesCard = cardFilter === "todos" || r.tipo === cardFilter;
-    return matchesSearch && matchesTipo && matchesDataInicio && matchesDataFim && matchesCard;
+    const matchesProfissionais = filterProfissionais.length === 0 || filterProfissionais.includes(r.funcionario_user_id);
+    return matchesSearch && matchesTipo && matchesDataInicio && matchesDataFim && matchesCard && matchesProfissionais;
   });
 
   const totalCreditos = registros
@@ -358,6 +362,60 @@ export const BancoHorasSection = () => {
       title: "Exportado",
       description: "Arquivo PDF exportado com sucesso.",
     });
+  };
+
+  // Relatório PDF de Saldo (Crédito - Débito) por colaborador
+  const handleExportSaldoPDF = async () => {
+    const dadosFiltrados = filteredRegistros;
+    const grouped: Record<string, { nome: string; credito: number; debito: number }> = {};
+    dadosFiltrados.forEach(r => {
+      const key = r.funcionario_user_id;
+      if (!grouped[key]) grouped[key] = { nome: r.funcionario_nome, credito: 0, debito: 0 };
+      if (r.tipo === 'credito') grouped[key].credito += Number(r.horas);
+      else grouped[key].debito += Number(r.horas);
+    });
+
+    const saldoRows = Object.values(grouped)
+      .sort((a, b) => a.nome.localeCompare(b.nome))
+      .map(c => {
+        const saldo = c.credito - c.debito;
+        return [
+          c.nome,
+          formatHM(c.credito),
+          formatHM(c.debito),
+          `${saldo >= 0 ? '+' : '-'}${formatHM(Math.abs(saldo))}`,
+        ];
+      });
+
+    const { doc, logoImg } = await createStandardPdf('Relatório de Saldo de Horas', 'portrait');
+
+    autoTable(doc, {
+      head: [['Colaborador', 'Horas Positivas', 'Horas Negativas', 'Saldo Final']],
+      body: saldoRows,
+      startY: 32,
+      styles: { fontSize: 9, cellPadding: 3 },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      margin: { top: 32, bottom: 28 },
+      columnStyles: {
+        1: { halign: 'center' },
+        2: { halign: 'center' },
+        3: { halign: 'center', fontStyle: 'bold' },
+      },
+      didParseCell: (data) => {
+        if (data.section === 'body' && data.column.index === 3) {
+          const val = String(data.cell.raw);
+          if (val.startsWith('+')) {
+            data.cell.styles.textColor = [22, 163, 74];
+          } else if (val.startsWith('-')) {
+            data.cell.styles.textColor = [220, 38, 38];
+          }
+        }
+      },
+    });
+
+    savePdfWithFooter(doc, 'Relatório de Saldo de Horas', 'relatorio_saldo_horas', logoImg);
+    toast({ title: "Exportado", description: "Relatório de saldo exportado em PDF." });
   };
 
   // Exportar para Excel (XLSX original)
@@ -862,6 +920,10 @@ export const BancoHorasSection = () => {
                   <FileText className="h-4 w-4 mr-2" />
                   Exportar Excel
                 </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExportSaldoPDF}>
+                  <FileBarChart className="h-4 w-4 mr-2" />
+                  Relatório Saldo (PDF)
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
             
@@ -982,50 +1044,99 @@ export const BancoHorasSection = () => {
 
         {/* Filtros expandidos */}
         {showFilters && (
-          <div className="flex flex-wrap gap-4 p-4 bg-secondary/30 rounded-lg">
-            <div className="space-y-1">
-              <Label className="text-xs">Tipo</Label>
-              <Select value={filterTipo} onValueChange={setFilterTipo}>
-                <SelectTrigger className="w-[150px]">
-                  <SelectValue placeholder="Tipo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todos">Todos Tipos</SelectItem>
-                  <SelectItem value="credito">Crédito</SelectItem>
-                  <SelectItem value="debito">Débito</SelectItem>
-                </SelectContent>
-              </Select>
+          <div className="flex flex-col gap-4 p-4 bg-secondary/30 rounded-lg">
+            <div className="flex flex-wrap gap-4">
+              <div className="space-y-1">
+                <Label className="text-xs">Tipo</Label>
+                <Select value={filterTipo} onValueChange={setFilterTipo}>
+                  <SelectTrigger className="w-[150px]">
+                    <SelectValue placeholder="Tipo" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos Tipos</SelectItem>
+                    <SelectItem value="credito">Crédito</SelectItem>
+                    <SelectItem value="debito">Débito</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Data Início</Label>
+                <Input
+                  type="date"
+                  value={filterDataInicio}
+                  onChange={(e) => setFilterDataInicio(e.target.value)}
+                  className="w-[150px]"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Data Fim</Label>
+                <Input
+                  type="date"
+                  value={filterDataFim}
+                  onChange={(e) => setFilterDataFim(e.target.value)}
+                  className="w-[150px]"
+                />
+              </div>
+              <div className="flex items-end">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setFilterTipo("todos");
+                    setFilterDataInicio("");
+                    setFilterDataFim("");
+                    setFilterProfissionais([]);
+                  }}
+                >
+                  Limpar filtros
+                </Button>
+              </div>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Data Início</Label>
-              <Input
-                type="date"
-                value={filterDataInicio}
-                onChange={(e) => setFilterDataInicio(e.target.value)}
-                className="w-[150px]"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Data Fim</Label>
-              <Input
-                type="date"
-                value={filterDataFim}
-                onChange={(e) => setFilterDataFim(e.target.value)}
-                className="w-[150px]"
-              />
-            </div>
-            <div className="flex items-end">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setFilterTipo("todos");
-                  setFilterDataInicio("");
-                  setFilterDataFim("");
-                }}
-              >
-                Limpar filtros
-              </Button>
+
+            {/* Seleção de profissionais */}
+            <div className="space-y-2">
+              <Label className="text-xs font-medium">Filtrar por Profissionais</Label>
+              <div className="flex flex-wrap gap-2 items-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const uniqueIds = [...new Set(registros.map(r => r.funcionario_user_id))];
+                    setFilterProfissionais(uniqueIds);
+                  }}
+                >
+                  Selecionar todos
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setFilterProfissionais([])}
+                >
+                  Limpar seleção
+                </Button>
+                {filterProfissionais.length > 0 && (
+                  <Badge variant="secondary">{filterProfissionais.length} selecionado(s)</Badge>
+                )}
+              </div>
+              <div className="max-h-48 overflow-y-auto border rounded-md p-2 bg-background grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
+                {[...new Map(registros.map(r => [r.funcionario_user_id, r.funcionario_nome])).entries()]
+                  .sort((a, b) => a[1].localeCompare(b[1]))
+                  .map(([userId, nome]) => (
+                    <label key={userId} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                      <Checkbox
+                        checked={filterProfissionais.includes(userId)}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            setFilterProfissionais(prev => [...prev, userId]);
+                          } else {
+                            setFilterProfissionais(prev => prev.filter(id => id !== userId));
+                          }
+                        }}
+                      />
+                      <span className="truncate">{nome}</span>
+                    </label>
+                  ))}
+              </div>
             </div>
           </div>
         )}
