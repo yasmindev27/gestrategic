@@ -1538,8 +1538,9 @@ export const SaidaProntuariosModule = () => {
                             return (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="text-xs h-auto py-1 px-2">
-                                    {safeFormatDate(entrega.data_hora, "dd/MM/yy HH:mm")}
+                                  <Button variant="outline" size="sm" className="text-xs h-7 gap-1">
+                                    <Send className="h-3 w-3" />
+                                    {safeFormatDate(entrega.data_hora, "dd/MM HH:mm")}
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-56 p-3">
@@ -1571,8 +1572,9 @@ export const SaidaProntuariosModule = () => {
                             return (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="text-xs h-auto py-1 px-2">
-                                    {safeFormatDate(entrega.data_hora, "dd/MM/yy HH:mm")}
+                                  <Button variant="outline" size="sm" className="text-xs h-7 gap-1">
+                                    <Send className="h-3 w-3" />
+                                    {safeFormatDate(entrega.data_hora, "dd/MM HH:mm")}
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-56 p-3">
@@ -1597,8 +1599,9 @@ export const SaidaProntuariosModule = () => {
                             return (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="text-xs h-auto py-1 px-2">
-                                    {safeFormatDate(entrega.data_hora, "dd/MM/yy HH:mm")}
+                                  <Button variant="outline" size="sm" className="text-xs h-7 gap-1">
+                                    <Send className="h-3 w-3" />
+                                    {safeFormatDate(entrega.data_hora, "dd/MM HH:mm")}
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-56 p-3">
