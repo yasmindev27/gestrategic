@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,26 +12,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { 
   Plus, 
-  Trash2, 
-  GripVertical, 
   Users, 
   Building2, 
   Briefcase, 
   Globe,
   X,
   Save,
-  Loader2
+  Loader2,
+  FileText
 } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-
-interface Campo {
-  id?: string;
-  tipo: string;
-  label: string;
-  obrigatorio: boolean;
-  opcoes: string[];
-  ordem: number;
-}
+import { QuestionCard, AddQuestionButton, type QuestionData } from "@/components/form-builder";
 
 interface Permissao {
   tipo_permissao: "usuario" | "cargo" | "setor" | "todos";
@@ -69,18 +59,8 @@ interface FormularioDialogProps {
   onSuccess: () => void;
 }
 
-const tiposCampo = [
-  { value: "texto", label: "Texto curto" },
-  { value: "texto_longo", label: "Texto longo" },
-  { value: "numero", label: "Número" },
-  { value: "data", label: "Data" },
-  { value: "selecao", label: "Seleção única" },
-  { value: "multipla_escolha", label: "Múltipla escolha" },
-  { value: "sim_nao", label: "Sim/Não" },
-];
-
 export const FormularioDialog = ({ open, onOpenChange, formulario, onSuccess }: FormularioDialogProps) => {
-  const [activeTab, setActiveTab] = useState("info");
+  const [activeTab, setActiveTab] = useState("campos");
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
@@ -90,12 +70,9 @@ export const FormularioDialog = ({ open, onOpenChange, formulario, onSuccess }: 
   const [prazo, setPrazo] = useState("");
   const [status, setStatus] = useState("rascunho");
   
-  // Campos
-  const [campos, setCampos] = useState<Campo[]>([]);
-  const [novoCampoTipo, setNovoCampoTipo] = useState("texto");
-  const [novoCampoLabel, setNovoCampoLabel] = useState("");
-  const [novoCampoObrigatorio, setNovoCampoObrigatorio] = useState(false);
-  const [novoCampoOpcoes, setNovoCampoOpcoes] = useState("");
+  // Campos (questions)
+  const [campos, setCampos] = useState<QuestionData[]>([]);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   
   // Permissões
   const [permissoes, setPermissoes] = useState<Permissao[]>([]);
@@ -125,7 +102,8 @@ export const FormularioDialog = ({ open, onOpenChange, formulario, onSuccess }: 
     setStatus("rascunho");
     setCampos([]);
     setPermissoes([]);
-    setActiveTab("info");
+    setActiveTab("campos");
+    setSelectedIndex(null);
   };
 
   const loadAuxiliaryData = async () => {
@@ -154,7 +132,6 @@ export const FormularioDialog = ({ open, onOpenChange, formulario, onSuccess }: 
       setPrazo(formulario.prazo || "");
       setStatus(formulario.status);
 
-      // Carregar campos
       const { data: camposData } = await supabase
         .from("formulario_campos")
         .select("*")
@@ -172,7 +149,6 @@ export const FormularioDialog = ({ open, onOpenChange, formulario, onSuccess }: 
         })));
       }
 
-      // Carregar permissões
       const { data: permissoesData } = await supabase
         .from("formulario_permissoes")
         .select("*")
@@ -192,37 +168,33 @@ export const FormularioDialog = ({ open, onOpenChange, formulario, onSuccess }: 
     }
   };
 
-  const adicionarCampo = () => {
-    if (!novoCampoLabel.trim()) {
-      toast.error("Informe o nome do campo");
-      return;
-    }
-
-    const needsOptions = ["selecao", "multipla_escolha"].includes(novoCampoTipo);
-    if (needsOptions && !novoCampoOpcoes.trim()) {
-      toast.error("Informe as opções separadas por vírgula");
-      return;
-    }
-
-    const novoCampo: Campo = {
-      tipo: novoCampoTipo,
-      label: novoCampoLabel.trim(),
-      obrigatorio: novoCampoObrigatorio,
-      opcoes: needsOptions ? novoCampoOpcoes.split(",").map(o => o.trim()).filter(Boolean) : [],
-      ordem: campos.length
-    };
-
-    setCampos([...campos, novoCampo]);
-    setNovoCampoLabel("");
-    setNovoCampoOpcoes("");
-    setNovoCampoObrigatorio(false);
-    toast.success("Campo adicionado");
+  // Question handlers
+  const handleAddQuestion = (question: QuestionData) => {
+    const newCampos = [...campos, { ...question, ordem: campos.length }];
+    setCampos(newCampos);
+    setSelectedIndex(newCampos.length - 1);
   };
 
-  const removerCampo = (index: number) => {
+  const handleUpdateQuestion = (index: number, updated: QuestionData) => {
+    const newCampos = [...campos];
+    newCampos[index] = updated;
+    setCampos(newCampos);
+  };
+
+  const handleDeleteQuestion = (index: number) => {
     setCampos(campos.filter((_, i) => i !== index));
+    setSelectedIndex(null);
   };
 
+  const handleDuplicateQuestion = (index: number) => {
+    const copy = { ...campos[index], id: undefined, ordem: campos.length };
+    const newCampos = [...campos];
+    newCampos.splice(index + 1, 0, copy);
+    setCampos(newCampos);
+    setSelectedIndex(index + 1);
+  };
+
+  // Permissões
   const adicionarPermissao = () => {
     if (tipoPermissao === "todos") {
       if (permissoes.some(p => p.tipo_permissao === "todos")) {
@@ -254,14 +226,8 @@ export const FormularioDialog = ({ open, onOpenChange, formulario, onSuccess }: 
       const profile = profiles.find(p => p.user_id === permissao.valor);
       return profile?.full_name || permissao.valor;
     }
-    if (permissao.tipo_permissao === "cargo") {
-      const cargo = cargos.find(c => c.nome === permissao.valor);
-      return cargo?.nome || permissao.valor;
-    }
-    if (permissao.tipo_permissao === "setor") {
-      const setor = setores.find(s => s.nome === permissao.valor);
-      return setor?.nome || permissao.valor;
-    }
+    if (permissao.tipo_permissao === "cargo") return permissao.valor;
+    if (permissao.tipo_permissao === "setor") return permissao.valor;
     return permissao.valor;
   };
 
@@ -279,43 +245,26 @@ export const FormularioDialog = ({ open, onOpenChange, formulario, onSuccess }: 
       let formularioId = formulario?.id;
 
       if (formularioId) {
-        // Update
         const { error } = await supabase
           .from("formularios")
-          .update({
-            titulo: titulo.trim(),
-            descricao: descricao.trim() || null,
-            prazo: prazo || null,
-            status
-          })
+          .update({ titulo: titulo.trim(), descricao: descricao.trim() || null, prazo: prazo || null, status })
           .eq("id", formularioId);
-
         if (error) throw error;
 
-        // Deletar campos e permissões existentes
         await Promise.all([
           supabase.from("formulario_campos").delete().eq("formulario_id", formularioId),
           supabase.from("formulario_permissoes").delete().eq("formulario_id", formularioId)
         ]);
       } else {
-        // Create
         const { data, error } = await supabase
           .from("formularios")
-          .insert({
-            titulo: titulo.trim(),
-            descricao: descricao.trim() || null,
-            prazo: prazo || null,
-            status,
-            criado_por: userData.user.id
-          })
+          .insert({ titulo: titulo.trim(), descricao: descricao.trim() || null, prazo: prazo || null, status, criado_por: userData.user.id })
           .select("id")
           .single();
-
         if (error) throw error;
         formularioId = data.id;
       }
 
-      // Inserir campos
       if (campos.length > 0) {
         const camposInsert = campos.map((campo, index) => ({
           formulario_id: formularioId,
@@ -325,26 +274,17 @@ export const FormularioDialog = ({ open, onOpenChange, formulario, onSuccess }: 
           opcoes: campo.opcoes.length > 0 ? campo.opcoes : null,
           ordem: index
         }));
-
-        const { error: camposError } = await supabase
-          .from("formulario_campos")
-          .insert(camposInsert);
-
+        const { error: camposError } = await supabase.from("formulario_campos").insert(camposInsert);
         if (camposError) throw camposError;
       }
 
-      // Inserir permissões
       if (permissoes.length > 0) {
         const permissoesInsert = permissoes.map(p => ({
           formulario_id: formularioId,
           tipo_permissao: p.tipo_permissao,
           valor: p.valor
         }));
-
-        const { error: permError } = await supabase
-          .from("formulario_permissoes")
-          .insert(permissoesInsert);
-
+        const { error: permError } = await supabase.from("formulario_permissoes").insert(permissoesInsert);
         if (permError) throw permError;
       }
 
@@ -361,15 +301,47 @@ export const FormularioDialog = ({ open, onOpenChange, formulario, onSuccess }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col">
-        <DialogHeader>
-          <DialogTitle>
-            {formulario?.id ? "Editar Formulário" : "Novo Formulário"}
-          </DialogTitle>
-          <DialogDescription>
-            Configure as informações, campos e permissões do formulário
-          </DialogDescription>
-        </DialogHeader>
+      <DialogContent className="max-w-4xl max-h-[95vh] overflow-hidden flex flex-col p-0">
+        {/* Header styled like Google Forms */}
+        <div className="bg-primary/5 border-b p-6 space-y-3">
+          <Input
+            value={titulo}
+            onChange={(e) => setTitulo(e.target.value)}
+            placeholder="Título do formulário"
+            className="text-2xl font-bold border-0 border-b-2 border-transparent focus-visible:border-primary rounded-none px-0 bg-transparent focus-visible:ring-0 h-auto py-1"
+          />
+          <Textarea
+            value={descricao}
+            onChange={(e) => setDescricao(e.target.value)}
+            placeholder="Descrição do formulário (opcional)"
+            className="border-0 border-b border-transparent focus-visible:border-primary rounded-none px-0 bg-transparent focus-visible:ring-0 resize-none text-sm text-muted-foreground min-h-0"
+            rows={1}
+          />
+          <div className="flex gap-3 items-center flex-wrap">
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground whitespace-nowrap">Prazo:</Label>
+              <Input
+                type="date"
+                value={prazo}
+                onChange={(e) => setPrazo(e.target.value)}
+                className="h-8 w-auto text-xs"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">Status:</Label>
+              <Select value={status} onValueChange={setStatus}>
+                <SelectTrigger className="h-8 w-auto text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="rascunho">Rascunho</SelectItem>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="encerrado">Encerrado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
 
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
@@ -378,156 +350,53 @@ export const FormularioDialog = ({ open, onOpenChange, formulario, onSuccess }: 
         ) : (
           <>
             <Tabs value={activeTab} onValueChange={setActiveTab} className="flex-1 overflow-hidden flex flex-col">
-              <TabsList className="grid w-full grid-cols-3">
-                <TabsTrigger value="info">Informações</TabsTrigger>
-                <TabsTrigger value="campos">Campos ({campos.length})</TabsTrigger>
-                <TabsTrigger value="permissoes">Permissões ({permissoes.length})</TabsTrigger>
-              </TabsList>
+              <div className="px-6 pt-2">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="campos" className="gap-1">
+                    <FileText className="h-4 w-4" />
+                    Perguntas ({campos.length})
+                  </TabsTrigger>
+                  <TabsTrigger value="permissoes" className="gap-1">
+                    <Users className="h-4 w-4" />
+                    Permissões ({permissoes.length})
+                  </TabsTrigger>
+                </TabsList>
+              </div>
 
-              <ScrollArea className="flex-1 mt-4">
-                <TabsContent value="info" className="mt-0 space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="titulo">Título *</Label>
-                    <Input
-                      id="titulo"
-                      value={titulo}
-                      onChange={(e) => setTitulo(e.target.value)}
-                      placeholder="Ex: Pesquisa de Clima Organizacional"
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="descricao">Descrição</Label>
-                    <Textarea
-                      id="descricao"
-                      value={descricao}
-                      onChange={(e) => setDescricao(e.target.value)}
-                      placeholder="Descreva o objetivo do formulário..."
-                      rows={3}
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="prazo">Prazo</Label>
-                      <Input
-                        id="prazo"
-                        type="date"
-                        value={prazo}
-                        onChange={(e) => setPrazo(e.target.value)}
+              <ScrollArea className="flex-1 px-6 pb-4">
+                <TabsContent value="campos" className="mt-4 space-y-3">
+                  {campos.length === 0 ? (
+                    <div className="py-8">
+                      <AddQuestionButton
+                        onAdd={handleAddQuestion}
+                        currentCount={campos.length}
+                        variant="full"
                       />
                     </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="status">Status</Label>
-                      <Select value={status} onValueChange={setStatus}>
-                        <SelectTrigger>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="rascunho">Rascunho</SelectItem>
-                          <SelectItem value="ativo">Ativo</SelectItem>
-                          <SelectItem value="encerrado">Encerrado</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                <TabsContent value="campos" className="mt-0 space-y-4">
-                  <Card>
-                    <CardContent className="pt-4 space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label>Tipo do campo</Label>
-                          <Select value={novoCampoTipo} onValueChange={setNovoCampoTipo}>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {tiposCampo.map(tipo => (
-                                <SelectItem key={tipo.value} value={tipo.value}>
-                                  {tipo.label}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-
-                        <div className="space-y-2">
-                          <Label>Nome do campo</Label>
-                          <Input
-                            value={novoCampoLabel}
-                            onChange={(e) => setNovoCampoLabel(e.target.value)}
-                            placeholder="Ex: Qual sua avaliação?"
-                          />
-                        </div>
-                      </div>
-
-                      {["selecao", "multipla_escolha"].includes(novoCampoTipo) && (
-                        <div className="space-y-2">
-                          <Label>Opções (separadas por vírgula)</Label>
-                          <Input
-                            value={novoCampoOpcoes}
-                            onChange={(e) => setNovoCampoOpcoes(e.target.value)}
-                            placeholder="Ex: Ótimo, Bom, Regular, Ruim"
-                          />
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <Checkbox
-                            id="obrigatorio"
-                            checked={novoCampoObrigatorio}
-                            onCheckedChange={(checked) => setNovoCampoObrigatorio(checked as boolean)}
-                          />
-                          <Label htmlFor="obrigatorio" className="cursor-pointer">
-                            Campo obrigatório
-                          </Label>
-                        </div>
-
-                        <Button onClick={adicionarCampo} size="sm">
-                          <Plus className="h-4 w-4 mr-1" />
-                          Adicionar
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {campos.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">
-                      Nenhum campo adicionado. Adicione campos acima.
-                    </p>
                   ) : (
-                    <div className="space-y-2">
+                    <>
                       {campos.map((campo, index) => (
-                        <Card key={index}>
-                          <CardContent className="py-3 flex items-center gap-3">
-                            <GripVertical className="h-4 w-4 text-muted-foreground" />
-                            <div className="flex-1">
-                              <p className="font-medium">{campo.label}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {tiposCampo.find(t => t.value === campo.tipo)?.label}
-                                {campo.obrigatorio && " • Obrigatório"}
-                                {campo.opcoes.length > 0 && ` • ${campo.opcoes.length} opções`}
-                              </p>
-                            </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => removerCampo(index)}
-                            >
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            </Button>
-                          </CardContent>
-                        </Card>
+                        <QuestionCard
+                          key={`${campo.id || index}-${index}`}
+                          question={campo}
+                          index={index}
+                          isSelected={selectedIndex === index}
+                          onSelect={() => setSelectedIndex(selectedIndex === index ? null : index)}
+                          onChange={(updated) => handleUpdateQuestion(index, updated)}
+                          onDelete={() => handleDeleteQuestion(index)}
+                          onDuplicate={() => handleDuplicateQuestion(index)}
+                        />
                       ))}
-                    </div>
+                      <AddQuestionButton
+                        onAdd={handleAddQuestion}
+                        currentCount={campos.length}
+                        variant="compact"
+                      />
+                    </>
                   )}
                 </TabsContent>
 
-                <TabsContent value="permissoes" className="mt-0 space-y-4">
+                <TabsContent value="permissoes" className="mt-4 space-y-4">
                   <Card>
                     <CardContent className="pt-4 space-y-4">
                       <div className="grid grid-cols-2 gap-4">
@@ -544,30 +413,10 @@ export const FormularioDialog = ({ open, onOpenChange, formulario, onSuccess }: 
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="todos">
-                                <div className="flex items-center gap-2">
-                                  <Globe className="h-4 w-4" />
-                                  Todos
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="usuario">
-                                <div className="flex items-center gap-2">
-                                  <Users className="h-4 w-4" />
-                                  Usuário específico
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="cargo">
-                                <div className="flex items-center gap-2">
-                                  <Briefcase className="h-4 w-4" />
-                                  Por Cargo
-                                </div>
-                              </SelectItem>
-                              <SelectItem value="setor">
-                                <div className="flex items-center gap-2">
-                                  <Building2 className="h-4 w-4" />
-                                  Por Setor
-                                </div>
-                              </SelectItem>
+                              <SelectItem value="todos"><div className="flex items-center gap-2"><Globe className="h-4 w-4" />Todos</div></SelectItem>
+                              <SelectItem value="usuario"><div className="flex items-center gap-2"><Users className="h-4 w-4" />Usuário específico</div></SelectItem>
+                              <SelectItem value="cargo"><div className="flex items-center gap-2"><Briefcase className="h-4 w-4" />Por Cargo</div></SelectItem>
+                              <SelectItem value="setor"><div className="flex items-center gap-2"><Building2 className="h-4 w-4" />Por Setor</div></SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
@@ -585,19 +434,13 @@ export const FormularioDialog = ({ open, onOpenChange, formulario, onSuccess }: 
                               </SelectTrigger>
                               <SelectContent>
                                 {tipoPermissao === "usuario" && profiles.map(p => (
-                                  <SelectItem key={p.user_id} value={p.user_id}>
-                                    {p.full_name}
-                                  </SelectItem>
+                                  <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>
                                 ))}
                                 {tipoPermissao === "cargo" && cargos.map(c => (
-                                  <SelectItem key={c.id} value={c.nome}>
-                                    {c.nome}
-                                  </SelectItem>
+                                  <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>
                                 ))}
                                 {tipoPermissao === "setor" && setores.map(s => (
-                                  <SelectItem key={s.id} value={s.nome}>
-                                    {s.nome}
-                                  </SelectItem>
+                                  <SelectItem key={s.id} value={s.nome}>{s.nome}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
@@ -621,20 +464,13 @@ export const FormularioDialog = ({ open, onOpenChange, formulario, onSuccess }: 
                   ) : (
                     <div className="flex flex-wrap gap-2">
                       {permissoes.map((perm, index) => (
-                        <Badge
-                          key={index}
-                          variant="secondary"
-                          className="flex items-center gap-1 py-1.5 px-3"
-                        >
+                        <Badge key={index} variant="secondary" className="flex items-center gap-1 py-1.5 px-3">
                           {perm.tipo_permissao === "todos" && <Globe className="h-3 w-3" />}
                           {perm.tipo_permissao === "usuario" && <Users className="h-3 w-3" />}
                           {perm.tipo_permissao === "cargo" && <Briefcase className="h-3 w-3" />}
                           {perm.tipo_permissao === "setor" && <Building2 className="h-3 w-3" />}
                           {getPermissaoLabel(perm)}
-                          <button
-                            onClick={() => removerPermissao(index)}
-                            className="ml-1 hover:text-destructive"
-                          >
+                          <button onClick={() => removerPermissao(index)} className="ml-1 hover:text-destructive">
                             <X className="h-3 w-3" />
                           </button>
                         </Badge>
@@ -645,21 +481,15 @@ export const FormularioDialog = ({ open, onOpenChange, formulario, onSuccess }: 
               </ScrollArea>
             </Tabs>
 
-            <div className="flex justify-end gap-2 pt-4 border-t">
+            <div className="flex justify-end gap-2 p-4 border-t">
               <Button variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
               <Button onClick={handleSubmit} disabled={isSaving}>
                 {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Salvando...
-                  </>
+                  <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Salvando...</>
                 ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Salvar
-                  </>
+                  <><Save className="h-4 w-4 mr-2" />Salvar</>
                 )}
               </Button>
             </div>
