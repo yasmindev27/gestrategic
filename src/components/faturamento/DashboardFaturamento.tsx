@@ -600,7 +600,7 @@ export function DashboardFaturamento() {
               {selectedPeriod && (
                 <div className="flex items-center gap-2 mb-3">
                   <Badge variant="secondary" className="text-xs">
-                    📅 Filtrando: {selectedPeriod}
+                    Filtrando: {selectedPeriod}
                   </Badge>
                   <Button
                     variant="ghost"
@@ -650,7 +650,7 @@ export function DashboardFaturamento() {
                     fontSize: "12px",
                   }}
                   formatter={(value, name) => [value, name]}
-                  labelFormatter={(label) => `📅 ${label} — clique para filtrar`}
+                  labelFormatter={(label) => `${label} — clique para filtrar`}
                 />
                 <Legend />
                 {selectedPeriod && (
@@ -664,7 +664,7 @@ export function DashboardFaturamento() {
                 <Area
                   type="monotone"
                   dataKey="lancados"
-                  name="🔵 Lançados"
+                  name="Lançados"
                   stroke="#3b82f6"
                   fill="url(#colorLancados)"
                   strokeWidth={2}
@@ -672,7 +672,7 @@ export function DashboardFaturamento() {
                 <Area
                   type="monotone"
                   dataKey="pendentes"
-                  name="🟡 Pendentes"
+                  name="Pendentes"
                   stroke="#f59e0b"
                   fill="url(#colorPendentes)"
                   strokeWidth={2}
@@ -680,7 +680,7 @@ export function DashboardFaturamento() {
                 <Area
                   type="monotone"
                   dataKey="avaliados"
-                  name="🟢 Avaliados"
+                  name="Avaliados"
                   stroke="#22c55e"
                   fill="url(#colorAvaliados)"
                   strokeWidth={2}
@@ -700,7 +700,7 @@ export function DashboardFaturamento() {
             Performance por Avaliador
             {selectedPeriod && (
               <Badge variant="outline" className="ml-2 text-xs font-normal">
-                📅 {selectedPeriod}
+                {selectedPeriod}
               </Badge>
             )}
           </CardTitle>
@@ -727,7 +727,7 @@ export function DashboardFaturamento() {
                   { value: "day" as const, label: "Hoje" },
                   { value: "week" as const, label: "Semana" },
                   { value: "month" as const, label: "Mês" },
-                  { value: "custom" as const, label: "📅 Período" },
+                  { value: "custom" as const, label: "Período" },
                 ].map((opt) => (
                   <Button
                     key={opt.value}

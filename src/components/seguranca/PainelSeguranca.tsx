@@ -171,7 +171,7 @@ export function PainelSeguranca() {
                     )}
                     {alerta.status === "atendido" && (
                       <div className="text-xs text-success mt-1 space-y-0.5">
-                        <p>✅ Atendido por: {alerta.atendido_por_nome}</p>
+                        <p>Atendido por: {alerta.atendido_por_nome}</p>
                         {alerta.desfecho && <p>Desfecho: {alerta.desfecho}</p>}
                         {alerta.atendido_em && <p>{format(new Date(alerta.atendido_em), "dd/MM HH:mm")}</p>}
                       </div>

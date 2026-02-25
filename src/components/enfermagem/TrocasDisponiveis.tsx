@@ -150,7 +150,7 @@ export function TrocasDisponiveis({ userId, userName }: TrocasDisponiveisProps) 
                                 ({troca.escala.hora_inicio} - {troca.escala.hora_fim}).
                                 {requerAprovacao && (
                                   <span className="block mt-2 text-yellow-600">
-                                    ⚠️ Esta troca precisará de aprovação do gestor.
+                                    Atenção: Esta troca precisará de aprovação do gestor.
                                   </span>
                                 )}
                               </AlertDialogDescription>
