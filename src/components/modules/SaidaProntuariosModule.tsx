@@ -104,6 +104,7 @@ export const SaidaProntuariosModule = () => {
   
   // Contagens reais (independente do limite de 1000 linhas)
   const [totalSaidasCount, setTotalSaidasCount] = useState(0);
+  const [totalSaidasHojeCount, setTotalSaidasHojeCount] = useState(0);
   const [totalFolhasCount, setTotalFolhasCount] = useState(0);
   const [totalFaltantesCount, setTotalFaltantesCount] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
@@ -177,16 +178,23 @@ export const SaidaProntuariosModule = () => {
   const fetchCounts = async () => {
     setIsLoading(true);
     try {
-      const [regularCount, folhasCount, salusCount] = await Promise.all([
+      const hoje = new Date().toISOString().split('T')[0];
+      const [regularCount, regularHojeCount, folhasCount, salusCount] = await Promise.all([
         supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
           .eq("is_folha_avulsa", false)
           .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%"),
+        supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
+          .eq("is_folha_avulsa", false)
+          .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%")
+          .gte("data_atendimento", hoje)
+          .lte("data_atendimento", hoje),
         supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
           .eq("is_folha_avulsa", true),
         supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
           .ilike("observacao_classificacao", "%importado via salus%"),
       ]);
       setTotalSaidasCount(regularCount.count ?? 0);
+      setTotalSaidasHojeCount(regularHojeCount.count ?? 0);
       setTotalFolhasCount(folhasCount.count ?? 0);
       setTotalFaltantesCount(salusCount.count ?? 0);
     } finally {
@@ -1113,9 +1121,16 @@ export const SaidaProntuariosModule = () => {
                 <Users className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total de Registros</p>
-                <p className="text-2xl font-bold text-primary">{hasActiveFilters ? filteredSaidas.length : totalSaidasCount}</p>
-                {hasActiveFilters && (
+                <p className="text-sm text-muted-foreground">
+                  {isFaturamento || isAdmin ? "Total de Registros" : "Registros do Dia"}
+                </p>
+                <p className="text-2xl font-bold text-primary">
+                  {isFaturamento || isAdmin
+                    ? (hasActiveFilters ? filteredSaidas.length : totalSaidasCount)
+                    : totalSaidasHojeCount
+                  }
+                </p>
+                {(isFaturamento || isAdmin) && hasActiveFilters && (
                   <p className="text-xs text-muted-foreground">de {totalSaidasCount} totais</p>
                 )}
               </div>
