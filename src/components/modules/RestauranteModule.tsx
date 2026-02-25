@@ -686,7 +686,7 @@ export const RestauranteModule = () => {
       body: todasSolicitacoes.map(s => [s.paciente_nome || "N/A", s.quarto_leito || "N/A", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, format(new Date(s.data_inicio), "dd/MM") + (s.data_fim ? ` - ${format(new Date(s.data_fim), "dd/MM")}` : ""), s.status.charAt(0).toUpperCase() + s.status.slice(1)]),
       startY: 32,
       styles: { fontSize: 8 },
-      margin: { bottom: 28 },
+      margin: { top: 32, bottom: 28 },
     });
     savePdfWithFooter(doc, 'Solicitações de Dieta para Pacientes', `solicitacoes_dieta_${format(new Date(), "yyyyMMdd_HHmm")}`, logoImg);
     toast({ title: "Sucesso", description: "Arquivo PDF exportado!" });
@@ -793,7 +793,7 @@ export const RestauranteModule = () => {
       body: tableData,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [59, 130, 246] },
-      margin: { bottom: 28 },
+      margin: { top: 32, bottom: 28 },
     });
     const fileName = `dietas_${format(new Date(dashboardDataInicio), "ddMMyyyy")}_${format(new Date(dashboardDataFim), "ddMMyyyy")}`;
     savePdfWithFooter(doc, 'Relatório de Solicitações de Dieta', fileName, logoImg);
@@ -862,7 +862,7 @@ export const RestauranteModule = () => {
       body: tableData,
       styles: { fontSize: 8 },
       headStyles: { fillColor: [59, 130, 246] },
-      margin: { bottom: 28 },
+      margin: { top: 32, bottom: 28 },
     });
     savePdfWithFooter(doc, 'Minhas Solicitações de Dieta', `minhas_dietas_${format(new Date(), "ddMMyyyy")}`, logoImg);
     toast({ title: "Sucesso", description: "Arquivo PDF exportado com sucesso." });
