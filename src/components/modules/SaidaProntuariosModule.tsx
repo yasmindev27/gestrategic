@@ -1363,6 +1363,33 @@ export const SaidaProntuariosModule = () => {
                             if (pendencias.length === 0) {
                               return <Badge className="bg-success text-success-foreground text-xs">Nenhuma</Badge>;
                             }
+                            if (saida.pendencia_resolvida_em) {
+                              return (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button variant="outline" size="sm" className="text-xs text-muted-foreground h-7">
+                                      Houveram {pendencias.length} pendência{pendencias.length > 1 ? "s" : ""}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-64 p-3">
+                                    <p className="text-sm font-medium mb-2">Pendências Resolvidas</p>
+                                    <ul className="space-y-1">
+                                      {pendencias.map((p, i) => (
+                                        <li key={i} className="text-sm flex items-center gap-1.5">
+                                          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+                                          {p}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                    {cl.observacao && (
+                                      <p className="text-xs text-muted-foreground mt-2 border-t pt-2">
+                                        <strong>Obs:</strong> {cl.observacao}
+                                      </p>
+                                    )}
+                                  </PopoverContent>
+                                </Popover>
+                              );
+                            }
                             return (
                               <Popover>
                                 <PopoverTrigger asChild>
