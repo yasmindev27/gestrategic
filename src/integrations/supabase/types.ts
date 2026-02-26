@@ -3072,6 +3072,69 @@ export type Database = {
           },
         ]
       }
+      justificativas_extensao_jornada: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          aprovado_por_nome: string | null
+          colaborador_cargo: string | null
+          colaborador_nome: string
+          colaborador_setor: string | null
+          colaborador_user_id: string
+          created_at: string
+          data_extensao: string
+          hora_fim_extra: string
+          hora_inicio_extra: string
+          id: string
+          justificativa: string
+          minutos_extras: number
+          motivo: string
+          observacao_aprovador: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          aprovado_por_nome?: string | null
+          colaborador_cargo?: string | null
+          colaborador_nome: string
+          colaborador_setor?: string | null
+          colaborador_user_id: string
+          created_at?: string
+          data_extensao: string
+          hora_fim_extra: string
+          hora_inicio_extra: string
+          id?: string
+          justificativa: string
+          minutos_extras?: number
+          motivo: string
+          observacao_aprovador?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          aprovado_por_nome?: string | null
+          colaborador_cargo?: string | null
+          colaborador_nome?: string
+          colaborador_setor?: string | null
+          colaborador_user_id?: string
+          created_at?: string
+          data_extensao?: string
+          hora_fim_extra?: string
+          hora_inicio_extra?: string
+          id?: string
+          justificativa?: string
+          minutos_extras?: number
+          motivo?: string
+          observacao_aprovador?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       justificativas_ponto: {
         Row: {
           cargo_funcao: string | null

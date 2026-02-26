@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Microscope, Activity, Upload, FileCheck } from 'lucide-react';
+import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Microscope, Activity, Upload, FileCheck, ClipboardCheck } from 'lucide-react';
 import { ProtocolosModule } from '@/components/protocolos/ProtocolosModule';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -32,6 +32,7 @@ import { IndicadoresUPA } from '@/components/indicadores';
 import { useTrocasDisponiveis, useTrocasPendentes, useMinhasEscalas } from '@/hooks/useEnfermagem';
 import type { Escala } from '@/components/enfermagem/types';
 import ImportEquipeDialog from '@/components/modules/equipe/ImportEquipeDialog';
+import { AprovacaoExtensaoJornada } from '@/components/enfermagem/AprovacaoExtensaoJornada';
 
 export default function EnfermagemModule() {
   const navigate = useNavigate();
@@ -133,6 +134,10 @@ export default function EnfermagemModule() {
           </TabsTrigger>
           {isGestor && (
             <>
+              <TabsTrigger value="extensao-jornada" className="gap-2 text-sm px-4 py-2">
+                <ClipboardCheck className="h-4 w-4" />
+                Extensão Jornada
+              </TabsTrigger>
               <TabsTrigger value="protocolos" className="gap-2 text-sm px-4 py-2">
                 <FileCheck className="h-4 w-4" />
                 Protocolos
@@ -308,6 +313,11 @@ export default function EnfermagemModule() {
               <HistoricoTrocas />
             </TabsContent>
           </Tabs>
+        </TabsContent>
+
+        {/* ── Extensão de Jornada ── */}
+        <TabsContent value="extensao-jornada" className="mt-6">
+          <AprovacaoExtensaoJornada />
         </TabsContent>
 
         {/* ── Protocolos ── */}
