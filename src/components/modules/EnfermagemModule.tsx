@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Bug, BarChart3, FlaskConical, Pill, Bell, Microscope, HeartPulse, Activity, Upload } from 'lucide-react';
+import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Microscope, Activity, Upload, FileCheck } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,14 +26,7 @@ import {
   NovaEscalaDialog,
   HistoricoTrocas,
 } from '@/components/enfermagem';
-import {
-  VigilanciaIRASComponent,
-  IndicadoresInfeccao,
-  CulturasMicrobiologicas,
-  ControleAntimicrobianos,
-  NotificacoesEpidemiologicas,
-  PortaECG,
-} from '@/components/sciras';
+// SCIRAS components removed – replaced by Protocolos
 import { IndicadoresUPA } from '@/components/indicadores';
 import { useTrocasDisponiveis, useTrocasPendentes, useMinhasEscalas } from '@/hooks/useEnfermagem';
 import type { Escala } from '@/components/enfermagem/types';
@@ -53,7 +46,7 @@ export default function EnfermagemModule() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [mainTab, setMainTab] = useState('operacional');
   const [operacionalTab, setOperacionalTab] = useState('meus-plantoes');
-  const [scirasTab, setScirasTab] = useState('vigilancia');
+  // scirasTab removed
 
   useEffect(() => {
     logAction('acesso', 'enfermagem');
@@ -139,9 +132,9 @@ export default function EnfermagemModule() {
           </TabsTrigger>
           {isGestor && (
             <>
-              <TabsTrigger value="sciras" className="gap-2 text-sm px-4 py-2">
-                <Microscope className="h-4 w-4" />
-                SCIRAS & Epidemiologia
+              <TabsTrigger value="protocolos" className="gap-2 text-sm px-4 py-2">
+                <FileCheck className="h-4 w-4" />
+                Protocolos
               </TabsTrigger>
               <TabsTrigger value="indicadores-upa" className="gap-2 text-sm px-4 py-2">
                 <Activity className="h-4 w-4" />
@@ -316,61 +309,15 @@ export default function EnfermagemModule() {
           </Tabs>
         </TabsContent>
 
-        {/* ── SCIRAS & Epidemiologia ── */}
-        <TabsContent value="sciras" className="mt-6 space-y-6">
-          <Tabs value={scirasTab} onValueChange={setScirasTab}>
-            <TabsList className="flex flex-wrap gap-1 h-auto p-1">
-              <TabsTrigger value="vigilancia" className="gap-2">
-                <Bug className="h-4 w-4" />
-                <span className="hidden sm:inline">Vigilância IRAS</span>
-                <span className="sm:hidden">IRAS</span>
-              </TabsTrigger>
-              <TabsTrigger value="indicadores" className="gap-2">
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline">Indicadores</span>
-                <span className="sm:hidden">Ind.</span>
-              </TabsTrigger>
-              <TabsTrigger value="culturas" className="gap-2">
-                <FlaskConical className="h-4 w-4" />
-                <span className="hidden sm:inline">Culturas</span>
-                <span className="sm:hidden">Cult.</span>
-              </TabsTrigger>
-              <TabsTrigger value="antimicrobianos" className="gap-2">
-                <Pill className="h-4 w-4" />
-                <span className="hidden sm:inline">Antimicrobianos</span>
-                <span className="sm:hidden">ATM</span>
-              </TabsTrigger>
-              <TabsTrigger value="notificacoes" className="gap-2">
-                <Bell className="h-4 w-4" />
-                <span className="hidden sm:inline">Epidemiologia</span>
-                <span className="sm:hidden">Epi.</span>
-              </TabsTrigger>
-              <TabsTrigger value="porta-ecg" className="gap-2">
-                <HeartPulse className="h-4 w-4" />
-                <span className="hidden sm:inline">Porta-ECG</span>
-                <span className="sm:hidden">ECG</span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="vigilancia" className="mt-6">
-              <VigilanciaIRASComponent userId={userId || ''} userName={userName || ''} />
-            </TabsContent>
-            <TabsContent value="indicadores" className="mt-6">
-              <IndicadoresInfeccao userId={userId || ''} userName={userName || ''} />
-            </TabsContent>
-            <TabsContent value="culturas" className="mt-6">
-              <CulturasMicrobiologicas userId={userId || ''} userName={userName || ''} />
-            </TabsContent>
-            <TabsContent value="antimicrobianos" className="mt-6">
-              <ControleAntimicrobianos userId={userId || ''} userName={userName || ''} />
-            </TabsContent>
-            <TabsContent value="notificacoes" className="mt-6">
-              <NotificacoesEpidemiologicas userId={userId || ''} userName={userName || ''} />
-            </TabsContent>
-            <TabsContent value="porta-ecg" className="mt-6">
-              <PortaECG userId={userId || ''} userName={userName || ''} />
-            </TabsContent>
-          </Tabs>
+        {/* ── Protocolos ── */}
+        <TabsContent value="protocolos" className="mt-6 space-y-6">
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <FileCheck className="h-12 w-12 text-primary opacity-60 mb-4" />
+              <h3 className="text-lg font-semibold">Protocolos</h3>
+              <p className="text-muted-foreground mt-1">Área em construção. O conteúdo será adicionado em breve.</p>
+            </CardContent>
+          </Card>
         </TabsContent>
 
         {/* ── Indicadores Emergência ── */}
