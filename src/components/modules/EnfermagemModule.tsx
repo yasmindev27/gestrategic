@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Microscope, Activity, Upload, FileCheck } from 'lucide-react';
+import { ProtocolosModule } from '@/components/protocolos/ProtocolosModule';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Card, CardContent } from '@/components/ui/card';
@@ -311,13 +312,7 @@ export default function EnfermagemModule() {
 
         {/* ── Protocolos ── */}
         <TabsContent value="protocolos" className="mt-6 space-y-6">
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <FileCheck className="h-12 w-12 text-primary opacity-60 mb-4" />
-              <h3 className="text-lg font-semibold">Protocolos</h3>
-              <p className="text-muted-foreground mt-1">Área em construção. O conteúdo será adicionado em breve.</p>
-            </CardContent>
-          </Card>
+          <ProtocolosModule />
         </TabsContent>
 
         {/* ── Indicadores Emergência ── */}
