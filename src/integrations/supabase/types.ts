@@ -4454,6 +4454,8 @@ export type Database = {
       }
       protocolo_atendimentos: {
         Row: {
+          achados_clinicos: Json | null
+          achados_neurologicos: Json | null
           action_plan: string | null
           admin_observations: string | null
           age: number | null
@@ -4470,6 +4472,7 @@ export type Database = {
           atb2_dose: string | null
           atb2_horario_inicio: string | null
           atb2_nome: string | null
+          attachment_path: string | null
           choque_lactato2_data_hora: string | null
           choque_lactato3_data_hora: string | null
           choque_lactato3_medicamento: string | null
@@ -4510,6 +4513,8 @@ export type Database = {
           foco_urinario: boolean | null
           id: string
           initial_diagnosis: string | null
+          investigation_name: string | null
+          investigation_status: string | null
           kit_sepse_coletado: boolean | null
           lab_villac_horario_chamado: string | null
           lab_villac_horario_coleta: string | null
@@ -4573,6 +4578,8 @@ export type Database = {
           within_target: boolean | null
         }
         Insert: {
+          achados_clinicos?: Json | null
+          achados_neurologicos?: Json | null
           action_plan?: string | null
           admin_observations?: string | null
           age?: number | null
@@ -4589,6 +4596,7 @@ export type Database = {
           atb2_dose?: string | null
           atb2_horario_inicio?: string | null
           atb2_nome?: string | null
+          attachment_path?: string | null
           choque_lactato2_data_hora?: string | null
           choque_lactato3_data_hora?: string | null
           choque_lactato3_medicamento?: string | null
@@ -4629,6 +4637,8 @@ export type Database = {
           foco_urinario?: boolean | null
           id?: string
           initial_diagnosis?: string | null
+          investigation_name?: string | null
+          investigation_status?: string | null
           kit_sepse_coletado?: boolean | null
           lab_villac_horario_chamado?: string | null
           lab_villac_horario_coleta?: string | null
@@ -4692,6 +4702,8 @@ export type Database = {
           within_target?: boolean | null
         }
         Update: {
+          achados_clinicos?: Json | null
+          achados_neurologicos?: Json | null
           action_plan?: string | null
           admin_observations?: string | null
           age?: number | null
@@ -4708,6 +4720,7 @@ export type Database = {
           atb2_dose?: string | null
           atb2_horario_inicio?: string | null
           atb2_nome?: string | null
+          attachment_path?: string | null
           choque_lactato2_data_hora?: string | null
           choque_lactato3_data_hora?: string | null
           choque_lactato3_medicamento?: string | null
@@ -4748,6 +4761,8 @@ export type Database = {
           foco_urinario?: boolean | null
           id?: string
           initial_diagnosis?: string | null
+          investigation_name?: string | null
+          investigation_status?: string | null
           kit_sepse_coletado?: boolean | null
           lab_villac_horario_chamado?: string | null
           lab_villac_horario_coleta?: string | null
