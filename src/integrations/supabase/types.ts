@@ -3072,6 +3072,75 @@ export type Database = {
           },
         ]
       }
+      justificativas_ponto: {
+        Row: {
+          cargo_funcao: string | null
+          colaborador_nome: string
+          colaborador_user_id: string | null
+          created_at: string
+          data_ocorrencia: string
+          id: string
+          jornada_contratual_entrada: string | null
+          jornada_contratual_saida: string | null
+          jornada_registrada_entrada: string | null
+          jornada_registrada_saida: string | null
+          justificativa: string | null
+          matricula: string | null
+          minutos_excedentes: number | null
+          observacoes: string | null
+          registrado_por: string | null
+          registrado_por_nome: string | null
+          setor: string | null
+          status: string
+          unidade: string
+          updated_at: string
+        }
+        Insert: {
+          cargo_funcao?: string | null
+          colaborador_nome: string
+          colaborador_user_id?: string | null
+          created_at?: string
+          data_ocorrencia: string
+          id?: string
+          jornada_contratual_entrada?: string | null
+          jornada_contratual_saida?: string | null
+          jornada_registrada_entrada?: string | null
+          jornada_registrada_saida?: string | null
+          justificativa?: string | null
+          matricula?: string | null
+          minutos_excedentes?: number | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string | null
+          setor?: string | null
+          status?: string
+          unidade?: string
+          updated_at?: string
+        }
+        Update: {
+          cargo_funcao?: string | null
+          colaborador_nome?: string
+          colaborador_user_id?: string | null
+          created_at?: string
+          data_ocorrencia?: string
+          id?: string
+          jornada_contratual_entrada?: string | null
+          jornada_contratual_saida?: string | null
+          jornada_registrada_entrada?: string | null
+          jornada_registrada_saida?: string | null
+          justificativa?: string | null
+          matricula?: string | null
+          minutos_excedentes?: number | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string | null
+          setor?: string | null
+          status?: string
+          unidade?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       lms_inscricoes: {
         Row: {
           created_at: string
