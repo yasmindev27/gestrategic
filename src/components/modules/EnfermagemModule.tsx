@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Microscope, Activity, Upload, FileCheck, ClipboardCheck } from 'lucide-react';
+import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Activity, Upload, FileCheck, ClipboardCheck, ClipboardList } from 'lucide-react';
 import { ProtocolosModule } from '@/components/protocolos/ProtocolosModule';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -26,6 +26,7 @@ import {
   AprovacaoTrocas,
   NovaEscalaDialog,
   HistoricoTrocas,
+  EscalaTecEnfermagem,
 } from '@/components/enfermagem';
 // SCIRAS components removed – replaced by Protocolos
 import { IndicadoresUPA } from '@/components/indicadores';
@@ -134,6 +135,10 @@ export default function EnfermagemModule() {
           </TabsTrigger>
           {isGestor && (
             <>
+              <TabsTrigger value="escala-tecnicos" className="gap-2 text-sm px-4 py-2">
+                <ClipboardList className="h-4 w-4" />
+                Escala Técnicos
+              </TabsTrigger>
               <TabsTrigger value="aprovacao-ponto" className="gap-2 text-sm px-4 py-2">
                 <ClipboardCheck className="h-4 w-4" />
                 Aprovação de Ponto
@@ -313,6 +318,11 @@ export default function EnfermagemModule() {
               <HistoricoTrocas />
             </TabsContent>
           </Tabs>
+        </TabsContent>
+
+        {/* ── Escala Técnicos ── */}
+        <TabsContent value="escala-tecnicos" className="mt-6">
+          <EscalaTecEnfermagem />
         </TabsContent>
 
         {/* ── Aprovação de Ponto ── */}
