@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, FileText, ShieldX, ClipboardList, Users, UserCog, AlertTriangle, Stethoscope, BarChart3 } from "lucide-react";
+import { Clock, FileText, ShieldX, ClipboardList, Users, UserCog, AlertTriangle, Stethoscope, BarChart3, UserCheck } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { BancoHorasSection } from "@/components/rhdp/BancoHorasSection";
@@ -11,6 +11,7 @@ import { MovimentacoesDisciplinarSection } from "@/components/rhdp/Movimentacoes
 import { ProfissionaisSaude } from "@/components/rh";
 import { ASOControl } from "@/components/seguranca-trabalho";
 import { AvaliacaoDesempenhoSection } from "@/components/rhdp/AvaliacaoDesempenhoSection";
+import { AvaliacaoExperienciaSection } from "@/components/rhdp/AvaliacaoExperienciaSection";
 
 export const RHDPModule = () => {
   const { isAdmin, hasRole, isLoading } = useUserRole();
@@ -62,7 +63,7 @@ export const RHDPModule = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-7">
+            <TabsList className="grid w-full grid-cols-8">
               <TabsTrigger value="banco-horas" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 <span className="hidden sm:inline">Banco de Horas</span>
@@ -97,6 +98,11 @@ export const RHDPModule = () => {
                 <span className="hidden sm:inline">Avaliação/PDI</span>
                 <span className="sm:hidden">Aval.</span>
               </TabsTrigger>
+              <TabsTrigger value="experiencia" className="flex items-center gap-2">
+                <UserCheck className="h-4 w-4" />
+                <span className="hidden sm:inline">Av. Experiência</span>
+                <span className="sm:hidden">Exp.</span>
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="banco-horas" className="mt-6">
@@ -125,6 +131,10 @@ export const RHDPModule = () => {
 
             <TabsContent value="avaliacao" className="mt-6">
               <AvaliacaoDesempenhoSection />
+            </TabsContent>
+
+            <TabsContent value="experiencia" className="mt-6">
+              <AvaliacaoExperienciaSection />
             </TabsContent>
           </Tabs>
         </CardContent>
