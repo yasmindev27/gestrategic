@@ -1109,6 +1109,81 @@ export type Database = {
         }
         Relationships: []
       }
+      avaliacoes_experiencia: {
+        Row: {
+          acoes_adequacao: string | null
+          assiduidade: string
+          avaliador_id: string | null
+          avaliador_nome: string
+          colaborador_nome: string
+          competencias_ajustes: string | null
+          competencias_destaque: string | null
+          created_at: string
+          data_admissao: string
+          data_avaliacao: string
+          data_termino_experiencia: string | null
+          disciplina: string
+          funcao: string | null
+          id: string
+          iniciativa: string
+          outros_comentarios: string | null
+          periodo_avaliacao: string
+          produtividade: string
+          responsabilidade: string
+          resultado: string
+          setor: string | null
+          updated_at: string
+        }
+        Insert: {
+          acoes_adequacao?: string | null
+          assiduidade: string
+          avaliador_id?: string | null
+          avaliador_nome: string
+          colaborador_nome: string
+          competencias_ajustes?: string | null
+          competencias_destaque?: string | null
+          created_at?: string
+          data_admissao: string
+          data_avaliacao?: string
+          data_termino_experiencia?: string | null
+          disciplina: string
+          funcao?: string | null
+          id?: string
+          iniciativa: string
+          outros_comentarios?: string | null
+          periodo_avaliacao: string
+          produtividade: string
+          responsabilidade: string
+          resultado: string
+          setor?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acoes_adequacao?: string | null
+          assiduidade?: string
+          avaliador_id?: string | null
+          avaliador_nome?: string
+          colaborador_nome?: string
+          competencias_ajustes?: string | null
+          competencias_destaque?: string | null
+          created_at?: string
+          data_admissao?: string
+          data_avaliacao?: string
+          data_termino_experiencia?: string | null
+          disciplina?: string
+          funcao?: string | null
+          id?: string
+          iniciativa?: string
+          outros_comentarios?: string | null
+          periodo_avaliacao?: string
+          produtividade?: string
+          responsabilidade?: string
+          resultado?: string
+          setor?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       avaliacoes_historico: {
         Row: {
           acao: string
