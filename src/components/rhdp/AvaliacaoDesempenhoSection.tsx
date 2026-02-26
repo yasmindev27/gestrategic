@@ -672,6 +672,254 @@ export const AvaliacaoDesempenhoSection = () => {
     savePdfWithFooter(doc, "Relatório de Avaliações Aplicadas", "relatorio_avaliacoes", logoImg);
   };
 
+  // ── Export full report from saved evaluation ──
+  const handleExportRelatorioCompleto = async (av: AvaliacaoSalva) => {
+    const { doc, logoImg } = await createStandardPdf("Relatório Completo – Avaliação de Desempenho e PDI", "portrait");
+    const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
+    let y = 32;
+
+    const savedScores = av.scores || {};
+    const fmtN = (n: number | null | undefined) => (n !== null && n !== undefined ? Number(n).toFixed(2) : "—");
+
+    // Header info
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Colaborador(a): ${av.colaborador}`, 14, y); y += 5;
+    doc.text(`Cargo: ${av.cargo || "—"}`, 14, y); y += 5;
+    doc.text(`Avaliador(a): ${av.avaliador}`, 14, y); y += 5;
+    doc.text(`Data: ${av.data_avaliacao ? format(new Date(av.data_avaliacao + "T00:00:00"), "dd/MM/yyyy") : "—"}`, 14, y); y += 3;
+
+    y += 4;
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.text("Legenda: 0=Nunca | 1=Raramente | 2=Poucas vezes | 3=Com frequência | 4=Muitas vezes | 5=Todas as vezes", 14, y);
+    y += 5;
+
+    // ── PART 1: Avaliação de Desempenho ──
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("AVALIAÇÃO DE DESEMPENHO POR COMPETÊNCIAS", 14, y); y += 6;
+
+    CATEGORIAS.forEach(cat => {
+      const rows: (string | number)[][] = [];
+      cat.competencias.forEach(comp => {
+        comp.itens.forEach((item, idx) => {
+          const s = savedScores[item.id];
+          const media = idx === comp.itens.length - 1 ? getCompetenciaMedia(comp, "atual", savedScores) : null;
+          const mediaP = idx === comp.itens.length - 1 ? getCompetenciaMedia(comp, "projetado", savedScores) : null;
+          rows.push([
+            idx === 0 ? comp.nome : "",
+            item.descricao,
+            s?.atual !== undefined ? String(s.atual) : "",
+            s?.projetado !== undefined ? String(s.projetado) : "",
+            media !== null ? fmtN((media + (mediaP ?? 0)) / 2) : "",
+          ]);
+        });
+      });
+
+      const catMedia = getCategoriaMedia(cat, "atual", savedScores);
+      const catMediaP = getCategoriaMedia(cat, "projetado", savedScores);
+      rows.push(["Desempenho Médio", "", fmtN(catMedia), fmtN(catMediaP), fmtN(catMedia !== null && catMediaP !== null ? (catMedia + catMediaP) / 2 : null)]);
+
+      autoTable(doc, {
+        head: [[cat.nome, "Descrição", "Atual", "Proj.", "Média"]],
+        body: rows,
+        startY: y,
+        styles: { fontSize: 7, cellPadding: 1.5 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: "bold", fontSize: 7 },
+        alternateRowStyles: { fillColor: [245, 245, 245] },
+        margin: { top: 32, bottom: 28 },
+        columnStyles: { 0: { cellWidth: 35 }, 2: { halign: "center", cellWidth: 14 }, 3: { halign: "center", cellWidth: 14 }, 4: { halign: "center", cellWidth: 14 } },
+      });
+      y = (doc as any).lastAutoTable.finalY + 4;
+      if (y > pageHeight - 40) { doc.addPage(); y = 32; }
+    });
+
+    // Resultado Final
+    doc.addPage(); y = 32;
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "bold");
+    doc.text("RESULTADO FINAL", 14, y); y += 6;
+
+    const mediasFromDB = av.medias_categorias as Record<string, { atual: number | null; projetado: number | null }> | null;
+    const resultRows: string[][] = [];
+    if (mediasFromDB) {
+      Object.entries(mediasFromDB).forEach(([cat, val]) => {
+        resultRows.push([cat.replace("Competências ", ""), fmtN(val?.atual), fmtN(val?.projetado)]);
+      });
+    }
+
+    autoTable(doc, {
+      head: [["Categoria", "Atual", "Projetado"]],
+      body: resultRows,
+      startY: y,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: "bold" },
+      columnStyles: { 1: { halign: "center" }, 2: { halign: "center" } },
+      margin: { bottom: 28 },
+    });
+    y = (doc as any).lastAutoTable.finalY + 6;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text(`NOTA GERAL DA AVALIAÇÃO: ${fmtN(av.nota_geral)}`, 14, y); y += 10;
+
+    // ── PART 2: PDI ──
+    if (y + 20 > pageHeight - 40) { doc.addPage(); y = 32; }
+    doc.setFontSize(12);
+    doc.setFont("helvetica", "bold");
+    doc.text("PLANO DE DESENVOLVIMENTO INDIVIDUAL (PDI)", 14, y); y += 8;
+
+    // Radar chart
+    try {
+      const chartCanvas = document.createElement("canvas");
+      chartCanvas.width = 600;
+      chartCanvas.height = 500;
+      const ctx = chartCanvas.getContext("2d");
+      if (ctx) {
+        const chartData: { competencia: string; atual: number; projetado: number }[] = [];
+        CATEGORIAS.forEach(cat => {
+          cat.competencias.forEach(comp => {
+            chartData.push({
+              competencia: comp.nome.length > 18 ? comp.nome.substring(0, 16) + "…" : comp.nome,
+              atual: getCompetenciaMedia(comp, "atual", savedScores) ?? 0,
+              projetado: getCompetenciaMedia(comp, "projetado", savedScores) ?? 0,
+            });
+          });
+        });
+
+        const cx = 300, cy = 230, maxR = 180, n = chartData.length;
+        const angleStep = (2 * Math.PI) / n;
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, 600, 500);
+        ctx.fillStyle = "#1a1a1a";
+        ctx.font = "bold 18px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("RODA DAS COMPETÊNCIAS – ATUAL E PROJETADA", cx, 24);
+
+        for (let level = 1; level <= 5; level++) {
+          const r = (level / 5) * maxR;
+          ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+          ctx.strokeStyle = "#ddd"; ctx.lineWidth = 0.8; ctx.stroke();
+          ctx.fillStyle = "#999"; ctx.font = "11px Arial"; ctx.textAlign = "left";
+          ctx.fillText(String(level), cx + 3, cy - r + 4);
+        }
+
+        ctx.font = "11px Arial"; ctx.fillStyle = "#333";
+        chartData.forEach((d, i) => {
+          const angle = i * angleStep - Math.PI / 2;
+          const x2 = cx + maxR * Math.cos(angle), y2 = cy + maxR * Math.sin(angle);
+          ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x2, y2);
+          ctx.strokeStyle = "#ccc"; ctx.lineWidth = 0.6; ctx.stroke();
+          const lx = cx + (maxR + 18) * Math.cos(angle), ly = cy + (maxR + 18) * Math.sin(angle);
+          ctx.textAlign = Math.cos(angle) < -0.1 ? "right" : Math.cos(angle) > 0.1 ? "left" : "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(d.competencia, lx, ly);
+        });
+
+        const drawPoly = (field: "atual" | "projetado", color: string, fill: string) => {
+          ctx.beginPath();
+          chartData.forEach((d, i) => {
+            const angle = i * angleStep - Math.PI / 2;
+            const r = (d[field] / 5) * maxR;
+            const x = cx + r * Math.cos(angle), yy = cy + r * Math.sin(angle);
+            if (i === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+          });
+          ctx.closePath(); ctx.fillStyle = fill; ctx.fill();
+          ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.stroke();
+          chartData.forEach((d, i) => {
+            const angle = i * angleStep - Math.PI / 2;
+            const r = (d[field] / 5) * maxR;
+            ctx.beginPath(); ctx.arc(cx + r * Math.cos(angle), cy + r * Math.sin(angle), 3, 0, 2 * Math.PI);
+            ctx.fillStyle = color; ctx.fill();
+          });
+        };
+
+        drawPoly("atual", "#2563eb", "rgba(37,99,235,0.15)");
+        drawPoly("projetado", "#16a34a", "rgba(22,163,74,0.15)");
+
+        const legY = cy + maxR + 40;
+        ctx.fillStyle = "#2563eb"; ctx.fillRect(cx - 80, legY, 12, 12);
+        ctx.fillStyle = "#333"; ctx.font = "13px Arial"; ctx.textAlign = "left"; ctx.fillText("Atual", cx - 64, legY + 10);
+        ctx.fillStyle = "#16a34a"; ctx.fillRect(cx + 10, legY, 12, 12);
+        ctx.fillStyle = "#333"; ctx.fillText("Projetado", cx + 26, legY + 10);
+
+        if (y + 90 > pageHeight - 40) { doc.addPage(); y = 32; }
+        const imgData = chartCanvas.toDataURL("image/png");
+        const chartW = pageWidth - 28;
+        const chartH = chartW * (500 / 600);
+        doc.addImage(imgData, "PNG", 14, y, chartW, chartH);
+        y += chartH + 8;
+      }
+    } catch (e) { console.warn("Erro no gráfico radar:", e); }
+
+    // Pontos fortes & oportunidades
+    if (y + 30 > pageHeight - 40) { doc.addPage(); y = 32; }
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("PONTOS FORTES", 14, y);
+    doc.text("OPORTUNIDADES DE DESENVOLVIMENTO", pageWidth / 2 + 4, y);
+    y += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    const splitF = doc.splitTextToSize(av.pontos_fortes || "—", pageWidth / 2 - 20);
+    const splitO = doc.splitTextToSize(av.oportunidades || "—", pageWidth / 2 - 20);
+    doc.text(splitF, 14, y);
+    doc.text(splitO, pageWidth / 2 + 4, y);
+    y += Math.max(splitF.length, splitO.length) * 4 + 6;
+
+    // Competências-alvo
+    if (y + 20 > pageHeight - 40) { doc.addPage(); y = 32; }
+    const acoesSalvas = (av.acoes_desenvolvimento || []) as AcaoDesenvolvimento[];
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("COMPETÊNCIAS-ALVO / AÇÕES DE DESENVOLVIMENTO", 14, y); y += 6;
+
+    if (acoesSalvas.length > 0) {
+      autoTable(doc, {
+        head: [["Competência-Alvo", "Ação de Desenvolvimento", "Prazo"]],
+        body: acoesSalvas.map(a => [a.competencia, a.acao, a.prazo]),
+        startY: y,
+        styles: { fontSize: 8 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: "bold" },
+        margin: { bottom: 28 },
+      });
+      y = (doc as any).lastAutoTable.finalY + 6;
+    } else {
+      doc.setFontSize(8); doc.setFont("helvetica", "normal");
+      doc.text("Nenhuma ação de desenvolvimento registrada.", 14, y); y += 6;
+    }
+
+    // Feedback
+    if (y + 20 > pageHeight - 40) { doc.addPage(); y = 32; }
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("FEEDBACK", 14, y); y += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    const splitFb = doc.splitTextToSize(av.feedback || "—", pageWidth - 28);
+    doc.text(splitFb, 14, y); y += splitFb.length * 4 + 8;
+
+    // Signatures
+    if (y + 30 > pageHeight - 40) { doc.addPage(); y = 32; }
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "italic");
+    doc.text("Este formulário destina-se à avaliação do desempenho por competência e deverá ser tratado de forma confidencial.", 14, y);
+    y += 10;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`DATA: ${av.data_avaliacao ? format(new Date(av.data_avaliacao + "T00:00:00"), "dd/MM/yyyy") : ""}`, 14, y);
+    y += 12;
+    doc.line(14, y, 80, y);
+    doc.text("Líder avaliador", 30, y + 5);
+    doc.line(pageWidth - 80, y, pageWidth - 14, y);
+    doc.text("Colaborador(a)", pageWidth - 60, y + 5);
+
+    savePdfWithFooter(doc, "Relatório Completo – Avaliação e PDI", `relatorio_completo_${av.colaborador.replace(/\s+/g, "_")}`, logoImg);
+  };
+
   // ── View saved evaluation detail ──
   const handleViewAvaliacao = (av: AvaliacaoSalva) => {
     setViewingAvaliacao(av);
@@ -1110,9 +1358,14 @@ export const AvaliacaoDesempenhoSection = () => {
                             </Badge>
                           </td>
                           <td className="py-2 text-center">
-                            <Button variant="ghost" size="icon-sm" onClick={() => handleViewAvaliacao(h)}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
+                            <div className="flex items-center justify-center gap-1">
+                              <Button variant="ghost" size="icon-sm" onClick={() => handleViewAvaliacao(h)} title="Visualizar">
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon-sm" onClick={() => handleExportRelatorioCompleto(h)} title="Exportar Relatório Completo PDF">
+                                <Download className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </td>
                         </tr>
                       ))}
@@ -1196,6 +1449,12 @@ export const AvaliacaoDesempenhoSection = () => {
                   <p className="text-sm text-muted-foreground">{viewingAvaliacao.feedback}</p>
                 </div>
               )}
+
+              <Separator />
+              <Button onClick={() => handleExportRelatorioCompleto(viewingAvaliacao)} variant="outline" className="gap-2 w-full">
+                <Download className="h-4 w-4" />
+                Exportar Relatório Completo (Avaliação + PDI)
+              </Button>
             </div>
           )}
         </DialogContent>
