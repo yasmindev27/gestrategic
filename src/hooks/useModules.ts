@@ -60,6 +60,7 @@ export const useModules = () => {
     equipe: isAdmin || isGestor,
     chat: true,
     abrirChamado: true,
+    colaborador: true,
     lms: true,
   }), [
     isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
