@@ -1055,6 +1055,60 @@ export type Database = {
         }
         Relationships: []
       }
+      avaliacoes_desempenho: {
+        Row: {
+          acoes_desenvolvimento: Json | null
+          avaliador: string
+          cargo: string | null
+          colaborador: string
+          created_at: string
+          data_avaliacao: string
+          feedback: string | null
+          id: string
+          medias_categorias: Json | null
+          nota_geral: number | null
+          oportunidades: string | null
+          pontos_fortes: string | null
+          registrado_por: string | null
+          scores: Json
+          updated_at: string
+        }
+        Insert: {
+          acoes_desenvolvimento?: Json | null
+          avaliador: string
+          cargo?: string | null
+          colaborador: string
+          created_at?: string
+          data_avaliacao?: string
+          feedback?: string | null
+          id?: string
+          medias_categorias?: Json | null
+          nota_geral?: number | null
+          oportunidades?: string | null
+          pontos_fortes?: string | null
+          registrado_por?: string | null
+          scores?: Json
+          updated_at?: string
+        }
+        Update: {
+          acoes_desenvolvimento?: Json | null
+          avaliador?: string
+          cargo?: string | null
+          colaborador?: string
+          created_at?: string
+          data_avaliacao?: string
+          feedback?: string | null
+          id?: string
+          medias_categorias?: Json | null
+          nota_geral?: number | null
+          oportunidades?: string | null
+          pontos_fortes?: string | null
+          registrado_por?: string | null
+          scores?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       avaliacoes_historico: {
         Row: {
           acao: string

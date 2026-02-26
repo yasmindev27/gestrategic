@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,11 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { FileText, BarChart3, Target, User, Calendar, Download } from "lucide-react";
+import { FileText, BarChart3, Target, User, Calendar, Download, Save, List, Eye } from "lucide-react";
 import { format } from "date-fns";
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer, Legend } from "recharts";
 import { createStandardPdf, savePdfWithFooter } from "@/lib/export-utils";
 import autoTable from "jspdf-autotable";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 // ── Data structure ──
 interface CompetenciaItem {
@@ -118,6 +121,22 @@ interface AcaoDesenvolvimento {
   prazo: string;
 }
 
+interface AvaliacaoSalva {
+  id: string;
+  colaborador: string;
+  cargo: string;
+  avaliador: string;
+  data_avaliacao: string;
+  nota_geral: number;
+  scores: Record<string, { atual: number; projetado: number }>;
+  pontos_fortes: string;
+  oportunidades: string;
+  feedback: string;
+  acoes_desenvolvimento: AcaoDesenvolvimento[];
+  medias_categorias: any;
+  created_at: string;
+}
+
 // ── Component ──
 export const AvaliacaoDesempenhoSection = () => {
   const [activeTab, setActiveTab] = useState("avaliacao");
@@ -128,7 +147,7 @@ export const AvaliacaoDesempenhoSection = () => {
   const [avaliador, setAvaliador] = useState("");
   const [dataAvaliacao, setDataAvaliacao] = useState(format(new Date(), "yyyy-MM-dd"));
 
-  // Scores: { [itemId]: { atual: number, projetado: number } }
+  // Scores
   const [scores, setScores] = useState<Record<string, { atual: number; projetado: number }>>({});
 
   // PDI fields
@@ -141,6 +160,12 @@ export const AvaliacaoDesempenhoSection = () => {
     { competencia: "", acao: "", prazo: "" },
   ]);
 
+  // History
+  const [historico, setHistorico] = useState<AvaliacaoSalva[]>([]);
+  const [loadingHistorico, setLoadingHistorico] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [viewingAvaliacao, setViewingAvaliacao] = useState<AvaliacaoSalva | null>(null);
+
   const setScore = (id: string, field: "atual" | "projetado", value: number) => {
     setScores(prev => ({
       ...prev,
@@ -149,13 +174,14 @@ export const AvaliacaoDesempenhoSection = () => {
   };
 
   // ── Computed averages ──
-  const getCompetenciaMedia = (comp: Competencia, field: "atual" | "projetado") => {
-    const vals = comp.itens.map(i => scores[i.id]?.[field]).filter(v => v !== undefined && v !== null) as number[];
+  const getCompetenciaMedia = (comp: Competencia, field: "atual" | "projetado", customScores?: Record<string, { atual: number; projetado: number }>) => {
+    const s = customScores || scores;
+    const vals = comp.itens.map(i => s[i.id]?.[field]).filter(v => v !== undefined && v !== null) as number[];
     return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
   };
 
-  const getCategoriaMedia = (cat: CategoriaCompetencia, field: "atual" | "projetado") => {
-    const medias = cat.competencias.map(c => getCompetenciaMedia(c, field)).filter(v => v !== null) as number[];
+  const getCategoriaMedia = (cat: CategoriaCompetencia, field: "atual" | "projetado", customScores?: Record<string, { atual: number; projetado: number }>) => {
+    const medias = cat.competencias.map(c => getCompetenciaMedia(c, field, customScores)).filter(v => v !== null) as number[];
     return medias.length > 0 ? medias.reduce((a, b) => a + b, 0) / medias.length : null;
   };
 
@@ -167,7 +193,11 @@ export const AvaliacaoDesempenhoSection = () => {
     }));
   }, [scores]);
 
-  // Radar data per competência (for PDI chart)
+  const notaGeral = useMemo(() => {
+    const medias = categoriasMedias.filter(c => c.atual !== null).map(c => c.atual!);
+    return medias.length > 0 ? medias.reduce((a, b) => a + b, 0) / medias.length : null;
+  }, [categoriasMedias]);
+
   const radarData = useMemo(() => {
     const data: { competencia: string; atual: number; projetado: number }[] = [];
     CATEGORIAS.forEach(cat => {
@@ -186,13 +216,102 @@ export const AvaliacaoDesempenhoSection = () => {
 
   const fmtNum = (n: number | null) => (n !== null ? n.toFixed(2) : "—");
 
+  // ── Load history ──
+  const fetchHistorico = async () => {
+    setLoadingHistorico(true);
+    try {
+      const { data, error } = await supabase
+        .from("avaliacoes_desempenho")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      setHistorico((data || []) as unknown as AvaliacaoSalva[]);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingHistorico(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchHistorico();
+  }, []);
+
+  // ── Save evaluation ──
+  const handleSalvar = async () => {
+    if (!colaborador.trim()) {
+      toast.error("Informe o nome do colaborador.");
+      return;
+    }
+    if (!avaliador.trim()) {
+      toast.error("Informe o nome do avaliador.");
+      return;
+    }
+
+    const hasAnyScore = Object.keys(scores).length > 0;
+    if (!hasAnyScore) {
+      toast.error("Preencha ao menos uma competência antes de salvar.");
+      return;
+    }
+
+    setSaving(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      const mediasObj: Record<string, { atual: number | null; projetado: number | null }> = {};
+      CATEGORIAS.forEach(cat => {
+        mediasObj[cat.nome] = {
+          atual: getCategoriaMedia(cat, "atual"),
+          projetado: getCategoriaMedia(cat, "projetado"),
+        };
+      });
+
+      const { error } = await supabase.from("avaliacoes_desempenho").insert({
+        colaborador: colaborador.trim(),
+        cargo: cargo.trim() || null,
+        avaliador: avaliador.trim(),
+        data_avaliacao: dataAvaliacao,
+        scores: scores as any,
+        pontos_fortes: pontosFortes || null,
+        oportunidades: oportunidades || null,
+        feedback: feedback || null,
+        acoes_desenvolvimento: acoes.filter(a => a.competencia || a.acao) as any,
+        medias_categorias: mediasObj as any,
+        nota_geral: notaGeral,
+        registrado_por: user?.id || null,
+      });
+
+      if (error) throw error;
+      toast.success("Avaliação salva com sucesso!");
+      fetchHistorico();
+      
+      // Reset form
+      setColaborador("");
+      setCargo("");
+      setAvaliador("");
+      setDataAvaliacao(format(new Date(), "yyyy-MM-dd"));
+      setScores({});
+      setPontosFortes("");
+      setOportunidades("");
+      setFeedback("");
+      setAcoes([
+        { competencia: "", acao: "", prazo: "" },
+        { competencia: "", acao: "", prazo: "" },
+        { competencia: "", acao: "", prazo: "" },
+      ]);
+    } catch (err: any) {
+      toast.error("Erro ao salvar: " + (err.message || "Tente novamente."));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // ── PDF Export: Avaliação ──
   const handleExportAvaliacaoPDF = async () => {
     const { doc, logoImg } = await createStandardPdf("Avaliação de Desempenho por Competências", "portrait");
     const pageWidth = doc.internal.pageSize.width;
     let y = 32;
 
-    // Info header
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
     doc.text(`Colaborador(a): ${colaborador}`, 14, y); y += 5;
@@ -200,14 +319,12 @@ export const AvaliacaoDesempenhoSection = () => {
     doc.text(`Avaliador(a): ${avaliador}`, 14, y); y += 5;
     doc.text(`Data: ${dataAvaliacao ? format(new Date(dataAvaliacao + "T00:00:00"), "dd/MM/yyyy") : ""}`, 14, y); y += 3;
 
-    // Legenda
     y += 4;
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
     doc.text("Legenda: 0=Nunca | 1=Raramente | 2=Poucas vezes | 3=Com frequência | 4=Muitas vezes | 5=Todas as vezes", 14, y);
     y += 5;
 
-    // Each category as a table
     CATEGORIAS.forEach(cat => {
       const rows: (string | number)[][] = [];
       cat.competencias.forEach(comp => {
@@ -252,7 +369,6 @@ export const AvaliacaoDesempenhoSection = () => {
       }
     });
 
-    // Result table
     doc.addPage();
     y = 32;
     doc.setFontSize(11);
@@ -293,6 +409,7 @@ export const AvaliacaoDesempenhoSection = () => {
   const handleExportPDIPDF = async () => {
     const { doc, logoImg } = await createStandardPdf("Plano de Desenvolvimento Individual", "portrait");
     const pageWidth = doc.internal.pageSize.width;
+    const pageHeight = doc.internal.pageSize.height;
     let y = 32;
 
     doc.setFontSize(10);
@@ -333,6 +450,12 @@ export const AvaliacaoDesempenhoSection = () => {
     });
     y = (doc as any).lastAutoTable.finalY + 8;
 
+    // ── Nota Geral ──
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text(`NOTA GERAL DA AVALIAÇÃO: ${fmtNum(notaGeral)}`, 14, y);
+    y += 8;
+
     // ── Roda das Competências (Radar Chart) ──
     try {
       const chartCanvas = document.createElement("canvas");
@@ -345,17 +468,14 @@ export const AvaliacaoDesempenhoSection = () => {
         const angleStep = (2 * Math.PI) / n;
         const maxVal = 5;
 
-        // Background
         ctx.fillStyle = "#ffffff";
         ctx.fillRect(0, 0, 600, 500);
 
-        // Title
         ctx.fillStyle = "#1a1a1a";
         ctx.font = "bold 18px Arial";
         ctx.textAlign = "center";
         ctx.fillText("RODA DAS COMPETÊNCIAS – ATUAL E PROJETADA", cx, 24);
 
-        // Grid circles
         for (let level = 1; level <= 5; level++) {
           const r = (level / maxVal) * maxR;
           ctx.beginPath();
@@ -369,7 +489,6 @@ export const AvaliacaoDesempenhoSection = () => {
           ctx.fillText(String(level), cx + 3, cy - r + 4);
         }
 
-        // Axis lines + labels
         ctx.font = "11px Arial";
         ctx.fillStyle = "#333";
         radarData.forEach((d, i) => {
@@ -382,7 +501,6 @@ export const AvaliacaoDesempenhoSection = () => {
           ctx.strokeStyle = "#ccc";
           ctx.lineWidth = 0.6;
           ctx.stroke();
-          // Label
           const lx = cx + (maxR + 18) * Math.cos(angle);
           const ly = cy + (maxR + 18) * Math.sin(angle);
           ctx.textAlign = Math.cos(angle) < -0.1 ? "right" : Math.cos(angle) > 0.1 ? "left" : "center";
@@ -390,7 +508,6 @@ export const AvaliacaoDesempenhoSection = () => {
           ctx.fillText(d.competencia, lx, ly);
         });
 
-        // Draw polygon helper
         const drawPoly = (field: "atual" | "projetado", color: string, fillColor: string) => {
           ctx.beginPath();
           radarData.forEach((d, i) => {
@@ -407,7 +524,6 @@ export const AvaliacaoDesempenhoSection = () => {
           ctx.lineWidth = 2;
           ctx.stroke();
 
-          // Dots
           radarData.forEach((d, i) => {
             const angle = i * angleStep - Math.PI / 2;
             const r = (d[field] / maxVal) * maxR;
@@ -421,7 +537,6 @@ export const AvaliacaoDesempenhoSection = () => {
         drawPoly("atual", "#2563eb", "rgba(37,99,235,0.15)");
         drawPoly("projetado", "#16a34a", "rgba(22,163,74,0.15)");
 
-        // Legend
         const legY = cy + maxR + 40;
         ctx.fillStyle = "#2563eb";
         ctx.fillRect(cx - 80, legY, 12, 12);
@@ -434,8 +549,7 @@ export const AvaliacaoDesempenhoSection = () => {
         ctx.fillStyle = "#333";
         ctx.fillText("Projetado", cx + 26, legY + 10);
 
-        // Check if we need a new page for the chart
-        if (y + 90 > doc.internal.pageSize.height - 40) {
+        if (y + 90 > pageHeight - 40) {
           doc.addPage();
           y = 32;
         }
@@ -450,8 +564,8 @@ export const AvaliacaoDesempenhoSection = () => {
       console.warn("Não foi possível gerar gráfico radar no PDF:", e);
     }
 
-    // Check if we need a new page for the remaining content
-    if (y + 40 > doc.internal.pageSize.height - 40) {
+    // Check page space
+    if (y + 40 > pageHeight - 40) {
       doc.addPage();
       y = 32;
     }
@@ -470,8 +584,15 @@ export const AvaliacaoDesempenhoSection = () => {
     doc.text(splitOp, pageWidth / 2 + 4, y);
     y += Math.max(splitFortes.length, splitOp.length) * 4 + 6;
 
-    // Ações de desenvolvimento
+    // Competência-Alvo / Ação de Desenvolvimento
+    if (y + 20 > pageHeight - 40) { doc.addPage(); y = 32; }
+
     const acoesFiltradas = acoes.filter(a => a.competencia || a.acao);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("COMPETÊNCIAS-ALVO / AÇÕES DE DESENVOLVIMENTO", 14, y);
+    y += 6;
+
     if (acoesFiltradas.length > 0) {
       autoTable(doc, {
         head: [["Competência-Alvo", "Ação de Desenvolvimento", "Prazo"]],
@@ -482,22 +603,28 @@ export const AvaliacaoDesempenhoSection = () => {
         margin: { bottom: 28 },
       });
       y = (doc as any).lastAutoTable.finalY + 6;
+    } else {
+      doc.setFontSize(8);
+      doc.setFont("helvetica", "normal");
+      doc.text("Nenhuma ação de desenvolvimento registrada.", 14, y);
+      y += 6;
     }
 
     // Feedback
-    if (feedback) {
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.text("FEEDBACK", 14, y);
-      y += 5;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(8);
-      const splitFb = doc.splitTextToSize(feedback, pageWidth - 28);
-      doc.text(splitFb, 14, y);
-      y += splitFb.length * 4 + 8;
-    }
+    if (y + 20 > pageHeight - 40) { doc.addPage(); y = 32; }
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("FEEDBACK", 14, y);
+    y += 5;
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    const splitFb = doc.splitTextToSize(feedback || "—", pageWidth - 28);
+    doc.text(splitFb, 14, y);
+    y += splitFb.length * 4 + 8;
 
     // Confidentiality notice
+    if (y + 30 > pageHeight - 40) { doc.addPage(); y = 32; }
     doc.setFontSize(7);
     doc.setFont("helvetica", "italic");
     doc.text("Este formulário destina-se à avaliação do desempenho por competência e deverá ser tratado de forma confidencial.", 14, y);
@@ -513,6 +640,41 @@ export const AvaliacaoDesempenhoSection = () => {
     doc.text("Colaborador(a)", pageWidth - 60, y + 5);
 
     savePdfWithFooter(doc, "Plano de Desenvolvimento Individual", "pdi", logoImg);
+  };
+
+  // ── Export relatório de avaliações aplicadas ──
+  const handleExportRelatorioAvaliacoes = async () => {
+    if (historico.length === 0) {
+      toast.error("Nenhuma avaliação salva para gerar relatório.");
+      return;
+    }
+    const { doc, logoImg } = await createStandardPdf("Relatório de Avaliações Aplicadas", "landscape");
+    let y = 32;
+
+    const rows = historico.map(h => [
+      h.colaborador,
+      h.cargo || "—",
+      h.avaliador,
+      h.data_avaliacao ? format(new Date(h.data_avaliacao + "T00:00:00"), "dd/MM/yyyy") : "—",
+      h.nota_geral !== null && h.nota_geral !== undefined ? Number(h.nota_geral).toFixed(2) : "—",
+    ]);
+
+    autoTable(doc, {
+      head: [["Colaborador", "Cargo", "Avaliador", "Data", "Nota Geral"]],
+      body: rows,
+      startY: y,
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255, fontStyle: "bold" },
+      columnStyles: { 4: { halign: "center", fontStyle: "bold" } },
+      margin: { bottom: 28 },
+    });
+
+    savePdfWithFooter(doc, "Relatório de Avaliações Aplicadas", "relatorio_avaliacoes", logoImg);
+  };
+
+  // ── View saved evaluation detail ──
+  const handleViewAvaliacao = (av: AvaliacaoSalva) => {
+    setViewingAvaliacao(av);
   };
 
   // ── Score selector component ──
@@ -537,14 +699,20 @@ export const AvaliacaoDesempenhoSection = () => {
   return (
     <div className="space-y-6">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="avaliacao" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
-            Avaliação de Desempenho
+            <span className="hidden sm:inline">Avaliação de Desempenho</span>
+            <span className="sm:hidden">Avaliação</span>
           </TabsTrigger>
           <TabsTrigger value="pdi" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
             PDI
+          </TabsTrigger>
+          <TabsTrigger value="historico" className="flex items-center gap-2">
+            <List className="h-4 w-4" />
+            <span className="hidden sm:inline">Avaliações Aplicadas</span>
+            <span className="sm:hidden">Histórico</span>
           </TabsTrigger>
         </TabsList>
 
@@ -578,7 +746,6 @@ export const AvaliacaoDesempenhoSection = () => {
                 </div>
               </div>
 
-              {/* Legenda */}
               <div className="bg-muted/50 rounded-lg p-3">
                 <p className="text-xs font-semibold mb-2">Legenda de Graus</p>
                 <div className="flex flex-wrap gap-2">
@@ -679,16 +846,19 @@ export const AvaliacaoDesempenhoSection = () => {
                     </div>
                   </div>
                 ))}
+                <div className="flex items-center justify-between py-3 bg-primary/5 rounded-lg px-3 mt-2">
+                  <span className="text-sm font-bold">NOTA GERAL DA AVALIAÇÃO</span>
+                  <Badge className="text-base px-4 py-1">{fmtNum(notaGeral)}</Badge>
+                </div>
               </div>
 
               <Separator className="my-4" />
               <p className="text-xs text-muted-foreground italic">
                 Este formulário destina-se à avaliação do desempenho por competência e deverá ser tratado de forma confidencial.
-                Os resultados apresentados têm como finalidade dar suporte no desenvolvimento profissional e aprimoramento das práticas de gestão de desempenho da instituição.
               </p>
 
-              <div className="mt-4">
-                <Button onClick={handleExportAvaliacaoPDF} className="gap-2">
+              <div className="mt-4 flex gap-3 flex-wrap">
+                <Button onClick={handleExportAvaliacaoPDF} variant="outline" className="gap-2">
                   <Download className="h-4 w-4" />
                   Exportar Avaliação em PDF
                 </Button>
@@ -757,6 +927,10 @@ export const AvaliacaoDesempenhoSection = () => {
                     )}
                   </tbody>
                 </table>
+              </div>
+              <div className="flex items-center justify-between py-3 bg-primary/5 rounded-lg px-3 mt-4">
+                <span className="text-sm font-bold">NOTA GERAL</span>
+                <Badge className="text-base px-4 py-1">{fmtNum(notaGeral)}</Badge>
               </div>
             </CardContent>
           </Card>
@@ -861,21 +1035,171 @@ export const AvaliacaoDesempenhoSection = () => {
             </CardContent>
           </Card>
 
-          {/* Confidentiality + Export */}
+          {/* Confidentiality + Save + Export */}
           <Card>
             <CardContent className="pt-6">
               <p className="text-xs text-muted-foreground italic mb-4">
                 Este formulário destina-se à avaliação do desempenho por competência e deverá ser tratado de forma confidencial.
-                Os resultados apresentados têm como finalidade dar suporte no desenvolvimento profissional e aprimoramento das práticas de gestão de desempenho da instituição.
               </p>
-              <Button onClick={handleExportPDIPDF} className="gap-2">
-                <Download className="h-4 w-4" />
-                Exportar PDI em PDF
-              </Button>
+              <div className="flex gap-3 flex-wrap">
+                <Button onClick={handleSalvar} disabled={saving} variant="success" className="gap-2">
+                  <Save className="h-4 w-4" />
+                  {saving ? "Salvando..." : "Salvar Avaliação"}
+                </Button>
+                <Button onClick={handleExportPDIPDF} variant="outline" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Exportar PDI em PDF
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ─── HISTÓRICO ─── */}
+        <TabsContent value="historico" className="mt-6 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center gap-2">
+                <List className="h-5 w-5 text-primary" />
+                Avaliações Aplicadas
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex justify-end mb-4">
+                <Button onClick={handleExportRelatorioAvaliacoes} variant="outline" size="sm" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Exportar Relatório PDF
+                </Button>
+              </div>
+
+              {loadingHistorico ? (
+                <div className="flex items-center justify-center h-32">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : historico.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Nenhuma avaliação salva.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b">
+                        <th className="text-left py-2">Colaborador</th>
+                        <th className="text-left py-2">Cargo</th>
+                        <th className="text-left py-2">Avaliador</th>
+                        <th className="text-center py-2">Data</th>
+                        <th className="text-center py-2">Nota Geral</th>
+                        <th className="text-center py-2">Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {historico.map(h => (
+                        <tr key={h.id} className="border-b border-muted/50 hover:bg-muted/30">
+                          <td className="py-2 font-medium">{h.colaborador}</td>
+                          <td className="py-2 text-muted-foreground">{h.cargo || "—"}</td>
+                          <td className="py-2">{h.avaliador}</td>
+                          <td className="py-2 text-center">
+                            {h.data_avaliacao ? format(new Date(h.data_avaliacao + "T00:00:00"), "dd/MM/yyyy") : "—"}
+                          </td>
+                          <td className="py-2 text-center">
+                            <Badge variant={
+                              h.nota_geral !== null && h.nota_geral !== undefined
+                                ? Number(h.nota_geral) >= 4 ? "default" : Number(h.nota_geral) >= 2.5 ? "secondary" : "destructive"
+                                : "outline"
+                            }>
+                              {h.nota_geral !== null && h.nota_geral !== undefined ? Number(h.nota_geral).toFixed(2) : "—"}
+                            </Badge>
+                          </td>
+                          <td className="py-2 text-center">
+                            <Button variant="ghost" size="icon-sm" onClick={() => handleViewAvaliacao(h)}>
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* ── Dialog de detalhes da avaliação salva ── */}
+      <Dialog open={!!viewingAvaliacao} onOpenChange={() => setViewingAvaliacao(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Detalhes da Avaliação - {viewingAvaliacao?.colaborador}</DialogTitle>
+          </DialogHeader>
+          {viewingAvaliacao && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div><strong>Colaborador:</strong> {viewingAvaliacao.colaborador}</div>
+                <div><strong>Cargo:</strong> {viewingAvaliacao.cargo || "—"}</div>
+                <div><strong>Avaliador:</strong> {viewingAvaliacao.avaliador}</div>
+                <div><strong>Data:</strong> {viewingAvaliacao.data_avaliacao ? format(new Date(viewingAvaliacao.data_avaliacao + "T00:00:00"), "dd/MM/yyyy") : "—"}</div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <h4 className="font-semibold mb-2">Médias por Categoria</h4>
+                {viewingAvaliacao.medias_categorias && typeof viewingAvaliacao.medias_categorias === "object" && (
+                  <div className="space-y-1">
+                    {Object.entries(viewingAvaliacao.medias_categorias as Record<string, any>).map(([cat, val]: [string, any]) => (
+                      <div key={cat} className="flex justify-between text-sm border-b border-muted/30 py-1">
+                        <span>{cat.replace("Competências ", "")}</span>
+                        <div className="flex gap-4">
+                          <span>Atual: {val?.atual !== null ? Number(val.atual).toFixed(2) : "—"}</span>
+                          <span>Proj.: {val?.projetado !== null ? Number(val.projetado).toFixed(2) : "—"}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                <div className="flex justify-between font-bold mt-2 text-sm bg-primary/5 rounded px-2 py-1">
+                  <span>NOTA GERAL</span>
+                  <span>{viewingAvaliacao.nota_geral !== null ? Number(viewingAvaliacao.nota_geral).toFixed(2) : "—"}</span>
+                </div>
+              </div>
+
+              {viewingAvaliacao.pontos_fortes && (
+                <div>
+                  <h4 className="font-semibold text-sm">Pontos Fortes</h4>
+                  <p className="text-sm text-muted-foreground">{viewingAvaliacao.pontos_fortes}</p>
+                </div>
+              )}
+
+              {viewingAvaliacao.oportunidades && (
+                <div>
+                  <h4 className="font-semibold text-sm">Oportunidades de Desenvolvimento</h4>
+                  <p className="text-sm text-muted-foreground">{viewingAvaliacao.oportunidades}</p>
+                </div>
+              )}
+
+              {viewingAvaliacao.acoes_desenvolvimento && Array.isArray(viewingAvaliacao.acoes_desenvolvimento) && viewingAvaliacao.acoes_desenvolvimento.length > 0 && (
+                <div>
+                  <h4 className="font-semibold text-sm">Competências-Alvo / Ações</h4>
+                  <div className="space-y-1">
+                    {(viewingAvaliacao.acoes_desenvolvimento as AcaoDesenvolvimento[]).map((a, i) => (
+                      <div key={i} className="text-sm border-b border-muted/30 py-1">
+                        <strong>{a.competencia}</strong> → {a.acao} {a.prazo && `(Prazo: ${a.prazo})`}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {viewingAvaliacao.feedback && (
+                <div>
+                  <h4 className="font-semibold text-sm">Feedback</h4>
+                  <p className="text-sm text-muted-foreground">{viewingAvaliacao.feedback}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
