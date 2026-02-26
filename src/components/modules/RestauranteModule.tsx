@@ -17,6 +17,7 @@ import { RegistrosRefeicoes } from "@/components/restaurante/RegistrosRefeicoes"
 import { RelatorioQuantitativoRefeicoes } from "@/components/restaurante/RelatorioQuantitativoRefeicoes";
 import { ColaboradoresManager } from "@/components/restaurante/ColaboradoresManager";
 import { TentativasDuplicidade } from "@/components/restaurante/TentativasDuplicidade";
+import { RegistroDietasLote } from "@/components/restaurante/RegistroDietasLote";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
@@ -1033,6 +1034,9 @@ export const RestauranteModule = () => {
 
         {/* Dietas Tab */}
         <TabsContent value="solicitar" className="space-y-4">
+          {/* Registro em Lote */}
+          <RegistroDietasLote userName={userName} userId={userId || ""} onSuccess={fetchData} />
+
           <Card>
             <CardHeader>
               <div className="flex flex-col gap-4">
