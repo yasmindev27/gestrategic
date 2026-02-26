@@ -246,13 +246,12 @@ export function EscalaTecEnfermagem() {
     },
   });
 
-  // Copy escala from previous month
+  // Copy escala from previous month (professionals only)
   const copyFromPreviousMonth = useMutation({
     mutationFn: async () => {
       const prevMes = mes === 1 ? 12 : mes - 1;
       const prevAno = mes === 1 ? ano - 1 : ano;
       
-      // Get previous escala
       const { data: prevEscala } = await supabase
         .from('escalas_tec_enfermagem')
         .select('id')
@@ -262,7 +261,6 @@ export function EscalaTecEnfermagem() {
       
       if (!prevEscala) throw new Error(`Nenhuma escala encontrada para ${MESES[prevMes - 1]}/${prevAno}`);
       
-      // Get previous professionals
       const { data: prevProfs } = await supabase
         .from('escala_tec_enf_profissionais')
         .select('*')
@@ -270,7 +268,6 @@ export function EscalaTecEnfermagem() {
       
       if (!prevProfs || prevProfs.length === 0) throw new Error('Nenhum profissional na escala anterior');
       
-      // Ensure current escala exists
       let currentEscalaId = escala?.id;
       if (!currentEscalaId) {
         const { data: userData } = await supabase.auth.getUser();
@@ -283,7 +280,6 @@ export function EscalaTecEnfermagem() {
         currentEscalaId = newEscala.id;
       }
       
-      // Copy professionals (without dias)
       for (const prof of prevProfs) {
         await supabase
           .from('escala_tec_enf_profissionais')
@@ -304,6 +300,114 @@ export function EscalaTecEnfermagem() {
     },
     onError: (e: Error) => {
       toast({ title: 'Erro', description: e.message, variant: 'destructive' });
+    },
+  });
+
+  // Duplicate full escala (professionals + all sector assignments) to next month
+  const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
+  const [targetMes, setTargetMes] = useState(mes === 12 ? 1 : mes + 1);
+  const [targetAno, setTargetAno] = useState(mes === 12 ? ano + 1 : ano);
+
+  useEffect(() => {
+    setTargetMes(mes === 12 ? 1 : mes + 1);
+    setTargetAno(mes === 12 ? ano + 1 : ano);
+  }, [mes, ano]);
+
+  const duplicateEscalaMutation = useMutation({
+    mutationFn: async () => {
+      if (!escala?.id) throw new Error('Nenhuma escala atual para duplicar');
+
+      // Check if target already exists
+      const { data: existing } = await supabase
+        .from('escalas_tec_enfermagem')
+        .select('id')
+        .eq('mes', targetMes)
+        .eq('ano', targetAno)
+        .maybeSingle();
+
+      if (existing) throw new Error(`Já existe uma escala para ${MESES[targetMes - 1]}/${targetAno}. Exclua-a primeiro ou escolha outro mês.`);
+
+      // Create new escala
+      const { data: userData } = await supabase.auth.getUser();
+      const { data: newEscala, error: escErr } = await supabase
+        .from('escalas_tec_enfermagem')
+        .insert({
+          mes: targetMes,
+          ano: targetAno,
+          created_by: userData.user?.id,
+          unidade: escala.unidade,
+          titulo: escala.titulo,
+          coordenadora_nome: escala.coordenadora_nome,
+          coordenadora_coren: escala.coordenadora_coren,
+          mensagem_motivacional: escala.mensagem_motivacional,
+        })
+        .select()
+        .single();
+      if (escErr) throw escErr;
+
+      // Get current professionals
+      const { data: curProfs } = await supabase
+        .from('escala_tec_enf_profissionais')
+        .select('*')
+        .eq('escala_id', escala.id);
+
+      if (!curProfs || curProfs.length === 0) return;
+
+      const targetDaysInMonth = new Date(targetAno, targetMes, 0).getDate();
+
+      // Copy each professional and their dias
+      for (const prof of curProfs) {
+        const { data: newProf, error: profErr } = await supabase
+          .from('escala_tec_enf_profissionais')
+          .insert({
+            escala_id: newEscala.id,
+            nome: prof.nome,
+            coren: prof.coren,
+            horario: prof.horario,
+            grupo: prof.grupo,
+            ordem: prof.ordem,
+          })
+          .select()
+          .single();
+        if (profErr) throw profErr;
+
+        // Get original dias (use localDias if available with unsaved changes)
+        const profDias = localDias[prof.id] || {};
+        const diasToInsert: { profissional_id: string; dia: number; setor_codigo: string }[] = [];
+
+        for (let dia = 1; dia <= targetDaysInMonth; dia++) {
+          const code = profDias[dia] || '';
+          if (code) {
+            diasToInsert.push({
+              profissional_id: newProf.id,
+              dia,
+              setor_codigo: code,
+            });
+          }
+        }
+
+        if (diasToInsert.length > 0) {
+          // Insert in batches of 50
+          for (let i = 0; i < diasToInsert.length; i += 50) {
+            const batch = diasToInsert.slice(i, i + 50);
+            const { error: diaErr } = await supabase
+              .from('escala_tec_enf_dias')
+              .insert(batch);
+            if (diaErr) throw diaErr;
+          }
+        }
+      }
+    },
+    onSuccess: () => {
+      setDuplicateDialogOpen(false);
+      setMes(targetMes);
+      setAno(targetAno);
+      queryClient.invalidateQueries({ queryKey: ['escala-tec-enf'] });
+      queryClient.invalidateQueries({ queryKey: ['escala-tec-enf-profs'] });
+      toast({ title: `Escala duplicada para ${MESES[targetMes - 1]}/${targetAno}! Edite conforme necessário.` });
+    },
+    onError: (e: Error) => {
+      toast({ title: 'Erro ao duplicar', description: e.message, variant: 'destructive' });
     },
   });
 
@@ -475,6 +579,9 @@ export function EscalaTecEnfermagem() {
               <>
                 <Button size="sm" variant="outline" onClick={() => setAddProfOpen(true)}>
                   <UserPlus className="h-4 w-4 mr-1" /> Profissional
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => setDuplicateDialogOpen(true)}>
+                  <Copy className="h-4 w-4 mr-1" /> Duplicar Escala
                 </Button>
                 {hasChanges && (
                   <Button size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
@@ -748,6 +855,47 @@ export function EscalaTecEnfermagem() {
               disabled={!editingProf?.nome || !editingProf?.coren || editProfMutation.isPending}
             >
               Salvar Alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Duplicate Escala Dialog */}
+      <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Duplicar Escala Completa</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Todos os profissionais e seus setores diários serão copiados para o mês destino. Depois, você poderá editar nomes, turnos, setores e dias livremente.
+          </p>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Mês Destino</Label>
+              <Select value={String(targetMes)} onValueChange={v => setTargetMes(Number(v))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {MESES.map((m, i) => (
+                    <SelectItem key={i} value={String(i + 1)}>{m}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Ano Destino</Label>
+              <Input
+                type="number"
+                value={targetAno}
+                onChange={e => setTargetAno(Number(e.target.value))}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDuplicateDialogOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={() => duplicateEscalaMutation.mutate()}
+              disabled={duplicateEscalaMutation.isPending}
+            >
+              {duplicateEscalaMutation.isPending ? 'Duplicando...' : 'Duplicar Escala'}
             </Button>
           </DialogFooter>
         </DialogContent>
