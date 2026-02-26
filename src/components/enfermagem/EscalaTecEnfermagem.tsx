@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Calendar, Plus, Save, Trash2, UserPlus } from 'lucide-react';
+import { Calendar, Copy, Edit2, Plus, Save, Trash2, UserPlus } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -89,6 +89,8 @@ export function EscalaTecEnfermagem() {
   const [ano, setAno] = useState(new Date().getFullYear());
   const [editingCell, setEditingCell] = useState<{ profId: string; dia: number } | null>(null);
   const [addProfOpen, setAddProfOpen] = useState(false);
+  const [editProfOpen, setEditProfOpen] = useState(false);
+  const [editingProf, setEditingProf] = useState<Profissional | null>(null);
   const [newProf, setNewProf] = useState({ nome: '', coren: '', grupo: 'noturno_impar', horario: '19:00 AS 07:00' });
   const [hasChanges, setHasChanges] = useState(false);
   const [localDias, setLocalDias] = useState<Record<string, Record<number, string>>>({});
@@ -221,6 +223,87 @@ export function EscalaTecEnfermagem() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['escala-tec-enf-profs'] });
       toast({ title: 'Profissional removido' });
+    },
+  });
+
+  // Edit professional
+  const editProfMutation = useMutation({
+    mutationFn: async (data: { id: string; nome: string; coren: string; grupo: string; horario: string }) => {
+      const { error } = await supabase
+        .from('escala_tec_enf_profissionais')
+        .update({ nome: data.nome, coren: data.coren, grupo: data.grupo, horario: data.horario })
+        .eq('id', data.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['escala-tec-enf-profs'] });
+      setEditProfOpen(false);
+      setEditingProf(null);
+      toast({ title: 'Profissional atualizado!' });
+    },
+    onError: (e: Error) => {
+      toast({ title: 'Erro', description: e.message, variant: 'destructive' });
+    },
+  });
+
+  // Copy escala from previous month
+  const copyFromPreviousMonth = useMutation({
+    mutationFn: async () => {
+      const prevMes = mes === 1 ? 12 : mes - 1;
+      const prevAno = mes === 1 ? ano - 1 : ano;
+      
+      // Get previous escala
+      const { data: prevEscala } = await supabase
+        .from('escalas_tec_enfermagem')
+        .select('id')
+        .eq('mes', prevMes)
+        .eq('ano', prevAno)
+        .maybeSingle();
+      
+      if (!prevEscala) throw new Error(`Nenhuma escala encontrada para ${MESES[prevMes - 1]}/${prevAno}`);
+      
+      // Get previous professionals
+      const { data: prevProfs } = await supabase
+        .from('escala_tec_enf_profissionais')
+        .select('*')
+        .eq('escala_id', prevEscala.id);
+      
+      if (!prevProfs || prevProfs.length === 0) throw new Error('Nenhum profissional na escala anterior');
+      
+      // Ensure current escala exists
+      let currentEscalaId = escala?.id;
+      if (!currentEscalaId) {
+        const { data: userData } = await supabase.auth.getUser();
+        const { data: newEscala, error } = await supabase
+          .from('escalas_tec_enfermagem')
+          .insert({ mes, ano, created_by: userData.user?.id })
+          .select()
+          .single();
+        if (error) throw error;
+        currentEscalaId = newEscala.id;
+      }
+      
+      // Copy professionals (without dias)
+      for (const prof of prevProfs) {
+        await supabase
+          .from('escala_tec_enf_profissionais')
+          .insert({
+            escala_id: currentEscalaId,
+            nome: prof.nome,
+            coren: prof.coren,
+            horario: prof.horario,
+            grupo: prof.grupo,
+            ordem: prof.ordem,
+          });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['escala-tec-enf', mes, ano] });
+      queryClient.invalidateQueries({ queryKey: ['escala-tec-enf-profs'] });
+      toast({ title: 'Profissionais copiados do mês anterior! Preencha os setores.' });
+    },
+    onError: (e: Error) => {
+      toast({ title: 'Erro', description: e.message, variant: 'destructive' });
     },
   });
 
@@ -408,9 +491,14 @@ export function EscalaTecEnfermagem() {
         {!escala ? (
           <div className="text-center py-12 space-y-4">
             <p className="text-muted-foreground">Nenhuma escala encontrada para {MESES[mes - 1]}/{ano}.</p>
-            <Button onClick={() => createEscalaMutation.mutate()} disabled={createEscalaMutation.isPending}>
-              <Plus className="h-4 w-4 mr-2" /> Criar Escala para {MESES[mes - 1]}
-            </Button>
+            <div className="flex gap-2 justify-center">
+              <Button onClick={() => createEscalaMutation.mutate()} disabled={createEscalaMutation.isPending}>
+                <Plus className="h-4 w-4 mr-2" /> Criar Escala Vazia
+              </Button>
+              <Button variant="outline" onClick={() => copyFromPreviousMonth.mutate()} disabled={copyFromPreviousMonth.isPending}>
+                <Copy className="h-4 w-4 mr-2" /> Copiar do Mês Anterior
+              </Button>
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -490,16 +578,27 @@ export function EscalaTecEnfermagem() {
                               })}
                               <td className="border px-1 py-0.5 text-center text-[10px]">{prof.horario}</td>
                               <td className="border px-0.5 py-0.5 text-center">
-                                <button
-                                  className="text-destructive hover:text-destructive/80"
-                                  onClick={() => {
-                                    if (confirm('Remover ' + prof.nome + '?')) {
-                                      removeProfMutation.mutate(prof.id);
-                                    }
-                                  }}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </button>
+                                <div className="flex items-center gap-0.5 justify-center">
+                                  <button
+                                    className="text-primary hover:text-primary/80"
+                                    onClick={() => {
+                                      setEditingProf(prof);
+                                      setEditProfOpen(true);
+                                    }}
+                                  >
+                                    <Edit2 className="h-3 w-3" />
+                                  </button>
+                                  <button
+                                    className="text-destructive hover:text-destructive/80"
+                                    onClick={() => {
+                                      if (confirm('Remover ' + prof.nome + '?')) {
+                                        removeProfMutation.mutate(prof.id);
+                                      }
+                                    }}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -589,6 +688,66 @@ export function EscalaTecEnfermagem() {
               disabled={!newProf.nome || !newProf.coren || addProfMutation.isPending}
             >
               Adicionar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Professional Dialog */}
+      <Dialog open={editProfOpen} onOpenChange={(open) => { setEditProfOpen(open); if (!open) setEditingProf(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Alterar Profissional</DialogTitle>
+          </DialogHeader>
+          {editingProf && (
+            <div className="space-y-4">
+              <div>
+                <Label>Nome Completo *</Label>
+                <Input
+                  value={editingProf.nome}
+                  onChange={e => setEditingProf({ ...editingProf, nome: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>COREN-MG *</Label>
+                <Input
+                  value={editingProf.coren}
+                  onChange={e => setEditingProf({ ...editingProf, coren: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label>Grupo / Turno</Label>
+                <Select
+                  value={editingProf.grupo}
+                  onValueChange={v => {
+                    const grp = GRUPOS.find(g => g.value === v);
+                    setEditingProf({ ...editingProf, grupo: v, horario: grp?.horario || editingProf.horario });
+                  }}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {GRUPOS.map(g => (
+                      <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Horário</Label>
+                <Input
+                  value={editingProf.horario}
+                  onChange={e => setEditingProf({ ...editingProf, horario: e.target.value })}
+                />
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEditProfOpen(false); setEditingProf(null); }}>Cancelar</Button>
+            <Button
+              onClick={() => editingProf && editProfMutation.mutate({ id: editingProf.id, nome: editingProf.nome, coren: editingProf.coren, grupo: editingProf.grupo, horario: editingProf.horario })}
+              disabled={!editingProf?.nome || !editingProf?.coren || editProfMutation.isPending}
+            >
+              Salvar Alterações
             </Button>
           </DialogFooter>
         </DialogContent>
