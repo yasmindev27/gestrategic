@@ -333,6 +333,129 @@ export const AvaliacaoDesempenhoSection = () => {
     });
     y = (doc as any).lastAutoTable.finalY + 8;
 
+    // ── Roda das Competências (Radar Chart) ──
+    try {
+      const chartCanvas = document.createElement("canvas");
+      chartCanvas.width = 600;
+      chartCanvas.height = 500;
+      const ctx = chartCanvas.getContext("2d");
+      if (ctx && radarData.length > 0) {
+        const cx = 300, cy = 230, maxR = 180;
+        const n = radarData.length;
+        const angleStep = (2 * Math.PI) / n;
+        const maxVal = 5;
+
+        // Background
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, 600, 500);
+
+        // Title
+        ctx.fillStyle = "#1a1a1a";
+        ctx.font = "bold 18px Arial";
+        ctx.textAlign = "center";
+        ctx.fillText("RODA DAS COMPETÊNCIAS – ATUAL E PROJETADA", cx, 24);
+
+        // Grid circles
+        for (let level = 1; level <= 5; level++) {
+          const r = (level / maxVal) * maxR;
+          ctx.beginPath();
+          ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+          ctx.strokeStyle = "#ddd";
+          ctx.lineWidth = 0.8;
+          ctx.stroke();
+          ctx.fillStyle = "#999";
+          ctx.font = "11px Arial";
+          ctx.textAlign = "left";
+          ctx.fillText(String(level), cx + 3, cy - r + 4);
+        }
+
+        // Axis lines + labels
+        ctx.font = "11px Arial";
+        ctx.fillStyle = "#333";
+        radarData.forEach((d, i) => {
+          const angle = i * angleStep - Math.PI / 2;
+          const x2 = cx + maxR * Math.cos(angle);
+          const y2 = cy + maxR * Math.sin(angle);
+          ctx.beginPath();
+          ctx.moveTo(cx, cy);
+          ctx.lineTo(x2, y2);
+          ctx.strokeStyle = "#ccc";
+          ctx.lineWidth = 0.6;
+          ctx.stroke();
+          // Label
+          const lx = cx + (maxR + 18) * Math.cos(angle);
+          const ly = cy + (maxR + 18) * Math.sin(angle);
+          ctx.textAlign = Math.cos(angle) < -0.1 ? "right" : Math.cos(angle) > 0.1 ? "left" : "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(d.competencia, lx, ly);
+        });
+
+        // Draw polygon helper
+        const drawPoly = (field: "atual" | "projetado", color: string, fillColor: string) => {
+          ctx.beginPath();
+          radarData.forEach((d, i) => {
+            const angle = i * angleStep - Math.PI / 2;
+            const r = (d[field] / maxVal) * maxR;
+            const x = cx + r * Math.cos(angle);
+            const yy = cy + r * Math.sin(angle);
+            if (i === 0) ctx.moveTo(x, yy); else ctx.lineTo(x, yy);
+          });
+          ctx.closePath();
+          ctx.fillStyle = fillColor;
+          ctx.fill();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Dots
+          radarData.forEach((d, i) => {
+            const angle = i * angleStep - Math.PI / 2;
+            const r = (d[field] / maxVal) * maxR;
+            ctx.beginPath();
+            ctx.arc(cx + r * Math.cos(angle), cy + r * Math.sin(angle), 3, 0, 2 * Math.PI);
+            ctx.fillStyle = color;
+            ctx.fill();
+          });
+        };
+
+        drawPoly("atual", "#2563eb", "rgba(37,99,235,0.15)");
+        drawPoly("projetado", "#16a34a", "rgba(22,163,74,0.15)");
+
+        // Legend
+        const legY = cy + maxR + 40;
+        ctx.fillStyle = "#2563eb";
+        ctx.fillRect(cx - 80, legY, 12, 12);
+        ctx.fillStyle = "#333";
+        ctx.font = "13px Arial";
+        ctx.textAlign = "left";
+        ctx.fillText("Atual", cx - 64, legY + 10);
+        ctx.fillStyle = "#16a34a";
+        ctx.fillRect(cx + 10, legY, 12, 12);
+        ctx.fillStyle = "#333";
+        ctx.fillText("Projetado", cx + 26, legY + 10);
+
+        // Check if we need a new page for the chart
+        if (y + 90 > doc.internal.pageSize.height - 40) {
+          doc.addPage();
+          y = 32;
+        }
+
+        const imgData = chartCanvas.toDataURL("image/png");
+        const chartW = pageWidth - 28;
+        const chartH = chartW * (500 / 600);
+        doc.addImage(imgData, "PNG", 14, y, chartW, chartH);
+        y += chartH + 8;
+      }
+    } catch (e) {
+      console.warn("Não foi possível gerar gráfico radar no PDF:", e);
+    }
+
+    // Check if we need a new page for the remaining content
+    if (y + 40 > doc.internal.pageSize.height - 40) {
+      doc.addPage();
+      y = 32;
+    }
+
     // Pontos fortes & oportunidades
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
