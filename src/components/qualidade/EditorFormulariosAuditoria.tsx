@@ -1,17 +1,19 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import {
   Plus, Pencil, Trash2, Save, ChevronLeft, Settings2,
   ClipboardList, FileText, ToggleLeft, AlignLeft, Hash,
-  GripVertical, CircleDot
+  GripVertical, CircleDot, Eye, Copy, MoreVertical,
+  ChevronDown, ChevronUp, LayoutList, X, Check
 } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading-state";
 import { cn } from "@/lib/utils";
@@ -45,11 +47,11 @@ interface PerguntaConfig {
 
 type TipoPergunta = "multipla_escolha" | "sim_nao" | "escala" | "texto_livre";
 
-const TIPO_PERGUNTA_INFO: Record<TipoPergunta, { label: string; icon: React.ReactNode; desc: string }> = {
-  multipla_escolha: { label: "Múltipla Escolha", icon: <CircleDot className="h-4 w-4" />, desc: "Selecionar uma entre várias opções" },
-  sim_nao: { label: "Sim / Não", icon: <ToggleLeft className="h-4 w-4" />, desc: "Resposta binária com opções padrão" },
-  escala: { label: "Escala Numérica", icon: <Hash className="h-4 w-4" />, desc: "Escala de 0 a 9 para avaliações qualitativas" },
-  texto_livre: { label: "Texto Livre", icon: <AlignLeft className="h-4 w-4" />, desc: "Campo aberto para o auditor escrever" },
+const TIPO_PERGUNTA_INFO: Record<TipoPergunta, { label: string; icon: React.ReactNode; desc: string; color: string }> = {
+  multipla_escolha: { label: "Múltipla Escolha", icon: <CircleDot className="h-4 w-4" />, desc: "Opções personalizáveis", color: "text-blue-600" },
+  sim_nao: { label: "Sim / Não", icon: <ToggleLeft className="h-4 w-4" />, desc: "Resposta binária", color: "text-emerald-600" },
+  escala: { label: "Escala 0-9", icon: <Hash className="h-4 w-4" />, desc: "Avaliação numérica", color: "text-amber-600" },
+  texto_livre: { label: "Texto Livre", icon: <AlignLeft className="h-4 w-4" />, desc: "Campo aberto", color: "text-purple-600" },
 };
 
 const PRESET_OPCOES: Record<TipoPergunta, string[]> = {
@@ -60,8 +62,8 @@ const PRESET_OPCOES: Record<TipoPergunta, string[]> = {
 };
 
 const OPCOES_LABELS: Record<string, string> = {
-  conforme: "Conforme", nao_conforme: "Não Conforme", nao_aplica: "Não se aplica",
-  sim: "Sim", nao: "Não", __texto_livre__: "Campo de texto aberto",
+  conforme: "Conforme", nao_conforme: "Não Conforme", nao_aplica: "N/A",
+  sim: "Sim", nao: "Não", __texto_livre__: "Texto aberto",
 };
 
 const getOpcaoLabel = (opt: string) => OPCOES_LABELS[opt] || opt.replace(/_/g, " ");
@@ -75,12 +77,7 @@ const detectTipoPergunta = (opcoes: string[]): TipoPergunta => {
 
 // ──────── Inline Question Card ────────
 const InlineQuestionCard = ({
-  pergunta,
-  index,
-  isSelected,
-  onSelect,
-  onSave,
-  onDelete,
+  pergunta, index, isSelected, onSelect, onSave, onDelete,
 }: {
   pergunta: PerguntaConfig;
   index: number;
@@ -106,9 +103,7 @@ const InlineQuestionCard = ({
 
   const handleChangeTipo = (t: TipoPergunta) => {
     setCurrentTipo(t);
-    if (t !== "multipla_escolha") {
-      setOpcoes(PRESET_OPCOES[t]);
-    }
+    if (t !== "multipla_escolha") setOpcoes(PRESET_OPCOES[t]);
     setDirty(true);
   };
 
@@ -118,133 +113,163 @@ const InlineQuestionCard = ({
     setDirty(false);
   };
 
+  const addOpcao = () => {
+    if (novaOpcao.trim()) {
+      setOpcoes([...opcoes, novaOpcao.trim()]);
+      setNovaOpcao("");
+      setDirty(true);
+    }
+  };
+
+  // ─── COLLAPSED VIEW ───
+  if (!isSelected) {
+    return (
+      <div
+        className="group flex items-center gap-3 px-4 py-3 rounded-lg border bg-card hover:bg-accent/30 hover:border-primary/30 cursor-pointer transition-all"
+        onClick={onSelect}
+      >
+        <span className="text-xs font-mono text-muted-foreground w-5 text-right shrink-0">{index + 1}</span>
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-medium truncate">{pergunta.label || <span className="italic text-muted-foreground">Sem título — clique para editar</span>}</p>
+        </div>
+        <Badge variant="outline" className={cn("text-[10px] gap-1 shrink-0", info.color)}>
+          {info.icon}
+          {info.label}
+        </Badge>
+      </div>
+    );
+  }
+
+  // ─── EXPANDED VIEW ───
   return (
-    <Card
-      className={cn(
-        "transition-all cursor-pointer group relative",
-        isSelected ? "ring-2 ring-primary border-primary shadow-md" : "hover:shadow-sm hover:border-primary/30"
-      )}
-      onClick={onSelect}
-    >
-      {isSelected && <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-xl" />}
+    <Card className="ring-2 ring-primary border-primary shadow-lg relative overflow-hidden" onClick={e => e.stopPropagation()}>
+      <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
 
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-5 pl-7 space-y-4">
+        {/* Question label */}
         <div className="flex items-start gap-3">
-          <div className="mt-2 cursor-grab opacity-30 group-hover:opacity-60">
-            <GripVertical className="h-5 w-5 text-muted-foreground" />
+          <span className="text-sm font-bold text-primary mt-2.5 w-6 shrink-0">{index + 1}.</span>
+          <div className="flex-1">
+            <Input
+              value={label}
+              onChange={(e) => { setLabel(e.target.value); setDirty(true); }}
+              placeholder="Digite o texto da pergunta..."
+              className="text-base font-medium border-0 border-b-2 border-muted-foreground/20 rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary bg-transparent h-auto py-2"
+              autoFocus
+            />
           </div>
-          <span className="text-sm font-bold text-muted-foreground mt-2 w-6 shrink-0">{index + 1}</span>
+        </div>
 
-          <div className="flex-1 min-w-0">
-            {isSelected ? (
-              <>
-                <Input
-                  value={label}
-                  onChange={(e) => { setLabel(e.target.value); setDirty(true); }}
-                  placeholder="Texto da pergunta"
-                  className="flex-1 text-base font-medium border-0 border-b-2 border-muted rounded-none px-0 focus-visible:ring-0 focus-visible:border-primary bg-transparent mb-3"
-                  onClick={e => e.stopPropagation()}
-                />
+        {/* Type selector - horizontal pills */}
+        <div className="flex flex-wrap gap-1.5">
+          {(Object.entries(TIPO_PERGUNTA_INFO) as [TipoPergunta, typeof TIPO_PERGUNTA_INFO[TipoPergunta]][]).map(([key, inf]) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => handleChangeTipo(key)}
+              className={cn(
+                "inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium transition-all border",
+                currentTipo === key
+                  ? "bg-primary text-primary-foreground border-primary shadow-sm"
+                  : "bg-muted/50 text-muted-foreground border-transparent hover:bg-muted hover:border-border"
+              )}
+            >
+              {inf.icon}
+              {inf.label}
+            </button>
+          ))}
+        </div>
 
-                <div className="grid grid-cols-2 gap-2 mb-3">
-                  {(Object.entries(TIPO_PERGUNTA_INFO) as [TipoPergunta, typeof TIPO_PERGUNTA_INFO[TipoPergunta]][]).map(([key, inf]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); handleChangeTipo(key); }}
-                      className={cn(
-                        "flex items-start gap-2 p-2.5 rounded-lg border text-left transition-all text-sm",
-                        currentTipo === key ? "border-primary bg-primary/5 shadow-sm" : "border-border hover:border-primary/40"
-                      )}
-                    >
-                      <span className={cn("mt-0.5", currentTipo === key ? "text-primary" : "text-muted-foreground")}>{inf.icon}</span>
-                      <p className="font-medium text-xs">{inf.label}</p>
-                    </button>
-                  ))}
+        {/* Options preview/editor */}
+        {currentTipo === "multipla_escolha" && (
+          <div className="space-y-3 bg-muted/20 rounded-lg p-3 border">
+            <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Opções de Resposta</Label>
+            <div className="flex flex-wrap gap-2">
+              {opcoes.map((opt, i) => (
+                <div key={`${opt}-${i}`} className="flex items-center gap-1 bg-background border rounded-full pl-3 pr-1 py-1 text-sm group/opt">
+                  <span className="text-xs">{getOpcaoLabel(opt)}</span>
+                  <button
+                    onClick={() => { setOpcoes(opcoes.filter((_, idx) => idx !== i)); setDirty(true); }}
+                    className="h-5 w-5 rounded-full flex items-center justify-center hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
                 </div>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={novaOpcao}
+                onChange={e => setNovaOpcao(e.target.value)}
+                placeholder="Adicionar opção..."
+                className="text-sm h-8"
+                onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); addOpcao(); } }}
+              />
+              <Button variant="secondary" size="sm" className="h-8 shrink-0" onClick={addOpcao} disabled={!novaOpcao.trim()}>
+                <Plus className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+            <div className="flex gap-1.5">
+              {[
+                { label: "Conforme / Não Conforme / N/A", v: ["conforme", "nao_conforme", "nao_aplica"] },
+                { label: "Sim / Não / N/A", v: ["sim", "nao", "nao_aplica"] },
+              ].map(p => (
+                <Button key={p.label} variant="ghost" size="sm" className="text-[11px] h-7 text-primary hover:text-primary px-2" onClick={() => { setOpcoes(p.v); setDirty(true); }}>
+                  <Copy className="h-3 w-3 mr-1" />
+                  {p.label}
+                </Button>
+              ))}
+            </div>
+          </div>
+        )}
 
-                {currentTipo === "multipla_escolha" && (
-                  <div className="space-y-2" onClick={e => e.stopPropagation()}>
-                    <div className="flex flex-wrap gap-1.5 min-h-[36px] p-2 border rounded-lg bg-muted/20">
-                      {opcoes.map(opt => (
-                        <Badge key={opt} variant="secondary" className="gap-1 pr-1 cursor-pointer hover:bg-destructive/10" onClick={() => { setOpcoes(opcoes.filter(o => o !== opt)); setDirty(true); }}>
-                          {getOpcaoLabel(opt)}
-                          <span className="text-destructive font-bold">×</span>
-                        </Badge>
-                      ))}
-                    </div>
-                    <div className="flex gap-2">
-                      <Input
-                        value={novaOpcao}
-                        onChange={e => setNovaOpcao(e.target.value)}
-                        placeholder="Nova opção..."
-                        className="text-sm"
-                        onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); if (novaOpcao.trim()) { setOpcoes([...opcoes, novaOpcao.trim()]); setNovaOpcao(""); setDirty(true); } } }}
-                      />
-                      <Button variant="outline" size="sm" onClick={() => { if (novaOpcao.trim()) { setOpcoes([...opcoes, novaOpcao.trim()]); setNovaOpcao(""); setDirty(true); } }}>
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {[
-                        { label: "Conforme/Não Conforme", v: ["conforme", "nao_conforme", "nao_aplica"] },
-                        { label: "Sim/Não/N/A", v: ["sim", "nao", "nao_aplica"] },
-                      ].map(p => (
-                        <Button key={p.label} variant="ghost" size="sm" className="text-xs h-7 text-primary" onClick={() => { setOpcoes(p.v); setDirty(true); }}>
-                          + {p.label}
-                        </Button>
-                      ))}
-                    </div>
-                  </div>
-                )}
+        {currentTipo === "sim_nao" && (
+          <div className="flex items-center gap-2 p-3 rounded-lg border bg-emerald-50/50 dark:bg-emerald-950/10">
+            <ToggleLeft className="h-4 w-4 text-emerald-600" />
+            <span className="text-sm text-muted-foreground">Opções automáticas: <strong>Sim</strong>, <strong>Não</strong> e <strong>N/A</strong></span>
+          </div>
+        )}
+        {currentTipo === "escala" && (
+          <div className="p-3 rounded-lg border bg-amber-50/50 dark:bg-amber-950/10">
+            <div className="flex items-center gap-2 mb-2">
+              <Hash className="h-4 w-4 text-amber-600" />
+              <span className="text-sm text-muted-foreground">Escala numérica de <strong>0 a 9</strong> + N/A</span>
+            </div>
+            <div className="flex gap-1">
+              {[0,1,2,3,4,5,6,7,8,9].map(n => (
+                <div key={n} className="h-7 w-7 rounded border bg-background flex items-center justify-center text-xs font-mono text-muted-foreground">{n}</div>
+              ))}
+              <div className="h-7 px-2 rounded border bg-background flex items-center justify-center text-[10px] text-muted-foreground">N/A</div>
+            </div>
+          </div>
+        )}
+        {currentTipo === "texto_livre" && (
+          <div className="p-3 rounded-lg border bg-purple-50/50 dark:bg-purple-950/10">
+            <div className="flex items-center gap-2 mb-2">
+              <AlignLeft className="h-4 w-4 text-purple-600" />
+              <span className="text-sm text-muted-foreground">O auditor poderá escrever livremente</span>
+            </div>
+            <div className="border rounded bg-background p-2">
+              <div className="h-12 border-b border-dashed border-muted-foreground/20" />
+              <div className="h-4 border-b border-dashed border-muted-foreground/20 mt-2" />
+            </div>
+          </div>
+        )}
 
-                {currentTipo === "sim_nao" && (
-                  <div className="p-3 rounded-lg border bg-muted/20 text-sm text-muted-foreground">
-                    Opções: <strong>Sim, Não e Não se aplica</strong>
-                  </div>
-                )}
-                {currentTipo === "escala" && (
-                  <div className="p-3 rounded-lg border bg-muted/20 text-sm text-muted-foreground">
-                    Escala <strong>0 a 9 + Não se aplica</strong>
-                  </div>
-                )}
-                {currentTipo === "texto_livre" && (
-                  <div className="p-3 rounded-lg border bg-primary/5 text-sm text-muted-foreground">
-                    Campo de <strong>texto aberto</strong>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between pt-3 border-t mt-3" onClick={e => e.stopPropagation()}>
-                  <div className="flex gap-1">
-                    {dirty && (
-                      <Button size="sm" onClick={handleSave}>
-                        <Save className="h-3.5 w-3.5 mr-1" /> Salvar
-                      </Button>
-                    )}
-                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={onDelete}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <p className="text-sm font-medium leading-relaxed">{pergunta.label || <span className="text-muted-foreground italic">Sem título</span>}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="outline" className="text-xs flex items-center gap-1">
-                    {info.icon}
-                    {info.label}
-                  </Badge>
-                  {tipo !== "texto_livre" && pergunta.opcoes.slice(0, 4).map(opt => (
-                    <span key={opt} className="text-xs text-muted-foreground border rounded px-1.5 py-0.5 bg-muted/40">
-                      {getOpcaoLabel(opt)}
-                    </span>
-                  ))}
-                  {tipo !== "texto_livre" && pergunta.opcoes.length > 4 && (
-                    <span className="text-xs text-muted-foreground">+{pergunta.opcoes.length - 4}</span>
-                  )}
-                </div>
-              </>
+        {/* Action bar */}
+        <Separator />
+        <div className="flex items-center justify-between">
+          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive hover:bg-destructive/10 gap-1.5" onClick={onDelete}>
+            <Trash2 className="h-3.5 w-3.5" /> Excluir
+          </Button>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={onSelect} className="gap-1.5">
+              <X className="h-3.5 w-3.5" /> Fechar
+            </Button>
+            {dirty && (
+              <Button size="sm" onClick={handleSave} className="gap-1.5">
+                <Check className="h-3.5 w-3.5" /> Salvar Alterações
+              </Button>
             )}
           </div>
         </div>
@@ -262,16 +287,12 @@ export const EditorFormulariosAuditoria = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedFormulario, setSelectedFormulario] = useState<FormularioConfig | null>(null);
 
-  // Dialogs
   const [editSecaoDialog, setEditSecaoDialog] = useState(false);
   const [editingSecao, setEditingSecao] = useState<SecaoConfig | null>(null);
-
-  // Inline editing
   const [selectedPerguntaId, setSelectedPerguntaId] = useState<string | null>(null);
   const [addingToSecaoId, setAddingToSecaoId] = useState<string | null>(null);
-
-  // Seção form
   const [secaoNome, setSecaoNome] = useState("");
+  const [expandedSecoes, setExpandedSecoes] = useState<Set<string>>(new Set());
 
   useEffect(() => { loadAll(); }, []);
 
@@ -283,9 +304,23 @@ export const EditorFormulariosAuditoria = () => {
       supabase.from("auditoria_perguntas_config").select("*").order("ordem"),
     ]);
     if (fRes.data) setFormularios(fRes.data as FormularioConfig[]);
-    if (sRes.data) setSecoes(sRes.data as SecaoConfig[]);
+    if (sRes.data) {
+      setSecoes(sRes.data as SecaoConfig[]);
+      // Auto-expand all sections on first load
+      if (expandedSecoes.size === 0) {
+        setExpandedSecoes(new Set((sRes.data as SecaoConfig[]).map(s => s.id)));
+      }
+    }
     if (pRes.data) setPerguntas(pRes.data as PerguntaConfig[]);
     setIsLoading(false);
+  };
+
+  const toggleSecao = (id: string) => {
+    setExpandedSecoes(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
   };
 
   // ---- Pergunta CRUD ----
@@ -312,14 +347,8 @@ export const EditorFormulariosAuditoria = () => {
   };
 
   const savePergunta = async (id: string, updates: { label: string; opcoes: string[] }) => {
-    const { error } = await supabase
-      .from("auditoria_perguntas_config")
-      .update({ label: updates.label, opcoes: updates.opcoes })
-      .eq("id", id);
-    if (error) {
-      toast({ title: "Erro", description: "Falha ao salvar", variant: "destructive" });
-      return;
-    }
+    const { error } = await supabase.from("auditoria_perguntas_config").update({ label: updates.label, opcoes: updates.opcoes }).eq("id", id);
+    if (error) { toast({ title: "Erro", description: "Falha ao salvar", variant: "destructive" }); return; }
     toast({ title: "Pergunta salva!" });
     loadAll();
   };
@@ -337,17 +366,15 @@ export const EditorFormulariosAuditoria = () => {
   const openEditSecao = (secao: SecaoConfig) => { setEditingSecao(secao); setSecaoNome(secao.nome); setEditSecaoDialog(true); };
 
   const saveSecao = async () => {
-    if (!secaoNome.trim()) {
-      toast({ title: "Campo obrigatório", description: "Digite o nome da seção.", variant: "destructive" });
-      return;
-    }
+    if (!secaoNome.trim()) { toast({ title: "Campo obrigatório", variant: "destructive" }); return; }
     if (editingSecao) {
       await supabase.from("auditoria_secoes_config").update({ nome: secaoNome }).eq("id", editingSecao.id);
       toast({ title: "Seção renomeada!" });
     } else {
       const formSecoes = secoes.filter(s => s.formulario_id === selectedFormulario!.id);
       const maxOrdem = formSecoes.length > 0 ? Math.max(...formSecoes.map(s => s.ordem)) : 0;
-      await supabase.from("auditoria_secoes_config").insert({ formulario_id: selectedFormulario!.id, nome: secaoNome, ordem: maxOrdem + 1 });
+      const { data } = await supabase.from("auditoria_secoes_config").insert({ formulario_id: selectedFormulario!.id, nome: secaoNome, ordem: maxOrdem + 1 }).select("id").single();
+      if (data) setExpandedSecoes(prev => new Set([...prev, data.id]));
       toast({ title: "Seção criada!" });
     }
     setEditSecaoDialog(false);
@@ -361,28 +388,18 @@ export const EditorFormulariosAuditoria = () => {
     loadAll();
   };
 
-  // ---- Formulário: criação rápida (1 click) ----
+  // ---- Formulário ----
   const criarFormularioRapido = async () => {
     const maxOrdem = formularios.length > 0 ? Math.max(...formularios.map(f => f.ordem ?? 0)) : 0;
     const { data: formData, error: formError } = await supabase
       .from("auditoria_formularios_config")
-      .insert({
-        nome: "Novo Formulário", tipo: `custom_${Date.now()}`, icone: "clipboard-check",
-        setores: ["Todos"], ordem: maxOrdem + 1, ativo: true,
-      })
-      .select("*")
-      .single();
+      .insert({ nome: "Novo Formulário", tipo: `custom_${Date.now()}`, icone: "clipboard-check", setores: ["Todos"], ordem: maxOrdem + 1, ativo: true })
+      .select("*").single();
 
-    if (formError || !formData) {
-      toast({ title: "Erro", description: "Falha ao criar formulário", variant: "destructive" });
-      return;
-    }
+    if (formError || !formData) { toast({ title: "Erro", variant: "destructive" }); return; }
 
-    // Auto-create a default first section
-    await supabase
-      .from("auditoria_secoes_config")
-      .insert({ formulario_id: formData.id, nome: "Seção 1", ordem: 1 });
-
+    const { data: secData } = await supabase.from("auditoria_secoes_config").insert({ formulario_id: formData.id, nome: "Seção 1", ordem: 1 }).select("id").single();
+    if (secData) setExpandedSecoes(new Set([secData.id]));
     toast({ title: "Formulário criado!", description: "Edite o título e adicione suas perguntas." });
     await loadAll();
     setSelectedFormulario(formData as FormularioConfig);
@@ -405,41 +422,52 @@ export const EditorFormulariosAuditoria = () => {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-semibold text-lg">Formulários de Auditoria</h3>
-            <p className="text-sm text-muted-foreground mt-0.5">Clique em um formulário para editar</p>
+            <h3 className="font-semibold text-lg flex items-center gap-2">
+              <LayoutList className="h-5 w-5 text-primary" />
+              Formulários de Auditoria
+            </h3>
+            <p className="text-sm text-muted-foreground mt-0.5">Selecione um formulário para editar ou crie um novo</p>
           </div>
-          <Button onClick={criarFormularioRapido}>
-            <Plus className="h-4 w-4 mr-2" /> Novo Formulário
+          <Button onClick={criarFormularioRapido} className="gap-2">
+            <Plus className="h-4 w-4" /> Novo Formulário
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {formularios.filter(f => f.ativo).map(f => {
             const fSecoes = secoes.filter(s => s.formulario_id === f.id);
             const fPerguntas = fSecoes.flatMap(s => perguntas.filter(p => p.secao_id === s.id));
             return (
-              <Card key={f.id} className="cursor-pointer hover:border-primary hover:shadow-sm transition-all group" onClick={() => setSelectedFormulario(f)}>
-                <CardContent className="flex items-center gap-4 py-5">
-                  <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                    <ClipboardList className="h-5 w-5 text-primary" />
+              <Card key={f.id} className="cursor-pointer hover:border-primary/50 hover:shadow-md transition-all group overflow-hidden" onClick={() => setSelectedFormulario(f)}>
+                <div className="h-1.5 bg-primary/20 group-hover:bg-primary transition-colors" />
+                <CardContent className="p-5">
+                  <div className="flex items-start gap-3">
+                    <div className="h-11 w-11 rounded-xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary/20 transition-colors">
+                      <ClipboardList className="h-5 w-5 text-primary" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-semibold truncate group-hover:text-primary transition-colors">{f.nome}</h4>
+                      <div className="flex items-center gap-3 mt-1.5">
+                        <span className="text-xs text-muted-foreground">{fSecoes.length} seç{fSecoes.length === 1 ? "ão" : "ões"}</span>
+                        <span className="text-xs text-muted-foreground">{fPerguntas.length} pergunta{fPerguntas.length !== 1 ? "s" : ""}</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium truncate">{f.nome}</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {fSecoes.length} {fSecoes.length === 1 ? "seção" : "seções"} · {fPerguntas.length} {fPerguntas.length === 1 ? "pergunta" : "perguntas"}
-                    </p>
-                  </div>
-                  <Settings2 className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
                 </CardContent>
               </Card>
             );
           })}
           {formularios.filter(f => f.ativo).length === 0 && (
-            <Card className="col-span-2">
-              <CardContent className="py-12 text-center text-muted-foreground">
-                <FileText className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                <p>Nenhum formulário cadastrado.</p>
-                <p className="text-sm mt-1">Clique em "Novo Formulário" para começar.</p>
+            <Card className="col-span-full">
+              <CardContent className="py-16 text-center text-muted-foreground">
+                <div className="h-16 w-16 mx-auto mb-4 rounded-2xl bg-muted/50 flex items-center justify-center">
+                  <FileText className="h-8 w-8 opacity-30" />
+                </div>
+                <p className="font-medium">Nenhum formulário cadastrado</p>
+                <p className="text-sm mt-1 mb-4">Crie seu primeiro formulário de auditoria</p>
+                <Button onClick={criarFormularioRapido} className="gap-2">
+                  <Plus className="h-4 w-4" /> Criar Formulário
+                </Button>
               </CardContent>
             </Card>
           )}
@@ -448,74 +476,97 @@ export const EditorFormulariosAuditoria = () => {
     );
   }
 
-  // ───────────────── DETAIL VIEW (Google Forms-like) ─────────────────
+  // ───────────────── DETAIL/EDITOR VIEW ─────────────────
   const formSecoes = secoes.filter(s => s.formulario_id === selectedFormulario.id).sort((a, b) => a.ordem - b.ordem);
+  const totalPerguntas = formSecoes.reduce((acc, s) => acc + perguntas.filter(p => p.secao_id === s.id).length, 0);
 
   return (
-    <div className="space-y-5">
-      {/* Header */}
-      <Card className="bg-primary/5 border-primary/20">
-        <CardContent className="p-5 space-y-3">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" onClick={() => setSelectedFormulario(null)}>
-              <ChevronLeft className="h-4 w-4 mr-1" /> Voltar
+    <div className="space-y-4 max-w-4xl mx-auto">
+      {/* Header Card */}
+      <Card className="overflow-hidden">
+        <div className="h-2 bg-primary" />
+        <CardContent className="p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setSelectedFormulario(null)} className="gap-1.5 text-muted-foreground hover:text-foreground -ml-2">
+              <ChevronLeft className="h-4 w-4" /> Voltar
             </Button>
             <div className="flex-1" />
-            <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={deleteFormulario}>
-              <Trash2 className="h-4 w-4 mr-1" /> Excluir
-            </Button>
-            <Button size="sm" onClick={openAddSecao}>
-              <Plus className="h-4 w-4 mr-1" /> Nova Seção
+            <Button variant="outline" size="sm" className="gap-1.5 text-destructive hover:text-destructive border-destructive/30 hover:border-destructive/60" onClick={deleteFormulario}>
+              <Trash2 className="h-3.5 w-3.5" /> Excluir
             </Button>
           </div>
+
           <Input
             value={selectedFormulario.nome}
-            onChange={(e) => {
-              setSelectedFormulario({ ...selectedFormulario, nome: e.target.value });
-            }}
+            onChange={(e) => setSelectedFormulario({ ...selectedFormulario, nome: e.target.value })}
             onBlur={async () => {
               await supabase.from("auditoria_formularios_config").update({ nome: selectedFormulario.nome }).eq("id", selectedFormulario.id);
               loadAll();
             }}
             placeholder="Título do formulário"
-            className="text-xl font-bold border-0 border-b-2 border-transparent focus-visible:border-primary rounded-none px-0 bg-transparent focus-visible:ring-0 h-auto py-1"
+            className="text-2xl font-bold border-0 border-b-2 border-transparent focus-visible:border-primary rounded-none px-0 bg-transparent focus-visible:ring-0 h-auto py-1"
           />
-          <p className="text-xs text-muted-foreground">{formSecoes.length} seções · {formSecoes.flatMap(s => perguntas.filter(p => p.secao_id === s.id)).length} perguntas</p>
+
+          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <span className="flex items-center gap-1.5">
+              <LayoutList className="h-4 w-4" />
+              {formSecoes.length} seç{formSecoes.length === 1 ? "ão" : "ões"}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <ClipboardList className="h-4 w-4" />
+              {totalPerguntas} pergunta{totalPerguntas !== 1 ? "s" : ""}
+            </span>
+          </div>
         </CardContent>
       </Card>
 
       {/* Seções */}
       {formSecoes.length === 0 ? (
         <Card>
-          <CardContent className="py-12 text-center text-muted-foreground">
-            <ClipboardList className="h-10 w-10 mx-auto mb-3 opacity-30" />
-            <p>Nenhuma seção ainda.</p>
-            <Button className="mt-4" onClick={openAddSecao}><Plus className="h-4 w-4 mr-1" /> Criar primeira seção</Button>
+          <CardContent className="py-16 text-center text-muted-foreground">
+            <div className="h-14 w-14 mx-auto mb-4 rounded-xl bg-muted/50 flex items-center justify-center">
+              <LayoutList className="h-7 w-7 opacity-30" />
+            </div>
+            <p className="font-medium">Nenhuma seção criada</p>
+            <p className="text-sm mt-1 mb-4">Seções agrupam perguntas relacionadas</p>
+            <Button onClick={openAddSecao} className="gap-2"><Plus className="h-4 w-4" /> Criar Primeira Seção</Button>
           </CardContent>
         </Card>
       ) : (
-        <Accordion type="multiple" defaultValue={formSecoes.map(s => s.id)} className="space-y-3">
+        <div className="space-y-3">
           {formSecoes.map(secao => {
             const secaoPerguntas = perguntas.filter(p => p.secao_id === secao.id).sort((a, b) => a.ordem - b.ordem);
-            return (
-              <AccordionItem key={secao.id} value={secao.id} className="border rounded-xl overflow-hidden">
-                <AccordionTrigger className="px-5 py-4 hover:no-underline bg-muted/30 hover:bg-muted/50 transition-colors">
-                  <div className="flex items-center gap-3 flex-1 text-left">
-                    <span className="font-semibold">{secao.nome}</span>
-                    <Badge variant="secondary">{secaoPerguntas.length} pergunta{secaoPerguntas.length !== 1 ? "s" : ""}</Badge>
-                  </div>
-                </AccordionTrigger>
-                <AccordionContent className="px-5 py-4 space-y-3">
-                  <div className="flex gap-2 mb-2">
-                    <Button variant="outline" size="sm" onClick={() => openEditSecao(secao)}>
-                      <Pencil className="h-3 w-3 mr-1" /> Renomear
-                    </Button>
-                    <Button variant="outline" size="sm" className="text-destructive hover:text-destructive" onClick={() => deleteSecao(secao.id)}>
-                      <Trash2 className="h-3 w-3 mr-1" /> Excluir Seção
-                    </Button>
-                  </div>
+            const isExpanded = expandedSecoes.has(secao.id);
 
-                  <div className="space-y-3">
+            return (
+              <Card key={secao.id} className="overflow-hidden">
+                {/* Section header */}
+                <div
+                  className="flex items-center gap-3 px-5 py-3.5 bg-muted/30 hover:bg-muted/50 cursor-pointer transition-colors border-b"
+                  onClick={() => toggleSecao(secao.id)}
+                >
+                  <button className="shrink-0 text-muted-foreground">
+                    {isExpanded ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4 rotate-180" />}
+                  </button>
+                  <h4 className="font-semibold text-sm flex-1">{secao.nome}</h4>
+                  <Badge variant="secondary" className="text-xs">{secaoPerguntas.length}</Badge>
+                  <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                    <Button variant="ghost" size="icon-sm" onClick={() => openEditSecao(secao)} title="Renomear seção">
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    <Button variant="ghost" size="icon-sm" className="text-destructive hover:text-destructive" onClick={() => deleteSecao(secao.id)} title="Excluir seção">
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Section content */}
+                {isExpanded && (
+                  <CardContent className="p-4 space-y-2">
+                    {secaoPerguntas.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">Nenhuma pergunta nesta seção</p>
+                    )}
+
                     {secaoPerguntas.map((p, idx) => (
                       <InlineQuestionCard
                         key={p.id}
@@ -527,47 +578,52 @@ export const EditorFormulariosAuditoria = () => {
                         onDelete={() => deletePergunta(p.id)}
                       />
                     ))}
-                  </div>
 
-                  {/* Add question */}
-                  {addingToSecaoId === secao.id ? (
-                    <Card className="border-2 border-dashed border-primary/30 bg-primary/5">
-                      <CardContent className="p-4 space-y-3">
-                        <p className="text-sm font-medium">Escolha o tipo de pergunta:</p>
+                    {/* Add question area */}
+                    {addingToSecaoId === secao.id ? (
+                      <div className="border-2 border-dashed border-primary/30 rounded-xl p-4 bg-primary/5 space-y-3">
+                        <p className="text-sm font-medium text-center">Escolha o tipo de pergunta</p>
                         <div className="grid grid-cols-2 gap-2">
                           {(Object.entries(TIPO_PERGUNTA_INFO) as [TipoPergunta, typeof TIPO_PERGUNTA_INFO[TipoPergunta]][]).map(([key, inf]) => (
                             <button
                               key={key}
                               type="button"
                               onClick={() => addPergunta(secao.id, key)}
-                              className="flex items-start gap-2 p-3 rounded-lg border bg-background text-left hover:border-primary hover:shadow-sm transition-all"
+                              className="flex items-center gap-2.5 p-3 rounded-lg border bg-background text-left hover:border-primary hover:shadow-sm transition-all group"
                             >
-                              <span className="text-primary mt-0.5">{inf.icon}</span>
+                              <span className={cn("shrink-0", inf.color)}>{inf.icon}</span>
                               <div>
                                 <p className="text-sm font-medium">{inf.label}</p>
-                                <p className="text-xs text-muted-foreground">{inf.desc}</p>
+                                <p className="text-[11px] text-muted-foreground">{inf.desc}</p>
                               </div>
                             </button>
                           ))}
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => setAddingToSecaoId(null)}>Cancelar</Button>
-                      </CardContent>
-                    </Card>
-                  ) : (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="w-full border-dashed"
-                      onClick={() => setAddingToSecaoId(secao.id)}
-                    >
-                      <Plus className="h-4 w-4 mr-1" /> Adicionar Pergunta
-                    </Button>
-                  )}
-                </AccordionContent>
-              </AccordionItem>
+                        <div className="text-center">
+                          <Button variant="ghost" size="sm" onClick={() => setAddingToSecaoId(null)}>Cancelar</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="w-full border-dashed mt-1 text-muted-foreground hover:text-primary hover:border-primary/40"
+                        onClick={() => setAddingToSecaoId(secao.id)}
+                      >
+                        <Plus className="h-4 w-4 mr-1.5" /> Adicionar Pergunta
+                      </Button>
+                    )}
+                  </CardContent>
+                )}
+              </Card>
             );
           })}
-        </Accordion>
+
+          {/* Add section button */}
+          <Button variant="outline" size="sm" className="w-full border-dashed gap-2" onClick={openAddSecao}>
+            <Plus className="h-4 w-4" /> Nova Seção
+          </Button>
+        </div>
       )}
 
       {/* Dialog: Seção */}
@@ -575,7 +631,7 @@ export const EditorFormulariosAuditoria = () => {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{editingSecao ? "Renomear Seção" : "Nova Seção"}</DialogTitle>
-            <DialogDescription>As seções agrupam perguntas relacionadas no formulário</DialogDescription>
+            <DialogDescription>Seções agrupam perguntas relacionadas no formulário de auditoria</DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5">
             <Label>Nome da Seção *</Label>
@@ -584,11 +640,12 @@ export const EditorFormulariosAuditoria = () => {
               onChange={e => setSecaoNome(e.target.value)}
               placeholder="Ex: Identificação do Paciente"
               onKeyDown={e => e.key === "Enter" && saveSecao()}
+              autoFocus
             />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditSecaoDialog(false)}>Cancelar</Button>
-            <Button onClick={saveSecao}><Save className="h-4 w-4 mr-1" /> Salvar</Button>
+            <Button onClick={saveSecao} className="gap-1.5"><Save className="h-4 w-4" /> Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
