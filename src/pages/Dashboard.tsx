@@ -36,6 +36,7 @@ const EnfermagemModule = lazy(() => import("@/components/modules/EnfermagemModul
 const SalusModule = lazy(() => import("@/components/modules/SalusModule"));
 const MedicosModule = lazy(() => import("@/components/modules/MedicosModule"));
 const EquipeModule = lazy(() => import("@/components/modules/EquipeModule"));
+const ColaboradorModule = lazy(() => import("@/components/modules/ColaboradorModule"));
 
 // Module loading fallback
 const ModuleLoader = () => (
@@ -179,6 +180,8 @@ const Dashboard = () => {
         case "painel-seguranca":
         case "seguranca-patrimonial":
           return <SegurancaPatrimonialModule />;
+        case "colaborador":
+          return <ColaboradorModule />;
         default:
           return <DashboardPersonalizado onNavigate={handleSectionChange} />;
       }
