@@ -8,13 +8,14 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, FileDown, Eye, ClipboardCheck } from "lucide-react";
+import { Plus, FileDown, Eye, ClipboardCheck, Pencil, Trash2 } from "lucide-react";
 import { createStandardPdf, savePdfWithFooter } from "@/lib/export-utils";
 import autoTable from "jspdf-autotable";
 
@@ -105,8 +106,11 @@ export const AvaliacaoExperienciaSection = () => {
   const [avaliacoes, setAvaliacoes] = useState<AvaliacaoExperiencia[]>([]);
   const [selectedAv, setSelectedAv] = useState<AvaliacaoExperiencia | null>(null);
   const [loading, setLoading] = useState(false);
+  const [deleteConfirmAv, setDeleteConfirmAv] = useState<AvaliacaoExperiencia | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Form state
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [periodo, setPeriodo] = useState("");
   const [colaborador, setColaborador] = useState("");
   const [setor, setSetor] = useState("");
@@ -135,10 +139,37 @@ export const AvaliacaoExperienciaSection = () => {
   }, []);
 
   const resetForm = () => {
+    setEditingId(null);
     setPeriodo(""); setColaborador(""); setSetor(""); setFuncao("");
     setDataAdmissao(""); setDataTermino(""); setDataAvaliacao(format(new Date(), "yyyy-MM-dd"));
     setAvaliador(""); setScores({}); setDestaque(""); setAjustes("");
     setAcoes(""); setComentarios(""); setResultado("");
+  };
+
+  const loadForEdit = (av: AvaliacaoExperiencia) => {
+    setEditingId(av.id);
+    setPeriodo(av.periodo_avaliacao);
+    setColaborador(av.colaborador_nome);
+    setSetor(av.setor || "");
+    setFuncao(av.funcao || "");
+    setDataAdmissao(av.data_admissao);
+    setDataTermino(av.data_termino_experiencia || "");
+    setDataAvaliacao(av.data_avaliacao);
+    setAvaliador(av.avaliador_nome);
+    setScores({
+      assiduidade: av.assiduidade,
+      disciplina: av.disciplina,
+      iniciativa: av.iniciativa,
+      produtividade: av.produtividade,
+      responsabilidade: av.responsabilidade,
+    });
+    setDestaque(av.competencias_destaque || "");
+    setAjustes(av.competencias_ajustes || "");
+    setAcoes(av.acoes_adequacao || "");
+    setComentarios(av.outros_comentarios || "");
+    setResultado(av.resultado);
+    setSelectedAv(null);
+    setSubTab("formulario");
   };
 
   const allCompetenciasFilled = COMPETENCIAS.every(c => scores[c.id]);
@@ -149,7 +180,8 @@ export const AvaliacaoExperienciaSection = () => {
       return;
     }
     setLoading(true);
-    const { error } = await supabase.from("avaliacoes_experiencia").insert({
+
+    const payload = {
       periodo_avaliacao: periodo,
       colaborador_nome: colaborador,
       setor: setor || null,
@@ -168,15 +200,37 @@ export const AvaliacaoExperienciaSection = () => {
       acoes_adequacao: acoes || null,
       outros_comentarios: comentarios || null,
       resultado,
-    } as any);
+    } as any;
+
+    let error;
+    if (editingId) {
+      ({ error } = await supabase.from("avaliacoes_experiencia").update(payload).eq("id", editingId));
+    } else {
+      ({ error } = await supabase.from("avaliacoes_experiencia").insert(payload));
+    }
+
     setLoading(false);
     if (error) {
       toast.error("Erro ao salvar: " + error.message);
     } else {
-      toast.success("Avaliação de experiência salva com sucesso!");
+      toast.success(editingId ? "Avaliação atualizada com sucesso!" : "Avaliação de experiência salva com sucesso!");
       resetForm();
       fetchAvaliacoes();
       setSubTab("historico");
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!deleteConfirmAv) return;
+    setIsDeleting(true);
+    const { error } = await supabase.from("avaliacoes_experiencia").delete().eq("id", deleteConfirmAv.id);
+    setIsDeleting(false);
+    if (error) {
+      toast.error("Erro ao excluir: " + error.message);
+    } else {
+      toast.success("Avaliação excluída com sucesso!");
+      setDeleteConfirmAv(null);
+      fetchAvaliacoes();
     }
   };
 
@@ -227,7 +281,7 @@ export const AvaliacaoExperienciaSection = () => {
     ];
 
     for (const d of descritivos) {
-      if (y > 260) { doc.addPage(); y = 20; }
+      if (y > 250) { doc.addPage(); y = 20; }
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
       doc.text(d.label + ":", 14, y);
@@ -240,24 +294,32 @@ export const AvaliacaoExperienciaSection = () => {
     }
 
     // Resultado
-    if (y > 260) { doc.addPage(); y = 20; }
+    if (y > 250) { doc.addPage(); y = 20; }
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     const corResultado = av.resultado === "aprovado" ? [39, 174, 96] : [231, 76, 60];
     doc.setTextColor(corResultado[0], corResultado[1], corResultado[2]);
     doc.text(`RESULTADO: ${av.resultado.toUpperCase()}`, 14, y);
     doc.setTextColor(0, 0, 0);
-    y += 20;
+    y += 25;
 
     // Assinaturas
-    if (y > 250) { doc.addPage(); y = 20; }
+    if (y > 240) { doc.addPage(); y = 30; }
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
+
+    // Linha e nome do Avaliador
     doc.line(14, y, 90, y);
-    doc.line(110, y, 196, y);
     y += 5;
     doc.text("Assinatura do(a) Avaliador(a)", 14, y);
-    doc.text("Assinatura do(a) Avaliado(a)", 110, y);
+    y += 5;
+    doc.text(av.avaliador_nome, 14, y);
+
+    // Linha e nome do Colaborador
+    const yCol = y - 10;
+    doc.line(110, yCol, 196, yCol);
+    doc.text("Assinatura do(a) Colaborador(a)", 110, yCol + 5);
+    doc.text(av.colaborador_nome, 110, yCol + 10);
 
     savePdfWithFooter(doc, "Avaliação de Experiência", `avaliacao_experiencia_${av.colaborador_nome}`, logoImg);
   };
@@ -268,7 +330,7 @@ export const AvaliacaoExperienciaSection = () => {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="formulario" className="flex items-center gap-2">
             <Plus className="h-4 w-4" />
-            Nova Avaliação
+            {editingId ? "Editando Avaliação" : "Nova Avaliação"}
           </TabsTrigger>
           <TabsTrigger value="historico" className="flex items-center gap-2">
             <ClipboardCheck className="h-4 w-4" />
@@ -279,7 +341,14 @@ export const AvaliacaoExperienciaSection = () => {
         <TabsContent value="formulario" className="mt-4 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">FORM.RH.009 - AVALIAÇÃO DE EXPERIÊNCIA</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">
+                  {editingId ? "Editar Avaliação de Experiência" : "FORM.RH.009 - AVALIAÇÃO DE EXPERIÊNCIA"}
+                </CardTitle>
+                {editingId && (
+                  <Button variant="outline" size="sm" onClick={resetForm}>Cancelar Edição</Button>
+                )}
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Dados do colaborador */}
@@ -395,7 +464,7 @@ export const AvaliacaoExperienciaSection = () => {
 
               <div className="flex justify-end">
                 <Button onClick={handleSalvar} disabled={loading} size="lg">
-                  {loading ? "Salvando..." : "Salvar Avaliação"}
+                  {loading ? "Salvando..." : editingId ? "Atualizar Avaliação" : "Salvar Avaliação"}
                 </Button>
               </div>
             </CardContent>
@@ -444,6 +513,12 @@ export const AvaliacaoExperienciaSection = () => {
                               </Button>
                               <Button variant="ghost" size="icon-sm" onClick={() => handleExportPDF(av)} title="Exportar PDF">
                                 <FileDown className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon-sm" onClick={() => loadForEdit(av)} title="Editar">
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button variant="ghost" size="icon-sm" onClick={() => setDeleteConfirmAv(av)} title="Excluir" className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
                           </TableCell>
@@ -503,7 +578,10 @@ export const AvaliacaoExperienciaSection = () => {
                 </Badge>
               </div>
 
-              <div className="flex justify-end">
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => { loadForEdit(selectedAv); }} className="flex items-center gap-2">
+                  <Pencil className="h-4 w-4" /> Editar
+                </Button>
                 <Button onClick={() => handleExportPDF(selectedAv)} className="flex items-center gap-2">
                   <FileDown className="h-4 w-4" /> Exportar PDF
                 </Button>
@@ -512,6 +590,24 @@ export const AvaliacaoExperienciaSection = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de confirmação de exclusão */}
+      <AlertDialog open={!!deleteConfirmAv} onOpenChange={() => setDeleteConfirmAv(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Excluir Avaliação</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir a avaliação de experiência de <strong>{deleteConfirmAv?.colaborador_nome}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} disabled={isDeleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {isDeleting ? "Excluindo..." : "Excluir"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
