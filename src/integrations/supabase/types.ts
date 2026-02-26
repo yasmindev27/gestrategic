@@ -3137,6 +3137,9 @@ export type Database = {
       }
       justificativas_ponto: {
         Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          aprovado_por_nome: string | null
           cargo_funcao: string | null
           colaborador_nome: string
           colaborador_user_id: string | null
@@ -3148,6 +3151,7 @@ export type Database = {
           jornada_registrada_entrada: string | null
           jornada_registrada_saida: string | null
           justificativa: string | null
+          justificativa_aprovacao: string | null
           matricula: string | null
           minutos_excedentes: number | null
           observacoes: string | null
@@ -3159,6 +3163,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          aprovado_por_nome?: string | null
           cargo_funcao?: string | null
           colaborador_nome: string
           colaborador_user_id?: string | null
@@ -3170,6 +3177,7 @@ export type Database = {
           jornada_registrada_entrada?: string | null
           jornada_registrada_saida?: string | null
           justificativa?: string | null
+          justificativa_aprovacao?: string | null
           matricula?: string | null
           minutos_excedentes?: number | null
           observacoes?: string | null
@@ -3181,6 +3189,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          aprovado_por_nome?: string | null
           cargo_funcao?: string | null
           colaborador_nome?: string
           colaborador_user_id?: string | null
@@ -3192,6 +3203,7 @@ export type Database = {
           jornada_registrada_entrada?: string | null
           jornada_registrada_saida?: string | null
           justificativa?: string | null
+          justificativa_aprovacao?: string | null
           matricula?: string | null
           minutos_excedentes?: number | null
           observacoes?: string | null
