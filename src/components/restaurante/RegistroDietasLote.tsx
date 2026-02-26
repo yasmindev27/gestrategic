@@ -26,7 +26,7 @@ const tipoDietaOptions = [
 const refeicaoOptions = [
   { value: "cafe", label: "Café" },
   { value: "almoco", label: "Almoço" },
-  { value: "lanche", label: "Lanche" },
+  { value: "lanche", label: "Café da Tarde" },
   { value: "jantar", label: "Jantar" },
 ];
 
@@ -48,7 +48,7 @@ const criarLinhaVazia = (): Linhadieta => ({
   tipo_dieta: "geral",
   tem_acompanhante: false,
   restricoes_alimentares: "",
-  horarios_refeicoes: ["cafe", "almoco", "lanche", "jantar"],
+  horarios_refeicoes: [] as string[],
   observacoes: "",
 });
 
@@ -129,22 +129,28 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
   return (
     <Card>
       <CardHeader>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <CardTitle className="flex items-center gap-2">
-              <ListPlus className="h-5 w-5" />
-              Registro de Dietas em Lote
-            </CardTitle>
-            <CardDescription>Registre as dietas de todos os pacientes do dia em uma única tabela</CardDescription>
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
+              <CardTitle className="flex items-center gap-2">
+                <ListPlus className="h-5 w-5" />
+                Registro de Dietas em Lote
+              </CardTitle>
+              <CardDescription>Registre as dietas de todos os pacientes do dia em uma única tabela</CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Data:</span>
+              <Input
+                type="date"
+                value={dataSolicitacao}
+                onChange={e => setDataSolicitacao(e.target.value)}
+                className="w-[160px] border-primary"
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-muted-foreground">Data:</span>
-            <Input
-              type="date"
-              value={dataSolicitacao}
-              onChange={e => setDataSolicitacao(e.target.value)}
-              className="w-[160px] border-primary"
-            />
+          <div className="flex items-center gap-2 text-sm text-muted-foreground border-t pt-2">
+            <span>Solicitante:</span>
+            <Badge variant="secondary">{userName || "Carregando..."}</Badge>
           </div>
         </div>
       </CardHeader>
