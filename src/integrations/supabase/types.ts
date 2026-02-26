@@ -4452,6 +4452,390 @@ export type Database = {
         }
         Relationships: []
       }
+      protocolo_atendimentos: {
+        Row: {
+          action_plan: string | null
+          admin_observations: string | null
+          age: number | null
+          arrival_time: string
+          assinatura_enfermeiro: string | null
+          assinatura_farmacia: string | null
+          assinatura_medico: string | null
+          atb_profissional: string | null
+          atb1_data: string | null
+          atb1_dose: string | null
+          atb1_horario_inicio: string | null
+          atb1_nome: string | null
+          atb2_data: string | null
+          atb2_dose: string | null
+          atb2_horario_inicio: string | null
+          atb2_nome: string | null
+          choque_lactato2_data_hora: string | null
+          choque_lactato3_data_hora: string | null
+          choque_lactato3_medicamento: string | null
+          choque_lactato3_medicamento_data_hora: string | null
+          choque_lactato3_necessita: boolean | null
+          choque_reposicao_data_hora: string | null
+          choque_reposicao_medicamento: string | null
+          choque_septico: boolean | null
+          choque_vasopressor_data_hora: string | null
+          choque_vasopressor_medicamento: string | null
+          competency: string
+          conduct_high_risk: boolean | null
+          conduct_low_risk: boolean | null
+          conduct_medication: boolean | null
+          conduct_moderate_risk: boolean | null
+          conduct_monitoring: boolean | null
+          conduct_observation: boolean | null
+          conduct_oxygen: boolean | null
+          conduct_referral: boolean | null
+          conduct_transfer: boolean | null
+          created_at: string
+          created_by: string | null
+          delay_reason: string | null
+          delay_reason_other: string | null
+          destination_hospital: string | null
+          destino_instituicao_nome: string | null
+          destino_paciente: string | null
+          disfuncao_consciencia: boolean | null
+          disfuncao_pa_baixa: boolean | null
+          disfuncao_sato2_baixa: boolean | null
+          ecg_time: string | null
+          first_doctor_time: string | null
+          foco_abdominal: boolean | null
+          foco_corrente_sanguinea_cateter: boolean | null
+          foco_pele_partes_moles: boolean | null
+          foco_pulmonar: boolean | null
+          foco_sem_foco_definido: boolean | null
+          foco_urinario: boolean | null
+          id: string
+          initial_diagnosis: string | null
+          kit_sepse_coletado: boolean | null
+          lab_villac_horario_chamado: string | null
+          lab_villac_horario_coleta: string | null
+          medical_report: string | null
+          necessidade_uti: boolean | null
+          pain_association: string | null
+          pain_characteristic: string | null
+          pain_duration: string | null
+          pain_irradiation: string | null
+          pain_location: string | null
+          pain_onset_date: string | null
+          pain_onset_time: string | null
+          pain_referral: string | null
+          patient_name: string | null
+          porta_ecg_minutes: number | null
+          protocol_opened_at: string | null
+          protocol_opened_by_sector: string | null
+          record_number: string
+          risk_classification: string | null
+          samu_arrival_time: string | null
+          sepse_horario: string | null
+          sepse_medico: string | null
+          sepse_motivo: string | null
+          sepse_suspeita: boolean | null
+          sex: string | null
+          sirs_bilirrubina: boolean | null
+          sirs_celulas_jovens: boolean | null
+          sirs_creatinina: boolean | null
+          sirs_fc_alta: boolean | null
+          sirs_fr_alta: boolean | null
+          sirs_lactato: boolean | null
+          sirs_leucocitose: boolean | null
+          sirs_leucopenia: boolean | null
+          sirs_plaquetas: boolean | null
+          sirs_temp_alta: boolean | null
+          sirs_temp_baixa: boolean | null
+          thrombolysis_complication: boolean | null
+          thrombolysis_conduct: string | null
+          thrombolysis_time: string | null
+          thrombolysis_type: string | null
+          tipo_protocolo: string
+          troponin_sample1_collection_time: string | null
+          troponin_sample1_collector: string | null
+          troponin_sample1_release_time: string | null
+          troponin_sample1_result: string | null
+          troponin_sample2_collection_time: string | null
+          troponin_sample2_collector: string | null
+          troponin_sample2_release_time: string | null
+          troponin_sample2_result: string | null
+          troponin_sample3_collection_time: string | null
+          troponin_sample3_collector: string | null
+          troponin_sample3_release_time: string | null
+          troponin_sample3_result: string | null
+          updated_at: string
+          updated_by: string | null
+          vital_fc: number | null
+          vital_fr: number | null
+          vital_pa: string | null
+          vital_spo2: number | null
+          vital_temperatura: number | null
+          within_target: boolean | null
+        }
+        Insert: {
+          action_plan?: string | null
+          admin_observations?: string | null
+          age?: number | null
+          arrival_time: string
+          assinatura_enfermeiro?: string | null
+          assinatura_farmacia?: string | null
+          assinatura_medico?: string | null
+          atb_profissional?: string | null
+          atb1_data?: string | null
+          atb1_dose?: string | null
+          atb1_horario_inicio?: string | null
+          atb1_nome?: string | null
+          atb2_data?: string | null
+          atb2_dose?: string | null
+          atb2_horario_inicio?: string | null
+          atb2_nome?: string | null
+          choque_lactato2_data_hora?: string | null
+          choque_lactato3_data_hora?: string | null
+          choque_lactato3_medicamento?: string | null
+          choque_lactato3_medicamento_data_hora?: string | null
+          choque_lactato3_necessita?: boolean | null
+          choque_reposicao_data_hora?: string | null
+          choque_reposicao_medicamento?: string | null
+          choque_septico?: boolean | null
+          choque_vasopressor_data_hora?: string | null
+          choque_vasopressor_medicamento?: string | null
+          competency?: string
+          conduct_high_risk?: boolean | null
+          conduct_low_risk?: boolean | null
+          conduct_medication?: boolean | null
+          conduct_moderate_risk?: boolean | null
+          conduct_monitoring?: boolean | null
+          conduct_observation?: boolean | null
+          conduct_oxygen?: boolean | null
+          conduct_referral?: boolean | null
+          conduct_transfer?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          delay_reason?: string | null
+          delay_reason_other?: string | null
+          destination_hospital?: string | null
+          destino_instituicao_nome?: string | null
+          destino_paciente?: string | null
+          disfuncao_consciencia?: boolean | null
+          disfuncao_pa_baixa?: boolean | null
+          disfuncao_sato2_baixa?: boolean | null
+          ecg_time?: string | null
+          first_doctor_time?: string | null
+          foco_abdominal?: boolean | null
+          foco_corrente_sanguinea_cateter?: boolean | null
+          foco_pele_partes_moles?: boolean | null
+          foco_pulmonar?: boolean | null
+          foco_sem_foco_definido?: boolean | null
+          foco_urinario?: boolean | null
+          id?: string
+          initial_diagnosis?: string | null
+          kit_sepse_coletado?: boolean | null
+          lab_villac_horario_chamado?: string | null
+          lab_villac_horario_coleta?: string | null
+          medical_report?: string | null
+          necessidade_uti?: boolean | null
+          pain_association?: string | null
+          pain_characteristic?: string | null
+          pain_duration?: string | null
+          pain_irradiation?: string | null
+          pain_location?: string | null
+          pain_onset_date?: string | null
+          pain_onset_time?: string | null
+          pain_referral?: string | null
+          patient_name?: string | null
+          porta_ecg_minutes?: number | null
+          protocol_opened_at?: string | null
+          protocol_opened_by_sector?: string | null
+          record_number: string
+          risk_classification?: string | null
+          samu_arrival_time?: string | null
+          sepse_horario?: string | null
+          sepse_medico?: string | null
+          sepse_motivo?: string | null
+          sepse_suspeita?: boolean | null
+          sex?: string | null
+          sirs_bilirrubina?: boolean | null
+          sirs_celulas_jovens?: boolean | null
+          sirs_creatinina?: boolean | null
+          sirs_fc_alta?: boolean | null
+          sirs_fr_alta?: boolean | null
+          sirs_lactato?: boolean | null
+          sirs_leucocitose?: boolean | null
+          sirs_leucopenia?: boolean | null
+          sirs_plaquetas?: boolean | null
+          sirs_temp_alta?: boolean | null
+          sirs_temp_baixa?: boolean | null
+          thrombolysis_complication?: boolean | null
+          thrombolysis_conduct?: string | null
+          thrombolysis_time?: string | null
+          thrombolysis_type?: string | null
+          tipo_protocolo: string
+          troponin_sample1_collection_time?: string | null
+          troponin_sample1_collector?: string | null
+          troponin_sample1_release_time?: string | null
+          troponin_sample1_result?: string | null
+          troponin_sample2_collection_time?: string | null
+          troponin_sample2_collector?: string | null
+          troponin_sample2_release_time?: string | null
+          troponin_sample2_result?: string | null
+          troponin_sample3_collection_time?: string | null
+          troponin_sample3_collector?: string | null
+          troponin_sample3_release_time?: string | null
+          troponin_sample3_result?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          vital_fc?: number | null
+          vital_fr?: number | null
+          vital_pa?: string | null
+          vital_spo2?: number | null
+          vital_temperatura?: number | null
+          within_target?: boolean | null
+        }
+        Update: {
+          action_plan?: string | null
+          admin_observations?: string | null
+          age?: number | null
+          arrival_time?: string
+          assinatura_enfermeiro?: string | null
+          assinatura_farmacia?: string | null
+          assinatura_medico?: string | null
+          atb_profissional?: string | null
+          atb1_data?: string | null
+          atb1_dose?: string | null
+          atb1_horario_inicio?: string | null
+          atb1_nome?: string | null
+          atb2_data?: string | null
+          atb2_dose?: string | null
+          atb2_horario_inicio?: string | null
+          atb2_nome?: string | null
+          choque_lactato2_data_hora?: string | null
+          choque_lactato3_data_hora?: string | null
+          choque_lactato3_medicamento?: string | null
+          choque_lactato3_medicamento_data_hora?: string | null
+          choque_lactato3_necessita?: boolean | null
+          choque_reposicao_data_hora?: string | null
+          choque_reposicao_medicamento?: string | null
+          choque_septico?: boolean | null
+          choque_vasopressor_data_hora?: string | null
+          choque_vasopressor_medicamento?: string | null
+          competency?: string
+          conduct_high_risk?: boolean | null
+          conduct_low_risk?: boolean | null
+          conduct_medication?: boolean | null
+          conduct_moderate_risk?: boolean | null
+          conduct_monitoring?: boolean | null
+          conduct_observation?: boolean | null
+          conduct_oxygen?: boolean | null
+          conduct_referral?: boolean | null
+          conduct_transfer?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          delay_reason?: string | null
+          delay_reason_other?: string | null
+          destination_hospital?: string | null
+          destino_instituicao_nome?: string | null
+          destino_paciente?: string | null
+          disfuncao_consciencia?: boolean | null
+          disfuncao_pa_baixa?: boolean | null
+          disfuncao_sato2_baixa?: boolean | null
+          ecg_time?: string | null
+          first_doctor_time?: string | null
+          foco_abdominal?: boolean | null
+          foco_corrente_sanguinea_cateter?: boolean | null
+          foco_pele_partes_moles?: boolean | null
+          foco_pulmonar?: boolean | null
+          foco_sem_foco_definido?: boolean | null
+          foco_urinario?: boolean | null
+          id?: string
+          initial_diagnosis?: string | null
+          kit_sepse_coletado?: boolean | null
+          lab_villac_horario_chamado?: string | null
+          lab_villac_horario_coleta?: string | null
+          medical_report?: string | null
+          necessidade_uti?: boolean | null
+          pain_association?: string | null
+          pain_characteristic?: string | null
+          pain_duration?: string | null
+          pain_irradiation?: string | null
+          pain_location?: string | null
+          pain_onset_date?: string | null
+          pain_onset_time?: string | null
+          pain_referral?: string | null
+          patient_name?: string | null
+          porta_ecg_minutes?: number | null
+          protocol_opened_at?: string | null
+          protocol_opened_by_sector?: string | null
+          record_number?: string
+          risk_classification?: string | null
+          samu_arrival_time?: string | null
+          sepse_horario?: string | null
+          sepse_medico?: string | null
+          sepse_motivo?: string | null
+          sepse_suspeita?: boolean | null
+          sex?: string | null
+          sirs_bilirrubina?: boolean | null
+          sirs_celulas_jovens?: boolean | null
+          sirs_creatinina?: boolean | null
+          sirs_fc_alta?: boolean | null
+          sirs_fr_alta?: boolean | null
+          sirs_lactato?: boolean | null
+          sirs_leucocitose?: boolean | null
+          sirs_leucopenia?: boolean | null
+          sirs_plaquetas?: boolean | null
+          sirs_temp_alta?: boolean | null
+          sirs_temp_baixa?: boolean | null
+          thrombolysis_complication?: boolean | null
+          thrombolysis_conduct?: string | null
+          thrombolysis_time?: string | null
+          thrombolysis_type?: string | null
+          tipo_protocolo?: string
+          troponin_sample1_collection_time?: string | null
+          troponin_sample1_collector?: string | null
+          troponin_sample1_release_time?: string | null
+          troponin_sample1_result?: string | null
+          troponin_sample2_collection_time?: string | null
+          troponin_sample2_collector?: string | null
+          troponin_sample2_release_time?: string | null
+          troponin_sample2_result?: string | null
+          troponin_sample3_collection_time?: string | null
+          troponin_sample3_collector?: string | null
+          troponin_sample3_release_time?: string | null
+          troponin_sample3_result?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          vital_fc?: number | null
+          vital_fr?: number | null
+          vital_pa?: string | null
+          vital_spo2?: number | null
+          vital_temperatura?: number | null
+          within_target?: boolean | null
+        }
+        Relationships: []
+      }
+      protocolo_settings: {
+        Row: {
+          created_at: string
+          id: string
+          meta_minutos: number
+          tipo_protocolo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meta_minutos?: number
+          tipo_protocolo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meta_minutos?: number
+          tipo_protocolo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       refeicoes_registros: {
         Row: {
           colaborador_nome: string
