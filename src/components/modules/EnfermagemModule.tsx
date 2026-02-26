@@ -32,7 +32,7 @@ import { IndicadoresUPA } from '@/components/indicadores';
 import { useTrocasDisponiveis, useTrocasPendentes, useMinhasEscalas } from '@/hooks/useEnfermagem';
 import type { Escala } from '@/components/enfermagem/types';
 import ImportEquipeDialog from '@/components/modules/equipe/ImportEquipeDialog';
-import { AprovacaoExtensaoJornada } from '@/components/enfermagem/AprovacaoExtensaoJornada';
+import { AprovacaoPontoJustificativa } from '@/components/enfermagem/AprovacaoPontoJustificativa';
 
 export default function EnfermagemModule() {
   const navigate = useNavigate();
@@ -134,9 +134,9 @@ export default function EnfermagemModule() {
           </TabsTrigger>
           {isGestor && (
             <>
-              <TabsTrigger value="extensao-jornada" className="gap-2 text-sm px-4 py-2">
+              <TabsTrigger value="aprovacao-ponto" className="gap-2 text-sm px-4 py-2">
                 <ClipboardCheck className="h-4 w-4" />
-                Extensão Jornada
+                Aprovação de Ponto
               </TabsTrigger>
               <TabsTrigger value="protocolos" className="gap-2 text-sm px-4 py-2">
                 <FileCheck className="h-4 w-4" />
@@ -315,9 +315,9 @@ export default function EnfermagemModule() {
           </Tabs>
         </TabsContent>
 
-        {/* ── Extensão de Jornada ── */}
-        <TabsContent value="extensao-jornada" className="mt-6">
-          <AprovacaoExtensaoJornada />
+        {/* ── Aprovação de Ponto ── */}
+        <TabsContent value="aprovacao-ponto" className="mt-6">
+          <AprovacaoPontoJustificativa />
         </TabsContent>
 
         {/* ── Protocolos ── */}
