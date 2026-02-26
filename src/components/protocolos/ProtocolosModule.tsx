@@ -6,7 +6,7 @@ import { FormDorToracica } from './FormDorToracica';
 import { FormSepseAdulto } from './FormSepseAdulto';
 import { FormSepsePediatrico } from './FormSepsePediatrico';
 
-type View = 'list' | 'form';
+type View = 'list' | 'form' | 'relatorios' | 'consolidado';
 
 export const ProtocolosModule = () => {
   const [activeTab, setActiveTab] = useState('dor_toracica');
@@ -14,6 +14,8 @@ export const ProtocolosModule = () => {
 
   const handleNovo = () => setView('form');
   const handleBack = () => setView('list');
+  const handleRelatorios = () => setView('relatorios');
+  const handleConsolidado = () => setView('consolidado');
 
   if (view === 'form') {
     switch (activeTab) {
@@ -22,6 +24,9 @@ export const ProtocolosModule = () => {
       case 'sepse_pediatrico': return <FormSepsePediatrico onBack={handleBack} />;
     }
   }
+
+  // TODO: implement dedicated views for relatorios and consolidado
+  // For now they fall through to the list view
 
   return (
     <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setView('list'); }}>
@@ -44,13 +49,13 @@ export const ProtocolosModule = () => {
       </TabsList>
 
       <TabsContent value="dor_toracica" className="mt-6">
-        <ProtocolosList tipo="dor_toracica" titulo="Protocolo Dor Torácica" onNovo={handleNovo} />
+        <ProtocolosList tipo="dor_toracica" titulo="Protocolo Dor Torácica" onNovo={handleNovo} onRelatorios={handleRelatorios} onConsolidado={handleConsolidado} />
       </TabsContent>
       <TabsContent value="sepse_adulto" className="mt-6">
-        <ProtocolosList tipo="sepse_adulto" titulo="Protocolo Sepse Adulto" onNovo={handleNovo} />
+        <ProtocolosList tipo="sepse_adulto" titulo="Protocolo Sepse Adulto" onNovo={handleNovo} onRelatorios={handleRelatorios} onConsolidado={handleConsolidado} />
       </TabsContent>
       <TabsContent value="sepse_pediatrico" className="mt-6">
-        <ProtocolosList tipo="sepse_pediatrico" titulo="Protocolo Sepse Pediátrico" onNovo={handleNovo} />
+        <ProtocolosList tipo="sepse_pediatrico" titulo="Protocolo Sepse Pediátrico" onNovo={handleNovo} onRelatorios={handleRelatorios} onConsolidado={handleConsolidado} />
       </TabsContent>
     </Tabs>
   );

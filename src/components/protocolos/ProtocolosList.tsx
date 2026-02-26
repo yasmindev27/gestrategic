@@ -1,170 +1,174 @@
-import { useState, useMemo } from 'react';
-import { format } from 'date-fns';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useProtocoloAtendimentos, useProtocoloStats, TipoProtocolo } from '@/hooks/useProtocoloAtendimentos';
-import { Plus, Search, Clock, CheckCircle, XCircle, BarChart3 } from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
+import { TipoProtocolo } from '@/hooks/useProtocoloAtendimentos';
+import { Heart, Clock, Activity, BarChart3, FileText, TrendingUp, ClipboardPlus } from 'lucide-react';
 
 interface Props {
   tipo: TipoProtocolo;
   titulo: string;
   onNovo: () => void;
+  onRelatorios?: () => void;
+  onConsolidado?: () => void;
 }
 
-const MESES = ['01','02','03','04','05','06','07','08','09','10','11','12'];
+const protocoloConfig: Record<string, {
+  heroTitle: string;
+  heroSubtitle: string;
+  badges: { icon: React.ReactNode; value: string; label: string }[];
+  aboutTitle: string;
+  aboutText: string;
+}> = {
+  dor_toracica: {
+    heroTitle: 'Protocolo Dor Torácica',
+    heroSubtitle: 'Sistema de Monitoramento UPA',
+    badges: [
+      { icon: <Clock className="h-5 w-5" />, value: '≤ 10 min', label: 'Meta Protocolo' },
+      { icon: <Activity className="h-5 w-5" />, value: 'ECG', label: 'Eletrocardiograma' },
+      { icon: <TrendingUp className="h-5 w-5" />, value: 'KPI', label: 'Indicadores' },
+    ],
+    aboutTitle: 'Sobre o Protocolo Dor Torácica',
+    aboutText: 'O tempo Porta-ECG é o intervalo entre a chegada do paciente com queixa de dor torácica e a realização do eletrocardiograma (ECG). A meta estabelecida é de até 10 minutos, visando a identificação precoce de Síndrome Coronariana Aguda (SCA) e início rápido do tratamento adequado. Este sistema permite o registro, monitoramento e análise deste indicador de qualidade assistencial.',
+  },
+  sepse_adulto: {
+    heroTitle: 'Protocolo de Sepse Adulto',
+    heroSubtitle: 'Monitoramento e Gestão de Protocolos',
+    badges: [
+      { icon: <Clock className="h-5 w-5" />, value: '≤ 1h', label: 'Meta ATB' },
+      { icon: <Activity className="h-5 w-5" />, value: 'Sepse', label: 'Protocolo Adulto' },
+      { icon: <TrendingUp className="h-5 w-5" />, value: 'KPI', label: 'Indicadores' },
+    ],
+    aboutTitle: 'Sobre o Protocolo de Sepse Adulto',
+    aboutText: 'O Protocolo de Sepse Adulto é um conjunto de diretrizes para identificação e tratamento precoce de sepse em pacientes adultos. A meta é o início rápido de antibioticoterapia e medidas de suporte, visando a redução da mortalidade e melhora dos desfechos clínicos. Este sistema permite o registro, monitoramento e análise dos indicadores de qualidade assistencial.',
+  },
+  sepse_pediatrico: {
+    heroTitle: 'Protocolo de Sepse Pediátrico',
+    heroSubtitle: 'Monitoramento e Gestão de Protocolos',
+    badges: [
+      { icon: <Clock className="h-5 w-5" />, value: '≤ 1h', label: 'Meta ATB' },
+      { icon: <Activity className="h-5 w-5" />, value: 'Sepse', label: 'Protocolo Pediátrico' },
+      { icon: <TrendingUp className="h-5 w-5" />, value: 'KPI', label: 'Indicadores' },
+    ],
+    aboutTitle: 'Sobre o Protocolo de Sepse Pediátrico',
+    aboutText: 'O Protocolo de Sepse Pediátrico é um conjunto de diretrizes para identificação e tratamento precoce de sepse em pacientes pediátricos. A meta é o início rápido de antibioticoterapia e medidas de suporte, visando a redução da mortalidade e melhora dos desfechos clínicos. Este sistema permite o registro, monitoramento e análise dos indicadores de qualidade assistencial.',
+  },
+};
 
-export const ProtocolosList = ({ tipo, titulo, onNovo }: Props) => {
-  const now = new Date();
-  const [competency, setCompetency] = useState(format(now, 'yyyy-MM'));
-  const [search, setSearch] = useState('');
-  
-  const { data: atendimentos = [], isLoading } = useProtocoloAtendimentos(tipo, competency);
-  const { data: stats } = useProtocoloStats(tipo, competency);
+const actionCards = [
+  {
+    key: 'cadastrar',
+    icon: <ClipboardPlus className="h-6 w-6" />,
+    title: 'Cadastrar Atendimento',
+    description: 'Registre novos atendimentos de pacientes e calcule os indicadores do protocolo.',
+    iconBg: 'bg-primary/10 text-primary',
+  },
+  {
+    key: 'relatorios',
+    icon: <FileText className="h-6 w-6" />,
+    title: 'Relatórios',
+    description: 'Visualize e exporte relatórios individuais de cada atendimento.',
+    iconBg: 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
+  },
+  {
+    key: 'consolidado',
+    icon: <BarChart3 className="h-6 w-6" />,
+    title: 'Consolidado Mensal',
+    description: 'Analise indicadores mensais, gráficos e exporte relatórios consolidados.',
+    iconBg: 'bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+  },
+];
 
-  const filtered = useMemo(() => {
-    if (!search) return atendimentos;
-    const q = search.toLowerCase();
-    return atendimentos.filter((a: any) =>
-      a.record_number?.toLowerCase().includes(q) ||
-      a.patient_name?.toLowerCase().includes(q)
-    );
-  }, [atendimentos, search]);
+export const ProtocolosList = ({ tipo, titulo, onNovo, onRelatorios, onConsolidado }: Props) => {
+  const config = protocoloConfig[tipo];
 
-  const [year, month] = competency.split('-');
+  const handleCardClick = (key: string) => {
+    switch (key) {
+      case 'cadastrar': onNovo(); break;
+      case 'relatorios': onRelatorios?.(); break;
+      case 'consolidado': onConsolidado?.(); break;
+    }
+  };
 
   return (
-    <div className="space-y-4">
-      {/* KPIs */}
-      {stats && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <BarChart3 className="h-8 w-8 text-primary opacity-70" />
-              <div>
-                <p className="text-2xl font-bold">{stats.total}</p>
-                <p className="text-xs text-muted-foreground">Total Atendimentos</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <CheckCircle className="h-8 w-8 text-emerald-500 opacity-70" />
-              <div>
-                <p className="text-2xl font-bold">{stats.withinTarget}</p>
-                <p className="text-xs text-muted-foreground">Dentro da Meta</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <XCircle className="h-8 w-8 text-destructive opacity-70" />
-              <div>
-                <p className="text-2xl font-bold">{stats.total - stats.withinTarget}</p>
-                <p className="text-xs text-muted-foreground">Fora da Meta</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4 flex items-center gap-3">
-              <Clock className="h-8 w-8 text-amber-500 opacity-70" />
-              <div>
-                <p className="text-2xl font-bold">{stats.average} min</p>
-                <p className="text-xs text-muted-foreground">Média Tempo</p>
-              </div>
-            </CardContent>
-          </Card>
+    <div className="space-y-6">
+      {/* Top Navigation */}
+      <div className="flex items-center gap-6 border-b pb-3">
+        <div className="flex items-center gap-2">
+          <Heart className="h-5 w-5 text-primary" />
+          <span className="font-semibold text-foreground">{titulo}</span>
+          <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded">UPA</span>
         </div>
-      )}
-
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3 items-center">
-        <Select value={month} onValueChange={(m) => setCompetency(`${year}-${m}`)}>
-          <SelectTrigger className="w-32"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {MESES.map(m => (
-              <SelectItem key={m} value={m}>
-                {new Date(2026, parseInt(m) - 1).toLocaleString('pt-BR', { month: 'long' })}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={year} onValueChange={(y) => setCompetency(`${y}-${month}`)}>
-          <SelectTrigger className="w-24"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            {[2024, 2025, 2026, 2027].map(y => (
-              <SelectItem key={y} value={String(y)}>{y}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar prontuário ou paciente..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10" />
+        <div className="flex items-center gap-4 ml-auto text-sm">
+          <button onClick={onNovo} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+            <ClipboardPlus className="h-4 w-4" /> Cadastrar Atendimento
+          </button>
+          <button onClick={() => onRelatorios?.()} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+            <FileText className="h-4 w-4" /> Relatórios
+          </button>
+          <button onClick={() => onConsolidado?.()} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
+            <BarChart3 className="h-4 w-4" /> Consolidado Mensal
+          </button>
         </div>
-        <Button onClick={onNovo} className="gap-2">
-          <Plus className="h-4 w-4" /> Novo Atendimento
-        </Button>
       </div>
 
-      {/* Table */}
+      {/* Hero Banner */}
+      <div className="rounded-2xl bg-gradient-to-r from-[hsl(210,70%,20%)] to-[hsl(210,60%,45%)] p-6 text-white">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center">
+            <Heart className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-xl font-bold">{config.heroTitle}</h1>
+            <p className="text-sm text-white/70">{config.heroSubtitle}</p>
+          </div>
+        </div>
+        <div className="grid grid-cols-3 gap-3">
+          {config.badges.map((badge, i) => (
+            <div
+              key={i}
+              className={`rounded-xl px-4 py-3 flex items-center gap-3 ${
+                i === 0 
+                  ? 'bg-white/20' 
+                  : 'bg-white/10'
+              }`}
+            >
+              <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center">
+                {badge.icon}
+              </div>
+              <div>
+                <p className="font-bold text-sm">{badge.value}</p>
+                <p className="text-xs text-white/70">{badge.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Action Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {actionCards.map((card) => (
+          <Card
+            key={card.key}
+            className="cursor-pointer hover:shadow-md transition-shadow group border"
+            onClick={() => handleCardClick(card.key)}
+          >
+            <CardContent className="p-6 space-y-3">
+              <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${card.iconBg}`}>
+                {card.icon}
+              </div>
+              <h3 className="font-semibold text-foreground">{card.title}</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">{card.description}</p>
+              <span className="text-sm text-primary font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                Acessar →
+              </span>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* About Section */}
       <Card>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Prontuário</TableHead>
-                <TableHead>Paciente</TableHead>
-                <TableHead>Data</TableHead>
-                <TableHead>Tempo</TableHead>
-                <TableHead>Meta</TableHead>
-                <TableHead>Classificação</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
-                    {isLoading ? 'Carregando...' : 'Nenhum registro encontrado.'}
-                  </TableCell>
-                </TableRow>
-              )}
-              {filtered.map((a: any) => (
-                <TableRow key={a.id}>
-                  <TableCell className="font-medium">{a.record_number}</TableCell>
-                  <TableCell>{a.patient_name || '-'}</TableCell>
-                  <TableCell>{a.arrival_time ? format(new Date(a.arrival_time), 'dd/MM/yyyy HH:mm') : '-'}</TableCell>
-                  <TableCell>
-                    <Badge variant={a.within_target ? 'default' : 'destructive'}>
-                      {a.porta_ecg_minutes} min
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {a.within_target ? (
-                      <Badge variant="outline" className="text-emerald-600 border-emerald-300">✓ Dentro</Badge>
-                    ) : (
-                      <Badge variant="outline" className="text-destructive border-destructive/30">✗ Fora</Badge>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {a.risk_classification && (
-                      <Badge className={
-                        a.risk_classification === 'vermelho' ? 'bg-red-500' :
-                        a.risk_classification === 'laranja' ? 'bg-orange-500' :
-                        a.risk_classification === 'amarelo' ? 'bg-yellow-500 text-black' :
-                        a.risk_classification === 'verde' ? 'bg-green-500' :
-                        'bg-blue-500'
-                      }>
-                        {a.risk_classification}
-                      </Badge>
-                    )}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        <CardContent className="p-6">
+          <h2 className="font-semibold text-foreground mb-3">{config.aboutTitle}</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">{config.aboutText}</p>
         </CardContent>
       </Card>
     </div>
