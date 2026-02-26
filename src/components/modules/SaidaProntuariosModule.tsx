@@ -206,6 +206,12 @@ export const SaidaProntuariosModule = () => {
   const inicioHoje = `${hoje}T00:00:00-03:00`;
   const fimHoje = `${hoje}T23:59:59-03:00`;
 
+  // D1: Classificação vê ontem + hoje (24h para tratar prontuários)
+  const ontemDate = new Date();
+  ontemDate.setDate(ontemDate.getDate() - 1);
+  const ontem = ontemDate.toISOString().slice(0, 10);
+  const inicioOntem = `${ontem}T00:00:00-03:00`;
+
   // Pagination
   const PAGE_SIZE = 100;
   const [saidasPage, setSaidasPage] = useState(0);
@@ -227,7 +233,8 @@ export const SaidaProntuariosModule = () => {
   const fetchCounts = async () => {
     setIsLoading(true);
     try {
-      const restrictedToToday = (isRecepcao || isClassificacao) && !isAdmin && !isNir && !isFaturamento;
+      const restrictedToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
+      const restrictedToYesterdayToday = isClassificacao && !isAdmin && !isNir && !isFaturamento;
 
       const regularCountQuery = supabase
         .from("saida_prontuarios")
@@ -245,12 +252,19 @@ export const SaidaProntuariosModule = () => {
         .lte("created_at", fimHoje)
         .neq("status", "concluido");
 
-      const folhasCountQueryBase = supabase
+      // Folhas avulsas: restringir contagem para recepção/classificação
+      let folhasCountQueryBase = supabase
         .from("saida_prontuarios")
         .select("*", { count: "exact", head: true })
         .eq("is_folha_avulsa", true);
 
-      const faltantesCountQueryBase = supabase
+      if (restrictedToToday) {
+        folhasCountQueryBase = folhasCountQueryBase.gte("created_at", inicioHoje).lte("created_at", fimHoje);
+      } else if (restrictedToYesterdayToday) {
+        folhasCountQueryBase = folhasCountQueryBase.gte("created_at", inicioOntem).lte("created_at", fimHoje);
+      }
+
+      let faltantesCountQueryBase = supabase
         .from("saida_prontuarios")
         .select("*", { count: "exact", head: true })
         .ilike("observacao_classificacao", "%importado via salus%");
@@ -261,7 +275,9 @@ export const SaidaProntuariosModule = () => {
         folhasCountQueryBase,
         restrictedToToday
           ? faltantesCountQueryBase.gte("created_at", inicioHoje).lte("created_at", fimHoje)
-          : faltantesCountQueryBase,
+          : restrictedToYesterdayToday
+            ? faltantesCountQueryBase.gte("created_at", inicioOntem).lte("created_at", fimHoje)
+            : faltantesCountQueryBase,
       ]);
       setTotalSaidasCount(regularCount.count ?? 0);
       setTotalSaidasHojeCount(regularHojeCount.count ?? 0);
@@ -285,11 +301,13 @@ export const SaidaProntuariosModule = () => {
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
-    // Recepção e Classificação veem somente registros lançados no dia
-    const restrictToToday = (isRecepcao || isClassificacao) && !isAdmin && !isNir && !isFaturamento;
+    // Recepção vê somente hoje; Classificação vê ontem + hoje (D1: 24h para tratar)
+    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
+    const restrictToYesterdayToday = isClassificacao && !isAdmin && !isNir && !isFaturamento;
     if (restrictToToday) {
-      query = query.gte("created_at", inicioHoje)
-                   .lte("created_at", fimHoje);
+      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
+    } else if (restrictToYesterdayToday) {
+      query = query.gte("created_at", inicioOntem).lte("created_at", fimHoje);
     }
 
     if (debouncedSearchTerm) query = query.ilike("paciente_nome", `%${debouncedSearchTerm}%`);
@@ -353,11 +371,13 @@ export const SaidaProntuariosModule = () => {
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
-    // Recepção e Classificação veem somente registros lançados no dia
-    const restrictToToday = (isRecepcao || isClassificacao) && !isAdmin && !isNir && !isFaturamento;
+    // Recepção vê somente hoje; Classificação vê ontem + hoje (D1: 24h)
+    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
+    const restrictToYesterdayToday = isClassificacao && !isAdmin && !isNir && !isFaturamento;
     if (restrictToToday) {
-      query = query.gte("created_at", inicioHoje)
-                   .lte("created_at", fimHoje);
+      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
+    } else if (restrictToYesterdayToday) {
+      query = query.gte("created_at", inicioOntem).lte("created_at", fimHoje);
     }
 
     if (debouncedFolhasSearch) query = query.ilike("paciente_nome", `%${debouncedFolhasSearch}%`);
@@ -378,11 +398,13 @@ export const SaidaProntuariosModule = () => {
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
-    // Recepção e Classificação veem somente registros lançados no dia
-    const restrictToToday = (isRecepcao || isClassificacao) && !isAdmin && !isNir && !isFaturamento;
+    // Recepção vê somente hoje; Classificação vê ontem + hoje (D1: 24h)
+    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
+    const restrictToYesterdayToday = isClassificacao && !isAdmin && !isNir && !isFaturamento;
     if (restrictToToday) {
-      query = query.gte("created_at", inicioHoje)
-                   .lte("created_at", fimHoje);
+      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
+    } else if (restrictToYesterdayToday) {
+      query = query.gte("created_at", inicioOntem).lte("created_at", fimHoje);
     }
 
     if (debouncedFaltantesSearch) query = query.ilike("paciente_nome", `%${debouncedFaltantesSearch}%`);
