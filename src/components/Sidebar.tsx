@@ -82,6 +82,7 @@ const Sidebar = ({
         { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia", category: "administrativo" },
         { icon: Calendar, label: "Agenda", id: "agenda", category: "administrativo" },
         { icon: GraduationCap, label: "Capacitação", id: "lms", category: "administrativo" },
+        { icon: UserRound, label: "Colaborador", id: "colaborador", category: "administrativo" },
         { icon: Shield, label: "Administração", id: "admin", category: "administrativo" },
         { icon: Shield, label: "Seg. Patrimonial", id: "seguranca-patrimonial", category: "apoio" },
         { icon: Video, label: "Reuniões", id: "reuniao", category: "administrativo" },
