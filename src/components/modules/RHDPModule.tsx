@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, FileText, ShieldX, ClipboardList, Users, UserCog, AlertTriangle, Stethoscope, BarChart3, UserCheck } from "lucide-react";
+import { Clock, FileText, ShieldX, ClipboardList, Users, UserCog, AlertTriangle, Stethoscope, BarChart3, UserCheck, LayoutDashboard } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { BancoHorasSection } from "@/components/rhdp/BancoHorasSection";
@@ -12,11 +12,12 @@ import { ProfissionaisSaude } from "@/components/rh";
 import { ASOControl } from "@/components/seguranca-trabalho";
 import { AvaliacaoDesempenhoSection } from "@/components/rhdp/AvaliacaoDesempenhoSection";
 import { AvaliacaoExperienciaSection } from "@/components/rhdp/AvaliacaoExperienciaSection";
+import { DashboardRHDP } from "@/components/rhdp/DashboardRHDP";
 
 export const RHDPModule = () => {
   const { isAdmin, hasRole, isLoading } = useUserRole();
   const { logAction } = useLogAccess();
-  const [activeTab, setActiveTab] = useState("banco-horas");
+  const [activeTab, setActiveTab] = useState("dashboard-rhdp");
 
   useEffect(() => {
     logAction("acesso_modulo", "rhdp");
@@ -63,7 +64,12 @@ export const RHDPModule = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-8">
+            <TabsList className="grid w-full grid-cols-9">
+              <TabsTrigger value="dashboard-rhdp" className="flex items-center gap-2">
+                <LayoutDashboard className="h-4 w-4" />
+                <span className="hidden sm:inline">Dashboard</span>
+                <span className="sm:hidden">Dash</span>
+              </TabsTrigger>
               <TabsTrigger value="banco-horas" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 <span className="hidden sm:inline">Banco de Horas</span>
@@ -104,6 +110,10 @@ export const RHDPModule = () => {
                 <span className="sm:hidden">Exp.</span>
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="dashboard-rhdp" className="mt-6">
+              <DashboardRHDP />
+            </TabsContent>
 
             <TabsContent value="banco-horas" className="mt-6">
               <BancoHorasSection />
