@@ -2413,6 +2413,86 @@ export type Database = {
         }
         Relationships: []
       }
+      escala_tec_enf_dias: {
+        Row: {
+          dia: number
+          id: string
+          profissional_id: string
+          setor_codigo: string
+        }
+        Insert: {
+          dia: number
+          id?: string
+          profissional_id: string
+          setor_codigo?: string
+        }
+        Update: {
+          dia?: number
+          id?: string
+          profissional_id?: string
+          setor_codigo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escala_tec_enf_dias_profissional_id_fkey"
+            columns: ["profissional_id"]
+            isOneToOne: false
+            referencedRelation: "escala_tec_enf_profissionais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      escala_tec_enf_profissionais: {
+        Row: {
+          coren: string
+          created_at: string
+          escala_id: string
+          grupo: string
+          horario: string
+          id: string
+          nome: string
+          ordem: number
+          profissional_saude_id: string | null
+        }
+        Insert: {
+          coren: string
+          created_at?: string
+          escala_id: string
+          grupo: string
+          horario: string
+          id?: string
+          nome: string
+          ordem?: number
+          profissional_saude_id?: string | null
+        }
+        Update: {
+          coren?: string
+          created_at?: string
+          escala_id?: string
+          grupo?: string
+          horario?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          profissional_saude_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escala_tec_enf_profissionais_escala_id_fkey"
+            columns: ["escala_id"]
+            isOneToOne: false
+            referencedRelation: "escalas_tec_enfermagem"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escala_tec_enf_profissionais_profissional_saude_id_fkey"
+            columns: ["profissional_saude_id"]
+            isOneToOne: false
+            referencedRelation: "profissionais_saude"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       escalas_laboratorio: {
         Row: {
           ano: number
@@ -2507,6 +2587,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      escalas_tec_enfermagem: {
+        Row: {
+          ano: number
+          coordenadora_coren: string | null
+          coordenadora_nome: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          legenda: Json | null
+          mensagem_motivacional: string | null
+          mes: number
+          titulo: string | null
+          unidade: string | null
+          updated_at: string
+        }
+        Insert: {
+          ano: number
+          coordenadora_coren?: string | null
+          coordenadora_nome?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          legenda?: Json | null
+          mensagem_motivacional?: string | null
+          mes: number
+          titulo?: string | null
+          unidade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ano?: number
+          coordenadora_coren?: string | null
+          coordenadora_nome?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          legenda?: Json | null
+          mensagem_motivacional?: string | null
+          mes?: number
+          titulo?: string | null
+          unidade?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       ferramentas_modulo: {
         Row: {
@@ -4442,6 +4567,7 @@ export type Database = {
       }
       profissionais_saude: {
         Row: {
+          coren: string | null
           created_at: string
           created_by: string | null
           email: string | null
@@ -4457,6 +4583,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          coren?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
@@ -4472,6 +4599,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          coren?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
