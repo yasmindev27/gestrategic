@@ -671,6 +671,135 @@ export const CentralAtestadosSection = () => {
               </div>
             </CardContent>
           </Card>
+
+          {/* Alerta: Colaboradores com múltiplos atestados no mês */}
+          {(() => {
+            const alertaColabs = (() => {
+              const map = new Map<string, { nome: string; quantidade: number; totalDias: number; tipos: string[] }>();
+              atestadosFiltrados.forEach((a) => {
+                const key = a.funcionario_nome.trim().toLowerCase();
+                if (!map.has(key)) map.set(key, { nome: a.funcionario_nome, quantidade: 0, totalDias: 0, tipos: [] });
+                const entry = map.get(key)!;
+                entry.quantidade += 1;
+                entry.totalDias += a.dias_afastamento;
+                if (a.tipo && !entry.tipos.includes(a.tipo)) entry.tipos.push(a.tipo);
+              });
+              return Array.from(map.values()).filter(c => c.quantidade > 1).sort((a, b) => b.quantidade - a.quantidade || b.totalDias - a.totalDias);
+            })();
+
+            const alertaChartData = alertaColabs.slice(0, 10).map(c => ({
+              name: c.nome.length > 18 ? c.nome.substring(0, 18) + "…" : c.nome,
+              fullName: c.nome,
+              atestados: c.quantidade,
+              dias: c.totalDias,
+            }));
+
+            const getBarColor = (qty: number) => {
+              if (qty >= 4) return "hsl(var(--destructive))";
+              if (qty >= 3) return "hsl(var(--warning))";
+              return "hsl(var(--primary))";
+            };
+
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="shadow-sm border-l-4 border-l-warning">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <AlertTriangle className="h-5 w-5 text-warning" />
+                      Colaboradores com múltiplos atestados
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">
+                      Colaboradores com mais de 1 atestado no período selecionado
+                    </p>
+                  </CardHeader>
+                  <CardContent>
+                    {alertaChartData.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                        <Users className="h-10 w-10 mb-2 opacity-40" />
+                        <p className="font-medium">Nenhum colaborador em alerta</p>
+                      </div>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={280}>
+                        <BarChart data={alertaChartData} layout="vertical" margin={{ left: 10, right: 20 }}>
+                          <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
+                          <XAxis type="number" allowDecimals={false} />
+                          <YAxis type="category" dataKey="name" width={130} tick={{ fontSize: 12 }} />
+                          <Tooltip
+                            content={({ active, payload }) => {
+                              if (!active || !payload?.length) return null;
+                              const d = payload[0].payload;
+                              return (
+                                <div className="bg-popover border rounded-lg p-3 shadow-lg text-sm">
+                                  <p className="font-semibold">{d.fullName}</p>
+                                  <p className="text-muted-foreground">Atestados: <strong>{d.atestados}</strong></p>
+                                  <p className="text-muted-foreground">Dias afastado: <strong>{d.dias}</strong></p>
+                                </div>
+                              );
+                            }}
+                          />
+                          <Bar dataKey="atestados" radius={[0, 6, 6, 0]} barSize={22}>
+                            {alertaChartData.map((entry, i) => (
+                              <Cell key={i} fill={getBarColor(entry.atestados)} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CardContent>
+                </Card>
+
+                <Card className="shadow-sm">
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-lg">
+                      <FileText className="h-5 w-5 text-primary" />
+                      Detalhamento — Múltiplos Atestados
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {alertaColabs.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-48 text-muted-foreground">
+                        <FileText className="h-10 w-10 mb-2 opacity-40" />
+                        <p className="font-medium">Sem registros</p>
+                      </div>
+                    ) : (
+                      <div className="max-h-[280px] overflow-auto">
+                        <Table>
+                          <TableHeader>
+                            <TableRow>
+                              <TableHead>Colaborador</TableHead>
+                              <TableHead className="text-center">Qty</TableHead>
+                              <TableHead className="text-center">Dias</TableHead>
+                              <TableHead>Tipos</TableHead>
+                            </TableRow>
+                          </TableHeader>
+                          <TableBody>
+                            {alertaColabs.map((c, i) => (
+                              <TableRow key={i}>
+                                <TableCell className="font-medium">{c.nome}</TableCell>
+                                <TableCell className="text-center">
+                                  <Badge variant={c.quantidade >= 3 ? "destructive" : "secondary"} className="font-bold">{c.quantidade}</Badge>
+                                </TableCell>
+                                <TableCell className="text-center font-medium">{c.totalDias}</TableCell>
+                                <TableCell>
+                                  <div className="flex flex-wrap gap-1">
+                                    {c.tipos.map((t, j) => (
+                                      <Badge key={j} variant="outline" className="text-xs">
+                                        {t === "medico" ? "Médico" : t === "acompanhante" ? "Acompanhante" : "Declaração"}
+                                      </Badge>
+                                    ))}
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))}
+                          </TableBody>
+                        </Table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })()}
         </TabsContent>
 
         {/* ======================== ATESTADOS TAB ======================== */}
