@@ -246,7 +246,33 @@ export function EscalaTecEnfermagem() {
     },
   });
 
-  // Copy escala from previous month (professionals only)
+  // Delete entire escala for current month
+  const deleteEscalaMutation = useMutation({
+    mutationFn: async () => {
+      if (!escala?.id) throw new Error('Nenhuma escala para excluir');
+      // Delete dias first (cascade via profissionais)
+      const { data: profs } = await supabase
+        .from('escala_tec_enf_profissionais')
+        .select('id')
+        .eq('escala_id', escala.id);
+      if (profs && profs.length > 0) {
+        const profIds = profs.map(p => p.id);
+        await supabase.from('escala_tec_enf_dias').delete().in('profissional_id', profIds);
+        await supabase.from('escala_tec_enf_profissionais').delete().eq('escala_id', escala.id);
+      }
+      const { error } = await supabase.from('escalas_tec_enfermagem').delete().eq('id', escala.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['escala-tec-enf', mes, ano] });
+      queryClient.invalidateQueries({ queryKey: ['escala-tec-enf-profs'] });
+      toast({ title: `Escala de ${MESES[mes - 1]}/${ano} excluída com sucesso.` });
+    },
+    onError: (e: Error) => {
+      toast({ title: 'Erro ao excluir', description: e.message, variant: 'destructive' });
+    },
+  });
+
   const copyFromPreviousMonth = useMutation({
     mutationFn: async () => {
       const prevMes = mes === 1 ? 12 : mes - 1;
@@ -582,6 +608,13 @@ export function EscalaTecEnfermagem() {
                 </Button>
                 <Button size="sm" variant="outline" onClick={() => setDuplicateDialogOpen(true)}>
                   <Copy className="h-4 w-4 mr-1" /> Duplicar Escala
+                </Button>
+                <Button size="sm" variant="destructive" onClick={() => {
+                  if (confirm(`Tem certeza que deseja excluir toda a escala de ${MESES[mes - 1]}/${ano}? Esta ação não pode ser desfeita.`)) {
+                    deleteEscalaMutation.mutate();
+                  }
+                }} disabled={deleteEscalaMutation.isPending}>
+                  <Trash2 className="h-4 w-4 mr-1" /> Excluir Escala
                 </Button>
                 {hasChanges && (
                   <Button size="sm" onClick={() => saveMutation.mutate()} disabled={saveMutation.isPending}>
