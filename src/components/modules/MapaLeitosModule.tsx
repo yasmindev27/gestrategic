@@ -196,30 +196,47 @@ export const MapaLeitosModule = () => {
       });
   }, [beds]);
 
-  const handleExportCSV = useCallback(() => {
+  const handleExportExcel = useCallback(async () => {
     const data = getExportData();
-    const meta = [
-      `Data;${shiftInfo.data}`,
-      `Plantão;${shiftInfo.tipo === 'noturno' ? 'Noturno' : 'Diurno'}`,
-      `Regulador NIR;${shiftInfo.reguladorNIR || '-'}`,
-      `Médicos;${shiftInfo.medicos || '-'}`,
-      `Enfermeiros;${shiftInfo.enfermeiros || '-'}`,
-      `Ocupação;${totalOccupancy.occupied}/${totalOccupancy.total}`,
-      '',
+    const XLSX = await import('xlsx');
+    
+    const wb = XLSX.utils.book_new();
+    
+    // Header info rows
+    const headerRows = [
+      ['Mapa de Leitos'],
+      [`Data: ${shiftInfo.data}`, `Plantao: ${shiftInfo.tipo === 'noturno' ? 'Noturno' : 'Diurno'}`],
+      [`Regulador NIR: ${shiftInfo.reguladorNIR || '-'}`],
+      [`Medicos: ${shiftInfo.medicos || '-'}`],
+      [`Enfermeiros: ${shiftInfo.enfermeiros || '-'}`],
+      [`Ocupacao: ${totalOccupancy.occupied}/${totalOccupancy.total}`],
+      [],
     ];
-    const headers = ['Setor', 'Leito', 'Paciente', 'Hipótese', 'Conduta', 'Observações', 'Internação', 'Permanência', 'SUS Fácil'];
-    const csvContent = [
-      ...meta,
-      headers.join(';'),
-      ...data.map(row => [row.setor, row.leito, row.paciente, row.hipotese, row.conduta, row.observacao, row.dataInternacao, row.permanencia, row.susFacil].join(';'))
-    ].join('\n');
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `mapa-leitos-${shiftInfo.data}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    
+    const tableHeaders = ['Setor', 'Leito', 'Paciente', 'Hipotese Diagnostica', 'Conduta', 'Observacoes', 'Internacao', 'Permanencia', 'SUS Facil'];
+    const tableRows = data.map(row => [row.setor, row.leito, row.paciente, row.hipotese, row.conduta, row.observacao, row.dataInternacao, row.permanencia, row.susFacil]);
+    
+    const wsData = [...headerRows, tableHeaders, ...tableRows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // Set column widths for proper display
+    ws['!cols'] = [
+      { wch: 22 },  // Setor
+      { wch: 14 },  // Leito
+      { wch: 32 },  // Paciente
+      { wch: 30 },  // Hipotese
+      { wch: 28 },  // Conduta
+      { wch: 28 },  // Observacoes
+      { wch: 14 },  // Internacao
+      { wch: 12 },  // Permanencia
+      { wch: 10 },  // SUS Facil
+    ];
+    
+    // Merge title row
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Mapa de Leitos');
+    XLSX.writeFile(wb, `mapa-leitos-${shiftInfo.data}.xlsx`);
   }, [getExportData, shiftInfo, totalOccupancy]);
 
   const handleExportPDF = useCallback(async () => {
@@ -419,7 +436,7 @@ export const MapaLeitosModule = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <ExportDropdown onExportPDF={handleExportPDF} onExportCSV={handleExportCSV} />
+          <ExportDropdown onExportPDF={handleExportPDF} onExportExcel={handleExportExcel} />
           <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary">
             {shiftInfo.tipo === 'noturno' ? '🌙 Plantão Noturno' : '☀️ Plantão Diurno'}
           </span>
