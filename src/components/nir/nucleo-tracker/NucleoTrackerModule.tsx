@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useEffect } from "react";
-import { getRegistrosDB, getColaboradoresDB } from "./storage";
+import { getRegistrosDB, getColaboradoresDB, getCurrentUserInfo } from "./storage";
 import { RegistroProducao, Colaborador } from "./types";
 import { StatCard } from "./StatCard";
 import { RegistroForm } from "./RegistroForm";
@@ -7,7 +7,6 @@ import { RegistrosTable } from "./RegistrosTable";
 import { ProducaoChart } from "./ProducaoChart";
 import { AtividadeChart } from "./AtividadeChart";
 import { Filtros } from "./Filtros";
-
 import { Relatorios } from "./Relatorios";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -27,9 +26,15 @@ export function NucleoTrackerModule() {
   const [filtroAtiv, setFiltroAtiv] = useState("todas");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
+  const [isPrivileged, setIsPrivileged] = useState(false);
 
   const refresh = useCallback(async () => {
-    const [regs, colabs] = await Promise.all([getRegistrosDB(), getColaboradoresDB()]);
+    const userInfo = await getCurrentUserInfo();
+    setIsPrivileged(userInfo.isPrivileged);
+
+    // Privileged users see all records; regular users see only their own
+    const regs = await getRegistrosDB(!userInfo.isPrivileged);
+    const colabs = await getColaboradoresDB();
     setRegistros(regs);
     setColaboradores(colabs);
   }, []);
@@ -65,19 +70,20 @@ export function NucleoTrackerModule() {
             </p>
           </div>
         </div>
-        
       </div>
 
       <Tabs defaultValue="painel" className="w-full">
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className={`grid w-full max-w-md ${isPrivileged ? 'grid-cols-2' : 'grid-cols-1'}`}>
           <TabsTrigger value="painel" className="gap-2">
             <LayoutDashboard className="h-4 w-4" />
             Painel
           </TabsTrigger>
-          <TabsTrigger value="relatorios" className="gap-2">
-            <FileText className="h-4 w-4" />
-            Relatórios
-          </TabsTrigger>
+          {isPrivileged && (
+            <TabsTrigger value="relatorios" className="gap-2">
+              <FileText className="h-4 w-4" />
+              Relatórios
+            </TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="painel" className="space-y-6 mt-6">
@@ -95,24 +101,28 @@ export function NucleoTrackerModule() {
             <AtividadeChart registros={filtered} />
           </div>
 
-          <Filtros
-            colaboradores={colaboradores}
-            colaborador={filtroColab}
-            atividade={filtroAtiv}
-            dataInicio={dataInicio}
-            dataFim={dataFim}
-            onColaboradorChange={setFiltroColab}
-            onAtividadeChange={setFiltroAtiv}
-            onDataInicioChange={setDataInicio}
-            onDataFimChange={setDataFim}
-          />
+          {isPrivileged && (
+            <Filtros
+              colaboradores={colaboradores}
+              colaborador={filtroColab}
+              atividade={filtroAtiv}
+              dataInicio={dataInicio}
+              dataFim={dataFim}
+              onColaboradorChange={setFiltroColab}
+              onAtividadeChange={setFiltroAtiv}
+              onDataInicioChange={setDataInicio}
+              onDataFimChange={setDataFim}
+            />
+          )}
 
           <RegistrosTable registros={filtered} onUpdate={refresh} />
         </TabsContent>
 
-        <TabsContent value="relatorios" className="mt-6">
-          <Relatorios registros={registros} colaboradores={colaboradores} />
-        </TabsContent>
+        {isPrivileged && (
+          <TabsContent value="relatorios" className="mt-6">
+            <Relatorios registros={registros} colaboradores={colaboradores} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

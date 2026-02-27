@@ -1,13 +1,41 @@
 import { supabase } from "@/integrations/supabase/client";
 import { RegistroProducao, Colaborador } from "./types";
 
+// ---- Helpers ----
+
+export async function getCurrentUserInfo() {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { userName: "", isAdmin: false, isPrivileged: false };
+
+  const [profileRes, roleRes] = await Promise.all([
+    supabase.from("profiles").select("full_name").eq("user_id", user.id).single(),
+    supabase.from("user_roles").select("role").eq("user_id", user.id),
+  ]);
+
+  const userName = profileRes.data?.full_name || "";
+  const isAdmin = roleRes.data?.some((r: any) => r.role === "admin") || false;
+  const nameLower = userName.toLowerCase();
+  const isPrivileged = isAdmin || nameLower.includes("blendon") || nameLower.includes("maximo");
+
+  return { userName, isAdmin, isPrivileged };
+}
+
 // ---- Registros de Produção ----
 
-export async function getRegistrosDB(): Promise<RegistroProducao[]> {
-  const { data, error } = await supabase
+export async function getRegistrosDB(onlyOwn: boolean = true): Promise<RegistroProducao[]> {
+  let query = supabase
     .from("nir_registros_producao")
     .select("*")
     .order("created_at", { ascending: false });
+
+  if (onlyOwn) {
+    const { userName } = await getCurrentUserInfo();
+    if (userName) {
+      query = query.eq("colaborador", userName);
+    }
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     console.error("Erro ao carregar registros:", error);
@@ -94,12 +122,4 @@ export async function toggleColaboradorAtivoDB(id: string, ativo: boolean) {
     console.error("Erro ao atualizar colaborador:", error);
     throw error;
   }
-}
-
-// Legacy localStorage functions kept for backward compat (deprecated)
-export function getRegistros(): RegistroProducao[] {
-  return [];
-}
-export function getColaboradores(): Colaborador[] {
-  return [];
 }
