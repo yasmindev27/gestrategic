@@ -236,7 +236,11 @@ export const MapaLeitosModule = () => {
     ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }];
     
     XLSX.utils.book_append_sheet(wb, ws, 'Mapa de Leitos');
-    XLSX.writeFile(wb, `mapa-leitos-${shiftInfo.data}.xlsx`);
+    const turno = shiftInfo.tipo === 'noturno' ? 'NOTURNO' : 'DIURNO';
+    const primeiroNome = (shiftInfo.reguladorNIR || 'SEM-REGULADOR').split(' ')[0].toUpperCase();
+    const [, mes, dia] = shiftInfo.data.split('-');
+    const nomeArquivo = `PLANTAO ${turno} ${primeiroNome} ${dia}-${mes}`;
+    XLSX.writeFile(wb, `${nomeArquivo}.xlsx`);
   }, [getExportData, shiftInfo, totalOccupancy]);
 
   const handleExportPDF = useCallback(async () => {
@@ -260,7 +264,11 @@ export const MapaLeitosModule = () => {
       margin: { top: 32, bottom: 28 },
     });
 
-    savePdfWithFooter(doc, 'Mapa de Leitos', `mapa-leitos-${shiftInfo.data}`, logoImg);
+    const turno = shiftInfo.tipo === 'noturno' ? 'NOTURNO' : 'DIURNO';
+    const primeiroNome = (shiftInfo.reguladorNIR || 'SEM-REGULADOR').split(' ')[0].toUpperCase();
+    const [, mes, dia] = shiftInfo.data.split('-');
+    const nomeArquivo = `PLANTAO ${turno} ${primeiroNome} ${dia}-${mes}`;
+    savePdfWithFooter(doc, 'Mapa de Leitos', nomeArquivo, logoImg);
   }, [getExportData, shiftInfo, totalOccupancy]);
 
   const handleBedClick = (bed: Bed) => {
