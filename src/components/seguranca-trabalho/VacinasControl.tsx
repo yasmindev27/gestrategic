@@ -140,10 +140,12 @@ function ColaboradorVacinaList({
 
         return (
           <div key={nome} className="border rounded-lg overflow-hidden">
-            <button
-              type="button"
-              className="w-full flex items-center justify-between p-3 hover:bg-accent/50 transition-colors text-left"
-              onClick={() => setExpandedColab(isOpen ? null : nome)}
+            <div
+              role="button"
+              tabIndex={0}
+              className="w-full flex items-center justify-between p-4 hover:bg-accent/50 transition-colors cursor-pointer select-none"
+              onClick={(e) => { e.stopPropagation(); setExpandedColab(isOpen ? null : nome); }}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setExpandedColab(isOpen ? null : nome); } }}
             >
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-muted-foreground" />
@@ -154,7 +156,7 @@ function ColaboradorVacinaList({
                 {pendentes > 0 && <Badge variant="outline" className="text-xs">{pendentes} pendente(s)</Badge>}
                 <span className="text-muted-foreground text-xs">{isOpen ? "▲" : "▼"}</span>
               </div>
-            </button>
+            </div>
 
             {isOpen && (
               <div className="border-t px-3 pb-3">
