@@ -126,8 +126,8 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
   const [savingValor, setSavingValor] = useState<string | null>(null);
   const [showValoresConfig, setShowValoresConfig] = useState(false);
 
-  const fetchData = async () => {
-    setIsLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
       // Buscar TODOS os registros do totem com paginação (limite de 1000 por request)
       let allRefeicoes: RegistroRefeicao[] = [];
@@ -213,7 +213,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
@@ -285,7 +285,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
 
       toast({ title: "Sucesso", description: "Quantidade de extras atualizada!" });
       setEditingCell(null);
-      fetchData();
+      fetchData(true);
     } catch (error: any) {
       toast({ title: "Erro", description: error.message || "Erro ao atualizar extras.", variant: "destructive" });
     } finally {
@@ -432,7 +432,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       }
 
       toast({ title: "Sucesso", description: `Café Litro salvo para ${format(parseISO(data), "dd/MM/yyyy")}` });
-      fetchData(); // Recarregar dados
+      fetchData(true);
     } catch (error: any) {
       console.error("Erro ao salvar café litro:", error);
       toast({
@@ -483,7 +483,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       setValoresRefeicoes(prev => ({ ...prev, [tipo]: valorNum }));
       
       // Recarregar dados para atualizar os cálculos financeiros
-      fetchData();
+      fetchData(true);
       
       toast({ title: "Sucesso", description: `Valor de ${tipo === 'cafe_litro' ? 'Café Litro' : tipo.charAt(0).toUpperCase() + tipo.slice(1)} atualizado!` });
     } catch (error: any) {
@@ -552,7 +552,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
 
       toast({ title: "Sucesso", description: "Quantidade atualizada!" });
       setEditingCell(null);
-      fetchData();
+      fetchData(true);
     } catch (error: any) {
       toast({ title: "Erro", description: error.message || "Erro ao atualizar.", variant: "destructive" });
     } finally {
@@ -637,7 +637,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
 
       toast({ title: "Sucesso", description: "Quantidade de dietas atualizada!" });
       setEditingCell(null);
-      fetchData();
+      fetchData(true);
     } catch (error: any) {
       toast({ title: "Erro", description: error.message || "Erro ao atualizar dietas.", variant: "destructive" });
     } finally {
