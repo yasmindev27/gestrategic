@@ -2599,6 +2599,7 @@ export type Database = {
           legenda: Json | null
           mensagem_motivacional: string | null
           mes: number
+          tipo: string
           titulo: string | null
           unidade: string | null
           updated_at: string
@@ -2613,6 +2614,7 @@ export type Database = {
           legenda?: Json | null
           mensagem_motivacional?: string | null
           mes: number
+          tipo?: string
           titulo?: string | null
           unidade?: string | null
           updated_at?: string
@@ -2627,6 +2629,7 @@ export type Database = {
           legenda?: Json | null
           mensagem_motivacional?: string | null
           mes?: number
+          tipo?: string
           titulo?: string | null
           unidade?: string | null
           updated_at?: string

@@ -27,29 +27,136 @@ import { cn } from '@/lib/utils';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-const SETOR_CODES = [
-  { code: '', label: 'Folga', color: 'bg-gray-50 text-gray-400' },
-  { code: 'U', label: 'Urgência', color: 'bg-red-100 text-red-800' },
-  { code: 'S', label: 'Sutura', color: 'bg-blue-100 text-blue-800' },
-  { code: 'I', label: 'Internação', color: 'bg-purple-100 text-purple-800' },
-  { code: 'C/M', label: 'CME / Medicação', color: 'bg-amber-100 text-amber-800' },
-  { code: 'M1', label: 'Medicação / Acolhimento', color: 'bg-teal-100 text-teal-800' },
-  { code: 'M2', label: 'Lab / Medicação', color: 'bg-cyan-100 text-cyan-800' },
-  { code: 'T', label: 'Transporte', color: 'bg-orange-100 text-orange-800' },
-  { code: 'A', label: 'Acolhimento', color: 'bg-green-100 text-green-800' },
-  { code: 'LAB', label: 'Laboratório', color: 'bg-indigo-100 text-indigo-800' },
-  { code: 'CME', label: 'CME', color: 'bg-yellow-100 text-yellow-800' },
-  { code: 'AF', label: 'Afastamento', color: 'bg-gray-200 text-gray-700' },
-  { code: 'M6', label: 'M6', color: 'bg-pink-100 text-pink-800' },
-];
+/* =====================================================
+   CONFIGURAÇÕES POR TIPO DE ESCALA
+   ===================================================== */
 
-const GRUPOS = [
-  { value: 'noturno_impar', label: 'Noturno (Ímpares)', horario: '19:00 AS 07:00' },
-  { value: 'noturno_par', label: 'Noturno (Pares)', horario: '19:00 AS 07:00' },
-  { value: 'diurno_impar', label: 'Diurno (Ímpares)', horario: '07:00 AS 19:00' },
-  { value: 'diurno_par', label: 'Diurno (Pares)', horario: '07:00 AS 19:00' },
-  { value: 'especial', label: 'Especial', horario: '' },
-];
+export type EscalaTipo = 'tecnicos' | 'enfermeiros' | 'radiologia' | 'administrativa';
+
+interface SetorCode {
+  code: string;
+  label: string;
+  color: string;
+}
+
+interface GrupoConfig {
+  value: string;
+  label: string;
+  horario: string;
+}
+
+interface EscalaTipoConfig {
+  titulo: string;
+  tituloCard: string;
+  setorCodes: SetorCode[];
+  grupos: GrupoConfig[];
+  registroLabel: string; // ex: COREN-MG, CRM, Matrícula
+  pdfFilename: string;
+}
+
+const ESCALA_CONFIGS: Record<EscalaTipo, EscalaTipoConfig> = {
+  tecnicos: {
+    titulo: 'ESCALA DE SERVIÇO DE TECNICO DE ENFERMAGEM',
+    tituloCard: 'Escala de Técnico de Enfermagem',
+    registroLabel: 'COREN-MG',
+    pdfFilename: 'Escala_Tec_Enfermagem',
+    setorCodes: [
+      { code: '', label: 'Folga', color: 'bg-gray-50 text-gray-400' },
+      { code: 'U', label: 'Urgência', color: 'bg-red-100 text-red-800' },
+      { code: 'S', label: 'Sutura', color: 'bg-blue-100 text-blue-800' },
+      { code: 'I', label: 'Internação', color: 'bg-purple-100 text-purple-800' },
+      { code: 'C/M', label: 'CME / Medicação', color: 'bg-amber-100 text-amber-800' },
+      { code: 'M1', label: 'Medicação / Acolhimento', color: 'bg-teal-100 text-teal-800' },
+      { code: 'M2', label: 'Lab / Medicação', color: 'bg-cyan-100 text-cyan-800' },
+      { code: 'T', label: 'Transporte', color: 'bg-orange-100 text-orange-800' },
+      { code: 'A', label: 'Acolhimento', color: 'bg-green-100 text-green-800' },
+      { code: 'LAB', label: 'Laboratório', color: 'bg-indigo-100 text-indigo-800' },
+      { code: 'CME', label: 'CME', color: 'bg-yellow-100 text-yellow-800' },
+      { code: 'AF', label: 'Afastamento', color: 'bg-gray-200 text-gray-700' },
+      { code: 'M6', label: 'M6', color: 'bg-pink-100 text-pink-800' },
+    ],
+    grupos: [
+      { value: 'noturno_impar', label: 'Noturno (Ímpares)', horario: '19:00 AS 07:00' },
+      { value: 'noturno_par', label: 'Noturno (Pares)', horario: '19:00 AS 07:00' },
+      { value: 'diurno_impar', label: 'Diurno (Ímpares)', horario: '07:00 AS 19:00' },
+      { value: 'diurno_par', label: 'Diurno (Pares)', horario: '07:00 AS 19:00' },
+      { value: 'especial', label: 'Especial', horario: '' },
+    ],
+  },
+  enfermeiros: {
+    titulo: 'ESCALA DE SERVIÇO DE ENFERMEIROS',
+    tituloCard: 'Escala de Enfermeiros',
+    registroLabel: 'COREN-MG',
+    pdfFilename: 'Escala_Enfermeiros',
+    setorCodes: [
+      { code: '', label: 'Folga', color: 'bg-gray-50 text-gray-400' },
+      { code: 'U', label: 'Urgência', color: 'bg-red-100 text-red-800' },
+      { code: 'I', label: 'Internação', color: 'bg-purple-100 text-purple-800' },
+      { code: 'S', label: 'Sutura', color: 'bg-blue-100 text-blue-800' },
+      { code: 'RT', label: 'RT (Resp. Técnico)', color: 'bg-emerald-100 text-emerald-800' },
+      { code: 'SUP', label: 'Supervisão', color: 'bg-sky-100 text-sky-800' },
+      { code: 'AC', label: 'Acolhimento', color: 'bg-green-100 text-green-800' },
+      { code: 'M', label: 'Medicação', color: 'bg-amber-100 text-amber-800' },
+      { code: 'T', label: 'Transporte', color: 'bg-orange-100 text-orange-800' },
+      { code: 'AF', label: 'Afastamento', color: 'bg-gray-200 text-gray-700' },
+    ],
+    grupos: [
+      { value: 'noturno_impar', label: 'Noturno (Ímpares)', horario: '19:00 AS 07:00' },
+      { value: 'noturno_par', label: 'Noturno (Pares)', horario: '19:00 AS 07:00' },
+      { value: 'diurno_impar', label: 'Diurno (Ímpares)', horario: '07:00 AS 19:00' },
+      { value: 'diurno_par', label: 'Diurno (Pares)', horario: '07:00 AS 19:00' },
+      { value: 'especial', label: 'Especial', horario: '' },
+    ],
+  },
+  radiologia: {
+    titulo: 'ESCALA DE SERVIÇO DE RADIOLOGIA',
+    tituloCard: 'Escala de Radiologia',
+    registroLabel: 'CRTR',
+    pdfFilename: 'Escala_Radiologia',
+    setorCodes: [
+      { code: '', label: 'Folga', color: 'bg-gray-50 text-gray-400' },
+      { code: 'RX', label: 'Raio-X', color: 'bg-blue-100 text-blue-800' },
+      { code: 'TC', label: 'Tomografia', color: 'bg-purple-100 text-purple-800' },
+      { code: 'US', label: 'Ultrassom', color: 'bg-teal-100 text-teal-800' },
+      { code: 'PL', label: 'Plantão', color: 'bg-red-100 text-red-800' },
+      { code: 'ADM', label: 'Administrativo', color: 'bg-amber-100 text-amber-800' },
+      { code: 'AF', label: 'Afastamento', color: 'bg-gray-200 text-gray-700' },
+    ],
+    grupos: [
+      { value: 'noturno_impar', label: 'Noturno (Ímpares)', horario: '19:00 AS 07:00' },
+      { value: 'noturno_par', label: 'Noturno (Pares)', horario: '19:00 AS 07:00' },
+      { value: 'diurno_impar', label: 'Diurno (Ímpares)', horario: '07:00 AS 19:00' },
+      { value: 'diurno_par', label: 'Diurno (Pares)', horario: '07:00 AS 19:00' },
+      { value: 'especial', label: 'Especial', horario: '' },
+    ],
+  },
+  administrativa: {
+    titulo: 'ESCALA ADMINISTRATIVA',
+    tituloCard: 'Escala Administrativa',
+    registroLabel: 'Matrícula',
+    pdfFilename: 'Escala_Administrativa',
+    setorCodes: [
+      { code: '', label: 'Folga', color: 'bg-gray-50 text-gray-400' },
+      { code: 'REC', label: 'Recepção', color: 'bg-blue-100 text-blue-800' },
+      { code: 'NIR', label: 'NIR', color: 'bg-purple-100 text-purple-800' },
+      { code: 'FAT', label: 'Faturamento', color: 'bg-amber-100 text-amber-800' },
+      { code: 'ADM', label: 'Administração', color: 'bg-green-100 text-green-800' },
+      { code: 'ALM', label: 'Almoxarifado', color: 'bg-orange-100 text-orange-800' },
+      { code: 'SEG', label: 'Segurança', color: 'bg-red-100 text-red-800' },
+      { code: 'LIM', label: 'Limpeza', color: 'bg-teal-100 text-teal-800' },
+      { code: 'RES', label: 'Restaurante', color: 'bg-cyan-100 text-cyan-800' },
+      { code: 'MAN', label: 'Manutenção', color: 'bg-indigo-100 text-indigo-800' },
+      { code: 'AF', label: 'Afastamento', color: 'bg-gray-200 text-gray-700' },
+    ],
+    grupos: [
+      { value: 'noturno_impar', label: 'Noturno (Ímpares)', horario: '19:00 AS 07:00' },
+      { value: 'noturno_par', label: 'Noturno (Pares)', horario: '19:00 AS 07:00' },
+      { value: 'diurno_impar', label: 'Diurno (Ímpares)', horario: '07:00 AS 19:00' },
+      { value: 'diurno_par', label: 'Diurno (Pares)', horario: '07:00 AS 19:00' },
+      { value: 'especial', label: 'Especial', horario: '' },
+    ],
+  },
+};
 
 const MESES = [
   'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
@@ -78,11 +185,12 @@ interface EscalaData {
   coordenadora_coren: string | null;
 }
 
-function getSetorColor(code: string) {
-  return SETOR_CODES.find(s => s.code === code)?.color || 'bg-gray-50';
+interface EscalaTecEnfermagemProps {
+  tipo?: EscalaTipo;
 }
 
-export function EscalaTecEnfermagem() {
+export function EscalaTecEnfermagem({ tipo = 'tecnicos' }: EscalaTecEnfermagemProps) {
+  const config = ESCALA_CONFIGS[tipo];
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [mes, setMes] = useState(new Date().getMonth() + 1);
@@ -91,22 +199,27 @@ export function EscalaTecEnfermagem() {
   const [addProfOpen, setAddProfOpen] = useState(false);
   const [editProfOpen, setEditProfOpen] = useState(false);
   const [editingProf, setEditingProf] = useState<Profissional | null>(null);
-  const [newProf, setNewProf] = useState({ nome: '', coren: '', grupo: 'noturno_impar', horario: '19:00 AS 07:00' });
+  const [newProf, setNewProf] = useState({ nome: '', coren: '', grupo: config.grupos[0]?.value || 'noturno_impar', horario: config.grupos[0]?.horario || '' });
   const [hasChanges, setHasChanges] = useState(false);
   const [localDias, setLocalDias] = useState<Record<string, Record<number, string>>>({});
 
   const daysInMonth = new Date(ano, mes, 0).getDate();
   const days = Array.from({ length: daysInMonth }, (_, i) => i + 1);
 
-  // Fetch escala
+  function getSetorColor(code: string) {
+    return config.setorCodes.find(s => s.code === code)?.color || 'bg-gray-50';
+  }
+
+  // Fetch escala filtered by tipo
   const { data: escala, isLoading: escalaLoading } = useQuery({
-    queryKey: ['escala-tec-enf', mes, ano],
+    queryKey: ['escala-tec-enf', mes, ano, tipo],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('escalas_tec_enfermagem')
         .select('*')
         .eq('mes', mes)
         .eq('ano', ano)
+        .eq('tipo', tipo)
         .maybeSingle();
       if (error) throw error;
       return data as EscalaData | null;
@@ -115,7 +228,7 @@ export function EscalaTecEnfermagem() {
 
   // Fetch profissionais + dias
   const { data: profissionais = [], isLoading: profsLoading } = useQuery({
-    queryKey: ['escala-tec-enf-profs', escala?.id],
+    queryKey: ['escala-tec-enf-profs', escala?.id, tipo],
     queryFn: async () => {
       if (!escala?.id) return [];
       const { data: profs, error } = await supabase
@@ -126,7 +239,6 @@ export function EscalaTecEnfermagem() {
         .order('ordem');
       if (error) throw error;
 
-      // Fetch all dias for these professionals
       const profIds = profs.map(p => p.id);
       if (profIds.length === 0) return [];
 
@@ -136,7 +248,6 @@ export function EscalaTecEnfermagem() {
         .in('profissional_id', profIds);
       if (diasError) throw diasError;
 
-      // Map dias to professionals
       return profs.map(p => {
         const profDias: Record<number, string> = {};
         diasData?.filter(d => d.profissional_id === p.id).forEach(d => {
@@ -148,7 +259,6 @@ export function EscalaTecEnfermagem() {
     enabled: !!escala?.id,
   });
 
-  // Initialize local dias from fetched data
   useEffect(() => {
     const mapped: Record<string, Record<number, string>> = {};
     profissionais.forEach(p => {
@@ -167,6 +277,8 @@ export function EscalaTecEnfermagem() {
         .insert({
           mes,
           ano,
+          tipo,
+          titulo: config.titulo,
           created_by: userData.user?.id,
         })
         .select()
@@ -175,7 +287,7 @@ export function EscalaTecEnfermagem() {
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['escala-tec-enf', mes, ano] });
+      queryClient.invalidateQueries({ queryKey: ['escala-tec-enf', mes, ano, tipo] });
       toast({ title: 'Escala criada para ' + MESES[mes - 1] + '/' + ano });
     },
     onError: (e: Error) => {
@@ -203,7 +315,7 @@ export function EscalaTecEnfermagem() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['escala-tec-enf-profs'] });
       setAddProfOpen(false);
-      setNewProf({ nome: '', coren: '', grupo: 'noturno_impar', horario: '19:00 AS 07:00' });
+      setNewProf({ nome: '', coren: '', grupo: config.grupos[0]?.value || 'noturno_impar', horario: config.grupos[0]?.horario || '' });
       toast({ title: 'Profissional adicionado!' });
     },
     onError: (e: Error) => {
@@ -214,6 +326,8 @@ export function EscalaTecEnfermagem() {
   // Remove professional
   const removeProfMutation = useMutation({
     mutationFn: async (profId: string) => {
+      // Delete dias first
+      await supabase.from('escala_tec_enf_dias').delete().eq('profissional_id', profId);
       const { error } = await supabase
         .from('escala_tec_enf_profissionais')
         .delete()
@@ -250,7 +364,6 @@ export function EscalaTecEnfermagem() {
   const deleteEscalaMutation = useMutation({
     mutationFn: async () => {
       if (!escala?.id) throw new Error('Nenhuma escala para excluir');
-      // Delete dias first (cascade via profissionais)
       const { data: profs } = await supabase
         .from('escala_tec_enf_profissionais')
         .select('id')
@@ -264,7 +377,7 @@ export function EscalaTecEnfermagem() {
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['escala-tec-enf', mes, ano] });
+      queryClient.invalidateQueries({ queryKey: ['escala-tec-enf', mes, ano, tipo] });
       queryClient.invalidateQueries({ queryKey: ['escala-tec-enf-profs'] });
       toast({ title: `Escala de ${MESES[mes - 1]}/${ano} excluída com sucesso.` });
     },
@@ -273,6 +386,7 @@ export function EscalaTecEnfermagem() {
     },
   });
 
+  // Copy from previous month (professionals only)
   const copyFromPreviousMonth = useMutation({
     mutationFn: async () => {
       const prevMes = mes === 1 ? 12 : mes - 1;
@@ -283,6 +397,7 @@ export function EscalaTecEnfermagem() {
         .select('id')
         .eq('mes', prevMes)
         .eq('ano', prevAno)
+        .eq('tipo', tipo)
         .maybeSingle();
       
       if (!prevEscala) throw new Error(`Nenhuma escala encontrada para ${MESES[prevMes - 1]}/${prevAno}`);
@@ -299,7 +414,7 @@ export function EscalaTecEnfermagem() {
         const { data: userData } = await supabase.auth.getUser();
         const { data: newEscala, error } = await supabase
           .from('escalas_tec_enfermagem')
-          .insert({ mes, ano, created_by: userData.user?.id })
+          .insert({ mes, ano, tipo, titulo: config.titulo, created_by: userData.user?.id })
           .select()
           .single();
         if (error) throw error;
@@ -320,7 +435,7 @@ export function EscalaTecEnfermagem() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['escala-tec-enf', mes, ano] });
+      queryClient.invalidateQueries({ queryKey: ['escala-tec-enf', mes, ano, tipo] });
       queryClient.invalidateQueries({ queryKey: ['escala-tec-enf-profs'] });
       toast({ title: 'Profissionais copiados do mês anterior! Preencha os setores.' });
     },
@@ -329,7 +444,7 @@ export function EscalaTecEnfermagem() {
     },
   });
 
-  // Duplicate full escala (professionals + all sector assignments) to next month
+  // Duplicate full escala
   const [duplicateDialogOpen, setDuplicateDialogOpen] = useState(false);
   const [targetMes, setTargetMes] = useState(mes === 12 ? 1 : mes + 1);
   const [targetAno, setTargetAno] = useState(mes === 12 ? ano + 1 : ano);
@@ -343,23 +458,23 @@ export function EscalaTecEnfermagem() {
     mutationFn: async () => {
       if (!escala?.id) throw new Error('Nenhuma escala atual para duplicar');
 
-      // Check if target already exists
       const { data: existing } = await supabase
         .from('escalas_tec_enfermagem')
         .select('id')
         .eq('mes', targetMes)
         .eq('ano', targetAno)
+        .eq('tipo', tipo)
         .maybeSingle();
 
       if (existing) throw new Error(`Já existe uma escala para ${MESES[targetMes - 1]}/${targetAno}. Exclua-a primeiro ou escolha outro mês.`);
 
-      // Create new escala
       const { data: userData } = await supabase.auth.getUser();
       const { data: newEscala, error: escErr } = await supabase
         .from('escalas_tec_enfermagem')
         .insert({
           mes: targetMes,
           ano: targetAno,
+          tipo,
           created_by: userData.user?.id,
           unidade: escala.unidade,
           titulo: escala.titulo,
@@ -371,7 +486,6 @@ export function EscalaTecEnfermagem() {
         .single();
       if (escErr) throw escErr;
 
-      // Get current professionals
       const { data: curProfs } = await supabase
         .from('escala_tec_enf_profissionais')
         .select('*')
@@ -381,9 +495,8 @@ export function EscalaTecEnfermagem() {
 
       const targetDaysInMonth = new Date(targetAno, targetMes, 0).getDate();
 
-      // Copy each professional and their dias
       for (const prof of curProfs) {
-        const { data: newProf, error: profErr } = await supabase
+        const { data: newProfData, error: profErr } = await supabase
           .from('escala_tec_enf_profissionais')
           .insert({
             escala_id: newEscala.id,
@@ -397,7 +510,6 @@ export function EscalaTecEnfermagem() {
           .single();
         if (profErr) throw profErr;
 
-        // Get original dias (use localDias if available with unsaved changes)
         const profDias = localDias[prof.id] || {};
         const diasToInsert: { profissional_id: string; dia: number; setor_codigo: string }[] = [];
 
@@ -405,7 +517,7 @@ export function EscalaTecEnfermagem() {
           const code = profDias[dia] || '';
           if (code) {
             diasToInsert.push({
-              profissional_id: newProf.id,
+              profissional_id: newProfData.id,
               dia,
               setor_codigo: code,
             });
@@ -413,7 +525,6 @@ export function EscalaTecEnfermagem() {
         }
 
         if (diasToInsert.length > 0) {
-          // Insert in batches of 50
           for (let i = 0; i < diasToInsert.length; i += 50) {
             const batch = diasToInsert.slice(i, i + 50);
             const { error: diaErr } = await supabase
@@ -440,12 +551,10 @@ export function EscalaTecEnfermagem() {
   // Save all changes
   const saveMutation = useMutation({
     mutationFn: async () => {
-      // For each professional, upsert their dias
       for (const profId of Object.keys(localDias)) {
         const profDias = localDias[profId];
         for (let dia = 1; dia <= daysInMonth; dia++) {
           const code = profDias[dia] || '';
-          // Upsert
           const { error } = await supabase
             .from('escala_tec_enf_dias')
             .upsert({
@@ -483,34 +592,32 @@ export function EscalaTecEnfermagem() {
 
   const groupedProfs = useMemo(() => {
     const groups: Record<string, Profissional[]> = {};
-    GRUPOS.forEach(g => { groups[g.value] = []; });
+    config.grupos.forEach(g => { groups[g.value] = []; });
     profissionais.forEach(p => {
       if (!groups[p.grupo]) groups[p.grupo] = [];
       groups[p.grupo].push(p);
     });
     return groups;
-  }, [profissionais]);
+  }, [profissionais, config.grupos]);
 
   // PDF Export
   const exportPDF = useCallback(() => {
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a3' });
     const pageWidth = doc.internal.pageSize.getWidth();
 
-    // Header
     doc.setFontSize(12);
     doc.text(escala?.unidade || 'UNIDADE DE PRONTO ATENDIMENTO', pageWidth / 2, 12, { align: 'center' });
     doc.setFontSize(10);
-    doc.text(escala?.titulo || 'ESCALA DE SERVIÇO DE TECNICO DE ENFERMAGEM', pageWidth / 2, 18, { align: 'center' });
+    doc.text(escala?.titulo || config.titulo, pageWidth / 2, 18, { align: 'center' });
     doc.text(`MÊS: ${MESES[mes - 1].toUpperCase()} ${ano}`, pageWidth / 2, 24, { align: 'center' });
 
     let startY = 28;
 
-    GRUPOS.forEach(grupo => {
+    config.grupos.forEach(grupo => {
       const profs = groupedProfs[grupo.value] || [];
       if (profs.length === 0) return;
 
-      // Header row
-      const headers = ['NOME DO PROFISSIONAL', 'COREN-MG', ...days.map(d => String(d)), 'HORÁRIO'];
+      const headers = ['NOME DO PROFISSIONAL', config.registroLabel, ...days.map(d => String(d)), 'HORÁRIO'];
 
       const body = profs.map(p => {
         const profDias = localDias[p.id] || p.dias || {};
@@ -540,20 +647,18 @@ export function EscalaTecEnfermagem() {
       startY = (doc as any).lastAutoTable.finalY + 4;
     });
 
-    // Legenda
     doc.setFontSize(6);
-    const legendItems = SETOR_CODES.filter(s => s.code).map(s => `${s.code} - ${s.label}`);
+    const legendItems = config.setorCodes.filter(s => s.code).map(s => `${s.code} - ${s.label}`);
     doc.text('LEGENDA: ' + legendItems.join('  |  '), 5, startY + 2);
 
     if (escala?.coordenadora_nome) {
       doc.text(`${escala.coordenadora_nome}`, pageWidth - 60, startY + 6);
       if (escala.coordenadora_coren) {
-        doc.text(`COREN-MG ${escala.coordenadora_coren}`, pageWidth - 60, startY + 10);
+        doc.text(`${config.registroLabel} ${escala.coordenadora_coren}`, pageWidth - 60, startY + 10);
       }
       doc.text('COORDENADORA DE ENFERMAGEM', pageWidth - 60, startY + 14);
     }
 
-    // LGPD footer
     doc.setFontSize(5);
     doc.text(
       'Documento gerado pelo sistema GEStrategic. Confidencial – LGPD Art. 46.',
@@ -562,9 +667,9 @@ export function EscalaTecEnfermagem() {
       { align: 'center' }
     );
 
-    doc.save(`Escala_Tec_Enfermagem_${MESES[mes - 1]}_${ano}.pdf`);
+    doc.save(`${config.pdfFilename}_${MESES[mes - 1]}_${ano}.pdf`);
     toast({ title: 'PDF exportado com sucesso!' });
-  }, [escala, mes, ano, groupedProfs, localDias, days, toast]);
+  }, [escala, mes, ano, groupedProfs, localDias, days, toast, config]);
 
   const isLoading = escalaLoading || profsLoading;
 
@@ -582,7 +687,7 @@ export function EscalaTecEnfermagem() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <Calendar className="h-5 w-5" />
-            Escala de Técnico de Enfermagem
+            {config.tituloCard}
           </CardTitle>
           <div className="flex items-center gap-2 flex-wrap">
             <Select value={String(mes)} onValueChange={v => setMes(Number(v))}>
@@ -642,15 +747,13 @@ export function EscalaTecEnfermagem() {
           </div>
         ) : (
           <div className="space-y-6">
-            {/* Header info */}
             <div className="text-center space-y-1">
               <p className="text-sm font-semibold">{escala.unidade}</p>
               <p className="text-sm">{escala.titulo}</p>
               <p className="text-sm font-medium">MÊS: {MESES[mes - 1].toUpperCase()} {ano}</p>
             </div>
 
-            {/* Schedule grid per group */}
-            {GRUPOS.map(grupo => {
+            {config.grupos.map(grupo => {
               const profs = groupedProfs[grupo.value] || [];
               if (profs.length === 0) return null;
 
@@ -664,7 +767,7 @@ export function EscalaTecEnfermagem() {
                           <th className="border px-2 py-1 text-left sticky left-0 bg-primary/10 z-10 min-w-[180px]">
                             NOME DO PROFISSIONAL
                           </th>
-                          <th className="border px-1 py-1 min-w-[70px]">COREN-MG</th>
+                          <th className="border px-1 py-1 min-w-[70px]">{config.registroLabel}</th>
                           {days.map(d => (
                             <th key={d} className="border px-0.5 py-1 min-w-[28px]">
                               <div>{d}</div>
@@ -704,7 +807,7 @@ export function EscalaTecEnfermagem() {
                                         onChange={e => handleCellChange(prof.id, d, e.target.value)}
                                         onBlur={() => setEditingCell(null)}
                                       >
-                                        {SETOR_CODES.map(s => (
+                                        {config.setorCodes.map(s => (
                                           <option key={s.code} value={s.code}>
                                             {s.code || '-'}
                                           </option>
@@ -753,7 +856,7 @@ export function EscalaTecEnfermagem() {
             {/* Legenda */}
             <div className="flex flex-wrap gap-2 pt-2">
               <span className="text-xs font-semibold text-muted-foreground">LEGENDA:</span>
-              {SETOR_CODES.filter(s => s.code).map(s => (
+              {config.setorCodes.filter(s => s.code).map(s => (
                 <Badge key={s.code} variant="outline" className={cn('text-[10px]', s.color)}>
                   {s.code} - {s.label}
                 </Badge>
@@ -764,7 +867,7 @@ export function EscalaTecEnfermagem() {
             {escala.coordenadora_nome && (
               <div className="text-right text-xs space-y-0.5 pt-4">
                 <p className="font-semibold">{escala.coordenadora_nome}</p>
-                {escala.coordenadora_coren && <p>COREN-MG {escala.coordenadora_coren}</p>}
+                {escala.coordenadora_coren && <p>{config.registroLabel} {escala.coordenadora_coren}</p>}
                 <p>COORDENADORA DE ENFERMAGEM</p>
               </div>
             )}
@@ -788,11 +891,11 @@ export function EscalaTecEnfermagem() {
               />
             </div>
             <div>
-              <Label>COREN-MG *</Label>
+              <Label>{config.registroLabel} *</Label>
               <Input
                 value={newProf.coren}
                 onChange={e => setNewProf({ ...newProf, coren: e.target.value })}
-                placeholder="Número do COREN"
+                placeholder={`Número do ${config.registroLabel}`}
               />
             </div>
             <div>
@@ -800,13 +903,13 @@ export function EscalaTecEnfermagem() {
               <Select
                 value={newProf.grupo}
                 onValueChange={v => {
-                  const grp = GRUPOS.find(g => g.value === v);
+                  const grp = config.grupos.find(g => g.value === v);
                   setNewProf({ ...newProf, grupo: v, horario: grp?.horario || newProf.horario });
                 }}
               >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {GRUPOS.map(g => (
+                  {config.grupos.map(g => (
                     <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
                   ))}
                 </SelectContent>
@@ -849,7 +952,7 @@ export function EscalaTecEnfermagem() {
                 />
               </div>
               <div>
-                <Label>COREN-MG *</Label>
+                <Label>{config.registroLabel} *</Label>
                 <Input
                   value={editingProf.coren}
                   onChange={e => setEditingProf({ ...editingProf, coren: e.target.value })}
@@ -860,13 +963,13 @@ export function EscalaTecEnfermagem() {
                 <Select
                   value={editingProf.grupo}
                   onValueChange={v => {
-                    const grp = GRUPOS.find(g => g.value === v);
+                    const grp = config.grupos.find(g => g.value === v);
                     setEditingProf({ ...editingProf, grupo: v, horario: grp?.horario || editingProf.horario });
                   }}
                 >
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {GRUPOS.map(g => (
+                    {config.grupos.map(g => (
                       <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
                     ))}
                   </SelectContent>
@@ -892,6 +995,7 @@ export function EscalaTecEnfermagem() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       {/* Duplicate Escala Dialog */}
       <Dialog open={duplicateDialogOpen} onOpenChange={setDuplicateDialogOpen}>
         <DialogContent className="max-w-md">
