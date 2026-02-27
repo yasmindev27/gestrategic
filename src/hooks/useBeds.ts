@@ -130,10 +130,11 @@ export function useBeds(shiftDate?: string) {
     const result: Record<Sector, { occupied: number; total: number }> = {} as Record<Sector, { occupied: number; total: number }>;
     
     SECTORS.forEach((sector) => {
-      const sectorBeds = beds.filter((bed) => bed.sector === sector.id && typeof bed.number === 'number');
+      const regularBeds = beds.filter((bed) => bed.sector === sector.id && typeof bed.number === 'number');
+      const extraOccupied = beds.filter((bed) => bed.sector === sector.id && typeof bed.number === 'string' && bed.patient !== null).length;
       result[sector.id] = {
-        occupied: sectorBeds.filter((bed) => bed.patient !== null).length,
-        total: sectorBeds.length,
+        occupied: regularBeds.filter((bed) => bed.patient !== null).length + extraOccupied,
+        total: regularBeds.length,
       };
     });
 
@@ -141,10 +142,11 @@ export function useBeds(shiftDate?: string) {
   }, [beds]);
 
   const totalOccupancy = useMemo(() => {
-    const countableBeds = beds.filter((bed) => typeof bed.number === 'number');
+    const regularBeds = beds.filter((bed) => typeof bed.number === 'number');
+    const extraOccupied = beds.filter((bed) => typeof bed.number === 'string' && bed.patient !== null).length;
     return {
-      occupied: countableBeds.filter((bed) => bed.patient !== null).length,
-      total: countableBeds.length,
+      occupied: regularBeds.filter((bed) => bed.patient !== null).length + extraOccupied,
+      total: regularBeds.length,
     };
   }, [beds]);
 
