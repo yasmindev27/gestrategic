@@ -90,8 +90,9 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
     loadUserInfo();
   }, []);
 
-  // Load original regulador when shift date/type changes
+  // Load original regulador when shift date/type changes and reset firstSaveDone per turno
   useEffect(() => {
+    setFirstSaveDone(false); // Reset per turno change
     const loadOriginalRegulador = async () => {
       if (!shiftInfo.data || !shiftInfo.tipo) return;
 
