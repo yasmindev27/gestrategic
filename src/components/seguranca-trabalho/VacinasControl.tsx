@@ -538,90 +538,28 @@ export function VacinasControl() {
         <StatCard title="Colaboradores Vacinados" value={colabsVacinados} icon={Users} variant="primary" />
       </div>
 
-      <Tabs defaultValue="registros">
-        <TabsList>
-          <TabsTrigger value="registros"><Syringe className="h-4 w-4 mr-2" />Registros</TabsTrigger>
-          <TabsTrigger value="cartoes"><ClipboardList className="h-4 w-4 mr-2" />Por Colaborador</TabsTrigger>
-        </TabsList>
+      {/* Search + Collaborator View */}
+      <Card>
+        <CardContent className="pt-6">
+          <SearchInput value={searchTerm} onChange={setSearchTerm} placeholder="Buscar por colaborador ou vacina..." />
+        </CardContent>
+      </Card>
 
-        {/* Tab: Registros */}
-        <TabsContent value="registros" className="space-y-4 mt-4">
-          <Card>
-            <CardContent className="pt-6">
-              <SearchInput value={searchTerm} onChange={setSearchTerm} placeholder="Buscar por colaborador ou vacina..." />
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Registros de Vacinação</CardTitle>
-              <CardDescription>{filteredVacinas.length} registro(s)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {filteredVacinas.length === 0 ? (
-                <EmptyState icon={Syringe} title="Nenhuma vacina registrada" description="Comece registrando vacinas individualmente ou via Cartão de Vacinação" />
-              ) : (
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Colaborador</TableHead>
-                        <TableHead>Vacina</TableHead>
-                        <TableHead>Dose</TableHead>
-                        <TableHead>Aplicação</TableHead>
-                        <TableHead>Próxima Dose</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Registrado por</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredVacinas.map((v) => (
-                        <TableRow key={v.id}>
-                          <TableCell className="font-medium">{v.usuario_nome}</TableCell>
-                          <TableCell>{v.tipo_vacina}</TableCell>
-                          <TableCell>{v.dose || "-"}</TableCell>
-                          <TableCell>{format(new Date(v.data_aplicacao), "dd/MM/yyyy")}</TableCell>
-                          <TableCell>
-                            {v.data_proxima_dose ? format(new Date(v.data_proxima_dose), "dd/MM/yyyy") : "-"}
-                            {getProximaDoseBadge(v.data_proxima_dose)}
-                          </TableCell>
-                          <TableCell>{getStatusBadge(v.status)}</TableCell>
-                          <TableCell className="text-muted-foreground text-xs">{v.registrado_por_nome}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex gap-1 justify-end">
-                              <Button size="icon" variant="ghost" onClick={() => handleEdit(v)}><Edit className="h-4 w-4" /></Button>
-                              <Button size="icon" variant="ghost" onClick={() => handleDelete(v.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Tab: Por Colaborador */}
-        <TabsContent value="cartoes" className="space-y-4 mt-4">
-          <Card>
-            <CardContent className="pt-6">
-              <SearchInput value={searchTerm} onChange={setSearchTerm} placeholder="Buscar colaborador..." />
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle>Cartão de Vacinação por Colaborador</CardTitle>
-              <CardDescription>Clique no nome para ver todas as vacinas</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ColaboradorVacinaList vacinas={vacinas} searchTerm={searchTerm} getStatusBadge={getStatusBadge} onEdit={handleEdit} onDelete={handleDelete} />
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      <Card>
+        <CardHeader>
+          <CardTitle>Vacinação por Colaborador</CardTitle>
+          <CardDescription>{colabsVacinados} colaborador(es) vacinado(s)</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ColaboradorVacinaList
+            vacinas={filteredVacinas}
+            searchTerm=""
+            getStatusBadge={getStatusBadge}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
+        </CardContent>
+      </Card>
 
       {/* Dialog: Registro Individual */}
       <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
