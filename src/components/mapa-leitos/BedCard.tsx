@@ -14,16 +14,17 @@ export const BedCard = memo(forwardRef<HTMLDivElement, BedCardProps>(
     const isExtra = typeof bed.number === 'string';
 
     const tempoPermanencia = useMemo(() => {
-      if (!bed.patient?.dataInternacao) return null;
+      const timestamp = bed.patient?.registradoEm;
+      if (!timestamp) return null;
       try {
-        const dataInt = parseISO(bed.patient.dataInternacao);
+        const dataReg = parseISO(timestamp);
         const now = new Date();
-        const dias = differenceInDays(now, dataInt);
-        const horas = differenceInHours(now, dataInt) % 24;
+        const dias = differenceInDays(now, dataReg);
+        const horas = differenceInHours(now, dataReg) % 24;
         if (dias > 0) return `${dias}d ${horas}h`;
         return `${horas}h`;
       } catch { return null; }
-    }, [bed.patient?.dataInternacao]);
+    }, [bed.patient?.registradoEm]);
 
     const getCardClass = () => {
       if (isExtra && isOccupied) return 'border-2 border-hospital-amber bg-hospital-amber-light';

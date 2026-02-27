@@ -55,7 +55,7 @@ export function useBeds(shiftDate?: string) {
       try {
         const { data: bedRecords, error } = await supabase
           .from('bed_records')
-          .select('bed_id, patient_name, hipotese_diagnostica, condutas_outros, observacao, data_nascimento, data_internacao, sus_facil, numero_sus_facil, motivo_alta, estabelecimento_transferencia')
+          .select('bed_id, patient_name, hipotese_diagnostica, condutas_outros, observacao, data_nascimento, data_internacao, sus_facil, numero_sus_facil, motivo_alta, estabelecimento_transferencia, created_at')
           .eq('shift_date', dateToLoad);
 
         if (error) {
@@ -83,6 +83,7 @@ export function useBeds(shiftDate?: string) {
                 numeroSusFacil: record.numero_sus_facil || '',
                 motivoAlta: (record.motivo_alta as Patient['motivoAlta']) || '',
                 estabelecimentoTransferencia: record.estabelecimento_transferencia || '',
+                registradoEm: record.created_at || '',
               };
             }
           });
