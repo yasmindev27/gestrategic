@@ -160,11 +160,13 @@ export const MapaLeitosModule = () => {
 
   const getExportData = useCallback(() => {
     return beds
-      .filter(b => typeof b.number === 'number' && b.patient !== null)
+      .filter(b => b.patient !== null)
       .sort((a, b) => {
         const sectorOrder = SECTORS.findIndex(s => s.id === a.sector) - SECTORS.findIndex(s => s.id === b.sector);
         if (sectorOrder !== 0) return sectorOrder;
-        return (a.number as number) - (b.number as number);
+        const numA = typeof a.number === 'number' ? a.number : 9999;
+        const numB = typeof b.number === 'number' ? b.number : 9999;
+        return numA - numB;
       })
       .map(bed => {
         const sectorName = SECTORS.find(s => s.id === bed.sector)?.name || bed.sector;
