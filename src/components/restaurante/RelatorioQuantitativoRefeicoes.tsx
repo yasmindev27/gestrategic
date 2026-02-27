@@ -485,6 +485,91 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
     }
   };
 
+  // Admin: save edited diet cell quantity
+  const saveDietaCellEdited = async (dataStr: string, tipoRefeicao: string, newValue: number, currentValue: number) => {
+    const cellKey = `${dataStr}-dieta-${tipoRefeicao}`;
+    setSavingCell(cellKey);
+    try {
+      const diff = newValue - currentValue;
+      if (diff === 0) { setEditingCell(null); setSavingCell(null); return; }
+
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
+
+      if (diff > 0) {
+        // Insert single-day approved diet entries
+        const inserts = Array.from({ length: diff }, () => ({
+          data_inicio: dataStr,
+          data_fim: dataStr,
+          status: "aprovada",
+          horarios_refeicoes: [tipoRefeicao],
+          tipo_dieta: "normal",
+          solicitante_id: user.id,
+          solicitante_nome: "Ajuste administrativo",
+          observacoes: "[AJUSTE ADMIN]",
+          tem_acompanhante: false,
+          aprovado_por: user.id,
+          aprovado_em: new Date().toISOString(),
+        }));
+        const { error } = await supabase.from("solicitacoes_dieta").insert(inserts);
+        if (error) throw error;
+      } else {
+        // Remove admin-created entries for that day/type first, then regular ones
+        const toRemove = Math.abs(diff);
+        const { data: adminEntries } = await supabase
+          .from("solicitacoes_dieta")
+          .select("id")
+          .eq("status", "aprovada")
+          .eq("data_inicio", dataStr)
+          .eq("data_fim", dataStr)
+          .ilike("observacoes", "%[AJUSTE ADMIN]%")
+          .contains("horarios_refeicoes", [tipoRefeicao])
+          .order("created_at", { ascending: false })
+          .limit(toRemove);
+
+        const idsToDelete = (adminEntries || []).map(e => e.id);
+        
+        if (idsToDelete.length > 0) {
+          const { error } = await supabase
+            .from("solicitacoes_dieta")
+            .delete()
+            .in("id", idsToDelete);
+          if (error) throw error;
+        }
+
+        // If still need to remove more, remove other single-day entries
+        const remaining = toRemove - idsToDelete.length;
+        if (remaining > 0) {
+          const { data: otherEntries } = await supabase
+            .from("solicitacoes_dieta")
+            .select("id")
+            .eq("status", "aprovada")
+            .eq("data_inicio", dataStr)
+            .eq("data_fim", dataStr)
+            .contains("horarios_refeicoes", [tipoRefeicao])
+            .order("created_at", { ascending: false })
+            .limit(remaining);
+
+          if (otherEntries && otherEntries.length > 0) {
+            const { error } = await supabase
+              .from("solicitacoes_dieta")
+              .delete()
+              .in("id", otherEntries.map(e => e.id));
+            if (error) throw error;
+          }
+        }
+      }
+
+      toast({ title: "Sucesso", description: "Quantidade de dietas atualizada!" });
+      setEditingCell(null);
+      fetchData();
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message || "Erro ao atualizar dietas.", variant: "destructive" });
+    } finally {
+      setSavingCell(null);
+    }
+  };
+
   // Função para determinar o tipo de refeição por horário
   const determinarTipoRefeicaoPorHorario = (hora: string): string => {
     const [hh] = hora.split(":").map(Number);
@@ -1364,10 +1449,58 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                           <TableCell className="text-center border-r bg-blue-100 font-semibold text-blue-800">
                             {q.totalRefeicoes}
                           </TableCell>
-                          <TableCell className="text-center bg-orange-50">{q.dietasCafe || "-"}</TableCell>
-                          <TableCell className="text-center bg-orange-50">{q.dietasAlmoco || "-"}</TableCell>
-                          <TableCell className="text-center bg-orange-50">{q.dietasLanche || "-"}</TableCell>
-                          <TableCell className="text-center bg-orange-50">{q.dietasJantar || "-"}</TableCell>
+                          {/* Dietas - Café */}
+                          <TableCell className="text-center bg-orange-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-dieta-cafe` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'cafe', parseInt(editValue) || 0, q.dietasCafe); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveDietaCellEdited(q.data, 'cafe', parseInt(editValue) || 0, q.dietasCafe)} disabled={savingCell === `${q.data}-dieta-cafe`}>{savingCell === `${q.data}-dieta-cafe` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-dieta-cafe`); setEditValue(String(q.dietasCafe)); }}>{q.dietasCafe || "-"}</span>
+                              )
+                            ) : (q.dietasCafe || "-")}
+                          </TableCell>
+                          {/* Dietas - Almoço */}
+                          <TableCell className="text-center bg-orange-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-dieta-almoco` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'almoco', parseInt(editValue) || 0, q.dietasAlmoco); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveDietaCellEdited(q.data, 'almoco', parseInt(editValue) || 0, q.dietasAlmoco)} disabled={savingCell === `${q.data}-dieta-almoco`}>{savingCell === `${q.data}-dieta-almoco` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-dieta-almoco`); setEditValue(String(q.dietasAlmoco)); }}>{q.dietasAlmoco || "-"}</span>
+                              )
+                            ) : (q.dietasAlmoco || "-")}
+                          </TableCell>
+                          {/* Dietas - Lanche */}
+                          <TableCell className="text-center bg-orange-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-dieta-lanche` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'lanche', parseInt(editValue) || 0, q.dietasLanche); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveDietaCellEdited(q.data, 'lanche', parseInt(editValue) || 0, q.dietasLanche)} disabled={savingCell === `${q.data}-dieta-lanche`}>{savingCell === `${q.data}-dieta-lanche` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-dieta-lanche`); setEditValue(String(q.dietasLanche)); }}>{q.dietasLanche || "-"}</span>
+                              )
+                            ) : (q.dietasLanche || "-")}
+                          </TableCell>
+                          {/* Dietas - Jantar */}
+                          <TableCell className="text-center bg-orange-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-dieta-jantar` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'jantar', parseInt(editValue) || 0, q.dietasJantar); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveDietaCellEdited(q.data, 'jantar', parseInt(editValue) || 0, q.dietasJantar)} disabled={savingCell === `${q.data}-dieta-jantar`}>{savingCell === `${q.data}-dieta-jantar` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-dieta-jantar`); setEditValue(String(q.dietasJantar)); }}>{q.dietasJantar || "-"}</span>
+                              )
+                            ) : (q.dietasJantar || "-")}
+                          </TableCell>
                           <TableCell className="text-center border-r bg-orange-100 font-semibold text-orange-800">
                             {q.totalDietas}
                           </TableCell>
