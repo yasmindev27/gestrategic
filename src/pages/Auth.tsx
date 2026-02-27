@@ -63,8 +63,11 @@ const Auth = () => {
     let isMounted = true;
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("[Auth] onAuthStateChange:", event, !!session);
       if (!isMounted || showDialogRef.current) return;
-      if (session?.user) {
+      if (event === 'SIGNED_IN' && session?.user) {
+        // Reset checkingRef in case it got stuck
+        checkingRef.current = false;
         checkFirstLogin(session.user.id);
       }
     });
@@ -149,8 +152,16 @@ const Auth = () => {
         description: errorMessage,
         variant: "destructive",
       });
+      return;
     }
-    // On success, don't setIsLoading(false) — let onAuthStateChange handle navigation
+
+    // Safety timeout — if onAuthStateChange doesn't navigate within 8s, force it
+    setTimeout(() => {
+      setIsLoading(false);
+      if (!showDialogRef.current) {
+        navigate("/dashboard");
+      }
+    }, 8000);
   };
 
   const handlePasswordChangeSuccess = () => {
