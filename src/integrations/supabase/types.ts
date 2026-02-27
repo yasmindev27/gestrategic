@@ -3915,6 +3915,63 @@ export type Database = {
           },
         ]
       }
+      nir_colaboradores: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      nir_registros_producao: {
+        Row: {
+          atividade: string
+          colaborador: string
+          created_at: string
+          created_by: string | null
+          data: string
+          id: string
+          observacao: string | null
+          quantidade: number
+        }
+        Insert: {
+          atividade: string
+          colaborador: string
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          id?: string
+          observacao?: string | null
+          quantidade?: number
+        }
+        Update: {
+          atividade?: string
+          colaborador?: string
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          id?: string
+          observacao?: string | null
+          quantidade?: number
+        }
+        Relationships: []
+      }
       notificacoes_seguranca: {
         Row: {
           created_at: string

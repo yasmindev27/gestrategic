@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Trash2 } from "lucide-react";
-import { excluirRegistro } from "./storage";
+import { excluirRegistroDB } from "./storage";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 
@@ -27,10 +27,14 @@ const atividadeBadgeColor: Record<string, string> = {
 };
 
 export function RegistrosTable({ registros, onUpdate }: Props) {
-  const handleDelete = (id: string) => {
-    excluirRegistro(id);
-    toast.success("Registro excluído.");
-    onUpdate();
+  const handleDelete = async (id: string) => {
+    try {
+      await excluirRegistroDB(id);
+      toast.success("Registro excluído.");
+      onUpdate();
+    } catch {
+      toast.error("Erro ao excluir registro.");
+    }
   };
 
   if (registros.length === 0) {

@@ -1,5 +1,5 @@
-import { useState, useCallback, useMemo } from "react";
-import { getRegistros, getColaboradores } from "./storage";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { getRegistrosDB, getColaboradoresDB } from "./storage";
 import { RegistroProducao, Colaborador } from "./types";
 import { StatCard } from "./StatCard";
 import { RegistroForm } from "./RegistroForm";
@@ -21,17 +21,22 @@ import {
 } from "lucide-react";
 
 export function NucleoTrackerModule() {
-  const [registros, setRegistros] = useState<RegistroProducao[]>(getRegistros);
-  const [colaboradores, setColaboradores] = useState<Colaborador[]>(getColaboradores);
+  const [registros, setRegistros] = useState<RegistroProducao[]>([]);
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
   const [filtroColab, setFiltroColab] = useState("todos");
   const [filtroAtiv, setFiltroAtiv] = useState("todas");
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
 
-  const refresh = useCallback(() => {
-    setRegistros(getRegistros());
-    setColaboradores(getColaboradores());
+  const refresh = useCallback(async () => {
+    const [regs, colabs] = await Promise.all([getRegistrosDB(), getColaboradoresDB()]);
+    setRegistros(regs);
+    setColaboradores(colabs);
   }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const filtered = useMemo(() => {
     return registros.filter((r) => {
