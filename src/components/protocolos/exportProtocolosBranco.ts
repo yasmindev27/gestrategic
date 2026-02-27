@@ -295,9 +295,18 @@ export async function exportSepseAdultoPDF() {
   y = drawFieldRow(doc, y, [{ label: 'Competência', width: 2 }, { label: 'Nº Prontuário', width: 2 }, { label: 'Nome do Paciente', width: 4 }]);
   y = drawFieldRow(doc, y, [{ label: 'Sexo', width: 2 }, { label: 'Idade', width: 1 }]);
 
-  y = drawSectionHeader(doc, y, 'Indicador — Meta ≤ 1h');
+  y = drawSectionHeader(doc, y, 'Indicador — Meta de 1 Hora');
   y = drawFieldRow(doc, y, [{ label: 'Hora de Chegada', width: 2 }, { label: 'Hora do ECG', width: 2 }, { label: 'Tempo Porta-ECG', width: 2 }]);
   y = drawFieldRow(doc, y, [{ label: 'Classificação de Risco', width: 2 }, { label: '1º Atendimento Médico', width: 2 }, { label: 'Médico Responsável', width: 2 }]);
+
+  y = drawSectionHeader(doc, y, 'Avaliação da Enfermagem');
+  y = drawFieldRow(doc, y, [{ label: 'Enfermeiro(a) Responsável', width: 3 }, { label: 'COREN', width: 2 }]);
+  y = drawFieldRow(doc, y, [{ label: 'Data/Hora Avaliação', width: 2 }, { label: 'Setor', width: 2 }]);
+  y = drawCheckboxGroup(doc, y, [
+    'Acesso venoso periférico', 'Acesso venoso central', 'Sonda vesical de demora',
+    'Cateter nasoenteral', 'Ventilação mecânica', 'Oxigenoterapia',
+    'Monitorização contínua', 'Balanço hídrico',
+  ], 3);
 
   y = drawSectionHeader(doc, y, 'Critérios SIRS');
   y = drawCheckboxGroup(doc, y, [
@@ -319,8 +328,16 @@ export async function exportSepseAdultoPDF() {
   y = drawSectionHeader(doc, y, 'Foco Infeccioso');
   y = drawCheckboxGroup(doc, y, ['Pulmonar', 'Urinário', 'Abdominal', 'Pele/Partes Moles', 'Corrente Sanguínea/Cateter', 'Sem foco definido'], 3);
 
-  y = drawSectionHeader(doc, y, 'Kit Sepse / Laboratório');
+  y = drawSectionHeader(doc, y, 'Exames Kit Sepse');
   y = drawCheckboxGroup(doc, y, ['Kit Sepse coletado'], 1);
+  y = drawSubtitle(doc, y, 'Exames obrigatórios:');
+  y = drawCheckboxGroup(doc, y, [
+    '1. Hemograma e plaqueta', '2. Ureia e creatinina', '3. Sódio e potássio',
+    '4. Tempo de protrombina', '5. Hemocultura 2 pares', '6. Bilirrubinas totais e frações',
+    '7. PCR', '8. Glicemia', '9. Lactato',
+  ], 3);
+  y = drawSubtitle(doc, y, 'Complementares (se indicado):');
+  y = drawCheckboxGroup(doc, y, ['Raio X tórax (suspeita PNM)', 'Gasometria (choque/insuf. resp.)', 'Culturas de outros sítios'], 3);
   y = drawFieldRow(doc, y, [{ label: 'Lab Villac — Horário chamado', width: 2 }, { label: 'Lab Villac — Horário coleta', width: 2 }]);
 
   y = drawSectionHeader(doc, y, 'Antibioticoterapia');
@@ -355,10 +372,17 @@ export async function exportSepseAdultoWord() {
         wordFieldRow(['Nome do Paciente']),
         wordFieldRow(['Sexo', 'Idade']),
 
-        wordSection('Indicador — Meta ≤ 1h'),
+        wordSection('Indicador — Meta de 1 Hora'),
         wordFieldRow(['Hora de Chegada', 'Hora do ECG']),
         wordFieldRow(['Tempo Porta-ECG', 'Classificação de Risco']),
         wordFieldRow(['1º Atendimento Médico', 'Médico Responsável']),
+
+        wordSection('Avaliação da Enfermagem'),
+        wordFieldRow(['Enfermeiro(a) Responsável', 'COREN']),
+        wordFieldRow(['Data/Hora Avaliação', 'Setor']),
+        wordCheckboxList(['Acesso venoso periférico', 'Acesso venoso central', 'Sonda vesical de demora']),
+        wordCheckboxList(['Cateter nasoenteral', 'Ventilação mecânica', 'Oxigenoterapia']),
+        wordCheckboxList(['Monitorização contínua', 'Balanço hídrico']),
 
         wordSection('Critérios SIRS'),
         wordCheckboxList(['Temp > 38,3°C', 'Temp < 36°C', 'FC > 90 bpm', 'FR > 20 irpm']),
@@ -380,8 +404,12 @@ export async function exportSepseAdultoWord() {
         wordCheckboxList(['Pulmonar', 'Urinário', 'Abdominal']),
         wordCheckboxList(['Pele/Partes Moles', 'Corrente Sanguínea/Cateter', 'Sem foco definido']),
 
-        wordSection('Kit Sepse / Laboratório'),
+        wordSection('Exames Kit Sepse'),
         wordCheckboxList(['Kit Sepse coletado']),
+        wordCheckboxList(['1. Hemograma e plaqueta', '2. Ureia e creatinina', '3. Sódio e potássio']),
+        wordCheckboxList(['4. Tempo de protrombina', '5. Hemocultura 2 pares', '6. Bilirrubinas totais e frações']),
+        wordCheckboxList(['7. PCR', '8. Glicemia', '9. Lactato']),
+        wordCheckboxList(['Raio X tórax (suspeita PNM)', 'Gasometria (choque/insuf. resp.)', 'Culturas de outros sítios']),
         wordFieldRow(['Lab Villac — Horário chamado', 'Lab Villac — Horário coleta']),
 
         wordSection('Antibioticoterapia'),
