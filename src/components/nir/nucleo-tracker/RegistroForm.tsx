@@ -25,7 +25,9 @@ export function RegistroForm({ onRegistroAdded }: Props) {
   const [atividade, setAtividade] = useState("");
   const [quantidade, setQuantidade] = useState("");
   const [observacao, setObservacao] = useState("");
-  const [data, setData] = useState(() => new Date().toISOString().slice(0, 10));
+  const today = new Date().toISOString().slice(0, 10);
+  const [data] = useState(today);
+  const [horario, setHorario] = useState(() => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
 
   // Auto-fill colaborador from logged-in user
   useEffect(() => {
@@ -113,10 +115,15 @@ export function RegistroForm({ onRegistroAdded }: Props) {
 
         <div className="space-y-2">
           <Label>Data *</Label>
+          <Input type="date" value={data} disabled className="bg-muted" />
+        </div>
+
+        <div className="space-y-2">
+          <Label>Horário *</Label>
           <Input
-            type="date"
-            value={data}
-            onChange={(e) => setData(e.target.value)}
+            type="time"
+            value={horario}
+            onChange={(e) => setHorario(e.target.value)}
           />
         </div>
       </div>
