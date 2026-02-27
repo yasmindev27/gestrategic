@@ -87,11 +87,12 @@ export function NucleoTrackerModule() {
         </TabsList>
 
         <TabsContent value="painel" className="space-y-6 mt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <StatCard title="Conferência de Documentos" value={countByAtividade("Conferência")} icon={FileCheck} color="primary" />
             <StatCard title="Cadastro SUSFácil" value={countByAtividade("SUSFácil")} icon={UserPlus} color="secondary" />
-            <StatCard title="Gestão de Vagas / Transferências" value={countByAtividade("Gestão") + countByAtividade("Transferência")} icon={ArrowRightLeft} color="warning" />
-            <StatCard title="Contato c/ Estabelecimentos" value={countByAtividade("Contato")} icon={Phone} color="info" />
+            <StatCard title="Gestão de Vagas" value={countByAtividade("Gestão")} icon={ArrowRightLeft} color="warning" />
+            <StatCard title="Solicitação de Transferência" value={countByAtividade("Solicitação")} icon={ArrowRightLeft} color="info" />
+            <StatCard title="Contato c/ Estabelecimentos" value={countByAtividade("Contato")} icon={Phone} color="primary" />
           </div>
 
           <RegistroForm onRegistroAdded={refresh} />
