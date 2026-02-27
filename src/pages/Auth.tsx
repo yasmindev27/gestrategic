@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,16 +21,33 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const checkingRef = useRef(false);
-  const showDialogRef = useRef(false);
-
+  
   // Login form
   const [loginIdentifier, setLoginIdentifier] = useState("");
   const [loginPassword, setLoginPassword] = useState("");
 
-  const checkFirstLogin = useCallback(async (userId: string) => {
-    if (checkingRef.current || showDialogRef.current) return;
-    checkingRef.current = true;
+  useEffect(() => {
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user && !showChangePasswordDialog) {
+        // Check if user needs to change password
+        setTimeout(() => {
+          checkFirstLogin(session.user.id);
+        }, 0);
+      }
+    });
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user && !showChangePasswordDialog) {
+        checkFirstLogin(session.user.id);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [navigate, showChangePasswordDialog]);
+
+  const checkFirstLogin = async (userId: string) => {
     try {
       const { data: profile, error } = await supabase
         .from("profiles")
@@ -45,7 +62,6 @@ const Auth = () => {
       }
 
       if (profile?.deve_trocar_senha) {
-        showDialogRef.current = true;
         setCurrentUserId(userId);
         setShowChangePasswordDialog(true);
       } else {
@@ -54,37 +70,8 @@ const Auth = () => {
     } catch (error) {
       console.error("Erro:", error);
       navigate("/dashboard");
-    } finally {
-      checkingRef.current = false;
     }
-  }, [navigate]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      console.log("[Auth] onAuthStateChange:", event, !!session);
-      if (!isMounted || showDialogRef.current) return;
-      if (event === 'SIGNED_IN' && session?.user) {
-        // Reset checkingRef in case it got stuck
-        checkingRef.current = false;
-        checkFirstLogin(session.user.id);
-      }
-    });
-
-    // Check for existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!isMounted || showDialogRef.current) return;
-      if (session?.user) {
-        checkFirstLogin(session.user.id);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      subscription.unsubscribe();
-    };
-  }, [checkFirstLogin]);
+  };
 
   const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
@@ -116,6 +103,7 @@ const Auth = () => {
     
     // Detecta automaticamente se é email ou matrícula
     if (!isEmail(loginIdentifier)) {
+      // Tratado como matrícula
       const { data: profiles, error: profileError } = await supabase
         .rpc("buscar_usuario_por_matricula", { _matricula: loginIdentifier });
 
@@ -137,8 +125,9 @@ const Auth = () => {
       password: loginPassword,
     });
 
+    setIsLoading(false);
+
     if (error) {
-      setIsLoading(false);
       let errorMessage = "Erro ao fazer login";
       
       if (error.message.includes("Invalid login credentials")) {
@@ -152,20 +141,10 @@ const Auth = () => {
         description: errorMessage,
         variant: "destructive",
       });
-      return;
     }
-
-    // Safety timeout — if onAuthStateChange doesn't navigate within 8s, force it
-    setTimeout(() => {
-      setIsLoading(false);
-      if (!showDialogRef.current) {
-        navigate("/dashboard");
-      }
-    }, 8000);
   };
 
   const handlePasswordChangeSuccess = () => {
-    showDialogRef.current = false;
     setShowChangePasswordDialog(false);
     setCurrentUserId(null);
     navigate("/dashboard");
@@ -225,7 +204,6 @@ const Auth = () => {
                     value={loginIdentifier}
                     onChange={(e) => setLoginIdentifier(e.target.value)}
                     required
-                    disabled={isLoading}
                     className="bg-background/50 border-border/60 h-11 transition-all duration-200 focus:bg-background"
                   />
                 </div>
@@ -241,7 +219,6 @@ const Auth = () => {
                     value={loginPassword}
                     onChange={(e) => setLoginPassword(e.target.value)}
                     required
-                    disabled={isLoading}
                     className="bg-background/50 border-border/60 pr-10 h-11 transition-all duration-200 focus:bg-background"
                   />
                   <button

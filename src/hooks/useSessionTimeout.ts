@@ -4,15 +4,14 @@ import { toast } from "sonner";
 
 /**
  * Hook de Segurança — Timeout de Sessão por Inatividade
- * LGPD / Normas UPA: encerra a sessão automaticamente após N minutos sem uso.
- * Usa debounce para evitar resets excessivos em mousemove.
+ * LGPD / Normas UPA: encerra a sessão automaticamente após 15 minutos sem uso.
+ * Monitora mouse, teclado e touch para detectar atividade.
  */
 export function useSessionTimeout(timeoutMinutes = 15) {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const warningRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const timeoutMs = timeoutMinutes * 60 * 1000;
-  const warningMs = (timeoutMinutes - 2) * 60 * 1000;
+  const warningMs = (timeoutMinutes - 2) * 60 * 1000; // avisa 2 min antes
 
   const logout = useCallback(async () => {
     toast.error("Sessão encerrada por inatividade", {
@@ -20,6 +19,7 @@ export function useSessionTimeout(timeoutMinutes = 15) {
       duration: 6000,
     });
     await supabase.auth.signOut();
+    // Força redirect para login
     window.location.href = "/auth";
   }, [timeoutMinutes]);
 
@@ -27,6 +27,7 @@ export function useSessionTimeout(timeoutMinutes = 15) {
     if (timerRef.current) clearTimeout(timerRef.current);
     if (warningRef.current) clearTimeout(warningRef.current);
 
+    // Aviso 2 min antes do logout
     warningRef.current = setTimeout(() => {
       toast.warning("Sessão prestes a expirar", {
         description: "Você será desconectado em 2 minutos por inatividade. Mova o mouse para continuar.",
@@ -34,26 +35,23 @@ export function useSessionTimeout(timeoutMinutes = 15) {
       });
     }, warningMs);
 
+    // Logout automático
     timerRef.current = setTimeout(logout, timeoutMs);
   }, [logout, timeoutMs, warningMs]);
 
-  // Debounced reset — evita centenas de chamadas por segundo em mousemove
-  const debouncedReset = useCallback(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(resetTimer, 1000);
-  }, [resetTimer]);
-
   useEffect(() => {
+    // Eventos que reiniciam o timer
     const events = ["mousemove", "mousedown", "keypress", "touchstart", "scroll", "click"];
 
-    events.forEach((e) => window.addEventListener(e, debouncedReset, { passive: true }));
+    const handleActivity = () => resetTimer();
+
+    events.forEach((e) => window.addEventListener(e, handleActivity, { passive: true }));
     resetTimer(); // inicia o timer na montagem
 
     return () => {
-      events.forEach((e) => window.removeEventListener(e, debouncedReset));
+      events.forEach((e) => window.removeEventListener(e, handleActivity));
       if (timerRef.current) clearTimeout(timerRef.current);
       if (warningRef.current) clearTimeout(warningRef.current);
-      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [resetTimer, debouncedReset]);
+  }, [resetTimer]);
 }
