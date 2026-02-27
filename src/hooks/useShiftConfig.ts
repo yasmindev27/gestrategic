@@ -76,11 +76,19 @@ export function useShiftConfig(initialDate?: string) {
           reguladorNIR: config.regulador_nir || '',
         }));
       } else {
+        // Auto-fill regulador with logged-in user's name
+        let userName = '';
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            userName = user.user_metadata?.full_name || user.email?.split('@')[0] || '';
+          }
+        } catch {}
         setShiftInfo(prev => ({
           ...prev,
           medicos: '',
           enfermeiros: '',
-          reguladorNIR: '',
+          reguladorNIR: userName,
         }));
       }
       
