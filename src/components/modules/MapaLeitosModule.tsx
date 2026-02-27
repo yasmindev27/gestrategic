@@ -31,6 +31,7 @@ export const MapaLeitosModule = () => {
   const [activeSector, setActiveSector] = useState<Sector>('enfermaria-masculina');
   const [selectedBed, setSelectedBed] = useState<Bed | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pendenciasPlantao, setPendenciasPlantao] = useState<string | null>(null);
 
   const { beds, isLoading: isBedsLoading, updateBed, transferPatient, occupancyBySector, totalOccupancy } = useBeds(shiftInfo.data);
   const { saveBedRecord, updateDailyStatistics } = useBedRecords();
@@ -40,6 +41,37 @@ export const MapaLeitosModule = () => {
 
   const hasAccess = isAdmin || isNir;
   const isLoading = isShiftLoading || isBedsLoading;
+
+  // Load pendências from previous shift's passagem
+  useEffect(() => {
+    const loadPendencias = async () => {
+      // Determine previous shift
+      let prevDate = shiftInfo.data;
+      let prevType: string;
+      if (shiftInfo.tipo === 'diurno') {
+        // Previous shift was noturno of the same date (or previous day)
+        prevType = 'noturno';
+        const d = new Date(shiftInfo.data + 'T12:00:00');
+        d.setDate(d.getDate() - 1);
+        prevDate = d.toISOString().split('T')[0];
+      } else {
+        prevType = 'diurno';
+      }
+
+      const { data } = await supabase
+        .from('passagem_plantao')
+        .select('pendencias')
+        .eq('shift_date', prevDate)
+        .eq('shift_type', prevType)
+        .not('pendencias', 'is', null)
+        .order('data_hora_conclusao', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      setPendenciasPlantao(data?.pendencias || null);
+    };
+    loadPendencias();
+  }, [shiftInfo.data, shiftInfo.tipo]);
 
   useEffect(() => {
     if (hasAccess && !isLoadingRole) {
@@ -210,7 +242,7 @@ export const MapaLeitosModule = () => {
     });
   };
 
-  const handleConcluirPlantao = useCallback(async (justificativa?: string) => {
+  const handleConcluirPlantao = useCallback(async (justificativa?: string, pendencias?: string) => {
     // Determine next shift
     const nextShiftType = shiftInfo.tipo === 'diurno' ? 'noturno' : 'diurno';
     let nextDate = shiftInfo.data;
@@ -274,6 +306,7 @@ export const MapaLeitosModule = () => {
       colaborador_saida_nome: userName,
       data_hora_conclusao: new Date().toISOString(),
       justificativa: justificativa || null,
+      pendencias: pendencias || null,
     });
 
     // Log the action
@@ -331,6 +364,7 @@ export const MapaLeitosModule = () => {
         onShiftInfoChange={updateShiftInfo}
         onSave={saveShiftConfig}
         onConcluirPlantao={handleConcluirPlantao}
+        pendenciasPlantao={pendenciasPlantao}
       />
 
       <OccupancySummary

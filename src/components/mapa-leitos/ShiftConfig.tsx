@@ -15,7 +15,8 @@ interface ShiftConfigProps {
   shiftInfo: ShiftInfo;
   onShiftInfoChange: (info: ShiftInfo) => void;
   onSave?: () => Promise<void>;
-  onConcluirPlantao?: (justificativa?: string) => Promise<void>;
+  onConcluirPlantao?: (justificativa?: string, pendencias?: string) => Promise<void>;
+  pendenciasPlantao?: string | null;
 }
 
 interface SavedShift {
@@ -48,7 +49,7 @@ function isTimeAllowed(shiftDate: string, shiftType: string): { allowed: boolean
   return { allowed: true, reason: '' };
 }
 
-export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPlantao }: ShiftConfigProps) {
+export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPlantao, pendenciasPlantao }: ShiftConfigProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isConcluindo, setIsConcluindo] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -58,6 +59,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
   const [concluirDialogOpen, setConcluirDialogOpen] = useState(false);
   const [justificativa, setJustificativa] = useState('');
   const [needsJustificativa, setNeedsJustificativa] = useState(false);
+  const [pendencias, setPendencias] = useState('');
 
   // User permission state
   const [isAdmin, setIsAdmin] = useState(false);
@@ -230,6 +232,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
       setNeedsJustificativa(true);
     }
     setJustificativa('');
+    setPendencias('');
     setConcluirDialogOpen(true);
   };
 
@@ -237,7 +240,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
     if (!onConcluirPlantao) return;
     setIsConcluindo(true);
     try {
-      await onConcluirPlantao(needsJustificativa ? justificativa : undefined);
+      await onConcluirPlantao(needsJustificativa ? justificativa : undefined, pendencias.trim() || undefined);
       setConcluirDialogOpen(false);
       toast.success('Plantão concluído! Dados transferidos para o próximo plantão.');
     } catch (error) {
@@ -363,23 +366,36 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
               {needsJustificativa ? 'Justificativa para conclusão antecipada' : 'Confirmar conclusão do plantão'}
             </DialogTitle>
           </DialogHeader>
-          {needsJustificativa ? (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                Faltam mais de 15 minutos para o fim do plantão. Por favor, informe o motivo da conclusão antecipada.
+          {needsJustificativa && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-destructive">Justificativa (obrigatória)</Label>
+              <p className="text-xs text-muted-foreground">
+                Faltam mais de 15 minutos para o fim do plantão.
               </p>
               <Textarea
                 value={justificativa}
                 onChange={(e) => setJustificativa(e.target.value)}
                 placeholder="Informe o motivo da conclusão antecipada..."
-                rows={3}
+                rows={2}
               />
             </div>
-          ) : (
+          )}
+
+          {!needsJustificativa && (
             <p className="text-sm text-muted-foreground">
-              Ao concluir, os dados dos leitos serão transferidos para o próximo plantão. Deseja continuar?
+              Ao concluir, os dados dos leitos serão transferidos para o próximo plantão.
             </p>
           )}
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Pendências para o próximo regulador</Label>
+            <Textarea
+              value={pendencias}
+              onChange={(e) => setPendencias(e.target.value)}
+              placeholder="Descreva as pendências ou informações importantes para o próximo plantão..."
+              rows={3}
+            />
+          </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConcluirDialogOpen(false)}>Cancelar</Button>
             <Button
@@ -456,6 +472,12 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
             placeholder="Nome do regulador"
             disabled={!editAllowed}
           />
+          {pendenciasPlantao && (
+            <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm">
+              <p className="font-medium text-amber-800 mb-1">📋 Pendências do plantão anterior:</p>
+              <p className="text-amber-700 whitespace-pre-wrap">{pendenciasPlantao}</p>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2 md:col-span-2 lg:col-span-1">
