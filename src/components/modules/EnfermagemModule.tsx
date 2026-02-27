@@ -156,6 +156,12 @@ export default function EnfermagemModule() {
             <Users className="h-4 w-4" />
             Gestão Operacional
           </TabsTrigger>
+          {canAccessProtocolos && (
+            <TabsTrigger value="protocolos" className="gap-2 text-sm px-4 py-2">
+              <FileCheck className="h-4 w-4" />
+              Protocolos
+            </TabsTrigger>
+          )}
           {isGestor && (
             <>
               <TabsTrigger value="escala-tecnicos" className="gap-2 text-sm px-4 py-2">
@@ -174,12 +180,6 @@ export default function EnfermagemModule() {
                 <ClipboardCheck className="h-4 w-4" />
                 Aprovação de Ponto
               </TabsTrigger>
-              {canAccessProtocolos && (
-                <TabsTrigger value="protocolos" className="gap-2 text-sm px-4 py-2">
-                  <FileCheck className="h-4 w-4" />
-                  Protocolos
-                </TabsTrigger>
-              )}
               <TabsTrigger value="indicadores-upa" className="gap-2 text-sm px-4 py-2">
                 <Activity className="h-4 w-4" />
                 Indicadores UPA
