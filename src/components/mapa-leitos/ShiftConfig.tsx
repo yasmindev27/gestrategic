@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Sun, Moon, Calendar, Stethoscope, Users, UserCheck, Save, Check, History, Loader2 } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Sun, Moon, Calendar, Stethoscope, Users, UserCheck, Save, Check, History, Loader2, Lock } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -27,6 +27,28 @@ interface SavedShift {
   created_at: string;
 }
 
+function isEditingAllowed(shiftDate: string, shiftType: string): { allowed: boolean; reason: string } {
+  const now = new Date();
+  const today = format(now, 'yyyy-MM-dd');
+  const currentHour = now.getHours();
+
+  // Only today's shift can be edited
+  if (shiftDate !== today) {
+    return { allowed: false, reason: 'Apenas o plantão do dia atual pode ser alterado.' };
+  }
+
+  // Diurno: 07:00–18:59 | Noturno: 19:00–06:59
+  if (shiftType === 'diurno' && (currentHour < 7 || currentHour >= 19)) {
+    return { allowed: false, reason: 'O plantão diurno só pode ser alterado entre 07:00 e 19:00.' };
+  }
+
+  if (shiftType === 'noturno' && (currentHour >= 7 && currentHour < 19)) {
+    return { allowed: false, reason: 'O plantão noturno só pode ser alterado entre 19:00 e 07:00.' };
+  }
+
+  return { allowed: true, reason: '' };
+}
+
 export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfigProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -34,12 +56,26 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
   const [isLoadingShifts, setIsLoadingShifts] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
+  const editCheck = useMemo(
+    () => isEditingAllowed(shiftInfo.data, shiftInfo.tipo),
+    [shiftInfo.data, shiftInfo.tipo]
+  );
+
   const handleChange = (field: keyof ShiftInfo, value: string) => {
+    // Tipo and data can always change so the user can navigate, but content fields are locked
+    if (field !== 'tipo' && field !== 'data' && !editCheck.allowed) {
+      toast.error(editCheck.reason);
+      return;
+    }
     setSaved(false);
     onShiftInfoChange({ ...shiftInfo, [field]: value });
   };
 
   const handleSave = async () => {
+    if (!editCheck.allowed) {
+      toast.error(editCheck.reason);
+      return;
+    }
     setIsSaving(true);
     try {
       if (onSave) {
@@ -160,21 +196,30 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
 
           <Button 
             onClick={handleSave} 
-            disabled={isSaving}
+            disabled={isSaving || !editCheck.allowed}
             className="gap-2"
             variant={saved ? "outline" : "default"}
           >
             {isSaving ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+            ) : !editCheck.allowed ? (
+              <Lock className="w-4 h-4" />
             ) : saved ? (
               <Check className="w-4 h-4 text-hospital-green" />
             ) : (
               <Save className="w-4 h-4" />
             )}
-            {saved ? 'Salvo' : 'Salvar Plantão'}
+            {saved ? 'Salvo' : !editCheck.allowed ? 'Bloqueado' : 'Salvar Plantão'}
           </Button>
         </div>
       </div>
+
+      {!editCheck.allowed && (
+        <div className="mb-4 flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+          <Lock className="w-4 h-4 shrink-0" />
+          {editCheck.reason}
+        </div>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="space-y-2">
@@ -231,6 +276,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
             value={shiftInfo.reguladorNIR}
             onChange={(e) => handleChange('reguladorNIR', e.target.value)}
             placeholder="Nome do regulador"
+            disabled={!editCheck.allowed}
           />
         </div>
 
@@ -245,6 +291,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
             onChange={(e) => handleChange('medicos', e.target.value)}
             placeholder="Nomes dos médicos de plantão"
             rows={2}
+            disabled={!editCheck.allowed}
           />
         </div>
 
@@ -259,6 +306,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
             onChange={(e) => handleChange('enfermeiros', e.target.value)}
             placeholder="Nomes dos enfermeiros de plantão"
             rows={2}
+            disabled={!editCheck.allowed}
           />
         </div>
       </div>
