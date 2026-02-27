@@ -91,7 +91,7 @@ export const MapaLeitosModule = () => {
 
   const getExportData = useCallback(() => {
     return beds
-      .filter(b => typeof b.number === 'number')
+      .filter(b => typeof b.number === 'number' && b.patient !== null)
       .sort((a, b) => {
         const sectorOrder = SECTORS.findIndex(s => s.id === a.sector) - SECTORS.findIndex(s => s.id === b.sector);
         if (sectorOrder !== 0) return sectorOrder;
