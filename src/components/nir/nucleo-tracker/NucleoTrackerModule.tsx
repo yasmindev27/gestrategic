@@ -63,10 +63,10 @@ export function NucleoTrackerModule() {
           <Activity className="h-6 w-6 text-primary" />
           <div>
             <h2 className="text-2xl font-bold text-foreground">
-              Relatório de Produtividade — NIR
+              Relatório — NIR
             </h2>
             <p className="text-muted-foreground text-sm">
-              Sistema de Acompanhamento de Produtividade
+              Registro de tarefas diárias
             </p>
           </div>
         </div>
