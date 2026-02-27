@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Sun, Moon, Calendar, Stethoscope, Users, UserCheck, Save, Check, History, Loader2, Lock, CheckCircle2 } from 'lucide-react';
+import { Sun, Moon, Calendar, Stethoscope, Users, UserCheck, Save, Check, History, Loader2, Lock, CheckCircle2, Square, CheckSquare } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,12 +11,19 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+interface PendenciaItem {
+  text: string;
+  resolved: boolean;
+}
+
 interface ShiftConfigProps {
   shiftInfo: ShiftInfo;
   onShiftInfoChange: (info: ShiftInfo) => void;
   onSave?: () => Promise<void>;
   onConcluirPlantao?: (justificativa?: string, pendencias?: string) => Promise<void>;
-  pendenciasPlantao?: string | null;
+  pendenciasPassadas?: PendenciaItem[];
+  pendenciasEncontradasList?: PendenciaItem[];
+  onResolvePendencia?: (tipo: 'passadas' | 'encontradas', index: number) => void;
   onReportPendenciasEncontradas?: (pendencias: string) => Promise<void>;
 }
 
@@ -50,7 +57,7 @@ function isTimeAllowed(shiftDate: string, shiftType: string): { allowed: boolean
   return { allowed: true, reason: '' };
 }
 
-export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPlantao, pendenciasPlantao, onReportPendenciasEncontradas }: ShiftConfigProps) {
+export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPlantao, pendenciasPassadas, pendenciasEncontradasList, onResolvePendencia, onReportPendenciasEncontradas }: ShiftConfigProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isConcluindo, setIsConcluindo] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -492,10 +499,59 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
             placeholder="Nome do regulador"
             disabled={!editAllowed}
           />
-          {pendenciasPlantao && (
+          {/* Pendências Passadas */}
+          {pendenciasPassadas && pendenciasPassadas.length > 0 && (
             <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm">
-              <p className="font-medium text-amber-800 mb-1">📋 Pendências do plantão anterior:</p>
-              <p className="text-amber-700 whitespace-pre-wrap">{pendenciasPlantao}</p>
+              <p className="font-medium text-amber-800 mb-2">📋 Pendências do plantão anterior:</p>
+              <ul className="space-y-1">
+                {pendenciasPassadas.map((p, i) => (
+                  <li key={`p-${i}`} className="flex items-start gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onResolvePendencia?.('passadas', i)}
+                      className="mt-0.5 shrink-0"
+                      title={p.resolved ? 'Resolvida' : 'Marcar como resolvida'}
+                    >
+                      {p.resolved ? (
+                        <CheckSquare className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Square className="w-4 h-4 text-amber-600" />
+                      )}
+                    </button>
+                    <span className={`${p.resolved ? 'line-through text-amber-500' : 'text-amber-700'}`}>
+                      {p.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Pendências Encontradas */}
+          {pendenciasEncontradasList && pendenciasEncontradasList.length > 0 && (
+            <div className="mt-2 rounded-md border border-blue-300 bg-blue-50 px-3 py-2 text-sm">
+              <p className="font-medium text-blue-800 mb-2">🔍 Pendências encontradas na assunção:</p>
+              <ul className="space-y-1">
+                {pendenciasEncontradasList.map((p, i) => (
+                  <li key={`e-${i}`} className="flex items-start gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onResolvePendencia?.('encontradas', i)}
+                      className="mt-0.5 shrink-0"
+                      title={p.resolved ? 'Resolvida' : 'Marcar como resolvida'}
+                    >
+                      {p.resolved ? (
+                        <CheckSquare className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Square className="w-4 h-4 text-blue-600" />
+                      )}
+                    </button>
+                    <span className={`${p.resolved ? 'line-through text-blue-400' : 'text-blue-700'}`}>
+                      {p.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
             </div>
           )}
         </div>
