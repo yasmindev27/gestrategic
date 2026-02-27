@@ -450,8 +450,32 @@ export async function exportSepsePediatricoPDF() {
   y = drawFieldRow(doc, y, [{ label: 'Hora de Chegada', width: 2 }, { label: 'Hora do ECG', width: 2 }, { label: 'Tempo Porta-ECG', width: 2 }]);
   y = drawFieldRow(doc, y, [{ label: 'Classificação de Risco', width: 2 }, { label: '1º Atendimento Médico', width: 2 }, { label: 'Médico Responsável', width: 2 }]);
 
+  y = drawSectionHeader(doc, y, 'Avaliação da Enfermagem');
+  y = drawFieldRow(doc, y, [{ label: 'Enfermeiro(a) Responsável', width: 3 }, { label: 'COREN', width: 2 }]);
+  y = drawFieldRow(doc, y, [{ label: 'Data/Hora Avaliação', width: 2 }, { label: 'Setor', width: 2 }]);
+  y = drawCheckboxGroup(doc, y, [
+    'Acesso venoso periférico', 'Acesso venoso central', 'Sonda vesical de demora',
+    'Cateter nasoenteral', 'Ventilação mecânica', 'Oxigenoterapia',
+    'Monitorização contínua', 'Balanço hídrico',
+  ], 3);
+
   y = drawSectionHeader(doc, y, 'Sinais Vitais');
   y = drawFieldRow(doc, y, [{ label: 'PA', width: 2 }, { label: 'FC', width: 1 }, { label: 'FR', width: 1 }, { label: 'SpO2', width: 1 }, { label: 'Temperatura', width: 1 }]);
+
+  y = drawSectionHeader(doc, y, 'Parâmetros Pediátricos de Referência');
+  y = drawSubtitle(doc, y, 'Valores normais por faixa etária:');
+  y = drawCheckboxGroup(doc, y, [
+    'RN (0-28d): FC 120-160, FR 30-60',
+    'Lactente (1-12m): FC 100-150, FR 25-50',
+    'Pré-escolar (1-5a): FC 80-130, FR 20-30',
+    'Escolar (6-12a): FC 70-110, FR 18-25',
+    'Adolescente (>12a): FC 60-100, FR 12-20',
+  ], 2);
+  y = drawSubtitle(doc, y, 'PAS mínima por idade:');
+  y = drawCheckboxGroup(doc, y, [
+    'RN: ≥ 60 mmHg', 'Lactente: ≥ 70 mmHg',
+    '1-10 anos: 70 + (idade×2)', 'Acima 10 anos: ≥ 90 mmHg',
+  ], 2);
 
   y = drawSectionHeader(doc, y, 'Achados Clínicos');
   y = drawCheckboxGroup(doc, y, ['Desidratação', 'Dor abdominal', 'Disúria', 'Feridas cutâneas', 'Desaturação', 'Alteração de perfusão', 'Palidez cutânea'], 3);
@@ -466,8 +490,16 @@ export async function exportSepsePediatricoPDF() {
   y = drawSectionHeader(doc, y, 'Foco Infeccioso');
   y = drawCheckboxGroup(doc, y, ['Pulmonar', 'Urinário', 'Abdominal', 'Pele/Partes Moles', 'Corrente Sanguínea/Cateter', 'Sem foco definido'], 3);
 
-  y = drawSectionHeader(doc, y, 'Kit Sepse / Laboratório');
+  y = drawSectionHeader(doc, y, 'Exames Kit Sepse');
   y = drawCheckboxGroup(doc, y, ['Kit Sepse coletado'], 1);
+  y = drawSubtitle(doc, y, 'Exames obrigatórios:');
+  y = drawCheckboxGroup(doc, y, [
+    '1. Hemograma e plaqueta', '2. Ureia e creatinina', '3. Sódio e potássio',
+    '4. Tempo de protrombina', '5. Hemocultura 2 pares', '6. Bilirrubinas totais e frações',
+    '7. PCR', '8. Glicemia', '9. Lactato',
+  ], 3);
+  y = drawSubtitle(doc, y, 'Complementares (se indicado):');
+  y = drawCheckboxGroup(doc, y, ['Raio X tórax (suspeita PNM)', 'Gasometria (choque/insuf. resp.)', 'Culturas de outros sítios'], 3);
   y = drawFieldRow(doc, y, [{ label: 'Lab Villac — Horário chamado', width: 2 }, { label: 'Lab Villac — Horário coleta', width: 2 }]);
 
   y = drawSectionHeader(doc, y, 'Antibioticoterapia');
@@ -507,9 +539,25 @@ export async function exportSepsePediatricoWord() {
         wordFieldRow(['Tempo Porta-ECG', 'Classificação de Risco']),
         wordFieldRow(['1º Atendimento Médico', 'Médico Responsável']),
 
+        wordSection('Avaliação da Enfermagem'),
+        wordFieldRow(['Enfermeiro(a) Responsável', 'COREN']),
+        wordFieldRow(['Data/Hora Avaliação', 'Setor']),
+        wordCheckboxList(['Acesso venoso periférico', 'Acesso venoso central', 'Sonda vesical de demora']),
+        wordCheckboxList(['Cateter nasoenteral', 'Ventilação mecânica', 'Oxigenoterapia']),
+        wordCheckboxList(['Monitorização contínua', 'Balanço hídrico']),
+
         wordSection('Sinais Vitais'),
         wordFieldRow(['PA', 'FC', 'FR']),
         wordFieldRow(['SpO2', 'Temperatura']),
+
+        wordSection('Parâmetros Pediátricos de Referência'),
+        wordSubtitle('Valores normais por faixa etária:'),
+        wordCheckboxList(['RN (0-28d): FC 120-160, FR 30-60', 'Lactente (1-12m): FC 100-150, FR 25-50']),
+        wordCheckboxList(['Pré-escolar (1-5a): FC 80-130, FR 20-30', 'Escolar (6-12a): FC 70-110, FR 18-25']),
+        wordCheckboxList(['Adolescente (>12a): FC 60-100, FR 12-20']),
+        wordSubtitle('PAS mínima por idade:'),
+        wordCheckboxList(['RN: ≥ 60 mmHg', 'Lactente: ≥ 70 mmHg']),
+        wordCheckboxList(['1-10 anos: 70 + (idade×2)', 'Acima 10 anos: ≥ 90 mmHg']),
 
         wordSection('Achados Clínicos'),
         wordCheckboxList(['Desidratação', 'Dor abdominal', 'Disúria', 'Feridas cutâneas']),
@@ -527,8 +575,12 @@ export async function exportSepsePediatricoWord() {
         wordCheckboxList(['Pulmonar', 'Urinário', 'Abdominal']),
         wordCheckboxList(['Pele/Partes Moles', 'Corrente Sanguínea/Cateter', 'Sem foco definido']),
 
-        wordSection('Kit Sepse / Laboratório'),
+        wordSection('Exames Kit Sepse'),
         wordCheckboxList(['Kit Sepse coletado']),
+        wordCheckboxList(['1. Hemograma e plaqueta', '2. Ureia e creatinina', '3. Sódio e potássio']),
+        wordCheckboxList(['4. Tempo de protrombina', '5. Hemocultura 2 pares', '6. Bilirrubinas totais e frações']),
+        wordCheckboxList(['7. PCR', '8. Glicemia', '9. Lactato']),
+        wordCheckboxList(['Raio X tórax (suspeita PNM)', 'Gasometria (choque/insuf. resp.)', 'Culturas de outros sítios']),
         wordFieldRow(['Lab Villac — Horário chamado', 'Lab Villac — Horário coleta']),
 
         wordSection('Antibioticoterapia'),
