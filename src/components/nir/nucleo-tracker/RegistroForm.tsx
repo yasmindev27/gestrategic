@@ -11,7 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ATIVIDADES, Atividade, Colaborador, RegistroProducao } from "./types";
-import { salvarRegistro } from "./storage";
+import { salvarRegistroDB } from "./storage";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 
@@ -29,7 +29,7 @@ export function RegistroForm({ colaboradores, onRegistroAdded }: Props) {
 
   const ativos = (colaboradores ?? []).filter((c) => c.ativo);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!colaborador || !atividade || !quantidade || !data) {
       toast.error("Preencha todos os campos obrigatórios.");
@@ -46,13 +46,17 @@ export function RegistroForm({ colaboradores, onRegistroAdded }: Props) {
       criadoEm: new Date().toISOString(),
     };
 
-    salvarRegistro(registro);
-    toast.success("Produção registrada com sucesso!");
-    setColaborador("");
-    setAtividade("");
-    setQuantidade("");
-    setObservacao("");
-    onRegistroAdded();
+    try {
+      await salvarRegistroDB(registro);
+      toast.success("Produção registrada com sucesso!");
+      setColaborador("");
+      setAtividade("");
+      setQuantidade("");
+      setObservacao("");
+      onRegistroAdded();
+    } catch {
+      toast.error("Erro ao registrar produção.");
+    }
   };
 
   return (

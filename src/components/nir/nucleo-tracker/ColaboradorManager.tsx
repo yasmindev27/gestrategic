@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { getColaboradores, salvarColaborador, toggleColaboradorAtivo } from "./storage";
+import { salvarColaboradorDB, toggleColaboradorAtivoDB, getColaboradoresDB } from "./storage";
 import { Colaborador } from "./types";
 import { toast } from "sonner";
 import { UserPlus, Users } from "lucide-react";
@@ -23,14 +23,15 @@ interface Props {
 export function ColaboradorManager({ onUpdate }: Props) {
   const [open, setOpen] = useState(false);
   const [nome, setNome] = useState("");
-  const [colaboradores, setColaboradores] = useState<Colaborador[]>(getColaboradores);
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
 
-  const refresh = () => {
-    setColaboradores(getColaboradores());
+  const refresh = async () => {
+    const data = await getColaboradoresDB();
+    setColaboradores(data);
     onUpdate();
   };
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (!nome.trim()) {
       toast.error("Informe o nome do colaborador.");
       return;
@@ -42,20 +43,23 @@ export function ColaboradorManager({ onUpdate }: Props) {
       toast.error("Colaborador já cadastrado.");
       return;
     }
-    salvarColaborador({
-      id: crypto.randomUUID(),
-      nome: nome.trim(),
-      ativo: true,
-      criadoEm: new Date().toISOString(),
-    });
-    setNome("");
-    toast.success("Colaborador cadastrado!");
-    refresh();
+    try {
+      await salvarColaboradorDB(nome.trim());
+      setNome("");
+      toast.success("Colaborador cadastrado!");
+      await refresh();
+    } catch {
+      toast.error("Erro ao cadastrar colaborador.");
+    }
   };
 
-  const handleToggle = (id: string) => {
-    toggleColaboradorAtivo(id);
-    refresh();
+  const handleToggle = async (id: string, ativo: boolean) => {
+    try {
+      await toggleColaboradorAtivoDB(id, ativo);
+      await refresh();
+    } catch {
+      toast.error("Erro ao atualizar colaborador.");
+    }
   };
 
   return (
@@ -113,7 +117,7 @@ export function ColaboradorManager({ onUpdate }: Props) {
                 </div>
                 <Switch
                   checked={c.ativo}
-                  onCheckedChange={() => handleToggle(c.id)}
+                  onCheckedChange={() => handleToggle(c.id, c.ativo)}
                 />
               </div>
             ))}
