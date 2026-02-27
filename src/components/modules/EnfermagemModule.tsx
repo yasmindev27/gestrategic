@@ -60,20 +60,32 @@ export default function EnfermagemModule() {
   useEffect(() => {
     async function checkProtocolosAccess() {
       if (!userId) return;
-      // Check SCIRAS profile
+      // Check SCIRAS profile via two separate queries to avoid join issues
       const { data: perfilData } = await supabase
         .from('usuario_perfil')
-        .select('perfil_id, perfis_sistema!inner(nome)')
+        .select('perfil_id')
         .eq('user_id', userId);
-      const hasSciras = perfilData?.some((p: any) => p.perfis_sistema?.nome === 'SCIRAS');
-      // Check coordinator cargo
+      
+      let hasSciras = false;
+      if (perfilData && perfilData.length > 0) {
+        const perfilIds = perfilData.map((p: any) => p.perfil_id);
+        const { data: perfisData } = await supabase
+          .from('perfis_sistema')
+          .select('id, nome')
+          .in('id', perfilIds);
+        hasSciras = perfisData?.some((p: any) => p.nome === 'SCIRAS') || false;
+      }
+
+      // Check coordinator cargo or SCIRAS cargo
       const { data: profileData } = await supabase
         .from('profiles')
         .select('cargo')
         .eq('user_id', userId)
         .single();
-      const isCoord = profileData?.cargo?.toLowerCase().includes('coordenador') && profileData?.cargo?.toLowerCase().includes('enfermagem');
-      setCanAccessProtocolos(role === 'admin' || !!hasSciras || !!isCoord);
+      const cargoLower = profileData?.cargo?.toLowerCase() || '';
+      const isCoord = cargoLower.includes('coordenador') && cargoLower.includes('enfermagem');
+      const isCargoSciras = cargoLower.includes('sciras');
+      setCanAccessProtocolos(role === 'admin' || hasSciras || isCoord || isCargoSciras);
     }
     checkProtocolosAccess();
   }, [userId, role]);
