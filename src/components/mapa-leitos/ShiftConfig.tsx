@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Sun, Moon, Calendar, Stethoscope, Users, UserCheck, Save, Check, History, Loader2, Lock } from 'lucide-react';
+import { Sun, Moon, Calendar, Stethoscope, Users, UserCheck, Save, Check, History, Loader2, Lock, CheckCircle2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { ShiftInfo } from '@/types/bed';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -15,6 +15,7 @@ interface ShiftConfigProps {
   shiftInfo: ShiftInfo;
   onShiftInfoChange: (info: ShiftInfo) => void;
   onSave?: () => Promise<void>;
+  onConcluirPlantao?: (justificativa?: string) => Promise<void>;
 }
 
 interface SavedShift {
@@ -47,12 +48,16 @@ function isTimeAllowed(shiftDate: string, shiftType: string): { allowed: boolean
   return { allowed: true, reason: '' };
 }
 
-export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfigProps) {
+export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPlantao }: ShiftConfigProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const [isConcluindo, setIsConcluindo] = useState(false);
   const [saved, setSaved] = useState(false);
   const [savedShifts, setSavedShifts] = useState<SavedShift[]>([]);
   const [isLoadingShifts, setIsLoadingShifts] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [concluirDialogOpen, setConcluirDialogOpen] = useState(false);
+  const [justificativa, setJustificativa] = useState('');
+  const [needsJustificativa, setNeedsJustificativa] = useState(false);
 
   // User permission state
   const [isAdmin, setIsAdmin] = useState(false);
@@ -202,6 +207,46 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
     toast.success(`Plantão de ${format(new Date(shift.shift_date + 'T12:00:00'), "dd/MM/yyyy", { locale: ptBR })} carregado`);
   };
 
+  const isWithin15MinOfEnd = useMemo(() => {
+    const now = new Date();
+    const today = format(now, 'yyyy-MM-dd');
+    if (shiftInfo.data !== today) return false;
+
+    const currentMinutes = now.getHours() * 60 + now.getMinutes();
+
+    if (shiftInfo.tipo === 'diurno') {
+      // Diurno ends at 19:00 (1140 min). 15 min before = 18:45 (1125 min)
+      return currentMinutes >= 1125 && currentMinutes < 1140;
+    } else {
+      // Noturno ends at 07:00 (420 min). 15 min before = 06:45 (405 min)
+      return currentMinutes >= 405 && currentMinutes < 420;
+    }
+  }, [shiftInfo.data, shiftInfo.tipo]);
+
+  const handleConcluirClick = () => {
+    if (isWithin15MinOfEnd) {
+      setNeedsJustificativa(false);
+    } else {
+      setNeedsJustificativa(true);
+    }
+    setJustificativa('');
+    setConcluirDialogOpen(true);
+  };
+
+  const handleConfirmConcluir = async () => {
+    if (!onConcluirPlantao) return;
+    setIsConcluindo(true);
+    try {
+      await onConcluirPlantao(needsJustificativa ? justificativa : undefined);
+      setConcluirDialogOpen(false);
+      toast.success('Plantão concluído! Dados transferidos para o próximo plantão.');
+    } catch (error) {
+      toast.error('Erro ao concluir plantão.');
+    } finally {
+      setIsConcluindo(false);
+    }
+  };
+
   return (
     <div className="bg-card rounded-lg border p-6">
       <div className="flex items-center justify-between mb-4">
@@ -289,10 +334,63 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
             ) : (
               <Save className="w-4 h-4" />
             )}
-            {saved ? 'Salvo' : !editAllowed ? 'Bloqueado' : 'Salvar Plantão'}
+           {saved ? 'Salvo' : !editAllowed ? 'Bloqueado' : 'Salvar'}
           </Button>
+
+          {onConcluirPlantao && editAllowed && (
+            <Button
+              onClick={handleConcluirClick}
+              disabled={isConcluindo}
+              variant="outline"
+              className="gap-2 border-green-500 text-green-700 hover:bg-green-50"
+            >
+              {isConcluindo ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4" />
+              )}
+              Concluir Plantão
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* Dialog de justificativa para conclusão antecipada */}
+      <Dialog open={concluirDialogOpen} onOpenChange={setConcluirDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {needsJustificativa ? 'Justificativa para conclusão antecipada' : 'Confirmar conclusão do plantão'}
+            </DialogTitle>
+          </DialogHeader>
+          {needsJustificativa ? (
+            <div className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Faltam mais de 15 minutos para o fim do plantão. Por favor, informe o motivo da conclusão antecipada.
+              </p>
+              <Textarea
+                value={justificativa}
+                onChange={(e) => setJustificativa(e.target.value)}
+                placeholder="Informe o motivo da conclusão antecipada..."
+                rows={3}
+              />
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Ao concluir, os dados dos leitos serão transferidos para o próximo plantão. Deseja continuar?
+            </p>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConcluirDialogOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={handleConfirmConcluir}
+              disabled={needsJustificativa && !justificativa.trim()}
+            >
+              Confirmar Conclusão
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {!editAllowed && blockReason && (
         <div className="mb-4 flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
