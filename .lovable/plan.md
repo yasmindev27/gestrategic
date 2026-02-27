@@ -1,4 +1,8 @@
 
+## CONTEXTO INSTITUCIONAL — NÃO REMOVER
+Este projeto é o sistema de gestão de uma **instituição hospitalar (UPA 24h)**. A integridade e fidedignidade dos dados é crítica — erros de estatística, contagem duplicada ou inconsistências em relatórios podem impactar decisões clínicas e operacionais. Todo processamento de dados deve priorizar precisão, deduplicação e auditabilidade. Conformidade com LGPD e ONA são requisitos permanentes.
+
+---
 
 # Plano de Atualizacoes Estruturais, Visuais e de Conformidade
 
