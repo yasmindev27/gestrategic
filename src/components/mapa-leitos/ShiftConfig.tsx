@@ -17,6 +17,7 @@ interface ShiftConfigProps {
   onSave?: () => Promise<void>;
   onConcluirPlantao?: (justificativa?: string, pendencias?: string) => Promise<void>;
   pendenciasPlantao?: string | null;
+  onReportPendenciasEncontradas?: (pendencias: string) => Promise<void>;
 }
 
 interface SavedShift {
@@ -49,7 +50,7 @@ function isTimeAllowed(shiftDate: string, shiftType: string): { allowed: boolean
   return { allowed: true, reason: '' };
 }
 
-export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPlantao, pendenciasPlantao }: ShiftConfigProps) {
+export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPlantao, pendenciasPlantao, onReportPendenciasEncontradas }: ShiftConfigProps) {
   const [isSaving, setIsSaving] = useState(false);
   const [isConcluindo, setIsConcluindo] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -60,6 +61,9 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
   const [justificativa, setJustificativa] = useState('');
   const [needsJustificativa, setNeedsJustificativa] = useState(false);
   const [pendencias, setPendencias] = useState('');
+  const [pendenciasEncontradasDialog, setPendenciasEncontradasDialog] = useState(false);
+  const [pendenciasEncontradas, setPendenciasEncontradas] = useState('');
+  const [firstSaveDone, setFirstSaveDone] = useState(false);
 
   // User permission state
   const [isAdmin, setIsAdmin] = useState(false);
@@ -166,8 +170,15 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
         await onSave();
       }
       setSaved(true);
-      // Update original regulador after save
       setOriginalRegulador(shiftInfo.reguladorNIR);
+
+      // On the first save of this shift, ask about found pendências
+      if (!shiftAlreadySaved && !firstSaveDone) {
+        setFirstSaveDone(true);
+        setPendenciasEncontradas('');
+        setPendenciasEncontradasDialog(true);
+      }
+
       setShiftAlreadySaved(true);
       toast.success('Configuração do plantão salva com sucesso!');
       setTimeout(() => setSaved(false), 3000);
@@ -176,6 +187,14 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleConfirmPendenciasEncontradas = async () => {
+    if (pendenciasEncontradas.trim() && onReportPendenciasEncontradas) {
+      await onReportPendenciasEncontradas(pendenciasEncontradas.trim());
+      toast.success('Pendências encontradas registradas com sucesso!');
+    }
+    setPendenciasEncontradasDialog(false);
   };
 
   const loadSavedShifts = async () => {
@@ -510,6 +529,42 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
           />
         </div>
       </div>
+
+      {/* Dialog de pendências encontradas ao assumir plantão */}
+      <Dialog open={pendenciasEncontradasDialog} onOpenChange={setPendenciasEncontradasDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              📋 Pendências encontradas ao assumir o plantão
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Você identificou alguma pendência ao assumir este plantão? Registre abaixo para manter o histórico de continuidade assistencial.
+            </p>
+            <Textarea
+              value={pendenciasEncontradas}
+              onChange={(e) => setPendenciasEncontradas(e.target.value)}
+              placeholder="Descreva as pendências encontradas ao assumir o plantão (ex.: paciente aguardando resultado de exame, solicitação de transferência pendente...)"
+              rows={4}
+            />
+            <p className="text-xs text-muted-foreground italic">
+              Essas pendências ficarão visíveis como "Pendências identificadas na assunção" junto ao campo do Regulador.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendenciasEncontradasDialog(false)}>
+              Nenhuma pendência
+            </Button>
+            <Button
+              onClick={handleConfirmPendenciasEncontradas}
+              disabled={!pendenciasEncontradas.trim()}
+            >
+              Registrar Pendências
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

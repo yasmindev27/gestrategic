@@ -32,6 +32,7 @@ export const MapaLeitosModule = () => {
   const [selectedBed, setSelectedBed] = useState<Bed | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pendenciasPlantao, setPendenciasPlantao] = useState<string | null>(null);
+  const [pendenciasEncontradas, setPendenciasEncontradas] = useState<string | null>(null);
 
   const { beds, isLoading: isBedsLoading, updateBed, transferPatient, occupancyBySector, totalOccupancy } = useBeds(shiftInfo.data);
   const { saveBedRecord, updateDailyStatistics } = useBedRecords();
@@ -364,7 +365,32 @@ export const MapaLeitosModule = () => {
         onShiftInfoChange={updateShiftInfo}
         onSave={saveShiftConfig}
         onConcluirPlantao={handleConcluirPlantao}
-        pendenciasPlantao={pendenciasPlantao}
+        pendenciasPlantao={
+          [pendenciasPlantao, pendenciasEncontradas ? `🔍 Pendências identificadas na assunção:\n${pendenciasEncontradas}` : null]
+            .filter(Boolean).join('\n\n') || null
+        }
+        onReportPendenciasEncontradas={async (text) => {
+          // Store in passagem_plantao for the current shift
+          const { data: { user } } = await supabase.auth.getUser();
+          const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
+          
+          // Update the most recent passagem for the previous shift with encontradas info
+          // or create a record for the current shift
+          await supabase.from('passagem_plantao').insert({
+            shift_date: shiftInfo.data,
+            shift_type: shiftInfo.tipo,
+            colaborador_saida_nome: userName,
+            colaborador_saida_id: user?.id || null,
+            data_hora_conclusao: new Date().toISOString(),
+            colaborador_entrada_nome: userName,
+            colaborador_entrada_id: user?.id || null,
+            data_hora_assuncao: new Date().toISOString(),
+            tempo_troca_minutos: 0,
+            pendencias: `🔍 Pendências identificadas na assunção por ${userName}:\n${text}`,
+          });
+          
+          setPendenciasEncontradas(text);
+        }}
       />
 
       <OccupancySummary
