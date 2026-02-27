@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -245,7 +245,12 @@ const Sidebar = ({
     return items;
   };
 
-  const menuItems = addCommonMenuItems(getMenuItems());
+  const menuItems = useMemo(() => addCommonMenuItems(getMenuItems()), [
+    isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
+    isLaboratorio, isRecepcao, isClassificacao, isNir,
+    isFaturamento, isRHDP, isQualidade, isNSP, isMedicos, isEnfermagem,
+    isSeguranca
+  ]);
 
   // Reusable menu button content
   const MenuButtonContent = ({ item, isActive }: { item: MenuItem; isActive: boolean }) => {

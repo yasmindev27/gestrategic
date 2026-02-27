@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ const Auth = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showChangePasswordDialog, setShowChangePasswordDialog] = useState(false);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const checkingRef = useRef(false);
   
   // Login form
   const [loginIdentifier, setLoginIdentifier] = useState("");
@@ -48,6 +49,8 @@ const Auth = () => {
   }, [navigate, showChangePasswordDialog]);
 
   const checkFirstLogin = async (userId: string) => {
+    if (checkingRef.current) return;
+    checkingRef.current = true;
     try {
       const { data: profile, error } = await supabase
         .from("profiles")
@@ -69,6 +72,7 @@ const Auth = () => {
       }
     } catch (error) {
       console.error("Erro:", error);
+      checkingRef.current = false;
       navigate("/dashboard");
     }
   };
