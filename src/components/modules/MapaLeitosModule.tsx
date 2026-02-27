@@ -102,9 +102,10 @@ export const MapaLeitosModule = () => {
         return {
           setor: sectorName,
           leito: `Leito ${bed.number}`,
-          status: bed.patient ? 'Ocupado' : 'Disponível',
           paciente: bed.patient?.nome || '-',
           hipotese: bed.patient?.hipoteseDiagnostica || '-',
+          conduta: bed.patient?.condutasOutros || '-',
+          observacao: bed.patient?.observacao || '-',
           dataInternacao: bed.patient?.dataInternacao || '-',
           susFacil: bed.patient?.susFacil || '-',
         };
@@ -122,11 +123,11 @@ export const MapaLeitosModule = () => {
       `Ocupação;${totalOccupancy.occupied}/${totalOccupancy.total}`,
       '',
     ];
-    const headers = ['Setor', 'Leito', 'Status', 'Paciente', 'Hipótese Diagnóstica', 'Data Internação', 'SUS Fácil'];
+    const headers = ['Setor', 'Leito', 'Paciente', 'Hipótese Diagnóstica', 'Conduta', 'Observações', 'Data Internação', 'SUS Fácil'];
     const csvContent = [
       ...meta,
       headers.join(';'),
-      ...data.map(row => [row.setor, row.leito, row.status, row.paciente, row.hipotese, row.dataInternacao, row.susFacil].join(';'))
+      ...data.map(row => [row.setor, row.leito, row.paciente, row.hipotese, row.conduta, row.observacao, row.dataInternacao, row.susFacil].join(';'))
     ].join('\n');
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -150,9 +151,9 @@ export const MapaLeitosModule = () => {
 
     autoTable(doc, {
       startY: 45,
-      head: [['Setor', 'Leito', 'Status', 'Paciente', 'Hipótese', 'Internação', 'SUS Fácil']],
-      body: data.map(r => [r.setor, r.leito, r.status, r.paciente, r.hipotese, r.dataInternacao, r.susFacil]),
-      styles: { fontSize: 8 },
+      head: [['Setor', 'Leito', 'Paciente', 'Hipótese', 'Conduta', 'Observações', 'Internação', 'SUS Fácil']],
+      body: data.map(r => [r.setor, r.leito, r.paciente, r.hipotese, r.conduta, r.observacao, r.dataInternacao, r.susFacil]),
+      styles: { fontSize: 7 },
       headStyles: { fillColor: [37, 99, 235] },
     });
 
