@@ -738,7 +738,7 @@ export function DashboardFaturamento() {
                     variant={perfFilterPeriodo === opt.value ? "default" : "outline"}
                     size="sm"
                     className="h-8 text-xs"
-                    onClick={() => setPerfFilterPeriodo(opt.value)}
+                    onClick={() => { setPerfFilterPeriodo(opt.value); if (opt.value !== "all") setSelectedPeriod(null); }}
                   >
                     {opt.label}
                   </Button>
