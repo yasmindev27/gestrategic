@@ -224,9 +224,17 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      const baseData = {
+            ...productForm,
+            codigo: productForm.codigo?.trim() || null,
+            descricao: productForm.descricao?.trim() || null,
+            categoria: productForm.categoria?.trim() || null,
+            localizacao: productForm.localizacao?.trim() || null,
+          };
+
       const insertData = isSegurancaSetor(setor) 
         ? {
-            ...productForm,
+            ...baseData,
             unidade_medida: "UN",
             localizacao: "Armário de Uniformes",
             quantidade_minima: 0,
@@ -234,7 +242,7 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
             created_by: user?.id,
           }
         : {
-            ...productForm,
+            ...baseData,
             setor_responsavel: setor,
             created_by: user?.id,
           };
