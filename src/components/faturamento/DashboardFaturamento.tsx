@@ -416,13 +416,11 @@ export function DashboardFaturamento() {
         const score = Math.round(scoreCompost);
 
         const metaAvaliados = item.avaliados >= META_AVALIADOS;
-        const progressoMeta = Math.min(Math.round((item.avaliados / META_AVALIADOS) * 100), 100);
+        // progressoMeta agora pode ultrapassar 100% para mostrar excedente
+        const progressoMeta = Math.round((item.avaliados / META_AVALIADOS) * 100);
 
-        // Conclusão não pode ser 100% se a meta não foi batida
-        let taxaConclusao = Math.round(fatorConclusao * 100);
-        if (!metaAvaliados && taxaConclusao === 100) {
-          taxaConclusao = progressoMeta;
-        }
+        // Conclusão baseada na quantidade real vs meta
+        let taxaConclusao = META_AVALIADOS > 0 ? Math.round((item.avaliados / META_AVALIADOS) * 100) : 0;
 
         // Faltante para meta do período e meta diária
         const faltantePeriodo = Math.max(META_AVALIADOS - item.avaliados, 0);
@@ -840,7 +838,11 @@ export function DashboardFaturamento() {
                         >
                           {item.avaliados}{item.metaAvaliados && " ✓"}
                         </Badge>
-                        <span className="text-xs text-muted-foreground">{item.progressoMeta}% da meta ({item.meta})</span>
+                        <span className="text-xs text-muted-foreground">
+                          {item.progressoMeta > 100
+                            ? `🔥 ${item.progressoMeta}% da meta (${item.meta}) — Excedente!`
+                            : `${item.progressoMeta}% da meta (${item.meta})`}
+                        </span>
                       </div>
                     </TableCell>
 
@@ -891,17 +893,26 @@ export function DashboardFaturamento() {
 
                     {/* Taxa de conclusão */}
                     <TableCell className="text-center">
-                      <span
-                        className={`text-sm font-semibold ${
-                          item.taxaConclusao >= 80
-                            ? "text-green-600"
-                            : item.taxaConclusao >= 50
-                            ? "text-amber-600"
-                            : "text-destructive"
-                        }`}
-                      >
-                        {item.taxaConclusao}%
-                      </span>
+                      <div className="flex flex-col items-center gap-0.5">
+                        <span
+                          className={`text-sm font-semibold ${
+                            item.taxaConclusao >= 100
+                              ? "text-green-600"
+                              : item.taxaConclusao >= 80
+                              ? "text-green-600"
+                              : item.taxaConclusao >= 50
+                              ? "text-amber-600"
+                              : "text-destructive"
+                          }`}
+                        >
+                          {item.taxaConclusao}%
+                        </span>
+                        {item.taxaConclusao > 100 && (
+                          <span className="text-xs text-green-600 font-medium">
+                            🔥 Excedente +{item.taxaConclusao - 100}%
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
 
                     {/* Score composto */}
