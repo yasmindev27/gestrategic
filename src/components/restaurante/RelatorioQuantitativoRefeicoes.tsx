@@ -48,6 +48,7 @@ interface RegistroRefeicao {
 
 interface SolicitacaoDieta {
   id: string;
+  paciente_nome: string | null;
   horarios_refeicoes: string[] | null;
   data_inicio: string;
   data_fim: string | null;
@@ -153,7 +154,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       // Buscar solicitações de dieta aprovadas no período
       const { data: dietas, error: dietasError } = await supabase
         .from("solicitacoes_dieta")
-        .select("id, horarios_refeicoes, data_inicio, data_fim, status, tem_acompanhante, observacoes")
+        .select("id, paciente_nome, horarios_refeicoes, data_inicio, data_fim, status, tem_acompanhante, observacoes")
         .eq("status", "aprovada")
         .lte("data_inicio", dataFim)
         .order("data_inicio", { ascending: true });
@@ -323,24 +324,47 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       });
 
       // Separar dietas normais e extras
-      const dietasNormais = dietasAtivasNoDia.filter(d => !d.observacoes?.includes("[DIETA EXTRA]"));
-      const dietasExtras = dietasAtivasNoDia.filter(d => d.observacoes?.includes("[DIETA EXTRA]"));
+      const dietasNormaisRaw = dietasAtivasNoDia.filter(d => !d.observacoes?.includes("[DIETA EXTRA]"));
+      const dietasExtrasRaw = dietasAtivasNoDia.filter(d => d.observacoes?.includes("[DIETA EXTRA]"));
 
+      // Deduplicar dietas por paciente: unificar horários de múltiplos registros do mesmo paciente
+      const deduplicarDietas = (lista: SolicitacaoDieta[]) => {
+        const porPaciente = new Map<string, { horarios: Set<string>; temAcompanhante: boolean }>();
+        lista.forEach(d => {
+          // Usar nome do paciente como chave de deduplicação
+          // Para extras sem nome, usar o ID como fallback (cada extra é único)
+          const chave = d.paciente_nome?.trim().toUpperCase() || d.id;
+          const horarios = (d.horarios_refeicoes && d.horarios_refeicoes.length > 0) 
+            ? d.horarios_refeicoes 
+            : ["cafe", "almoco", "lanche", "jantar"];
+          const temAcomp = d.tem_acompanhante || false;
+          
+          if (!porPaciente.has(chave)) {
+            porPaciente.set(chave, { horarios: new Set(horarios), temAcompanhante: temAcomp });
+          } else {
+            // Unificar horários: se o mesmo paciente tem [cafe, almoco] e [lanche, jantar], 
+            // resulta em [cafe, almoco, lanche, jantar] contado apenas 1x
+            const existing = porPaciente.get(chave)!;
+            horarios.forEach(h => existing.horarios.add(h));
+            if (temAcomp) existing.temAcompanhante = true;
+          }
+        });
+        return porPaciente;
+      };
+
+      // Para dietas normais, contar cada refeição apenas 1x por paciente
       let dietasCafe = 0;
       let dietasAlmoco = 0;
       let dietasLanche = 0;
       let dietasJantar = 0;
 
-      dietasNormais.forEach(d => {
-        const horarios = (d.horarios_refeicoes && d.horarios_refeicoes.length > 0) 
-          ? d.horarios_refeicoes 
-          : ["cafe", "almoco", "lanche", "jantar"];
-        const multiplicador = d.tem_acompanhante ? 2 : 1;
-
-        if (horarios.includes("cafe")) dietasCafe += multiplicador;
-        if (horarios.includes("almoco")) dietasAlmoco += multiplicador;
-        if (horarios.includes("lanche")) dietasLanche += multiplicador;
-        if (horarios.includes("jantar")) dietasJantar += multiplicador;
+      const normaisDedup = deduplicarDietas(dietasNormaisRaw);
+      normaisDedup.forEach(({ horarios, temAcompanhante }) => {
+        const multiplicador = temAcompanhante ? 2 : 1;
+        if (horarios.has("cafe")) dietasCafe += multiplicador;
+        if (horarios.has("almoco")) dietasAlmoco += multiplicador;
+        if (horarios.has("lanche")) dietasLanche += multiplicador;
+        if (horarios.has("jantar")) dietasJantar += multiplicador;
       });
 
       let extraCafe = 0;
@@ -348,7 +372,8 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       let extraLanche = 0;
       let extraJantar = 0;
 
-      dietasExtras.forEach(d => {
+      // Extras NÃO são deduplicados - cada registro representa uma refeição extra independente
+      dietasExtrasRaw.forEach(d => {
         const horarios = (d.horarios_refeicoes && d.horarios_refeicoes.length > 0) 
           ? d.horarios_refeicoes 
           : ["cafe", "almoco", "lanche", "jantar"];
