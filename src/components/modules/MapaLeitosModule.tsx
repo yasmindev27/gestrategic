@@ -263,6 +263,19 @@ export const MapaLeitosModule = () => {
       onConflict: 'shift_date,shift_type'
     });
 
+    // Record passagem de plantão
+    const { data: { user } } = await supabase.auth.getUser();
+    const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Desconhecido';
+
+    await supabase.from('passagem_plantao').insert({
+      shift_date: shiftInfo.data,
+      shift_type: shiftInfo.tipo,
+      colaborador_saida_id: user?.id || null,
+      colaborador_saida_nome: userName,
+      data_hora_conclusao: new Date().toISOString(),
+      justificativa: justificativa || null,
+    });
+
     // Log the action
     logAction('mapa_leitos', 'concluir_plantao', {
       data: shiftInfo.data,

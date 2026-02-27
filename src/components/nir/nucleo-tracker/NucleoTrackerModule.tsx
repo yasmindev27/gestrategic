@@ -8,6 +8,7 @@ import { ProducaoChart } from "./ProducaoChart";
 import { AtividadeChart } from "./AtividadeChart";
 import { Filtros } from "./Filtros";
 import { Relatorios } from "./Relatorios";
+import { PassagemPlantaoReport } from "./PassagemPlantaoReport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   FileCheck,
@@ -17,6 +18,7 @@ import {
   Activity,
   LayoutDashboard,
   FileText,
+  ClipboardList,
 } from "lucide-react";
 
 export function NucleoTrackerModule() {
@@ -73,7 +75,7 @@ export function NucleoTrackerModule() {
       </div>
 
       <Tabs defaultValue="painel" className="w-full">
-        <TabsList className={`grid w-full max-w-md ${isPrivileged ? 'grid-cols-2' : 'grid-cols-1'}`}>
+        <TabsList className={`grid w-full max-w-lg ${isPrivileged ? 'grid-cols-3' : 'grid-cols-1'}`}>
           <TabsTrigger value="painel" className="gap-2">
             <LayoutDashboard className="h-4 w-4" />
             Painel
@@ -81,7 +83,13 @@ export function NucleoTrackerModule() {
           {isPrivileged && (
             <TabsTrigger value="relatorios" className="gap-2">
               <FileText className="h-4 w-4" />
-              Relatórios
+              Relatório Produtividade
+            </TabsTrigger>
+          )}
+          {isPrivileged && (
+            <TabsTrigger value="passagem" className="gap-2">
+              <ClipboardList className="h-4 w-4" />
+              Passagem de Plantão
             </TabsTrigger>
           )}
         </TabsList>
@@ -122,6 +130,12 @@ export function NucleoTrackerModule() {
         {isPrivileged && (
           <TabsContent value="relatorios" className="mt-6">
             <Relatorios registros={registros} colaboradores={colaboradores} />
+          </TabsContent>
+        )}
+
+        {isPrivileged && (
+          <TabsContent value="passagem" className="mt-6">
+            <PassagemPlantaoReport />
           </TabsContent>
         )}
       </Tabs>

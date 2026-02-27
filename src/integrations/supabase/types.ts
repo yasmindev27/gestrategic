@@ -4126,6 +4126,54 @@ export type Database = {
         }
         Relationships: []
       }
+      passagem_plantao: {
+        Row: {
+          colaborador_entrada_id: string | null
+          colaborador_entrada_nome: string | null
+          colaborador_saida_id: string | null
+          colaborador_saida_nome: string
+          created_at: string
+          data_hora_assuncao: string | null
+          data_hora_conclusao: string
+          id: string
+          justificativa: string | null
+          shift_date: string
+          shift_type: string
+          tempo_troca_minutos: number | null
+          updated_at: string
+        }
+        Insert: {
+          colaborador_entrada_id?: string | null
+          colaborador_entrada_nome?: string | null
+          colaborador_saida_id?: string | null
+          colaborador_saida_nome: string
+          created_at?: string
+          data_hora_assuncao?: string | null
+          data_hora_conclusao?: string
+          id?: string
+          justificativa?: string | null
+          shift_date: string
+          shift_type: string
+          tempo_troca_minutos?: number | null
+          updated_at?: string
+        }
+        Update: {
+          colaborador_entrada_id?: string | null
+          colaborador_entrada_nome?: string | null
+          colaborador_saida_id?: string | null
+          colaborador_saida_nome?: string
+          created_at?: string
+          data_hora_assuncao?: string | null
+          data_hora_conclusao?: string
+          id?: string
+          justificativa?: string | null
+          shift_date?: string
+          shift_type?: string
+          tempo_troca_minutos?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       pedidos_compra: {
         Row: {
           aprovado_em: string | null
