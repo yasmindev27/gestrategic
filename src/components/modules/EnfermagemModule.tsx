@@ -49,11 +49,34 @@ export default function EnfermagemModule() {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
   const [mainTab, setMainTab] = useState('operacional');
   const [operacionalTab, setOperacionalTab] = useState('meus-plantoes');
+  const [canAccessProtocolos, setCanAccessProtocolos] = useState(false);
   // scirasTab removed
 
   useEffect(() => {
     logAction('acesso', 'enfermagem');
   }, [logAction]);
+
+  // Check if user can access Protocolos (SCIRAS profile or Coord. Enfermagem or admin)
+  useEffect(() => {
+    async function checkProtocolosAccess() {
+      if (!userId) return;
+      // Check SCIRAS profile
+      const { data: perfilData } = await supabase
+        .from('usuario_perfil')
+        .select('perfil_id, perfis_sistema!inner(nome)')
+        .eq('user_id', userId);
+      const hasSciras = perfilData?.some((p: any) => p.perfis_sistema?.nome === 'SCIRAS');
+      // Check coordinator cargo
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('cargo')
+        .eq('user_id', userId)
+        .single();
+      const isCoord = profileData?.cargo?.toLowerCase().includes('coordenador') && profileData?.cargo?.toLowerCase().includes('enfermagem');
+      setCanAccessProtocolos(role === 'admin' || !!hasSciras || !!isCoord);
+    }
+    checkProtocolosAccess();
+  }, [userId, role]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -155,10 +178,12 @@ export default function EnfermagemModule() {
                 <ClipboardCheck className="h-4 w-4" />
                 Aprovação de Ponto
               </TabsTrigger>
-              <TabsTrigger value="protocolos" className="gap-2 text-sm px-4 py-2">
-                <FileCheck className="h-4 w-4" />
-                Protocolos
-              </TabsTrigger>
+              {canAccessProtocolos && (
+                <TabsTrigger value="protocolos" className="gap-2 text-sm px-4 py-2">
+                  <FileCheck className="h-4 w-4" />
+                  Protocolos
+                </TabsTrigger>
+              )}
               <TabsTrigger value="indicadores-upa" className="gap-2 text-sm px-4 py-2">
                 <Activity className="h-4 w-4" />
                 Indicadores UPA
