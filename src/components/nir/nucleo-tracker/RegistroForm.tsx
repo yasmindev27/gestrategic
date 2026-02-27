@@ -65,13 +65,13 @@ export function RegistroForm({ onRegistroAdded }: Props) {
 
     try {
       await salvarRegistroDB(registro);
-      toast.success("Produção registrada com sucesso!");
+      toast.success("Tarefa registrada com sucesso!");
       setAtividade("");
       setQuantidade("");
       setObservacao("");
       onRegistroAdded();
     } catch {
-      toast.error("Erro ao registrar produção.");
+      toast.error("Erro ao registrar tarefa.");
     }
   };
 
@@ -79,7 +79,7 @@ export function RegistroForm({ onRegistroAdded }: Props) {
     <form onSubmit={handleSubmit} className="bg-card border border-border rounded-lg p-6 space-y-4">
       <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
         <Plus className="h-5 w-5 text-primary" />
-        Registrar Produção
+        Registrar Tarefa
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -133,13 +133,13 @@ export function RegistroForm({ onRegistroAdded }: Props) {
         <Textarea
           value={observacao}
           onChange={(e) => setObservacao(e.target.value)}
-          placeholder="Detalhes adicionais sobre a produção..."
+          placeholder="Detalhes adicionais sobre a tarefa..."
           rows={2}
         />
       </div>
 
       <Button type="submit" className="w-full md:w-auto">
-        Registrar Produção
+        Registrar Tarefa
       </Button>
     </form>
   );

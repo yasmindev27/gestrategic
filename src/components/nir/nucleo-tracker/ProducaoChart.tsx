@@ -21,7 +21,7 @@ export function ProducaoChart({ registros }: Props) {
 
   return (
     <div className="bg-card border border-border rounded-lg p-6">
-      <h2 className="text-lg font-semibold text-foreground mb-4">Produção por Colaborador</h2>
+      <h2 className="text-lg font-semibold text-foreground mb-4">Tarefas por Colaborador</h2>
       <ResponsiveContainer width="100%" height={280}>
         <BarChart data={data} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
