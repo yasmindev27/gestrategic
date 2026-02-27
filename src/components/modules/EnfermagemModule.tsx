@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Activity, Upload, FileCheck, ClipboardCheck, ClipboardList, Radio, Building2 } from 'lucide-react';
+import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Activity, Upload, FileCheck, ClipboardCheck, ClipboardList, Radio } from 'lucide-react';
 import { ProtocolosModule } from '@/components/protocolos/ProtocolosModule';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -169,10 +169,6 @@ export default function EnfermagemModule() {
               <TabsTrigger value="escala-radiologia" className="gap-2 text-sm px-4 py-2">
                 <Radio className="h-4 w-4" />
                 Escala Radiologia
-              </TabsTrigger>
-              <TabsTrigger value="escala-administrativa" className="gap-2 text-sm px-4 py-2">
-                <Building2 className="h-4 w-4" />
-                Escala Administrativa
               </TabsTrigger>
               <TabsTrigger value="aprovacao-ponto" className="gap-2 text-sm px-4 py-2">
                 <ClipboardCheck className="h-4 w-4" />
@@ -372,10 +368,6 @@ export default function EnfermagemModule() {
           <EscalaTecEnfermagem tipo="radiologia" />
         </TabsContent>
 
-        {/* ── Escala Administrativa ── */}
-        <TabsContent value="escala-administrativa" className="mt-6">
-          <EscalaTecEnfermagem tipo="administrativa" />
-        </TabsContent>
 
         {/* ── Aprovação de Ponto ── */}
         <TabsContent value="aprovacao-ponto" className="mt-6">
