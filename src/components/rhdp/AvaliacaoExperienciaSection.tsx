@@ -181,7 +181,8 @@ const addElaboradorFooter = (doc: jsPDF) => {
 const handleExportPDFFidedigno = async (av: AvaliacaoExperiencia) => {
   const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
   const pw = doc.internal.pageSize.width;
-  const margin = 14;
+  const ph = doc.internal.pageSize.height;
+  const margin = 12;
   const contentWidth = pw - margin * 2;
 
   // Load logo
@@ -193,37 +194,39 @@ const handleExportPDFFidedigno = async (av: AvaliacaoExperiencia) => {
     img.onerror = () => resolve(null);
   });
 
-  // ===================== PAGE 1 =====================
-  addFormHeader(doc, 1, 3, logoImg);
+  const totalPages = 2;
 
-  let y = 36;
+  // ===================== PAGE 1 (FRENTE) =====================
+  addFormHeader(doc, 1, totalPages, logoImg);
+
+  let y = 34;
 
   // Title
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text('FORM.RH.009 - AVALIAÇÃO DE EXPERIÊNCIA', pw / 2, y, { align: 'center' });
-  y += 8;
+  y += 6;
 
   // Período
-  doc.setFontSize(9);
+  doc.setFontSize(8);
   doc.setFont('helvetica', 'bold');
   const periodo45 = av.periodo_avaliacao === '45_dias' ? '(X)' : '(  )';
   const periodo90 = av.periodo_avaliacao === '90_dias' ? '(X)' : '(  )';
   doc.text(`PERÍODO DE AVALIAÇÃO: ${periodo45} 45 DIAS    ${periodo90} 90 DIAS`, margin, y);
-  y += 8;
+  y += 6;
 
-  // Dados do colaborador - table format
+  // Dados do colaborador - compact fields
   doc.setLineWidth(0.3);
   doc.setDrawColor(0);
 
-  const drawField = (label: string, value: string, x: number, yPos: number, width: number) => {
-    doc.rect(x, yPos, width, 10);
-    doc.setFontSize(7);
+  const drawField = (label: string, value: string, x: number, yPos: number, width: number, h: number = 8) => {
+    doc.rect(x, yPos, width, h);
+    doc.setFontSize(6);
     doc.setFont('helvetica', 'bold');
-    doc.text(label, x + 2, yPos + 4);
-    doc.setFontSize(9);
+    doc.text(label, x + 1.5, yPos + 3);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'normal');
-    doc.text(value || '', x + 2, yPos + 8);
+    doc.text(value || '', x + 1.5, yPos + 6.5);
   };
 
   // Row 1: Nome / Setor / Função
@@ -233,48 +236,48 @@ const handleExportPDFFidedigno = async (av: AvaliacaoExperiencia) => {
   drawField('Nome do Colaborador:', av.colaborador_nome, margin, y, col1W);
   drawField('Setor:', av.setor || '', margin + col1W, y, col2W);
   drawField('Função:', av.funcao || '', margin + col1W + col2W, y, col3W);
-  y += 10;
+  y += 8;
 
-  // Row 2: Data Admissão / Data Término / Data Avaliação
+  // Row 2: Datas
   const col3EqW = contentWidth / 3;
   drawField('Data de Admissão:', format(new Date(av.data_admissao + 'T12:00:00'), 'dd/MM/yyyy'), margin, y, col3EqW);
-  drawField('Data do Término de Experiência:', av.data_termino_experiencia ? format(new Date(av.data_termino_experiencia + 'T12:00:00'), 'dd/MM/yyyy') : '', margin + col3EqW, y, col3EqW);
+  drawField('Término Experiência:', av.data_termino_experiencia ? format(new Date(av.data_termino_experiencia + 'T12:00:00'), 'dd/MM/yyyy') : '', margin + col3EqW, y, col3EqW);
   drawField('Data da Avaliação:', format(new Date(av.data_avaliacao + 'T12:00:00'), 'dd/MM/yyyy'), margin + col3EqW * 2, y, col3EqW);
-  y += 10;
+  y += 8;
 
   // Row 3: Avaliador
   drawField('Nome do Avaliador:', av.avaliador_nome, margin, y, contentWidth);
-  y += 12;
+  y += 10;
 
-  // Intro text
-  doc.setFontSize(8);
+  // Intro text - compact
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'normal');
   const introText = 'A presente avaliação tem por finalidade subsidiar ações de gestão, feedback e desenvolvimento do novo colaborador em seu período de experiência. O instrumento consiste em itens que compõem as competências individuais, comportamentais e institucionais essenciais para trabalhar na UPA Antonio Jose dos Santos. Os itens serão avaliados com os seguintes critérios: Excelente, Bom, Regular e Insatisfatório.';
   const introLines = doc.splitTextToSize(introText, contentWidth);
   doc.text(introLines, margin, y);
-  y += introLines.length * 4 + 6;
+  y += introLines.length * 3 + 4;
 
-  // Helper to draw a competency block with radio-style options
-  const drawCompetencia = (comp: typeof COMPETENCIAS[0], selectedValue: string, startY: number): number => {
+  // Compact competency drawing for all 5 on page 1
+  const drawCompetenciaCompact = (comp: typeof COMPETENCIAS[0], selectedValue: string, startY: number): number => {
     let cy = startY;
 
     // Title
-    doc.setFontSize(10);
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
     doc.text(comp.titulo, margin, cy);
-    cy += 5;
+    cy += 4;
 
-    // Description if exists
+    // Description if exists - compact
     if (comp.descricao) {
-      doc.setFontSize(8);
-      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(6.5);
+      doc.setFont('helvetica', 'italic');
       const descLines = doc.splitTextToSize(comp.descricao, contentWidth);
       doc.text(descLines, margin, cy);
-      cy += descLines.length * 3.5 + 2;
+      cy += descLines.length * 2.8 + 1;
     }
 
-    // Options
-    doc.setFontSize(8);
+    // Options - inline compact
+    doc.setFontSize(7);
     for (const op of comp.opcoes) {
       const marker = op.value === selectedValue ? '(X)' : '(  )';
       doc.setFont('helvetica', 'bold');
@@ -284,97 +287,87 @@ const handleExportPDFFidedigno = async (av: AvaliacaoExperiencia) => {
       doc.setFont('helvetica', 'normal');
       const descLines = doc.splitTextToSize(op.desc, contentWidth - optTextWidth - 2);
       doc.text(descLines, margin + optTextWidth, cy);
-      cy += descLines.length * 3.5 + 2;
+      cy += descLines.length * 2.8 + 1.2;
     }
 
-    return cy + 3;
+    return cy + 2;
   };
 
-  // Competencies 1 & 2 on page 1
-  y = drawCompetencia(COMPETENCIAS[0], (av as any)[COMPETENCIAS[0].id], y);
-  y = drawCompetencia(COMPETENCIAS[1], (av as any)[COMPETENCIAS[1].id], y);
+  // All 5 competencies on page 1
+  for (const comp of COMPETENCIAS) {
+    y = drawCompetenciaCompact(comp, (av as any)[comp.id], y);
+  }
 
-  // Elaborador footer page 1
+  // Footer page 1
   addElaboradorFooter(doc);
 
-  // ===================== PAGE 2 =====================
+  // ===================== PAGE 2 (VERSO) =====================
   doc.addPage();
-  addFormHeader(doc, 2, 3, logoImg);
-  y = 36;
-
-  // Competencies 3, 4, 5
-  y = drawCompetencia(COMPETENCIAS[2], (av as any)[COMPETENCIAS[2].id], y);
-  y = drawCompetencia(COMPETENCIAS[3], (av as any)[COMPETENCIAS[3].id], y);
-  y = drawCompetencia(COMPETENCIAS[4], (av as any)[COMPETENCIAS[4].id], y);
-
-  addElaboradorFooter(doc);
-
-  // ===================== PAGE 3 =====================
-  doc.addPage();
-  addFormHeader(doc, 3, 3, logoImg);
-  y = 36;
+  addFormHeader(doc, 2, totalPages, logoImg);
+  y = 34;
 
   // Title
-  doc.setFontSize(11);
+  doc.setFontSize(10);
   doc.setFont('helvetica', 'bold');
   doc.text('FORM.RH.009 - AVALIAÇÃO DE EXPERIÊNCIA', pw / 2, y, { align: 'center' });
-  y += 10;
+  y += 8;
 
-  // Open-ended questions with boxes
-  const drawOpenQuestion = (question: string, answer: string, startY: number, boxHeight: number = 20): number => {
-    doc.setFontSize(9);
+  // Open-ended questions with boxes - compact
+  const drawOpenQuestion = (question: string, answer: string, startY: number, boxHeight: number = 18): number => {
+    doc.setFontSize(8);
     doc.setFont('helvetica', 'bold');
-    doc.text(question, margin, startY);
-    startY += 4;
+    const qLines = doc.splitTextToSize(question, contentWidth);
+    doc.text(qLines, margin, startY);
+    startY += qLines.length * 3.5 + 1;
     doc.setDrawColor(0);
     doc.setLineWidth(0.3);
     doc.rect(margin, startY, contentWidth, boxHeight);
     if (answer) {
-      doc.setFontSize(8);
+      doc.setFontSize(7);
       doc.setFont('helvetica', 'normal');
       const lines = doc.splitTextToSize(answer, contentWidth - 4);
-      doc.text(lines, margin + 2, startY + 5);
+      doc.text(lines, margin + 2, startY + 4);
     }
-    return startY + boxHeight + 5;
+    return startY + boxHeight + 4;
   };
 
-  y = drawOpenQuestion('Qual(is) as competências ou aspectos de destaque do colaborador(a)?', av.competencias_destaque || '', y, 22);
-  y = drawOpenQuestion('Qual(is) competências ou aspectos com necessidade de ajustes/melhorias do colaborador(a)?', av.competencias_ajustes || '', y, 22);
-  y = drawOpenQuestion('O que deve ser realizado para que o colaborador(a) possa se adequar as competências da instituição?', av.acoes_adequacao || '', y, 22);
-  y = drawOpenQuestion('Outros comentários e sugestões:', av.outros_comentarios || '', y, 22);
+  y = drawOpenQuestion('Qual(is) as competências ou aspectos de destaque do colaborador(a)?', av.competencias_destaque || '', y, 20);
+  y = drawOpenQuestion('Qual(is) competências ou aspectos com necessidade de ajustes/melhorias do colaborador(a)?', av.competencias_ajustes || '', y, 20);
+  y = drawOpenQuestion('O que deve ser realizado para que o colaborador(a) possa se adequar as competências da instituição?', av.acoes_adequacao || '', y, 20);
+  y = drawOpenQuestion('Outros comentários e sugestões:', av.outros_comentarios || '', y, 20);
 
   // Resultado
   y += 2;
-  doc.setFontSize(10);
+  doc.setFontSize(9);
   doc.setFont('helvetica', 'bold');
   const aprovadoMark = av.resultado === 'aprovado' ? '(X)' : '(  )';
   const reprovadoMark = av.resultado === 'reprovado' ? '(X)' : '(  )';
   doc.text('A AVALIAÇÃO DE EXPERIÊNCIA DO COLABORADOR FOI CONSIDERADA APROVADA?', margin, y);
-  y += 7;
-  doc.setFontSize(10);
+  y += 6;
+  doc.setFontSize(9);
   doc.text(`${aprovadoMark} APROVADO        ${reprovadoMark} REPROVADO`, margin, y);
-  y += 14;
+  y += 12;
 
   // Signatures
-  const sigWidth = 75;
-  const sigLeftX = margin + 10;
-  const sigRightX = pw - margin - sigWidth - 10;
+  const sigWidth = 70;
+  const sigLeftX = margin + 8;
+  const sigRightX = pw - margin - sigWidth - 8;
 
   doc.setLineWidth(0.4);
   doc.line(sigLeftX, y, sigLeftX + sigWidth, y);
   doc.line(sigRightX, y, sigRightX + sigWidth, y);
-  y += 5;
+  y += 4;
 
-  doc.setFontSize(8);
+  doc.setFontSize(7);
   doc.setFont('helvetica', 'bold');
   doc.text('Assinatura do(a) Avaliador(a)', sigLeftX, y);
   doc.text('Assinatura do Avaliado(a)', sigRightX, y);
-  y += 5;
+  y += 4;
   doc.setFont('helvetica', 'normal');
   doc.text(av.avaliador_nome, sigLeftX, y);
   doc.text(av.colaborador_nome, sigRightX, y);
 
-  // Elaborador footer page 3
+  // Footer page 2
   addElaboradorFooter(doc);
 
   // LGPD footer on all pages
@@ -382,12 +375,11 @@ const handleExportPDFFidedigno = async (av: AvaliacaoExperiencia) => {
   const lgpdText = 'Este relatório contém dados tratados em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018). O conteúdo é estritamente confidencial e destinado apenas ao uso autorizado.';
   for (let i = 1; i <= pageCount; i++) {
     doc.setPage(i);
-    const ph = doc.internal.pageSize.height;
-    doc.setFontSize(6);
+    doc.setFontSize(5.5);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(120, 120, 120);
     const splitLgpd = doc.splitTextToSize(lgpdText, contentWidth);
-    doc.text(splitLgpd, margin, ph - 8);
+    doc.text(splitLgpd, margin, ph - 7);
     doc.setTextColor(0, 0, 0);
   }
 
