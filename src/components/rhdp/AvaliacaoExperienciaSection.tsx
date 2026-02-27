@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useColaboradores } from "@/hooks/useProfissionais";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -413,6 +414,55 @@ export const AvaliacaoExperienciaSection = () => {
   const [comentarios, setComentarios] = useState("");
   const [resultado, setResultado] = useState("");
 
+  // Autocomplete colaborador
+  const { data: colaboradoresLookup } = useColaboradores();
+  const [showColabSuggestions, setShowColabSuggestions] = useState(false);
+  const colabRef = useRef<HTMLDivElement>(null);
+
+  const filteredColaboradores = useMemo(() => {
+    if (!colaborador.trim() || !colaboradoresLookup) return [];
+    const term = colaborador.toLowerCase();
+    return colaboradoresLookup
+      .filter(c => c.full_name?.toLowerCase().includes(term))
+      .slice(0, 8);
+  }, [colaborador, colaboradoresLookup]);
+
+  const handleSelectColaborador = (c: { full_name: string; cargo: string | null; setor: string | null }) => {
+    setColaborador(c.full_name || "");
+    setSetor(c.setor || "");
+    setFuncao(c.cargo || "");
+    setShowColabSuggestions(false);
+  };
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (colabRef.current && !colabRef.current.contains(e.target as Node)) {
+        setShowColabSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Auto-fill avaliador with logged-in user name
+  useEffect(() => {
+    const fetchLoggedUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("user_id", user.id)
+          .single();
+        if (profile?.full_name && !avaliador) {
+          setAvaliador(profile.full_name);
+        }
+      }
+    };
+    fetchLoggedUser();
+  }, []);
+
   const fetchAvaliacoes = async () => {
     const { data } = await supabase
       .from("avaliacoes_experiencia")
@@ -560,9 +610,30 @@ export const AvaliacaoExperienciaSection = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div ref={colabRef} className="relative">
                   <Label>Nome do Colaborador *</Label>
-                  <Input value={colaborador} onChange={e => setColaborador(e.target.value)} />
+                  <Input
+                    value={colaborador}
+                    onChange={e => { setColaborador(e.target.value); setShowColabSuggestions(true); }}
+                    onFocus={() => setShowColabSuggestions(true)}
+                    placeholder="Digite para buscar..."
+                    autoComplete="off"
+                  />
+                  {showColabSuggestions && filteredColaboradores.length > 0 && (
+                    <div className="absolute z-50 mt-1 w-full bg-popover border border-border rounded-md shadow-lg max-h-48 overflow-auto">
+                      {filteredColaboradores.map((c, i) => (
+                        <button
+                          key={i}
+                          type="button"
+                          className="w-full text-left px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground"
+                          onClick={() => handleSelectColaborador(c)}
+                        >
+                          <span className="font-medium">{c.full_name}</span>
+                          {c.cargo && <span className="text-muted-foreground ml-2">— {c.cargo}</span>}
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <Label>Setor</Label>
@@ -586,7 +657,7 @@ export const AvaliacaoExperienciaSection = () => {
                 </div>
                 <div>
                   <Label>Nome do Avaliador *</Label>
-                  <Input value={avaliador} onChange={e => setAvaliador(e.target.value)} />
+                  <Input value={avaliador} readOnly className="bg-muted" />
                 </div>
               </div>
 
