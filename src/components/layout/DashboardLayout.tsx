@@ -5,6 +5,7 @@ import GreetingHeader from "@/components/GreetingHeader";
 import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
 import { FloatingSegurancaButton } from "@/components/seguranca/FloatingSegurancaButton";
 import { GlobalSecurityAlarm } from "@/components/seguranca/GlobalSecurityAlarm";
+import { PendenciasAlertSystem } from "@/components/seguranca/PendenciasAlertSystem";
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
@@ -43,6 +44,7 @@ const DashboardLayout = memo(({
   return (
     <div className="flex min-h-screen bg-background">
       <GlobalSecurityAlarm />
+      <PendenciasAlertSystem />
       <Sidebar activeSection={activeSection} onSectionChange={onSectionChange} onOpenExternal={onOpenExternal} />
       
       {fullContent ? (

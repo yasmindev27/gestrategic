@@ -277,7 +277,7 @@ export const MapaLeitosModule = () => {
     });
   };
 
-  const handleConcluirPlantao = useCallback(async (justificativa?: string, pendencias?: string) => {
+  const handleConcluirPlantao = useCallback(async (justificativa?: string, pendencias?: string, destinatarioId?: string, destinatarioNome?: string) => {
     // Determine next shift
     const nextShiftType = shiftInfo.tipo === 'diurno' ? 'noturno' : 'diurno';
     let nextDate = shiftInfo.data;
@@ -334,21 +334,51 @@ export const MapaLeitosModule = () => {
     const { data: { user } } = await supabase.auth.getUser();
     const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Desconhecido';
 
-    await supabase.from('passagem_plantao').insert({
+    const { data: passagemData } = await supabase.from('passagem_plantao').insert({
       shift_date: shiftInfo.data,
       shift_type: shiftInfo.tipo,
       colaborador_saida_id: user?.id || null,
       colaborador_saida_nome: userName,
       data_hora_conclusao: new Date().toISOString(),
+      colaborador_entrada_id: destinatarioId || null,
+      colaborador_entrada_nome: destinatarioNome || null,
       justificativa: justificativa || null,
       pendencias: pendencias || null,
-    });
+    }).select('id').single();
+
+    // Create individual pendências records with timestamps and notifications
+    if (pendencias && passagemData?.id && destinatarioId) {
+      const linhas = pendencias.split('\n').filter(l => l.trim().length > 0);
+      for (const linha of linhas) {
+        const { data: pendenciaData } = await supabase.from('passagem_plantao_pendencias').insert({
+          passagem_id: passagemData.id,
+          descricao: linha.trim(),
+          registrado_por_id: user?.id || null,
+          registrado_por_nome: userName,
+          destinatario_id: destinatarioId,
+          destinatario_nome: destinatarioNome || '',
+          data_hora_registro: new Date().toISOString(),
+          status: 'pendente',
+        }).select('id').single();
+
+        // Create notification for the receiving professional
+        if (pendenciaData?.id) {
+          await supabase.from('notificacoes_pendencias').insert({
+            pendencia_id: pendenciaData.id,
+            destinatario_id: destinatarioId,
+            titulo: '⚠️ Pendência de Passagem de Plantão',
+            mensagem: `${userName} registrou uma pendência: "${linha.trim()}". Resolva e dê baixa.`,
+          });
+        }
+      }
+    }
 
     // Log the action
     logAction('mapa_leitos', 'concluir_plantao', {
       data: shiftInfo.data,
       tipo: shiftInfo.tipo,
       proximo_plantao: `${nextDate} ${nextShiftType}`,
+      destinatario: destinatarioNome || 'Não informado',
       justificativa: justificativa || 'Dentro do horário permitido',
     });
   }, [beds, shiftInfo, saveShiftConfig, logAction]);
