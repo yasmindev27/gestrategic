@@ -89,11 +89,6 @@ export const FormSepseAdulto = ({ onBack }: Props) => {
   const [choqueSeptico, setChoqueSeptico] = useState(false);
   const [destinoPaciente, setDestinoPaciente] = useState('');
 
-  // Troponin samples state
-  const emptySample = { collectionTime: '', result: '', releaseTime: '', collector: '' };
-  const [troponinSample1, setTroponinSample1] = useState(emptySample);
-  const [troponinSample2, setTroponinSample2] = useState(emptySample);
-  const [troponinSample3, setTroponinSample3] = useState(emptySample);
   const [focoPulmonar, setFocoPulmonar] = useState(false);
   const [focoUrinario, setFocoUrinario] = useState(false);
   const [focoAbdominal, setFocoAbdominal] = useState(false);
@@ -192,19 +187,6 @@ export const FormSepseAdulto = ({ onBack }: Props) => {
       disfuncao_pa_baixa: formData.get('disfuncao_pa_baixa') === 'on',
       disfuncao_sato2_baixa: formData.get('disfuncao_sato2_baixa') === 'on',
       disfuncao_consciencia: formData.get('disfuncao_consciencia') === 'on',
-      // Troponin samples
-      troponin_sample1_collection_time: toISOString(troponinSample1.collectionTime),
-      troponin_sample1_result: troponinSample1.result || null,
-      troponin_sample1_release_time: toISOString(troponinSample1.releaseTime),
-      troponin_sample1_collector: troponinSample1.collector || null,
-      troponin_sample2_collection_time: toISOString(troponinSample2.collectionTime),
-      troponin_sample2_result: troponinSample2.result || null,
-      troponin_sample2_release_time: toISOString(troponinSample2.releaseTime),
-      troponin_sample2_collector: troponinSample2.collector || null,
-      troponin_sample3_collection_time: toISOString(troponinSample3.collectionTime),
-      troponin_sample3_result: troponinSample3.result || null,
-      troponin_sample3_release_time: toISOString(troponinSample3.releaseTime),
-      troponin_sample3_collector: troponinSample3.collector || null,
       // Foco Infeccioso
       foco_pulmonar: focoPulmonar,
       foco_urinario: focoUrinario,
@@ -636,42 +618,6 @@ export const FormSepseAdulto = ({ onBack }: Props) => {
           </CardContent>
         </Card>
 
-        {/* Troponina */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Amostras de Troponina</CardTitle>
-            <CardDescription>Registre até 3 amostras</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[
-              { label: '1ª Amostra', sample: troponinSample1, onChange: setTroponinSample1 },
-              { label: '2ª Amostra', sample: troponinSample2, onChange: setTroponinSample2 },
-              { label: '3ª Amostra', sample: troponinSample3, onChange: setTroponinSample3 },
-            ].map(({ label, sample, onChange }) => (
-              <div key={label} className="space-y-3 p-4 border rounded-lg bg-muted/30">
-                <h4 className="font-medium text-sm text-foreground">{label}</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div className="space-y-1">
-                    <Label className="text-xs">Horário de Coleta</Label>
-                    <Input type="datetime-local" value={sample.collectionTime} onChange={e => onChange({ ...sample, collectionTime: e.target.value })} className="text-sm" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Resultado</Label>
-                    <Input value={sample.result} onChange={e => onChange({ ...sample, result: e.target.value })} placeholder="Ex: Positivo / Negativo / Valor" className="text-sm" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Horário de Liberação</Label>
-                    <Input type="datetime-local" value={sample.releaseTime} onChange={e => onChange({ ...sample, releaseTime: e.target.value })} className="text-sm" />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Responsável pela Coleta</Label>
-                    <Input value={sample.collector} onChange={e => onChange({ ...sample, collector: e.target.value })} placeholder="Nome do responsável" className="text-sm" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
 
         {/* Kit Sepse */}
         <Card>
