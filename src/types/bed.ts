@@ -12,6 +12,7 @@ export interface Patient {
   motivoAlta: MotivoAlta;
   estabelecimentoTransferencia: string;
   dataAlta?: string;
+  registradoEm?: string; // created_at from bed_records - timestamp real do cadastro
 }
 
 export interface Bed {

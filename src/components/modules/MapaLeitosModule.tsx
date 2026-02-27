@@ -101,12 +101,13 @@ export const MapaLeitosModule = () => {
       .map(bed => {
         const sectorName = SECTORS.find(s => s.id === bed.sector)?.name || bed.sector;
         let permanencia = '-';
-        if (bed.patient?.dataInternacao) {
+        const timestamp = bed.patient?.registradoEm;
+        if (timestamp) {
           try {
-            const dataInt = parseISO(bed.patient.dataInternacao);
+            const dataReg = parseISO(timestamp);
             const now = new Date();
-            const dias = differenceInDays(now, dataInt);
-            const horas = differenceInHours(now, dataInt) % 24;
+            const dias = differenceInDays(now, dataReg);
+            const horas = differenceInHours(now, dataReg) % 24;
             permanencia = dias > 0 ? `${dias}d ${horas}h` : `${horas}h`;
           } catch { /* ignore */ }
         }
