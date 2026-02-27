@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, FileText, ShieldX, ClipboardList, Users, UserCog, AlertTriangle, Stethoscope, BarChart3, UserCheck } from "lucide-react";
+import { Clock, FileText, ShieldX, ClipboardList, Users, UserCog, AlertTriangle, Stethoscope, BarChart3, UserCheck, CalendarDays, Radio, Building2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { BancoHorasSection } from "@/components/rhdp/BancoHorasSection";
@@ -12,11 +12,13 @@ import { ProfissionaisSaude } from "@/components/rh";
 import { ASOControl } from "@/components/seguranca-trabalho";
 import { AvaliacaoDesempenhoSection } from "@/components/rhdp/AvaliacaoDesempenhoSection";
 import { AvaliacaoExperienciaSection } from "@/components/rhdp/AvaliacaoExperienciaSection";
+import { EscalaTecEnfermagem } from "@/components/enfermagem";
 
 export const RHDPModule = () => {
   const { isAdmin, hasRole, isLoading } = useUserRole();
   const { logAction } = useLogAccess();
   const [activeTab, setActiveTab] = useState("banco-horas");
+  const [escalasSubTab, setEscalasSubTab] = useState("tecnicos");
 
   useEffect(() => {
     logAction("acesso_modulo", "rhdp");
@@ -63,12 +65,7 @@ export const RHDPModule = () => {
         </CardHeader>
         <CardContent>
           <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="grid w-full grid-cols-8">
-              <TabsTrigger value="banco-horas" className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span className="hidden sm:inline">Banco de Horas</span>
-                <span className="sm:hidden">Horas</span>
-              </TabsTrigger>
+            <TabsList className="flex flex-wrap h-auto gap-1">
               <TabsTrigger value="banco-horas" className="flex items-center gap-2">
                 <Clock className="h-4 w-4" />
                 <span className="hidden sm:inline">Banco de Horas</span>
@@ -82,6 +79,10 @@ export const RHDPModule = () => {
               <TabsTrigger value="aso" className="flex items-center gap-2">
                 <Stethoscope className="h-4 w-4" />
                 <span className="hidden sm:inline">ASO</span>
+              </TabsTrigger>
+              <TabsTrigger value="escalas" className="flex items-center gap-2">
+                <CalendarDays className="h-4 w-4" />
+                <span className="hidden sm:inline">Escalas</span>
               </TabsTrigger>
               <TabsTrigger value="formularios" className="flex items-center gap-2">
                 <ClipboardList className="h-4 w-4" />
@@ -120,6 +121,42 @@ export const RHDPModule = () => {
 
             <TabsContent value="aso" className="mt-6">
               <ASOControl />
+            </TabsContent>
+
+            <TabsContent value="escalas" className="mt-6">
+              <Tabs value={escalasSubTab} onValueChange={setEscalasSubTab}>
+                <TabsList className="flex flex-wrap h-auto gap-1">
+                  <TabsTrigger value="tecnicos" className="gap-2">
+                    <ClipboardList className="h-4 w-4" />
+                    Escala Técnicos
+                  </TabsTrigger>
+                  <TabsTrigger value="enfermeiros" className="gap-2">
+                    <Stethoscope className="h-4 w-4" />
+                    Escala Enfermeiros
+                  </TabsTrigger>
+                  <TabsTrigger value="radiologia" className="gap-2">
+                    <Radio className="h-4 w-4" />
+                    Escala Radiologia
+                  </TabsTrigger>
+                  <TabsTrigger value="administrativa" className="gap-2">
+                    <Building2 className="h-4 w-4" />
+                    Escala Administrativa
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="tecnicos" className="mt-4">
+                  <EscalaTecEnfermagem tipo="tecnicos" />
+                </TabsContent>
+                <TabsContent value="enfermeiros" className="mt-4">
+                  <EscalaTecEnfermagem tipo="enfermeiros" />
+                </TabsContent>
+                <TabsContent value="radiologia" className="mt-4">
+                  <EscalaTecEnfermagem tipo="radiologia" />
+                </TabsContent>
+                <TabsContent value="administrativa" className="mt-4">
+                  <EscalaTecEnfermagem tipo="administrativa" />
+                </TabsContent>
+              </Tabs>
             </TabsContent>
 
             <TabsContent value="formularios" className="mt-6">
