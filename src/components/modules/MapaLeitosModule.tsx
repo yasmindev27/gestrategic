@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Ambulance, Loader2 } from 'lucide-react';
-import jsPDF from 'jspdf';
+// jsPDF is dynamically imported via export-utils
 import autoTable from 'jspdf-autotable';
 import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
@@ -170,6 +170,7 @@ export const MapaLeitosModule = () => {
       })
       .map(bed => {
         const sectorName = SECTORS.find(s => s.id === bed.sector)?.name || bed.sector;
+        const bedLabel = typeof bed.number === 'string' ? bed.number : String(bed.number);
         let permanencia = '-';
         const timestamp = bed.patient?.registradoEm;
         if (timestamp) {
@@ -183,8 +184,8 @@ export const MapaLeitosModule = () => {
         }
         return {
           setor: sectorName,
-          leito: `Leito ${bed.number}`,
-          paciente: bed.patient?.nome || '-',
+          leito: `Leito ${bedLabel}`,
+          paciente: (bed.patient?.nome || '-').trim(),
           hipotese: bed.patient?.hipoteseDiagnostica || '-',
           conduta: bed.patient?.condutasOutros || '-',
           observacao: bed.patient?.observacao || '-',
@@ -221,29 +222,28 @@ export const MapaLeitosModule = () => {
     URL.revokeObjectURL(url);
   }, [getExportData, shiftInfo, totalOccupancy]);
 
-  const handleExportPDF = useCallback(() => {
+  const handleExportPDF = useCallback(async () => {
     const data = getExportData();
-    const doc = new jsPDF({ orientation: 'landscape' });
-    doc.setFontSize(14);
-    doc.text('Mapa de Leitos', 14, 15);
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Mapa de Leitos', 'landscape');
+
     doc.setFontSize(9);
-    doc.text(`Data: ${shiftInfo.data} | Plantão: ${shiftInfo.tipo === 'noturno' ? 'Noturno' : 'Diurno'} | Regulador NIR: ${shiftInfo.reguladorNIR || '-'}`, 14, 22);
-    doc.text(`Médicos: ${shiftInfo.medicos || '-'}`, 14, 28);
-    doc.text(`Enfermeiros: ${shiftInfo.enfermeiros || '-'}`, 14, 34);
-    doc.text(`Ocupação: ${totalOccupancy.occupied}/${totalOccupancy.total}`, 14, 40);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Data: ${shiftInfo.data} | Plantao: ${shiftInfo.tipo === 'noturno' ? 'Noturno' : 'Diurno'} | Regulador NIR: ${shiftInfo.reguladorNIR || '-'}`, 14, 32);
+    doc.text(`Medicos: ${shiftInfo.medicos || '-'}`, 14, 37);
+    doc.text(`Enfermeiros: ${shiftInfo.enfermeiros || '-'}`, 14, 42);
+    doc.text(`Ocupacao: ${totalOccupancy.occupied}/${totalOccupancy.total}`, 14, 47);
 
     autoTable(doc, {
-      startY: 45,
-      head: [['Setor', 'Leito', 'Paciente', 'Hipótese', 'Conduta', 'Obs.', 'Internação', 'Perm.', 'SUS']],
+      startY: 52,
+      head: [['Setor', 'Leito', 'Paciente', 'Hipotese', 'Conduta', 'Obs.', 'Internacao', 'Perm.', 'SUS']],
       body: data.map(r => [r.setor, r.leito, r.paciente, r.hipotese, r.conduta, r.observacao, r.dataInternacao, r.permanencia, r.susFacil]),
       styles: { fontSize: 7 },
       headStyles: { fillColor: [37, 99, 235] },
+      margin: { top: 32, bottom: 28 },
     });
 
-    doc.setFontSize(7);
-    doc.text('Documento confidencial - LGPD. Uso restrito à equipe assistencial.', 14, doc.internal.pageSize.height - 10);
-
-    doc.save(`mapa-leitos-${shiftInfo.data}.pdf`);
+    savePdfWithFooter(doc, 'Mapa de Leitos', `mapa-leitos-${shiftInfo.data}`, logoImg);
   }, [getExportData, shiftInfo, totalOccupancy]);
 
   const handleBedClick = (bed: Bed) => {
