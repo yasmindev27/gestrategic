@@ -4,6 +4,7 @@ import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useBeds } from '@/hooks/useBeds';
 import { useBedRecords } from '@/hooks/useBedRecords';
@@ -209,6 +210,68 @@ export const MapaLeitosModule = () => {
     });
   };
 
+  const handleConcluirPlantao = useCallback(async (justificativa?: string) => {
+    // Determine next shift
+    const nextShiftType = shiftInfo.tipo === 'diurno' ? 'noturno' : 'diurno';
+    let nextDate = shiftInfo.data;
+    // If current is noturno, next diurno is next day
+    if (shiftInfo.tipo === 'noturno') {
+      const d = new Date(shiftInfo.data + 'T12:00:00');
+      d.setDate(d.getDate() + 1);
+      nextDate = d.toISOString().split('T')[0];
+    }
+
+    // Save current shift config first
+    await saveShiftConfig();
+
+    // Copy all bed records to the next shift with blank staff
+    const bedsWithPatients = beds.filter(bed => bed.patient !== null);
+    
+    for (const bed of bedsWithPatients) {
+      if (bed.patient) {
+        await supabase.from('bed_records').upsert({
+          bed_id: bed.id,
+          bed_number: String(bed.number),
+          sector: bed.sector,
+          shift_date: nextDate,
+          shift_type: nextShiftType,
+          patient_name: bed.patient.nome || null,
+          hipotese_diagnostica: bed.patient.hipoteseDiagnostica || null,
+          data_internacao: bed.patient.dataInternacao || null,
+          data_nascimento: bed.patient.dataNascimento || null,
+          observacao: bed.patient.observacao || null,
+          condutas_outros: bed.patient.condutasOutros || null,
+          sus_facil: bed.patient.susFacil || null,
+          numero_sus_facil: bed.patient.numeroSusFacil || null,
+          medicos: '',
+          enfermeiros: '',
+          regulador_nir: '',
+        }, {
+          onConflict: 'bed_id,shift_date,shift_type'
+        });
+      }
+    }
+
+    // Create next shift config with blank staff
+    await supabase.from('shift_configurations').upsert({
+      shift_date: nextDate,
+      shift_type: nextShiftType,
+      medicos: '',
+      enfermeiros: '',
+      regulador_nir: '',
+    }, {
+      onConflict: 'shift_date,shift_type'
+    });
+
+    // Log the action
+    logAction('mapa_leitos', 'concluir_plantao', {
+      data: shiftInfo.data,
+      tipo: shiftInfo.tipo,
+      proximo_plantao: `${nextDate} ${nextShiftType}`,
+      justificativa: justificativa || 'Dentro do horário permitido',
+    });
+  }, [beds, shiftInfo, saveShiftConfig, logAction]);
+
   if (isLoadingRole) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -254,6 +317,7 @@ export const MapaLeitosModule = () => {
         shiftInfo={shiftInfo}
         onShiftInfoChange={updateShiftInfo}
         onSave={saveShiftConfig}
+        onConcluirPlantao={handleConcluirPlantao}
       />
 
       <OccupancySummary
