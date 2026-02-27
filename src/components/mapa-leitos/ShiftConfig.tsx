@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ShiftInfo } from '@/types/bed';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -20,7 +21,7 @@ interface ShiftConfigProps {
   shiftInfo: ShiftInfo;
   onShiftInfoChange: (info: ShiftInfo) => void;
   onSave?: () => Promise<void>;
-  onConcluirPlantao?: (justificativa?: string, pendencias?: string) => Promise<void>;
+  onConcluirPlantao?: (justificativa?: string, pendencias?: string, destinatarioId?: string, destinatarioNome?: string) => Promise<void>;
   pendenciasPassadas?: PendenciaItem[];
   pendenciasEncontradasList?: PendenciaItem[];
   onResolvePendencia?: (tipo: 'passadas' | 'encontradas', index: number) => void;
@@ -71,6 +72,8 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
   const [pendenciasEncontradasDialog, setPendenciasEncontradasDialog] = useState(false);
   const [pendenciasEncontradas, setPendenciasEncontradas] = useState('');
   const [firstSaveDone, setFirstSaveDone] = useState(false);
+  const [profissionaisNIR, setProfissionaisNIR] = useState<{ user_id: string; full_name: string }[]>([]);
+  const [destinatarioId, setDestinatarioId] = useState('');
 
   // User permission state
   const [isAdmin, setIsAdmin] = useState(false);
@@ -95,6 +98,19 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
       }
     };
     loadUserInfo();
+  }, []);
+
+  // Load NIR professionals for the selector
+  useEffect(() => {
+    const loadProfissionais = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .not('full_name', 'is', null)
+        .order('full_name');
+      if (data) setProfissionaisNIR(data.filter(p => p.full_name));
+    };
+    loadProfissionais();
   }, []);
 
   // Load original regulador when shift date/type changes and reset firstSaveDone per turno
@@ -260,14 +276,25 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
     }
     setJustificativa('');
     setPendencias('');
+    setDestinatarioId('');
     setConcluirDialogOpen(true);
   };
 
   const handleConfirmConcluir = async () => {
     if (!onConcluirPlantao) return;
+    if (!destinatarioId) {
+      toast.error('Selecione o profissional que está recebendo o plantão.');
+      return;
+    }
+    const destinatario = profissionaisNIR.find(p => p.user_id === destinatarioId);
     setIsConcluindo(true);
     try {
-      await onConcluirPlantao(needsJustificativa ? justificativa : undefined, pendencias.trim() || undefined);
+      await onConcluirPlantao(
+        needsJustificativa ? justificativa : undefined,
+        pendencias.trim() || undefined,
+        destinatarioId,
+        destinatario?.full_name || ''
+      );
       setConcluirDialogOpen(false);
       toast.success('Plantão concluído! Dados transferidos para o próximo plantão.');
     } catch (error) {
@@ -415,19 +442,34 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
           )}
 
           <div className="space-y-2">
+            <Label className="text-sm font-medium">Profissional que está recebendo o plantão *</Label>
+            <Select value={destinatarioId} onValueChange={setDestinatarioId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o profissional..." />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                {profissionaisNIR.map(p => (
+                  <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
             <Label className="text-sm font-medium">Pendências para o próximo regulador</Label>
+            <p className="text-xs text-muted-foreground">Cada linha será uma pendência individual rastreada com horário de registro e resolução.</p>
             <Textarea
               value={pendencias}
               onChange={(e) => setPendencias(e.target.value)}
-              placeholder="Descreva as pendências ou informações importantes para o próximo plantão..."
-              rows={3}
+              placeholder="Uma pendência por linha. Ex:&#10;Paciente leito 4 aguardando vaga UTI&#10;Falta resultado exame leito 8"
+              rows={4}
             />
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setConcluirDialogOpen(false)}>Cancelar</Button>
             <Button
               onClick={handleConfirmConcluir}
-              disabled={needsJustificativa && !justificativa.trim()}
+              disabled={(needsJustificativa && !justificativa.trim()) || !destinatarioId}
             >
               Confirmar Conclusão
             </Button>

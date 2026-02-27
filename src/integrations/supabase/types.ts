@@ -3972,6 +3972,47 @@ export type Database = {
         }
         Relationships: []
       }
+      notificacoes_pendencias: {
+        Row: {
+          created_at: string
+          destinatario_id: string
+          id: string
+          lida: boolean
+          mensagem: string
+          pendencia_id: string
+          respondida: boolean
+          titulo: string
+        }
+        Insert: {
+          created_at?: string
+          destinatario_id: string
+          id?: string
+          lida?: boolean
+          mensagem: string
+          pendencia_id: string
+          respondida?: boolean
+          titulo: string
+        }
+        Update: {
+          created_at?: string
+          destinatario_id?: string
+          id?: string
+          lida?: boolean
+          mensagem?: string
+          pendencia_id?: string
+          respondida?: boolean
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificacoes_pendencias_pendencia_id_fkey"
+            columns: ["pendencia_id"]
+            isOneToOne: false
+            referencedRelation: "passagem_plantao_pendencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notificacoes_seguranca: {
         Row: {
           created_at: string
@@ -4182,6 +4223,65 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      passagem_plantao_pendencias: {
+        Row: {
+          created_at: string
+          data_hora_registro: string
+          data_hora_resolucao: string | null
+          descricao: string
+          destinatario_id: string | null
+          destinatario_nome: string | null
+          id: string
+          passagem_id: string
+          registrado_por_id: string | null
+          registrado_por_nome: string
+          resolvido_por_id: string | null
+          resolvido_por_nome: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_hora_registro?: string
+          data_hora_resolucao?: string | null
+          descricao: string
+          destinatario_id?: string | null
+          destinatario_nome?: string | null
+          id?: string
+          passagem_id: string
+          registrado_por_id?: string | null
+          registrado_por_nome: string
+          resolvido_por_id?: string | null
+          resolvido_por_nome?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_hora_registro?: string
+          data_hora_resolucao?: string | null
+          descricao?: string
+          destinatario_id?: string | null
+          destinatario_nome?: string | null
+          id?: string
+          passagem_id?: string
+          registrado_por_id?: string | null
+          registrado_por_nome?: string
+          resolvido_por_id?: string | null
+          resolvido_por_nome?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passagem_plantao_pendencias_passagem_id_fkey"
+            columns: ["passagem_id"]
+            isOneToOne: false
+            referencedRelation: "passagem_plantao"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       pedidos_compra: {
         Row: {
