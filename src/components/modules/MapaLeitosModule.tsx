@@ -33,6 +33,9 @@ export const MapaLeitosModule = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [pendenciasPlantao, setPendenciasPlantao] = useState<string | null>(null);
   const [pendenciasEncontradas, setPendenciasEncontradas] = useState<string | null>(null);
+  const [resolvedPassadas, setResolvedPassadas] = useState<Set<number>>(new Set());
+  const [resolvedEncontradas, setResolvedEncontradas] = useState<Set<number>>(new Set());
+  const [passagemId, setPassagemId] = useState<string | null>(null);
 
   const { beds, isLoading: isBedsLoading, updateBed, transferPatient, occupancyBySector, totalOccupancy } = useBeds(shiftInfo.data);
   const { saveBedRecord, updateDailyStatistics } = useBedRecords();
@@ -50,7 +53,6 @@ export const MapaLeitosModule = () => {
       let prevDate = shiftInfo.data;
       let prevType: string;
       if (shiftInfo.tipo === 'diurno') {
-        // Previous shift was noturno of the same date (or previous day)
         prevType = 'noturno';
         const d = new Date(shiftInfo.data + 'T12:00:00');
         d.setDate(d.getDate() - 1);
@@ -59,7 +61,8 @@ export const MapaLeitosModule = () => {
         prevType = 'diurno';
       }
 
-      const { data } = await supabase
+      // Load pendências from previous shift conclusion
+      const { data: prevData } = await supabase
         .from('passagem_plantao')
         .select('pendencias')
         .eq('shift_date', prevDate)
@@ -69,7 +72,38 @@ export const MapaLeitosModule = () => {
         .limit(1)
         .maybeSingle();
 
-      setPendenciasPlantao(data?.pendencias || null);
+      setPendenciasPlantao(prevData?.pendencias || null);
+
+      // Load current shift passagem for encontradas and resolvidas
+      const { data: currentData } = await supabase
+        .from('passagem_plantao')
+        .select('id, pendencias_encontradas, pendencias_resolvidas')
+        .eq('shift_date', shiftInfo.data)
+        .eq('shift_type', shiftInfo.tipo)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (currentData) {
+        setPassagemId(currentData.id);
+        setPendenciasEncontradas(currentData.pendencias_encontradas || null);
+        // Parse resolved items
+        if (currentData.pendencias_resolvidas) {
+          try {
+            const parsed = JSON.parse(currentData.pendencias_resolvidas);
+            setResolvedPassadas(new Set(parsed.passadas || []));
+            setResolvedEncontradas(new Set(parsed.encontradas || []));
+          } catch {
+            setResolvedPassadas(new Set());
+            setResolvedEncontradas(new Set());
+          }
+        }
+      } else {
+        setPassagemId(null);
+        setPendenciasEncontradas(null);
+        setResolvedPassadas(new Set());
+        setResolvedEncontradas(new Set());
+      }
     };
     loadPendencias();
   }, [shiftInfo.data, shiftInfo.tipo]);
@@ -365,31 +399,75 @@ export const MapaLeitosModule = () => {
         onShiftInfoChange={updateShiftInfo}
         onSave={saveShiftConfig}
         onConcluirPlantao={handleConcluirPlantao}
-        pendenciasPlantao={
-          [pendenciasPlantao, pendenciasEncontradas ? `🔍 Pendências identificadas na assunção:\n${pendenciasEncontradas}` : null]
-            .filter(Boolean).join('\n\n') || null
+        pendenciasPassadas={
+          pendenciasPlantao
+            ? pendenciasPlantao.split('\n').filter(l => l.trim()).map((text, i) => ({
+                text,
+                resolved: resolvedPassadas.has(i),
+              }))
+            : []
         }
+        pendenciasEncontradasList={
+          pendenciasEncontradas
+            ? pendenciasEncontradas.split('\n').filter(l => l.trim()).map((text, i) => ({
+                text,
+                resolved: resolvedEncontradas.has(i),
+              }))
+            : []
+        }
+        onResolvePendencia={async (tipo, index) => {
+          const newSet = tipo === 'passadas'
+            ? new Set(resolvedPassadas)
+            : new Set(resolvedEncontradas);
+
+          if (newSet.has(index)) {
+            newSet.delete(index);
+          } else {
+            newSet.add(index);
+          }
+
+          if (tipo === 'passadas') {
+            setResolvedPassadas(newSet);
+          } else {
+            setResolvedEncontradas(newSet);
+          }
+
+          // Save to DB
+          const resolvedData = JSON.stringify({
+            passadas: Array.from(tipo === 'passadas' ? newSet : resolvedPassadas),
+            encontradas: Array.from(tipo === 'encontradas' ? newSet : resolvedEncontradas),
+          });
+
+          if (passagemId) {
+            await supabase.from('passagem_plantao').update({
+              pendencias_resolvidas: resolvedData,
+            }).eq('id', passagemId);
+          } else {
+            // Create passagem record for current shift
+            const { data: { user } } = await supabase.auth.getUser();
+            const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
+            const { data: newRec } = await supabase.from('passagem_plantao').insert({
+              shift_date: shiftInfo.data,
+              shift_type: shiftInfo.tipo,
+              colaborador_saida_nome: userName,
+              colaborador_saida_id: user?.id || null,
+              data_hora_conclusao: new Date().toISOString(),
+              tempo_troca_minutos: 0,
+              pendencias_resolvidas: resolvedData,
+            }).select('id').single();
+            if (newRec) setPassagemId(newRec.id);
+          }
+        }}
         onReportPendenciasEncontradas={async (text) => {
           const { data: { user } } = await supabase.auth.getUser();
           
-          // Try to update the existing passagem for this shift (created on conclusion)
-          const { data: existing } = await supabase
-            .from('passagem_plantao')
-            .select('id')
-            .eq('shift_date', shiftInfo.data)
-            .eq('shift_type', shiftInfo.tipo)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (existing) {
+          if (passagemId) {
             await supabase.from('passagem_plantao').update({
               pendencias_encontradas: text,
-            }).eq('id', existing.id);
+            }).eq('id', passagemId);
           } else {
-            // No passagem yet, create one with encontradas
             const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
-            await supabase.from('passagem_plantao').insert({
+            const { data: newRec } = await supabase.from('passagem_plantao').insert({
               shift_date: shiftInfo.data,
               shift_type: shiftInfo.tipo,
               colaborador_saida_nome: userName,
@@ -400,7 +478,8 @@ export const MapaLeitosModule = () => {
               data_hora_assuncao: new Date().toISOString(),
               tempo_troca_minutos: 0,
               pendencias_encontradas: text,
-            });
+            }).select('id').single();
+            if (newRec) setPassagemId(newRec.id);
           }
           
           setPendenciasEncontradas(text);
