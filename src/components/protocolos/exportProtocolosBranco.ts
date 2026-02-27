@@ -198,7 +198,7 @@ export async function exportDorToracicaPDF() {
   y = drawFieldRow(doc, y, [{ label: 'Competência', width: 2 }, { label: 'Nº Prontuário', width: 2 }, { label: 'Nome do Paciente', width: 4 }]);
   y = drawFieldRow(doc, y, [{ label: 'Sexo', width: 2 }, { label: 'Idade', width: 1 }]);
 
-  y = drawSectionHeader(doc, y, 'Indicador Protocolo Dor Torácica — Meta ≤ 10 min');
+  y = drawSectionHeader(doc, y, 'Indicador Protocolo Dor Torácica — Meta de 10 Minutos');
   y = drawFieldRow(doc, y, [{ label: 'Hora de Chegada', width: 2 }, { label: 'Hora do ECG', width: 2 }, { label: 'Tempo Porta-ECG', width: 2 }]);
   y = drawFieldRow(doc, y, [{ label: 'Classificação de Risco', width: 2 }, { label: '1º Atendimento Médico', width: 3 }]);
 
@@ -245,7 +245,7 @@ export async function exportDorToracicaWord() {
         wordFieldRow(['Nome do Paciente']),
         wordFieldRow(['Sexo', 'Idade']),
 
-        wordSection('Indicador Protocolo Dor Torácica — Meta ≤ 10 min'),
+        wordSection('Indicador Protocolo Dor Torácica — Meta de 10 Minutos'),
         wordFieldRow(['Hora de Chegada', 'Hora do ECG']),
         wordFieldRow(['Tempo Porta-ECG', 'Classificação de Risco']),
         wordFieldRow(['1º Atendimento Médico']),
