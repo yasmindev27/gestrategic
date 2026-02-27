@@ -544,14 +544,12 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
 
       if (diff > 0) {
         // Need to add records
-        const { data: { user } } = await supabase.auth.getUser();
         const inserts = Array.from({ length: diff }, () => ({
           tipo_pessoa: "colaborador",
           colaborador_nome: "Ajuste administrativo",
           tipo_refeicao: tipoRefeicao,
           data_registro: dataStr,
           hora_registro: "00:00",
-          registrado_por: user?.id || null,
         }));
         const { error } = await supabase.from("refeicoes_registros").insert(inserts);
         if (error) throw error;
