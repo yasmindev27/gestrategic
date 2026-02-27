@@ -127,7 +127,7 @@ export function Relatorios({ registros, colaboradores }: Props) {
 
     doc.setFontSize(18);
     doc.setFont("helvetica", "bold");
-    doc.text("NIR — Relatório de Produção", pageWidth / 2, 20, { align: "center" });
+    doc.text("NIR — Relatório de Tarefas", pageWidth / 2, 20, { align: "center" });
 
     doc.setFontSize(11);
     doc.setFont("helvetica", "normal");
