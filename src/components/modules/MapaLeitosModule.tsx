@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Ambulance, Loader2 } from 'lucide-react';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useBeds } from '@/hooks/useBeds';
@@ -99,6 +100,16 @@ export const MapaLeitosModule = () => {
       })
       .map(bed => {
         const sectorName = SECTORS.find(s => s.id === bed.sector)?.name || bed.sector;
+        let permanencia = '-';
+        if (bed.patient?.dataInternacao) {
+          try {
+            const dataInt = parseISO(bed.patient.dataInternacao);
+            const now = new Date();
+            const dias = differenceInDays(now, dataInt);
+            const horas = differenceInHours(now, dataInt) % 24;
+            permanencia = dias > 0 ? `${dias}d ${horas}h` : `${horas}h`;
+          } catch { /* ignore */ }
+        }
         return {
           setor: sectorName,
           leito: `Leito ${bed.number}`,
@@ -107,6 +118,7 @@ export const MapaLeitosModule = () => {
           conduta: bed.patient?.condutasOutros || '-',
           observacao: bed.patient?.observacao || '-',
           dataInternacao: bed.patient?.dataInternacao || '-',
+          permanencia,
           susFacil: bed.patient?.susFacil || '-',
         };
       });
@@ -123,11 +135,11 @@ export const MapaLeitosModule = () => {
       `Ocupação;${totalOccupancy.occupied}/${totalOccupancy.total}`,
       '',
     ];
-    const headers = ['Setor', 'Leito', 'Paciente', 'Hipótese Diagnóstica', 'Conduta', 'Observações', 'Data Internação', 'SUS Fácil'];
+    const headers = ['Setor', 'Leito', 'Paciente', 'Hipótese', 'Conduta', 'Observações', 'Internação', 'Permanência', 'SUS Fácil'];
     const csvContent = [
       ...meta,
       headers.join(';'),
-      ...data.map(row => [row.setor, row.leito, row.paciente, row.hipotese, row.conduta, row.observacao, row.dataInternacao, row.susFacil].join(';'))
+      ...data.map(row => [row.setor, row.leito, row.paciente, row.hipotese, row.conduta, row.observacao, row.dataInternacao, row.permanencia, row.susFacil].join(';'))
     ].join('\n');
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -151,8 +163,8 @@ export const MapaLeitosModule = () => {
 
     autoTable(doc, {
       startY: 45,
-      head: [['Setor', 'Leito', 'Paciente', 'Hipótese', 'Conduta', 'Observações', 'Internação', 'SUS Fácil']],
-      body: data.map(r => [r.setor, r.leito, r.paciente, r.hipotese, r.conduta, r.observacao, r.dataInternacao, r.susFacil]),
+      head: [['Setor', 'Leito', 'Paciente', 'Hipótese', 'Conduta', 'Obs.', 'Internação', 'Perm.', 'SUS']],
+      body: data.map(r => [r.setor, r.leito, r.paciente, r.hipotese, r.conduta, r.observacao, r.dataInternacao, r.permanencia, r.susFacil]),
       styles: { fontSize: 7 },
       headStyles: { fillColor: [37, 99, 235] },
     });
