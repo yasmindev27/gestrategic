@@ -1,5 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Ambulance, Loader2 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 import { Card, CardContent } from '@/components/ui/card';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useBeds } from '@/hooks/useBeds';
@@ -14,6 +16,7 @@ import {
   OccupancySummary, 
   ShiftConfig 
 } from '@/components/mapa-leitos';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
 import { Bed, Patient, Sector, SECTORS } from '@/types/bed';
 
 export const MapaLeitosModule = () => {
@@ -34,6 +37,7 @@ export const MapaLeitosModule = () => {
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const hasAccess = isAdmin || isNir;
+  const isLoading = isShiftLoading || isBedsLoading;
 
   useEffect(() => {
     if (hasAccess && !isLoadingRole) {
@@ -84,6 +88,64 @@ export const MapaLeitosModule = () => {
       }
     };
   }, [beds, syncToDatabase]);
+
+  const getExportData = useCallback(() => {
+    return beds
+      .filter(b => typeof b.number === 'number')
+      .sort((a, b) => {
+        const sectorOrder = SECTORS.findIndex(s => s.id === a.sector) - SECTORS.findIndex(s => s.id === b.sector);
+        if (sectorOrder !== 0) return sectorOrder;
+        return (a.number as number) - (b.number as number);
+      })
+      .map(bed => {
+        const sectorName = SECTORS.find(s => s.id === bed.sector)?.name || bed.sector;
+        return {
+          setor: sectorName,
+          leito: `Leito ${bed.number}`,
+          status: bed.patient ? 'Ocupado' : 'Disponível',
+          paciente: bed.patient?.nome || '-',
+          hipotese: bed.patient?.hipoteseDiagnostica || '-',
+          dataInternacao: bed.patient?.dataInternacao || '-',
+          susFacil: bed.patient?.susFacil || '-',
+        };
+      });
+  }, [beds]);
+
+  const handleExportCSV = useCallback(() => {
+    const data = getExportData();
+    const headers = ['Setor', 'Leito', 'Status', 'Paciente', 'Hipótese Diagnóstica', 'Data Internação', 'SUS Fácil'];
+    const csvContent = [
+      headers.join(';'),
+      ...data.map(row => [row.setor, row.leito, row.status, row.paciente, row.hipotese, row.dataInternacao, row.susFacil].join(';'))
+    ].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `mapa-leitos-${shiftInfo.data}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [getExportData, shiftInfo.data]);
+
+  const handleExportPDF = useCallback(() => {
+    const data = getExportData();
+    const doc = new jsPDF({ orientation: 'landscape' });
+    doc.setFontSize(16);
+    doc.text('Mapa de Leitos', 14, 15);
+    doc.setFontSize(10);
+    doc.text(`Data: ${shiftInfo.data} | Plantão: ${shiftInfo.tipo === 'noturno' ? 'Noturno' : 'Diurno'} | Regulador: ${shiftInfo.reguladorNIR || '-'}`, 14, 22);
+    doc.text(`Ocupação: ${totalOccupancy.occupied}/${totalOccupancy.total}`, 14, 28);
+
+    autoTable(doc, {
+      startY: 33,
+      head: [['Setor', 'Leito', 'Status', 'Paciente', 'Hipótese', 'Internação', 'SUS Fácil']],
+      body: data.map(r => [r.setor, r.leito, r.status, r.paciente, r.hipotese, r.dataInternacao, r.susFacil]),
+      styles: { fontSize: 8 },
+      headStyles: { fillColor: [37, 99, 235] },
+    });
+
+    doc.save(`mapa-leitos-${shiftInfo.data}.pdf`);
+  }, [getExportData, shiftInfo, totalOccupancy]);
 
   const handleBedClick = (bed: Bed) => {
     setSelectedBed(bed);
@@ -139,8 +201,6 @@ export const MapaLeitosModule = () => {
     );
   }
 
-  const isLoading = isShiftLoading || isBedsLoading;
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -154,6 +214,7 @@ export const MapaLeitosModule = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <ExportDropdown onExportPDF={handleExportPDF} onExportCSV={handleExportCSV} />
           <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary">
             {shiftInfo.tipo === 'noturno' ? '🌙 Plantão Noturno' : '☀️ Plantão Diurno'}
           </span>
