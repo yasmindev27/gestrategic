@@ -677,10 +677,6 @@ export function GerenciaModule() {
                 <Building2 className="h-4 w-4" />
                 Geral
               </TabsTrigger>
-              <TabsTrigger value="chamados" className="gap-1 text-xs sm:text-sm">
-                <Wrench className="h-4 w-4" />
-                Chamados
-              </TabsTrigger>
               <TabsTrigger value="faturamento" className="gap-1 text-xs sm:text-sm">
                 <ReceiptText className="h-4 w-4" />
                 Faturamento
@@ -771,9 +767,6 @@ export function GerenciaModule() {
               </div>
             </TabsContent>
 
-            <TabsContent value="chamados">
-              <ChamadosDashboard />
-            </TabsContent>
 
             <TabsContent value="faturamento">
               <DashboardFaturamento />
