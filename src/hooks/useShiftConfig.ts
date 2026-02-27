@@ -47,6 +47,34 @@ export function useShiftConfig(initialDate?: string) {
       onConflict: 'shift_date,shift_type'
     });
 
+    // Check if there's a pending passagem (no assunção yet) and fill it
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && configToSave.reguladorNIR) {
+        const { data: pendingPassagem } = await supabase
+          .from('passagem_plantao')
+          .select('id, data_hora_conclusao')
+          .eq('shift_date', configToSave.data)
+          .eq('shift_type', configToSave.tipo)
+          .is('data_hora_assuncao', null)
+          .limit(1)
+          .maybeSingle();
+
+        if (pendingPassagem) {
+          const now = new Date();
+          const conclusao = new Date(pendingPassagem.data_hora_conclusao);
+          const tempoMinutos = (now.getTime() - conclusao.getTime()) / 60000;
+
+          await supabase.from('passagem_plantao').update({
+            colaborador_entrada_id: user.id,
+            colaborador_entrada_nome: configToSave.reguladorNIR,
+            data_hora_assuncao: now.toISOString(),
+            tempo_troca_minutos: Math.round(tempoMinutos * 100) / 100,
+          }).eq('id', pendingPassagem.id);
+        }
+      }
+    } catch { /* non-critical */ }
+
     isSavingRef.current = false;
 
     if (error) {
