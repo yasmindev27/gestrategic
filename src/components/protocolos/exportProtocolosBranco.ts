@@ -446,7 +446,7 @@ export async function exportSepsePediatricoPDF() {
   y = drawFieldRow(doc, y, [{ label: 'Competência', width: 2 }, { label: 'Nº Prontuário', width: 2 }, { label: 'Nome do Paciente', width: 4 }]);
   y = drawFieldRow(doc, y, [{ label: 'Sexo', width: 2 }, { label: 'Idade', width: 1 }]);
 
-  y = drawSectionHeader(doc, y, 'Indicador — Meta ≤ 1h');
+  y = drawSectionHeader(doc, y, 'Indicador — Meta de 1 Hora');
   y = drawFieldRow(doc, y, [{ label: 'Hora de Chegada', width: 2 }, { label: 'Hora do ECG', width: 2 }, { label: 'Tempo Porta-ECG', width: 2 }]);
   y = drawFieldRow(doc, y, [{ label: 'Classificação de Risco', width: 2 }, { label: '1º Atendimento Médico', width: 2 }, { label: 'Médico Responsável', width: 2 }]);
 
@@ -502,7 +502,7 @@ export async function exportSepsePediatricoWord() {
         wordFieldRow(['Nome do Paciente']),
         wordFieldRow(['Sexo', 'Idade']),
 
-        wordSection('Indicador — Meta ≤ 1h'),
+        wordSection('Indicador — Meta de 1 Hora'),
         wordFieldRow(['Hora de Chegada', 'Hora do ECG']),
         wordFieldRow(['Tempo Porta-ECG', 'Classificação de Risco']),
         wordFieldRow(['1º Atendimento Médico', 'Médico Responsável']),
