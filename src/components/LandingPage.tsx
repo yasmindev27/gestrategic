@@ -307,6 +307,51 @@ const LandingPage = () => {
           </div>
         </section>
 
+        {/* ═══════════════ SEGURANÇA & LGPD ═══════════════ */}
+        <section id="seguranca" className="py-16 md:py-24 bg-white" aria-labelledby="seguranca-title">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 id="seguranca-title" className="text-2xl md:text-3xl font-bold text-[#1a2e44] mb-4">
+              Segurança & <span className="text-[#2d7dd2]">LGPD</span>
+            </h2>
+            <p className="text-[#5a7a9a] max-w-2xl mx-auto leading-relaxed">
+              Todos os dados são protegidos com criptografia de ponta a ponta, controle de acesso granular por perfil
+              e logout automático por inatividade. Estamos em total conformidade com a Lei Geral de Proteção de Dados.
+            </p>
+          </div>
+        </section>
+
+        {/* ═══════════════ SOBRE NÓS ═══════════════ */}
+        <section id="sobre" className="py-16 md:py-24 bg-[#f0f5fa]" aria-labelledby="sobre-title">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 id="sobre-title" className="text-2xl md:text-3xl font-bold text-[#1a2e44] mb-4">
+              Sobre a <span className="text-[#2d7dd2]">GESTRATEGIC</span>
+            </h2>
+            <p className="text-[#5a7a9a] max-w-2xl mx-auto leading-relaxed">
+              Somos especialistas em gestão e tecnologia da informação para o setor de saúde. Atuamos com
+              monitoramento 24/7, integração de sistemas hospitalares e automação de processos, garantindo
+              eficiência operacional e segurança dos dados.
+            </p>
+          </div>
+        </section>
+
+        {/* ═══════════════ CONTATO ═══════════════ */}
+        <section id="contato" className="py-16 md:py-24 bg-white" aria-labelledby="contato-title">
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <h2 id="contato-title" className="text-2xl md:text-3xl font-bold text-[#1a2e44] mb-4">
+              Entre em <span className="text-[#2d7dd2]">Contato</span>
+            </h2>
+            <p className="text-[#5a7a9a] max-w-xl mx-auto mb-6">
+              Agende uma consultoria gratuita e descubra como podemos transformar a gestão da sua unidade de saúde.
+            </p>
+            <Button
+              className="bg-[#2d7dd2] hover:bg-[#2570c2] text-white rounded-xl px-8 h-12 text-sm font-semibold shadow-lg shadow-[#2d7dd2]/25"
+              onClick={() => window.open("mailto:contato@gestrategic.com.br", "_blank")}
+            >
+              Fale Conosco
+            </Button>
+          </div>
+        </section>
+
         {/* ═══════════════ FOOTER ═══════════════ */}
         <footer className="bg-[#0d2137] text-[#5a7a9a] py-12 border-t border-white/5" role="contentinfo">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
