@@ -41,18 +41,9 @@ interface SavedShift {
 function isTimeAllowed(shiftDate: string, shiftType: string): { allowed: boolean; reason: string } {
   const now = new Date();
   const today = format(now, 'yyyy-MM-dd');
-  const currentHour = now.getHours();
 
   if (shiftDate !== today) {
     return { allowed: false, reason: 'Apenas o plantão do dia atual pode ser alterado.' };
-  }
-
-  if (shiftType === 'diurno' && (currentHour < 7 || currentHour >= 19)) {
-    return { allowed: false, reason: 'O plantão diurno só pode ser alterado entre 07:00 e 19:00.' };
-  }
-
-  if (shiftType === 'noturno' && (currentHour >= 7 && currentHour < 19)) {
-    return { allowed: false, reason: 'O plantão noturno só pode ser alterado entre 19:00 e 07:00.' };
   }
 
   return { allowed: true, reason: '' };
