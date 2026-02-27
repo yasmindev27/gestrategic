@@ -114,6 +114,9 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
   const [cafeLitroRegistros, setCafeLitroRegistros] = useState<CafeLitroDiario[]>([]);
   const [cafeLitroInputs, setCafeLitroInputs] = useState<Record<string, string>>({});
   const [savingCafeLitro, setSavingCafeLitro] = useState<string | null>(null);
+  const [editingCell, setEditingCell] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [savingCell, setSavingCell] = useState<string | null>(null);
   const [valoresRefeicoes, setValoresRefeicoes] = useState<Record<string, number>>({
     cafe: 0, almoco: 0, lanche: 0, jantar: 0, cafe_litro: 0
   });
@@ -423,6 +426,64 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
   useEffect(() => {
     fetchData();
   }, [dataInicio, dataFim]);
+
+  // Admin: save edited cell quantity
+  const saveEditedCell = async (dataStr: string, tipoRefeicao: string, newValue: number) => {
+    const cellKey = `${dataStr}-${tipoRefeicao}`;
+    setSavingCell(cellKey);
+    try {
+      // Get all records for that day+type and adjust
+      const { data: records } = await supabase
+        .from("refeicoes_registros")
+        .select("id")
+        .eq("data_registro", dataStr)
+        .eq("tipo_refeicao", tipoRefeicao);
+
+      const currentCount = records?.length || 0;
+      const diff = newValue - currentCount;
+
+      if (diff > 0) {
+        // Need to add records
+        const { data: { user } } = await supabase.auth.getUser();
+        const inserts = Array.from({ length: diff }, () => ({
+          tipo_pessoa: "colaborador",
+          colaborador_nome: "Ajuste administrativo",
+          tipo_refeicao: tipoRefeicao,
+          data_registro: dataStr,
+          hora_registro: "00:00",
+          registrado_por: user?.id || null,
+        }));
+        const { error } = await supabase.from("refeicoes_registros").insert(inserts);
+        if (error) throw error;
+      } else if (diff < 0) {
+        // Need to remove records (remove the most recent ones)
+        const toRemove = Math.abs(diff);
+        const { data: toDelete } = await supabase
+          .from("refeicoes_registros")
+          .select("id")
+          .eq("data_registro", dataStr)
+          .eq("tipo_refeicao", tipoRefeicao)
+          .order("created_at", { ascending: false })
+          .limit(toRemove);
+
+        if (toDelete && toDelete.length > 0) {
+          const { error } = await supabase
+            .from("refeicoes_registros")
+            .delete()
+            .in("id", toDelete.map(r => r.id));
+          if (error) throw error;
+        }
+      }
+
+      toast({ title: "Sucesso", description: "Quantidade atualizada!" });
+      setEditingCell(null);
+      fetchData();
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message || "Erro ao atualizar.", variant: "destructive" });
+    } finally {
+      setSavingCell(null);
+    }
+  };
 
   // Função para determinar o tipo de refeição por horário
   const determinarTipoRefeicaoPorHorario = (hora: string): string => {
@@ -1140,13 +1201,13 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                       <TableRow>
                         <TableHead rowSpan={2} className="border-r bg-muted">Data</TableHead>
                         <TableHead colSpan={7} className="text-center border-r bg-blue-500 text-white">
-                          🖥️ Totem (Colaboradores/Visitantes)
+                          Totem (Colaboradores/Visitantes)
                         </TableHead>
                         <TableHead colSpan={5} className="text-center border-r bg-orange-500 text-white">
-                          🍽️ Dietas (Pacientes/Acompanhantes)
+                          Dietas (Pacientes/Acompanhantes)
                         </TableHead>
                         <TableHead colSpan={5} className="text-center border-r bg-purple-500 text-white">
-                          ⭐ Extra
+                          Extra
                         </TableHead>
                         <TableHead rowSpan={2} className="text-center bg-emerald-600 text-white font-bold">
                           Total
@@ -1251,10 +1312,54 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                               </Button>
                             </div>
                           </TableCell>
-                          <TableCell className="text-center bg-blue-50">{q.cafe || "-"}</TableCell>
-                          <TableCell className="text-center bg-blue-50">{q.almoco || "-"}</TableCell>
-                          <TableCell className="text-center bg-blue-50">{q.lanche || "-"}</TableCell>
-                          <TableCell className="text-center bg-blue-50">{q.jantar || "-"}</TableCell>
+                          <TableCell className="text-center bg-blue-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-cafe` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveEditedCell(q.data, 'cafe', parseInt(editValue) || 0); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveEditedCell(q.data, 'cafe', parseInt(editValue) || 0)} disabled={savingCell === `${q.data}-cafe`}>{savingCell === `${q.data}-cafe` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-cafe`); setEditValue(String(q.cafe)); }}>{q.cafe || "-"}</span>
+                              )
+                            ) : (q.cafe || "-")}
+                          </TableCell>
+                          <TableCell className="text-center bg-blue-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-almoco` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveEditedCell(q.data, 'almoco', parseInt(editValue) || 0); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveEditedCell(q.data, 'almoco', parseInt(editValue) || 0)} disabled={savingCell === `${q.data}-almoco`}>{savingCell === `${q.data}-almoco` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-almoco`); setEditValue(String(q.almoco)); }}>{q.almoco || "-"}</span>
+                              )
+                            ) : (q.almoco || "-")}
+                          </TableCell>
+                          <TableCell className="text-center bg-blue-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-lanche` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveEditedCell(q.data, 'lanche', parseInt(editValue) || 0); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveEditedCell(q.data, 'lanche', parseInt(editValue) || 0)} disabled={savingCell === `${q.data}-lanche`}>{savingCell === `${q.data}-lanche` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-lanche`); setEditValue(String(q.lanche)); }}>{q.lanche || "-"}</span>
+                              )
+                            ) : (q.lanche || "-")}
+                          </TableCell>
+                          <TableCell className="text-center bg-blue-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-jantar` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveEditedCell(q.data, 'jantar', parseInt(editValue) || 0); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveEditedCell(q.data, 'jantar', parseInt(editValue) || 0)} disabled={savingCell === `${q.data}-jantar`}>{savingCell === `${q.data}-jantar` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-jantar`); setEditValue(String(q.jantar)); }}>{q.jantar || "-"}</span>
+                              )
+                            ) : (q.jantar || "-")}
+                          </TableCell>
                           <TableCell className="text-center bg-gray-100">{q.foraHorario || "-"}</TableCell>
                           <TableCell className="text-center border-r bg-blue-100 font-semibold text-blue-800">
                             {q.totalRefeicoes}
