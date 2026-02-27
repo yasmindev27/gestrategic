@@ -4438,10 +4438,12 @@ export type Database = {
           codigo: string | null
           created_at: string
           created_by: string | null
+          data_validade: string | null
           descricao: string | null
           id: string
           localizacao: string | null
           nome: string
+          numero_ca: string | null
           quantidade_atual: number | null
           quantidade_minima: number | null
           setor_responsavel: string
@@ -4454,10 +4456,12 @@ export type Database = {
           codigo?: string | null
           created_at?: string
           created_by?: string | null
+          data_validade?: string | null
           descricao?: string | null
           id?: string
           localizacao?: string | null
           nome: string
+          numero_ca?: string | null
           quantidade_atual?: number | null
           quantidade_minima?: number | null
           setor_responsavel: string
@@ -4470,10 +4474,12 @@ export type Database = {
           codigo?: string | null
           created_at?: string
           created_by?: string | null
+          data_validade?: string | null
           descricao?: string | null
           id?: string
           localizacao?: string | null
           nome?: string
+          numero_ca?: string | null
           quantidade_atual?: number | null
           quantidade_minima?: number | null
           setor_responsavel?: string

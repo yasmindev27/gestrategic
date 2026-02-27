@@ -134,6 +134,8 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
     quantidade_minima: 0,
     quantidade_atual: 0,
     localizacao: "",
+    numero_ca: "",
+    data_validade: "",
   });
 
   const [movForm, setMovForm] = useState({
@@ -240,6 +242,8 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
             quantidade_minima: 0,
             setor_responsavel: setor,
             created_by: user?.id,
+            numero_ca: productForm.numero_ca?.trim() || null,
+            data_validade: productForm.data_validade || null,
           }
         : {
             ...baseData,
@@ -270,6 +274,8 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
         quantidade_minima: 0,
         quantidade_atual: 0,
         localizacao: "",
+        numero_ca: "",
+        data_validade: "",
       });
       fetchProdutos();
     } catch (error) {
@@ -674,11 +680,27 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
                   />
                 </div>
                 <div className="space-y-2">
+                  <Label>Número do C.A.</Label>
+                  <Input
+                    value={productForm.numero_ca}
+                    onChange={(e) => setProductForm({ ...productForm, numero_ca: e.target.value })}
+                    placeholder="Ex: 12345"
+                  />
+                </div>
+                <div className="space-y-2">
                   <Label>Quantidade Inicial</Label>
                   <Input
                     type="number"
                     value={productForm.quantidade_atual}
                     onChange={(e) => setProductForm({ ...productForm, quantidade_atual: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Data de Validade</Label>
+                  <Input
+                    type="date"
+                    value={productForm.data_validade}
+                    onChange={(e) => setProductForm({ ...productForm, data_validade: e.target.value })}
                   />
                 </div>
               </>
