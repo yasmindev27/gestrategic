@@ -100,6 +100,108 @@ const createEmptyCartao = (): CartaoVacinaItem[] =>
     status: "aplicada",
   }));
 
+// ---- Collapsed collaborator list with expandable vaccine table ----
+function ColaboradorVacinaList({
+  vacinas,
+  searchTerm,
+  getStatusBadge,
+  onEdit,
+  onDelete,
+}: {
+  vacinas: Vacina[];
+  searchTerm: string;
+  getStatusBadge: (status: string) => React.ReactNode;
+  onEdit: (v: Vacina) => void;
+  onDelete: (id: string) => void;
+}) {
+  const [expandedColab, setExpandedColab] = useState<string | null>(null);
+
+  const grouped = useMemo(() => {
+    const map: Record<string, Vacina[]> = {};
+    vacinas.forEach((v) => {
+      if (!map[v.usuario_nome]) map[v.usuario_nome] = [];
+      map[v.usuario_nome].push(v);
+    });
+    return Object.entries(map)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .filter(([nome]) => nome.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [vacinas, searchTerm]);
+
+  if (grouped.length === 0) {
+    return <EmptyState icon={Users} title="Nenhum colaborador encontrado" description="Registre vacinas para visualizar aqui." />;
+  }
+
+  return (
+    <div className="space-y-1">
+      {grouped.map(([nome, vacinasColab]) => {
+        const aplicadas = vacinasColab.filter((v) => v.status === "aplicada").length;
+        const pendentes = vacinasColab.filter((v) => v.status === "pendente").length;
+        const isOpen = expandedColab === nome;
+
+        return (
+          <div key={nome} className="border rounded-lg overflow-hidden">
+            <button
+              type="button"
+              className="w-full flex items-center justify-between p-3 hover:bg-accent/50 transition-colors text-left"
+              onClick={() => setExpandedColab(isOpen ? null : nome)}
+            >
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <span className="font-medium text-sm">{nome}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Badge variant="default" className="text-xs">{aplicadas} aplicada(s)</Badge>
+                {pendentes > 0 && <Badge variant="outline" className="text-xs">{pendentes} pendente(s)</Badge>}
+                <span className="text-muted-foreground text-xs">{isOpen ? "▲" : "▼"}</span>
+              </div>
+            </button>
+
+            {isOpen && (
+              <div className="border-t px-3 pb-3">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Vacina</TableHead>
+                      <TableHead>Dose</TableHead>
+                      <TableHead>Aplicação</TableHead>
+                      <TableHead>Próxima Dose</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Registrado por</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {vacinasColab.map((v) => (
+                      <TableRow key={v.id}>
+                        <TableCell className="font-medium">{v.tipo_vacina}</TableCell>
+                        <TableCell>{v.dose || "-"}</TableCell>
+                        <TableCell>{format(new Date(v.data_aplicacao), "dd/MM/yyyy")}</TableCell>
+                        <TableCell>{v.data_proxima_dose ? format(new Date(v.data_proxima_dose), "dd/MM/yyyy") : "-"}</TableCell>
+                        <TableCell>{getStatusBadge(v.status)}</TableCell>
+                        <TableCell className="text-xs">{v.registrado_por_nome}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-1 justify-end">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => onEdit(v)}>
+                              <Edit className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive" onClick={() => onDelete(v.id)}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export function VacinasControl() {
   const [vacinas, setVacinas] = useState<Vacina[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
@@ -503,39 +605,17 @@ export function VacinasControl() {
         {/* Tab: Por Colaborador */}
         <TabsContent value="cartoes" className="space-y-4 mt-4">
           <Card>
+            <CardContent className="pt-6">
+              <SearchInput value={searchTerm} onChange={setSearchTerm} placeholder="Buscar colaborador..." />
+            </CardContent>
+          </Card>
+          <Card>
             <CardHeader>
               <CardTitle>Cartão de Vacinação por Colaborador</CardTitle>
-              <CardDescription>Visualize o status vacinal de cada colaborador</CardDescription>
+              <CardDescription>Clique no nome para ver todas as vacinas</CardDescription>
             </CardHeader>
             <CardContent>
-              {(() => {
-                const porColab = vacinas.reduce((acc, v) => {
-                  if (!acc[v.usuario_nome]) acc[v.usuario_nome] = { total: 0, aplicadas: 0, pendentes: 0, atrasadas: 0 };
-                  acc[v.usuario_nome].total++;
-                  if (v.status === "aplicada") acc[v.usuario_nome].aplicadas++;
-                  else if (v.status === "pendente") acc[v.usuario_nome].pendentes++;
-                  else acc[v.usuario_nome].atrasadas++;
-                  return acc;
-                }, {} as Record<string, { total: number; aplicadas: number; pendentes: number; atrasadas: number }>);
-
-                const entries = Object.entries(porColab).sort((a, b) => a[0].localeCompare(b[0]));
-                if (entries.length === 0) return <p className="text-muted-foreground text-sm text-center py-4">Nenhum dado disponível.</p>;
-
-                return (
-                  <div className="space-y-2">
-                    {entries.map(([nome, stats]) => (
-                      <div key={nome} className="flex justify-between items-center p-3 rounded-lg border">
-                        <span className="font-medium">{nome}</span>
-                        <div className="flex gap-2">
-                          <Badge variant="default">{stats.aplicadas} aplicada(s)</Badge>
-                          {stats.pendentes > 0 && <Badge variant="outline">{stats.pendentes} pendente(s)</Badge>}
-                          {stats.atrasadas > 0 && <Badge variant="destructive">{stats.atrasadas} atrasada(s)</Badge>}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                );
-              })()}
+              <ColaboradorVacinaList vacinas={vacinas} searchTerm={searchTerm} getStatusBadge={getStatusBadge} onEdit={handleEdit} onDelete={handleDelete} />
             </CardContent>
           </Card>
         </TabsContent>
