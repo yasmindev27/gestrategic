@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,24 +10,39 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ATIVIDADES, Atividade, Colaborador, RegistroProducao } from "./types";
+import { ATIVIDADES, Atividade, RegistroProducao } from "./types";
 import { salvarRegistroDB } from "./storage";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
 
 interface Props {
-  colaboradores: Colaborador[];
   onRegistroAdded: () => void;
 }
 
-export function RegistroForm({ colaboradores, onRegistroAdded }: Props) {
+export function RegistroForm({ onRegistroAdded }: Props) {
   const [colaborador, setColaborador] = useState("");
   const [atividade, setAtividade] = useState("");
   const [quantidade, setQuantidade] = useState("");
   const [observacao, setObservacao] = useState("");
   const [data, setData] = useState(() => new Date().toISOString().slice(0, 10));
 
-  const ativos = (colaboradores ?? []).filter((c) => c.ativo);
+  // Auto-fill colaborador from logged-in user
+  useEffect(() => {
+    const loadUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("user_id", user.id)
+        .single();
+      if (profile?.full_name) {
+        setColaborador(profile.full_name);
+      }
+    };
+    loadUser();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +64,6 @@ export function RegistroForm({ colaboradores, onRegistroAdded }: Props) {
     try {
       await salvarRegistroDB(registro);
       toast.success("Produção registrada com sucesso!");
-      setColaborador("");
       setAtividade("");
       setQuantidade("");
       setObservacao("");
@@ -69,21 +83,7 @@ export function RegistroForm({ colaboradores, onRegistroAdded }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label>Colaborador *</Label>
-          <Select value={colaborador} onValueChange={setColaborador}>
-            <SelectTrigger>
-              <SelectValue placeholder="Selecione o colaborador" />
-            </SelectTrigger>
-            <SelectContent>
-              {ativos.length === 0 && (
-                <div className="px-2 py-3 text-sm text-muted-foreground text-center">
-                  Cadastre colaboradores primeiro
-                </div>
-              )}
-              {ativos.map((c) => (
-                <SelectItem key={c.id} value={c.nome}>{c.nome}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <Input value={colaborador} disabled className="bg-muted" />
         </div>
 
         <div className="space-y-2">

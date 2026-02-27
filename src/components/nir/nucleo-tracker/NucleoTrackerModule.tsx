@@ -7,7 +7,7 @@ import { RegistrosTable } from "./RegistrosTable";
 import { ProducaoChart } from "./ProducaoChart";
 import { AtividadeChart } from "./AtividadeChart";
 import { Filtros } from "./Filtros";
-import { ColaboradorManager } from "./ColaboradorManager";
+
 import { Relatorios } from "./Relatorios";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -65,7 +65,7 @@ export function NucleoTrackerModule() {
             </p>
           </div>
         </div>
-        <ColaboradorManager onUpdate={refresh} />
+        
       </div>
 
       <Tabs defaultValue="painel" className="w-full">
@@ -88,7 +88,7 @@ export function NucleoTrackerModule() {
             <StatCard title="Contato c/ Estabelecimentos" value={countByAtividade("Contato")} icon={Phone} color="info" />
           </div>
 
-          <RegistroForm colaboradores={colaboradores} onRegistroAdded={refresh} />
+          <RegistroForm onRegistroAdded={refresh} />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <ProducaoChart registros={filtered} />
