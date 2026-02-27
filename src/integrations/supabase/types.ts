@@ -4138,6 +4138,8 @@ export type Database = {
           id: string
           justificativa: string | null
           pendencias: string | null
+          pendencias_encontradas: string | null
+          pendencias_resolvidas: string | null
           shift_date: string
           shift_type: string
           tempo_troca_minutos: number | null
@@ -4154,6 +4156,8 @@ export type Database = {
           id?: string
           justificativa?: string | null
           pendencias?: string | null
+          pendencias_encontradas?: string | null
+          pendencias_resolvidas?: string | null
           shift_date: string
           shift_type: string
           tempo_troca_minutos?: number | null
@@ -4170,6 +4174,8 @@ export type Database = {
           id?: string
           justificativa?: string | null
           pendencias?: string | null
+          pendencias_encontradas?: string | null
+          pendencias_resolvidas?: string | null
           shift_date?: string
           shift_type?: string
           tempo_troca_minutos?: number | null

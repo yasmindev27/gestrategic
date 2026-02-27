@@ -370,24 +370,38 @@ export const MapaLeitosModule = () => {
             .filter(Boolean).join('\n\n') || null
         }
         onReportPendenciasEncontradas={async (text) => {
-          // Store in passagem_plantao for the current shift
           const { data: { user } } = await supabase.auth.getUser();
-          const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
           
-          // Update the most recent passagem for the previous shift with encontradas info
-          // or create a record for the current shift
-          await supabase.from('passagem_plantao').insert({
-            shift_date: shiftInfo.data,
-            shift_type: shiftInfo.tipo,
-            colaborador_saida_nome: userName,
-            colaborador_saida_id: user?.id || null,
-            data_hora_conclusao: new Date().toISOString(),
-            colaborador_entrada_nome: userName,
-            colaborador_entrada_id: user?.id || null,
-            data_hora_assuncao: new Date().toISOString(),
-            tempo_troca_minutos: 0,
-            pendencias: `🔍 Pendências identificadas na assunção por ${userName}:\n${text}`,
-          });
+          // Try to update the existing passagem for this shift (created on conclusion)
+          const { data: existing } = await supabase
+            .from('passagem_plantao')
+            .select('id')
+            .eq('shift_date', shiftInfo.data)
+            .eq('shift_type', shiftInfo.tipo)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (existing) {
+            await supabase.from('passagem_plantao').update({
+              pendencias_encontradas: text,
+            }).eq('id', existing.id);
+          } else {
+            // No passagem yet, create one with encontradas
+            const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
+            await supabase.from('passagem_plantao').insert({
+              shift_date: shiftInfo.data,
+              shift_type: shiftInfo.tipo,
+              colaborador_saida_nome: userName,
+              colaborador_saida_id: user?.id || null,
+              data_hora_conclusao: new Date().toISOString(),
+              colaborador_entrada_nome: userName,
+              colaborador_entrada_id: user?.id || null,
+              data_hora_assuncao: new Date().toISOString(),
+              tempo_troca_minutos: 0,
+              pendencias_encontradas: text,
+            });
+          }
           
           setPendenciasEncontradas(text);
         }}
