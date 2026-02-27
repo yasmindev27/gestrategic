@@ -82,6 +82,12 @@ interface SusFacilStats {
   urgentes: number;
 }
 
+interface StayAndTurnover {
+  avgStayDays: number;
+  turnoverRate: number;
+  totalDischargesMonth: number;
+}
+
 const COLORS = ['hsl(142, 70%, 40%)', 'hsl(210, 65%, 45%)', 'hsl(38, 90%, 50%)', 'hsl(0, 72%, 51%)', 'hsl(280, 60%, 50%)'];
 
 type DatePreset = 'today' | 'week' | 'month' | 'custom';
@@ -110,6 +116,11 @@ export const NirDashboardModule = () => {
     efetivadosHoje: 0,
     urgentes: 0
   });
+  const [stayAndTurnover, setStayAndTurnover] = useState<StayAndTurnover>({
+    avgStayDays: 0,
+    turnoverRate: 0,
+    totalDischargesMonth: 0,
+  });
 
   const hasAccess = isAdmin || isNir;
 
@@ -118,7 +129,7 @@ export const NirDashboardModule = () => {
     
     const { data: bedRecords, error: bedError } = await supabase
       .from('bed_records')
-      .select('bed_id, sector, patient_name, data_alta, data_internacao')
+      .select('bed_id, sector, patient_name, data_alta, data_internacao, created_at')
       .eq('shift_date', today);
 
     if (bedError) throw bedError;
@@ -197,6 +208,47 @@ export const NirDashboardModule = () => {
       };
     });
     setDailyStats(stats);
+
+    // Calculate average stay and turnover from ALL bed_records (last 30 days)
+    const thirtyDaysAgo = format(subDays(new Date(), 30), 'yyyy-MM-dd');
+    const { data: allRecords } = await supabase
+      .from('bed_records')
+      .select('bed_id, sector, patient_name, data_alta, data_internacao, created_at')
+      .gte('shift_date', thirtyDaysAgo);
+
+    if (allRecords && allRecords.length > 0) {
+      // Average stay: use created_at as base (per project memory)
+      const stayDurations: number[] = [];
+      const dischargesCount = allRecords.filter(r => r.data_alta).length;
+
+      allRecords.forEach(r => {
+        if (r.created_at && r.data_alta) {
+          const start = new Date(r.created_at).getTime();
+          const end = new Date(r.data_alta).getTime();
+          const days = (end - start) / (1000 * 60 * 60 * 24);
+          if (days >= 0 && days < 365) stayDurations.push(days);
+        } else if (r.created_at && r.patient_name && !r.data_alta) {
+          // Still admitted - count current stay
+          const start = new Date(r.created_at).getTime();
+          const now = Date.now();
+          const days = (now - start) / (1000 * 60 * 60 * 24);
+          if (days >= 0 && days < 365) stayDurations.push(days);
+        }
+      });
+
+      const avgStay = stayDurations.length > 0
+        ? stayDurations.reduce((a, b) => a + b, 0) / stayDurations.length
+        : 0;
+
+      // Turnover = discharges / total beds (over 30 days)
+      const turnover = totalBeds > 0 ? dischargesCount / totalBeds : 0;
+
+      setStayAndTurnover({
+        avgStayDays: Math.round(avgStay * 10) / 10,
+        turnoverRate: Math.round(turnover * 100) / 100,
+        totalDischargesMonth: dischargesCount,
+      });
+    }
   }, [startDate, endDate]);
 
   const loadSusFacilData = useCallback(async () => {
@@ -673,6 +725,79 @@ export const NirDashboardModule = () => {
                   </div>
                   <div className={`p-3 rounded-xl ${getOccupancyBg(occupancyStats.occupancyRate)}`}>
                     <Activity className={`h-6 w-6 ${getOccupancyColor(occupancyStats.occupancyRate)}`} />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Taxa de Ocupação por Tipo de Leito */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Bed className="h-5 w-5 text-primary" />
+                Taxa de Ocupação por Tipo de Leito
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {sectorOccupancy.map((sector) => (
+                  <div
+                    key={sector.name}
+                    className={`rounded-lg border p-4 text-center ${getOccupancyBg(sector.rate)}`}
+                  >
+                    <p className="text-xs font-medium text-muted-foreground mb-1">{sector.name}</p>
+                    <p className={`text-2xl font-bold ${getOccupancyColor(sector.rate)}`}>
+                      {sector.rate}%
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {sector.occupied}/{sector.total} leitos
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Taxa de Permanência e Rotatividade */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Card className="border-l-4 border-l-primary">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Clock className="h-4 w-4" />
+                      Taxa de Permanência Média
+                    </p>
+                    <p className="text-4xl font-bold text-primary">
+                      {stayAndTurnover.avgStayDays}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">dias (últimos 30 dias)</p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-primary/10">
+                    <Clock className="h-8 w-8 text-primary" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-l-4 border-l-secondary">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-muted-foreground flex items-center gap-2">
+                      <TrendingUp className="h-4 w-4" />
+                      Taxa de Rotatividade de Leitos
+                    </p>
+                    <p className="text-4xl font-bold text-foreground">
+                      {stayAndTurnover.turnoverRate}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {stayAndTurnover.totalDischargesMonth} altas / {occupancyStats.totalBeds} leitos (30 dias)
+                    </p>
+                  </div>
+                  <div className="p-4 rounded-xl bg-secondary/10">
+                    <TrendingUp className="h-8 w-8 text-secondary" />
                   </div>
                 </div>
               </CardContent>
