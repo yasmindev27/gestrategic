@@ -1,16 +1,17 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Ambulance, LayoutDashboard, BedDouble, ExternalLink, Truck, Navigation } from "lucide-react";
+import { Ambulance, LayoutDashboard, BedDouble, ExternalLink, Truck, Navigation, BarChart3 } from "lucide-react";
 import { NirDashboardModule } from "./NirDashboardModule";
 import { MapaLeitosModule } from "./MapaLeitosModule";
 
 import { TransferenciasModule } from "@/components/nir/TransferenciasModule";
+import { NucleoTrackerModule } from "@/components/nir/nucleo-tracker/NucleoTrackerModule";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { useRealtimeSync, REALTIME_PRESETS } from "@/hooks/useRealtimeSync";
 import logoSusFacil from "@/assets/logo-susfacil.png";
 
-type NirView = "menu" | "dashboard" | "mapa-leitos" | "transferencias";
+type NirView = "menu" | "dashboard" | "mapa-leitos" | "transferencias" | "relatorio";
 
 interface NirModuleProps {
   onOpenExternal?: (url: string, title: string) => void;
@@ -63,6 +64,16 @@ export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
     );
   }
 
+  if (currentView === "relatorio") {
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" onClick={() => handleViewChange("menu")} className="mb-2">
+          ← Voltar ao NIR
+        </Button>
+        <NucleoTrackerModule />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -179,6 +190,26 @@ export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
             <Button variant="outline" className="w-full gap-2">
               <ExternalLink className="h-4 w-4" />
               Acessar Portal
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
+          onClick={() => handleViewChange("relatorio")}
+        >
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
+              <BarChart3 className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle className="mt-4">Relatório</CardTitle>
+            <CardDescription>
+              Produtividade e indicadores da equipe NIR
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Button variant="outline" className="w-full">
+              Acessar Relatório
             </Button>
           </CardContent>
         </Card>
