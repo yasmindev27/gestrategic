@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Clock, FileText, ShieldX, ClipboardList, Users, UserCog, AlertTriangle, Stethoscope, BarChart3, UserCheck, CalendarDays, Radio, Building2 } from "lucide-react";
+import { Clock, FileText, ShieldX, ClipboardList, Users, UserCog, AlertTriangle, Stethoscope, BarChart3, UserCheck, CalendarDays, Radio, Building2, Pill } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { BancoHorasSection } from "@/components/rhdp/BancoHorasSection";
@@ -142,6 +142,10 @@ export const RHDPModule = () => {
                     <Building2 className="h-4 w-4" />
                     Escala Administrativa
                   </TabsTrigger>
+                  <TabsTrigger value="farmacia" className="gap-2">
+                    <Pill className="h-4 w-4" />
+                    Escala Farmácia
+                  </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="tecnicos" className="mt-4">
@@ -155,6 +159,9 @@ export const RHDPModule = () => {
                 </TabsContent>
                 <TabsContent value="administrativa" className="mt-4">
                   <EscalaTecEnfermagem tipo="administrativa" />
+                </TabsContent>
+                <TabsContent value="farmacia" className="mt-4">
+                  <EscalaTecEnfermagem tipo="farmacia" />
                 </TabsContent>
               </Tabs>
             </TabsContent>

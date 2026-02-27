@@ -31,7 +31,7 @@ import autoTable from 'jspdf-autotable';
    CONFIGURAÇÕES POR TIPO DE ESCALA
    ===================================================== */
 
-export type EscalaTipo = 'tecnicos' | 'enfermeiros' | 'radiologia' | 'administrativa';
+export type EscalaTipo = 'tecnicos' | 'enfermeiros' | 'radiologia' | 'administrativa' | 'farmacia';
 
 interface SetorCode {
   code: string;
@@ -147,6 +147,31 @@ const ESCALA_CONFIGS: Record<EscalaTipo, EscalaTipoConfig> = {
       { code: 'LIM', label: 'Limpeza', color: 'bg-teal-100 text-teal-800' },
       { code: 'RES', label: 'Restaurante', color: 'bg-cyan-100 text-cyan-800' },
       { code: 'MAN', label: 'Manutenção', color: 'bg-indigo-100 text-indigo-800' },
+      { code: 'AF', label: 'Afastamento', color: 'bg-gray-200 text-gray-700' },
+    ],
+    grupos: [
+      { value: 'noturno_impar', label: 'Noturno (Ímpares)', horario: '19:00 AS 07:00' },
+      { value: 'noturno_par', label: 'Noturno (Pares)', horario: '19:00 AS 07:00' },
+      { value: 'diurno_impar', label: 'Diurno (Ímpares)', horario: '07:00 AS 19:00' },
+      { value: 'diurno_par', label: 'Diurno (Pares)', horario: '07:00 AS 19:00' },
+      { value: 'especial', label: 'Especial', horario: '' },
+    ],
+  },
+  farmacia: {
+    titulo: 'ESCALA DE SERVIÇO DE FARMÁCIA',
+    tituloCard: 'Escala de Farmácia',
+    registroLabel: 'CRF',
+    pdfFilename: 'Escala_Farmacia',
+    setorCodes: [
+      { code: '', label: 'Folga', color: 'bg-gray-50 text-gray-400' },
+      { code: 'D', label: 'Diurno 07:00-19:00', color: 'bg-yellow-100 text-yellow-800' },
+      { code: 'N', label: 'Noturno 19:00-07:00', color: 'bg-indigo-100 text-indigo-800' },
+      { code: 'P', label: 'Plantão 24h', color: 'bg-red-100 text-red-800' },
+      { code: 'DISP', label: 'Dispensação', color: 'bg-green-100 text-green-800' },
+      { code: 'CTR', label: 'Controle/Estoque', color: 'bg-blue-100 text-blue-800' },
+      { code: 'HE', label: 'Hora Extra', color: 'bg-orange-100 text-orange-800' },
+      { code: 'FE', label: 'Férias', color: 'bg-emerald-100 text-emerald-800' },
+      { code: 'BH', label: 'Banco de Horas', color: 'bg-cyan-100 text-cyan-800' },
       { code: 'AF', label: 'Afastamento', color: 'bg-gray-200 text-gray-700' },
     ],
     grupos: [
@@ -273,6 +298,9 @@ export function EscalaTecEnfermagem({ tipo = 'tecnicos' }: EscalaTecEnfermagemPr
   const createEscalaMutation = useMutation({
     mutationFn: async () => {
       const { data: userData } = await supabase.auth.getUser();
+      const defaultCoord = tipo === 'farmacia' 
+        ? { coordenadora_nome: 'Cristina Angelina da Silva', coordenadora_coren: '' }
+        : {};
       const { data, error } = await supabase
         .from('escalas_tec_enfermagem')
         .insert({
@@ -281,6 +309,7 @@ export function EscalaTecEnfermagem({ tipo = 'tecnicos' }: EscalaTecEnfermagemPr
           tipo,
           titulo: config.titulo,
           created_by: userData.user?.id,
+          ...defaultCoord,
         })
         .select()
         .single();
@@ -657,7 +686,7 @@ export function EscalaTecEnfermagem({ tipo = 'tecnicos' }: EscalaTecEnfermagemPr
       if (escala.coordenadora_coren) {
         doc.text(`${config.registroLabel} ${escala.coordenadora_coren}`, pageWidth - 60, startY + 10);
       }
-      doc.text('COORDENADORA DE ENFERMAGEM', pageWidth - 60, startY + 14);
+      doc.text(tipo === 'farmacia' ? 'RESPONSÁVEL TÉCNICA - FARMÁCIA' : 'COORDENADORA DE ENFERMAGEM', pageWidth - 60, startY + 14);
     }
 
     doc.setFontSize(5);
@@ -869,7 +898,7 @@ export function EscalaTecEnfermagem({ tipo = 'tecnicos' }: EscalaTecEnfermagemPr
               <div className="text-right text-xs space-y-0.5 pt-4">
                 <p className="font-semibold">{escala.coordenadora_nome}</p>
                 {escala.coordenadora_coren && <p>{config.registroLabel} {escala.coordenadora_coren}</p>}
-                <p>COORDENADORA DE ENFERMAGEM</p>
+                <p>{tipo === 'farmacia' ? 'RESPONSÁVEL TÉCNICA - FARMÁCIA' : 'COORDENADORA DE ENFERMAGEM'}</p>
               </div>
             )}
           </div>
