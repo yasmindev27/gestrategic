@@ -113,11 +113,15 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
     // If shift was never saved, anyone can create the first entry
     if (!shiftAlreadySaved) return true;
 
-    // Admin always can edit
+    // Admin always can edit (any day)
     if (isAdmin) return true;
 
-    // User named "Blendon" (case-insensitive partial match)
-    if (currentUserName && currentUserName.toLowerCase().includes('blendon')) return true;
+    const now = new Date();
+    const today = format(now, 'yyyy-MM-dd');
+    const isToday = shiftInfo.data === today;
+
+    // Blendon can edit only today's shift
+    if (currentUserName && currentUserName.toLowerCase().includes('blendon') && isToday) return true;
 
     // Original regulador can edit
     if (originalRegulador && currentUserName && 
