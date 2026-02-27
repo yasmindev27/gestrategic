@@ -27,17 +27,15 @@ interface SavedShift {
   created_at: string;
 }
 
-function isEditingAllowed(shiftDate: string, shiftType: string): { allowed: boolean; reason: string } {
+function isTimeAllowed(shiftDate: string, shiftType: string): { allowed: boolean; reason: string } {
   const now = new Date();
   const today = format(now, 'yyyy-MM-dd');
   const currentHour = now.getHours();
 
-  // Only today's shift can be edited
   if (shiftDate !== today) {
     return { allowed: false, reason: 'Apenas o plantão do dia atual pode ser alterado.' };
   }
 
-  // Diurno: 07:00–18:59 | Noturno: 19:00–06:59
   if (shiftType === 'diurno' && (currentHour < 7 || currentHour >= 19)) {
     return { allowed: false, reason: 'O plantão diurno só pode ser alterado entre 07:00 e 19:00.' };
   }
@@ -56,15 +54,90 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
   const [isLoadingShifts, setIsLoadingShifts] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  const editCheck = useMemo(
-    () => isEditingAllowed(shiftInfo.data, shiftInfo.tipo),
+  // User permission state
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUserName, setCurrentUserName] = useState('');
+  const [originalRegulador, setOriginalRegulador] = useState<string | null>(null);
+  const [shiftAlreadySaved, setShiftAlreadySaved] = useState(false);
+
+  // Load current user info and role
+  useEffect(() => {
+    const loadUserInfo = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const [profileRes, roleRes] = await Promise.all([
+        supabase.from('profiles').select('full_name').eq('user_id', user.id).single(),
+        supabase.from('user_roles').select('role').eq('user_id', user.id),
+      ]);
+
+      if (profileRes.data) setCurrentUserName(profileRes.data.full_name || '');
+      if (roleRes.data) {
+        setIsAdmin(roleRes.data.some((r: any) => r.role === 'admin'));
+      }
+    };
+    loadUserInfo();
+  }, []);
+
+  // Load original regulador when shift date/type changes
+  useEffect(() => {
+    const loadOriginalRegulador = async () => {
+      if (!shiftInfo.data || !shiftInfo.tipo) return;
+
+      const { data } = await supabase
+        .from('shift_configurations')
+        .select('regulador_nir')
+        .eq('shift_date', shiftInfo.data)
+        .eq('shift_type', shiftInfo.tipo)
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        setOriginalRegulador(data.regulador_nir);
+        setShiftAlreadySaved(true);
+      } else {
+        setOriginalRegulador(null);
+        setShiftAlreadySaved(false);
+      }
+    };
+    loadOriginalRegulador();
+  }, [shiftInfo.data, shiftInfo.tipo]);
+
+  const timeCheck = useMemo(
+    () => isTimeAllowed(shiftInfo.data, shiftInfo.tipo),
     [shiftInfo.data, shiftInfo.tipo]
   );
 
+  // Permission: admin, original regulador, or "Blendon" can edit
+  const userCanEdit = useMemo(() => {
+    // If shift was never saved, anyone can create the first entry
+    if (!shiftAlreadySaved) return true;
+
+    // Admin always can edit
+    if (isAdmin) return true;
+
+    // User named "Blendon" (case-insensitive partial match)
+    if (currentUserName && currentUserName.toLowerCase().includes('blendon')) return true;
+
+    // Original regulador can edit
+    if (originalRegulador && currentUserName && 
+        originalRegulador.toLowerCase().trim() === currentUserName.toLowerCase().trim()) {
+      return true;
+    }
+
+    return false;
+  }, [shiftAlreadySaved, isAdmin, currentUserName, originalRegulador]);
+
+  const editAllowed = timeCheck.allowed && userCanEdit;
+  const blockReason = !timeCheck.allowed 
+    ? timeCheck.reason 
+    : !userCanEdit 
+      ? 'Apenas o administrador, o regulador do plantão ou Blendon podem alterar este plantão.' 
+      : '';
+
   const handleChange = (field: keyof ShiftInfo, value: string) => {
-    // Tipo and data can always change so the user can navigate, but content fields are locked
-    if (field !== 'tipo' && field !== 'data' && !editCheck.allowed) {
-      toast.error(editCheck.reason);
+    if (field !== 'tipo' && field !== 'data' && !editAllowed) {
+      toast.error(blockReason);
       return;
     }
     setSaved(false);
@@ -72,8 +145,8 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
   };
 
   const handleSave = async () => {
-    if (!editCheck.allowed) {
-      toast.error(editCheck.reason);
+    if (!editAllowed) {
+      toast.error(blockReason);
       return;
     }
     setIsSaving(true);
@@ -82,6 +155,9 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
         await onSave();
       }
       setSaved(true);
+      // Update original regulador after save
+      setOriginalRegulador(shiftInfo.reguladorNIR);
+      setShiftAlreadySaved(true);
       toast.success('Configuração do plantão salva com sucesso!');
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
@@ -196,28 +272,28 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
 
           <Button 
             onClick={handleSave} 
-            disabled={isSaving || !editCheck.allowed}
+            disabled={isSaving || !editAllowed}
             className="gap-2"
             variant={saved ? "outline" : "default"}
           >
             {isSaving ? (
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-            ) : !editCheck.allowed ? (
+            ) : !editAllowed ? (
               <Lock className="w-4 h-4" />
             ) : saved ? (
               <Check className="w-4 h-4 text-hospital-green" />
             ) : (
               <Save className="w-4 h-4" />
             )}
-            {saved ? 'Salvo' : !editCheck.allowed ? 'Bloqueado' : 'Salvar Plantão'}
+            {saved ? 'Salvo' : !editAllowed ? 'Bloqueado' : 'Salvar Plantão'}
           </Button>
         </div>
       </div>
 
-      {!editCheck.allowed && (
+      {!editAllowed && blockReason && (
         <div className="mb-4 flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
           <Lock className="w-4 h-4 shrink-0" />
-          {editCheck.reason}
+          {blockReason}
         </div>
       )}
       
@@ -276,7 +352,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
             value={shiftInfo.reguladorNIR}
             onChange={(e) => handleChange('reguladorNIR', e.target.value)}
             placeholder="Nome do regulador"
-            disabled={!editCheck.allowed}
+            disabled={!editAllowed}
           />
         </div>
 
@@ -291,7 +367,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
             onChange={(e) => handleChange('medicos', e.target.value)}
             placeholder="Nomes dos médicos de plantão"
             rows={2}
-            disabled={!editCheck.allowed}
+            disabled={!editAllowed}
           />
         </div>
 
@@ -306,7 +382,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
             onChange={(e) => handleChange('enfermeiros', e.target.value)}
             placeholder="Nomes dos enfermeiros de plantão"
             rows={2}
-            disabled={!editCheck.allowed}
+            disabled={!editAllowed}
           />
         </div>
       </div>
