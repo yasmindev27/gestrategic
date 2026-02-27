@@ -17,6 +17,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Plus, FileDown, Eye, ClipboardCheck, Pencil, Trash2 } from "lucide-react";
 import { createStandardPdf, savePdfWithFooter } from "@/lib/export-utils";
+import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 const COMPETENCIAS = [
@@ -65,12 +66,12 @@ const COMPETENCIAS = [
   {
     id: "responsabilidade",
     titulo: "5. RESPONSABILIDADE",
-    descricao: "Avalie o comprometimento do colaborador com suas tarefas e com as metas estabelecidas pela Direção.",
+    descricao: "Avalie o comprometimento do colaborador com suas tarefas e com as metas estabelecidas pela Direção, demonstrando a responsabilidade pelo cumprimento dos objetivos.",
     opcoes: [
-      { value: "excelente", label: "Excelente", desc: "Sempre demonstra alto nível de comprometimento, cumpre prazos rigorosamente e excede as expectativas." },
+      { value: "excelente", label: "Excelente", desc: "Sempre demonstra alto nível de comprometimento, cumpre prazos rigorosamente e excede as expectativas ao alinhar suas ações com as metas da Direção." },
       { value: "bom", label: "Bom", desc: "Demonstra comprometimento consistente, cumpre prazos e alinha suas ações com as metas da Direção na maioria das vezes." },
-      { value: "regular", label: "Regular", desc: "Demonstra algum nível de comprometimento, mas ocasionalmente não cumpre prazos." },
-      { value: "insatisfatorio", label: "Insatisfatório", desc: "Comprometimento insuficiente, frequentemente não cumpre prazos." },
+      { value: "regular", label: "Regular", desc: "Demonstra algum nível de comprometimento, mas ocasionalmente não cumpre prazos ou precisa de ajustes para alinhar suas ações com as metas da Direção." },
+      { value: "insatisfatorio", label: "Insatisfatório", desc: "Comprometimento insuficiente, frequentemente não cumpre prazos e não alinha suas ações com as metas da Direção." },
     ],
   },
 ];
@@ -100,6 +101,300 @@ interface AvaliacaoExperiencia {
   resultado: string;
   created_at: string;
 }
+
+// ==================== PDF EXPORT (fidedigno ao FORM.RH.009) ====================
+
+const addFormHeader = (doc: jsPDF, pageNum: number, totalPages: number, logoImg: HTMLImageElement | null) => {
+  const pw = doc.internal.pageSize.width;
+  const margin = 14;
+
+  // Border rectangle for header
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.5);
+  doc.rect(margin, 8, pw - margin * 2, 22);
+
+  // Logo area (left)
+  if (logoImg) {
+    try {
+      doc.addImage(logoImg, 'JPEG', margin + 2, 10, 28, 14);
+    } catch {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.text('GRUPO CHAVANTES', margin + 4, 18);
+    }
+  } else {
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'bold');
+    doc.text('GRUPO CHAVANTES', margin + 4, 18);
+  }
+
+  // Vertical lines
+  doc.line(margin + 32, 8, margin + 32, 30);
+  doc.line(pw - margin - 50, 8, pw - margin - 50, 30);
+
+  // Center: document info
+  const centerX = (margin + 32 + pw - margin - 50) / 2;
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Tipo do documento: Formulários / Impressos', centerX, 14, { align: 'center' });
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text('FORM.RH.009 - AVALIAÇÃO DE EXPERIÊNCIA', centerX, 20, { align: 'center' });
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'normal');
+  doc.text('Título do documento', centerX, 26, { align: 'center' });
+
+  // Right: version info
+  const rightX = pw - margin - 25;
+  doc.setFontSize(7);
+  doc.text('UPA.NS.FOR.IMP.0046', rightX, 13, { align: 'center' });
+  doc.text(`Página ${pageNum} de ${totalPages}`, rightX, 18, { align: 'center' });
+  doc.text('Emissão: 30/07/2025', rightX, 23, { align: 'center' });
+  doc.text('Versão: 1', rightX, 28, { align: 'center' });
+};
+
+const addElaboradorFooter = (doc: jsPDF) => {
+  const pw = doc.internal.pageSize.width;
+  const ph = doc.internal.pageSize.height;
+  const y = ph - 25;
+  const margin = 14;
+  const colW = (pw - margin * 2) / 3;
+
+  doc.setDrawColor(0);
+  doc.setLineWidth(0.3);
+  doc.rect(margin, y, pw - margin * 2, 18);
+  doc.line(margin + colW, y, margin + colW, y + 18);
+  doc.line(margin + colW * 2, y, margin + colW * 2, y + 18);
+
+  doc.setFontSize(7);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Elaborador:', margin + 3, y + 5);
+  doc.text('Revisor:', margin + colW + 3, y + 5);
+  doc.text('Aprovador:', margin + colW * 2 + 3, y + 5);
+
+  doc.setFont('helvetica', 'normal');
+  doc.text('Nayara Isabel Campos Ribeiro', margin + 3, y + 11);
+  doc.text('Camilla Thaysa de Mesquita', margin + colW + 3, y + 11);
+  doc.text('Máximo Lima', margin + colW * 2 + 3, y + 11);
+};
+
+const handleExportPDFFidedigno = async (av: AvaliacaoExperiencia) => {
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const pw = doc.internal.pageSize.width;
+  const margin = 14;
+  const contentWidth = pw - margin * 2;
+
+  // Load logo
+  const logoImg = await new Promise<HTMLImageElement | null>((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = '/assets/logo-gestrategic.jpg';
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+  });
+
+  // ===================== PAGE 1 =====================
+  addFormHeader(doc, 1, 3, logoImg);
+
+  let y = 36;
+
+  // Title
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('FORM.RH.009 - AVALIAÇÃO DE EXPERIÊNCIA', pw / 2, y, { align: 'center' });
+  y += 8;
+
+  // Período
+  doc.setFontSize(9);
+  doc.setFont('helvetica', 'bold');
+  const periodo45 = av.periodo_avaliacao === '45_dias' ? '(X)' : '(  )';
+  const periodo90 = av.periodo_avaliacao === '90_dias' ? '(X)' : '(  )';
+  doc.text(`PERÍODO DE AVALIAÇÃO: ${periodo45} 45 DIAS    ${periodo90} 90 DIAS`, margin, y);
+  y += 8;
+
+  // Dados do colaborador - table format
+  doc.setLineWidth(0.3);
+  doc.setDrawColor(0);
+
+  const drawField = (label: string, value: string, x: number, yPos: number, width: number) => {
+    doc.rect(x, yPos, width, 10);
+    doc.setFontSize(7);
+    doc.setFont('helvetica', 'bold');
+    doc.text(label, x + 2, yPos + 4);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(value || '', x + 2, yPos + 8);
+  };
+
+  // Row 1: Nome / Setor / Função
+  const col1W = contentWidth * 0.5;
+  const col2W = contentWidth * 0.25;
+  const col3W = contentWidth * 0.25;
+  drawField('Nome do Colaborador:', av.colaborador_nome, margin, y, col1W);
+  drawField('Setor:', av.setor || '', margin + col1W, y, col2W);
+  drawField('Função:', av.funcao || '', margin + col1W + col2W, y, col3W);
+  y += 10;
+
+  // Row 2: Data Admissão / Data Término / Data Avaliação
+  const col3EqW = contentWidth / 3;
+  drawField('Data de Admissão:', format(new Date(av.data_admissao + 'T12:00:00'), 'dd/MM/yyyy'), margin, y, col3EqW);
+  drawField('Data do Término de Experiência:', av.data_termino_experiencia ? format(new Date(av.data_termino_experiencia + 'T12:00:00'), 'dd/MM/yyyy') : '', margin + col3EqW, y, col3EqW);
+  drawField('Data da Avaliação:', format(new Date(av.data_avaliacao + 'T12:00:00'), 'dd/MM/yyyy'), margin + col3EqW * 2, y, col3EqW);
+  y += 10;
+
+  // Row 3: Avaliador
+  drawField('Nome do Avaliador:', av.avaliador_nome, margin, y, contentWidth);
+  y += 12;
+
+  // Intro text
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'normal');
+  const introText = 'A presente avaliação tem por finalidade subsidiar ações de gestão, feedback e desenvolvimento do novo colaborador em seu período de experiência. O instrumento consiste em itens que compõem as competências individuais, comportamentais e institucionais essenciais para trabalhar na UPA Antonio Jose dos Santos. Os itens serão avaliados com os seguintes critérios: Excelente, Bom, Regular e Insatisfatório.';
+  const introLines = doc.splitTextToSize(introText, contentWidth);
+  doc.text(introLines, margin, y);
+  y += introLines.length * 4 + 6;
+
+  // Helper to draw a competency block with radio-style options
+  const drawCompetencia = (comp: typeof COMPETENCIAS[0], selectedValue: string, startY: number): number => {
+    let cy = startY;
+
+    // Title
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'bold');
+    doc.text(comp.titulo, margin, cy);
+    cy += 5;
+
+    // Description if exists
+    if (comp.descricao) {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      const descLines = doc.splitTextToSize(comp.descricao, contentWidth);
+      doc.text(descLines, margin, cy);
+      cy += descLines.length * 3.5 + 2;
+    }
+
+    // Options
+    doc.setFontSize(8);
+    for (const op of comp.opcoes) {
+      const marker = op.value === selectedValue ? '(X)' : '(  )';
+      doc.setFont('helvetica', 'bold');
+      const optText = `${marker} ${op.label}: `;
+      doc.text(optText, margin, cy);
+      const optTextWidth = doc.getTextWidth(optText);
+      doc.setFont('helvetica', 'normal');
+      const descLines = doc.splitTextToSize(op.desc, contentWidth - optTextWidth - 2);
+      doc.text(descLines, margin + optTextWidth, cy);
+      cy += descLines.length * 3.5 + 2;
+    }
+
+    return cy + 3;
+  };
+
+  // Competencies 1 & 2 on page 1
+  y = drawCompetencia(COMPETENCIAS[0], (av as any)[COMPETENCIAS[0].id], y);
+  y = drawCompetencia(COMPETENCIAS[1], (av as any)[COMPETENCIAS[1].id], y);
+
+  // Elaborador footer page 1
+  addElaboradorFooter(doc);
+
+  // ===================== PAGE 2 =====================
+  doc.addPage();
+  addFormHeader(doc, 2, 3, logoImg);
+  y = 36;
+
+  // Competencies 3, 4, 5
+  y = drawCompetencia(COMPETENCIAS[2], (av as any)[COMPETENCIAS[2].id], y);
+  y = drawCompetencia(COMPETENCIAS[3], (av as any)[COMPETENCIAS[3].id], y);
+  y = drawCompetencia(COMPETENCIAS[4], (av as any)[COMPETENCIAS[4].id], y);
+
+  addElaboradorFooter(doc);
+
+  // ===================== PAGE 3 =====================
+  doc.addPage();
+  addFormHeader(doc, 3, 3, logoImg);
+  y = 36;
+
+  // Title
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('FORM.RH.009 - AVALIAÇÃO DE EXPERIÊNCIA', pw / 2, y, { align: 'center' });
+  y += 10;
+
+  // Open-ended questions with boxes
+  const drawOpenQuestion = (question: string, answer: string, startY: number, boxHeight: number = 20): number => {
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'bold');
+    doc.text(question, margin, startY);
+    startY += 4;
+    doc.setDrawColor(0);
+    doc.setLineWidth(0.3);
+    doc.rect(margin, startY, contentWidth, boxHeight);
+    if (answer) {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      const lines = doc.splitTextToSize(answer, contentWidth - 4);
+      doc.text(lines, margin + 2, startY + 5);
+    }
+    return startY + boxHeight + 5;
+  };
+
+  y = drawOpenQuestion('Qual(is) as competências ou aspectos de destaque do colaborador(a)?', av.competencias_destaque || '', y, 22);
+  y = drawOpenQuestion('Qual(is) competências ou aspectos com necessidade de ajustes/melhorias do colaborador(a)?', av.competencias_ajustes || '', y, 22);
+  y = drawOpenQuestion('O que deve ser realizado para que o colaborador(a) possa se adequar as competências da instituição?', av.acoes_adequacao || '', y, 22);
+  y = drawOpenQuestion('Outros comentários e sugestões:', av.outros_comentarios || '', y, 22);
+
+  // Resultado
+  y += 2;
+  doc.setFontSize(10);
+  doc.setFont('helvetica', 'bold');
+  const aprovadoMark = av.resultado === 'aprovado' ? '(X)' : '(  )';
+  const reprovadoMark = av.resultado === 'reprovado' ? '(X)' : '(  )';
+  doc.text('A AVALIAÇÃO DE EXPERIÊNCIA DO COLABORADOR FOI CONSIDERADA APROVADA?', margin, y);
+  y += 7;
+  doc.setFontSize(10);
+  doc.text(`${aprovadoMark} APROVADO        ${reprovadoMark} REPROVADO`, margin, y);
+  y += 14;
+
+  // Signatures
+  const sigWidth = 75;
+  const sigLeftX = margin + 10;
+  const sigRightX = pw - margin - sigWidth - 10;
+
+  doc.setLineWidth(0.4);
+  doc.line(sigLeftX, y, sigLeftX + sigWidth, y);
+  doc.line(sigRightX, y, sigRightX + sigWidth, y);
+  y += 5;
+
+  doc.setFontSize(8);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Assinatura do(a) Avaliador(a)', sigLeftX, y);
+  doc.text('Assinatura do Avaliado(a)', sigRightX, y);
+  y += 5;
+  doc.setFont('helvetica', 'normal');
+  doc.text(av.avaliador_nome, sigLeftX, y);
+  doc.text(av.colaborador_nome, sigRightX, y);
+
+  // Elaborador footer page 3
+  addElaboradorFooter(doc);
+
+  // LGPD footer on all pages
+  const pageCount = doc.getNumberOfPages();
+  const lgpdText = 'Este relatório contém dados tratados em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018). O conteúdo é estritamente confidencial e destinado apenas ao uso autorizado.';
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    const ph = doc.internal.pageSize.height;
+    doc.setFontSize(6);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(120, 120, 120);
+    const splitLgpd = doc.splitTextToSize(lgpdText, contentWidth);
+    doc.text(splitLgpd, margin, ph - 8);
+    doc.setTextColor(0, 0, 0);
+  }
+
+  doc.save(`FORM_RH_009_${av.colaborador_nome.replace(/\s+/g, '_')}_${format(new Date(), 'yyyy-MM-dd')}.pdf`);
+};
+
+// ==================== COMPONENT ====================
 
 export const AvaliacaoExperienciaSection = () => {
   const [subTab, setSubTab] = useState("formulario");
@@ -234,96 +529,6 @@ export const AvaliacaoExperienciaSection = () => {
     }
   };
 
-  const handleExportPDF = async (av: AvaliacaoExperiencia) => {
-    const { doc, logoImg } = await createStandardPdf("FORM.RH.009 - AVALIAÇÃO DE EXPERIÊNCIA", "portrait");
-    let y = 30;
-
-    // Cabeçalho info
-    doc.setFontSize(9);
-    doc.text(`Período: ${av.periodo_avaliacao === "45_dias" ? "45 Dias" : "90 Dias"}`, 14, y);
-    doc.text(`Data da Avaliação: ${format(new Date(av.data_avaliacao + "T12:00:00"), "dd/MM/yyyy")}`, 120, y);
-    y += 7;
-    doc.text(`Colaborador: ${av.colaborador_nome}`, 14, y);
-    doc.text(`Setor: ${av.setor || "-"}`, 120, y);
-    y += 7;
-    doc.text(`Função: ${av.funcao || "-"}`, 14, y);
-    doc.text(`Avaliador: ${av.avaliador_nome}`, 120, y);
-    y += 7;
-    doc.text(`Data Admissão: ${format(new Date(av.data_admissao + "T12:00:00"), "dd/MM/yyyy")}`, 14, y);
-    if (av.data_termino_experiencia) {
-      doc.text(`Término Experiência: ${format(new Date(av.data_termino_experiencia + "T12:00:00"), "dd/MM/yyyy")}`, 120, y);
-    }
-    y += 10;
-
-    // Tabela de competências
-    const competenciaRows = COMPETENCIAS.map(c => [
-      c.titulo.replace(/^\d+\.\s*/, ""),
-      LABEL_MAP[(av as any)[c.id]] || (av as any)[c.id],
-    ]);
-
-    autoTable(doc, {
-      startY: y,
-      head: [["Competência", "Avaliação"]],
-      body: competenciaRows,
-      styles: { fontSize: 9 },
-      headStyles: { fillColor: [41, 128, 185] },
-      margin: { left: 14, right: 14 },
-    });
-
-    y = (doc as any).lastAutoTable.finalY + 10;
-
-    // Campos descritivos
-    const descritivos = [
-      { label: "Competências de Destaque", value: av.competencias_destaque },
-      { label: "Competências com Necessidade de Ajustes", value: av.competencias_ajustes },
-      { label: "Ações para Adequação", value: av.acoes_adequacao },
-      { label: "Outros Comentários", value: av.outros_comentarios },
-    ];
-
-    for (const d of descritivos) {
-      if (y > 250) { doc.addPage(); y = 20; }
-      doc.setFontSize(10);
-      doc.setFont("helvetica", "bold");
-      doc.text(d.label + ":", 14, y);
-      y += 6;
-      doc.setFont("helvetica", "normal");
-      doc.setFontSize(9);
-      const lines = doc.splitTextToSize(d.value || "Não informado", 180);
-      doc.text(lines, 14, y);
-      y += lines.length * 5 + 6;
-    }
-
-    // Resultado
-    if (y > 250) { doc.addPage(); y = 20; }
-    doc.setFontSize(12);
-    doc.setFont("helvetica", "bold");
-    const corResultado = av.resultado === "aprovado" ? [39, 174, 96] : [231, 76, 60];
-    doc.setTextColor(corResultado[0], corResultado[1], corResultado[2]);
-    doc.text(`RESULTADO: ${av.resultado.toUpperCase()}`, 14, y);
-    doc.setTextColor(0, 0, 0);
-    y += 25;
-
-    // Assinaturas
-    if (y > 240) { doc.addPage(); y = 30; }
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "normal");
-
-    // Linha e nome do Avaliador
-    doc.line(14, y, 90, y);
-    y += 5;
-    doc.text("Assinatura do(a) Avaliador(a)", 14, y);
-    y += 5;
-    doc.text(av.avaliador_nome, 14, y);
-
-    // Linha e nome do Colaborador
-    const yCol = y - 10;
-    doc.line(110, yCol, 196, yCol);
-    doc.text("Assinatura do(a) Colaborador(a)", 110, yCol + 5);
-    doc.text(av.colaborador_nome, 110, yCol + 10);
-
-    savePdfWithFooter(doc, "Avaliação de Experiência", `avaliacao_experiencia_${av.colaborador_nome}`, logoImg);
-  };
-
   return (
     <div className="space-y-4">
       <Tabs value={subTab} onValueChange={setSubTab}>
@@ -394,7 +599,7 @@ export const AvaliacaoExperienciaSection = () => {
               </div>
 
               <p className="text-sm text-muted-foreground">
-                A presente avaliação tem por finalidade subsidiar ações de gestão, feedback e desenvolvimento do novo colaborador em seu período de experiência. Os itens serão avaliados com os seguintes critérios: Excelente, Bom, Regular e Insatisfatório.
+                A presente avaliação tem por finalidade subsidiar ações de gestão, feedback e desenvolvimento do novo colaborador em seu período de experiência. O instrumento consiste em itens que compõem as competências individuais, comportamentais e institucionais essenciais para trabalhar na UPA Antonio Jose dos Santos. Os itens serão avaliados com os seguintes critérios: Excelente, Bom, Regular e Insatisfatório.
               </p>
 
               {/* Competências */}
@@ -430,7 +635,7 @@ export const AvaliacaoExperienciaSection = () => {
                   <Textarea value={destaque} onChange={e => setDestaque(e.target.value)} rows={3} />
                 </div>
                 <div>
-                  <Label>Qual(is) competências ou aspectos com necessidade de ajustes/melhorias?</Label>
+                  <Label>Qual(is) competências ou aspectos com necessidade de ajustes/melhorias do colaborador(a)?</Label>
                   <Textarea value={ajustes} onChange={e => setAjustes(e.target.value)} rows={3} />
                 </div>
                 <div>
@@ -511,7 +716,7 @@ export const AvaliacaoExperienciaSection = () => {
                               <Button variant="ghost" size="icon-sm" onClick={() => setSelectedAv(av)} title="Visualizar">
                                 <Eye className="h-4 w-4" />
                               </Button>
-                              <Button variant="ghost" size="icon-sm" onClick={() => handleExportPDF(av)} title="Exportar PDF">
+                              <Button variant="ghost" size="icon-sm" onClick={() => handleExportPDFFidedigno(av)} title="Exportar PDF">
                                 <FileDown className="h-4 w-4" />
                               </Button>
                               <Button variant="ghost" size="icon-sm" onClick={() => loadForEdit(av)} title="Editar">
@@ -551,12 +756,21 @@ export const AvaliacaoExperienciaSection = () => {
               </div>
 
               <div className="space-y-2">
-                {COMPETENCIAS.map(c => (
-                  <div key={c.id} className="flex justify-between items-center border-b py-2">
-                    <span className="font-medium text-sm">{c.titulo}</span>
-                    <Badge variant="outline">{LABEL_MAP[(selectedAv as any)[c.id]]}</Badge>
-                  </div>
-                ))}
+                {COMPETENCIAS.map(c => {
+                  const selectedValue = (selectedAv as any)[c.id];
+                  const selectedOption = c.opcoes.find(o => o.value === selectedValue);
+                  return (
+                    <div key={c.id} className="border rounded-md p-3">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-medium text-sm">{c.titulo}</span>
+                        <Badge variant="outline">{LABEL_MAP[selectedValue]}</Badge>
+                      </div>
+                      {selectedOption && (
+                        <p className="text-xs text-muted-foreground">{selectedOption.desc}</p>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               {selectedAv.competencias_destaque && (
@@ -582,7 +796,7 @@ export const AvaliacaoExperienciaSection = () => {
                 <Button variant="outline" onClick={() => { loadForEdit(selectedAv); }} className="flex items-center gap-2">
                   <Pencil className="h-4 w-4" /> Editar
                 </Button>
-                <Button onClick={() => handleExportPDF(selectedAv)} className="flex items-center gap-2">
+                <Button onClick={() => handleExportPDFFidedigno(selectedAv)} className="flex items-center gap-2">
                   <FileDown className="h-4 w-4" /> Exportar PDF
                 </Button>
               </div>
