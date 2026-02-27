@@ -92,10 +92,19 @@ serve(async (req) => {
       }
     }
 
-    // Update auth user if email or password changed
-    const authUpdates: { email?: string; password?: string } = {};
-    if (email) authUpdates.email = email;
+    // Update auth user if email, password, or matricula changed
+    const authUpdates: { email?: string; password?: string; user_metadata?: Record<string, string> } = {};
+    if (email) {
+      authUpdates.email = email;
+    } else if (matricula !== undefined && !email) {
+      // If matricula changed but no explicit email, update the internal email to match
+      const { data: currentAuth } = await supabaseAdmin.auth.admin.getUserById(user_id);
+      if (currentAuth?.user?.email?.endsWith('@interno.local')) {
+        authUpdates.email = `${matricula}@interno.local`;
+      }
+    }
     if (password) authUpdates.password = password;
+    if (full_name) authUpdates.user_metadata = { full_name };
 
     if (Object.keys(authUpdates).length > 0) {
       const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
