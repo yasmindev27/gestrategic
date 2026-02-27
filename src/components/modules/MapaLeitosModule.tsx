@@ -113,8 +113,18 @@ export const MapaLeitosModule = () => {
 
   const handleExportCSV = useCallback(() => {
     const data = getExportData();
+    const meta = [
+      `Data;${shiftInfo.data}`,
+      `Plantão;${shiftInfo.tipo === 'noturno' ? 'Noturno' : 'Diurno'}`,
+      `Regulador NIR;${shiftInfo.reguladorNIR || '-'}`,
+      `Médicos;${shiftInfo.medicos || '-'}`,
+      `Enfermeiros;${shiftInfo.enfermeiros || '-'}`,
+      `Ocupação;${totalOccupancy.occupied}/${totalOccupancy.total}`,
+      '',
+    ];
     const headers = ['Setor', 'Leito', 'Status', 'Paciente', 'Hipótese Diagnóstica', 'Data Internação', 'SUS Fácil'];
     const csvContent = [
+      ...meta,
       headers.join(';'),
       ...data.map(row => [row.setor, row.leito, row.status, row.paciente, row.hipotese, row.dataInternacao, row.susFacil].join(';'))
     ].join('\n');
@@ -125,24 +135,29 @@ export const MapaLeitosModule = () => {
     a.download = `mapa-leitos-${shiftInfo.data}.csv`;
     a.click();
     URL.revokeObjectURL(url);
-  }, [getExportData, shiftInfo.data]);
+  }, [getExportData, shiftInfo, totalOccupancy]);
 
   const handleExportPDF = useCallback(() => {
     const data = getExportData();
     const doc = new jsPDF({ orientation: 'landscape' });
-    doc.setFontSize(16);
+    doc.setFontSize(14);
     doc.text('Mapa de Leitos', 14, 15);
-    doc.setFontSize(10);
-    doc.text(`Data: ${shiftInfo.data} | Plantão: ${shiftInfo.tipo === 'noturno' ? 'Noturno' : 'Diurno'} | Regulador: ${shiftInfo.reguladorNIR || '-'}`, 14, 22);
-    doc.text(`Ocupação: ${totalOccupancy.occupied}/${totalOccupancy.total}`, 14, 28);
+    doc.setFontSize(9);
+    doc.text(`Data: ${shiftInfo.data} | Plantão: ${shiftInfo.tipo === 'noturno' ? 'Noturno' : 'Diurno'} | Regulador NIR: ${shiftInfo.reguladorNIR || '-'}`, 14, 22);
+    doc.text(`Médicos: ${shiftInfo.medicos || '-'}`, 14, 28);
+    doc.text(`Enfermeiros: ${shiftInfo.enfermeiros || '-'}`, 14, 34);
+    doc.text(`Ocupação: ${totalOccupancy.occupied}/${totalOccupancy.total}`, 14, 40);
 
     autoTable(doc, {
-      startY: 33,
+      startY: 45,
       head: [['Setor', 'Leito', 'Status', 'Paciente', 'Hipótese', 'Internação', 'SUS Fácil']],
       body: data.map(r => [r.setor, r.leito, r.status, r.paciente, r.hipotese, r.dataInternacao, r.susFacil]),
       styles: { fontSize: 8 },
       headStyles: { fillColor: [37, 99, 235] },
     });
+
+    doc.setFontSize(7);
+    doc.text('Documento confidencial - LGPD. Uso restrito à equipe assistencial.', 14, doc.internal.pageSize.height - 10);
 
     doc.save(`mapa-leitos-${shiftInfo.data}.pdf`);
   }, [getExportData, shiftInfo, totalOccupancy]);
