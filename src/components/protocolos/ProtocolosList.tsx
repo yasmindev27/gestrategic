@@ -1,6 +1,12 @@
 import { Card, CardContent } from '@/components/ui/card';
 import { TipoProtocolo } from '@/hooks/useProtocoloAtendimentos';
-import { Heart, Clock, Activity, BarChart3, FileText, TrendingUp, ClipboardPlus } from 'lucide-react';
+import { Heart, Clock, Activity, BarChart3, FileText, TrendingUp, ClipboardPlus, Download } from 'lucide-react';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import {
+  exportDorToracicaPDF, exportDorToracicaWord,
+  exportSepseAdultoPDF, exportSepseAdultoWord,
+  exportSepsePediatricoPDF, exportSepsePediatricoWord,
+} from './exportProtocolosBranco';
 
 interface Props {
   tipo: TipoProtocolo;
@@ -87,6 +93,18 @@ export const ProtocolosList = ({ tipo, titulo, onNovo, onRelatorios, onConsolida
     }
   };
 
+  const exportPDF = () => {
+    if (tipo === 'dor_toracica') exportDorToracicaPDF();
+    else if (tipo === 'sepse_adulto') exportSepseAdultoPDF();
+    else exportSepsePediatricoPDF();
+  };
+
+  const exportWord = () => {
+    if (tipo === 'dor_toracica') exportDorToracicaWord();
+    else if (tipo === 'sepse_adulto') exportSepseAdultoWord();
+    else exportSepsePediatricoWord();
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Navigation */}
@@ -106,6 +124,13 @@ export const ProtocolosList = ({ tipo, titulo, onNovo, onRelatorios, onConsolida
           <button onClick={() => onConsolidado?.()} className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground transition-colors">
             <BarChart3 className="h-4 w-4" /> Consolidado Mensal
           </button>
+          <ExportDropdown
+            onExportPDF={exportPDF}
+            onExportWord={exportWord}
+            label="Formulário em Branco"
+            size="sm"
+            variant="outline"
+          />
         </div>
       </div>
 
