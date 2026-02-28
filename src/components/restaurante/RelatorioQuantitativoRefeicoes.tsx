@@ -165,9 +165,14 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
 
         if (dietasError) throw dietasError;
         allDietas = [...allDietas, ...(dietas || [])];
+        console.log(`[DEBUG] Dieta page ${dietaPage}: fetched ${dietas?.length || 0} records, total so far: ${allDietas.length}`);
         if (!dietas || dietas.length < pageSize) break;
         dietaPage++;
       }
+      
+      // Debug: check Feb 26-28 records
+      const feb26_28 = allDietas.filter(d => d.data_inicio >= '2026-02-26' && d.data_inicio <= '2026-02-28');
+      console.log(`[DEBUG] Dietas for Feb 26-28: ${feb26_28.length}`, feb26_28.slice(0, 5));
       
       // Filtrar dietas que estão ativas no período selecionado
       const dietasNoPeriodo = allDietas.filter(d => {
@@ -425,8 +430,16 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       };
     });
 
+    // Debug: log Feb 26-28 values before filtering
+    const debug26_28 = resultado.filter(r => r.data >= '2026-02-26' && r.data <= '2026-02-28');
+    console.log('[DEBUG] Feb 26-28 before filter:', debug26_28.map(r => ({ data: r.data, dietasCafe: r.dietasCafe, dietasAlmoco: r.dietasAlmoco, totalDietas: r.totalDietas, totalGeral: r.totalGeral })));
+
     // Remover dias sem nenhum registro (manter apenas dias com dados)
     const resultadoFiltrado = resultado.filter(r => r.totalGeral > 0 || r.cafeLitro > 0);
+    
+    const debug26_28_after = resultadoFiltrado.filter(r => r.data >= '2026-02-26' && r.data <= '2026-02-28');
+    console.log('[DEBUG] Feb 26-28 after filter:', debug26_28_after.length, 'records');
+    
     setQuantitativos(resultadoFiltrado);
   };
 
@@ -594,9 +607,11 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
   // Admin: save edited diet cell quantity
   const saveDietaCellEdited = async (dataStr: string, tipoRefeicao: string, newValue: number, currentValue: number) => {
     const cellKey = `${dataStr}-dieta-${tipoRefeicao}`;
+    console.log(`[DEBUG SAVE] saveDietaCellEdited called: date=${dataStr}, tipo=${tipoRefeicao}, newValue=${newValue}, currentValue=${currentValue}`);
     setSavingCell(cellKey);
     try {
       const diff = newValue - currentValue;
+      console.log(`[DEBUG SAVE] diff=${diff}`);
       if (diff === 0) { setEditingCell(null); setSavingCell(null); return; }
 
       const { data: { user } } = await supabase.auth.getUser();
@@ -617,7 +632,9 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
           aprovado_por: user.id,
           aprovado_em: new Date().toISOString(),
         }));
-        const { error } = await supabase.from("solicitacoes_dieta").insert(inserts);
+        console.log(`[DEBUG SAVE] Inserting ${inserts.length} records`);
+        const { error, data: insertedData } = await supabase.from("solicitacoes_dieta").insert(inserts).select();
+        console.log(`[DEBUG SAVE] Insert result: error=${error?.message}, inserted=${insertedData?.length}`);
         if (error) throw error;
       } else {
         // Remove admin-created entries for that day/type first, then regular ones
