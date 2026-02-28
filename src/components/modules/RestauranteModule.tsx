@@ -1264,7 +1264,7 @@ export const RestauranteModule = () => {
 
               {/* Sub-tab: Quantitativo Diário */}
               <TabsContent value="quantitativo" className="mt-4">
-                <RelatorioQuantitativoRefeicoes isAdmin={isAdmin || isRestaurante} />
+                <RelatorioQuantitativoRefeicoes isAdmin={isAdmin} />
               </TabsContent>
 
               {/* Sub-tab: Registro Geral */}
