@@ -71,8 +71,8 @@ export function RoupariaRelatorios() {
   const [resumoPorCategoria, setResumoPorCategoria] = useState<{ nome: string; quantidade: number }[]>([]);
   
   // Filtros
-  const [dataInicio, setDataInicio] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
-  const [dataFim, setDataFim] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
+  const [dataInicio, setDataInicio] = useState(format(subDays(new Date(), 180), "yyyy-MM-dd"));
+  const [dataFim, setDataFim] = useState(format(new Date(), "yyyy-MM-dd"));
   const [filterTipo, setFilterTipo] = useState<string>("all");
 
   const fetchData = useCallback(async () => {
@@ -89,7 +89,8 @@ export function RoupariaRelatorios() {
       `)
       .gte("created_at", `${dataInicio}T00:00:00`)
       .lte("created_at", `${dataFim}T23:59:59`)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(5000);
 
     if (filterTipo !== "all") {
       query = query.eq("tipo_movimentacao", filterTipo);
