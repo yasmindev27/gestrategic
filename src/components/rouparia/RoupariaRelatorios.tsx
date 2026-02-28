@@ -75,9 +75,7 @@ export function RoupariaRelatorios() {
   const [dataFim, setDataFim] = useState(format(new Date(), "yyyy-MM-dd"));
   const [filterTipo, setFilterTipo] = useState<string>("all");
 
-  const fetchData = useCallback(async () => {
-    setIsLoading(true);
-
+  const buildQuery = useCallback((from: number, to: number) => {
     let query = supabase
       .from("rouparia_movimentacoes")
       .select(`
@@ -90,25 +88,47 @@ export function RoupariaRelatorios() {
       .gte("created_at", `${dataInicio}T00:00:00`)
       .lte("created_at", `${dataFim}T23:59:59`)
       .order("created_at", { ascending: false })
-      .limit(5000);
+      .range(from, to);
 
     if (filterTipo !== "all") {
       query = query.eq("tipo_movimentacao", filterTipo);
     }
 
-    const { data, error } = await query;
+    return query;
+  }, [dataInicio, dataFim, filterTipo]);
 
-    if (!error && data) {
-      setMovimentacoes(data as unknown as Movimentacao[]);
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
 
-      // Calcular resumo por tipo
+    const PAGE_SIZE = 1000;
+    let allData: any[] = [];
+    let from = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data, error } = await buildQuery(from, from + PAGE_SIZE - 1);
+      if (error || !data || data.length === 0) {
+        hasMore = false;
+      } else {
+        allData = [...allData, ...data];
+        from += PAGE_SIZE;
+        if (data.length < PAGE_SIZE) hasMore = false;
+      }
+    }
+
+    if (allData.length > 0) {
+      const typedData = allData as unknown as Movimentacao[];
+      setMovimentacoes(typedData);
+
       const tipoMap: Record<string, number> = {};
       const categoriaMap: Record<string, number> = {};
 
-      (data as unknown as Movimentacao[]).forEach((mov) => {
+      typedData.forEach((mov) => {
         tipoMap[mov.tipo_movimentacao] = (tipoMap[mov.tipo_movimentacao] || 0) + mov.quantidade;
-        const catNome = mov.rouparia_itens.rouparia_categorias.nome;
-        categoriaMap[catNome] = (categoriaMap[catNome] || 0) + mov.quantidade;
+        const catNome = mov.rouparia_itens?.rouparia_categorias?.nome;
+        if (catNome) {
+          categoriaMap[catNome] = (categoriaMap[catNome] || 0) + mov.quantidade;
+        }
       });
 
       setResumoPorTipo(
@@ -121,10 +141,14 @@ export function RoupariaRelatorios() {
           .sort((a, b) => b.quantidade - a.quantidade)
           .slice(0, 10)
       );
+    } else {
+      setMovimentacoes([]);
+      setResumoPorTipo([]);
+      setResumoPorCategoria([]);
     }
 
     setIsLoading(false);
-  }, [dataInicio, dataFim, filterTipo]);
+  }, [buildQuery]);
 
   useEffect(() => {
     fetchData();
