@@ -27,6 +27,7 @@ import {
   Trash2, 
   RotateCcw,
   Loader2,
+  Search,
   Download,
   FileSpreadsheet
 } from "lucide-react";
@@ -75,28 +76,6 @@ export function RoupariaRelatorios() {
   const [dataFim, setDataFim] = useState(format(new Date(), "yyyy-MM-dd"));
   const [filterTipo, setFilterTipo] = useState<string>("all");
 
-  const buildQuery = useCallback((from: number, to: number) => {
-    let query = supabase
-      .from("rouparia_movimentacoes")
-      .select(`
-        *,
-        rouparia_itens (
-          codigo_barras,
-          rouparia_categorias (nome)
-        )
-      `)
-      .gte("created_at", `${dataInicio}T00:00:00`)
-      .lte("created_at", `${dataFim}T23:59:59`)
-      .order("created_at", { ascending: false })
-      .range(from, to);
-
-    if (filterTipo !== "all") {
-      query = query.eq("tipo_movimentacao", filterTipo);
-    }
-
-    return query;
-  }, [dataInicio, dataFim, filterTipo]);
-
   const fetchData = useCallback(async () => {
     setIsLoading(true);
 
@@ -106,7 +85,25 @@ export function RoupariaRelatorios() {
     let hasMore = true;
 
     while (hasMore) {
-      const { data, error } = await buildQuery(from, from + PAGE_SIZE - 1);
+      let query = supabase
+        .from("rouparia_movimentacoes")
+        .select(`
+          *,
+          rouparia_itens (
+            codigo_barras,
+            rouparia_categorias (nome)
+          )
+        `)
+        .gte("created_at", `${dataInicio}T00:00:00`)
+        .lte("created_at", `${dataFim}T23:59:59`)
+        .order("created_at", { ascending: false })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (filterTipo !== "all") {
+        query = query.eq("tipo_movimentacao", filterTipo);
+      }
+
+      const { data, error } = await query;
       if (error || !data || data.length === 0) {
         hasMore = false;
       } else {
@@ -148,7 +145,7 @@ export function RoupariaRelatorios() {
     }
 
     setIsLoading(false);
-  }, [buildQuery]);
+  }, [dataInicio, dataFim, filterTipo]);
 
   useEffect(() => {
     fetchData();
@@ -234,6 +231,10 @@ export function RoupariaRelatorios() {
                 90 dias
               </Button>
             </div>
+            <Button size="sm" onClick={fetchData} disabled={isLoading}>
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4 mr-1" />}
+              Filtrar
+            </Button>
             <ExportDropdown onExportExcel={handleExportExcel} disabled={movimentacoes.length === 0} />
           </div>
         </CardContent>
