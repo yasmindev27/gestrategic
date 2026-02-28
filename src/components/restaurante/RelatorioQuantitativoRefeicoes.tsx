@@ -758,18 +758,18 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       "Café Litro": q.cafeLitro,
       "Café (Totem)": q.cafe,
       "Almoço (Totem)": q.almoco,
-      "Lanche (Totem)": q.lanche,
+      "Café da Tarde (Totem)": q.lanche,
       "Jantar (Totem)": q.jantar,
       "Fora Horário (Totem)": q.foraHorario,
       "Total Totem": q.totalRefeicoes,
       "Café (Dietas)": q.dietasCafe,
       "Almoço (Dietas)": q.dietasAlmoco,
-      "Lanche (Dietas)": q.dietasLanche,
+      "Café da Tarde (Dietas)": q.dietasLanche,
       "Jantar (Dietas)": q.dietasJantar,
       "Total Dietas": q.totalDietas,
       "Café (Extra)": q.extraCafe,
       "Almoço (Extra)": q.extraAlmoco,
-      "Lanche (Extra)": q.extraLanche,
+      "Café da Tarde (Extra)": q.extraLanche,
       "Jantar (Extra)": q.extraJantar,
       "Total Extra": q.totalExtra,
       "TOTAL GERAL": q.totalGeral,
@@ -782,18 +782,18 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       "Café Litro": totaisGerais.cafeLitro,
       "Café (Totem)": totaisGerais.cafe,
       "Almoço (Totem)": totaisGerais.almoco,
-      "Lanche (Totem)": totaisGerais.lanche,
+      "Café da Tarde (Totem)": totaisGerais.lanche,
       "Jantar (Totem)": totaisGerais.jantar,
       "Fora Horário (Totem)": totaisGerais.foraHorario,
       "Total Totem": totaisGerais.totalRefeicoes,
       "Café (Dietas)": totaisDietas.dietasCafe,
       "Almoço (Dietas)": totaisDietas.dietasAlmoco,
-      "Lanche (Dietas)": totaisDietas.dietasLanche,
+      "Café da Tarde (Dietas)": totaisDietas.dietasLanche,
       "Jantar (Dietas)": totaisDietas.dietasJantar,
       "Total Dietas": totaisDietas.totalDietas,
       "Café (Extra)": totaisExtra.extraCafe,
       "Almoço (Extra)": totaisExtra.extraAlmoco,
-      "Lanche (Extra)": totaisExtra.extraLanche,
+      "Café da Tarde (Extra)": totaisExtra.extraLanche,
       "Jantar (Extra)": totaisExtra.extraJantar,
       "Total Extra": totaisExtra.totalExtra,
       "TOTAL GERAL": totaisGeraisCombinados.totalGeral,
@@ -890,7 +890,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
     doc.line(14 + (cardWidth + cardGap) * 3, cardStartY, 14 + (cardWidth + cardGap) * 3, cardStartY + cardHeight);
     doc.setFontSize(8);
     doc.setTextColor(157, 23, 77);
-    doc.text("Total Lanche", 18 + (cardWidth + cardGap) * 3, cardStartY + 6);
+    doc.text("Total Café Tarde", 18 + (cardWidth + cardGap) * 3, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
     doc.text(String(totaisGerais.lanche + totaisDietas.dietasLanche + totaisExtra.extraLanche), 18 + (cardWidth + cardGap) * 3, cardStartY + 14);
@@ -1259,7 +1259,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                     </p>
                   </div>
                   <div className="text-center p-2 bg-white/60 rounded">
-                    <p className="text-xs text-muted-foreground">Lanche</p>
+                    <p className="text-xs text-muted-foreground">Café da Tarde</p>
                     <p className="font-bold text-emerald-700">
                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valoresFinanceiros.lanche)}
                     </p>
@@ -1322,7 +1322,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                 <div className="p-4 bg-pink-50 rounded-lg border-l-4 border-pink-500">
                   <div className="flex items-center gap-2 mb-1">
                     <Cookie className="h-4 w-4 text-pink-600" />
-                    <p className="text-sm text-muted-foreground">Total Lanche</p>
+                    <p className="text-sm text-muted-foreground">Total Café da Tarde</p>
                   </div>
                   <p className="text-2xl font-bold text-pink-700">
                     {totaisGerais.lanche + totaisDietas.dietasLanche + totaisExtra.extraLanche}
@@ -1425,7 +1425,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                           <div className="flex flex-col items-center justify-center gap-0.5">
                             <div className="flex items-center gap-1">
                               <Cookie className="h-3 w-3" />
-                              Lanche
+                              Café Tarde
                             </div>
                             <span className="text-[10px] font-normal opacity-70">15:00–17:59</span>
                           </div>
@@ -1448,12 +1448,12 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                         <TableHead className="text-center border-r bg-blue-200 text-blue-900 font-semibold">Subtotal</TableHead>
                         <TableHead className="text-center bg-orange-100 text-orange-800">Café</TableHead>
                         <TableHead className="text-center bg-orange-100 text-orange-800">Almoço</TableHead>
-                        <TableHead className="text-center bg-orange-100 text-orange-800">Lanche</TableHead>
+                        <TableHead className="text-center bg-orange-100 text-orange-800">Café Tarde</TableHead>
                         <TableHead className="text-center bg-orange-100 text-orange-800">Jantar</TableHead>
                         <TableHead className="text-center border-r bg-orange-200 text-orange-900 font-semibold">Subtotal</TableHead>
                         <TableHead className="text-center bg-purple-100 text-purple-800">Café</TableHead>
                         <TableHead className="text-center bg-purple-100 text-purple-800">Almoço</TableHead>
-                        <TableHead className="text-center bg-purple-100 text-purple-800">Lanche</TableHead>
+                        <TableHead className="text-center bg-purple-100 text-purple-800">Café Tarde</TableHead>
                         <TableHead className="text-center bg-purple-100 text-purple-800">Jantar</TableHead>
                         <TableHead className="text-center border-r bg-purple-200 text-purple-900 font-semibold">Subtotal</TableHead>
                       </TableRow>
