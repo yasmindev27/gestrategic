@@ -18,8 +18,19 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Loader2, Shirt } from "lucide-react";
+import { Plus, Pencil, Loader2, Shirt, Trash2 } from "lucide-react";
 
 interface Categoria {
   id: string;
@@ -31,9 +42,10 @@ interface Categoria {
 
 interface RoupariaCategoriasProps {
   canManage: boolean;
+  isAdmin?: boolean;
 }
 
-export function RoupariaCategorias({ canManage }: RoupariaCategoriasProps) {
+export function RoupariaCategorias({ canManage, isAdmin }: RoupariaCategoriasProps) {
   const { toast } = useToast();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -172,6 +184,27 @@ export function RoupariaCategorias({ canManage }: RoupariaCategoriasProps) {
     fetchCategorias();
   };
 
+  const handleDeleteCategoria = async (categoria: Categoria) => {
+    const { error } = await supabase
+      .from("rouparia_categorias")
+      .delete()
+      .eq("id", categoria.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao excluir categoria",
+        description: error.code === "23503" 
+          ? "Esta categoria possui itens vinculados. Remova os itens primeiro." 
+          : error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({ title: "Categoria excluída com sucesso" });
+    fetchCategorias();
+  };
+
   if (!canManage) {
     return (
       <div className="text-center py-12 text-muted-foreground">
@@ -298,7 +331,7 @@ export function RoupariaCategorias({ canManage }: RoupariaCategoriasProps) {
                       {cat.ativo ? "Ativo" : "Inativo"}
                     </Button>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right space-x-1">
                     <Button
                       variant="ghost"
                       size="sm"
@@ -306,6 +339,29 @@ export function RoupariaCategorias({ canManage }: RoupariaCategoriasProps) {
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
+                    {isAdmin && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Excluir categoria?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              A categoria "{cat.nome}" será removida permanentemente. Se houver itens vinculados, a exclusão será impedida.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => handleDeleteCategoria(cat)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                              Excluir
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
                   </TableCell>
                 </TableRow>
               ))
