@@ -1548,54 +1548,54 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                             {q.totalRefeicoes}
                           </TableCell>
                           {/* Dietas - Café */}
-                          <TableCell className="text-center bg-orange-50">
+                          <TableCell className={`text-center bg-orange-50 ${isAdmin && editingCell !== `${q.data}-dieta-cafe` ? 'cursor-pointer hover:bg-orange-100' : ''}`} onClick={() => { if (isAdmin && editingCell !== `${q.data}-dieta-cafe`) { console.log('Editing diet cafe for', q.data); setEditingCell(`${q.data}-dieta-cafe`); setEditValue(String(q.dietasCafe)); } }}>
                             {isAdmin ? (
                               editingCell === `${q.data}-dieta-cafe` ? (
                                 <div className="flex items-center justify-center gap-1">
-                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'cafe', parseInt(editValue) || 0, q.dietasCafe); if (e.key === 'Escape') setEditingCell(null); }} />
-                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveDietaCellEdited(q.data, 'cafe', parseInt(editValue) || 0, q.dietasCafe)} disabled={savingCell === `${q.data}-dieta-cafe`}>{savingCell === `${q.data}-dieta-cafe` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'cafe', parseInt(editValue) || 0, q.dietasCafe); if (e.key === 'Escape') setEditingCell(null); }} onClick={(e) => e.stopPropagation()} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); saveDietaCellEdited(q.data, 'cafe', parseInt(editValue) || 0, q.dietasCafe); }} disabled={savingCell === `${q.data}-dieta-cafe`}>{savingCell === `${q.data}-dieta-cafe` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
                                 </div>
                               ) : (
-                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-dieta-cafe`); setEditValue(String(q.dietasCafe)); }}>{q.dietasCafe || "-"}</span>
+                                <span>{q.dietasCafe || "-"}</span>
                               )
                             ) : (q.dietasCafe || "-")}
                           </TableCell>
                           {/* Dietas - Almoço */}
-                          <TableCell className="text-center bg-orange-50">
+                          <TableCell className={`text-center bg-orange-50 ${isAdmin && editingCell !== `${q.data}-dieta-almoco` ? 'cursor-pointer hover:bg-orange-100' : ''}`} onClick={() => { if (isAdmin && editingCell !== `${q.data}-dieta-almoco`) { console.log('Editing diet almoco for', q.data); setEditingCell(`${q.data}-dieta-almoco`); setEditValue(String(q.dietasAlmoco)); } }}>
                             {isAdmin ? (
                               editingCell === `${q.data}-dieta-almoco` ? (
                                 <div className="flex items-center justify-center gap-1">
-                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'almoco', parseInt(editValue) || 0, q.dietasAlmoco); if (e.key === 'Escape') setEditingCell(null); }} />
-                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveDietaCellEdited(q.data, 'almoco', parseInt(editValue) || 0, q.dietasAlmoco)} disabled={savingCell === `${q.data}-dieta-almoco`}>{savingCell === `${q.data}-dieta-almoco` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'almoco', parseInt(editValue) || 0, q.dietasAlmoco); if (e.key === 'Escape') setEditingCell(null); }} onClick={(e) => e.stopPropagation()} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); saveDietaCellEdited(q.data, 'almoco', parseInt(editValue) || 0, q.dietasAlmoco); }} disabled={savingCell === `${q.data}-dieta-almoco`}>{savingCell === `${q.data}-dieta-almoco` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
                                 </div>
                               ) : (
-                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-dieta-almoco`); setEditValue(String(q.dietasAlmoco)); }}>{q.dietasAlmoco || "-"}</span>
+                                <span>{q.dietasAlmoco || "-"}</span>
                               )
                             ) : (q.dietasAlmoco || "-")}
                           </TableCell>
                           {/* Dietas - Lanche */}
-                          <TableCell className="text-center bg-orange-50">
+                          <TableCell className={`text-center bg-orange-50 ${isAdmin && editingCell !== `${q.data}-dieta-lanche` ? 'cursor-pointer hover:bg-orange-100' : ''}`} onClick={() => { if (isAdmin && editingCell !== `${q.data}-dieta-lanche`) { console.log('Editing diet lanche for', q.data); setEditingCell(`${q.data}-dieta-lanche`); setEditValue(String(q.dietasLanche)); } }}>
                             {isAdmin ? (
                               editingCell === `${q.data}-dieta-lanche` ? (
                                 <div className="flex items-center justify-center gap-1">
-                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'lanche', parseInt(editValue) || 0, q.dietasLanche); if (e.key === 'Escape') setEditingCell(null); }} />
-                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveDietaCellEdited(q.data, 'lanche', parseInt(editValue) || 0, q.dietasLanche)} disabled={savingCell === `${q.data}-dieta-lanche`}>{savingCell === `${q.data}-dieta-lanche` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'lanche', parseInt(editValue) || 0, q.dietasLanche); if (e.key === 'Escape') setEditingCell(null); }} onClick={(e) => e.stopPropagation()} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); saveDietaCellEdited(q.data, 'lanche', parseInt(editValue) || 0, q.dietasLanche); }} disabled={savingCell === `${q.data}-dieta-lanche`}>{savingCell === `${q.data}-dieta-lanche` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
                                 </div>
                               ) : (
-                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-dieta-lanche`); setEditValue(String(q.dietasLanche)); }}>{q.dietasLanche || "-"}</span>
+                                <span>{q.dietasLanche || "-"}</span>
                               )
                             ) : (q.dietasLanche || "-")}
                           </TableCell>
                           {/* Dietas - Jantar */}
-                          <TableCell className="text-center bg-orange-50">
+                          <TableCell className={`text-center bg-orange-50 ${isAdmin && editingCell !== `${q.data}-dieta-jantar` ? 'cursor-pointer hover:bg-orange-100' : ''}`} onClick={() => { if (isAdmin && editingCell !== `${q.data}-dieta-jantar`) { console.log('Editing diet jantar for', q.data); setEditingCell(`${q.data}-dieta-jantar`); setEditValue(String(q.dietasJantar)); } }}>
                             {isAdmin ? (
                               editingCell === `${q.data}-dieta-jantar` ? (
                                 <div className="flex items-center justify-center gap-1">
-                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'jantar', parseInt(editValue) || 0, q.dietasJantar); if (e.key === 'Escape') setEditingCell(null); }} />
-                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveDietaCellEdited(q.data, 'jantar', parseInt(editValue) || 0, q.dietasJantar)} disabled={savingCell === `${q.data}-dieta-jantar`}>{savingCell === `${q.data}-dieta-jantar` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'jantar', parseInt(editValue) || 0, q.dietasJantar); if (e.key === 'Escape') setEditingCell(null); }} onClick={(e) => e.stopPropagation()} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); saveDietaCellEdited(q.data, 'jantar', parseInt(editValue) || 0, q.dietasJantar); }} disabled={savingCell === `${q.data}-dieta-jantar`}>{savingCell === `${q.data}-dieta-jantar` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
                                 </div>
                               ) : (
-                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-dieta-jantar`); setEditValue(String(q.dietasJantar)); }}>{q.dietasJantar || "-"}</span>
+                                <span>{q.dietasJantar || "-"}</span>
                               )
                             ) : (q.dietasJantar || "-")}
                           </TableCell>
