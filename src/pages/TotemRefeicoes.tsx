@@ -963,7 +963,7 @@ const TotemRefeicoes = () => {
             <Sun className="h-3 w-3" /> Almoço: 11:30-13:00
           </span>
           <span className="flex items-center gap-1">
-            <Cookie className="h-3 w-3" /> Lanche: 15:30-16:30
+            <Cookie className="h-3 w-3" /> Café da Tarde: 15:30-16:30
           </span>
           <span className="flex items-center gap-1">
             <Moon className="h-3 w-3" /> Jantar: 19:30-22:00
