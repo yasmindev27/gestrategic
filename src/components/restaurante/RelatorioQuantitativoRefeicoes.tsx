@@ -151,7 +151,8 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
 
       setRegistrosRefeicoes(allRefeicoes);
 
-      // Buscar solicitações de dieta aprovadas no período com paginação
+      // Buscar solicitações de dieta aprovadas que se sobrepõem ao período selecionado
+      // Filtra no banco: data_inicio <= dataFim AND (data_fim >= dataInicio OR data_fim IS NULL)
       let allDietas: SolicitacaoDieta[] = [];
       let dietaPage = 0;
       while (true) {
@@ -160,6 +161,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
           .select("id, paciente_nome, horarios_refeicoes, data_inicio, data_fim, status, tem_acompanhante, observacoes")
           .eq("status", "aprovada")
           .lte("data_inicio", dataFim)
+          .or(`data_fim.gte.${dataInicio},data_fim.is.null`)
           .order("data_inicio", { ascending: true })
           .range(dietaPage * pageSize, (dietaPage + 1) * pageSize - 1);
 
@@ -170,16 +172,12 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
         dietaPage++;
       }
       
-      // Debug: check Feb 26-28 records
+      console.log(`[DEBUG] Total dietas fetched: ${allDietas.length}`);
       const feb26_28 = allDietas.filter(d => d.data_inicio >= '2026-02-26' && d.data_inicio <= '2026-02-28');
       console.log(`[DEBUG] Dietas for Feb 26-28: ${feb26_28.length}`, feb26_28.slice(0, 5));
       
-      // Filtrar dietas que estão ativas no período selecionado
-      const dietasNoPeriodo = allDietas.filter(d => {
-        const inicio = d.data_inicio;
-        const fim = d.data_fim || dataFim;
-        return inicio <= dataFim && fim >= dataInicio;
-      });
+      // Dietas já filtradas pelo banco, usar diretamente
+      const dietasNoPeriodo = allDietas;
       
       setSolicitacoesDieta(dietasNoPeriodo);
 
