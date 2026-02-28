@@ -27,13 +27,25 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { 
   Plus, 
   Search, 
   AlertTriangle, 
   Package,
   Loader2,
-  Pencil
+  Pencil,
+  Trash2
 } from "lucide-react";
 
 interface Categoria {
@@ -54,9 +66,10 @@ interface Item {
 
 interface RoupariaEstoqueProps {
   canManage: boolean;
+  isAdmin?: boolean;
 }
 
-export function RoupariaEstoque({ canManage }: RoupariaEstoqueProps) {
+export function RoupariaEstoque({ canManage, isAdmin }: RoupariaEstoqueProps) {
   const { toast } = useToast();
   const [itens, setItens] = useState<Item[]>([]);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
@@ -203,6 +216,25 @@ export function RoupariaEstoque({ canManage }: RoupariaEstoqueProps) {
 
     setDialogOpen(false);
     resetForm();
+    fetchData();
+  };
+
+  const handleDeleteItem = async (item: Item) => {
+    const { error } = await supabase
+      .from("rouparia_itens")
+      .delete()
+      .eq("id", item.id);
+
+    if (error) {
+      toast({
+        title: "Erro ao excluir item",
+        description: error.message,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({ title: "Item excluído com sucesso" });
     fetchData();
   };
 
@@ -429,7 +461,7 @@ export function RoupariaEstoque({ canManage }: RoupariaEstoqueProps) {
                       )}
                     </TableCell>
                     {canManage && (
-                      <TableCell className="text-right">
+                      <TableCell className="text-right space-x-1">
                         <Button
                           variant="ghost"
                           size="sm"
@@ -437,6 +469,29 @@ export function RoupariaEstoque({ canManage }: RoupariaEstoqueProps) {
                         >
                           <Pencil className="h-4 w-4" />
                         </Button>
+                        {isAdmin && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>Excluir item?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  O item "{item.codigo_barras}" será removido permanentemente. Esta ação não pode ser desfeita.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => handleDeleteItem(item)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                                  Excluir
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
                       </TableCell>
                     )}
                   </TableRow>
