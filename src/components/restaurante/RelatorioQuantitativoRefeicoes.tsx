@@ -151,18 +151,26 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
 
       setRegistrosRefeicoes(allRefeicoes);
 
-      // Buscar solicitações de dieta aprovadas no período
-      const { data: dietas, error: dietasError } = await supabase
-        .from("solicitacoes_dieta")
-        .select("id, paciente_nome, horarios_refeicoes, data_inicio, data_fim, status, tem_acompanhante, observacoes")
-        .eq("status", "aprovada")
-        .lte("data_inicio", dataFim)
-        .order("data_inicio", { ascending: true });
+      // Buscar solicitações de dieta aprovadas no período com paginação
+      let allDietas: SolicitacaoDieta[] = [];
+      let dietaPage = 0;
+      while (true) {
+        const { data: dietas, error: dietasError } = await supabase
+          .from("solicitacoes_dieta")
+          .select("id, paciente_nome, horarios_refeicoes, data_inicio, data_fim, status, tem_acompanhante, observacoes")
+          .eq("status", "aprovada")
+          .lte("data_inicio", dataFim)
+          .order("data_inicio", { ascending: true })
+          .range(dietaPage * pageSize, (dietaPage + 1) * pageSize - 1);
 
-      if (dietasError) throw dietasError;
+        if (dietasError) throw dietasError;
+        allDietas = [...allDietas, ...(dietas || [])];
+        if (!dietas || dietas.length < pageSize) break;
+        dietaPage++;
+      }
       
       // Filtrar dietas que estão ativas no período selecionado
-      const dietasNoPeriodo = (dietas || []).filter(d => {
+      const dietasNoPeriodo = allDietas.filter(d => {
         const inicio = d.data_inicio;
         const fim = d.data_fim || dataFim;
         return inicio <= dataFim && fim >= dataInicio;
