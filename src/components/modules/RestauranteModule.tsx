@@ -120,7 +120,7 @@ const horariosRefeicaoOptions = [{
   label: "Almoço"
 }, {
   value: "lanche",
-  label: "Lanche da Tarde"
+  label: "Café da Tarde"
 }, {
   value: "jantar",
   label: "Jantar"
