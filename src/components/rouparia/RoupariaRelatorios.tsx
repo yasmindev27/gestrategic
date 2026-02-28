@@ -71,8 +71,8 @@ export function RoupariaRelatorios() {
   const [resumoPorTipo, setResumoPorTipo] = useState<ResumoTipo[]>([]);
   const [resumoPorCategoria, setResumoPorCategoria] = useState<{ nome: string; quantidade: number }[]>([]);
   
-  // Filtros
-  const [dataInicio, setDataInicio] = useState(format(subDays(new Date(), 180), "yyyy-MM-dd"));
+  // Filtros - padrão: desde 01/09/2025 para cobrir dados importados
+  const [dataInicio, setDataInicio] = useState("2025-09-01");
   const [dataFim, setDataFim] = useState(format(new Date(), "yyyy-MM-dd"));
   const [filterTipo, setFilterTipo] = useState<string>("all");
 
