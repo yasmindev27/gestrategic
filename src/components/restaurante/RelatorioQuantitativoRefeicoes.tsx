@@ -1122,6 +1122,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       styles: { fontSize: 6, cellPadding: 1.5 },
       headStyles: { fontSize: 6 },
       footStyles: { fontSize: 7 },
+      margin: { top: 32 },
       columnStyles: {
         0: { cellWidth: 22 },
       },
