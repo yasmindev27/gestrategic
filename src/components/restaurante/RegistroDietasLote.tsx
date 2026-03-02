@@ -91,11 +91,14 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
     }));
   };
 
-  const linhasValidas = linhas.filter(l => l.paciente_nome.trim() && l.quarto_leito.trim() && l.tipo_dieta);
+  const linhasValidas = linhas.filter(l => {
+    if (l.is_extra) return l.tipo_dieta;
+    return l.paciente_nome.trim() && l.quarto_leito.trim() && l.tipo_dieta;
+  });
 
   const handleSalvarTodas = async () => {
     if (linhasValidas.length === 0) {
-      toast({ title: "Atenção", description: "Preencha ao menos uma linha com Paciente, Quarto/Leito e Tipo de Dieta.", variant: "destructive" });
+      toast({ title: "Atenção", description: "Preencha ao menos uma linha válida. Extras precisam apenas do Tipo de Dieta.", variant: "destructive" });
       return;
     }
 
@@ -110,8 +113,8 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
           solicitante_id: userId,
           solicitante_nome: userName,
           tipo_dieta: l.tipo_dieta,
-          paciente_nome: l.paciente_nome,
-          quarto_leito: l.quarto_leito,
+          paciente_nome: l.paciente_nome.trim() || (l.is_extra ? "Extra" : l.paciente_nome),
+          quarto_leito: l.quarto_leito.trim() || (l.is_extra ? "-" : l.quarto_leito),
           tem_acompanhante: l.tem_acompanhante,
           restricoes_alimentares: l.restricoes_alimentares || null,
           horarios_refeicoes: l.horarios_refeicoes,
@@ -187,7 +190,7 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
             </TableHeader>
             <TableBody>
               {linhas.map((linha, idx) => {
-                const isValid = linha.paciente_nome.trim() && linha.quarto_leito.trim() && linha.tipo_dieta;
+                const isValid = linha.is_extra ? !!linha.tipo_dieta : (linha.paciente_nome.trim() && linha.quarto_leito.trim() && linha.tipo_dieta);
                 return (
                   <TableRow
                     key={linha.id}
@@ -198,15 +201,16 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
                     </TableCell>
                     <TableCell className="py-1 px-1">
                       <Input
-                        placeholder="Nome do paciente"
+                        placeholder={linha.is_extra ? "Opcional" : "Nome do paciente"}
                         value={linha.paciente_nome}
                         onChange={e => atualizarLinha(linha.id, "paciente_nome", e.target.value)}
                         className="h-8 text-sm"
+                        disabled={false}
                       />
                     </TableCell>
                     <TableCell className="py-1 px-1">
                       <Input
-                        placeholder="Ex: 101-A"
+                        placeholder={linha.is_extra ? "Opcional" : "Ex: 101-A"}
                         value={linha.quarto_leito}
                         onChange={e => atualizarLinha(linha.id, "quarto_leito", e.target.value)}
                         className="h-8 text-sm"
