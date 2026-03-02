@@ -15,10 +15,11 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Truck, Search, Clock, CheckCircle, AlertTriangle, Loader2, ArrowRight, MapPin, Navigation, Download, FileText, FileSpreadsheet, BarChart3 } from "lucide-react";
+import { Truck, Search, Clock, CheckCircle, AlertTriangle, Loader2, ArrowRight, MapPin, Navigation, Download, FileText, FileSpreadsheet, BarChart3, ArrowRightLeft } from "lucide-react";
 import { createStandardPdf, applyPdfHeaderFooter } from "@/lib/export-utils";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import { RelatorioTransferencias } from "./RelatorioTransferencias";
 
 interface Veiculo {
   id: string;
@@ -89,6 +90,7 @@ export const TransferenciasModule = () => {
   const [veiculoStatsId, setVeiculoStatsId] = useState<string | null>(null);
   const [veiculoStatsData, setVeiculoStatsData] = useState<{ dia: number; semana: number; mes: number; ano: number; kmDia: number; kmSemana: number; kmMes: number; kmAno: number } | null>(null);
   const [loadingStats, setLoadingStats] = useState(false);
+  const [activeTab, setActiveTab] = useState<"gestao" | "relatorio">("gestao");
 
   // Form state
   const [formDestino, setFormDestino] = useState("");
@@ -413,25 +415,50 @@ export const TransferenciasModule = () => {
           </h3>
           <p className="text-sm text-muted-foreground">Gestão de transferências de pacientes e acompanhamento de veículos</p>
         </div>
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" className="gap-2">
-              <Download className="h-4 w-4" />
-              Exportar
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="bg-popover">
-            <DropdownMenuItem onClick={exportPdf} className="gap-2 cursor-pointer">
-              <FileText className="h-4 w-4 text-red-500" />
-              Exportar PDF
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={exportExcel} className="gap-2 cursor-pointer">
-              <FileSpreadsheet className="h-4 w-4 text-green-600" />
-              Exportar Excel
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border bg-muted p-0.5">
+            <button
+              onClick={() => setActiveTab("gestao")}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${activeTab === "gestao" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <Truck className="h-3.5 w-3.5 inline mr-1.5" />
+              Gestão
+            </button>
+            <button
+              onClick={() => setActiveTab("relatorio")}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${activeTab === "relatorio" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <ArrowRightLeft className="h-3.5 w-3.5 inline mr-1.5" />
+              Relatório de Transferências
+            </button>
+          </div>
+          {activeTab === "gestao" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover">
+                <DropdownMenuItem onClick={exportPdf} className="gap-2 cursor-pointer">
+                  <FileText className="h-4 w-4 text-destructive" />
+                  Exportar PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={exportExcel} className="gap-2 cursor-pointer">
+                  <FileSpreadsheet className="h-4 w-4 text-primary" />
+                  Exportar Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
       </div>
+
+      {activeTab === "relatorio" ? (
+        <RelatorioTransferencias />
+      ) : (
+      <>
 
       {/* Gantt Chart */}
       <Card>
@@ -879,6 +906,8 @@ export const TransferenciasModule = () => {
           })()}
         </DialogContent>
       </Dialog>
+      </>
+      )}
     </div>
   );
 };
