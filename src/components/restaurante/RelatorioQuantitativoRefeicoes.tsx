@@ -169,16 +169,11 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues 
 
         if (dietasError) throw dietasError;
         allDietas = [...allDietas, ...(dietas || [])];
-        console.log(`[DEBUG] Dieta page ${dietaPage}: fetched ${dietas?.length || 0} records, total so far: ${allDietas.length}`);
+        
         if (!dietas || dietas.length < pageSize) break;
         dietaPage++;
       }
       
-      console.log(`[DEBUG] Total dietas fetched: ${allDietas.length}`);
-      const feb26_28 = allDietas.filter(d => d.data_inicio >= '2026-02-26' && d.data_inicio <= '2026-02-28');
-      console.log(`[DEBUG] Dietas for Feb 26-28: ${feb26_28.length}`, feb26_28.slice(0, 5));
-      
-      // Dietas já filtradas pelo banco, usar diretamente
       const dietasNoPeriodo = allDietas;
       
       setSolicitacoesDieta(dietasNoPeriodo);
@@ -305,11 +300,10 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues 
       const jantar = refeicoesNoDia.filter(r => r.tipo_refeicao === "jantar").length;
       const foraHorario = refeicoesNoDia.filter(r => r.tipo_refeicao === "fora_horario").length;
 
-      // Contar dietas ativas SOMENTE para este dia específico (excluir registros NEGATIVO legados)
+      // Contar dietas ativas SOMENTE para este dia específico
       const dietasAtivasNoDia = dietas.filter(d => {
-        if (d.observacoes?.includes("[NEGATIVO]")) return false;
         const inicio = d.data_inicio;
-        const fim = d.data_fim || "9999-12-31";
+        const fim = d.data_fim || d.data_inicio;
         return dataStr >= inicio && dataStr <= fim;
       });
 
@@ -379,15 +373,8 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues 
       };
     });
 
-    // Debug: log Feb 26-28 values before filtering
-    const debug26_28 = resultado.filter(r => r.data >= '2026-02-26' && r.data <= '2026-02-28');
-    console.log('[DEBUG] Feb 26-28 before filter:', debug26_28.map(r => ({ data: r.data, dietasCafe: r.dietasCafe, dietasAlmoco: r.dietasAlmoco, totalDietas: r.totalDietas, totalGeral: r.totalGeral })));
-
     // Remover dias sem nenhum registro (manter apenas dias com dados)
     const resultadoFiltrado = resultado.filter(r => r.totalGeral > 0 || r.cafeLitro > 0);
-    
-    const debug26_28_after = resultadoFiltrado.filter(r => r.data >= '2026-02-26' && r.data <= '2026-02-28');
-    console.log('[DEBUG] Feb 26-28 after filter:', debug26_28_after.length, 'records');
     
     setQuantitativos(resultadoFiltrado);
   };
