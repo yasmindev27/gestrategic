@@ -94,6 +94,52 @@ export const ProtocoloConsolidado = ({ tipo, titulo, onBack }: Props) => {
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [atendimentos]);
 
+  // Age distribution
+  const idadeData = useMemo(() => {
+    const faixas: Record<string, number> = { '0-17': 0, '18-39': 0, '40-59': 0, '60-79': 0, '80+': 0, 'N/I': 0 };
+    atendimentos.forEach((a: any) => {
+      const age = a.age;
+      if (age == null) { faixas['N/I']++; }
+      else if (age < 18) faixas['0-17']++;
+      else if (age < 40) faixas['18-39']++;
+      else if (age < 60) faixas['40-59']++;
+      else if (age < 80) faixas['60-79']++;
+      else faixas['80+']++;
+    });
+    return Object.entries(faixas).filter(([, v]) => v > 0).map(([name, value]) => ({ name, value }));
+  }, [atendimentos]);
+
+  // Sex distribution
+  const sexoData = useMemo(() => {
+    const counts: Record<string, number> = {};
+    atendimentos.forEach((a: any) => {
+      const s = a.sex || 'Não informado';
+      counts[s] = (counts[s] || 0) + 1;
+    });
+    return Object.entries(counts).map(([name, value]) => ({ name, value }));
+  }, [atendimentos]);
+
+  // Troponin within target time analysis
+  const troponinaData = useMemo(() => {
+    let comTroponina = 0;
+    let semTroponina = 0;
+    let dentroTempo = 0;
+    let foraTempo = 0;
+    atendimentos.forEach((a: any) => {
+      if (a.troponin_sample1_collection_time && a.troponin_sample1_release_time) {
+        comTroponina++;
+        const coleta = new Date(a.troponin_sample1_collection_time).getTime();
+        const resultado = new Date(a.troponin_sample1_release_time).getTime();
+        const diffMin = (resultado - coleta) / 60000;
+        if (diffMin <= 60) dentroTempo++;
+        else foraTempo++;
+      } else {
+        semTroponina++;
+      }
+    });
+    return { comTroponina, semTroponina, dentroTempo, foraTempo };
+  }, [atendimentos]);
+
   const exportExcel = () => {
     const data = [{
       'Competência': competencia,
@@ -271,25 +317,116 @@ export const ProtocoloConsolidado = ({ tipo, titulo, onBack }: Props) => {
             </Card>
           </div>
 
-          {/* Risk distribution */}
-          {riskData.length > 0 && (
+          {/* Demographics & Clinical */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Age distribution */}
+            {idadeData.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Distribuição por Faixa Etária</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={idadeData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="name" className="text-xs" />
+                      <YAxis className="text-xs" />
+                      <Tooltip />
+                      <Bar dataKey="value" name="Pacientes" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Sex distribution */}
+            {sexoData.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Distribuição por Sexo</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <PieChart>
+                      <Pie data={sexoData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value"
+                        label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
+                        {sexoData.map((_, i) => (
+                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Legend />
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Risk distribution */}
+            {riskData.length > 0 && (
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium">Classificação de Risco</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={riskData} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis type="number" className="text-xs" />
+                      <YAxis dataKey="name" type="category" className="text-xs" width={120} />
+                      <Tooltip />
+                      <Bar dataKey="value" name="Atendimentos" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Troponina */}
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium">Distribuição por Classificação de Risco</CardTitle>
+                <CardTitle className="text-sm font-medium">Troponina — Tempo de Resultado</CardTitle>
               </CardHeader>
               <CardContent>
-                <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={riskData} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                    <XAxis type="number" className="text-xs" />
-                    <YAxis dataKey="name" type="category" className="text-xs" width={120} />
-                    <Tooltip />
-                    <Bar dataKey="value" name="Atendimentos" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                {troponinaData.comTroponina === 0 ? (
+                  <div className="flex items-center justify-center h-[220px] text-muted-foreground text-sm">
+                    Nenhuma troponina registrada no período.
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <ResponsiveContainer width="100%" height={160}>
+                      <PieChart>
+                        <Pie
+                          data={[
+                            { name: 'Dentro (≤60min)', value: troponinaData.dentroTempo },
+                            { name: 'Fora (>60min)', value: troponinaData.foraTempo },
+                          ]}
+                          cx="50%" cy="50%" innerRadius={40} outerRadius={65} dataKey="value"
+                          label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}>
+                          <Cell fill="hsl(142, 71%, 45%)" />
+                          <Cell fill="hsl(0, 84%, 60%)" />
+                        </Pie>
+                        <Legend />
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="flex justify-around text-center text-xs text-muted-foreground">
+                      <div>
+                        <p className="text-lg font-bold text-foreground">{troponinaData.comTroponina}</p>
+                        <p>Com troponina</p>
+                      </div>
+                      <div>
+                        <p className="text-lg font-bold text-foreground">{troponinaData.semTroponina}</p>
+                        <p>Sem troponina</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
-          )}
+          </div>
         </>
       )}
     </div>
