@@ -107,7 +107,8 @@ const tipoDietaLabels: Record<string, string> = {
   liquida: "Líquida",
   hipossodica: "Hipossódica (Baixo Sódio)",
   hipocalorica: "Hipocalórica (Baixas Calorias)",
-  has_dm: "HAS/DM",
+  has: "HAS",
+  dm: "DM",
   enteral: "Enteral",
   branda: "Branda",
   suspensa: "Suspensa"
