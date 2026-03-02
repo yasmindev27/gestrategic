@@ -7,12 +7,15 @@
 -- ====================
 -- TIPOS CUSTOMIZADOS
 -- ====================
-CREATE TYPE public.app_role AS ENUM (
-  'admin', 'gestor', 'funcionario', 'recepcao', 'classificacao', 
-  'nir', 'faturamento', 'ti', 'manutencao', 'engenharia_clinica', 
-  'laboratorio', 'restaurante', 'rh_dp', 'assistencia_social', 
-  'qualidade', 'nsp', 'seguranca', 'enfermagem', 'medicos'
-);
+DO $$ BEGIN
+  CREATE TYPE public.app_role AS ENUM (
+    'admin', 'gestor', 'funcionario', 'recepcao', 'classificacao', 
+    'nir', 'faturamento', 'ti', 'manutencao', 'engenharia_clinica', 
+    'laboratorio', 'restaurante', 'rh_dp', 'assistencia_social', 
+    'qualidade', 'nsp', 'seguranca', 'enfermagem', 'medicos'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- ====================
 -- TABELAS

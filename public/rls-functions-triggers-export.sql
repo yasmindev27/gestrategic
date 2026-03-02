@@ -9,13 +9,16 @@
 -- ============================================================
 
 -- Tipo ENUM para roles
-CREATE TYPE public.app_role AS ENUM (
-  'admin', 'funcionario', 'rh_dp', 'enfermagem', 'medicos', 
-  'seguranca', 'faturamento', 'nir', 'recepcao', 'qualidade', 
-  'nsp', 'gestor', 'ti', 'manutencao', 'engenharia_clinica',
-  'restaurante', 'assistencia_social', 'laboratorio', 'rouparia',
-  'transporte', 'sciras'
-);
+DO $$ BEGIN
+  CREATE TYPE public.app_role AS ENUM (
+    'admin', 'funcionario', 'rh_dp', 'enfermagem', 'medicos', 
+    'seguranca', 'faturamento', 'nir', 'recepcao', 'qualidade', 
+    'nsp', 'gestor', 'ti', 'manutencao', 'engenharia_clinica',
+    'restaurante', 'assistencia_social', 'laboratorio', 'rouparia',
+    'transporte', 'sciras'
+  );
+EXCEPTION WHEN duplicate_object THEN NULL;
+END $$;
 
 -- Função: update_updated_at_column
 CREATE OR REPLACE FUNCTION public.update_updated_at_column()
