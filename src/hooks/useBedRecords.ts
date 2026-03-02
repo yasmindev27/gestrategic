@@ -16,9 +16,11 @@ export function useBedRecords() {
         pendingSavesRef.current.delete(bed.id);
         
         if (!bed.patient) {
+          // Only delete records that are NOT discharged (no data_alta)
           await supabase.from('bed_records').delete()
             .eq('bed_id', bed.id)
-            .eq('shift_date', shiftInfo.data);
+            .eq('shift_date', shiftInfo.data)
+            .is('data_alta', null);
           resolve();
           return;
         }
