@@ -196,7 +196,10 @@ export const ProtocoloConsolidado = ({ tipo, titulo, onBack }: Props) => {
     const pdfTitle = `Consolidado Mensal — ${tipoLabels[tipo]}`;
     const { doc, logoImg } = await createStandardPdf(pdfTitle);
 
+    const getFinalY = () => (doc as any).lastAutoTable?.finalY ?? (doc as any).previousAutoTable?.finalY ?? 80;
+
     doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
     doc.text(`Competência: ${competencia}`, 14, 30);
 
     // KPIs table
@@ -216,7 +219,7 @@ export const ProtocoloConsolidado = ({ tipo, titulo, onBack }: Props) => {
       margin: { top: 32, bottom: 30 },
     });
 
-    let cursorY = (doc as any).lastAutoTable?.finalY + 8 || 80;
+    let cursorY = getFinalY() + 8;
 
     // Idade
     if (idadeData.length > 0) {
@@ -231,7 +234,7 @@ export const ProtocoloConsolidado = ({ tipo, titulo, onBack }: Props) => {
         headStyles: { fillColor: [41, 128, 185], textColor: 255 },
         margin: { top: 32, bottom: 30 },
       });
-      cursorY = (doc as any).lastAutoTable?.finalY + 8 || cursorY + 30;
+      cursorY = getFinalY() + 8;
     }
 
     // Sexo
@@ -247,7 +250,7 @@ export const ProtocoloConsolidado = ({ tipo, titulo, onBack }: Props) => {
         headStyles: { fillColor: [41, 128, 185], textColor: 255 },
         margin: { top: 32, bottom: 30 },
       });
-      cursorY = (doc as any).lastAutoTable?.finalY + 8 || cursorY + 30;
+      cursorY = getFinalY() + 8;
     }
 
     // Classificação de Risco
@@ -263,7 +266,7 @@ export const ProtocoloConsolidado = ({ tipo, titulo, onBack }: Props) => {
         headStyles: { fillColor: [41, 128, 185], textColor: 255 },
         margin: { top: 32, bottom: 30 },
       });
-      cursorY = (doc as any).lastAutoTable?.finalY + 8 || cursorY + 30;
+      cursorY = getFinalY() + 8;
     }
 
     // Troponina
@@ -283,6 +286,31 @@ export const ProtocoloConsolidado = ({ tipo, titulo, onBack }: Props) => {
       headStyles: { fillColor: [41, 128, 185], textColor: 255 },
       margin: { top: 32, bottom: 30 },
     });
+
+    // Tabela detalhada dos atendimentos
+    cursorY = getFinalY() + 10;
+    if (atendimentos.length > 0) {
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Detalhamento dos Atendimentos', 14, cursorY);
+      autoTable(doc, {
+        startY: cursorY + 3,
+        head: [['Nº', 'Paciente', 'Idade', 'Sexo', 'Class. Risco', 'Porta-ECG (min)', 'Meta', 'Troponina']],
+        body: atendimentos.map((a: any) => [
+          a.record_number || '-',
+          a.patient_name || '-',
+          a.age != null ? String(a.age) : '-',
+          a.sex || '-',
+          a.risk_classification || '-',
+          a.porta_ecg_minutes != null ? String(a.porta_ecg_minutes) : '-',
+          a.within_target ? 'Sim' : 'Não',
+          a.troponin_sample1_result || '-',
+        ]),
+        styles: { fontSize: 7 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        margin: { top: 32, bottom: 30 },
+      });
+    }
 
     savePdfWithFooter(doc, pdfTitle, `consolidado_${tipo}_${competencia}`, logoImg);
   };
