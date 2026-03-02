@@ -319,7 +319,7 @@ export const MapaLeitosModule = () => {
     await saveShiftConfig();
 
     // Copy all bed records to the next shift with blank staff
-    const bedsWithPatients = beds.filter(bed => bed.patient !== null);
+    const bedsWithPatients = beds.filter(bed => bed.patient !== null && !bed.patient.motivoAlta);
     
     for (const bed of bedsWithPatients) {
       if (bed.patient) {
