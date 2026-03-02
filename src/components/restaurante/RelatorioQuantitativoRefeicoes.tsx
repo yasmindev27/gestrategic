@@ -102,9 +102,10 @@ const tipoRefeicaoLabels: Record<string, { label: string; icon: React.ReactNode;
 
 interface RelatorioQuantitativoRefeicoesProps {
   isAdmin?: boolean;
+  canViewValues?: boolean;
 }
 
-export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQuantitativoRefeicoesProps) => {
+export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues = false }: RelatorioQuantitativoRefeicoesProps) => {
   const { toast } = useToast();
   const [dataInicio, setDataInicio] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
   const [dataFim, setDataFim] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
@@ -957,7 +958,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
     // Seção de Valores Financeiros (apenas para admin)
     let finalY = cardStartY + cardHeight + 8;
 
-    if (isAdmin) {
+    if (isAdmin || canViewValues) {
       const financeiroY = cardStartY + cardHeight + 8;
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
@@ -1256,8 +1257,8 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                 </Card>
               )}
 
-              {/* Resumo Financeiro - apenas Admin */}
-              {isAdmin && (
+              {/* Resumo Financeiro - Admin ou perfil com visualização */}
+              {(isAdmin || canViewValues) && (
               <div className="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
                 <div className="flex items-center gap-2 mb-3">
                   <DollarSign className="h-5 w-5 text-emerald-600" />
