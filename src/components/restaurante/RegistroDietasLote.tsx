@@ -37,6 +37,7 @@ interface Linhadieta {
   quarto_leito: string;
   tipo_dieta: string;
   tem_acompanhante: boolean;
+  is_extra: boolean;
   restricoes_alimentares: string;
   horarios_refeicoes: string[];
   observacoes: string;
@@ -48,6 +49,7 @@ const criarLinhaVazia = (): Linhadieta => ({
   quarto_leito: "",
   tipo_dieta: "geral",
   tem_acompanhante: false,
+  is_extra: false,
   restricoes_alimentares: "",
   horarios_refeicoes: [] as string[],
   observacoes: "",
@@ -99,24 +101,35 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
 
     setIsSubmitting(true);
     try {
-      const registros = linhasValidas.map(l => ({
-        solicitante_id: userId,
-        solicitante_nome: userName,
-        tipo_dieta: l.tipo_dieta,
-        paciente_nome: l.paciente_nome,
-        quarto_leito: l.quarto_leito,
-        tem_acompanhante: l.tem_acompanhante,
-        restricoes_alimentares: l.restricoes_alimentares || null,
-        horarios_refeicoes: l.horarios_refeicoes,
-        data_inicio: dataSolicitacao,
-        observacoes: l.observacoes || null,
-        status: "aprovada",
-      }));
+      const registros = linhasValidas.map(l => {
+        const obsExtra = l.is_extra ? "[DIETA EXTRA]" : "";
+        const obsUsuario = l.observacoes?.trim() || "";
+        const obsFinal = [obsExtra, obsUsuario].filter(Boolean).join(" ") || null;
+
+        return {
+          solicitante_id: userId,
+          solicitante_nome: userName,
+          tipo_dieta: l.tipo_dieta,
+          paciente_nome: l.paciente_nome,
+          quarto_leito: l.quarto_leito,
+          tem_acompanhante: l.tem_acompanhante,
+          restricoes_alimentares: l.restricoes_alimentares || null,
+          horarios_refeicoes: l.horarios_refeicoes,
+          data_inicio: dataSolicitacao,
+          observacoes: obsFinal,
+          status: "aprovada",
+        };
+      });
 
       const { error } = await supabase.from("solicitacoes_dieta").insert(registros);
       if (error) throw error;
 
-      toast({ title: "Sucesso", description: `${linhasValidas.length} dieta(s) registrada(s) com sucesso!` });
+      const extras = linhasValidas.filter(l => l.is_extra).length;
+      const normais = linhasValidas.length - extras;
+      const parts = [];
+      if (normais > 0) parts.push(`${normais} dieta(s)`);
+      if (extras > 0) parts.push(`${extras} extra(s)`);
+      toast({ title: "Sucesso", description: `${parts.join(" e ")} registrada(s) com sucesso!` });
       setLinhas([criarLinhaVazia(), criarLinhaVazia(), criarLinhaVazia()]);
       onSuccess();
     } catch (error) {
@@ -165,6 +178,7 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
                 <TableHead className="min-w-[100px] text-xs font-semibold text-foreground py-2.5 uppercase">Quarto/Leito</TableHead>
                 <TableHead className="min-w-[130px] text-xs font-semibold text-foreground py-2.5 uppercase">Tipo de Dieta</TableHead>
                 <TableHead className="text-center min-w-[90px] text-xs font-semibold text-foreground py-2.5 uppercase">Acompanhante</TableHead>
+                <TableHead className="text-center min-w-[60px] text-xs font-semibold text-foreground py-2.5 uppercase">Extra</TableHead>
                 <TableHead className="min-w-[190px] text-xs font-semibold text-foreground py-2.5 uppercase">Refeições</TableHead>
                 <TableHead className="min-w-[130px] text-xs font-semibold text-foreground py-2.5 uppercase">Restrições</TableHead>
                 <TableHead className="min-w-[130px] text-xs font-semibold text-foreground py-2.5 uppercase">Observações</TableHead>
@@ -215,6 +229,19 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
                         checked={linha.tem_acompanhante}
                         onCheckedChange={v => atualizarLinha(linha.id, "tem_acompanhante", !!v)}
                       />
+                    </TableCell>
+                    <TableCell className="py-1 px-1 text-center">
+                      <div className="flex flex-col items-center gap-0.5">
+                        <Checkbox
+                          checked={linha.is_extra}
+                          onCheckedChange={v => atualizarLinha(linha.id, "is_extra", !!v)}
+                        />
+                        {linha.is_extra && (
+                          <Badge variant="secondary" className="text-[10px] px-1 py-0 bg-purple-100 text-purple-700 border-purple-200">
+                            Extra
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="py-1 px-1">
                       <div className="flex gap-1 flex-wrap">
