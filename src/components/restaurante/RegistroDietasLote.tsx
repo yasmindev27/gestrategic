@@ -127,47 +127,47 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
   };
 
   return (
-    <Card className="border-0 shadow-lg rounded-xl overflow-hidden">
-      <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 pb-4">
-        <div className="flex flex-col gap-3">
+    <Card className="border shadow-sm">
+      <CardHeader className="border-b bg-muted/30 py-4">
+        <div className="flex flex-col gap-2">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <ListPlus className="h-5 w-5 text-primary" />
+              <CardTitle className="flex items-center gap-2 text-base font-semibold">
+                <ListPlus className="h-4 w-4 text-muted-foreground" />
                 Registro de Dietas em Lote
               </CardTitle>
-              <CardDescription className="mt-1">Registre as dietas de todos os pacientes do dia em uma única tabela</CardDescription>
+              <CardDescription className="mt-0.5 text-xs">Registre as dietas de todos os pacientes do dia em uma única tabela</CardDescription>
             </div>
-            <div className="flex items-center gap-2 bg-background rounded-lg px-3 py-1.5 border shadow-sm">
-              <span className="text-xs font-medium text-muted-foreground">Data:</span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-muted-foreground">Data:</span>
               <Input
                 type="date"
                 value={dataSolicitacao}
                 onChange={e => setDataSolicitacao(e.target.value)}
-                className="w-[140px] h-8 border-0 shadow-none px-1 text-sm font-medium text-primary focus-visible:ring-0"
+                className="w-[150px] h-8 text-sm"
               />
             </div>
           </div>
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 text-xs text-muted-foreground border-t border-border/50 pt-2">
             <span>Solicitante:</span>
-            <Badge variant="secondary" className="font-medium">{userName || "Carregando..."}</Badge>
+            <Badge variant="secondary" className="text-xs font-normal">{userName || "Carregando..."}</Badge>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="p-4 space-y-4">
-        <div className="border rounded-xl overflow-hidden shadow-sm">
-          <Table className="border-collapse">
+      <CardContent className="p-3 space-y-3">
+        <div className="border rounded-md overflow-auto">
+          <Table>
             <TableHeader>
-              <TableRow className="bg-muted/40 border-b border-border">
-                <TableHead className="w-[40px] text-center text-xs font-bold text-foreground py-3">#</TableHead>
-                <TableHead className="min-w-[180px] text-xs font-bold text-foreground py-3">Paciente *</TableHead>
-                <TableHead className="min-w-[110px] text-xs font-bold text-foreground py-3">Quarto/Leito *</TableHead>
-                <TableHead className="min-w-[140px] text-xs font-bold text-foreground py-3">Tipo de Dieta *</TableHead>
-                <TableHead className="text-center min-w-[100px] text-xs font-bold text-foreground py-3">Acompanhante</TableHead>
-                <TableHead className="min-w-[200px] text-xs font-bold text-foreground py-3">Refeições</TableHead>
-                <TableHead className="min-w-[140px] text-xs font-bold text-foreground py-3">Restrições</TableHead>
-                <TableHead className="min-w-[140px] text-xs font-bold text-foreground py-3">Observações</TableHead>
-                <TableHead className="w-[44px]"></TableHead>
+              <TableRow className="border-b border-border bg-muted/20 hover:bg-muted/20">
+                <TableHead className="w-[36px] text-center text-xs font-semibold text-foreground py-2.5">#</TableHead>
+                <TableHead className="min-w-[170px] text-xs font-semibold text-foreground py-2.5">Paciente *</TableHead>
+                <TableHead className="min-w-[100px] text-xs font-semibold text-foreground py-2.5">Quarto/Leito *</TableHead>
+                <TableHead className="min-w-[130px] text-xs font-semibold text-foreground py-2.5">Tipo de Dieta *</TableHead>
+                <TableHead className="text-center min-w-[90px] text-xs font-semibold text-foreground py-2.5">Acompanhante</TableHead>
+                <TableHead className="min-w-[190px] text-xs font-semibold text-foreground py-2.5">Refeições</TableHead>
+                <TableHead className="min-w-[130px] text-xs font-semibold text-foreground py-2.5">Restrições</TableHead>
+                <TableHead className="min-w-[130px] text-xs font-semibold text-foreground py-2.5">Observações</TableHead>
+                <TableHead className="w-[40px]"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -176,30 +176,30 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
                 return (
                   <TableRow
                     key={linha.id}
-                    className={`border-b border-border/30 transition-colors ${isValid ? "bg-green-50/40 dark:bg-green-950/10" : idx % 2 === 0 ? "bg-background" : "bg-muted/30"} hover:bg-primary/5`}
+                    className={`border-b border-border/40 ${idx % 2 !== 0 ? "bg-muted/10" : "bg-background"} hover:bg-muted/20`}
                   >
-                    <TableCell className="text-center text-xs font-mono text-muted-foreground py-2">
+                    <TableCell className="text-center text-xs font-mono text-muted-foreground py-1.5">
                       {idx + 1}
                     </TableCell>
-                    <TableCell className="py-1.5 px-1.5">
+                    <TableCell className="py-1 px-1">
                       <Input
                         placeholder="Nome do paciente"
                         value={linha.paciente_nome}
                         onChange={e => atualizarLinha(linha.id, "paciente_nome", e.target.value)}
-                        className="h-8 text-sm border-muted/60 focus:border-primary/50 shadow-none"
+                        className="h-8 text-sm"
                       />
                     </TableCell>
-                    <TableCell className="py-1.5 px-1.5">
+                    <TableCell className="py-1 px-1">
                       <Input
                         placeholder="Ex: 101-A"
                         value={linha.quarto_leito}
                         onChange={e => atualizarLinha(linha.id, "quarto_leito", e.target.value)}
-                        className="h-8 text-sm border-muted/60 focus:border-primary/50 shadow-none"
+                        className="h-8 text-sm"
                       />
                     </TableCell>
-                    <TableCell className="py-1.5 px-1.5">
+                    <TableCell className="py-1 px-1">
                       <Select value={linha.tipo_dieta} onValueChange={v => atualizarLinha(linha.id, "tipo_dieta", v)}>
-                        <SelectTrigger className="h-8 text-sm border-muted/60 shadow-none">
+                        <SelectTrigger className="h-8 text-sm">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -209,23 +209,19 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
                         </SelectContent>
                       </Select>
                     </TableCell>
-                    <TableCell className="py-1.5 px-1.5 text-center">
+                    <TableCell className="py-1 px-1 text-center">
                       <Checkbox
                         checked={linha.tem_acompanhante}
                         onCheckedChange={v => atualizarLinha(linha.id, "tem_acompanhante", !!v)}
                       />
                     </TableCell>
-                    <TableCell className="py-1.5 px-1.5">
+                    <TableCell className="py-1 px-1">
                       <div className="flex gap-1 flex-wrap">
                         {refeicaoOptions.map(r => (
                           <Badge
                             key={r.value}
                             variant={linha.horarios_refeicoes.includes(r.value) ? "default" : "outline"}
-                            className={`cursor-pointer text-xs select-none transition-all ${
-                              linha.horarios_refeicoes.includes(r.value)
-                                ? "shadow-sm"
-                                : "text-muted-foreground hover:text-foreground hover:border-primary/40"
-                            }`}
+                            className="cursor-pointer text-xs select-none"
                             onClick={() => toggleRefeicao(linha.id, r.value)}
                           >
                             {r.label}
@@ -233,23 +229,23 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
                         ))}
                       </div>
                     </TableCell>
-                    <TableCell className="py-1.5 px-1.5">
+                    <TableCell className="py-1 px-1">
                       <Input
                         placeholder="Restrições"
                         value={linha.restricoes_alimentares}
                         onChange={e => atualizarLinha(linha.id, "restricoes_alimentares", e.target.value)}
-                        className="h-8 text-sm border-muted/60 focus:border-primary/50 shadow-none"
+                        className="h-8 text-sm"
                       />
                     </TableCell>
-                    <TableCell className="py-1.5 px-1.5">
+                    <TableCell className="py-1 px-1">
                       <Input
                         placeholder="Obs."
                         value={linha.observacoes}
                         onChange={e => atualizarLinha(linha.id, "observacoes", e.target.value)}
-                        className="h-8 text-sm border-muted/60 focus:border-primary/50 shadow-none"
+                        className="h-8 text-sm"
                       />
                     </TableCell>
-                    <TableCell className="py-1.5 px-0.5">
+                    <TableCell className="py-1 px-0.5">
                       {linhas.length > 1 && (
                         <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => removerLinha(linha.id)}>
                           <Trash2 className="h-3.5 w-3.5" />
@@ -263,7 +259,7 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
           </Table>
         </div>
 
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-1">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div className="flex items-center gap-1.5">
             <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => adicionarLinhas(1)}>
               <Plus className="h-3.5 w-3.5 mr-0.5" />
@@ -280,12 +276,11 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
           </div>
           <div className="flex items-center gap-3">
             {linhasValidas.length > 0 && (
-              <Badge variant="secondary" className="flex items-center gap-1 text-xs">
-                <CheckCircle2 className="h-3 w-3 text-success" />
+              <span className="text-xs text-muted-foreground">
                 {linhasValidas.length} dieta(s) preenchida(s)
-              </Badge>
+              </span>
             )}
-            <Button onClick={handleSalvarTodas} disabled={isSubmitting || linhasValidas.length === 0} className="shadow-md">
+            <Button onClick={handleSalvarTodas} disabled={isSubmitting || linhasValidas.length === 0}>
               {isSubmitting ? (
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
               ) : (
