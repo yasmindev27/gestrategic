@@ -46,7 +46,7 @@ export function useBedRecords() {
           regulador_nir: shiftInfo.reguladorNIR,
           data_alta: dataAlta || bed.patient.dataAlta || null,
         }, {
-          onConflict: 'bed_id,shift_date'
+          onConflict: 'bed_id,shift_date,shift_type'
         });
 
         if (error) {
