@@ -277,14 +277,20 @@ export const MapaLeitosModule = () => {
   };
 
   const handleSaveBed = async (bed: Bed, patient: Patient | null, isDischarge?: boolean) => {
-    updateBed(bed.id, patient);
-    
-    syncedBedsRef.current.delete(`${bed.id}-${JSON.stringify(bed.patient)}`);
+    // Clear sync cache for this bed so next sync picks up the change
+    syncedBedsRef.current = new Set(
+      [...syncedBedsRef.current].filter(k => !k.startsWith(`${bed.id}-`))
+    );
     
     if (isDischarge && patient?.dataAlta) {
+      // Save discharge record FIRST (with motivo_alta + data_alta), then clear the bed
       await saveBedRecord({ ...bed, patient }, shiftInfo, patient.dataAlta);
+      // Use a small delay to ensure the discharge upsert completes before sync runs
       updateBed(bed.id, null);
+      // Mark the discharged bed as already synced so background sync won't delete the record
+      syncedBedsRef.current.add(`${bed.id}-${JSON.stringify(null)}`);
     } else {
+      updateBed(bed.id, patient);
       await saveBedRecord({ ...bed, patient }, shiftInfo);
     }
 
