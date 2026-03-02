@@ -4,13 +4,13 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ArrowLeft, BarChart3, Loader2, TrendingUp, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { useProtocoloAtendimentos, TipoProtocolo } from '@/hooks/useProtocoloAtendimentos';
-import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from 'date-fns';
+import { format, eachMonthOfInterval, subMonths } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from 'recharts';
 import { ExportDropdown } from '@/components/ui/export-dropdown';
-import * as XLSX from 'xlsx';
-import jsPDF from 'jspdf';
+import { createStandardPdf, savePdfWithFooter } from '@/lib/export-utils';
 import autoTable from 'jspdf-autotable';
+import * as XLSX from 'xlsx';
 
 interface Props {
   tipo: TipoProtocolo;
@@ -141,7 +141,8 @@ export const ProtocoloConsolidado = ({ tipo, titulo, onBack }: Props) => {
   }, [atendimentos]);
 
   const exportExcel = () => {
-    const data = [{
+    // Summary sheet
+    const summaryData = [{
       'Competência': competencia,
       'Total Atendimentos': stats.total,
       'Dentro da Meta': stats.withinTarget,
@@ -150,18 +151,55 @@ export const ProtocoloConsolidado = ({ tipo, titulo, onBack }: Props) => {
       'Tempo Médio (min)': stats.avgTime,
       'Mediana (min)': stats.medianTime,
     }];
-    const ws = XLSX.utils.json_to_sheet(data);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Consolidado');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(summaryData), 'Resumo');
+
+    // Age sheet
+    if (idadeData.length > 0) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(idadeData.map(d => ({ 'Faixa Etária': d.name, 'Quantidade': d.value }))), 'Idade');
+    }
+    // Sex sheet
+    if (sexoData.length > 0) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(sexoData.map(d => ({ 'Sexo': d.name, 'Quantidade': d.value }))), 'Sexo');
+    }
+    // Risk sheet
+    if (riskData.length > 0) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(riskData.map(d => ({ 'Classificação': d.name, 'Quantidade': d.value }))), 'Risco');
+    }
+    // Troponina sheet
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet([{
+      'Com Troponina': troponinaData.comTroponina,
+      'Sem Troponina': troponinaData.semTroponina,
+      'Dentro do Tempo (≤60min)': troponinaData.dentroTempo,
+      'Fora do Tempo (>60min)': troponinaData.foraTempo,
+    }]), 'Troponina');
+
+    // Detail sheet
+    const detailRows = atendimentos.map((a: any) => ({
+      'Nº Registro': a.record_number || '',
+      'Paciente': a.patient_name || '',
+      'Idade': a.age ?? '',
+      'Sexo': a.sex || '',
+      'Classificação de Risco': a.risk_classification || '',
+      'Tempo Porta-ECG (min)': a.porta_ecg_minutes ?? '',
+      'Dentro da Meta': a.within_target ? 'Sim' : 'Não',
+      'Troponina 1ª Amostra': a.troponin_sample1_result || '',
+    }));
+    if (detailRows.length > 0) {
+      XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(detailRows), 'Detalhado');
+    }
+
     XLSX.writeFile(wb, `consolidado_${tipo}_${competencia}.xlsx`);
   };
 
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(14);
-    doc.text(`Consolidado Mensal — ${tipoLabels[tipo]}`, 14, 20);
+  const exportPDF = async () => {
+    const pdfTitle = `Consolidado Mensal — ${tipoLabels[tipo]}`;
+    const { doc, logoImg } = await createStandardPdf(pdfTitle);
+
     doc.setFontSize(10);
-    doc.text(`Competência: ${competencia}`, 14, 28);
+    doc.text(`Competência: ${competencia}`, 14, 30);
+
+    // KPIs table
     autoTable(doc, {
       startY: 34,
       head: [['Indicador', 'Valor']],
@@ -174,9 +212,79 @@ export const ProtocoloConsolidado = ({ tipo, titulo, onBack }: Props) => {
         ['Mediana (min)', String(stats.medianTime)],
       ],
       styles: { fontSize: 9 },
-      headStyles: { fillColor: [59, 130, 246] },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      margin: { top: 32, bottom: 30 },
     });
-    doc.save(`consolidado_${tipo}_${competencia}.pdf`);
+
+    let cursorY = (doc as any).lastAutoTable?.finalY + 8 || 80;
+
+    // Idade
+    if (idadeData.length > 0) {
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Distribuição por Faixa Etária', 14, cursorY);
+      autoTable(doc, {
+        startY: cursorY + 3,
+        head: [['Faixa Etária', 'Qtd']],
+        body: idadeData.map(d => [d.name, String(d.value)]),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        margin: { top: 32, bottom: 30 },
+      });
+      cursorY = (doc as any).lastAutoTable?.finalY + 8 || cursorY + 30;
+    }
+
+    // Sexo
+    if (sexoData.length > 0) {
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Distribuição por Sexo', 14, cursorY);
+      autoTable(doc, {
+        startY: cursorY + 3,
+        head: [['Sexo', 'Qtd']],
+        body: sexoData.map(d => [d.name, String(d.value)]),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        margin: { top: 32, bottom: 30 },
+      });
+      cursorY = (doc as any).lastAutoTable?.finalY + 8 || cursorY + 30;
+    }
+
+    // Classificação de Risco
+    if (riskData.length > 0) {
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Classificação de Risco', 14, cursorY);
+      autoTable(doc, {
+        startY: cursorY + 3,
+        head: [['Classificação', 'Qtd']],
+        body: riskData.map(d => [d.name, String(d.value)]),
+        styles: { fontSize: 9 },
+        headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+        margin: { top: 32, bottom: 30 },
+      });
+      cursorY = (doc as any).lastAutoTable?.finalY + 8 || cursorY + 30;
+    }
+
+    // Troponina
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Troponina — Tempo de Resultado', 14, cursorY);
+    autoTable(doc, {
+      startY: cursorY + 3,
+      head: [['Indicador', 'Valor']],
+      body: [
+        ['Com Troponina', String(troponinaData.comTroponina)],
+        ['Sem Troponina', String(troponinaData.semTroponina)],
+        ['Dentro do Tempo (≤60min)', String(troponinaData.dentroTempo)],
+        ['Fora do Tempo (>60min)', String(troponinaData.foraTempo)],
+      ],
+      styles: { fontSize: 9 },
+      headStyles: { fillColor: [41, 128, 185], textColor: 255 },
+      margin: { top: 32, bottom: 30 },
+    });
+
+    savePdfWithFooter(doc, pdfTitle, `consolidado_${tipo}_${competencia}`, logoImg);
   };
 
   return (
