@@ -1045,10 +1045,6 @@ export const RestauranteModule = () => {
                     <CardTitle>Solicitações de Dieta</CardTitle>
                     <CardDescription>Solicite uma dieta especial</CardDescription>
                   </div>
-                  <Button onClick={() => setDialogOpen(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Nova Solicitação
-                  </Button>
                 </div>
                 
                 {/* Filtros e Exportação */}
