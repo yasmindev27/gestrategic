@@ -335,9 +335,10 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues 
         return dataStr >= inicio && dataStr <= fim;
       });
 
-      // Separar dietas normais e extras
-      const dietasNormaisRaw = dietasAtivasNoDia.filter(d => !d.observacoes?.includes("[DIETA EXTRA]"));
-      const dietasExtrasRaw = dietasAtivasNoDia.filter(d => d.observacoes?.includes("[DIETA EXTRA]"));
+      // Separar dietas normais, extras e ajustes negativos
+      const dietasNegativas = dietasAtivasNoDia.filter(d => d.observacoes?.includes("[NEGATIVO]"));
+      const dietasNormaisRaw = dietasAtivasNoDia.filter(d => !d.observacoes?.includes("[DIETA EXTRA]") && !d.observacoes?.includes("[NEGATIVO]"));
+      const dietasExtrasRaw = dietasAtivasNoDia.filter(d => d.observacoes?.includes("[DIETA EXTRA]") && !d.observacoes?.includes("[NEGATIVO]"));
 
       // Cada registro de dieta no banco já é uma solicitação independente.
       // Não deduplicar por nome do paciente, pois múltiplos registros com mesmo nome
@@ -357,12 +358,15 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues 
         return { cafe, almoco, lanche, jantar };
       };
 
+      // Contar ajustes negativos
+      const negativos = contarDietas(dietasNegativas);
+
       // Contar dietas normais
       const normais = contarDietas(dietasNormaisRaw);
-      let dietasCafe = normais.cafe;
-      let dietasAlmoco = normais.almoco;
-      let dietasLanche = normais.lanche;
-      let dietasJantar = normais.jantar;
+      let dietasCafe = Math.max(0, normais.cafe - negativos.cafe);
+      let dietasAlmoco = Math.max(0, normais.almoco - negativos.almoco);
+      let dietasLanche = Math.max(0, normais.lanche - negativos.lanche);
+      let dietasJantar = Math.max(0, normais.jantar - negativos.jantar);
 
       // Contar dietas extras
       const extras = contarDietas(dietasExtrasRaw);
@@ -610,8 +614,11 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues 
         console.log(`[DEBUG SAVE] Insert result: error=${error?.message}, inserted=${insertedData?.length}`);
         if (error) throw error;
       } else {
-        // Remove admin-created entries for that day/type first, then regular ones
+        // Remove admin-created entries for that day/type first
         const toRemove = Math.abs(diff);
+        let removed = 0;
+
+        // 1. Try to delete single-day admin adjustment records first
         const { data: adminEntries } = await supabase
           .from("solicitacoes_dieta")
           .select("id")
@@ -631,12 +638,13 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues 
             .delete()
             .in("id", idsToDelete);
           if (error) throw error;
+          removed += idsToDelete.length;
         }
 
-        // If still need to remove more, remove other single-day entries
-        const remaining = toRemove - idsToDelete.length;
-        if (remaining > 0) {
-          const { data: otherEntries } = await supabase
+        // 2. Try to delete other single-day records
+        const remaining1 = toRemove - removed;
+        if (remaining1 > 0) {
+          const { data: singleDayEntries } = await supabase
             .from("solicitacoes_dieta")
             .select("id")
             .eq("status", "aprovada")
@@ -644,15 +652,37 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues 
             .eq("data_fim", dataStr)
             .contains("horarios_refeicoes", [tipoRefeicao])
             .order("created_at", { ascending: false })
-            .limit(remaining);
+            .limit(remaining1);
 
-          if (otherEntries && otherEntries.length > 0) {
+          if (singleDayEntries && singleDayEntries.length > 0) {
             const { error } = await supabase
               .from("solicitacoes_dieta")
               .delete()
-              .in("id", otherEntries.map(e => e.id));
+              .in("id", singleDayEntries.map(e => e.id));
             if (error) throw error;
+            removed += singleDayEntries.length;
           }
+        }
+
+        // 3. If still need to remove more (multi-day/open-ended diets can't be deleted),
+        //    insert negative adjustment records to compensate
+        const remaining2 = toRemove - removed;
+        if (remaining2 > 0) {
+          const negativeInserts = Array.from({ length: remaining2 }, () => ({
+            data_inicio: dataStr,
+            data_fim: dataStr,
+            status: "aprovada",
+            horarios_refeicoes: [tipoRefeicao],
+            tipo_dieta: "normal",
+            solicitante_id: user.id,
+            solicitante_nome: "Ajuste administrativo (redução)",
+            observacoes: "[AJUSTE ADMIN][NEGATIVO]",
+            tem_acompanhante: false,
+            aprovado_por: user.id,
+            aprovado_em: new Date().toISOString(),
+          }));
+          const { error } = await supabase.from("solicitacoes_dieta").insert(negativeInserts).select();
+          if (error) throw error;
         }
       }
 
