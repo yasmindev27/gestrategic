@@ -47,7 +47,7 @@ export function FloatingSegurancaButton() {
       if (error) throw error;
 
       toast({
-        title: "🚨 Alerta enviado!",
+        title: "Alerta enviado!",
         description: tipo === "urgente"
           ? "A equipe de segurança foi acionada com URGÊNCIA."
           : "A equipe de segurança foi acionada para apoio.",
@@ -96,13 +96,13 @@ export function FloatingSegurancaButton() {
                 <div className="flex items-center gap-2">
                   <RadioGroupItem value="urgente" id="float-urgente" />
                   <Label htmlFor="float-urgente" className="text-destructive font-bold cursor-pointer">
-                    🔴 Urgente
+                    Urgente
                   </Label>
                 </div>
                 <div className="flex items-center gap-2">
                   <RadioGroupItem value="apoio" id="float-apoio" />
                   <Label htmlFor="float-apoio" className="text-warning font-bold cursor-pointer">
-                    🟡 Apoio
+                    Apoio
                   </Label>
                 </div>
               </RadioGroup>
