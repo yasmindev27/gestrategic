@@ -29,7 +29,7 @@ const COLORS = ['hsl(var(--primary))', 'hsl(var(--destructive))', 'hsl(142, 71%,
 export const ProtocoloConsolidado = ({ tipo, titulo, onBack }: Props) => {
   const now = new Date();
   const [competencia, setCompetencia] = useState(format(now, 'yyyy-MM'));
-  const { data: allAtendimentos, isLoading } = useProtocoloAtendimentos(tipo);
+  const { data: allAtendimentos, isLoading, isError, error } = useProtocoloAtendimentos(tipo);
 
   // Generate last 12 months
   const meses = useMemo(() => {
@@ -163,6 +163,10 @@ export const ProtocoloConsolidado = ({ tipo, titulo, onBack }: Props) => {
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : isError ? (
+        <div className="text-center py-12 text-destructive">
+          <p>Erro ao carregar dados: {(error as any)?.message || 'Erro desconhecido'}</p>
         </div>
       ) : (
         <>
