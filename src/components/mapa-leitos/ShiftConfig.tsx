@@ -161,6 +161,9 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
     // If shift was never saved, anyone can create the first entry
     if (!shiftAlreadySaved) return true;
 
+    // If regulador is empty/not set, any NIR user can claim the shift
+    if (!originalRegulador || originalRegulador.trim() === '') return true;
+
     // Admin always can edit (any day)
     if (isAdmin) return true;
 
