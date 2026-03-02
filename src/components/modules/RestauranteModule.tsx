@@ -1460,33 +1460,33 @@ export const RestauranteModule = () => {
                           </div>;
                   }
                   return <div className="overflow-x-auto">
-                          <Table>
+                          <Table className="border-collapse border border-border">
                             <TableHeader>
-                              <TableRow>
-                                <TableHead>Paciente</TableHead>
-                                <TableHead>Tipo de Dieta</TableHead>
-                                <TableHead>Horários</TableHead>
-                                <TableHead className="text-center">
+                              <TableRow className="bg-primary/10 border-b-2 border-primary/30">
+                                <TableHead className="text-foreground font-bold border-r border-border/50">Paciente</TableHead>
+                                <TableHead className="text-foreground font-bold border-r border-border/50">Tipo de Dieta</TableHead>
+                                <TableHead className="text-foreground font-bold border-r border-border/50">Horários</TableHead>
+                                <TableHead className="text-center text-foreground font-bold border-r border-border/50">
                                   <div className="flex items-center justify-center gap-1">
                                     <Users className="h-4 w-4" />
                                     Acomp.
                                   </div>
                                 </TableHead>
-                                <TableHead>Quarto/Leito</TableHead>
-                                <TableHead>Solicitante</TableHead>
-                                <TableHead>Solicitado em</TableHead>
+                                <TableHead className="text-foreground font-bold border-r border-border/50">Quarto/Leito</TableHead>
+                                <TableHead className="text-foreground font-bold border-r border-border/50">Solicitante</TableHead>
+                                <TableHead className="text-foreground font-bold border-r border-border/50">Solicitado em</TableHead>
                                 
-                                {isAdmin && <TableHead className="w-[100px]">Ações</TableHead>}
+                                {isAdmin && <TableHead className="w-[100px] text-foreground font-bold">Ações</TableHead>}
                               </TableRow>
                             </TableHeader>
                             <TableBody>
-                              {solicitacoesFiltradas.map(s => <TableRow key={s.id}>
-                                  <TableCell>
+                              {solicitacoesFiltradas.map((s, idx) => <TableRow key={s.id} className={idx % 2 === 0 ? "bg-background" : "bg-muted/20"}>
+                                  <TableCell className="border-r border-border/30 text-foreground">
                                     <div>
                                       <span className="font-medium">{s.paciente_nome || "N/A"}</span>
                                     </div>
                                   </TableCell>
-                                  <TableCell>
+                                  <TableCell className="border-r border-border/30 text-foreground">
                                     <div>
                                       <span>{tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta}</span>
                                       {s.restricoes_alimentares && <p className="text-xs text-orange-600 mt-1">
@@ -1494,7 +1494,7 @@ export const RestauranteModule = () => {
                                         </p>}
                                     </div>
                                   </TableCell>
-                                  <TableCell>
+                                  <TableCell className="border-r border-border/30 text-foreground">
                                     <div className="text-sm">
                                       {s.horarios_refeicoes && s.horarios_refeicoes.length > 0 ? s.horarios_refeicoes.map(h => {
                                 const option = horariosRefeicaoOptions.find(o => o.value === h);
@@ -1502,16 +1502,16 @@ export const RestauranteModule = () => {
                               }).join(", ") : "Todos"}
                                     </div>
                                   </TableCell>
-                                  <TableCell className="text-center">
+                                  <TableCell className="text-center border-r border-border/30">
                                     <Badge variant={s.tem_acompanhante ? "default" : "outline"}>
                                       {s.tem_acompanhante ? "Sim" : "Não"}
                                     </Badge>
                                   </TableCell>
-                                  <TableCell>{s.quarto_leito || "N/A"}</TableCell>
-                                  <TableCell>
-                                    <span className="text-sm text-muted-foreground">{s.solicitante_nome}</span>
+                                  <TableCell className="border-r border-border/30 text-foreground">{s.quarto_leito || "N/A"}</TableCell>
+                                  <TableCell className="border-r border-border/30">
+                                    <span className="text-sm text-foreground">{s.solicitante_nome}</span>
                                   </TableCell>
-                                  <TableCell className="text-muted-foreground text-sm">
+                                  <TableCell className="text-foreground text-sm border-r border-border/30">
                                     {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
                                   </TableCell>
                                   {isAdmin && (
