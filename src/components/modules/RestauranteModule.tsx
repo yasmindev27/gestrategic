@@ -950,14 +950,21 @@ export const RestauranteModule = () => {
       margin: { top: 32, bottom: 28 },
     });
 
-    const pdfBlob = doc.output('blob');
-    const url = URL.createObjectURL(pdfBlob);
-    const printWindow = window.open(url, '_blank');
-    if (printWindow) {
-      printWindow.addEventListener('load', () => {
-        printWindow.print();
-      });
-    }
+    const pdfDataUri = doc.output('datauristring');
+    const iframe = document.createElement('iframe');
+    iframe.style.position = 'fixed';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = 'none';
+    iframe.style.opacity = '0';
+    document.body.appendChild(iframe);
+    iframe.src = pdfDataUri;
+    iframe.onload = () => {
+      setTimeout(() => {
+        iframe.contentWindow?.print();
+        setTimeout(() => document.body.removeChild(iframe), 1000);
+      }, 500);
+    };
     toast({ title: "Impressão", description: "Relatório enviado para impressão." });
   };
 
