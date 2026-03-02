@@ -158,15 +158,15 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
         <div className="border rounded-xl overflow-hidden shadow-sm">
           <Table className="border-collapse">
             <TableHeader>
-              <TableRow className="bg-primary/8 border-b border-primary/20">
-                <TableHead className="w-[40px] text-center text-xs font-semibold text-primary uppercase tracking-wider py-3">#</TableHead>
-                <TableHead className="min-w-[180px] text-xs font-semibold text-primary uppercase tracking-wider py-3">Paciente *</TableHead>
-                <TableHead className="min-w-[110px] text-xs font-semibold text-primary uppercase tracking-wider py-3">Quarto/Leito *</TableHead>
-                <TableHead className="min-w-[140px] text-xs font-semibold text-primary uppercase tracking-wider py-3">Tipo de Dieta *</TableHead>
-                <TableHead className="text-center min-w-[100px] text-xs font-semibold text-primary uppercase tracking-wider py-3">Acompanhante</TableHead>
-                <TableHead className="min-w-[200px] text-xs font-semibold text-primary uppercase tracking-wider py-3">Refeições</TableHead>
-                <TableHead className="min-w-[140px] text-xs font-semibold text-primary uppercase tracking-wider py-3">Restrições</TableHead>
-                <TableHead className="min-w-[140px] text-xs font-semibold text-primary uppercase tracking-wider py-3">Observações</TableHead>
+              <TableRow className="bg-muted/50 border-b-2 border-border">
+                <TableHead className="w-[40px] text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider py-3">#</TableHead>
+                <TableHead className="min-w-[180px] text-xs font-semibold text-muted-foreground uppercase tracking-wider py-3">Paciente *</TableHead>
+                <TableHead className="min-w-[110px] text-xs font-semibold text-muted-foreground uppercase tracking-wider py-3">Quarto/Leito *</TableHead>
+                <TableHead className="min-w-[140px] text-xs font-semibold text-muted-foreground uppercase tracking-wider py-3">Tipo de Dieta *</TableHead>
+                <TableHead className="text-center min-w-[100px] text-xs font-semibold text-muted-foreground uppercase tracking-wider py-3">Acompanhante</TableHead>
+                <TableHead className="min-w-[200px] text-xs font-semibold text-muted-foreground uppercase tracking-wider py-3">Refeições</TableHead>
+                <TableHead className="min-w-[140px] text-xs font-semibold text-muted-foreground uppercase tracking-wider py-3">Restrições</TableHead>
+                <TableHead className="min-w-[140px] text-xs font-semibold text-muted-foreground uppercase tracking-wider py-3">Observações</TableHead>
                 <TableHead className="w-[44px]"></TableHead>
               </TableRow>
             </TableHeader>
