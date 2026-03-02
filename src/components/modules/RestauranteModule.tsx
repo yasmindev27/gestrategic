@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UtensilsCrossed, Calendar, CalendarDays, Salad, Loader2, Plus, Coffee, Sun, Cookie, Moon, Clock, CheckCircle2, XCircle, AlertCircle, BarChart3, FileDown, FileSpreadsheet, Filter, ClipboardList, TrendingUp, Search, Users, AlertTriangle, Pencil, Trash2 } from "lucide-react";
+import { UtensilsCrossed, Calendar, CalendarDays, Salad, Loader2, Plus, Coffee, Sun, Cookie, Moon, Clock, CheckCircle2, XCircle, AlertCircle, BarChart3, FileDown, FileSpreadsheet, Filter, ClipboardList, TrendingUp, Search, Users, AlertTriangle, Pencil, Trash2, Printer } from "lucide-react";
 import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { RegistrosRefeicoes } from "@/components/restaurante/RegistrosRefeicoes";
 import { RelatorioQuantitativoRefeicoes } from "@/components/restaurante/RelatorioQuantitativoRefeicoes";
@@ -910,6 +910,57 @@ export const RestauranteModule = () => {
     toast({ title: "Sucesso", description: "Arquivo PDF exportado com sucesso." });
   };
 
+  // Imprimir relatório de dietas diretamente
+  const imprimirRelatorioDietas = async () => {
+    const { createStandardPdf } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Minhas Solicitações de Dieta', 'landscape');
+    
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Total: ${minhasSolicitacoesFiltradas.length} dietas`, 14, 32);
+    
+    const horarioLabels: Record<string, string> = {
+      cafe: "Café da Manhã",
+      almoco: "Almoço",
+      lanche: "Café da Tarde",
+      jantar: "Jantar",
+    };
+    const formatHorarios = (h: string[] | null) => {
+      if (!h || h.length === 0) return "Café da Manhã, Almoço, Café da Tarde, Jantar";
+      return h.map(x => horarioLabels[x] || x).join(", ");
+    };
+    const isExtraDieta = (s: SolicitacaoDieta) => s.observacoes?.includes("[DIETA EXTRA]");
+    const tableData = minhasSolicitacoesFiltradas.map(s => [
+      isExtraDieta(s) ? "-" : (s.paciente_nome || "-"),
+      s.quarto_leito || "-",
+      tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
+      formatHorarios(s.horarios_refeicoes),
+      s.descricao_especifica || "-",
+      s.restricoes_alimentares || "-",
+      s.tem_acompanhante ? "Sim" : "Não",
+      s.observacoes || "-",
+      format(new Date(s.created_at), "dd/MM/yyyy"),
+    ]);
+    autoTable(doc, {
+      startY: 38,
+      head: [["Paciente", "Quarto/Leito", "Tipo Dieta", "Refeições", "Descrição", "Restrições", "Acompanhante", "Obs.", "Solicitado"]],
+      body: tableData,
+      styles: { fontSize: 6.5 },
+      headStyles: { fillColor: [59, 130, 246] },
+      margin: { top: 32, bottom: 28 },
+    });
+
+    const pdfBlob = doc.output('blob');
+    const url = URL.createObjectURL(pdfBlob);
+    const printWindow = window.open(url, '_blank');
+    if (printWindow) {
+      printWindow.addEventListener('load', () => {
+        printWindow.print();
+      });
+    }
+    toast({ title: "Impressão", description: "Relatório enviado para impressão." });
+  };
+
   // Mostrar loading enquanto verifica roles
   if (isLoadingRole) {
     return <div className="flex items-center justify-center py-12">
@@ -1063,7 +1114,13 @@ export const RestauranteModule = () => {
                       Mês
                     </Button>
                   </div>
-                  <ExportDropdown onExportExcel={exportMinhasDietasToExcel} onExportPDF={exportMinhasDietasToPDF} disabled={minhasSolicitacoesFiltradas.length === 0} />
+                  <div className="flex items-center gap-2">
+                    <Button variant="outline" size="sm" onClick={imprimirRelatorioDietas} disabled={minhasSolicitacoesFiltradas.length === 0} title="Imprimir relatório">
+                      <Printer className="h-4 w-4 mr-1" />
+                      Imprimir
+                    </Button>
+                    <ExportDropdown onExportExcel={exportMinhasDietasToExcel} onExportPDF={exportMinhasDietasToPDF} disabled={minhasSolicitacoesFiltradas.length === 0} />
+                  </div>
                 </div>
               </div>
             </CardHeader>
