@@ -279,8 +279,8 @@ export const ProtocoloConsolidado = ({ tipo, titulo, onBack }: Props) => {
       body: [
         ['Com Troponina', String(troponinaData.comTroponina)],
         ['Sem Troponina', String(troponinaData.semTroponina)],
-        ['Dentro do Tempo (≤60min)', String(troponinaData.dentroTempo)],
-        ['Fora do Tempo (>60min)', String(troponinaData.foraTempo)],
+        ['Dentro do Tempo (ate 60min)', String(troponinaData.dentroTempo)],
+        ['Fora do Tempo (acima de 60min)', String(troponinaData.foraTempo)],
       ],
       styles: { fontSize: 9 },
       headStyles: { fillColor: [41, 128, 185], textColor: 255 },
