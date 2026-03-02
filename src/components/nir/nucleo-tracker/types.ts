@@ -3,7 +3,8 @@ export type Atividade =
   | "Cadastro SUSFácil"
   | "Gestão de Vagas"
   | "Solicitação de Transferência"
-  | "Contato com Estabelecimentos";
+  | "Contato com Estabelecimentos"
+  | "Encaminhamento para Exame";
 
 export const ATIVIDADES: Atividade[] = [
   "Conferência de Documentos",
@@ -11,6 +12,7 @@ export const ATIVIDADES: Atividade[] = [
   "Gestão de Vagas",
   "Solicitação de Transferência",
   "Contato com Estabelecimentos",
+  "Encaminhamento para Exame",
 ];
 
 export interface Colaborador {
