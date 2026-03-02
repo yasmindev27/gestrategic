@@ -5,8 +5,16 @@ import { ProtocolosList } from './ProtocolosList';
 import { FormDorToracica } from './FormDorToracica';
 import { FormSepseAdulto } from './FormSepseAdulto';
 import { FormSepsePediatrico } from './FormSepsePediatrico';
+import { ProtocoloRelatorios } from './ProtocoloRelatorios';
+import { ProtocoloConsolidado } from './ProtocoloConsolidado';
 
 type View = 'list' | 'form' | 'relatorios' | 'consolidado';
+
+const tituloByTipo: Record<string, string> = {
+  dor_toracica: 'Protocolo Dor Torácica',
+  sepse_adulto: 'Protocolo Sepse Adulto',
+  sepse_pediatrico: 'Protocolo Sepse Pediátrico',
+};
 
 export const ProtocolosModule = () => {
   const [activeTab, setActiveTab] = useState('dor_toracica');
@@ -25,8 +33,25 @@ export const ProtocolosModule = () => {
     }
   }
 
-  // TODO: implement dedicated views for relatorios and consolidado
-  // For now they fall through to the list view
+  if (view === 'relatorios') {
+    return (
+      <ProtocoloRelatorios
+        tipo={activeTab as any}
+        titulo={tituloByTipo[activeTab]}
+        onBack={handleBack}
+      />
+    );
+  }
+
+  if (view === 'consolidado') {
+    return (
+      <ProtocoloConsolidado
+        tipo={activeTab as any}
+        titulo={tituloByTipo[activeTab]}
+        onBack={handleBack}
+      />
+    );
+  }
 
   return (
     <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setView('list'); }}>
