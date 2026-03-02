@@ -286,7 +286,7 @@ CREATE TABLE public.auditoria_temporalidade (
   descricao text NOT NULL,
   data_fato timestamp with time zone NOT NULL,
   data_registro timestamp with time zone NOT NULL,
-  delay_horas numeric DEFAULT (EXTRACT(epoch FROM (data_registro - data_fato)) / (3600)::numeric),
+  delay_horas numeric,
   limite_horas numeric NOT NULL DEFAULT 24,
   justificado boolean DEFAULT false,
   justificativa_id uuid,
@@ -2392,6 +2392,23 @@ ALTER TABLE public.usuario_perfil ADD CONSTRAINT usuario_perfil_perfil_id_fkey F
 -- NOTA: As políticas RLS (Row Level Security) não foram incluídas nesta exportação.
 -- Você precisará recriá-las manualmente no novo projeto.
 -- Use: SELECT tablename, policyname, permissive, roles, cmd, qual, with_check FROM pg_policies WHERE schemaname = 'public';
+
+-- Trigger para calcular delay_horas automaticamente
+CREATE OR REPLACE FUNCTION public.calcular_delay_horas()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path TO 'public'
+AS $$
+BEGIN
+  NEW.delay_horas := EXTRACT(epoch FROM (NEW.data_registro - NEW.data_fato)) / 3600;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER trg_calcular_delay_horas
+BEFORE INSERT OR UPDATE ON public.auditoria_temporalidade
+FOR EACH ROW
+EXECUTE FUNCTION public.calcular_delay_horas();
 
 -- ====================
 -- FIM DO SCHEMA
