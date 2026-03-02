@@ -4,10 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Search, FileText, Loader2 } from 'lucide-react';
+import { ArrowLeft, Search, FileText, Loader2, Eye } from 'lucide-react';
 import { useProtocoloAtendimentos, TipoProtocolo } from '@/hooks/useProtocoloAtendimentos';
 import { format } from 'date-fns';
 import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { ProtocoloDetailDialog } from './ProtocoloDetailDialog';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -27,6 +28,7 @@ const tipoLabels: Record<string, string> = {
 export const ProtocoloRelatorios = ({ tipo, titulo, onBack }: Props) => {
   const { data: atendimentos, isLoading } = useProtocoloAtendimentos(tipo);
   const [search, setSearch] = useState('');
+  const [selectedAtendimento, setSelectedAtendimento] = useState<any>(null);
 
   const filtered = (atendimentos || []).filter((a: any) => {
     if (!search) return true;
@@ -123,6 +125,7 @@ export const ProtocoloRelatorios = ({ tipo, titulo, onBack }: Props) => {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10"></TableHead>
                   <TableHead>Prontuário</TableHead>
                   <TableHead>Paciente</TableHead>
                   <TableHead>Chegada</TableHead>
@@ -134,7 +137,12 @@ export const ProtocoloRelatorios = ({ tipo, titulo, onBack }: Props) => {
               </TableHeader>
               <TableBody>
                 {filtered.map((a: any) => (
-                  <TableRow key={a.id}>
+                  <TableRow key={a.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedAtendimento(a)}>
+                    <TableCell>
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setSelectedAtendimento(a); }}>
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      </Button>
+                    </TableCell>
                     <TableCell className="font-medium">{a.record_number || '-'}</TableCell>
                     <TableCell>{a.patient_name || '-'}</TableCell>
                     <TableCell className="text-sm">
@@ -161,6 +169,13 @@ export const ProtocoloRelatorios = ({ tipo, titulo, onBack }: Props) => {
           )}
         </CardContent>
       </Card>
+
+      <ProtocoloDetailDialog
+        open={!!selectedAtendimento}
+        onOpenChange={(open) => { if (!open) setSelectedAtendimento(null); }}
+        atendimento={selectedAtendimento}
+        tipo={tipo}
+      />
     </div>
   );
 };
