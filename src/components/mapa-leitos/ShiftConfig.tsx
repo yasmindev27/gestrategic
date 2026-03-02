@@ -156,24 +156,21 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
     [shiftInfo.data, shiftInfo.tipo]
   );
 
-  // Permission: admin, original regulador, or "Blendon" can edit
+  // Permission: any NIR user can edit the current active shift, admin can edit any shift
   const userCanEdit = useMemo(() => {
     // If shift was never saved, anyone can create the first entry
     if (!shiftAlreadySaved) return true;
 
-    // If regulador is empty/not set, any NIR user can claim the shift
-    if (!originalRegulador || originalRegulador.trim() === '') return true;
-
     // Admin always can edit (any day)
     if (isAdmin) return true;
 
+    // Calculate if this is the current active shift
     const now = new Date();
     const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
     const brasilia = new Date(utcMs - 3 * 3600000);
     const brasiliaDate = brasilia.toISOString().split('T')[0];
     const hour = brasilia.getHours();
 
-    // For noturno shifts, "today" means the shift that's currently active
     let isCurrentShift = false;
     if (shiftInfo.tipo === 'noturno') {
       if (hour < 7) {
@@ -187,17 +184,11 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
       isCurrentShift = shiftInfo.data === brasiliaDate;
     }
 
-    // Blendon can edit only current shift
-    if (currentUserName && currentUserName.toLowerCase().includes('blendon') && isCurrentShift) return true;
-
-    // Original regulador can edit
-    if (originalRegulador && currentUserName && 
-        originalRegulador.toLowerCase().trim() === currentUserName.toLowerCase().trim()) {
-      return true;
-    }
+    // Any NIR user can edit the current active shift
+    if (isCurrentShift) return true;
 
     return false;
-  }, [shiftAlreadySaved, isAdmin, currentUserName, originalRegulador, shiftInfo.data, shiftInfo.tipo]);
+  }, [shiftAlreadySaved, isAdmin, shiftInfo.data, shiftInfo.tipo]);
 
   const editAllowed = timeCheck.allowed && userCanEdit;
   const blockReason = !timeCheck.allowed 
