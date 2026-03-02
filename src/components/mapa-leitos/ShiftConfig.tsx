@@ -39,10 +39,32 @@ interface SavedShift {
 }
 
 function isTimeAllowed(shiftDate: string, shiftType: string): { allowed: boolean; reason: string } {
+  // Use Brasília time (UTC-3) for all comparisons
   const now = new Date();
-  const today = format(now, 'yyyy-MM-dd');
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const brasilia = new Date(utcMs - 3 * 3600000);
+  const brasiliaDateStr = brasilia.toISOString().split('T')[0];
+  const hour = brasilia.getHours();
 
-  if (shiftDate !== today) {
+  if (shiftType === 'noturno') {
+    // Noturno runs from 19:00 to 06:59 next day
+    // shift_date = the day the shift STARTED (19h)
+    // Between 00:00-06:59 Brasília, the shift_date is yesterday
+    if (hour < 7) {
+      const yesterday = new Date(brasilia);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      if (shiftDate === yesterdayStr) return { allowed: true, reason: '' };
+    }
+    // Between 19:00-23:59, shift_date is today
+    if (hour >= 19 && shiftDate === brasiliaDateStr) return { allowed: true, reason: '' };
+    // Also allow editing today's noturno during the day (for corrections)
+    if (shiftDate === brasiliaDateStr) return { allowed: true, reason: '' };
+    return { allowed: false, reason: 'Apenas o plantão do dia atual pode ser alterado.' };
+  }
+
+  // Diurno: 07:00-18:59, shift_date must be today
+  if (shiftDate !== brasiliaDateStr) {
     return { allowed: false, reason: 'Apenas o plantão do dia atual pode ser alterado.' };
   }
 
@@ -143,11 +165,27 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
     if (isAdmin) return true;
 
     const now = new Date();
-    const today = format(now, 'yyyy-MM-dd');
-    const isToday = shiftInfo.data === today;
+    const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+    const brasilia = new Date(utcMs - 3 * 3600000);
+    const brasiliaDate = brasilia.toISOString().split('T')[0];
+    const hour = brasilia.getHours();
 
-    // Blendon can edit only today's shift
-    if (currentUserName && currentUserName.toLowerCase().includes('blendon') && isToday) return true;
+    // For noturno shifts, "today" means the shift that's currently active
+    let isCurrentShift = false;
+    if (shiftInfo.tipo === 'noturno') {
+      if (hour < 7) {
+        const yesterday = new Date(brasilia);
+        yesterday.setDate(yesterday.getDate() - 1);
+        isCurrentShift = shiftInfo.data === yesterday.toISOString().split('T')[0];
+      } else {
+        isCurrentShift = shiftInfo.data === brasiliaDate;
+      }
+    } else {
+      isCurrentShift = shiftInfo.data === brasiliaDate;
+    }
+
+    // Blendon can edit only current shift
+    if (currentUserName && currentUserName.toLowerCase().includes('blendon') && isCurrentShift) return true;
 
     // Original regulador can edit
     if (originalRegulador && currentUserName && 
@@ -156,7 +194,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
     }
 
     return false;
-  }, [shiftAlreadySaved, isAdmin, currentUserName, originalRegulador]);
+  }, [shiftAlreadySaved, isAdmin, currentUserName, originalRegulador, shiftInfo.data, shiftInfo.tipo]);
 
   const editAllowed = timeCheck.allowed && userCanEdit;
   const blockReason = !timeCheck.allowed 
