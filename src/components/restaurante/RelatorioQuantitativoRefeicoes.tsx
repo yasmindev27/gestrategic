@@ -119,6 +119,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues 
   const [editingCell, setEditingCell] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [savingCell, setSavingCell] = useState<string | null>(null);
+  const [ajustesOverrides, setAjustesOverrides] = useState<Record<string, number>>({});
   const [valoresRefeicoes, setValoresRefeicoes] = useState<Record<string, number>>({
     cafe: 0, almoco: 0, lanche: 0, jantar: 0, cafe_litro: 0
   });
@@ -216,8 +217,21 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues 
       setValoresRefeicoes(valoresMap);
       setValoresInputs(inputsValores);
 
+      // Buscar ajustes de override do quantitativo
+      const { data: ajustes } = await supabase
+        .from("quantitativo_ajustes")
+        .select("data, categoria, tipo_refeicao, valor_override")
+        .gte("data", dataInicio)
+        .lte("data", dataFim);
+
+      const ajustesMap: Record<string, number> = {};
+      (ajustes || []).forEach((a: any) => {
+        ajustesMap[`${a.data}-${a.categoria}-${a.tipo_refeicao}`] = a.valor_override;
+      });
+      setAjustesOverrides(ajustesMap);
+
       // Processar quantitativos por dia
-      processarQuantitativos(allRefeicoes, dietasNoPeriodo, cafeLitro || []);
+      processarQuantitativos(allRefeicoes, dietasNoPeriodo, cafeLitro || [], ajustesMap);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -230,83 +244,46 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues 
     }
   };
 
-  // Admin: save edited extra cell quantity
-  const saveExtraCellEdited = async (dataStr: string, tipoRefeicao: string, newValue: number, currentValue: number) => {
-    const cellKey = `${dataStr}-extra-${tipoRefeicao}`;
+  // Admin: save override for diet/extra cell via quantitativo_ajustes table
+  const saveOverrideCell = async (dataStr: string, categoria: string, tipoRefeicao: string, newValue: number) => {
+    const cellKey = `${dataStr}-${categoria}-${tipoRefeicao}`;
     setSavingCell(cellKey);
     try {
-      const diff = newValue - currentValue;
-      if (diff === 0) { setEditingCell(null); setSavingCell(null); return; }
-
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Usuário não autenticado");
 
-      if (diff > 0) {
-        const inserts = Array.from({ length: diff }, () => ({
-          data_inicio: dataStr,
-          data_fim: dataStr,
-          status: "aprovada",
-          horarios_refeicoes: [tipoRefeicao],
-          tipo_dieta: "normal",
-          solicitante_id: user.id,
-          solicitante_nome: "Ajuste administrativo",
-          observacoes: "[DIETA EXTRA][AJUSTE ADMIN]",
-          tem_acompanhante: false,
-          aprovado_por: user.id,
-          aprovado_em: new Date().toISOString(),
-        }));
-        const { error } = await supabase.from("solicitacoes_dieta").insert(inserts);
+      const { data: existing } = await supabase
+        .from("quantitativo_ajustes")
+        .select("id")
+        .eq("data", dataStr)
+        .eq("categoria", categoria)
+        .eq("tipo_refeicao", tipoRefeicao)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from("quantitativo_ajustes")
+          .update({ valor_override: newValue, ajustado_por: user.id, ajustado_por_nome: "Admin" })
+          .eq("id", existing.id);
         if (error) throw error;
       } else {
-        const toRemove = Math.abs(diff);
-        const { data: adminEntries } = await supabase
-          .from("solicitacoes_dieta")
-          .select("id")
-          .eq("status", "aprovada")
-          .eq("data_inicio", dataStr)
-          .eq("data_fim", dataStr)
-          .ilike("observacoes", "%[DIETA EXTRA]%[AJUSTE ADMIN]%")
-          .contains("horarios_refeicoes", [tipoRefeicao])
-          .order("created_at", { ascending: false })
-          .limit(toRemove);
-
-        const idsToDelete = (adminEntries || []).map(e => e.id);
-        if (idsToDelete.length > 0) {
-          const { error } = await supabase.from("solicitacoes_dieta").delete().in("id", idsToDelete);
-          if (error) throw error;
-        }
-
-        const remaining = toRemove - idsToDelete.length;
-        if (remaining > 0) {
-          const { data: otherEntries } = await supabase
-            .from("solicitacoes_dieta")
-            .select("id")
-            .eq("status", "aprovada")
-            .eq("data_inicio", dataStr)
-            .eq("data_fim", dataStr)
-            .ilike("observacoes", "%[DIETA EXTRA]%")
-            .contains("horarios_refeicoes", [tipoRefeicao])
-            .order("created_at", { ascending: false })
-            .limit(remaining);
-
-          if (otherEntries && otherEntries.length > 0) {
-            const { error } = await supabase.from("solicitacoes_dieta").delete().in("id", otherEntries.map(e => e.id));
-            if (error) throw error;
-          }
-        }
+        const { error } = await supabase
+          .from("quantitativo_ajustes")
+          .insert({ data: dataStr, categoria, tipo_refeicao: tipoRefeicao, valor_override: newValue, ajustado_por: user.id, ajustado_por_nome: "Admin" });
+        if (error) throw error;
       }
 
-      toast({ title: "Sucesso", description: "Quantidade de extras atualizada!" });
+      toast({ title: "Sucesso", description: "Quantidade atualizada!" });
       setEditingCell(null);
       fetchData(true);
     } catch (error: any) {
-      toast({ title: "Erro", description: error.message || "Erro ao atualizar extras.", variant: "destructive" });
+      toast({ title: "Erro", description: error.message || "Erro ao atualizar.", variant: "destructive" });
     } finally {
       setSavingCell(null);
     }
   };
 
-  const processarQuantitativos = (refeicoes: RegistroRefeicao[], dietas: SolicitacaoDieta[], cafeLitro: CafeLitroDiario[]) => {
+  const processarQuantitativos = (refeicoes: RegistroRefeicao[], dietas: SolicitacaoDieta[], cafeLitro: CafeLitroDiario[], overrides: Record<string, number> = {}) => {
     // Garantir parsing correto das datas do filtro
     const startDate = parseISO(dataInicio);
     const endDate = parseISO(dataFim);
@@ -328,21 +305,17 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues 
       const jantar = refeicoesNoDia.filter(r => r.tipo_refeicao === "jantar").length;
       const foraHorario = refeicoesNoDia.filter(r => r.tipo_refeicao === "fora_horario").length;
 
-      // Contar dietas ativas SOMENTE para este dia específico
+      // Contar dietas ativas SOMENTE para este dia específico (excluir registros NEGATIVO legados)
       const dietasAtivasNoDia = dietas.filter(d => {
+        if (d.observacoes?.includes("[NEGATIVO]")) return false;
         const inicio = d.data_inicio;
         const fim = d.data_fim || "9999-12-31";
         return dataStr >= inicio && dataStr <= fim;
       });
 
-      // Separar dietas normais, extras e ajustes negativos
-      const dietasNegativas = dietasAtivasNoDia.filter(d => d.observacoes?.includes("[NEGATIVO]"));
-      const dietasNormaisRaw = dietasAtivasNoDia.filter(d => !d.observacoes?.includes("[DIETA EXTRA]") && !d.observacoes?.includes("[NEGATIVO]"));
-      const dietasExtrasRaw = dietasAtivasNoDia.filter(d => d.observacoes?.includes("[DIETA EXTRA]") && !d.observacoes?.includes("[NEGATIVO]"));
+      const dietasNormaisRaw = dietasAtivasNoDia.filter(d => !d.observacoes?.includes("[DIETA EXTRA]"));
+      const dietasExtrasRaw = dietasAtivasNoDia.filter(d => d.observacoes?.includes("[DIETA EXTRA]"));
 
-      // Cada registro de dieta no banco já é uma solicitação independente.
-      // Não deduplicar por nome do paciente, pois múltiplos registros com mesmo nome
-      // representam dietas distintas (ex: "POSSIVEIS ADMISSOES" = vagas reservadas).
       const contarDietas = (lista: SolicitacaoDieta[]) => {
         let cafe = 0, almoco = 0, lanche = 0, jantar = 0;
         lista.forEach(d => {
@@ -358,22 +331,21 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues 
         return { cafe, almoco, lanche, jantar };
       };
 
-      // Contar ajustes negativos
-      const negativos = contarDietas(dietasNegativas);
-
-      // Contar dietas normais
+      // Contar dietas normais (valor calculado do banco)
       const normais = contarDietas(dietasNormaisRaw);
-      let dietasCafe = Math.max(0, normais.cafe - negativos.cafe);
-      let dietasAlmoco = Math.max(0, normais.almoco - negativos.almoco);
-      let dietasLanche = Math.max(0, normais.lanche - negativos.lanche);
-      let dietasJantar = Math.max(0, normais.jantar - negativos.jantar);
+      
+      // Aplicar overrides: se existe override na tabela quantitativo_ajustes, usar o valor fixo
+      let dietasCafe = overrides[`${dataStr}-dieta-cafe`] ?? normais.cafe;
+      let dietasAlmoco = overrides[`${dataStr}-dieta-almoco`] ?? normais.almoco;
+      let dietasLanche = overrides[`${dataStr}-dieta-lanche`] ?? normais.lanche;
+      let dietasJantar = overrides[`${dataStr}-dieta-jantar`] ?? normais.jantar;
 
       // Contar dietas extras
       const extras = contarDietas(dietasExtrasRaw);
-      let extraCafe = extras.cafe;
-      let extraAlmoco = extras.almoco;
-      let extraLanche = extras.lanche;
-      let extraJantar = extras.jantar;
+      let extraCafe = overrides[`${dataStr}-extra-cafe`] ?? extras.cafe;
+      let extraAlmoco = overrides[`${dataStr}-extra-almoco`] ?? extras.almoco;
+      let extraLanche = overrides[`${dataStr}-extra-lanche`] ?? extras.lanche;
+      let extraJantar = overrides[`${dataStr}-extra-jantar`] ?? extras.jantar;
 
       const totalRefeicoes = cafe + almoco + lanche + jantar + foraHorario;
       const totalDietas = dietasCafe + dietasAlmoco + dietasLanche + dietasJantar;
@@ -581,119 +553,12 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues 
     }
   };
 
-  // Admin: save edited diet cell quantity
-  const saveDietaCellEdited = async (dataStr: string, tipoRefeicao: string, newValue: number, currentValue: number) => {
-    const cellKey = `${dataStr}-dieta-${tipoRefeicao}`;
-    console.log(`[DEBUG SAVE] saveDietaCellEdited called: date=${dataStr}, tipo=${tipoRefeicao}, newValue=${newValue}, currentValue=${currentValue}`);
-    setSavingCell(cellKey);
-    try {
-      const diff = newValue - currentValue;
-      console.log(`[DEBUG SAVE] diff=${diff}`);
-      if (diff === 0) { setEditingCell(null); setSavingCell(null); return; }
-
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Usuário não autenticado");
-
-      if (diff > 0) {
-        // Insert single-day approved diet entries
-        const inserts = Array.from({ length: diff }, () => ({
-          data_inicio: dataStr,
-          data_fim: dataStr,
-          status: "aprovada",
-          horarios_refeicoes: [tipoRefeicao],
-          tipo_dieta: "normal",
-          solicitante_id: user.id,
-          solicitante_nome: "Ajuste administrativo",
-          observacoes: "[AJUSTE ADMIN]",
-          tem_acompanhante: false,
-          aprovado_por: user.id,
-          aprovado_em: new Date().toISOString(),
-        }));
-        console.log(`[DEBUG SAVE] Inserting ${inserts.length} records`);
-        const { error, data: insertedData } = await supabase.from("solicitacoes_dieta").insert(inserts).select();
-        console.log(`[DEBUG SAVE] Insert result: error=${error?.message}, inserted=${insertedData?.length}`);
-        if (error) throw error;
-      } else {
-        // Remove admin-created entries for that day/type first
-        const toRemove = Math.abs(diff);
-        let removed = 0;
-
-        // 1. Try to delete single-day admin adjustment records first
-        const { data: adminEntries } = await supabase
-          .from("solicitacoes_dieta")
-          .select("id")
-          .eq("status", "aprovada")
-          .eq("data_inicio", dataStr)
-          .eq("data_fim", dataStr)
-          .ilike("observacoes", "%[AJUSTE ADMIN]%")
-          .contains("horarios_refeicoes", [tipoRefeicao])
-          .order("created_at", { ascending: false })
-          .limit(toRemove);
-
-        const idsToDelete = (adminEntries || []).map(e => e.id);
-        
-        if (idsToDelete.length > 0) {
-          const { error } = await supabase
-            .from("solicitacoes_dieta")
-            .delete()
-            .in("id", idsToDelete);
-          if (error) throw error;
-          removed += idsToDelete.length;
-        }
-
-        // 2. Try to delete other single-day records
-        const remaining1 = toRemove - removed;
-        if (remaining1 > 0) {
-          const { data: singleDayEntries } = await supabase
-            .from("solicitacoes_dieta")
-            .select("id")
-            .eq("status", "aprovada")
-            .eq("data_inicio", dataStr)
-            .eq("data_fim", dataStr)
-            .contains("horarios_refeicoes", [tipoRefeicao])
-            .order("created_at", { ascending: false })
-            .limit(remaining1);
-
-          if (singleDayEntries && singleDayEntries.length > 0) {
-            const { error } = await supabase
-              .from("solicitacoes_dieta")
-              .delete()
-              .in("id", singleDayEntries.map(e => e.id));
-            if (error) throw error;
-            removed += singleDayEntries.length;
-          }
-        }
-
-        // 3. If still need to remove more (multi-day/open-ended diets can't be deleted),
-        //    insert negative adjustment records to compensate
-        const remaining2 = toRemove - removed;
-        if (remaining2 > 0) {
-          const negativeInserts = Array.from({ length: remaining2 }, () => ({
-            data_inicio: dataStr,
-            data_fim: dataStr,
-            status: "aprovada",
-            horarios_refeicoes: [tipoRefeicao],
-            tipo_dieta: "normal",
-            solicitante_id: user.id,
-            solicitante_nome: "Ajuste administrativo (redução)",
-            observacoes: "[AJUSTE ADMIN][NEGATIVO]",
-            tem_acompanhante: false,
-            aprovado_por: user.id,
-            aprovado_em: new Date().toISOString(),
-          }));
-          const { error } = await supabase.from("solicitacoes_dieta").insert(negativeInserts).select();
-          if (error) throw error;
-        }
-      }
-
-      toast({ title: "Sucesso", description: "Quantidade de dietas atualizada!" });
-      setEditingCell(null);
-      fetchData(true);
-    } catch (error: any) {
-      toast({ title: "Erro", description: error.message || "Erro ao atualizar dietas.", variant: "destructive" });
-    } finally {
-      setSavingCell(null);
-    }
+  // Wrappers for backward compatibility with template calls
+  const saveDietaCellEdited = (dataStr: string, tipoRefeicao: string, newValue: number, _currentValue: number) => {
+    saveOverrideCell(dataStr, 'dieta', tipoRefeicao, newValue);
+  };
+  const saveExtraCellEdited = (dataStr: string, tipoRefeicao: string, newValue: number, _currentValue: number) => {
+    saveOverrideCell(dataStr, 'extra', tipoRefeicao, newValue);
   };
 
   // Função para determinar o tipo de refeição por horário

@@ -5277,6 +5277,42 @@ export type Database = {
         }
         Relationships: []
       }
+      quantitativo_ajustes: {
+        Row: {
+          ajustado_por: string | null
+          ajustado_por_nome: string | null
+          categoria: string
+          created_at: string
+          data: string
+          id: string
+          tipo_refeicao: string
+          updated_at: string
+          valor_override: number
+        }
+        Insert: {
+          ajustado_por?: string | null
+          ajustado_por_nome?: string | null
+          categoria: string
+          created_at?: string
+          data: string
+          id?: string
+          tipo_refeicao: string
+          updated_at?: string
+          valor_override: number
+        }
+        Update: {
+          ajustado_por?: string | null
+          ajustado_por_nome?: string | null
+          categoria?: string
+          created_at?: string
+          data?: string
+          id?: string
+          tipo_refeicao?: string
+          updated_at?: string
+          valor_override?: number
+        }
+        Relationships: []
+      }
       refeicoes_registros: {
         Row: {
           colaborador_nome: string
