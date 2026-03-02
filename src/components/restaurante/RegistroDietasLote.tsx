@@ -159,10 +159,10 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
           <Table>
             <TableHeader>
               <TableRow className="border-b border-border bg-muted/20 hover:bg-muted/20">
-                <TableHead className="w-[36px] text-center text-xs font-semibold text-foreground py-2.5">#</TableHead>
-                <TableHead className="min-w-[170px] text-xs font-semibold text-foreground py-2.5">Paciente *</TableHead>
-                <TableHead className="min-w-[100px] text-xs font-semibold text-foreground py-2.5">Quarto/Leito *</TableHead>
-                <TableHead className="min-w-[130px] text-xs font-semibold text-foreground py-2.5">Tipo de Dieta *</TableHead>
+                <TableHead className="w-[36px] text-center text-xs font-semibold text-foreground py-2.5"></TableHead>
+                <TableHead className="min-w-[170px] text-xs font-semibold text-foreground py-2.5">Paciente</TableHead>
+                <TableHead className="min-w-[100px] text-xs font-semibold text-foreground py-2.5">Quarto/Leito</TableHead>
+                <TableHead className="min-w-[130px] text-xs font-semibold text-foreground py-2.5">Tipo de Dieta</TableHead>
                 <TableHead className="text-center min-w-[90px] text-xs font-semibold text-foreground py-2.5">Acompanhante</TableHead>
                 <TableHead className="min-w-[190px] text-xs font-semibold text-foreground py-2.5">Refeições</TableHead>
                 <TableHead className="min-w-[130px] text-xs font-semibold text-foreground py-2.5">Restrições</TableHead>
