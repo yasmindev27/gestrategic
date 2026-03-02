@@ -163,7 +163,7 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
                 <TableHead className="min-w-[180px] text-foreground font-bold border-r border-border/50">Paciente *</TableHead>
                 <TableHead className="min-w-[120px] text-foreground font-bold border-r border-border/50">Quarto/Leito *</TableHead>
                 <TableHead className="min-w-[150px] text-foreground font-bold border-r border-border/50">Tipo de Dieta *</TableHead>
-                <TableHead className="text-center min-w-[60px] text-foreground font-bold border-r border-border/50">Acomp.</TableHead>
+                <TableHead className="text-center min-w-[100px] text-foreground font-bold border-r border-border/50">Acompanhante</TableHead>
                 <TableHead className="min-w-[200px] text-foreground font-bold border-r border-border/50">Refeições</TableHead>
                 <TableHead className="min-w-[150px] text-foreground font-bold border-r border-border/50">Restrições</TableHead>
                 <TableHead className="min-w-[150px] text-foreground font-bold border-r border-border/50">Observações</TableHead>
