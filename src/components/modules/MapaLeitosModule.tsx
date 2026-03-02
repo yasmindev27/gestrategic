@@ -399,7 +399,7 @@ export const MapaLeitosModule = () => {
           await supabase.from('notificacoes_pendencias').insert({
             pendencia_id: pendenciaData.id,
             destinatario_id: destinatarioId,
-            titulo: '⚠️ Pendência de Passagem de Plantão',
+            titulo: 'Pendência de Passagem de Plantão',
             mensagem: `${userName} registrou uma pendência: "${linha.trim()}". Resolva e dê baixa.`,
           });
         }

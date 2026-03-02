@@ -150,7 +150,7 @@ export function PainelSeguranca() {
                   <div className="flex-1 space-y-1">
                     <div className="flex items-center gap-2 flex-wrap">
                       <Badge variant={alerta.tipo === "urgente" ? "destructive" : "outline"} className={alerta.tipo === "apoio" ? "bg-warning/15 text-warning border-warning/30" : ""}>
-                        {alerta.tipo === "urgente" ? "🔴 URGENTE" : "🟡 APOIO"}
+                        {alerta.tipo === "urgente" ? "URGENTE" : "APOIO"}
                       </Badge>
                       <Badge variant="outline">{alerta.setor}</Badge>
                       <Badge variant={alerta.status === "atendido" ? "default" : "secondary"} className={alerta.status === "atendido" ? "bg-success text-success-foreground" : ""}>

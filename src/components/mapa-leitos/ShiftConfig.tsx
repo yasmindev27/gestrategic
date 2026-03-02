@@ -535,7 +535,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
           {/* Pendências Passadas */}
           {pendenciasPassadas && pendenciasPassadas.length > 0 && (
             <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm">
-              <p className="font-medium text-amber-800 mb-2">📋 Pendências do plantão anterior:</p>
+              <p className="font-medium text-amber-800 mb-2">Pendências do plantão anterior:</p>
               <ul className="space-y-1">
                 {pendenciasPassadas.map((p, i) => (
                   <li key={`p-${i}`} className="flex items-start gap-2">
@@ -563,7 +563,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
           {/* Pendências Encontradas */}
           {pendenciasEncontradasList && pendenciasEncontradasList.length > 0 && (
             <div className="mt-2 rounded-md border border-blue-300 bg-blue-50 px-3 py-2 text-sm">
-              <p className="font-medium text-blue-800 mb-2">🔍 Pendências encontradas na assunção:</p>
+              <p className="font-medium text-blue-800 mb-2">Pendências encontradas na assunção:</p>
               <ul className="space-y-1">
                 {pendenciasEncontradasList.map((p, i) => (
                   <li key={`e-${i}`} className="flex items-start gap-2">
@@ -625,7 +625,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              📋 Pendências encontradas ao assumir o plantão
+              Pendências encontradas ao assumir o plantão
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">

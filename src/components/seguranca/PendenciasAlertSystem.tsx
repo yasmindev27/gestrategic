@@ -142,7 +142,7 @@ export function PendenciasAlertSystem() {
     const reminderInterval = setInterval(() => {
       if (pendencias.length > 0 && !alertDialogOpen) {
         toast.warning(
-          `⚠️ Você tem ${pendencias.length} pendência(s) de plantão aguardando resolução!`,
+          `Você tem ${pendencias.length} pendência(s) de plantão aguardando resolução!`,
           {
             duration: 8000,
             action: {
