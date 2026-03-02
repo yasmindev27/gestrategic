@@ -71,7 +71,7 @@ export function useBeds(shiftDate?: string) {
           
           initialBeds.forEach((bed, index) => {
             const record = recordsMap.get(bed.id);
-            if (record && record.patient_name) {
+            if (record && record.patient_name && !record.motivo_alta) {
               initialBeds[index].patient = {
                 nome: record.patient_name,
                 hipoteseDiagnostica: record.hipotese_diagnostica || '',
