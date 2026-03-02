@@ -26,7 +26,7 @@ const tipoLabels: Record<string, string> = {
 };
 
 export const ProtocoloRelatorios = ({ tipo, titulo, onBack }: Props) => {
-  const { data: atendimentos, isLoading } = useProtocoloAtendimentos(tipo);
+  const { data: atendimentos, isLoading, isError, error } = useProtocoloAtendimentos(tipo);
   const [search, setSearch] = useState('');
   const [selectedAtendimento, setSelectedAtendimento] = useState<any>(null);
 
@@ -116,10 +116,16 @@ export const ProtocoloRelatorios = ({ tipo, titulo, onBack }: Props) => {
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
+          ) : isError ? (
+            <div className="text-center py-12 text-destructive">
+              <FileText className="h-12 w-12 mx-auto mb-3 opacity-40" />
+              <p>Erro ao carregar dados: {(error as any)?.message || 'Erro desconhecido'}</p>
+            </div>
           ) : filtered.length === 0 ? (
             <div className="text-center py-12 text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-3 opacity-40" />
               <p>Nenhum atendimento encontrado.</p>
+              <p className="text-xs mt-1">Total carregado: {atendimentos?.length || 0}</p>
             </div>
           ) : (
             <Table>
