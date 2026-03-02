@@ -156,45 +156,45 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="border rounded-lg overflow-auto">
-          <Table>
+          <Table className="border-collapse">
             <TableHeader>
-              <TableRow className="bg-muted/50">
-                <TableHead className="w-[30px] text-center">#</TableHead>
-                <TableHead className="min-w-[180px]">Paciente *</TableHead>
-                <TableHead className="min-w-[120px]">Quarto/Leito *</TableHead>
-                <TableHead className="min-w-[150px]">Tipo de Dieta *</TableHead>
-                <TableHead className="text-center min-w-[60px]">Acomp.</TableHead>
-                <TableHead className="min-w-[200px]">Refeições</TableHead>
-                <TableHead className="min-w-[150px]">Restrições</TableHead>
-                <TableHead className="min-w-[150px]">Observações</TableHead>
-                <TableHead className="w-[50px]"></TableHead>
+              <TableRow className="bg-primary/10 border-b-2 border-primary/30">
+                <TableHead className="w-[30px] text-center text-foreground font-bold border-r border-border/50">#</TableHead>
+                <TableHead className="min-w-[180px] text-foreground font-bold border-r border-border/50">Paciente *</TableHead>
+                <TableHead className="min-w-[120px] text-foreground font-bold border-r border-border/50">Quarto/Leito *</TableHead>
+                <TableHead className="min-w-[150px] text-foreground font-bold border-r border-border/50">Tipo de Dieta *</TableHead>
+                <TableHead className="text-center min-w-[60px] text-foreground font-bold border-r border-border/50">Acomp.</TableHead>
+                <TableHead className="min-w-[200px] text-foreground font-bold border-r border-border/50">Refeições</TableHead>
+                <TableHead className="min-w-[150px] text-foreground font-bold border-r border-border/50">Restrições</TableHead>
+                <TableHead className="min-w-[150px] text-foreground font-bold border-r border-border/50">Observações</TableHead>
+                <TableHead className="w-[50px] text-foreground font-bold"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {linhas.map((linha, idx) => (
-                <TableRow key={linha.id} className={linha.paciente_nome.trim() && linha.quarto_leito.trim() && linha.tipo_dieta ? "bg-green-50/30 dark:bg-green-950/10" : ""}>
-                  <TableCell className="text-center text-muted-foreground text-xs font-mono">
+                <TableRow key={linha.id} className={`border-b border-border/40 ${linha.paciente_nome.trim() && linha.quarto_leito.trim() && linha.tipo_dieta ? "bg-green-50/30 dark:bg-green-950/10" : idx % 2 === 0 ? "bg-background" : "bg-muted/20"}`}>
+                  <TableCell className="text-center text-foreground text-xs font-mono border-r border-border/30">
                     {idx + 1}
                   </TableCell>
-                  <TableCell className="p-1">
+                  <TableCell className="p-1 border-r border-border/30">
                     <Input
                       placeholder="Nome do paciente"
                       value={linha.paciente_nome}
                       onChange={e => atualizarLinha(linha.id, "paciente_nome", e.target.value)}
-                      className="h-9 text-sm"
+                      className="h-9 text-sm text-foreground"
                     />
                   </TableCell>
-                  <TableCell className="p-1">
+                  <TableCell className="p-1 border-r border-border/30">
                     <Input
                       placeholder="Ex: 101-A"
                       value={linha.quarto_leito}
                       onChange={e => atualizarLinha(linha.id, "quarto_leito", e.target.value)}
-                      className="h-9 text-sm"
+                      className="h-9 text-sm text-foreground"
                     />
                   </TableCell>
-                  <TableCell className="p-1">
+                  <TableCell className="p-1 border-r border-border/30">
                     <Select value={linha.tipo_dieta} onValueChange={v => atualizarLinha(linha.id, "tipo_dieta", v)}>
-                      <SelectTrigger className="h-9 text-sm">
+                      <SelectTrigger className="h-9 text-sm text-foreground">
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
@@ -204,13 +204,13 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
                       </SelectContent>
                     </Select>
                   </TableCell>
-                  <TableCell className="p-1 text-center">
+                  <TableCell className="p-1 text-center border-r border-border/30">
                     <Checkbox
                       checked={linha.tem_acompanhante}
                       onCheckedChange={v => atualizarLinha(linha.id, "tem_acompanhante", !!v)}
                     />
                   </TableCell>
-                  <TableCell className="p-1">
+                  <TableCell className="p-1 border-r border-border/30">
                     <div className="flex gap-1 flex-wrap">
                       {refeicaoOptions.map(r => (
                         <Badge
@@ -224,20 +224,20 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
                       ))}
                     </div>
                   </TableCell>
-                  <TableCell className="p-1">
+                  <TableCell className="p-1 border-r border-border/30">
                     <Input
                       placeholder="Restrições"
                       value={linha.restricoes_alimentares}
                       onChange={e => atualizarLinha(linha.id, "restricoes_alimentares", e.target.value)}
-                      className="h-9 text-sm"
+                      className="h-9 text-sm text-foreground"
                     />
                   </TableCell>
-                  <TableCell className="p-1">
+                  <TableCell className="p-1 border-r border-border/30">
                     <Input
                       placeholder="Obs."
                       value={linha.observacoes}
                       onChange={e => atualizarLinha(linha.id, "observacoes", e.target.value)}
-                      className="h-9 text-sm"
+                      className="h-9 text-sm text-foreground"
                     />
                   </TableCell>
                   <TableCell className="p-1">
