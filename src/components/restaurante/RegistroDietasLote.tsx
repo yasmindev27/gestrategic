@@ -18,7 +18,8 @@ const tipoDietaOptions = [
   { value: "liquida", label: "Líquida" },
   { value: "hipossodica", label: "Hipossódica" },
   { value: "hipocalorica", label: "Hipocalórica" },
-  { value: "has_dm", label: "HAS/DM" },
+  { value: "has", label: "HAS" },
+  { value: "dm", label: "DM" },
   { value: "enteral", label: "Enteral" },
   { value: "suspensa", label: "Suspensa" },
 ];
