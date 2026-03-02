@@ -822,8 +822,10 @@ export const RestauranteModule = () => {
     toast({ title: "Sucesso", description: "Arquivo PDF exportado com sucesso." });
   };
 
-  // Filtrar minhas solicitações pelo período selecionado
-  const minhasSolicitacoesFiltradas = minhasSolicitacoes.filter(s => {
+  // Filtrar solicitações pelo período selecionado
+  // Admin/restaurante vê todas, demais veem apenas as próprias
+  const baseSolicitacoes = canManage ? todasSolicitacoes : minhasSolicitacoes;
+  const minhasSolicitacoesFiltradas = baseSolicitacoes.filter(s => {
     const hoje = new Date();
     const dataCriacao = new Date(s.created_at);
     switch (minhasDietasFiltro) {
@@ -1137,7 +1139,7 @@ export const RestauranteModule = () => {
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div> : minhasSolicitacoesFiltradas.length === 0 ? <div className="text-center py-8 text-muted-foreground">
                   <Salad className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>{minhasSolicitacoes.length === 0 ? "Você ainda não fez nenhuma solicitação de dieta." : "Nenhuma dieta encontrada para o período selecionado."}
+                  <p>{baseSolicitacoes.length === 0 ? (canManage ? "Nenhuma solicitação de dieta encontrada." : "Você ainda não fez nenhuma solicitação de dieta.") : "Nenhuma dieta encontrada para o período selecionado."}
                   </p>
                 </div> : <Table>
                   <TableHeader>
@@ -1146,6 +1148,7 @@ export const RestauranteModule = () => {
                       <TableHead>Tipo de Dieta</TableHead>
                       <TableHead>Horários</TableHead>
                       <TableHead>Acompanhante</TableHead>
+                      {canManage && <TableHead>Solicitante</TableHead>}
                       <TableHead>Solicitado em</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1176,6 +1179,7 @@ export const RestauranteModule = () => {
                             {s.tem_acompanhante ? "Sim" : "Não"}
                           </Badge>
                         </TableCell>
+                        {canManage && <TableCell className="text-sm">{s.solicitante_nome}</TableCell>}
                         <TableCell className="text-muted-foreground text-sm">
                           {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
                         </TableCell>
