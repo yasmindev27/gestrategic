@@ -1,0 +1,29 @@
+{
+  "name": "Gestrategic - Gestão Hospitalar Inteligente",
+  "short_name": "Gestrategic",
+  "description": "Sistema completo de gestão hospitalar com segurança, monitoramento 24/7, conformidade LGPD.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a3a5c",
+  "theme_color": "#1a3a5c",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/assets/logo-gestrategic.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/logo-gestrategic.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}
