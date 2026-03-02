@@ -2,10 +2,34 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ShiftInfo } from '@/types/bed';
 
+function detectCurrentShift(): { tipo: 'diurno' | 'noturno'; data: string } {
+  // Brasília = UTC-3
+  const now = new Date();
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const brasiliaTime = new Date(utcMs - 3 * 3600000);
+  const hour = brasiliaTime.getHours();
+
+  // Diurno: 07:00–18:59  |  Noturno: 19:00–06:59
+  const isNoturno = hour >= 19 || hour < 7;
+
+  // For noturno between 00:00-06:59, the shift_date is the previous day (when the shift started at 19h)
+  let shiftDate: Date;
+  if (isNoturno && hour < 7) {
+    shiftDate = new Date(brasiliaTime);
+    shiftDate.setDate(shiftDate.getDate() - 1);
+  } else {
+    shiftDate = brasiliaTime;
+  }
+
+  const data = shiftDate.toISOString().split('T')[0];
+  return { tipo: isNoturno ? 'noturno' : 'diurno', data };
+}
+
 export function useShiftConfig(initialDate?: string) {
+  const detected = detectCurrentShift();
   const [shiftInfo, setShiftInfo] = useState<ShiftInfo>({
-    tipo: 'diurno',
-    data: initialDate || new Date().toISOString().split('T')[0],
+    tipo: detected.tipo,
+    data: initialDate || detected.data,
     medicos: '',
     enfermeiros: '',
     reguladorNIR: '',
