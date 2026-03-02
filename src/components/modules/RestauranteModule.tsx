@@ -900,7 +900,7 @@ export const RestauranteModule = () => {
     ]);
     autoTable(doc, {
       startY: 38,
-      head: [["Paciente", "Quarto/Leito", "Tipo Dieta", "Refeições", "Descrição", "Restrições", "Acomp.", "Obs.", "Solicitado"]],
+      head: [["Paciente", "Quarto/Leito", "Tipo Dieta", "Refeições", "Descrição", "Restrições", "Acompanhante", "Obs.", "Solicitado"]],
       body: tableData,
       styles: { fontSize: 6.5 },
       headStyles: { fillColor: [59, 130, 246] },
@@ -1469,7 +1469,7 @@ export const RestauranteModule = () => {
                                 <TableHead className="text-center text-foreground font-bold border-r border-border/50">
                                   <div className="flex items-center justify-center gap-1">
                                     <Users className="h-4 w-4" />
-                                    Acomp.
+                                    Acompanhante
                                   </div>
                                 </TableHead>
                                 <TableHead className="text-foreground font-bold border-r border-border/50">Quarto/Leito</TableHead>
