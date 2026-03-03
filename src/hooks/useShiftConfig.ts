@@ -2,6 +2,13 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ShiftInfo } from '@/types/bed';
 
+function formatLocalDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function detectCurrentShift(): { tipo: 'diurno' | 'noturno'; data: string } {
   // Brasília = UTC-3
   const now = new Date();
@@ -21,7 +28,7 @@ function detectCurrentShift(): { tipo: 'diurno' | 'noturno'; data: string } {
     shiftDate = brasiliaTime;
   }
 
-  const data = shiftDate.toISOString().split('T')[0];
+  const data = formatLocalDate(shiftDate);
   return { tipo: isNoturno ? 'noturno' : 'diurno', data };
 }
 

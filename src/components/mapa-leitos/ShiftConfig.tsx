@@ -12,6 +12,11 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
+/** Formats a Date to yyyy-MM-dd using LOCAL time (not UTC) */
+function fmtDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
 interface PendenciaItem {
   text: string;
   resolved: boolean;
@@ -43,7 +48,7 @@ function isTimeAllowed(shiftDate: string, shiftType: string): { allowed: boolean
   const now = new Date();
   const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
   const brasilia = new Date(utcMs - 3 * 3600000);
-  const brasiliaDateStr = brasilia.toISOString().split('T')[0];
+  const brasiliaDateStr = fmtDate(brasilia);
   const hour = brasilia.getHours();
 
   if (shiftType === 'noturno') {
@@ -53,7 +58,7 @@ function isTimeAllowed(shiftDate: string, shiftType: string): { allowed: boolean
     if (hour < 7) {
       const yesterday = new Date(brasilia);
       yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      const yesterdayStr = fmtDate(yesterday);
       if (shiftDate === yesterdayStr) return { allowed: true, reason: '' };
     }
     // Between 19:00-23:59, shift_date is today
@@ -168,7 +173,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
     const now = new Date();
     const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
     const brasilia = new Date(utcMs - 3 * 3600000);
-    const brasiliaDate = brasilia.toISOString().split('T')[0];
+    const brasiliaDate = fmtDate(brasilia);
     const hour = brasilia.getHours();
 
     let isCurrentShift = false;
@@ -176,7 +181,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
       if (hour < 7) {
         const yesterday = new Date(brasilia);
         yesterday.setDate(yesterday.getDate() - 1);
-        isCurrentShift = shiftInfo.data === yesterday.toISOString().split('T')[0];
+        isCurrentShift = shiftInfo.data === fmtDate(yesterday);
       } else {
         isCurrentShift = shiftInfo.data === brasiliaDate;
       }
@@ -281,7 +286,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
     const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
     const brasilia = new Date(utcMs - 3 * 3600000);
     const currentMinutes = brasilia.getHours() * 60 + brasilia.getMinutes();
-    const brasiliaDate = brasilia.toISOString().split('T')[0];
+    const brasiliaDate = fmtDate(brasilia);
 
     if (shiftInfo.tipo === 'diurno') {
       // Diurno ends at 19:00 (1140 min). Last hour = 18:00 (1080 min)
@@ -292,7 +297,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
       if (currentMinutes < 420) {
         const yesterday = new Date(brasilia);
         yesterday.setDate(yesterday.getDate() - 1);
-        if (shiftInfo.data !== yesterday.toISOString().split('T')[0]) return false;
+        if (shiftInfo.data !== fmtDate(yesterday)) return false;
       } else {
         if (shiftInfo.data !== brasiliaDate) return false;
       }
@@ -305,7 +310,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
     const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
     const brasilia = new Date(utcMs - 3 * 3600000);
     const currentMinutes = brasilia.getHours() * 60 + brasilia.getMinutes();
-    const brasiliaDate = brasilia.toISOString().split('T')[0];
+    const brasiliaDate = fmtDate(brasilia);
     
     if (shiftInfo.tipo === 'diurno') {
       if (shiftInfo.data !== brasiliaDate) return false;
@@ -314,7 +319,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
       if (currentMinutes < 420) {
         const yesterday = new Date(brasilia);
         yesterday.setDate(yesterday.getDate() - 1);
-        if (shiftInfo.data !== yesterday.toISOString().split('T')[0]) return false;
+        if (shiftInfo.data !== fmtDate(yesterday)) return false;
       } else {
         if (shiftInfo.data !== brasiliaDate) return false;
       }
