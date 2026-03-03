@@ -275,25 +275,42 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
     toast.success(`Plantão de ${format(new Date(shift.shift_date + 'T12:00:00'), "dd/MM/yyyy", { locale: ptBR })} carregado`);
   };
 
-  const isWithin15MinOfEnd = useMemo(() => {
-    // Use Brasília time (UTC-3)
+  // Check if we're within the last 60 minutes of the shift (allows conclusion)
+  const isWithinLastHour = useMemo(() => {
     const now = new Date();
     const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
     const brasilia = new Date(utcMs - 3 * 3600000);
     const currentMinutes = brasilia.getHours() * 60 + brasilia.getMinutes();
+    const brasiliaDate = brasilia.toISOString().split('T')[0];
 
-    // Check if we're on the correct shift date
+    if (shiftInfo.tipo === 'diurno') {
+      // Diurno ends at 19:00 (1140 min). Last hour = 18:00 (1080 min)
+      if (shiftInfo.data !== brasiliaDate) return false;
+      return currentMinutes >= 1080 && currentMinutes < 1140;
+    } else {
+      // Noturno ends at 07:00 (420 min). Last hour = 06:00 (360 min)
+      if (currentMinutes < 420) {
+        const yesterday = new Date(brasilia);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (shiftInfo.data !== yesterday.toISOString().split('T')[0]) return false;
+      } else {
+        if (shiftInfo.data !== brasiliaDate) return false;
+      }
+      return currentMinutes >= 360 && currentMinutes < 420;
+    }
+  }, [shiftInfo.data, shiftInfo.tipo]);
+
+  const isWithin15MinOfEnd = useMemo(() => {
+    const now = new Date();
+    const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+    const brasilia = new Date(utcMs - 3 * 3600000);
+    const currentMinutes = brasilia.getHours() * 60 + brasilia.getMinutes();
     const brasiliaDate = brasilia.toISOString().split('T')[0];
     
     if (shiftInfo.tipo === 'diurno') {
-      // Diurno ends at 19:00 (1140 min). 15 min before = 18:45 (1125 min)
       if (shiftInfo.data !== brasiliaDate) return false;
       return currentMinutes >= 1125 && currentMinutes < 1140;
     } else {
-      // Noturno ends at 07:00 next day (420 min). 15 min before = 06:45 (405 min)
-      // For noturno, shift_date is the day it STARTED (19h), but end is next day 07h
-      const nextDay = new Date(brasilia);
-      // If we're between 0:00-7:00, the shift started yesterday
       if (currentMinutes < 420) {
         const yesterday = new Date(brasilia);
         yesterday.setDate(yesterday.getDate() - 1);
@@ -434,16 +451,19 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPl
           {onConcluirPlantao && editAllowed && (
             <Button
               onClick={handleConcluirClick}
-              disabled={isConcluindo}
+              disabled={isConcluindo || (!isAdmin && !isWithinLastHour)}
               variant="outline"
               className="gap-2 border-green-500 text-green-700 hover:bg-green-50"
+              title={!isWithinLastHour && !isAdmin ? `Conclusão disponível apenas na última hora do turno (${shiftInfo.tipo === 'diurno' ? '18:00–19:00' : '06:00–07:00'})` : ''}
             >
               {isConcluindo ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (!isAdmin && !isWithinLastHour) ? (
+                <Lock className="w-4 h-4" />
               ) : (
                 <CheckCircle2 className="w-4 h-4" />
               )}
-              Concluir Plantão
+              {(!isAdmin && !isWithinLastHour) ? 'Conclusão indisponível' : 'Concluir Plantão'}
             </Button>
           )}
         </div>
