@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -8,19 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Truck, MapPin, Clock, CheckCircle2, LogOut, Navigation, ChevronRight, Play, AlertTriangle, LocateFixed, FileWarning, Map } from "lucide-react";
+import { Loader2, Truck, MapPin, Clock, CheckCircle2, LogOut, Navigation, ChevronRight, Play, AlertTriangle, FileWarning, RefreshCw, Ambulance } from "lucide-react";
 import logoGestrategic from "@/assets/logo-gestrategic.jpg";
-import { MapContainer, TileLayer, Polyline, Marker, Popup } from "react-leaflet";
-import L from "leaflet";
-import "leaflet/dist/leaflet.css";
-
-// Fix leaflet default icon
-delete (L.Icon.Default.prototype as any)._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-});
 
 type Solicitacao = {
   id: string;
@@ -35,13 +24,11 @@ type Solicitacao = {
   solicitado_por_nome: string | null;
 };
 
-type Coordenada = { latitude: number; longitude: number; registrado_em: string };
-
-const prioridadeColors: Record<string, string> = {
-  baixa: "bg-green-100 text-green-800 border-green-300",
-  normal: "bg-blue-100 text-blue-800 border-blue-300",
-  alta: "bg-orange-100 text-orange-800 border-orange-300",
-  urgente: "bg-red-100 text-red-800 border-red-300",
+const prioridadeConfig: Record<string, { label: string; bg: string; dot: string }> = {
+  baixa: { label: "BAIXA", bg: "bg-emerald-50 text-emerald-700 border-emerald-200", dot: "bg-emerald-500" },
+  normal: { label: "NORMAL", bg: "bg-sky-50 text-sky-700 border-sky-200", dot: "bg-sky-500" },
+  alta: { label: "ALTA", bg: "bg-amber-50 text-amber-700 border-amber-200", dot: "bg-amber-500" },
+  urgente: { label: "URGENTE", bg: "bg-red-50 text-red-700 border-red-200", dot: "bg-red-500" },
 };
 
 const Transporte = () => {
@@ -50,6 +37,7 @@ const Transporte = () => {
   const [user, setUser] = useState<any>(null);
   const [userName, setUserName] = useState("");
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [missoes, setMissoes] = useState<Solicitacao[]>([]);
   const [selectedMissao, setSelectedMissao] = useState<Solicitacao | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -59,9 +47,6 @@ const Transporte = () => {
   const [preAcceptOpen, setPreAcceptOpen] = useState(false);
   const [preAcceptMissaoId, setPreAcceptMissaoId] = useState<string | null>(null);
   const [kmInicial, setKmInicial] = useState("");
-  const [locAtiva, setLocAtiva] = useState(false);
-  const [locLoading, setLocLoading] = useState(false);
-  const [locError, setLocError] = useState("");
   const [finalizarOpen, setFinalizarOpen] = useState(false);
   const [finalizarMissaoId, setFinalizarMissaoId] = useState<string | null>(null);
   const [kmFinal, setKmFinal] = useState("");
@@ -70,67 +55,18 @@ const Transporte = () => {
   const [intercorrenciaTexto, setIntercorrenciaTexto] = useState("");
   const [intercorrenciaLoading, setIntercorrenciaLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"missoes" | "historico">("missoes");
-  const [rotaMapOpen, setRotaMapOpen] = useState(false);
-  const [rotaCoordenadas, setRotaCoordenadas] = useState<Coordenada[]>([]);
-  const [rotaLoading, setRotaLoading] = useState(false);
-  const [rotaMissaoNome, setRotaMissaoNome] = useState("");
-  const trackingRef = useRef<number | null>(null);
 
   useEffect(() => {
     const checkAuth = async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        navigate("/auth");
-        return;
-      }
+      if (!user) { navigate("/auth"); return; }
       setUser(user);
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name")
-        .eq("user_id", user.id)
-        .single();
+      const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).single();
       setUserName(profile?.full_name || user.email || "Motorista");
       loadMissoes(profile?.full_name || user.email || "");
     };
     checkAuth();
   }, [navigate]);
-
-  // Auto-detect GPS when pre-accept dialog opens
-  useEffect(() => {
-    if (preAcceptOpen && !locAtiva) {
-      ativarLocalizacao();
-    }
-  }, [preAcceptOpen]);
-
-  // GPS tracking: periodically save coordinates while there's an active mission
-  useEffect(() => {
-    const activeMission = missoes.find(m => m.status === "em_transporte");
-    if (activeMission && user) {
-      const saveCoord = () => {
-        navigator.geolocation?.getCurrentPosition(
-          async (pos) => {
-            await supabase.from("transferencia_coordenadas").insert({
-              solicitacao_id: activeMission.id,
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-            });
-          },
-          () => {}, // silently fail
-          { enableHighAccuracy: true, timeout: 10000 }
-        );
-      };
-      // Save immediately then every 30s
-      saveCoord();
-      const interval = window.setInterval(saveCoord, 30000);
-      trackingRef.current = interval;
-      return () => window.clearInterval(interval);
-    } else {
-      if (trackingRef.current) {
-        window.clearInterval(trackingRef.current);
-        trackingRef.current = null;
-      }
-    }
-  }, [missoes, user]);
 
   const loadMissoes = useCallback(async (nome: string) => {
     setLoading(true);
@@ -143,6 +79,13 @@ const Transporte = () => {
     setMissoes((data as Solicitacao[]) || []);
     setLoading(false);
   }, []);
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await loadMissoes(userName);
+    setRefreshing(false);
+    toast({ title: "Lista atualizada!" });
+  };
 
   const tentarAceitarMissao = (missao: Solicitacao) => {
     const motoristaAtribuido = missao.motorista_nome?.trim();
@@ -158,36 +101,10 @@ const Transporte = () => {
   const abrirPreAccept = (missaoId: string) => {
     setPreAcceptMissaoId(missaoId);
     setKmInicial("");
-    setLocAtiva(false);
-    setLocError("");
     setPreAcceptOpen(true);
   };
 
-  const ativarLocalizacao = () => {
-    if (!navigator.geolocation) {
-      setLocError("Geolocalização não suportada neste dispositivo.");
-      return;
-    }
-    setLocLoading(true);
-    setLocError("");
-    navigator.geolocation.getCurrentPosition(
-      () => {
-        setLocAtiva(true);
-        setLocLoading(false);
-      },
-      () => {
-        setLocError("Permissão negada. Ative a localização nas configurações do navegador.");
-        setLocLoading(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
   const confirmarPreAccept = () => {
-    if (!locAtiva) {
-      toast({ title: "Ative a localização antes de aceitar", variant: "destructive" });
-      return;
-    }
     if (!kmInicial.trim() || isNaN(Number(kmInicial))) {
       toast({ title: "Informe a km atual da ambulância", variant: "destructive" });
       return;
@@ -206,12 +123,9 @@ const Transporte = () => {
         hora_saida: new Date().toISOString(),
       };
       if (km !== undefined) updateData.km_rodados = km;
-      const { error } = await supabase
-        .from("transferencia_solicitacoes")
-        .update(updateData)
-        .eq("id", missaoId);
+      const { error } = await supabase.from("transferencia_solicitacoes").update(updateData).eq("id", missaoId);
       if (error) throw error;
-      toast({ title: "Missão aceita! Boa viagem." });
+      toast({ title: "Missão aceita! Boa viagem. 🚑" });
       setSelectedMissao(null);
       loadMissoes(userName);
     } catch (err: any) {
@@ -238,24 +152,16 @@ const Transporte = () => {
     if (!finalizarMissaoId) return;
     setActionLoading(finalizarMissaoId);
     try {
-      const { data: sol } = await supabase
-        .from("transferencia_solicitacoes")
-        .select("km_rodados")
-        .eq("id", finalizarMissaoId)
-        .single();
+      const { data: sol } = await supabase.from("transferencia_solicitacoes").select("km_rodados").eq("id", finalizarMissaoId).single();
       const kmIni = (sol as any)?.km_rodados || 0;
       const kmTotal = Math.max(0, Number(kmFinal) - kmIni);
-
-      const { error } = await supabase
-        .from("transferencia_solicitacoes")
-        .update({
-          status: "concluida",
-          hora_chegada: new Date().toISOString(),
-          km_rodados: kmTotal,
-        })
-        .eq("id", finalizarMissaoId);
+      const { error } = await supabase.from("transferencia_solicitacoes").update({
+        status: "concluida",
+        hora_chegada: new Date().toISOString(),
+        km_rodados: kmTotal,
+      }).eq("id", finalizarMissaoId);
       if (error) throw error;
-      toast({ title: `Missão finalizada! ${kmTotal} km percorridos.` });
+      toast({ title: `Missão finalizada! ${kmTotal} km percorridos. ✅` });
       setSelectedMissao(null);
       loadMissoes(userName);
     } catch (err: any) {
@@ -296,26 +202,12 @@ const Transporte = () => {
   };
 
   const handleNavegar = (destino: string) => {
-    const url = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destino)}`;
-    window.open(url, "_blank");
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destino)}`, "_blank");
   };
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
     navigate("/auth");
-  };
-
-  const abrirRotaMapa = async (missao: Solicitacao) => {
-    setRotaLoading(true);
-    setRotaMissaoNome(`${missao.setor_origem} → ${missao.destino}`);
-    setRotaMapOpen(true);
-    const { data } = await supabase
-      .from("transferencia_coordenadas")
-      .select("latitude, longitude, registrado_em")
-      .eq("solicitacao_id", missao.id)
-      .order("registrado_em", { ascending: true });
-    setRotaCoordenadas((data as Coordenada[]) || []);
-    setRotaLoading(false);
   };
 
   const formatDate = (d: string) => {
@@ -324,235 +216,284 @@ const Transporte = () => {
     } catch { return d; }
   };
 
+  const pendentes = missoes.filter(m => m.status === "pendente");
+  const emRota = missoes.filter(m => m.status === "em_transporte");
+  const concluidas = missoes.filter(m => m.status === "concluida");
+  const ativas = [...emRota, ...pendentes];
+
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
+        <Ambulance className="h-12 w-12 text-primary animate-pulse" />
+        <p className="text-sm text-muted-foreground">Carregando missões...</p>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 flex flex-col max-w-lg mx-auto">
+    <div className="min-h-screen bg-background flex flex-col max-w-lg mx-auto">
       {/* Header */}
-      <header className="bg-primary text-primary-foreground p-4 flex items-center justify-between sticky top-0 z-10 shadow-md">
-        <div className="flex items-center gap-3">
-          <img src={logoGestrategic} alt="Logo" className="h-8 w-8 rounded-full object-cover" />
-          <div>
-            <h1 className="text-lg font-bold leading-tight">Transporte</h1>
-            <p className="text-xs opacity-80">{userName}</p>
+      <header className="bg-gradient-to-r from-primary to-primary/85 text-primary-foreground px-4 py-5 sticky top-0 z-10 shadow-lg">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <img src={logoGestrategic} alt="Logo" className="h-10 w-10 rounded-xl object-cover ring-2 ring-white/20" />
+              {emRota.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-green-400 rounded-full border-2 border-primary animate-pulse" />
+              )}
+            </div>
+            <div>
+              <h1 className="text-lg font-bold tracking-tight">Transporte</h1>
+              <p className="text-xs opacity-75 truncate max-w-[180px]">{userName}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="text-primary-foreground hover:bg-white/10"
+            >
+              <RefreshCw className={`h-4.5 w-4.5 ${refreshing ? "animate-spin" : ""}`} />
+            </Button>
+            <Button variant="ghost" size="icon" onClick={handleLogout} className="text-primary-foreground hover:bg-white/10">
+              <LogOut className="h-4.5 w-4.5" />
+            </Button>
           </div>
         </div>
-        <Button variant="ghost" size="icon" onClick={handleLogout} className="text-primary-foreground hover:bg-primary-foreground/20">
-          <LogOut className="h-5 w-5" />
-        </Button>
+
+        {/* Stats inline */}
+        <div className="flex gap-3 mt-4">
+          {[
+            { count: pendentes.length, label: "Pendentes", color: "bg-amber-400/20 text-amber-100" },
+            { count: emRota.length, label: "Em Rota", color: "bg-sky-400/20 text-sky-100" },
+            { count: concluidas.length, label: "Concluídas", color: "bg-emerald-400/20 text-emerald-100" },
+          ].map(({ count, label, color }) => (
+            <div key={label} className={`flex-1 rounded-lg px-3 py-2 text-center ${color}`}>
+              <p className="text-xl font-bold">{count}</p>
+              <p className="text-[10px] font-medium opacity-80">{label}</p>
+            </div>
+          ))}
+        </div>
       </header>
 
-      {/* Stats */}
-      <div className="grid grid-cols-3 gap-2 p-4">
-        <Card className="text-center">
-          <CardContent className="p-3">
-            <p className="text-2xl font-bold text-orange-600">{missoes.filter(m => m.status === "pendente").length}</p>
-            <p className="text-xs text-muted-foreground">Pendentes</p>
-          </CardContent>
-        </Card>
-        <Card className="text-center">
-          <CardContent className="p-3">
-            <p className="text-2xl font-bold text-blue-600">{missoes.filter(m => m.status === "em_transporte").length}</p>
-            <p className="text-xs text-muted-foreground">Em Rota</p>
-          </CardContent>
-        </Card>
-        <Card className="text-center">
-          <CardContent className="p-3">
-            <p className="text-2xl font-bold text-green-600">{missoes.filter(m => m.status === "concluida").length}</p>
-            <p className="text-xs text-muted-foreground">Concluídas</p>
-          </CardContent>
-        </Card>
-      </div>
+      {/* Active mission banner */}
+      {emRota.length > 0 && activeTab === "missoes" && (
+        <div className="mx-4 mt-3 p-3 rounded-xl bg-primary/5 border border-primary/15 flex items-center gap-3">
+          <div className="p-2 bg-primary/10 rounded-lg">
+            <Truck className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-xs font-semibold text-primary">Missão em andamento</p>
+            <p className="text-xs text-muted-foreground truncate">{emRota[0].paciente_nome} → {emRota[0].destino}</p>
+          </div>
+          <Badge className="bg-primary text-primary-foreground shrink-0 text-[10px]">EM ROTA</Badge>
+        </div>
+      )}
 
       {/* Mission List */}
-      <div className="flex-1 px-4 pb-4 space-y-3">
+      <div className="flex-1 px-4 py-4 space-y-3 pb-20">
         {activeTab === "missoes" && (
           <>
-            <h2 className="font-semibold text-foreground flex items-center gap-2">
-              <Truck className="h-5 w-5 text-primary" />
-              Missões de Transporte
-            </h2>
-
-            {missoes.filter(m => m.status !== "concluida").length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  <Navigation className="h-12 w-12 mx-auto mb-3 opacity-40" />
-                  <p>Nenhuma missão no momento</p>
-                </CardContent>
-              </Card>
+            {ativas.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="p-4 bg-muted rounded-full mb-4">
+                  <Ambulance className="h-10 w-10 text-muted-foreground/50" />
+                </div>
+                <p className="font-medium text-foreground">Nenhuma missão no momento</p>
+                <p className="text-sm text-muted-foreground mt-1">Puxe para baixo para atualizar</p>
+              </div>
             ) : (
-              missoes.filter(m => m.status !== "concluida").map((m) => (
-                <Card 
-                  key={m.id} 
-                  className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]"
-                  onClick={() => setSelectedMissao(selectedMissao?.id === m.id ? null : m)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge className={`text-xs ${prioridadeColors[m.prioridade] || "bg-muted"}`}>
-                            {m.prioridade?.toUpperCase()}
-                          </Badge>
-                          <Badge variant={m.status === "pendente" ? "outline" : "default"} className="text-xs">
-                            {m.status === "pendente" ? "Pendente" : "Em Rota"}
-                          </Badge>
-                        </div>
-                        <p className="font-semibold text-sm truncate">{m.paciente_nome}</p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                          <MapPin className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{m.setor_origem} → {m.destino}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                          <Clock className="h-3 w-3 shrink-0" />
-                          <span>{formatDate(m.created_at)}</span>
-                        </div>
-                      </div>
-                      <ChevronRight className={`h-5 w-5 text-muted-foreground transition-transform ${selectedMissao?.id === m.id ? "rotate-90" : ""}`} />
-                    </div>
+              ativas.map((m) => {
+                const prio = prioridadeConfig[m.prioridade] || prioridadeConfig.normal;
+                const isExpanded = selectedMissao?.id === m.id;
+                const isEmRota = m.status === "em_transporte";
 
-                    {selectedMissao?.id === m.id && (
-                      <div className="mt-3 pt-3 border-t space-y-2">
-                        <div className="text-xs space-y-1">
-                          <p><span className="font-medium">Regulador:</span> {m.solicitado_por_nome || "—"}</p>
-                          <p><span className="font-medium">Veículo:</span> {m.veiculo_tipo || "Não definido"}</p>
-                          <p><span className="font-medium">Motorista:</span> {m.motorista_nome || "Não atribuído"}</p>
-                        </div>
-                        {m.status === "pendente" && (
-                          <Button 
-                            size="sm" 
-                            className="w-full mt-2 gap-2" 
-                            disabled={actionLoading === m.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              tentarAceitarMissao(m);
-                            }}
-                          >
-                            {actionLoading === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                            Aceitar Missão
-                          </Button>
-                        )}
-                        {m.status === "em_transporte" && (
-                          <div className="space-y-2">
-                            <div className="flex gap-2">
-                              <Button size="sm" variant="outline" className="flex-1 gap-1 text-xs" onClick={(e) => {
-                                e.stopPropagation();
-                                handleNavegar(m.destino);
-                              }}>
-                                <Navigation className="h-3 w-3" />
-                                Navegar
-                              </Button>
-                              <Button 
-                                size="sm" 
-                                className="flex-1 gap-1 text-xs"
-                                disabled={actionLoading === m.id}
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  abrirFinalizar(m.id);
-                                }}
-                              >
-                                {actionLoading === m.id ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />}
-                                Finalizar
-                              </Button>
+                return (
+                  <Card
+                    key={m.id}
+                    className={`transition-all duration-200 active:scale-[0.98] overflow-hidden ${
+                      isEmRota ? "ring-2 ring-primary/20 shadow-md" : "hover:shadow-md"
+                    }`}
+                    onClick={() => setSelectedMissao(isExpanded ? null : m)}
+                  >
+                    <CardContent className="p-0">
+                      {/* Priority stripe */}
+                      <div className={`h-1 ${isEmRota ? "bg-primary" : prio.dot}`} />
+
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <Badge className={`text-[10px] font-semibold px-2 py-0.5 border ${prio.bg}`}>
+                                {prio.label}
+                              </Badge>
+                              {isEmRota ? (
+                                <Badge className="bg-primary text-primary-foreground text-[10px] px-2 py-0.5 gap-1">
+                                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                                  Em Rota
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-[10px] px-2 py-0.5">Pendente</Badge>
+                              )}
                             </div>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="w-full gap-1 text-xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                abrirIntercorrencia(m.id);
-                              }}
-                            >
-                              <FileWarning className="h-3 w-3" />
-                              Registrar Intercorrência
-                            </Button>
+                            <p className="font-semibold text-sm truncate">{m.paciente_nome}</p>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1.5">
+                              <MapPin className="h-3 w-3 shrink-0 text-primary/60" />
+                              <span className="truncate">{m.setor_origem} → {m.destino}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                              <Clock className="h-3 w-3 shrink-0" />
+                              <span>{formatDate(m.created_at)}</span>
+                            </div>
+                          </div>
+                          <ChevronRight className={`h-5 w-5 text-muted-foreground/50 transition-transform duration-200 mt-1 ${isExpanded ? "rotate-90" : ""}`} />
+                        </div>
+
+                        {isExpanded && (
+                          <div className="mt-3 pt-3 border-t border-dashed space-y-3 animate-in slide-in-from-top-2 duration-200">
+                            <div className="grid grid-cols-3 gap-2">
+                              {[
+                                { label: "Regulador", value: m.solicitado_por_nome || "—" },
+                                { label: "Veículo", value: m.veiculo_tipo || "Não definido" },
+                                { label: "Motorista", value: m.motorista_nome || "Não atribuído" },
+                              ].map(({ label, value }) => (
+                                <div key={label} className="bg-muted/50 rounded-lg p-2">
+                                  <p className="text-[10px] text-muted-foreground font-medium">{label}</p>
+                                  <p className="text-xs font-semibold truncate mt-0.5">{value}</p>
+                                </div>
+                              ))}
+                            </div>
+
+                            {m.status === "pendente" && (
+                              <Button
+                                size="sm"
+                                className="w-full gap-2 h-10 font-semibold"
+                                disabled={actionLoading === m.id}
+                                onClick={(e) => { e.stopPropagation(); tentarAceitarMissao(m); }}
+                              >
+                                {actionLoading === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                                Aceitar Missão
+                              </Button>
+                            )}
+
+                            {isEmRota && (
+                              <div className="space-y-2">
+                                <div className="grid grid-cols-2 gap-2">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="gap-1.5 h-10"
+                                    onClick={(e) => { e.stopPropagation(); handleNavegar(m.destino); }}
+                                  >
+                                    <Navigation className="h-4 w-4" />
+                                    Navegar
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    className="gap-1.5 h-10 font-semibold"
+                                    disabled={actionLoading === m.id}
+                                    onClick={(e) => { e.stopPropagation(); abrirFinalizar(m.id); }}
+                                  >
+                                    {actionLoading === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                                    Finalizar
+                                  </Button>
+                                </div>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  className="w-full gap-1.5 h-9 text-destructive border-destructive/30 hover:bg-destructive/5"
+                                  onClick={(e) => { e.stopPropagation(); abrirIntercorrencia(m.id); }}
+                                >
+                                  <FileWarning className="h-3.5 w-3.5" />
+                                  Registrar Intercorrência
+                                </Button>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </>
         )}
 
         {activeTab === "historico" && (
           <>
-            <h2 className="font-semibold text-foreground flex items-center gap-2">
-              <Clock className="h-5 w-5 text-primary" />
-              Histórico de Missões
-            </h2>
-
-            {missoes.filter(m => m.status === "concluida").length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center text-muted-foreground">
-                  <CheckCircle2 className="h-12 w-12 mx-auto mb-3 opacity-40" />
-                  <p>Nenhuma missão concluída</p>
-                </CardContent>
-              </Card>
+            {concluidas.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="p-4 bg-muted rounded-full mb-4">
+                  <CheckCircle2 className="h-10 w-10 text-muted-foreground/50" />
+                </div>
+                <p className="font-medium text-foreground">Nenhuma missão concluída</p>
+                <p className="text-sm text-muted-foreground mt-1">Suas missões finalizadas aparecerão aqui</p>
+              </div>
             ) : (
-              missoes.filter(m => m.status === "concluida").map((m) => (
-                <Card 
-                  key={m.id} 
-                  className="cursor-pointer hover:shadow-md transition-shadow active:scale-[0.98]"
-                  onClick={() => abrirRotaMapa(m)}
-                >
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge className={`text-xs ${prioridadeColors[m.prioridade] || "bg-muted"}`}>
-                            {m.prioridade?.toUpperCase()}
-                          </Badge>
-                          <Badge variant="secondary" className="text-xs">Concluída</Badge>
-                        </div>
-                        <p className="font-semibold text-sm truncate">{m.paciente_nome}</p>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                          <MapPin className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{m.setor_origem} → {m.destino}</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
-                          <Clock className="h-3 w-3 shrink-0" />
-                          <span>{formatDate(m.created_at)}</span>
+              concluidas.map((m) => {
+                const prio = prioridadeConfig[m.prioridade] || prioridadeConfig.normal;
+                return (
+                  <Card key={m.id} className="overflow-hidden">
+                    <CardContent className="p-0">
+                      <div className="h-1 bg-emerald-500" />
+                      <div className="p-4">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <Badge className={`text-[10px] font-semibold px-2 py-0.5 border ${prio.bg}`}>
+                                {prio.label}
+                              </Badge>
+                              <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] px-2 py-0.5 border">
+                                ✓ Concluída
+                              </Badge>
+                            </div>
+                            <p className="font-semibold text-sm truncate">{m.paciente_nome}</p>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-1.5">
+                              <MapPin className="h-3 w-3 shrink-0 text-primary/60" />
+                              <span className="truncate">{m.setor_origem} → {m.destino}</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                              <Clock className="h-3 w-3 shrink-0" />
+                              <span>{formatDate(m.created_at)}</span>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                      <Map className="h-5 w-5 text-primary shrink-0" />
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                    </CardContent>
+                  </Card>
+                );
+              })
             )}
           </>
         )}
       </div>
 
-      {/* Bottom nav */}
-      <nav className="bg-card border-t sticky bottom-0 grid grid-cols-2 text-center py-2">
-        <button 
-          className={`flex flex-col items-center gap-0.5 ${activeTab === "missoes" ? "text-primary" : "text-muted-foreground"}`}
+      {/* Bottom navigation */}
+      <nav className="bg-card border-t fixed bottom-0 left-0 right-0 max-w-lg mx-auto grid grid-cols-2 text-center py-2.5 z-10 shadow-[0_-2px_10px_rgba(0,0,0,0.05)]">
+        <button
+          className={`flex flex-col items-center gap-1 transition-colors ${activeTab === "missoes" ? "text-primary" : "text-muted-foreground"}`}
           onClick={() => setActiveTab("missoes")}
         >
-          <Truck className="h-5 w-5" />
-          <span className="text-[10px] font-medium">Missões</span>
+          <div className={`p-1.5 rounded-lg transition-colors ${activeTab === "missoes" ? "bg-primary/10" : ""}`}>
+            <Truck className="h-5 w-5" />
+          </div>
+          <span className="text-[10px] font-semibold">Missões</span>
         </button>
-        <button 
-          className={`flex flex-col items-center gap-0.5 ${activeTab === "historico" ? "text-primary" : "text-muted-foreground"}`}
+        <button
+          className={`flex flex-col items-center gap-1 transition-colors ${activeTab === "historico" ? "text-primary" : "text-muted-foreground"}`}
           onClick={() => setActiveTab("historico")}
         >
-          <Clock className="h-5 w-5" />
-          <span className="text-[10px]">Histórico</span>
+          <div className={`p-1.5 rounded-lg transition-colors ${activeTab === "historico" ? "bg-primary/10" : ""}`}>
+            <Clock className="h-5 w-5" />
+          </div>
+          <span className="text-[10px] font-semibold">Histórico</span>
         </button>
       </nav>
 
-      {/* Confirm dialog when driver name doesn't match */}
+      {/* Confirm dialog: driver mismatch */}
       <Dialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -582,7 +523,7 @@ const Transporte = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Pre-accept dialog: location + km */}
+      {/* Pre-accept dialog: km only */}
       <Dialog open={preAcceptOpen} onOpenChange={setPreAcceptOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
@@ -591,37 +532,10 @@ const Transporte = () => {
               Iniciar Missão
             </DialogTitle>
             <DialogDescription>
-              Confirme sua localização e informe a km atual do veículo para prosseguir.
+              Informe a km atual do veículo para prosseguir.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
-            {/* Location */}
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Localização</Label>
-              {locLoading ? (
-                <div className="flex items-center gap-2 p-3 rounded-md bg-muted border text-muted-foreground text-sm">
-                  <Loader2 className="h-4 w-4 animate-spin shrink-0" />
-                  Verificando localização...
-                </div>
-              ) : locAtiva ? (
-                <div className="flex items-center gap-2 p-3 rounded-md bg-green-50 border border-green-200 text-green-800 text-sm">
-                  <LocateFixed className="h-4 w-4 shrink-0" />
-                  Localização ativada
-                </div>
-              ) : (
-                <Button
-                  variant="outline"
-                  className="w-full gap-2"
-                  onClick={ativarLocalizacao}
-                >
-                  <LocateFixed className="h-4 w-4" />
-                  Ativar Localização
-                </Button>
-              )}
-              {locError && <p className="text-xs text-destructive">{locError}</p>}
-            </div>
-
-            {/* KM */}
             <div className="space-y-2">
               <Label htmlFor="km-inicial" className="text-sm font-medium">Km atual da ambulância</Label>
               <Input
@@ -631,7 +545,8 @@ const Transporte = () => {
                 placeholder="Ex: 45230"
                 value={kmInicial}
                 onChange={(e) => setKmInicial(e.target.value)}
-                className="text-lg"
+                className="text-lg h-12"
+                autoFocus
               />
             </div>
           </div>
@@ -639,11 +554,7 @@ const Transporte = () => {
             <Button variant="outline" className="flex-1" onClick={() => setPreAcceptOpen(false)}>
               Cancelar
             </Button>
-            <Button
-              className="flex-1 gap-2"
-              disabled={!locAtiva || !kmInicial.trim()}
-              onClick={confirmarPreAccept}
-            >
+            <Button className="flex-1 gap-2" disabled={!kmInicial.trim()} onClick={confirmarPreAccept}>
               <Play className="h-4 w-4" />
               Confirmar Saída
             </Button>
@@ -672,7 +583,8 @@ const Transporte = () => {
               placeholder="Ex: 45280"
               value={kmFinal}
               onChange={(e) => setKmFinal(e.target.value)}
-              className="text-lg"
+              className="text-lg h-12"
+              autoFocus
             />
           </div>
           <DialogFooter className="flex gap-2 sm:gap-2">
@@ -723,64 +635,6 @@ const Transporte = () => {
               Registrar
             </Button>
           </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Rota Map dialog */}
-      <Dialog open={rotaMapOpen} onOpenChange={setRotaMapOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Map className="h-5 w-5 text-primary" />
-              Rota Percorrida
-            </DialogTitle>
-            <DialogDescription>{rotaMissaoNome}</DialogDescription>
-          </DialogHeader>
-          <div className="w-full h-[400px] rounded-md overflow-hidden border">
-            {rotaLoading ? (
-              <div className="h-full flex items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              </div>
-            ) : rotaCoordenadas.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-muted-foreground gap-2">
-                <MapPin className="h-10 w-10 opacity-40" />
-                <p className="text-sm">Nenhum ponto de GPS registrado para esta missão</p>
-              </div>
-            ) : (
-              <MapContainer
-                center={[rotaCoordenadas[0].latitude, rotaCoordenadas[0].longitude]}
-                zoom={13}
-                style={{ height: "100%", width: "100%" }}
-              >
-                <TileLayer
-                  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-                  url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                />
-                <Polyline
-                  positions={rotaCoordenadas.map(c => [c.latitude, c.longitude] as [number, number])}
-                  color="hsl(221, 83%, 53%)"
-                  weight={4}
-                />
-                {/* Start marker */}
-                <Marker position={[rotaCoordenadas[0].latitude, rotaCoordenadas[0].longitude]}>
-                  <Popup>
-                    <strong>Início</strong><br />
-                    {new Date(rotaCoordenadas[0].registrado_em).toLocaleString("pt-BR")}
-                  </Popup>
-                </Marker>
-                {/* End marker */}
-                <Marker position={[rotaCoordenadas[rotaCoordenadas.length - 1].latitude, rotaCoordenadas[rotaCoordenadas.length - 1].longitude]}>
-                  <Popup>
-                    <strong>Fim</strong><br />
-                    {new Date(rotaCoordenadas[rotaCoordenadas.length - 1].registrado_em).toLocaleString("pt-BR")}
-                  </Popup>
-                </Marker>
-              </MapContainer>
-            )}
-          </div>
-          <p className="text-xs text-muted-foreground text-center">
-            {rotaCoordenadas.length > 0 && `${rotaCoordenadas.length} pontos registrados`}
-          </p>
         </DialogContent>
       </Dialog>
     </div>
