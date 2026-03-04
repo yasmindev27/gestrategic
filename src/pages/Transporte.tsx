@@ -8,8 +8,9 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, Truck, MapPin, Clock, CheckCircle2, LogOut, Navigation, ChevronRight, Play, AlertTriangle, FileWarning, RefreshCw, Ambulance } from "lucide-react";
+import { Loader2, Truck, MapPin, Clock, CheckCircle2, LogOut, Navigation, ChevronRight, Play, AlertTriangle, FileWarning, RefreshCw, Ambulance, Bell, BellOff } from "lucide-react";
 import logoGestrategic from "@/assets/logo-gestrategic.jpg";
+import { usePushNotifications } from "@/hooks/usePushNotifications";
 
 type Solicitacao = {
   id: string;
@@ -55,6 +56,7 @@ const Transporte = () => {
   const [intercorrenciaTexto, setIntercorrenciaTexto] = useState("");
   const [intercorrenciaLoading, setIntercorrenciaLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"missoes" | "historico">("missoes");
+  const { isSupported: pushSupported, isSubscribed: pushSubscribed, isLoading: pushLoading, subscribe: pushSubscribe, unsubscribe: pushUnsubscribe } = usePushNotifications();
 
   useEffect(() => {
     const checkAuth = async () => {
@@ -248,6 +250,18 @@ const Transporte = () => {
             </div>
           </div>
           <div className="flex items-center gap-1">
+            {pushSupported && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={pushSubscribed ? pushUnsubscribe : pushSubscribe}
+                disabled={pushLoading}
+                className="text-primary-foreground hover:bg-white/10"
+                title={pushSubscribed ? "Desativar notificações" : "Ativar notificações"}
+              >
+                {pushSubscribed ? <Bell className="h-4.5 w-4.5" /> : <BellOff className="h-4.5 w-4.5" />}
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"

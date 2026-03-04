@@ -35,3 +35,9 @@ verify_jwt = false
 
 [functions.gerar-ata-reuniao]
 verify_jwt = false
+
+[functions.enviar-push]
+verify_jwt = false
+
+[functions.gerar-vapid-keys]
+verify_jwt = false

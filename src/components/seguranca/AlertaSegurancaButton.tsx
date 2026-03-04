@@ -15,6 +15,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { sendPushToUsers } from "@/hooks/usePushNotifications";
 
 interface AlertaSegurancaButtonProps {
   collapsed?: boolean;
@@ -48,6 +49,22 @@ export function AlertaSegurancaButton({ collapsed = false }: AlertaSegurancaButt
       });
 
       if (error) throw error;
+
+      // Send push to security team
+      const { data: securityUsers } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .in("role", ["admin", "seguranca"]);
+
+      if (securityUsers && securityUsers.length > 0) {
+        const userIds = securityUsers.map(u => u.user_id);
+        sendPushToUsers(
+          userIds,
+          tipo === "urgente" ? "🚨 ALERTA URGENTE!" : "⚠️ Pedido de Apoio",
+          `${profile?.full_name || "Colaborador"} - ${profile?.setor || "Setor não informado"}${observacao ? `: ${observacao}` : ""}`,
+          { tipo: "seguranca", tag: "seguranca-alert" }
+        );
+      }
 
       toast({
         title: "Alerta enviado!",

@@ -18,6 +18,7 @@ import { ptBR } from "date-fns/locale";
 import { Truck, Search, Clock, CheckCircle, AlertTriangle, Loader2, ArrowRight, Download, FileText, FileSpreadsheet, BarChart3, ArrowRightLeft } from "lucide-react";
 import { createStandardPdf, applyPdfHeaderFooter } from "@/lib/export-utils";
 import autoTable from "jspdf-autotable";
+import { sendPushToUsers } from "@/hooks/usePushNotifications";
 import * as XLSX from "xlsx";
 import { RelatorioTransferencias } from "./RelatorioTransferencias";
 
@@ -183,6 +184,25 @@ export const TransferenciasModule = () => {
       });
 
       if (error) throw error;
+
+      // Send push to the assigned driver (if not SAMU)
+      if (!veiculoIsSamu && formMotorista) {
+        // Find the driver's user_id by name
+        const { data: driverProfiles } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .ilike("full_name", `%${formMotorista}%`);
+
+        if (driverProfiles && driverProfiles.length > 0) {
+          const driverIds = driverProfiles.map(d => d.user_id);
+          sendPushToUsers(
+            driverIds,
+            "🚑 Novo Transporte Atribuído",
+            `Paciente: ${formPacienteNome} → ${formDestino} (${formPrioridade.toUpperCase()})`,
+            { tipo: "transporte", tag: "transporte-novo" }
+          );
+        }
+      }
 
       toast({ title: "Transferência solicitada com sucesso!" });
       setDialogOpen(false);
