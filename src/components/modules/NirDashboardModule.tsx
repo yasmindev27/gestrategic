@@ -141,8 +141,9 @@ export const NirDashboardModule = () => {
 
   // ── Data loaders ─────────────────────────────────────────
   const loadBedData = useCallback(async () => {
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const currentHour = new Date().getHours();
+    const { getBrasiliaDateString, getBrasiliaHours } = await import('@/lib/brasilia-time');
+    const today = getBrasiliaDateString();
+    const currentHour = getBrasiliaHours();
     const currentShift = currentHour >= 7 && currentHour < 19 ? 'diurno' : 'noturno';
 
     // 1) Current occupancy — filter by CURRENT shift to match Mapa de Leitos
@@ -279,7 +280,9 @@ export const NirDashboardModule = () => {
   }, [startDate, endDate]);
 
   const loadSusFacilData = useCallback(async () => {
-    const today = format(new Date(), 'yyyy-MM-dd');
+    const { getBrasiliaDateString } = await import('@/lib/brasilia-time');
+    const today = getBrasiliaDateString();
+
     const { data, error } = await supabase
       .from('regulacao_sus_facil')
       .select('tipo, status, prioridade, data_resposta');
