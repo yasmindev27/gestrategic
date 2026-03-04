@@ -37,6 +37,7 @@ const SalusModule = lazy(() => import("@/components/modules/SalusModule"));
 const MedicosModule = lazy(() => import("@/components/modules/MedicosModule"));
 const EquipeModule = lazy(() => import("@/components/modules/EquipeModule"));
 const ColaboradorModule = lazy(() => import("@/components/modules/ColaboradorModule"));
+const MapaLeitosModule = lazy(() => import("@/components/modules/MapaLeitosModule").then(m => ({ default: m.MapaLeitosModule })));
 
 // Module loading fallback
 const ModuleLoader = () => (
@@ -163,6 +164,8 @@ const Dashboard = () => {
           return <ReportarIncidenteDialog onSectionChange={handleSectionChange} />;
         case "enfermagem":
           return <EnfermagemModule />;
+        case "mapa-leitos":
+          return <MapaLeitosModule />;
         case "chat":
           return <ChatModule />;
         case "medicos":
