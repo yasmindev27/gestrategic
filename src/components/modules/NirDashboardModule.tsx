@@ -987,7 +987,7 @@ export const NirDashboardModule = () => {
                         <td className="py-3 px-4 font-medium">{sector.name}</td>
                         <td className="text-center py-3 px-4 text-green-600 font-semibold">{sector.occupied}</td>
                         <td className="text-center py-3 px-4">{sector.total}</td>
-                        <td className="text-center py-3 px-4">{sector.total - sector.occupied}</td>
+                        <td className="text-center py-3 px-4">{Math.max(0, sector.total - sector.occupied)}</td>
                         <td className="text-center py-3 px-4">
                           <span className={`font-semibold ${getOccupancyColor(sector.rate)}`}>
                             {sector.rate}%
