@@ -28,6 +28,7 @@ const emptyPatient: Patient = {
   dataInternacao: '',
   susFacil: '',
   numeroSusFacil: '',
+  cti: '',
   motivoAlta: '',
   estabelecimentoTransferencia: '',
 };
@@ -188,6 +189,26 @@ export function BedModal({ bed, isOpen, onClose, onSave, sectorBeds = [], onTran
               />
             </div>
           )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>CTI</Label>
+              <RadioGroup
+                value={patient.cti}
+                onValueChange={(value) => handleChange('cti', value)}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="sim" id="ctiSim" />
+                  <Label htmlFor="ctiSim">Sim</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="nao" id="ctiNao" />
+                  <Label htmlFor="ctiNao">Não</Label>
+                </div>
+              </RadioGroup>
+            </div>
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="hipoteseDiagnostica">Hipótese Diagnóstica</Label>

@@ -1390,6 +1390,7 @@ export type Database = {
           bed_number: string
           condutas_outros: string | null
           created_at: string | null
+          cti: string | null
           data_alta: string | null
           data_internacao: string | null
           data_nascimento: string | null
@@ -1414,6 +1415,7 @@ export type Database = {
           bed_number: string
           condutas_outros?: string | null
           created_at?: string | null
+          cti?: string | null
           data_alta?: string | null
           data_internacao?: string | null
           data_nascimento?: string | null
@@ -1438,6 +1440,7 @@ export type Database = {
           bed_number?: string
           condutas_outros?: string | null
           created_at?: string | null
+          cti?: string | null
           data_alta?: string | null
           data_internacao?: string | null
           data_nascimento?: string | null

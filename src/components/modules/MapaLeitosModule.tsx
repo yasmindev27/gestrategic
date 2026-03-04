@@ -191,7 +191,7 @@ export const MapaLeitosModule = () => {
           observacao: bed.patient?.observacao || '-',
           dataInternacao: bed.patient?.dataInternacao || '-',
           permanencia,
-          susFacil: bed.patient?.susFacil || '-',
+          cti: bed.patient?.cti === 'sim' ? 'Sim' : bed.patient?.cti === 'nao' ? 'Nao' : '-',
         };
       });
   }, [beds]);
@@ -213,8 +213,8 @@ export const MapaLeitosModule = () => {
       [],
     ];
     
-    const tableHeaders = ['Setor', 'Leito', 'Paciente', 'Hipotese Diagnostica', 'Conduta', 'Observacoes', 'Internacao', 'Permanencia', 'SUS Facil'];
-    const tableRows = data.map(row => [row.setor, row.leito, row.paciente, row.hipotese, row.conduta, row.observacao, row.dataInternacao, row.permanencia, row.susFacil]);
+    const tableHeaders = ['Setor', 'Leito', 'Paciente', 'Hipotese Diagnostica', 'Conduta', 'Observacoes', 'Internacao', 'Permanencia', 'CTI'];
+    const tableRows = data.map(row => [row.setor, row.leito, row.paciente, row.hipotese, row.conduta, row.observacao, row.dataInternacao, row.permanencia, row.cti]);
     
     const wsData = [...headerRows, tableHeaders, ...tableRows];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -229,7 +229,7 @@ export const MapaLeitosModule = () => {
       { wch: 28 },  // Observacoes
       { wch: 14 },  // Internacao
       { wch: 12 },  // Permanencia
-      { wch: 10 },  // SUS Facil
+      { wch: 10 },  // CTI
     ];
     
     // Merge title row
@@ -257,8 +257,8 @@ export const MapaLeitosModule = () => {
 
     autoTable(doc, {
       startY: 52,
-      head: [['Setor', 'Leito', 'Paciente', 'Hipotese', 'Conduta', 'Obs.', 'Internacao', 'Perm.', 'SUS']],
-      body: data.map(r => [r.setor, r.leito, r.paciente, r.hipotese, r.conduta, r.observacao, r.dataInternacao, r.permanencia, r.susFacil]),
+      head: [['Setor', 'Leito', 'Paciente', 'Hipotese', 'Conduta', 'Obs.', 'Internacao', 'Perm.', 'CTI']],
+      body: data.map(r => [r.setor, r.leito, r.paciente, r.hipotese, r.conduta, r.observacao, r.dataInternacao, r.permanencia, r.cti]),
       styles: { fontSize: 7 },
       headStyles: { fillColor: [37, 99, 235] },
       margin: { top: 32, bottom: 28 },
@@ -343,6 +343,7 @@ export const MapaLeitosModule = () => {
           condutas_outros: bed.patient.condutasOutros || null,
           sus_facil: bed.patient.susFacil || null,
           numero_sus_facil: bed.patient.numeroSusFacil || null,
+          cti: bed.patient.cti || null,
           medicos: '',
           enfermeiros: '',
           regulador_nir: '',
