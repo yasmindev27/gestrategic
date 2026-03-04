@@ -154,9 +154,12 @@ export const TransferenciasModule = () => {
     setDialogOpen(true);
   };
 
+  const selectedVeiculoObj = veiculos.find(v => v.id === formVeiculoId);
+  const isSamu = selectedVeiculoObj?.tipo?.toLowerCase().includes('samu') ?? false;
+
   const handleSubmit = async () => {
-    if (!formPacienteNome || !formDestino || !formVeiculoId || !formMotorista) {
-      toast({ title: "Preencha os campos obrigatórios (paciente, destino, veículo e motorista)", variant: "destructive" });
+    if (!formPacienteNome || !formDestino || !formVeiculoId || (!isSamu && !formMotorista)) {
+      toast({ title: "Preencha os campos obrigatórios (paciente, destino, veículo" + (isSamu ? "" : " e motorista") + ")", variant: "destructive" });
       return;
     }
 
@@ -164,6 +167,7 @@ export const TransferenciasModule = () => {
     try {
       const user = (await supabase.auth.getUser()).data.user;
       const selectedVeiculo = veiculos.find(v => v.id === formVeiculoId);
+      const veiculoIsSamu = selectedVeiculo?.tipo?.toLowerCase().includes('samu') ?? false;
       const { error } = await supabase.from("transferencia_solicitacoes").insert({
         paciente_nome: formPacienteNome,
         setor_origem: "UPA Antônio José dos Santos",
@@ -173,7 +177,10 @@ export const TransferenciasModule = () => {
         veiculo_id: formVeiculoId || null,
         veiculo_placa: selectedVeiculo?.placa || null,
         veiculo_tipo: selectedVeiculo?.tipo || null,
-        motorista_nome: formMotorista || null,
+        motorista_nome: veiculoIsSamu ? "SAMU" : (formMotorista || null),
+        status: veiculoIsSamu ? "concluida" : "pendente",
+        hora_saida: veiculoIsSamu ? new Date().toISOString() : null,
+        hora_chegada: veiculoIsSamu ? new Date().toISOString() : null,
         solicitado_por: user?.id,
         solicitado_por_nome: reguladorNome || user?.email || "—",
       });
@@ -703,6 +710,7 @@ export const TransferenciasModule = () => {
                 </SelectContent>
               </Select>
             </div>
+            {!isSamu && (
             <div>
               <Label>Motorista *</Label>
               <Select value={formMotorista} onValueChange={setFormMotorista}>
@@ -718,6 +726,13 @@ export const TransferenciasModule = () => {
                 </SelectContent>
               </Select>
             </div>
+            )}
+            {isSamu && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <p className="text-sm text-primary font-medium">🚑 Ambulância SAMU selecionada</p>
+                <p className="text-xs text-muted-foreground mt-1">Não é necessário atribuir motorista. A transferência será registrada como concluída automaticamente.</p>
+              </div>
+            )}
             <div>
               <Label>Motivo</Label>
               <Textarea
