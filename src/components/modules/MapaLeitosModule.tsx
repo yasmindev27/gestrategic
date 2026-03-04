@@ -450,6 +450,9 @@ export const MapaLeitosModule = () => {
     );
   }
 
+  // Enfermagem: view-only (grid + transfer), no shift config / exports / passagem
+  const isFullAccess = isAdmin || isNir;
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -459,108 +462,112 @@ export const MapaLeitosModule = () => {
             Mapa de Leitos
           </h2>
           <p className="text-muted-foreground">
-            Sistema de Gestão de Ocupação Hospitalar - NIR
+            {isFullAccess
+              ? 'Sistema de Gestão de Ocupação Hospitalar - NIR'
+              : 'Visualização e Movimentação de Leitos'}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <ExportDropdown onExportPDF={handleExportPDF} onExportExcel={handleExportExcel} />
+          {isFullAccess && (
+            <ExportDropdown onExportPDF={handleExportPDF} onExportExcel={handleExportExcel} />
+          )}
           <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary">
             {shiftInfo.tipo === 'noturno' ? '🌙 Plantão Noturno' : '☀️ Plantão Diurno'}
           </span>
         </div>
       </div>
 
-      <ShiftConfig
-        shiftInfo={shiftInfo}
-        onShiftInfoChange={updateShiftInfo}
-        onSave={saveShiftConfig}
-        onConcluirPlantao={handleConcluirPlantao}
-        pendenciasPassadas={
-          pendenciasPlantao
-            ? pendenciasPlantao.split('\n').filter(l => l.trim()).map((text, i) => ({
-                text,
-                resolved: resolvedPassadas.has(i),
-              }))
-            : []
-        }
-        pendenciasEncontradasList={
-          pendenciasEncontradas
-            ? pendenciasEncontradas.split('\n').filter(l => l.trim()).map((text, i) => ({
-                text,
-                resolved: resolvedEncontradas.has(i),
-              }))
-            : []
-        }
-        onResolvePendencia={async (tipo, index) => {
-          const newSet = tipo === 'passadas'
-            ? new Set(resolvedPassadas)
-            : new Set(resolvedEncontradas);
-
-          if (newSet.has(index)) {
-            newSet.delete(index);
-          } else {
-            newSet.add(index);
+      {isFullAccess && (
+        <ShiftConfig
+          shiftInfo={shiftInfo}
+          onShiftInfoChange={updateShiftInfo}
+          onSave={saveShiftConfig}
+          onConcluirPlantao={handleConcluirPlantao}
+          pendenciasPassadas={
+            pendenciasPlantao
+              ? pendenciasPlantao.split('\n').filter(l => l.trim()).map((text, i) => ({
+                  text,
+                  resolved: resolvedPassadas.has(i),
+                }))
+              : []
           }
-
-          if (tipo === 'passadas') {
-            setResolvedPassadas(newSet);
-          } else {
-            setResolvedEncontradas(newSet);
+          pendenciasEncontradasList={
+            pendenciasEncontradas
+              ? pendenciasEncontradas.split('\n').filter(l => l.trim()).map((text, i) => ({
+                  text,
+                  resolved: resolvedEncontradas.has(i),
+                }))
+              : []
           }
+          onResolvePendencia={async (tipo, index) => {
+            const newSet = tipo === 'passadas'
+              ? new Set(resolvedPassadas)
+              : new Set(resolvedEncontradas);
 
-          // Save to DB
-          const resolvedData = JSON.stringify({
-            passadas: Array.from(tipo === 'passadas' ? newSet : resolvedPassadas),
-            encontradas: Array.from(tipo === 'encontradas' ? newSet : resolvedEncontradas),
-          });
+            if (newSet.has(index)) {
+              newSet.delete(index);
+            } else {
+              newSet.add(index);
+            }
 
-          if (passagemId) {
-            await supabase.from('passagem_plantao').update({
-              pendencias_resolvidas: resolvedData,
-            }).eq('id', passagemId);
-          } else {
-            // Create passagem record for current shift
+            if (tipo === 'passadas') {
+              setResolvedPassadas(newSet);
+            } else {
+              setResolvedEncontradas(newSet);
+            }
+
+            const resolvedData = JSON.stringify({
+              passadas: Array.from(tipo === 'passadas' ? newSet : resolvedPassadas),
+              encontradas: Array.from(tipo === 'encontradas' ? newSet : resolvedEncontradas),
+            });
+
+            if (passagemId) {
+              await supabase.from('passagem_plantao').update({
+                pendencias_resolvidas: resolvedData,
+              }).eq('id', passagemId);
+            } else {
+              const { data: { user } } = await supabase.auth.getUser();
+              const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
+              const { data: newRec } = await supabase.from('passagem_plantao').insert({
+                shift_date: shiftInfo.data,
+                shift_type: shiftInfo.tipo,
+                colaborador_saida_nome: userName,
+                colaborador_saida_id: user?.id || null,
+                data_hora_conclusao: new Date().toISOString(),
+                tempo_troca_minutos: 0,
+                pendencias_resolvidas: resolvedData,
+              }).select('id').single();
+              if (newRec) setPassagemId(newRec.id);
+            }
+          }}
+          onReportPendenciasEncontradas={async (text) => {
             const { data: { user } } = await supabase.auth.getUser();
-            const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
-            const { data: newRec } = await supabase.from('passagem_plantao').insert({
-              shift_date: shiftInfo.data,
-              shift_type: shiftInfo.tipo,
-              colaborador_saida_nome: userName,
-              colaborador_saida_id: user?.id || null,
-              data_hora_conclusao: new Date().toISOString(),
-              tempo_troca_minutos: 0,
-              pendencias_resolvidas: resolvedData,
-            }).select('id').single();
-            if (newRec) setPassagemId(newRec.id);
-          }
-        }}
-        onReportPendenciasEncontradas={async (text) => {
-          const { data: { user } } = await supabase.auth.getUser();
-          
-          if (passagemId) {
-            await supabase.from('passagem_plantao').update({
-              pendencias_encontradas: text,
-            }).eq('id', passagemId);
-          } else {
-            const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
-            const { data: newRec } = await supabase.from('passagem_plantao').insert({
-              shift_date: shiftInfo.data,
-              shift_type: shiftInfo.tipo,
-              colaborador_saida_nome: userName,
-              colaborador_saida_id: user?.id || null,
-              data_hora_conclusao: new Date().toISOString(),
-              colaborador_entrada_nome: userName,
-              colaborador_entrada_id: user?.id || null,
-              data_hora_assuncao: new Date().toISOString(),
-              tempo_troca_minutos: 0,
-              pendencias_encontradas: text,
-            }).select('id').single();
-            if (newRec) setPassagemId(newRec.id);
-          }
-          
-          setPendenciasEncontradas(text);
-        }}
-      />
+            
+            if (passagemId) {
+              await supabase.from('passagem_plantao').update({
+                pendencias_encontradas: text,
+              }).eq('id', passagemId);
+            } else {
+              const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
+              const { data: newRec } = await supabase.from('passagem_plantao').insert({
+                shift_date: shiftInfo.data,
+                shift_type: shiftInfo.tipo,
+                colaborador_saida_nome: userName,
+                colaborador_saida_id: user?.id || null,
+                data_hora_conclusao: new Date().toISOString(),
+                colaborador_entrada_nome: userName,
+                colaborador_entrada_id: user?.id || null,
+                data_hora_assuncao: new Date().toISOString(),
+                tempo_troca_minutos: 0,
+                pendencias_encontradas: text,
+              }).select('id').single();
+              if (newRec) setPassagemId(newRec.id);
+            }
+            
+            setPendenciasEncontradas(text);
+          }}
+        />
+      )}
 
       <OccupancySummary
         occupied={totalOccupancy.occupied}
@@ -589,7 +596,7 @@ export const MapaLeitosModule = () => {
         bed={selectedBed}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveBed}
+        onSave={isFullAccess ? handleSaveBed : undefined}
         sectorBeds={beds.filter(b => b.sector === activeSector)}
         allBeds={beds}
         onTransfer={handleTransfer}
