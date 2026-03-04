@@ -125,11 +125,11 @@ const Transporte = () => {
       if (km !== undefined) updateData.km_rodados = km;
       const { error } = await supabase.from("transferencia_solicitacoes").update(updateData).eq("id", missaoId);
       if (error) throw error;
-      toast({ title: "Missão aceita! Boa viagem. 🚑" });
+      toast({ title: "Transporte aceito! Boa viagem. 🚑" });
       setSelectedMissao(null);
       loadMissoes(userName);
     } catch (err: any) {
-      toast({ title: "Erro ao aceitar missão", description: err.message, variant: "destructive" });
+      toast({ title: "Erro ao aceitar transporte", description: err.message, variant: "destructive" });
     } finally {
       setActionLoading(null);
       setPendingMissaoId(null);
@@ -161,7 +161,7 @@ const Transporte = () => {
         km_rodados: kmTotal,
       }).eq("id", finalizarMissaoId);
       if (error) throw error;
-      toast({ title: `Missão finalizada! ${kmTotal} km percorridos. ✅` });
+      toast({ title: `Transporte finalizado! ${kmTotal} km percorridos. ✅` });
       setSelectedMissao(null);
       loadMissoes(userName);
     } catch (err: any) {
@@ -225,7 +225,7 @@ const Transporte = () => {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-3">
         <Ambulance className="h-12 w-12 text-primary animate-pulse" />
-        <p className="text-sm text-muted-foreground">Carregando missões...</p>
+        <p className="text-sm text-muted-foreground">Carregando transportes...</p>
       </div>
     );
   }
@@ -285,7 +285,7 @@ const Transporte = () => {
             <Truck className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-primary">Missão em andamento</p>
+            <p className="text-xs font-semibold text-primary">Transporte em andamento</p>
             <p className="text-xs text-muted-foreground truncate">{emRota[0].paciente_nome} → {emRota[0].destino}</p>
           </div>
           <Badge className="bg-primary text-primary-foreground shrink-0 text-[10px]">EM ROTA</Badge>
@@ -301,7 +301,7 @@ const Transporte = () => {
                 <div className="p-4 bg-muted rounded-full mb-4">
                   <Ambulance className="h-10 w-10 text-muted-foreground/50" />
                 </div>
-                <p className="font-medium text-foreground">Nenhuma missão no momento</p>
+                <p className="font-medium text-foreground">Nenhum transporte no momento</p>
                 <p className="text-sm text-muted-foreground mt-1">Puxe para baixo para atualizar</p>
               </div>
             ) : (
@@ -374,7 +374,7 @@ const Transporte = () => {
                                 onClick={(e) => { e.stopPropagation(); tentarAceitarMissao(m); }}
                               >
                                 {actionLoading === m.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                                Aceitar Missão
+                                Aceitar Transporte
                               </Button>
                             )}
 
@@ -429,8 +429,8 @@ const Transporte = () => {
                 <div className="p-4 bg-muted rounded-full mb-4">
                   <CheckCircle2 className="h-10 w-10 text-muted-foreground/50" />
                 </div>
-                <p className="font-medium text-foreground">Nenhuma missão concluída</p>
-                <p className="text-sm text-muted-foreground mt-1">Suas missões finalizadas aparecerão aqui</p>
+                <p className="font-medium text-foreground">Nenhum transporte concluído</p>
+                <p className="text-sm text-muted-foreground mt-1">Seus transportes finalizados aparecerão aqui</p>
               </div>
             ) : (
               concluidas.map((m) => {
@@ -480,7 +480,7 @@ const Transporte = () => {
           <div className={`p-1.5 rounded-lg transition-colors ${activeTab === "missoes" ? "bg-primary/10" : ""}`}>
             <Truck className="h-5 w-5" />
           </div>
-          <span className="text-[10px] font-semibold">Missões</span>
+          <span className="text-[10px] font-semibold">Transportes</span>
         </button>
         <button
           className={`flex flex-col items-center gap-1 transition-colors ${activeTab === "historico" ? "text-primary" : "text-muted-foreground"}`}
@@ -502,7 +502,7 @@ const Transporte = () => {
               Atenção
             </DialogTitle>
             <DialogDescription className="pt-2">
-              Esta missão está atribuída para <span className="font-semibold text-foreground">{pendingMissaoMotorista}</span>, mas você está logado como <span className="font-semibold text-foreground">{userName}</span>. Deseja aceitar mesmo assim?
+              Este transporte está atribuído para <span className="font-semibold text-foreground">{pendingMissaoMotorista}</span>, mas você está logado como <span className="font-semibold text-foreground">{userName}</span>. Deseja aceitar mesmo assim?
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 sm:gap-2">
@@ -529,7 +529,7 @@ const Transporte = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Truck className="h-5 w-5 text-primary" />
-              Iniciar Missão
+              Iniciar Transporte
             </DialogTitle>
             <DialogDescription>
               Informe a km atual do veículo para prosseguir.
@@ -568,7 +568,7 @@ const Transporte = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-primary" />
-              Finalizar Missão
+              Finalizar Transporte
             </DialogTitle>
             <DialogDescription>
               Informe a km atual da ambulância para calcular a distância percorrida.
