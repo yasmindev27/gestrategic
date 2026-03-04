@@ -129,19 +129,19 @@ export const NirDashboardModule = () => {
     
     const { data: bedRecords, error: bedError } = await supabase
       .from('bed_records')
-      .select('bed_id, sector, patient_name, data_alta, data_internacao, created_at')
+      .select('bed_id, sector, patient_name, motivo_alta, data_alta, data_internacao, created_at')
       .eq('shift_date', today);
 
     if (bedError) throw bedError;
 
-    // Total = capacidade instalada (leitos regulares apenas)
+    // Total = capacidade instalada (leitos regulares apenas) — mesmo critério do useBeds
     let totalBeds = 0;
     SECTORS.forEach(sector => {
       totalBeds += sector.beds.length;
     });
 
-    // Ocupados = pacientes em leitos regulares + extras (sem alta)
-    const occupiedBeds = bedRecords?.filter(r => r.patient_name && !r.data_alta).length || 0;
+    // Ocupados = pacientes COM nome e SEM motivo de alta (igual ao useBeds)
+    const occupiedBeds = bedRecords?.filter(r => r.patient_name && !r.motivo_alta).length || 0;
     const availableBeds = Math.max(0, totalBeds - occupiedBeds);
     const occupancyRate = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
 
@@ -152,13 +152,12 @@ export const NirDashboardModule = () => {
       occupancyRate
     });
 
-    // Ocupação por setor: regular beds como denominador, mas inclui extras nos ocupados
+    // Ocupação por setor: mesma lógica
     const sectorStats: SectorOccupancy[] = SECTORS.map(sector => {
       const regularBedsCount = sector.beds.length;
-      const activeRecords = bedRecords?.filter(
-        r => r.sector === sector.id && r.patient_name && !r.data_alta
-      ) || [];
-      const sectorOccupied = activeRecords.length;
+      const sectorOccupied = bedRecords?.filter(
+        r => r.sector === sector.id && r.patient_name && !r.motivo_alta
+      ).length || 0;
       
       return {
         name: sector.name,
