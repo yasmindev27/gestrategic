@@ -22,7 +22,7 @@ import { ExportDropdown } from '@/components/ui/export-dropdown';
 import { Bed, Patient, Sector, SECTORS } from '@/types/bed';
 
 export const MapaLeitosModule = () => {
-  const { isAdmin, isNir, isLoading: isLoadingRole } = useUserRole();
+  const { isAdmin, isNir, isEnfermagem, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
   useRealtimeSync(REALTIME_PRESETS.mapaLeitos);
   
@@ -43,7 +43,7 @@ export const MapaLeitosModule = () => {
   const syncedBedsRef = useRef<Set<string>>(new Set());
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const hasAccess = isAdmin || isNir;
+  const hasAccess = isAdmin || isNir || isEnfermagem;
   const isLoading = isShiftLoading || isBedsLoading;
 
   // Load pendências from previous shift's passagem
