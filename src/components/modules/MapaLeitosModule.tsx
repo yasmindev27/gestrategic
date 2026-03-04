@@ -182,10 +182,21 @@ export const MapaLeitosModule = () => {
             permanencia = dias > 0 ? `${dias}d ${horas}h` : `${horas}h`;
           } catch { /* ignore */ }
         }
+        let idadeStr = '-';
+        const dn = bed.patient?.dataNascimento;
+        if (dn) {
+          try {
+            const nascimento = parseISO(dn);
+            const anos = differenceInDays(new Date(), nascimento);
+            idadeStr = `${Math.floor(anos / 365)} anos`;
+          } catch { /* ignore */ }
+        }
         return {
           setor: sectorName,
           leito: `Leito ${bedLabel}`,
           paciente: (bed.patient?.nome || '-').trim(),
+          dataNascimento: dn || '-',
+          idade: idadeStr,
           hipotese: bed.patient?.hipoteseDiagnostica || '-',
           conduta: bed.patient?.condutasOutros || '-',
           observacao: bed.patient?.observacao || '-',
@@ -213,8 +224,8 @@ export const MapaLeitosModule = () => {
       [],
     ];
     
-    const tableHeaders = ['Setor', 'Leito', 'Paciente', 'Hipotese Diagnostica', 'Conduta', 'Observacoes', 'Internacao', 'Permanencia', 'CTI'];
-    const tableRows = data.map(row => [row.setor, row.leito, row.paciente, row.hipotese, row.conduta, row.observacao, row.dataInternacao, row.permanencia, row.cti]);
+    const tableHeaders = ['Setor', 'Leito', 'Paciente', 'Dt. Nasc.', 'Idade', 'Hipotese Diagnostica', 'Conduta', 'Observacoes', 'Internacao', 'Permanencia', 'CTI'];
+    const tableRows = data.map(row => [row.setor, row.leito, row.paciente, row.dataNascimento, row.idade, row.hipotese, row.conduta, row.observacao, row.dataInternacao, row.permanencia, row.cti]);
     
     const wsData = [...headerRows, tableHeaders, ...tableRows];
     const ws = XLSX.utils.aoa_to_sheet(wsData);
@@ -224,6 +235,8 @@ export const MapaLeitosModule = () => {
       { wch: 22 },  // Setor
       { wch: 14 },  // Leito
       { wch: 32 },  // Paciente
+      { wch: 12 },  // Dt. Nasc.
+      { wch: 10 },  // Idade
       { wch: 30 },  // Hipotese
       { wch: 28 },  // Conduta
       { wch: 28 },  // Observacoes
@@ -233,7 +246,7 @@ export const MapaLeitosModule = () => {
     ];
     
     // Merge title row
-    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 8 } }];
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }];
     
     XLSX.utils.book_append_sheet(wb, ws, 'Mapa de Leitos');
     const turno = shiftInfo.tipo === 'noturno' ? 'NOTURNO' : 'DIURNO';
@@ -257,8 +270,8 @@ export const MapaLeitosModule = () => {
 
     autoTable(doc, {
       startY: 52,
-      head: [['Setor', 'Leito', 'Paciente', 'Hipotese', 'Conduta', 'Obs.', 'Internacao', 'Perm.', 'CTI']],
-      body: data.map(r => [r.setor, r.leito, r.paciente, r.hipotese, r.conduta, r.observacao, r.dataInternacao, r.permanencia, r.cti]),
+      head: [['Setor', 'Leito', 'Paciente', 'Dt.Nasc.', 'Idade', 'Hipotese', 'Conduta', 'Obs.', 'Internacao', 'Perm.', 'CTI']],
+      body: data.map(r => [r.setor, r.leito, r.paciente, r.dataNascimento, r.idade, r.hipotese, r.conduta, r.observacao, r.dataInternacao, r.permanencia, r.cti]),
       styles: { fontSize: 7 },
       headStyles: { fillColor: [37, 99, 235] },
       margin: { top: 32, bottom: 28 },
