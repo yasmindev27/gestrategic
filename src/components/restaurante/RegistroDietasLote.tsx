@@ -34,6 +34,7 @@ const refeicaoOptions = [
 interface Linhadieta {
   id: string;
   paciente_nome: string;
+  data_nascimento: string;
   quarto_leito: string;
   tipo_dieta: string;
   tem_acompanhante: boolean;
@@ -46,6 +47,7 @@ interface Linhadieta {
 const criarLinhaVazia = (): Linhadieta => ({
   id: crypto.randomUUID(),
   paciente_nome: "",
+  data_nascimento: "",
   quarto_leito: "",
   tipo_dieta: "geral",
   tem_acompanhante: false,
@@ -178,6 +180,7 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
               <TableRow className="border-b border-border bg-background hover:bg-background">
                 <TableHead className="w-[36px] text-center text-xs font-semibold text-foreground py-2.5 uppercase"></TableHead>
                 <TableHead className="min-w-[170px] text-xs font-semibold text-foreground py-2.5 uppercase">Paciente</TableHead>
+                <TableHead className="min-w-[120px] text-xs font-semibold text-foreground py-2.5 uppercase">Dt. Nasc.</TableHead>
                 <TableHead className="min-w-[100px] text-xs font-semibold text-foreground py-2.5 uppercase">Quarto/Leito</TableHead>
                 <TableHead className="min-w-[130px] text-xs font-semibold text-foreground py-2.5 uppercase">Tipo de Dieta</TableHead>
                 <TableHead className="text-center min-w-[90px] text-xs font-semibold text-foreground py-2.5 uppercase">Acompanhante</TableHead>
@@ -206,6 +209,15 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
                         onChange={e => atualizarLinha(linha.id, "paciente_nome", e.target.value)}
                         className="h-8 text-sm"
                         disabled={false}
+                      />
+                    </TableCell>
+                    <TableCell className="py-1 px-1">
+                      <Input
+                        type="date"
+                        placeholder="Dt. Nasc."
+                        value={linha.data_nascimento}
+                        onChange={e => atualizarLinha(linha.id, "data_nascimento", e.target.value)}
+                        className="h-8 text-sm"
                       />
                     </TableCell>
                     <TableCell className="py-1 px-1">
