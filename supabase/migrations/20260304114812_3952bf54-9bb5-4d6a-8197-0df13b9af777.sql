@@ -1,0 +1,1 @@
+ALTER TABLE public.bed_records ADD COLUMN IF NOT EXISTS cti text DEFAULT null;

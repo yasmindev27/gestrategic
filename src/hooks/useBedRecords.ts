@@ -37,6 +37,7 @@ export function useBedRecords() {
           data_internacao: bed.patient.dataInternacao || null,
           sus_facil: bed.patient.susFacil,
           numero_sus_facil: bed.patient.numeroSusFacil,
+          cti: bed.patient.cti || null,
           motivo_alta: bed.patient.motivoAlta,
           estabelecimento_transferencia: bed.patient.estabelecimentoTransferencia,
           shift_type: shiftInfo.tipo,
