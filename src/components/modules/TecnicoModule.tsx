@@ -27,11 +27,7 @@ export const TecnicoModule = ({ setor, onOpenExternal }: TecnicoModuleProps) => 
 
   const handleAbrirChamados = () => {
     const url = "https://suporte.santacasachavantes.org/index.php";
-    if (onOpenExternal) {
-      onOpenExternal(url, "GLPI - Suporte");
-    } else {
-      window.open(url, "_blank");
-    }
+    window.open(url, "_blank", "noopener,noreferrer");
   };
 
   if (isLoading) {
