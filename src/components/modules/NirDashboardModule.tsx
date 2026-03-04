@@ -173,38 +173,37 @@ export const NirDashboardModule = () => {
     });
     setSectorOccupancy(sectorStats);
 
-    // 3) Admissions & Discharges — query across the selected date range, not just today
+    // 3) Admissions & Discharges — query across the selected date range
     const startDateStr = format(startDate, 'yyyy-MM-dd');
     const endDateStr = format(endDate, 'yyyy-MM-dd');
 
     const { data: rangeRecords } = await supabase
       .from('bed_records')
-      .select('bed_id, patient_name, data_internacao, data_alta, motivo_alta')
-      .or(`data_internacao.gte.${startDateStr},data_alta.gte.${startDateStr}`)
-      .or(`data_internacao.lte.${endDateStr},data_alta.lte.${endDateStr}`);
+      .select('bed_id, patient_name, data_internacao, data_alta, motivo_alta, shift_date, shift_type')
+      .gte('shift_date', startDateStr)
+      .lte('shift_date', endDateStr);
 
-    // Deduplicate by bed_id to avoid counting same patient across shifts
-    const uniqueByBed = new Map<string, typeof rangeRecords extends (infer T)[] | null ? T : never>();
+    // Deduplicate by bed_id + patient_name to avoid counting same patient across shifts
+    const admissionSet = new Set<string>();
+    const dischargeSet = new Set<string>();
+
     rangeRecords?.forEach(r => {
-      if (!uniqueByBed.has(r.bed_id) || r.data_alta) {
-        uniqueByBed.set(r.bed_id, r);
+      const key = `${r.bed_id}|${(r.patient_name || '').trim()}`;
+
+      if (r.data_internacao && r.data_internacao >= startDateStr && r.data_internacao <= endDateStr) {
+        admissionSet.add(key);
+      }
+
+      if (r.motivo_alta && r.data_alta) {
+        const altaDate = r.data_alta.split('T')[0];
+        if (altaDate >= startDateStr && altaDate <= endDateStr) {
+          dischargeSet.add(key);
+        }
       }
     });
-    const uniqueRecords = Array.from(uniqueByBed.values());
 
-    const admissions = uniqueRecords.filter(r => {
-      if (!r.data_internacao) return false;
-      return r.data_internacao >= startDateStr && r.data_internacao <= endDateStr;
-    }).length;
-
-    const discharges = uniqueRecords.filter(r => {
-      if (!r.data_alta) return false;
-      const altaDate = r.data_alta.split('T')[0];
-      return altaDate >= startDateStr && altaDate <= endDateStr;
-    }).length;
-
-    setTodayAdmissions(admissions);
-    setTodayDischarges(discharges);
+    setTodayAdmissions(admissionSet.size);
+    setTodayDischarges(dischargeSet.size);
 
     // 4) Daily evolution chart
     const daysToShow = isSameDay(startDate, endDate) ? 7 : Math.min(30, Math.ceil((endDate.getTime() - startDate.getTime()) / (86400000)) + 1);
@@ -227,31 +226,36 @@ export const NirDashboardModule = () => {
       };
     }));
 
-    // 5) Stay & Turnover (last 30 days, deduplicated by bed_id)
+    // 5) Stay & Turnover (last 30 days, deduplicated by bed_id + patient_name)
     const thirtyDaysAgo = format(subDays(new Date(), 30), 'yyyy-MM-dd');
     const { data: allRecords } = await supabase
       .from('bed_records')
-      .select('bed_id, patient_name, data_alta, created_at')
+      .select('bed_id, patient_name, data_alta, created_at, motivo_alta')
       .gte('shift_date', thirtyDaysAgo);
 
     if (allRecords && allRecords.length > 0) {
-      // Deduplicate: keep the most relevant record per bed_id (prefer one with data_alta)
-      const bedMap = new Map<string, { created_at: string; data_alta: string | null; patient_name: string | null }>();
+      // Deduplicate by bed_id + patient_name; prefer record with data_alta
+      const stayMap = new Map<string, { created_at: string; data_alta: string | null; motivo_alta: string | null }>();
       allRecords.forEach(r => {
-        const existing = bedMap.get(r.bed_id);
-        if (!existing || (r.data_alta && !existing.data_alta)) {
-          bedMap.set(r.bed_id, r);
+        if (!r.patient_name) return;
+        const key = `${r.bed_id}|${r.patient_name.trim()}`;
+        const existing = stayMap.get(key);
+        if (!existing || (r.data_alta && !existing.data_alta) || r.created_at < existing.created_at) {
+          stayMap.set(key, {
+            created_at: existing ? (r.created_at < existing.created_at ? r.created_at : existing.created_at) : r.created_at,
+            data_alta: r.data_alta || existing?.data_alta || null,
+            motivo_alta: r.motivo_alta || existing?.motivo_alta || null,
+          });
         }
       });
 
       const stayDurations: number[] = [];
       let dischCount = 0;
 
-      bedMap.forEach(r => {
-        if (!r.patient_name) return;
+      stayMap.forEach(r => {
         const startTs = new Date(r.created_at).getTime();
 
-        if (r.data_alta) {
+        if (r.motivo_alta && r.data_alta) {
           dischCount++;
           const endTs = new Date(r.data_alta).getTime();
           const days = (endTs - startTs) / 86400000;
