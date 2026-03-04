@@ -16,6 +16,7 @@ interface BedModalProps {
   onClose: () => void;
   onSave: (bed: Bed, patient: Patient | null, isDischarge?: boolean) => void;
   sectorBeds?: Bed[];
+  allBeds?: Bed[];
   onTransfer?: (fromBed: Bed, toBed: Bed) => void;
 }
 
@@ -33,7 +34,7 @@ const emptyPatient: Patient = {
   estabelecimentoTransferencia: '',
 };
 
-export function BedModal({ bed, isOpen, onClose, onSave, sectorBeds = [], onTransfer }: BedModalProps) {
+export function BedModal({ bed, isOpen, onClose, onSave, sectorBeds = [], allBeds = [], onTransfer }: BedModalProps) {
   const [patient, setPatient] = useState<Patient>(emptyPatient);
   const [selectedTransferBed, setSelectedTransferBed] = useState<string>('');
 
@@ -89,16 +90,22 @@ export function BedModal({ bed, isOpen, onClose, onSave, sectorBeds = [], onTran
 
   const handleTransfer = () => {
     if (!bed || !selectedTransferBed || !onTransfer) return;
-    const targetBed = sectorBeds.find(b => b.id === selectedTransferBed);
+    const targetBed = [...sectorBeds, ...allBeds].find(b => b.id === selectedTransferBed);
     if (targetBed) {
       onTransfer(bed, targetBed);
       onClose();
     }
   };
 
-  const availableBedsForTransfer = sectorBeds.filter(
+  // Same-sector empty beds
+  const sameSectorBeds = sectorBeds.filter(
     b => b.id !== bed?.id && b.patient === null
   );
+  // Urgência empty beds (when current sector is NOT urgência)
+  const urgenciaBeds = bed?.sector !== 'urgencia'
+    ? allBeds.filter(b => b.sector === 'urgencia' && b.patient === null)
+    : [];
+  const availableBedsForTransfer = [...sameSectorBeds, ...urgenciaBeds];
 
   if (!bed) return null;
 
@@ -295,11 +302,24 @@ export function BedModal({ bed, isOpen, onClose, onSave, sectorBeds = [], onTran
                         <SelectValue placeholder="Selecione o leito" />
                       </SelectTrigger>
                       <SelectContent>
-                        {availableBedsForTransfer.map((b) => (
+                        {sameSectorBeds.length > 0 && (
+                          <div className="px-2 py-1 text-xs font-semibold text-muted-foreground">Mesmo setor</div>
+                        )}
+                        {sameSectorBeds.map((b) => (
                           <SelectItem key={b.id} value={b.id}>
                             Leito {typeof b.number === 'string' ? b.number : String(b.number).padStart(2, '0')}
                           </SelectItem>
                         ))}
+                        {urgenciaBeds.length > 0 && (
+                          <>
+                            <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t mt-1 pt-1">Urgência</div>
+                            {urgenciaBeds.map((b) => (
+                              <SelectItem key={b.id} value={b.id}>
+                                Leito {typeof b.number === 'string' ? b.number : String(b.number).padStart(2, '0')} (Urgência)
+                              </SelectItem>
+                            ))}
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                     <Button

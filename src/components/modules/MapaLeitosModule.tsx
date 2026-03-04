@@ -592,6 +592,7 @@ export const MapaLeitosModule = () => {
         onClose={() => setIsModalOpen(false)}
         onSave={handleSaveBed}
         sectorBeds={beds.filter(b => b.sector === activeSector)}
+        allBeds={beds}
         onTransfer={handleTransfer}
       />
     </div>
