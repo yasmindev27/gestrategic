@@ -280,21 +280,18 @@ export const FaturamentoModule = () => {
 
   const fetchCounts = async () => {
     try {
-      const [totalRes, faltantesRes, avaliadosRes] = await Promise.all([
+      const [totalRes, avaliadosDistinctRes] = await Promise.all([
         supabase.from("saida_prontuarios").select("*", { count: "exact", head: true }),
-        // Faltantes = saidas without a finalized avaliacao
-        supabase.from("saida_prontuarios").select("*", { count: "exact", head: true })
-          .not("id", "in", `(${
-            // We'll use a simpler approach: count avaliacoes finalizadas
-            ""
-          })`),
-        supabase.from("avaliacoes_prontuarios").select("*", { count: "exact", head: true })
-          .eq("is_finalizada", true),
+        // Count distinct saidas that have a finalized avaliacao (ignores orphans with NULL saida_prontuario_id)
+        supabase.from("avaliacoes_prontuarios").select("saida_prontuario_id", { count: "exact", head: true })
+          .eq("is_finalizada", true)
+          .not("saida_prontuario_id", "is", null),
       ]);
-      setTotalCount(totalRes.count ?? 0);
-      setAvaliadosCount(avaliadosRes.count ?? 0);
-      // Faltantes = total - avaliados
-      setFaltantesCount((totalRes.count ?? 0) - (avaliadosRes.count ?? 0));
+      const total = totalRes.count ?? 0;
+      const avaliados = avaliadosDistinctRes.count ?? 0;
+      setTotalCount(total);
+      setAvaliadosCount(avaliados);
+      setFaltantesCount(Math.max(0, total - avaliados));
     } catch (e) {
       console.error("Error fetching counts:", e);
     }
@@ -462,6 +459,24 @@ export const FaturamentoModule = () => {
     }
     
     setIsSubmitting(true);
+
+    // Check if avaliacao already exists for this saida
+    const { data: existing } = await supabase
+      .from("avaliacoes_prontuarios")
+      .select("id")
+      .eq("saida_prontuario_id", selectedProntuario.id)
+      .eq("is_finalizada", true)
+      .maybeSingle();
+
+    if (existing) {
+      toast({
+        title: "Avaliação já existe",
+        description: "Este prontuário já possui uma avaliação finalizada.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
     try {
       // Get or create prontuario
       let prontuarioId: string | null = selectedProntuario.prontuario_id;
