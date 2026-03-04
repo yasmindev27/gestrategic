@@ -134,13 +134,13 @@ export const NirDashboardModule = () => {
 
     if (bedError) throw bedError;
 
-    // Total = capacidade instalada (leitos regulares apenas) — mesmo critério do useBeds
+    // Total = todos os leitos (regulares + extras)
     let totalBeds = 0;
     SECTORS.forEach(sector => {
-      totalBeds += sector.beds.length;
+      totalBeds += sector.beds.length + (sector.extraBeds?.length || 0);
     });
 
-    // Ocupados = pacientes COM nome e SEM motivo de alta (igual ao useBeds)
+    // Ocupados = pacientes COM nome e SEM motivo de alta
     const occupiedBeds = bedRecords?.filter(r => r.patient_name && !r.motivo_alta).length || 0;
     const availableBeds = Math.max(0, totalBeds - occupiedBeds);
     const occupancyRate = totalBeds > 0 ? Math.round((occupiedBeds / totalBeds) * 100) : 0;
@@ -152,9 +152,9 @@ export const NirDashboardModule = () => {
       occupancyRate
     });
 
-    // Ocupação por setor: mesma lógica
+    // Ocupação por setor: inclui leitos extras
     const sectorStats: SectorOccupancy[] = SECTORS.map(sector => {
-      const regularBedsCount = sector.beds.length;
+      const totalSectorBeds = sector.beds.length + (sector.extraBeds?.length || 0);
       const sectorOccupied = bedRecords?.filter(
         r => r.sector === sector.id && r.patient_name && !r.motivo_alta
       ).length || 0;
@@ -162,8 +162,8 @@ export const NirDashboardModule = () => {
       return {
         name: sector.name,
         occupied: sectorOccupied,
-        total: regularBedsCount,
-        rate: regularBedsCount > 0 ? Math.round((sectorOccupied / regularBedsCount) * 100) : 0
+        total: totalSectorBeds,
+        rate: totalSectorBeds > 0 ? Math.round((sectorOccupied / totalSectorBeds) * 100) : 0
       };
     });
     setSectorOccupancy(sectorStats);
