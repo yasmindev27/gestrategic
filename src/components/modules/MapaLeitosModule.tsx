@@ -37,7 +37,7 @@ export const MapaLeitosModule = () => {
   const [resolvedEncontradas, setResolvedEncontradas] = useState<Set<number>>(new Set());
   const [passagemId, setPassagemId] = useState<string | null>(null);
 
-  const { beds, isLoading: isBedsLoading, updateBed, transferPatient, occupancyBySector, totalOccupancy } = useBeds(shiftInfo.data);
+  const { beds, isLoading: isBedsLoading, updateBed, transferPatient, occupancyBySector, totalOccupancy } = useBeds(shiftInfo.data, shiftInfo.tipo);
   const { saveBedRecord, updateDailyStatistics } = useBedRecords();
   
   const syncedBedsRef = useRef<Set<string>>(new Set());
@@ -296,9 +296,8 @@ export const MapaLeitosModule = () => {
     );
     
     if (isDischarge && patient?.dataAlta) {
-      // Save discharge record FIRST (with motivo_alta + data_alta), then clear the bed
-      await saveBedRecord({ ...bed, patient }, shiftInfo, patient.dataAlta);
-      // Use a small delay to ensure the discharge upsert completes before sync runs
+      // Save discharge record immediately (no debounce) FIRST, then clear the bed
+      await saveBedRecord({ ...bed, patient }, shiftInfo, patient.dataAlta, true);
       updateBed(bed.id, null);
       // Mark the discharged bed as already synced so background sync won't delete the record
       syncedBedsRef.current.add(`${bed.id}-${JSON.stringify(null)}`);

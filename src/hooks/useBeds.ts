@@ -30,16 +30,18 @@ const initializeBeds = (): Bed[] => {
   return beds;
 };
 
-export function useBeds(shiftDate?: string) {
+export function useBeds(shiftDate?: string, shiftType?: 'diurno' | 'noturno') {
   const [beds, setBeds] = useState<Bed[]>(initializeBeds);
   const [isLoading, setIsLoading] = useState(true);
   const abortControllerRef = useRef<AbortController | null>(null);
-  const loadedDateRef = useRef<string | null>(null);
+  const loadedKeyRef = useRef<string | null>(null);
 
   useEffect(() => {
     const dateToLoad = shiftDate || new Date().toISOString().split('T')[0];
+    const typeToLoad = shiftType || (new Date().getHours() >= 7 && new Date().getHours() < 19 ? 'diurno' : 'noturno');
+    const loadKey = `${dateToLoad}|${typeToLoad}`;
     
-    if (loadedDateRef.current === dateToLoad && !isLoading) {
+    if (loadedKeyRef.current === loadKey && !isLoading) {
       return;
     }
 
@@ -56,7 +58,8 @@ export function useBeds(shiftDate?: string) {
         const { data: bedRecords, error } = await supabase
           .from('bed_records')
           .select('bed_id, patient_name, hipotese_diagnostica, condutas_outros, observacao, data_nascimento, data_internacao, sus_facil, numero_sus_facil, motivo_alta, estabelecimento_transferencia, created_at, cti')
-          .eq('shift_date', dateToLoad);
+          .eq('shift_date', dateToLoad)
+          .eq('shift_type', typeToLoad);
 
         if (error) {
           console.error('Error loading bed records:', error);
@@ -90,7 +93,7 @@ export function useBeds(shiftDate?: string) {
           });
         }
 
-        loadedDateRef.current = dateToLoad;
+        loadedKeyRef.current = loadKey;
         setBeds(initialBeds);
       } catch (err) {
         console.error('Error in loadBedsFromDatabase:', err);
@@ -106,7 +109,7 @@ export function useBeds(shiftDate?: string) {
         abortControllerRef.current.abort();
       }
     };
-  }, [shiftDate]);
+  }, [shiftDate, shiftType]);
 
   const updateBed = useCallback((bedId: string, patient: Patient | null) => {
     setBeds((prev) =>
