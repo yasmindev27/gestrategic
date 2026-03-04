@@ -151,7 +151,7 @@ export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
 
         <Card
           className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
-          onClick={() => onOpenExternal?.("/transporte", "Área do Motorista")}
+          onClick={() => window.open("/transporte", "_blank")}
         >
           <CardHeader className="text-center pb-2">
             <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
