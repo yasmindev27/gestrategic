@@ -15,7 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Truck, Search, Clock, CheckCircle, AlertTriangle, Loader2, ArrowRight, Download, FileText, FileSpreadsheet, BarChart3, ArrowRightLeft } from "lucide-react";
+import { Truck, Search, Clock, CheckCircle, AlertTriangle, Loader2, ArrowRight, Download, FileText, FileSpreadsheet, BarChart3, ArrowRightLeft, Plus, ClipboardList } from "lucide-react";
 import { createStandardPdf, applyPdfHeaderFooter } from "@/lib/export-utils";
 import autoTable from "jspdf-autotable";
 import { sendPushToUsers } from "@/hooks/usePushNotifications";
@@ -140,6 +140,27 @@ export const TransferenciasModule = () => {
     loadData();
   }, [loadData]);
 
+  const [externalDialogOpen, setExternalDialogOpen] = useState(false);
+  const [extDescricao, setExtDescricao] = useState("");
+  const [extDestino, setExtDestino] = useState("");
+  const [extPrioridade, setExtPrioridade] = useState("normal");
+  const [extVeiculoId, setExtVeiculoId] = useState("");
+  const [extMotorista, setExtMotorista] = useState("");
+  const [extMotivo, setExtMotivo] = useState("");
+  const [isSavingExt, setIsSavingExt] = useState(false);
+
+  const handleNovaTransferencia = () => {
+    setSelectedPaciente(null);
+    setFormPacienteNome("");
+    setFormSetorOrigem("UPA Antônio José dos Santos");
+    setFormDestino("");
+    setFormMotivo("");
+    setFormPrioridade("normal");
+    setFormVeiculoId("");
+    setFormMotorista("");
+    setDialogOpen(true);
+  };
+
   const handleSolicitar = (p: PacienteInternado) => {
     setSelectedPaciente(p);
     setFormPacienteNome(p.patient_name || "");
@@ -150,6 +171,53 @@ export const TransferenciasModule = () => {
     setFormVeiculoId("");
     setFormMotorista("");
     setDialogOpen(true);
+  };
+
+  const handleOpenExternalDialog = () => {
+    setExtDescricao("");
+    setExtDestino("");
+    setExtPrioridade("normal");
+    setExtVeiculoId("");
+    setExtMotorista("");
+    setExtMotivo("");
+    setExternalDialogOpen(true);
+  };
+
+  const handleSubmitExternal = async () => {
+    if (!extDescricao || !extDestino || !extVeiculoId) {
+      toast({ title: "Preencha descrição, destino e veículo", variant: "destructive" });
+      return;
+    }
+    setIsSavingExt(true);
+    try {
+      const user = (await supabase.auth.getUser()).data.user;
+      const selectedVeiculo = veiculos.find(v => v.id === extVeiculoId);
+      const veiculoIsSamu = selectedVeiculo?.tipo?.toLowerCase().includes('samu') ?? false;
+      const { error } = await supabase.from("transferencia_solicitacoes").insert({
+        paciente_nome: `[EXTERNA] ${extDescricao}`,
+        setor_origem: "UPA Antônio José dos Santos",
+        destino: extDestino,
+        motivo: extMotivo || null,
+        prioridade: extPrioridade,
+        veiculo_id: extVeiculoId || null,
+        veiculo_placa: selectedVeiculo?.placa || null,
+        veiculo_tipo: selectedVeiculo?.tipo || null,
+        motorista_nome: veiculoIsSamu ? "SAMU" : (extMotorista || null),
+        status: veiculoIsSamu ? "concluida" : "pendente",
+        hora_saida: veiculoIsSamu ? new Date().toISOString() : null,
+        hora_chegada: veiculoIsSamu ? new Date().toISOString() : null,
+        solicitado_por: user?.id,
+        solicitado_por_nome: reguladorNome || user?.email || "—",
+      });
+      if (error) throw error;
+      toast({ title: "Solicitação externa registrada!" });
+      setExternalDialogOpen(false);
+      loadData();
+    } catch (err: any) {
+      toast({ title: "Erro ao registrar", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSavingExt(false);
+    }
   };
 
   const selectedVeiculoObj = veiculos.find(v => v.id === formVeiculoId);
