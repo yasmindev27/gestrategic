@@ -639,72 +639,17 @@ export const TransferenciasModule = () => {
         </CardContent>
       </Card>
 
-      {/* Pacientes Internados */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <CardTitle className="text-base">Pacientes Internados</CardTitle>
-            <div className="relative w-64">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Buscar paciente ou setor..."
-                value={searchPaciente}
-                onChange={(e) => setSearchPaciente(e.target.value)}
-                className="pl-9 h-9"
-              />
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {filteredPacientes.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-6">Nenhum paciente internado encontrado.</p>
-          ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                     <TableHead>Paciente</TableHead>
-                     <TableHead>Setor</TableHead>
-                     <TableHead>Hipótese Diagnóstica</TableHead>
-                     <TableHead>Data Internação</TableHead>
-                     <TableHead>Status Transferência</TableHead>
-                     <TableHead className="text-right">Ação</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredPacientes.map((p) => (
-                    <TableRow key={p.bed_id}>
-                      <TableCell className="font-medium">{p.patient_name}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline">{getSectorLabel(p.sector)}</Badge>
-                      </TableCell>
-                      <TableCell className="max-w-[200px] truncate text-sm text-muted-foreground">
-                        {p.hipotese_diagnostica || "—"}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {p.data_internacao ? format(new Date(p.data_internacao), "dd/MM/yyyy") : "—"}
-                      </TableCell>
-                      <TableCell>
-                        {(() => {
-                          const transferStatus = getPatientTransferStatus(p.patient_name);
-                          if (!transferStatus) return <span className="text-xs text-muted-foreground">Sem solicitação</span>;
-                          return <Badge className={transferStatus.color}>{transferStatus.label}</Badge>;
-                        })()}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" className="gap-1.5" onClick={() => handleSolicitar(p)}>
-                          <ArrowRight className="h-3.5 w-3.5" />
-                          Solicitar Transferência
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {/* Action Buttons */}
+      <div className="flex items-center gap-3">
+        <Button onClick={handleNovaTransferencia} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Nova Transferência
+        </Button>
+        <Button variant="outline" onClick={handleOpenExternalDialog} className="gap-2">
+          <ClipboardList className="h-4 w-4" />
+          Solicitações Externas
+        </Button>
+      </div>
 
       {/* Dialog Solicitar Transferência */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -714,8 +659,8 @@ export const TransferenciasModule = () => {
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Paciente</Label>
-              <Input value={formPacienteNome} readOnly className="bg-muted/50" />
+              <Label>Paciente *</Label>
+              <Input value={formPacienteNome} onChange={(e) => setFormPacienteNome(e.target.value)} placeholder="Nome do paciente" />
             </div>
             <div>
               <Label>Unidade de Origem</Label>
@@ -810,7 +755,76 @@ export const TransferenciasModule = () => {
       </Dialog>
 
 
-      {/* Vehicle Stats Dialog */}
+      {/* Dialog Solicitação Externa */}
+      <Dialog open={externalDialogOpen} onOpenChange={setExternalDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-primary" />
+              Solicitação Externa
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Descrição da Solicitação *</Label>
+              <Input value={extDescricao} onChange={(e) => setExtDescricao(e.target.value)} placeholder="Ex: Buscar material, entrega de documentos..." />
+            </div>
+            <div>
+              <Label>Destino *</Label>
+              <Input value={extDestino} onChange={(e) => setExtDestino(e.target.value)} placeholder="Local de destino" />
+            </div>
+            <div>
+              <Label>Prioridade</Label>
+              <Select value={extPrioridade} onValueChange={setExtPrioridade}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="baixa">Baixa</SelectItem>
+                  <SelectItem value="normal">Normal</SelectItem>
+                  <SelectItem value="alta">Alta</SelectItem>
+                  <SelectItem value="urgente">Urgente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Veículo *</Label>
+              <Select value={extVeiculoId} onValueChange={setExtVeiculoId}>
+                <SelectTrigger><SelectValue placeholder="Selecione o veículo" /></SelectTrigger>
+                <SelectContent>
+                  {veiculos.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>{v.tipo} — {v.placa}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {!(veiculos.find(v => v.id === extVeiculoId)?.tipo?.toLowerCase().includes('samu')) && (
+              <div>
+                <Label>Motorista</Label>
+                <Select value={extMotorista} onValueChange={setExtMotorista}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o motorista" /></SelectTrigger>
+                  <SelectContent>
+                    {motoristas.map((m) => (
+                      <SelectItem key={m.user_id} value={m.full_name}>{m.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div>
+              <Label>Motivo / Observações</Label>
+              <Textarea value={extMotivo} onChange={(e) => setExtMotivo(e.target.value)} placeholder="Detalhes adicionais..." rows={3} />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setExternalDialogOpen(false)}>Cancelar</Button>
+              <Button onClick={handleSubmitExternal} disabled={isSavingExt}>
+                {isSavingExt && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                Registrar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
       <Dialog open={veiculoStatsOpen} onOpenChange={setVeiculoStatsOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
