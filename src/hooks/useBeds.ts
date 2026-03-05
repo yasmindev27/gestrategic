@@ -69,8 +69,10 @@ export function useBeds(shiftDate?: string, shiftType?: 'diurno' | 'noturno') {
 
         const initialBeds = initializeBeds();
 
-        if (bedRecords && bedRecords.length > 0) {
-          const recordsMap = new Map(bedRecords.map(r => [r.bed_id, r]));
+        // Helper to populate beds from records
+        const populateBedsFromRecords = (records: typeof bedRecords) => {
+          if (!records || records.length === 0) return;
+          const recordsMap = new Map(records.map(r => [r.bed_id, r]));
           
           initialBeds.forEach((bed, index) => {
             const record = recordsMap.get(bed.id);
@@ -91,6 +93,37 @@ export function useBeds(shiftDate?: string, shiftType?: 'diurno' | 'noturno') {
               };
             }
           });
+        };
+
+        if (bedRecords && bedRecords.length > 0) {
+          populateBedsFromRecords(bedRecords);
+        } else {
+          // No records for this shift — carry over from previous shift
+          let prevDate: string;
+          let prevType: 'diurno' | 'noturno';
+
+          if (typeToLoad === 'diurno') {
+            // Previous shift is noturno of the previous day
+            const d = new Date(dateToLoad + 'T12:00:00');
+            d.setDate(d.getDate() - 1);
+            prevDate = d.toISOString().split('T')[0];
+            prevType = 'noturno';
+          } else {
+            // Previous shift is diurno of the same day
+            prevDate = dateToLoad;
+            prevType = 'diurno';
+          }
+
+          const { data: prevRecords, error: prevError } = await supabase
+            .from('bed_records')
+            .select('bed_id, patient_name, hipotese_diagnostica, condutas_outros, observacao, data_nascimento, data_internacao, sus_facil, numero_sus_facil, motivo_alta, estabelecimento_transferencia, created_at, cti')
+            .eq('shift_date', prevDate)
+            .eq('shift_type', prevType);
+
+          if (!prevError && prevRecords && prevRecords.length > 0) {
+            populateBedsFromRecords(prevRecords);
+            console.log(`Migrated ${initialBeds.filter(b => b.patient).length} patients from ${prevType} ${prevDate} to ${typeToLoad} ${dateToLoad}`);
+          }
         }
 
         loadedKeyRef.current = loadKey;
