@@ -645,7 +645,7 @@ export const TransferenciasModule = () => {
           <Plus className="h-4 w-4" />
           Nova Transferência
         </Button>
-        <Button variant="outline" onClick={handleOpenExternalDialog} className="gap-2">
+        <Button onClick={handleOpenExternalDialog} className="gap-2">
           <ClipboardList className="h-4 w-4" />
           Solicitações Externas
         </Button>
