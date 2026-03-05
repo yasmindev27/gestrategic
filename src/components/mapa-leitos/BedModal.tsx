@@ -101,17 +101,17 @@ export function BedModal({ bed, isOpen, onClose, onSave, sectorBeds = [], allBed
   const sameSectorBeds = sectorBeds.filter(
     b => b.id !== bed?.id && b.patient === null
   );
-  // Other sectors empty beds (all sectors except current)
-  const otherSectorBeds = allBeds.filter(
-    b => b.sector !== bed?.sector && b.patient === null
+  // All beds from OTHER sectors (empty and occupied for visibility)
+  const otherSectorAllBeds = allBeds.filter(
+    b => b.sector !== bed?.sector
   );
   // Group other sector beds by sector
-  const otherSectorGroups = otherSectorBeds.reduce<Record<string, Bed[]>>((acc, b) => {
+  const otherSectorGroups = otherSectorAllBeds.reduce<Record<string, Bed[]>>((acc, b) => {
     if (!acc[b.sector]) acc[b.sector] = [];
     acc[b.sector].push(b);
     return acc;
   }, {});
-  const availableBedsForTransfer = [...sameSectorBeds, ...otherSectorBeds];
+  const availableBedsForTransfer = [...sameSectorBeds, ...otherSectorAllBeds.filter(b => b.patient === null)];
 
   if (!bed) return null;
 
@@ -296,7 +296,7 @@ export function BedModal({ bed, isOpen, onClose, onSave, sectorBeds = [], allBed
                     </div>
                   </div>
 
-                  {availableBedsForTransfer.length > 0 && (
+                  {(sameSectorBeds.length > 0 || Object.keys(otherSectorGroups).length > 0) && (
                     <div className="border-t pt-4">
                       <h3 className="font-semibold mb-4 flex items-center gap-2">
                         <ArrowRightLeft className="w-4 h-4" />
@@ -319,14 +319,14 @@ export function BedModal({ bed, isOpen, onClose, onSave, sectorBeds = [], allBed
                                 Leito {typeof b.number === 'string' ? b.number : String(b.number).padStart(2, '0')}
                               </SelectItem>
                             ))}
-                            {Object.entries(otherSectorGroups).map(([sectorId, beds]) => {
+                            {Object.entries(otherSectorGroups).map(([sectorId, sectorBedsList]) => {
                               const sectorConfig = SECTORS.find(s => s.id === sectorId);
-                              return beds.length > 0 ? (
+                              return sectorBedsList.length > 0 ? (
                                 <React.Fragment key={sectorId}>
                                   <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t mt-1 pt-1">{sectorConfig?.name || sectorId}</div>
-                                  {beds.map((b) => (
-                                    <SelectItem key={b.id} value={b.id}>
-                                      Leito {typeof b.number === 'string' ? b.number : String(b.number).padStart(2, '0')} ({sectorConfig?.name || sectorId})
+                                  {sectorBedsList.map((b) => (
+                                    <SelectItem key={b.id} value={b.id} disabled={b.patient !== null}>
+                                      Leito {typeof b.number === 'string' ? b.number : String(b.number).padStart(2, '0')} ({sectorConfig?.name || sectorId}){b.patient ? ' - Ocupado' : ''}
                                     </SelectItem>
                                   ))}
                                 </React.Fragment>
@@ -383,7 +383,7 @@ export function BedModal({ bed, isOpen, onClose, onSave, sectorBeds = [], allBed
                   )}
 
                   {/* Transfer section for enfermagem */}
-                  {availableBedsForTransfer.length > 0 && (
+                  {(sameSectorBeds.length > 0 || Object.keys(otherSectorGroups).length > 0) && (
                     <div className="border-t pt-4">
                       <h3 className="font-semibold mb-4 flex items-center gap-2">
                         <ArrowRightLeft className="w-4 h-4" />
@@ -406,14 +406,14 @@ export function BedModal({ bed, isOpen, onClose, onSave, sectorBeds = [], allBed
                                 Leito {typeof b.number === 'string' ? b.number : String(b.number).padStart(2, '0')}
                               </SelectItem>
                             ))}
-                            {Object.entries(otherSectorGroups).map(([sectorId, beds]) => {
+                            {Object.entries(otherSectorGroups).map(([sectorId, sectorBedsList]) => {
                               const sectorConfig = SECTORS.find(s => s.id === sectorId);
-                              return beds.length > 0 ? (
+                              return sectorBedsList.length > 0 ? (
                                 <React.Fragment key={sectorId}>
                                   <div className="px-2 py-1 text-xs font-semibold text-muted-foreground border-t mt-1 pt-1">{sectorConfig?.name || sectorId}</div>
-                                  {beds.map((b) => (
-                                    <SelectItem key={b.id} value={b.id}>
-                                      Leito {typeof b.number === 'string' ? b.number : String(b.number).padStart(2, '0')} ({sectorConfig?.name || sectorId})
+                                  {sectorBedsList.map((b) => (
+                                    <SelectItem key={b.id} value={b.id} disabled={b.patient !== null}>
+                                      Leito {typeof b.number === 'string' ? b.number : String(b.number).padStart(2, '0')} ({sectorConfig?.name || sectorId}){b.patient ? ' - Ocupado' : ''}
                                     </SelectItem>
                                   ))}
                                 </React.Fragment>
