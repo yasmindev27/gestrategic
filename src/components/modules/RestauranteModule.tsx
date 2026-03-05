@@ -915,8 +915,8 @@ export const RestauranteModule = () => {
 
   // Imprimir relatório de dietas diretamente
   const imprimirRelatorioDietas = async () => {
-    const { createStandardPdf } = await import('@/lib/export-utils');
-    const { doc, logoImg } = await createStandardPdf('Minhas Solicitações de Dieta', 'landscape');
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Solicitações de Dieta', 'landscape');
     
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
@@ -953,22 +953,8 @@ export const RestauranteModule = () => {
       margin: { top: 32, bottom: 28 },
     });
 
-    const pdfDataUri = doc.output('datauristring');
-    const iframe = document.createElement('iframe');
-    iframe.style.position = 'fixed';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = 'none';
-    iframe.style.opacity = '0';
-    document.body.appendChild(iframe);
-    iframe.src = pdfDataUri;
-    iframe.onload = () => {
-      setTimeout(() => {
-        iframe.contentWindow?.print();
-        setTimeout(() => document.body.removeChild(iframe), 1000);
-      }, 500);
-    };
-    toast({ title: "Impressão", description: "Relatório enviado para impressão." });
+    savePdfWithFooter(doc, 'Solicitações de Dieta', `solicitacoes_dieta_${format(new Date(), "ddMMyyyy")}`, logoImg);
+    toast({ title: "Sucesso", description: "Relatório PDF gerado com sucesso." });
   };
 
   // Mostrar loading enquanto verifica roles
