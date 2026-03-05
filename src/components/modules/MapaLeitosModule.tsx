@@ -468,9 +468,7 @@ export const MapaLeitosModule = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {isFullAccess && (
-            <ExportDropdown onExportPDF={handleExportPDF} onExportExcel={handleExportExcel} />
-          )}
+          <ExportDropdown onExportPDF={handleExportPDF} onExportExcel={handleExportExcel} />
           <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary">
             {shiftInfo.tipo === 'noturno' ? '🌙 Plantão Noturno' : '☀️ Plantão Diurno'}
           </span>
