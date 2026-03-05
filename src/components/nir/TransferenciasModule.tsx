@@ -265,7 +265,7 @@ export const TransferenciasModule = () => {
           const driverIds = driverProfiles.map(d => d.user_id);
           sendPushToUsers(
             driverIds,
-            "🚑 Novo Transporte Atribuído",
+            "Novo Transporte Atribuído",
             `Paciente: ${formPacienteNome} → ${formDestino} (${formPrioridade.toUpperCase()})`,
             { tipo: "transporte", tag: "transporte-novo" }
           );
@@ -728,7 +728,7 @@ export const TransferenciasModule = () => {
             )}
             {isSamu && (
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
-                <p className="text-sm text-primary font-medium">🚑 Ambulância SAMU selecionada</p>
+                <p className="text-sm text-primary font-medium">Ambulância SAMU selecionada</p>
                 <p className="text-xs text-muted-foreground mt-1">Não é necessário atribuir motorista. A transferência será registrada como concluída automaticamente.</p>
               </div>
             )}
