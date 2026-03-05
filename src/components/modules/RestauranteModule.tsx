@@ -1111,10 +1111,6 @@ export const RestauranteModule = () => {
                     </Button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={imprimirRelatorioDietas} disabled={minhasSolicitacoesFiltradas.length === 0} title="Imprimir relatório">
-                      <Printer className="h-4 w-4 mr-1" />
-                      Imprimir
-                    </Button>
                     <ExportDropdown onExportExcel={exportMinhasDietasToExcel} onExportPDF={exportMinhasDietasToPDF} disabled={minhasSolicitacoesFiltradas.length === 0} />
                   </div>
                 </div>
