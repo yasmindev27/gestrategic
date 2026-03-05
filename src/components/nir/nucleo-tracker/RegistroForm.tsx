@@ -15,6 +15,7 @@ import { salvarRegistroDB } from "./storage";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Plus } from "lucide-react";
+import { getBrasiliaDateString, getBrasiliaTimeString } from "@/lib/brasilia-time";
 
 interface Props {
   onRegistroAdded: () => void;
@@ -25,9 +26,8 @@ export function RegistroForm({ onRegistroAdded }: Props) {
   const [atividade, setAtividade] = useState("");
   const [quantidade, setQuantidade] = useState("");
   const [observacao, setObservacao] = useState("");
-  const today = new Date().toISOString().slice(0, 10);
-  const [data] = useState(today);
-  const [horario, setHorario] = useState(() => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }));
+  const [data] = useState(() => getBrasiliaDateString());
+  const [horario, setHorario] = useState(() => getBrasiliaTimeString());
 
   // Auto-fill colaborador from logged-in user
   useEffect(() => {
