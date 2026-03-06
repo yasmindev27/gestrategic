@@ -1135,29 +1135,42 @@ export const QualidadeModule = () => {
           )}
 
           {incidentesView === "dashboard" && (() => {
-            const totalIncidentes = incidentes.length;
-            const pendentes = incidentes.filter(i => i.status === "notificado").length;
-            const emAnalise = incidentes.filter(i => i.status === "em_analise").length;
-            const encerrados = incidentes.filter(i => i.status === "encerrado").length;
-            const comResponsavel = incidentes.filter(i => i.responsavel_tratativa_nome).length;
-            const semResponsavel = incidentes.filter(i => !i.responsavel_tratativa_nome && i.status !== "encerrado").length;
-            const comPlano = incidentes.filter(i => i.plano_acao).length;
-            const comEvidencia = incidentes.filter(i => i.evidencia_url).length;
+            // Dashboard filters
+            const dashData = incidentes.filter(i => {
+              const matchStatus = statusFilter === "todos" || i.status === statusFilter;
+              const matchTipo = tipoFilter === "todos" || i.tipo_incidente === tipoFilter;
+              const matchDataInicio = !dataInicio || new Date(i.data_ocorrencia) >= new Date(dataInicio);
+              const matchDataFim = !dataFim || new Date(i.data_ocorrencia) <= new Date(dataFim + "T23:59:59");
+              const matchSearch = searchTerm === "" ||
+                i.setor.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (i.responsavel_tratativa_nome || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
+                i.descricao.toLowerCase().includes(searchTerm.toLowerCase());
+              return matchStatus && matchTipo && matchDataInicio && matchDataFim && matchSearch;
+            });
+
+            const totalIncidentes = dashData.length;
+            const pendentes = dashData.filter(i => i.status === "notificado").length;
+            const emAnalise = dashData.filter(i => i.status === "em_analise").length;
+            const encerrados = dashData.filter(i => i.status === "encerrado").length;
+            const comResponsavel = dashData.filter(i => i.responsavel_tratativa_nome).length;
+            const semResponsavel = dashData.filter(i => !i.responsavel_tratativa_nome && i.status !== "encerrado").length;
+            const comPlano = dashData.filter(i => i.plano_acao).length;
+            const comEvidencia = dashData.filter(i => i.evidencia_url).length;
             const taxaEncerramento = totalIncidentes > 0 ? Math.round((encerrados / totalIncidentes) * 100) : 0;
             const taxaTratativa = totalIncidentes > 0 ? Math.round((comResponsavel / totalIncidentes) * 100) : 0;
 
-            const leves = incidentes.filter(i => i.classificacao_risco === "leve").length;
-            const moderados = incidentes.filter(i => i.classificacao_risco === "moderado").length;
-            const graves = incidentes.filter(i => i.classificacao_risco === "grave").length;
-            const catastroficos = incidentes.filter(i => i.classificacao_risco === "catastrofico").length;
+            const leves = dashData.filter(i => i.classificacao_risco === "leve").length;
+            const moderados = dashData.filter(i => i.classificacao_risco === "moderado").length;
+            const graves = dashData.filter(i => i.classificacao_risco === "grave").length;
+            const catastroficos = dashData.filter(i => i.classificacao_risco === "catastrofico").length;
 
-            const eventosAdversos = incidentes.filter(i => i.tipo_incidente === "evento_adverso").length;
-            const quaseErros = incidentes.filter(i => i.tipo_incidente === "quase_erro").length;
-            const semDano = incidentes.filter(i => i.tipo_incidente === "incidente_sem_dano").length;
+            const eventosAdversos = dashData.filter(i => i.tipo_incidente === "evento_adverso").length;
+            const quaseErros = dashData.filter(i => i.tipo_incidente === "quase_erro").length;
+            const semDano = dashData.filter(i => i.tipo_incidente === "incidente_sem_dano").length;
 
             const setorCount: Record<string, number> = {};
-            incidentes.forEach(i => { const key = normalizeSetor(i.setor); setorCount[key] = (setorCount[key] || 0) + 1; });
-            const topSetores = Object.entries(setorCount).sort((a, b) => b[1] - a[1]).slice(0, 6);
+            dashData.forEach(i => { const key = normalizeSetor(i.setor); setorCount[key] = (setorCount[key] || 0) + 1; });
+            const topSetores = Object.entries(setorCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
 
             const RISK_COLORS = ["hsl(142 71% 45%)", "hsl(48 96% 53%)", "hsl(25 95% 53%)", "hsl(0 84% 60%)"];
             const TYPE_COLORS = ["hsl(0 84% 60%)", "hsl(48 96% 53%)", "hsl(210 60% 55%)"];
@@ -1189,7 +1202,7 @@ export const QualidadeModule = () => {
 
             // Monthly trend
             const monthMap: Record<string, { notificado: number; encerrado: number }> = {};
-            incidentes.forEach(i => {
+            dashData.forEach(i => {
               const m = format(new Date(i.data_ocorrencia), "MMM/yy", { locale: ptBR });
               if (!monthMap[m]) monthMap[m] = { notificado: 0, encerrado: 0 };
               monthMap[m].notificado += 1;
@@ -1206,8 +1219,101 @@ export const QualidadeModule = () => {
               { label: "Encerrados", value: encerrados, pct: taxaEncerramento },
             ];
 
+            const exportDashboardPDF = async () => {
+              const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+              const { doc, logoImg } = await createStandardPdf('Dashboard de Incidentes - NSP');
+              doc.setFontSize(10);
+              doc.text(`Período: ${dataInicio || "Início"} a ${dataFim || "Atual"} | Total: ${totalIncidentes}`, 14, 32);
+              autoTable(doc, {
+                startY: 38,
+                head: [["Indicador", "Valor"]],
+                body: [
+                  ["Total de Notificações", String(totalIncidentes)],
+                  ["Taxa de Encerramento", `${taxaEncerramento}%`],
+                  ["Sem Responsável", String(semResponsavel)],
+                  ["Taxa de Atribuição", `${taxaTratativa}%`],
+                  ["Leve", String(leves)],
+                  ["Moderado", String(moderados)],
+                  ["Grave", String(graves)],
+                  ["Catastrófico", String(catastroficos)],
+                  ["Eventos Adversos", String(eventosAdversos)],
+                  ["Quase Erros", String(quaseErros)],
+                  ["Sem Dano", String(semDano)],
+                ],
+                styles: { fontSize: 9 },
+                margin: { bottom: 30 },
+              });
+              savePdfWithFooter(doc, 'Dashboard NSP', `dashboard-nsp-${format(new Date(), "yyyy-MM-dd")}`, logoImg);
+            };
+
+            const exportDashboardExcel = () => {
+              const data = dashData.map(i => ({
+                Número: i.numero_notificacao,
+                Data: format(new Date(i.data_ocorrencia), "dd/MM/yyyy"),
+                Tipo: tiposIncidente.find(t => t.value === i.tipo_incidente)?.label || i.tipo_incidente,
+                Setor: i.setor,
+                "Setor Notificante": i.setor_origem || "",
+                Risco: classificacoesRisco.find(c => c.value === i.classificacao_risco)?.label || i.classificacao_risco,
+                Status: statusIncidente.find(s => s.value === i.status)?.label || i.status,
+                Responsável: i.responsavel_tratativa_nome || "",
+                Descrição: i.descricao,
+              }));
+              const ws = XLSX.utils.json_to_sheet(data);
+              const wb = XLSX.utils.book_new();
+              XLSX.utils.book_append_sheet(wb, ws, "Dashboard NSP");
+              XLSX.writeFile(wb, `dashboard-nsp-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+            };
+
             return (
               <div className="space-y-4">
+                {/* Filtros + Exportar */}
+                <Card>
+                  <CardContent className="pt-4">
+                    <div className="flex flex-wrap items-end gap-4">
+                      <SearchInput
+                        value={searchTerm}
+                        onChange={setSearchTerm}
+                        placeholder="Buscar setor, responsável..."
+                        className="w-[220px]"
+                      />
+                      <Select value={statusFilter} onValueChange={setStatusFilter}>
+                        <SelectTrigger className="w-[140px]">
+                          <SelectValue placeholder="Status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todos Status</SelectItem>
+                          {statusIncidente.map(s => (
+                            <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select value={tipoFilter} onValueChange={setTipoFilter}>
+                        <SelectTrigger className="w-[160px]">
+                          <SelectValue placeholder="Tipo" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todos Tipos</SelectItem>
+                          {tiposIncidente.map(t => (
+                            <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <DateRangeFilter
+                        startDate={dataInicio}
+                        endDate={dataFim}
+                        onStartDateChange={setDataInicio}
+                        onEndDateChange={setDataFim}
+                        onClear={() => { setDataInicio(""); setDataFim(""); }}
+                      />
+                      <div className="ml-auto">
+                        <ExportDropdown
+                          onExportPDF={exportDashboardPDF}
+                          onExportExcel={exportDashboardExcel}
+                        />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
                 {/* KPI Row */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                   <StatCard title="Total de Notificações" value={totalIncidentes} icon={AlertTriangle} variant="default" />
@@ -1295,7 +1401,7 @@ export const QualidadeModule = () => {
                 {/* Setor Notificante (Origem) */}
                 {(() => {
                   const origemCount: Record<string, number> = {};
-                  incidentes.forEach(i => {
+                  dashData.forEach(i => {
                     const o = i.setor_origem || "Não informado";
                     const normalized = normalizeSetor(o);
                     origemCount[normalized] = (origemCount[normalized] || 0) + 1;
@@ -1338,7 +1444,7 @@ export const QualidadeModule = () => {
                     "Maikon Junior": "Manutenção/Infraestrutura",
                   };
                   const respCount: Record<string, number> = {};
-                  incidentes.forEach(i => {
+                  dashData.forEach(i => {
                     const r = i.responsavel_tratativa_nome || "Sem responsável";
                     respCount[r] = (respCount[r] || 0) + 1;
                   });
