@@ -704,7 +704,7 @@ export const QualidadeModule = () => {
                           <TableHead className="whitespace-nowrap">Classificação</TableHead>
                           <TableHead className="whitespace-nowrap">Dano</TableHead>
                           <TableHead className="whitespace-nowrap">Notificante</TableHead>
-                          <TableHead className="text-right whitespace-nowrap">Ações</TableHead>
+                          
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -736,28 +736,6 @@ export const QualidadeModule = () => {
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-sm">{i.notificacao_anonima ? "Anônimo" : i.notificador_nome || "-"}</TableCell>
-                              <TableCell className="text-right">
-                                <div className="flex gap-1 justify-end">
-                                  <Button size="icon" variant="ghost" onClick={() => {
-                                    setSelectedIncidente(i);
-                                    setDetalhesDialog(true);
-                                  }}>
-                                    <Eye className="h-4 w-4" />
-                                  </Button>
-                                  <Button size="icon" variant="ghost" onClick={() => {
-                                    setSelectedIncidente(i);
-                                    setAnaliseDialog(true);
-                                  }}>
-                                    <Target className="h-4 w-4" />
-                                  </Button>
-                                  <Button size="icon" variant="ghost" onClick={() => {
-                                    setSelectedIncidente(i);
-                                    setAcaoDialog(true);
-                                  }}>
-                                    <ClipboardCheck className="h-4 w-4" />
-                                  </Button>
-                                </div>
-                              </TableCell>
                             </TableRow>
                           );
                         })}
