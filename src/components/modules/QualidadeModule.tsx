@@ -1304,63 +1304,62 @@ export const QualidadeModule = () => {
                   );
                 })()}
 
-                {/* Evolução Mensal + Setor Notificante */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-semibold">Evolução Mensal</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {trendData.length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-8">Sem dados</p>
-                      ) : (
-                        <ResponsiveContainer width="100%" height={220}>
-                          <AreaChart data={trendData} margin={{ left: 0, right: 10 }}>
+                {/* Setor Notificante (Origem) - full width */}
+                {(() => {
+                  const origemCount: Record<string, number> = {};
+                  incidentes.forEach(i => {
+                    const o = i.setor_origem || "Não informado";
+                    const normalized = normalizeSetor(o);
+                    origemCount[normalized] = (origemCount[normalized] || 0) + 1;
+                  });
+                  const topOrigem = Object.entries(origemCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
+                  const origemData = topOrigem.map(([nome, count]) => ({
+                    nome: nome.length > 30 ? nome.slice(0, 30) + "..." : nome,
+                    total: count,
+                  }));
+                  return (
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-semibold">Setor Notificante (Origem)</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={origemData} layout="vertical" margin={{ left: 10, right: 20 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
-                            <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                            <YAxis type="category" dataKey="nome" width={180} tick={{ fontSize: 10 }} />
                             <Tooltip />
-                            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px" }} />
-                            <Area type="monotone" dataKey="notificado" name="Notificados" stroke="hsl(48 96% 53%)" fill="hsl(48 96% 53% / 0.15)" strokeWidth={2} />
-                            <Area type="monotone" dataKey="encerrado" name="Encerrados" stroke="hsl(142 71% 45%)" fill="hsl(142 71% 45% / 0.15)" strokeWidth={2} />
-                          </AreaChart>
+                            <Bar dataKey="total" name="Notificações" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={16} />
+                          </BarChart>
                         </ResponsiveContainer>
-                      )}
-                    </CardContent>
-                  </Card>
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
 
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-semibold">Setor Notificante (Origem)</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {(() => {
-                        const origemCount: Record<string, number> = {};
-                        incidentes.forEach(i => {
-                          const o = i.setor_origem || "Não informado";
-                          const normalized = normalizeSetor(o);
-                          origemCount[normalized] = (origemCount[normalized] || 0) + 1;
-                        });
-                        const topOrigem = Object.entries(origemCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
-                        const origemData = topOrigem.map(([nome, count]) => ({
-                          nome: nome.length > 25 ? nome.slice(0, 25) + "..." : nome,
-                          total: count,
-                        }));
-                        return (
-                          <ResponsiveContainer width="100%" height={220}>
-                            <BarChart data={origemData} layout="vertical" margin={{ left: 10, right: 20 }}>
-                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                              <YAxis type="category" dataKey="nome" width={150} tick={{ fontSize: 10 }} />
-                              <Tooltip />
-                              <Bar dataKey="total" name="Notificações" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={16} />
-                            </BarChart>
-                          </ResponsiveContainer>
-                        );
-                      })()}
-                    </CardContent>
-                  </Card>
-                </div>
+                {/* Evolução Mensal */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold">Evolução Mensal</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {trendData.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-8">Sem dados</p>
+                    ) : (
+                      <ResponsiveContainer width="100%" height={220}>
+                        <AreaChart data={trendData} margin={{ left: 0, right: 10 }}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+                          <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                          <Tooltip />
+                          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px" }} />
+                          <Area type="monotone" dataKey="notificado" name="Notificados" stroke="hsl(48 96% 53%)" fill="hsl(48 96% 53% / 0.15)" strokeWidth={2} />
+                          <Area type="monotone" dataKey="encerrado" name="Encerrados" stroke="hsl(142 71% 45%)" fill="hsl(142 71% 45% / 0.15)" strokeWidth={2} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    )}
+                  </CardContent>
+                </Card>
 
                 {/* Treatment Funnel */}
                 <Card>
