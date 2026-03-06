@@ -117,6 +117,9 @@ const normalizeSetor = (s: string): string => {
     [/transporte/i, "Transporte"],
     [/nir/i, "NIR"],
     [/nsp|qualidade/i, "NSP/Qualidade"],
+    [/scih|sciras|ccih/i, "SCIH/SCIRAS"],
+    [/ouvidoria/i, "Ouvidoria"],
+    [/lideranca/i, "Liderança"],
     [/raio.?x|radiologia/i, "Raio-X"],
     [/farmacia/i, "Farmácia"],
     [/laboratorio|coleta/i, "Laboratório"],
@@ -124,7 +127,8 @@ const normalizeSetor = (s: string): string => {
     [/assistencia social/i, "Assistência Social"],
     [/triagem|classificacao|acolhimento/i, "Classificação/Acolhimento"],
     [/recepcao|portaria|administrativ/i, "Administrativo/Recepção"],
-    [/consultorio|corpo.?clinic|medic|equipe.?medic/i, "Corpo Clínico"],
+    [/clinica.?medica/i, "Clínica Médica"],
+    [/consultorio|corpo.?clinic|equipe.?medic/i, "Corpo Clínico"],
     [/sutura/i, "Sutura"],
     [/sala.?vermelha|emergencia/i, "Emergência"],
     [/sala.?de.?medicacao|medicacao/i, "Medicação"],
@@ -133,6 +137,7 @@ const normalizeSetor = (s: string): string => {
     [/enfermagem|tecnic/i, "Enfermagem"],
     [/pediatr/i, "Pediatria"],
     [/gerencia/i, "Gerência"],
+    [/medic/i, "Corpo Clínico"],
   ];
 
   for (const [regex, canonical] of rules) {
