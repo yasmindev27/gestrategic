@@ -189,13 +189,16 @@ export const DashboardConformidade = () => {
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Award className="h-6 w-6 text-primary" />
-            Dashboard de Conformidade
+            Dashboard de Conformidade - ONA Nível 1
           </h2>
           <p className="text-muted-foreground">
-            Indicadores de acreditação ONA, ISO 9001 e Qmentum
+            Indicadores de acreditação ONA Nível 1, ISO 9001 e Qmentum
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Badge variant="outline" className="border-primary text-primary font-semibold px-3 py-1">
+            ONA N1
+          </Badge>
           <Button variant="outline" size="sm" onClick={recarregar}>
             <RefreshCcw className="h-4 w-4 mr-2" />
             Atualizar
