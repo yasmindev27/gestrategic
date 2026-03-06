@@ -25,7 +25,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, mapStatusToType } from "@/components/ui/status-badge";
 import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
-import { DashboardConformidade, MetasSegurancaPaciente } from "@/components/qualidade";
+import { DashboardConformidade, MetasSegurancaPaciente, FormulariosQualidade } from "@/components/qualidade";
 import { RiscosOperacionaisChart, AnalisarIncidenteIA, ImportarIncidentesDialog } from "@/components/gestao-incidentes";
 import * as XLSX from "xlsx";
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } from "recharts";
@@ -838,6 +838,10 @@ export const QualidadeModule = () => {
             Conformidade
           </TabsTrigger>
           <TabsTrigger value="incidentes">Incidentes</TabsTrigger>
+          <TabsTrigger value="formularios" className="gap-1">
+            <FileText className="h-4 w-4" />
+            Formulários
+          </TabsTrigger>
         </TabsList>
 
         {/* Metas de Segurança do Paciente - ONA Nível 1 */}
@@ -1290,6 +1294,75 @@ export const QualidadeModule = () => {
                   </Card>
                 </div>
 
+                {/* Responsável por Tratativa */}
+                {(() => {
+                  const respCount: Record<string, number> = {};
+                  incidentes.forEach(i => {
+                    const r = i.responsavel_tratativa_nome || "Sem responsável";
+                    respCount[r] = (respCount[r] || 0) + 1;
+                  });
+                  const topResp = Object.entries(respCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
+                  const respData = topResp.map(([nome, count]) => ({
+                    nome: nome.length > 25 ? nome.slice(0, 25) + "..." : nome,
+                    total: count,
+                  }));
+                  const RESP_COLORS = ["hsl(210 70% 50%)", "hsl(150 60% 45%)", "hsl(30 80% 55%)", "hsl(280 50% 55%)", "hsl(190 60% 45%)", "hsl(350 60% 55%)", "hsl(80 50% 45%)", "hsl(240 50% 55%)"];
+                  return (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-semibold">Distribuição por Responsável</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <ResponsiveContainer width="100%" height={250}>
+                            <BarChart data={respData} layout="vertical" margin={{ left: 10, right: 20 }}>
+                              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                              <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                              <YAxis type="category" dataKey="nome" width={150} tick={{ fontSize: 10 }} />
+                              <Tooltip />
+                              <Bar dataKey="total" name="Incidentes" radius={[0, 4, 4, 0]} barSize={16}>
+                                {respData.map((_, i) => <Cell key={i} fill={RESP_COLORS[i % RESP_COLORS.length]} />)}
+                              </Bar>
+                            </BarChart>
+                          </ResponsiveContainer>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-semibold">Setor Notificante (Origem)</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          {(() => {
+                            const origemCount: Record<string, number> = {};
+                            incidentes.forEach(i => {
+                              const o = i.setor_origem || "Não informado";
+                              const normalized = normalizeSetor(o);
+                              origemCount[normalized] = (origemCount[normalized] || 0) + 1;
+                            });
+                            const topOrigem = Object.entries(origemCount).sort((a, b) => b[1] - a[1]).slice(0, 8);
+                            const origemData = topOrigem.map(([nome, count]) => ({
+                              nome: nome.length > 25 ? nome.slice(0, 25) + "..." : nome,
+                              total: count,
+                            }));
+                            return (
+                              <ResponsiveContainer width="100%" height={250}>
+                                <BarChart data={origemData} layout="vertical" margin={{ left: 10, right: 20 }}>
+                                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                                  <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                                  <YAxis type="category" dataKey="nome" width={150} tick={{ fontSize: 10 }} />
+                                  <Tooltip />
+                                  <Bar dataKey="total" name="Notificações" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={16} />
+                                </BarChart>
+                              </ResponsiveContainer>
+                            );
+                          })()}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  );
+                })()}
+
                 {/* Treatment Funnel */}
                 <Card>
                   <CardHeader className="pb-2">
@@ -1317,6 +1390,11 @@ export const QualidadeModule = () => {
               </div>
             );
           })()}
+        </TabsContent>
+
+        {/* Formulários de Auditoria */}
+        <TabsContent value="formularios" className="mt-4">
+          <FormulariosQualidade />
         </TabsContent>
       </Tabs>
 
