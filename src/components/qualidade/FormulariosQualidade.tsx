@@ -483,18 +483,30 @@ export function FormulariosQualidade() {
   if (view === "consolidado" && selectedForm) {
     const tipoRegistros = registros.filter(r => r.tipo === selectedForm.tipo);
 
-    // Build monthly columns from BOTH incidentes and auditorias
+    // Build monthly columns - limit to current month (2026-03)
+    const currentMonth = format(new Date(), "yyyy-MM");
     const monthSet = new Set<string>();
-    incidentes.forEach(i => monthSet.add(format(new Date(i.data_ocorrencia), "yyyy-MM")));
-    tipoRegistros.forEach(r => monthSet.add(format(new Date(r.data_auditoria), "yyyy-MM")));
+    incidentes.forEach(i => {
+      const m = format(new Date(i.data_ocorrencia), "yyyy-MM");
+      if (m <= currentMonth) monthSet.add(m);
+    });
+    tipoRegistros.forEach(r => {
+      const m = format(new Date(r.data_auditoria), "yyyy-MM");
+      if (m <= currentMonth) monthSet.add(m);
+    });
     const months = [...monthSet].sort();
     const monthLabels = months.map(m => {
       const d = new Date(m + "-01");
       return format(d, "MMM/yy", { locale: ptBR }).replace(/^./, c => c.toUpperCase());
     });
 
-    // Helper: get incidentes for a month
-    const incByMonth = (month: string) => incidentes.filter(i => format(new Date(i.data_ocorrencia), "yyyy-MM") === month);
+    // Helper: normalize month - cap future dates at current month
+    const getIncMonth = (i: any) => {
+      const m = format(new Date(i.data_ocorrencia), "yyyy-MM");
+      return m > currentMonth ? currentMonth : m;
+    };
+    const incidentesFiltrados = incidentes; // all incidents counted
+    const incByMonth = (month: string) => incidentesFiltrados.filter(i => getIncMonth(i) === month);
     const calcAvg = (vals: number[]) => vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : "";
     const calcPct = (num: number, den: number) => den > 0 ? ((num / den) * 100).toFixed(1) : "";
 
@@ -768,7 +780,7 @@ export function FormulariosQualidade() {
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Card><CardContent className="pt-4 pb-3 text-center">
-            <p className="text-2xl font-bold">{incidentes.length}</p>
+            <p className="text-2xl font-bold">{incidentesFiltrados.length}</p>
             <p className="text-xs text-muted-foreground">Total Notificações</p>
           </CardContent></Card>
           <Card><CardContent className="pt-4 pb-3 text-center">
@@ -780,7 +792,7 @@ export function FormulariosQualidade() {
             <p className="text-xs text-muted-foreground">Meses com Dados</p>
           </CardContent></Card>
           <Card><CardContent className="pt-4 pb-3 text-center">
-            <p className="text-2xl font-bold">{incidentes.filter(i => i.tipo_incidente === "evento_adverso").length}</p>
+            <p className="text-2xl font-bold">{incidentesFiltrados.filter(i => i.tipo_incidente === "evento_adverso").length}</p>
             <p className="text-xs text-muted-foreground">Eventos Adversos</p>
           </CardContent></Card>
         </div>
