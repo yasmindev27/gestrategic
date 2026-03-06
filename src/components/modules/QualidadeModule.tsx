@@ -928,6 +928,7 @@ export const QualidadeModule = () => {
                           <TableHead className="whitespace-nowrap">Descrição</TableHead>
                           <TableHead className="whitespace-nowrap">Correção/Ação Imediata</TableHead>
                           <TableHead className="whitespace-nowrap">Classificação</TableHead>
+                          <TableHead className="whitespace-nowrap">Causas Prováveis (Protocolo de Londres)</TableHead>
                           <TableHead className="whitespace-nowrap">Dano</TableHead>
                         </TableRow>
                       </TableHeader>
@@ -953,6 +954,11 @@ export const QualidadeModule = () => {
                               <TableCell className="text-sm max-w-[200px] truncate" title={descricaoPura}>{descricaoPura}</TableCell>
                               <TableCell className="text-sm max-w-[200px] truncate" title={correcao}>{correcao}</TableCell>
                               <TableCell className="text-sm">{classificacaoOriginal}</TableCell>
+                              <TableCell className="text-sm max-w-[200px] truncate" title={
+                                analises.filter(a => a.incidente_id === i.id).map(a => a.causas_identificadas).filter(Boolean).join("; ") || "Sem análise"
+                              }>
+                                {analises.filter(a => a.incidente_id === i.id).map(a => a.causas_identificadas).filter(Boolean).join("; ") || <span className="text-muted-foreground">-</span>}
+                              </TableCell>
                               <TableCell>
                                 <Badge className={`${getRiscoColor(i.classificacao_risco)} text-white`}>
                                   {dano}
