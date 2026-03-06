@@ -256,8 +256,22 @@ export const LogsAuditoriaModule = () => {
   };
 
   const fetchModulos = async () => {
-    const { data } = await supabase.from("logs_acesso").select("modulo").order("modulo");
-    if (data) setModulos([...new Set(data.map(d => d.modulo))]);
+    // Busca paginada para não estourar limite de 1000 registros
+    const allModulos = new Set<string>();
+    let from = 0;
+    const batchSize = 1000;
+    let hasMore = true;
+    while (hasMore) {
+      const { data } = await supabase.from("logs_acesso").select("modulo").order("modulo").range(from, from + batchSize - 1);
+      if (data && data.length > 0) {
+        data.forEach(d => allModulos.add(d.modulo));
+        from += batchSize;
+        hasMore = data.length === batchSize;
+      } else {
+        hasMore = false;
+      }
+    }
+    setModulos([...allModulos].sort());
   };
 
   useEffect(() => { fetchModulos(); }, []);

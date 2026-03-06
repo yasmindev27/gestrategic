@@ -82,16 +82,16 @@ export const useConformidadeIndicadores = () => {
         escalasRes,
         bedRecordsRes,
       ] = await Promise.all([
-        supabase.from("incidentes_nsp").select("*"),
-        supabase.from("auditorias_seguranca_paciente").select("*").gte("data_auditoria", inicioMes.toISOString()),
-        supabase.from("chamados").select("*").gte("created_at", inicioMes.toISOString()),
-        supabase.from("acoes_incidentes").select("*"),
-        supabase.from("epis_seguranca").select("*"),
-        supabase.from("vacinas_seguranca").select("*"),
-        supabase.from("rondas_seguranca").select("*").gte("created_at", inicioMes.toISOString()),
-        supabase.from("atestados").select("*").gte("created_at", inicioMes.toISOString()),
-        supabase.from("enfermagem_escalas").select("*"),
-        supabase.from("bed_records").select("*").gte("created_at", inicioMes.toISOString()),
+        supabase.from("incidentes_nsp").select("id, status, classificacao_risco, responsavel_tratativa_nome, plano_acao, evidencia_url, data_conclusao, data_ocorrencia"),
+        supabase.from("auditorias_seguranca_paciente").select("id, respostas, data_auditoria").gte("data_auditoria", inicioMes.toISOString()),
+        supabase.from("chamados").select("id, status, prioridade, data_abertura, data_resolucao").gte("created_at", inicioMes.toISOString()),
+        supabase.from("acoes_incidentes").select("id, status"),
+        supabase.from("epis_seguranca").select("id, data_validade"),
+        supabase.from("vacinas_seguranca").select("id, status"),
+        supabase.from("rondas_seguranca").select("id").gte("created_at", inicioMes.toISOString()),
+        supabase.from("atestados").select("id, dias_afastamento").gte("created_at", inicioMes.toISOString()),
+        supabase.from("enfermagem_escalas").select("id, status"),
+        supabase.from("bed_records").select("id, patient_name").gte("created_at", inicioMes.toISOString()),
       ]);
 
       const incidentes = incidentesRes.data || [];
