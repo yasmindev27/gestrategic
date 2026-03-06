@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { AlertTriangle, ClipboardCheck, BarChart3, FileText, Plus, Eye, Pencil, ShieldX, TrendingUp, AlertCircle, CheckCircle2, Clock, Target, Stethoscope, Brain, Send, UserCheck, Upload } from "lucide-react";
+import { AlertTriangle, ClipboardCheck, BarChart3, FileText, Plus, Eye, Pencil, ShieldX, TrendingUp, AlertCircle, CheckCircle2, Clock, Target, Stethoscope, Brain, Send, UserCheck, Upload, Bot, Loader2, Users } from "lucide-react";
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
 import { StatCard } from "@/components/ui/stat-card";
 import { SearchInput } from "@/components/ui/search-input";
@@ -165,6 +165,11 @@ export const QualidadeModule = () => {
   const [selectedAcao, setSelectedAcao] = useState<Acao | null>(null);
   const [novoResponsavel, setNovoResponsavel] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [iaReviewLoading, setIaReviewLoading] = useState<string | null>(null);
+  const [iaReviewResult, setIaReviewResult] = useState<{ incidenteId: string; resultado: any } | null>(null);
+  const [iaReviewDialog, setIaReviewDialog] = useState(false);
+  const [responsavelDialog, setResponsavelDialog] = useState(false);
+  const [responsavelIncidente, setResponsavelIncidente] = useState<Incidente | null>(null);
   
   // Form data
   const [incidenteForm, setIncidenteForm] = useState({
@@ -470,6 +475,82 @@ export const QualidadeModule = () => {
     setEncaminharDialog(true);
   };
 
+  // IA Review Classification
+  const handleIAReview = async (incidente: Incidente) => {
+    setIaReviewLoading(incidente.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("analisar-incidente-ia", {
+        body: {
+          incidente: {
+            descricao: incidente.descricao,
+            setor: incidente.setor,
+            paciente_envolvido: incidente.paciente_envolvido,
+          },
+          tipo_analise: "classificacao",
+        },
+      });
+      if (error) throw error;
+      if (!data?.success) throw new Error(data?.error || "Erro na análise");
+      setIaReviewResult({ incidenteId: incidente.id, resultado: data.analise });
+      setIaReviewDialog(true);
+    } catch (err: any) {
+      toast({ title: "Erro", description: err.message || "Falha na análise de IA", variant: "destructive" });
+    } finally {
+      setIaReviewLoading(null);
+    }
+  };
+
+  // Assign responsible and create agenda notification
+  const handleAssignResponsavel = async (userId: string) => {
+    if (!responsavelIncidente) return;
+    const usuario = usuarios.find(u => u.user_id === userId);
+    if (!usuario) return;
+
+    setIsSubmitting(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+
+      // Update incident status to em_analise
+      await supabase.from("incidentes_nsp")
+        .update({ status: "em_analise" })
+        .eq("id", responsavelIncidente.id);
+
+      // Create agenda item for the responsible
+      const { data: agendaItem, error: agendaError } = await supabase
+        .from("agenda_items")
+        .insert({
+          tipo: "tarefa",
+          titulo: `Tratativa de Notificação ${responsavelIncidente.numero_notificacao}`,
+          descricao: `Nova notificação de incidente atribuída para tratativa.\n\nNº: ${responsavelIncidente.numero_notificacao}\nSetor: ${responsavelIncidente.setor}\nClassificação: ${classificacoesRisco.find(c => c.value === responsavelIncidente.classificacao_risco)?.label || responsavelIncidente.classificacao_risco}\n\nDescrição: ${responsavelIncidente.descricao.substring(0, 200)}`,
+          data_inicio: new Date().toISOString(),
+          prioridade: responsavelIncidente.classificacao_risco === "catastrofico" || responsavelIncidente.classificacao_risco === "grave" ? "alta" : "media",
+          status: "pendente",
+          criado_por: user.id,
+        })
+        .select()
+        .single();
+
+      if (agendaError) throw agendaError;
+
+      await supabase.from("agenda_destinatarios").insert({
+        agenda_item_id: agendaItem.id,
+        usuario_id: userId,
+        visualizado: false,
+      });
+
+      toast({ title: "Sucesso", description: `Notificação atribuída a ${usuario.full_name}. Uma nova tarefa foi criada na agenda.` });
+      setResponsavelDialog(false);
+      setResponsavelIncidente(null);
+      loadData();
+      logAction("Qualidade/NSP", "atribuir_responsavel_notificacao", { incidente_id: responsavelIncidente.id, responsavel: usuario.full_name });
+    } catch (err: any) {
+      console.error("Erro ao atribuir responsável:", err);
+      toast({ title: "Erro", description: "Falha ao atribuir responsável", variant: "destructive" });
+    }
+    setIsSubmitting(false);
+  };
+
   const resetIncidenteForm = () => setIncidenteForm({
     tipo_incidente: "", data_ocorrencia: "", local_ocorrencia: "", setor: "",
     descricao: "", classificacao_risco: "", notificacao_anonima: false,
@@ -767,10 +848,14 @@ export const QualidadeModule = () => {
             <Card>
               <CardContent className="pt-6">
                 <div className="space-y-4">
-                  <h3 className="text-lg font-semibold">Tratamento de Notificações</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Selecione um incidente na lista para realizar análise, plano de ação e encerramento.
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="text-lg font-semibold">Tratamento de Notificações</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Visualize, atribua responsáveis e utilize IA para revisar classificações.
+                      </p>
+                    </div>
+                  </div>
                   {incidentes.filter(i => i.status !== "encerrado").length === 0 ? (
                     <EmptyState
                       icon={CheckCircle2}
@@ -786,7 +871,7 @@ export const QualidadeModule = () => {
                           <TableHead>Setor</TableHead>
                           <TableHead>Classificação</TableHead>
                           <TableHead>Status</TableHead>
-                          
+                          <TableHead className="text-right">Ações</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -805,6 +890,37 @@ export const QualidadeModule = () => {
                                 status={mapStatusToType(i.status)} 
                                 label={statusIncidente.find(s => s.value === i.status)?.label || i.status} 
                               />
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex gap-1 justify-end">
+                                <Button size="sm" variant="outline" onClick={() => {
+                                  setSelectedIncidente(i);
+                                  setDetalhesDialog(true);
+                                }}>
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Ver
+                                </Button>
+                                <Button 
+                                  size="sm" 
+                                  variant="outline" 
+                                  onClick={() => handleIAReview(i)}
+                                  disabled={iaReviewLoading === i.id}
+                                >
+                                  {iaReviewLoading === i.id ? (
+                                    <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                                  ) : (
+                                    <Bot className="h-4 w-4 mr-1" />
+                                  )}
+                                  IA
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => {
+                                  setResponsavelIncidente(i);
+                                  setResponsavelDialog(true);
+                                }}>
+                                  <Users className="h-4 w-4 mr-1" />
+                                  Responsável
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
@@ -1349,6 +1465,90 @@ export const QualidadeModule = () => {
         onOpenChange={setImportarDialog}
         onImportComplete={loadData}
       />
+
+      {/* Dialog: Revisão IA de Classificação */}
+      <Dialog open={iaReviewDialog} onOpenChange={setIaReviewDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Bot className="h-5 w-5 text-primary" />
+              Revisão de Classificação por IA
+            </DialogTitle>
+          </DialogHeader>
+          {iaReviewResult?.resultado?.classificacao_sugerida && (
+            <div className="space-y-4">
+              <Card className="bg-muted/50">
+                <CardContent className="pt-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Classificação Sugerida</span>
+                    <Badge variant="default">{iaReviewResult.resultado.classificacao_sugerida.label}</Badge>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Confiança</span>
+                    <span className="text-sm font-semibold">{iaReviewResult.resultado.classificacao_sugerida.confianca}%</span>
+                  </div>
+                  <div>
+                    <span className="text-sm text-muted-foreground">Justificativa</span>
+                    <p className="text-sm mt-1">{iaReviewResult.resultado.classificacao_sugerida.justificativa}</p>
+                  </div>
+                </CardContent>
+              </Card>
+              {iaReviewResult.resultado.resumo_tecnico && (
+                <div>
+                  <Label className="text-muted-foreground">Resumo Técnico</Label>
+                  <p className="text-sm mt-1">{iaReviewResult.resultado.resumo_tecnico}</p>
+                </div>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIaReviewDialog(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Selecionar Responsável */}
+      <Dialog open={responsavelDialog} onOpenChange={(open) => {
+        setResponsavelDialog(open);
+        if (!open) setResponsavelIncidente(null);
+      }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5" />
+              Selecionar Responsável para Tratativa
+            </DialogTitle>
+          </DialogHeader>
+          {responsavelIncidente && (
+            <div className="space-y-4">
+              <Card className="bg-muted/50">
+                <CardContent className="pt-4 space-y-1">
+                  <p className="text-sm font-medium">{responsavelIncidente.numero_notificacao}</p>
+                  <p className="text-xs text-muted-foreground">{responsavelIncidente.setor} • {classificacoesRisco.find(c => c.value === responsavelIncidente.classificacao_risco)?.label}</p>
+                </CardContent>
+              </Card>
+              <div>
+                <Label>Selecionar Responsável *</Label>
+                <div className="max-h-[300px] overflow-y-auto border rounded-md mt-2">
+                  {usuarios.map(u => (
+                    <button
+                      key={u.user_id}
+                      className="w-full text-left px-4 py-3 hover:bg-muted/50 border-b last:border-b-0 flex items-center gap-3 transition-colors"
+                      onClick={() => handleAssignResponsavel(u.user_id)}
+                      disabled={isSubmitting}
+                    >
+                      <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm font-medium">
+                        {u.full_name.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="text-sm">{u.full_name}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
