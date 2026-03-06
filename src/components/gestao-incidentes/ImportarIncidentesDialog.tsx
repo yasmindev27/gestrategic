@@ -68,7 +68,8 @@ export function ImportarIncidentesDialog({ open, onOpenChange, onImportComplete 
             // Excel serial date
             const date = XLSX.SSF.parse_date_code(val);
             if (date) {
-              return `${date.d}/${date.m}/${date.y} ${date.H || 0}:${String(date.M || 0).padStart(2, "0")}`;
+              // Always output DD/MM/YYYY HH:MM to avoid ambiguity
+              return `${String(date.d).padStart(2, "0")}/${String(date.m).padStart(2, "0")}/${date.y} ${date.H || 0}:${String(date.M || 0).padStart(2, "0")}`;
             }
           }
           return String(val);

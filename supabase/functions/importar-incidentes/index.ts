@@ -26,44 +26,70 @@ function parseDate(raw: string | null): string | null {
   if (!raw || raw === "." || raw === "..." || raw === "-" || raw === "00" || raw === "0000") return null;
   
   try {
-    // Try DD/MM/YYYY or DD/MM/YY format
-    const parts = raw.replace(/\s+/g, " ").trim().split(/[\/\-\.]/);
-    if (parts.length >= 3) {
-      let day = parseInt(parts[0]);
-      let month = parseInt(parts[1]);
-      let year = parseInt(parts[2].split(" ")[0]); // Remove time part
-      
-      // Handle Excel date serial
-      if (day > 31 && month <= 12) {
-        // Swap - might be M/D/Y format
-        [day, month] = [month, day];
-      }
-      
-      if (year < 100) year += 2000;
-      if (month < 1 || month > 12) return null;
-      if (day < 1 || day > 31) return null;
-      
-      // Extract time if present
-      const timeParts = raw.split(" ");
-      let hours = "08", minutes = "00";
-      if (timeParts.length > 1) {
-        const time = timeParts[timeParts.length - 1];
-        const tParts = time.split(":");
-        if (tParts.length >= 2) {
-          hours = tParts[0].padStart(2, "0");
-          minutes = tParts[1].padStart(2, "0");
-        }
-      }
-      
-      const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${hours}:${minutes}:00-03:00`;
-      const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return null;
-      return d.toISOString();
+    const cleaned = raw.replace(/\s+/g, " ").trim();
+    
+    // Try to split date from time
+    const spaceIdx = cleaned.indexOf(" ");
+    const datePart = spaceIdx > 0 ? cleaned.substring(0, spaceIdx) : cleaned;
+    const timePart = spaceIdx > 0 ? cleaned.substring(spaceIdx + 1) : "";
+
+    // Split date by common separators
+    const parts = datePart.split(/[\/\-\.]/);
+    if (parts.length < 2) return null;
+
+    let day: number, month: number, year: number;
+
+    if (parts.length === 2) {
+      // DD/MM format without year — assume 2025
+      day = parseInt(parts[0]);
+      month = parseInt(parts[1]);
+      year = 2025;
+    } else {
+      // DD/MM/YYYY or DD/MM/YY
+      day = parseInt(parts[0]);
+      month = parseInt(parts[1]);
+      year = parseInt(parts[2]);
     }
+
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return null;
+
+    // Fix 2-digit year
+    if (year < 100) {
+      year = year > 50 ? 1900 + year : 2000 + year;
+    }
+
+    // Brazilian format is DD/MM/YYYY. If day > 12, it's definitely the day.
+    // If month > 12, then it's swapped (M/D/Y format from Excel).
+    if (month > 12 && day <= 12) {
+      [day, month] = [month, day];
+    }
+
+    // Validate
+    if (month < 1 || month > 12) return null;
+    if (day < 1 || day > 31) return null;
+
+    // Sanity: incident dates should be between 2024 and 2026
+    if (year < 2024 || year > 2026) return null;
+
+    // Parse time
+    let hours = 8, minutes = 0;
+    if (timePart) {
+      const tParts = timePart.split(":");
+      if (tParts.length >= 2) {
+        const h = parseInt(tParts[0]);
+        const m = parseInt(tParts[1]);
+        if (!isNaN(h) && h >= 0 && h <= 23) hours = h;
+        if (!isNaN(m) && m >= 0 && m <= 59) minutes = m;
+      }
+    }
+
+    const dateStr = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}T${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:00-03:00`;
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return null;
+    return d.toISOString();
   } catch {
     return null;
   }
-  return null;
 }
 
 function cleanText(raw: string | null | undefined): string {
@@ -108,9 +134,10 @@ Deno.serve(async (req) => {
       const rows = batch
         .filter((r: any) => {
           const desc = cleanText(r.descricao);
-          return desc.length > 5; // Skip empty/meaningless rows
+          return desc.length > 5;
         })
         .map((r: any) => {
+          // Try data_ocorrido first, then data_abertura, then fallback
           const dataOcorrencia = parseDate(r.data_ocorrido) || parseDate(r.data_abertura) || new Date().toISOString();
           const pacienteNome = cleanText(r.paciente_nome);
           const prontuario = cleanText(r.prontuario);
@@ -130,7 +157,7 @@ Deno.serve(async (req) => {
             : descricao;
 
           return {
-            numero_notificacao: "", // trigger generates
+            numero_notificacao: "",
             tipo_incidente: tipoIncidente,
             data_ocorrencia: dataOcorrencia,
             local_ocorrencia: setorNotificado,
