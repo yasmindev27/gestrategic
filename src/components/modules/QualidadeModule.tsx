@@ -1289,16 +1289,25 @@ export const QualidadeModule = () => {
 
                 {/* Distribuição por Responsável - logo abaixo */}
                 {(() => {
+                  // Agrupa setores por responsável
+                  const respSetores: Record<string, Set<string>> = {};
                   const respCount: Record<string, number> = {};
                   incidentes.forEach(i => {
                     const r = i.responsavel_tratativa_nome || "Sem responsável";
                     respCount[r] = (respCount[r] || 0) + 1;
+                    if (!respSetores[r]) respSetores[r] = new Set();
+                    const setorNorm = normalizeSetor(i.setor);
+                    respSetores[r].add(setorNorm);
                   });
-                  const topResp = Object.entries(respCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
-                  const respData = topResp.map(([nome, count]) => ({
-                    nome: nome.length > 30 ? nome.slice(0, 30) + "..." : nome,
-                    total: count,
-                  }));
+                  const topResp = Object.entries(respCount).sort((a, b) => b[1] - a[1]).slice(0, 12);
+                  const respData = topResp.map(([nome, count]) => {
+                    const setores = Array.from(respSetores[nome] || []).slice(0, 3).join(", ");
+                    const label = `${nome} (${setores})`;
+                    return {
+                      nome: label.length > 45 ? label.slice(0, 45) + "..." : label,
+                      total: count,
+                    };
+                  });
                   const RESP_COLORS = ["hsl(210 70% 50%)", "hsl(150 60% 45%)", "hsl(30 80% 55%)", "hsl(280 50% 55%)", "hsl(190 60% 45%)", "hsl(350 60% 55%)", "hsl(80 50% 45%)", "hsl(240 50% 55%)", "hsl(320 50% 50%)", "hsl(50 70% 50%)"];
                   return (
                     <Card>
@@ -1306,11 +1315,11 @@ export const QualidadeModule = () => {
                         <CardTitle className="text-sm font-semibold">Distribuição por Responsável</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <ResponsiveContainer width="100%" height={320}>
+                        <ResponsiveContainer width="100%" height={380}>
                           <BarChart data={respData} layout="vertical" margin={{ left: 10, right: 20 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                             <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                            <YAxis type="category" dataKey="nome" width={180} tick={{ fontSize: 10 }} />
+                            <YAxis type="category" dataKey="nome" width={280} tick={{ fontSize: 9 }} />
                             <Tooltip />
                             <Bar dataKey="total" name="Incidentes" radius={[0, 4, 4, 0]} barSize={16}>
                               {respData.map((_, i) => <Cell key={i} fill={RESP_COLORS[i % RESP_COLORS.length]} />)}
