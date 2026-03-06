@@ -478,17 +478,123 @@ export function FormulariosQualidade() {
 
   // ─── VIEW: CONSOLIDADO ───
   if (view === "consolidado" && selectedForm) {
-    const { totalAuditorias, avgConf, questionStats, sectorStats } = getConsolidadoData();
+    const tipoRegistros = registros.filter(r => r.tipo === selectedForm.tipo);
+
+    // Build monthly columns
+    const monthSet = new Set<string>();
+    tipoRegistros.forEach(r => {
+      const d = new Date(r.data_auditoria);
+      monthSet.add(format(d, "yyyy-MM"));
+    });
+    const months = [...monthSet].sort();
+    const monthLabels = months.map(m => {
+      const d = new Date(m + "-01");
+      return format(d, "MMM/yy", { locale: ptBR }).replace(/^./, c => c.toUpperCase());
+    });
+
+    // Meta sections from question codes (M1_, M2_, etc.)
+    const META_SECTIONS = [
+      { prefix: "M1_", label: "Identificação Correta do Paciente" },
+      { prefix: "M2_", label: "Comunicação Efetiva" },
+      { prefix: "M3_", label: "Segurança da Cadeia Medicamentosa" },
+      { prefix: "M4_", label: "Prevenção de Queda" },
+      { prefix: "M5_", label: "Higiene das Mãos" },
+      { prefix: "M6_", label: "Prevenção Lesão por Pressão" },
+    ];
+
+    // For each meta & month: count avaliados, conformes, %
+    const getMetaMonthData = (prefix: string, month: string) => {
+      const monthRegs = tipoRegistros.filter(r => format(new Date(r.data_auditoria), "yyyy-MM") === month);
+      let avaliados = 0;
+      let conformes = 0;
+      monthRegs.forEach(r => {
+        if (!r.respostas || typeof r.respostas !== "object") return;
+        const entries = Object.entries(r.respostas as Record<string, string>).filter(([k]) => k.startsWith(prefix));
+        if (entries.length === 0) return;
+        avaliados++;
+        const metaConformes = entries.filter(([, v]) => v === "conforme" || v === "sim").length;
+        const metaAvaliadas = entries.filter(([, v]) => v !== "nao_aplica").length;
+        if (metaAvaliadas > 0 && metaConformes === metaAvaliadas) conformes++;
+      });
+      const pct = avaliados > 0 ? Math.round((conformes / avaliados) * 100) : null;
+      return { avaliados, conformes, pct };
+    };
+
+    // Global averages per meta
+    const getMetaAvg = (prefix: string) => {
+      const vals = months.map(m => getMetaMonthData(prefix, m)).filter(d => d.avaliados > 0);
+      if (vals.length === 0) return null;
+      return Math.round(vals.reduce((a, v) => a + (v.pct || 0), 0) / vals.length);
+    };
+
+    const totalAuditorias = tipoRegistros.length;
+
+    const exportConsolidadoPDF = () => {
+      const doc = new jsPDF({ orientation: "landscape" });
+      doc.setFontSize(12);
+      doc.text("AUDITORIAS DE SEGURANÇA DO PACIENTE - Consolidado Mensal", 14, 15);
+      let startY = 22;
+
+      META_SECTIONS.forEach(meta => {
+        const head = [["", ...monthLabels, "Média"]];
+        const avRow = ["Nº pacientes avaliados", ...months.map(m => String(getMetaMonthData(meta.prefix, m).avaliados || "")), ""];
+        const confRow = ["Conformidade", ...months.map(m => String(getMetaMonthData(meta.prefix, m).conformes || "")), ""];
+        const pctRow = ["%", ...months.map(m => {
+          const d = getMetaMonthData(meta.prefix, m);
+          return d.pct !== null ? `${d.pct}%` : "";
+        }), getMetaAvg(meta.prefix) !== null ? `${getMetaAvg(meta.prefix)}%` : ""];
+
+        autoTable(doc, {
+          startY,
+          head: [[{ content: meta.label, colSpan: months.length + 2, styles: { halign: "left", fillColor: [30, 58, 95], textColor: 255 } }]],
+          body: [avRow, confRow, pctRow],
+          styles: { fontSize: 7, cellPadding: 2 },
+          theme: "grid",
+          margin: { bottom: 10 },
+        });
+        startY = (doc as any).lastAutoTable.finalY + 4;
+      });
+
+      doc.save(`consolidado-auditorias-nsp-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    };
+
+    const exportConsolidadoExcel = () => {
+      const rows: any[] = [];
+      META_SECTIONS.forEach(meta => {
+        rows.push({ Indicador: meta.label });
+        const avRow: any = { Indicador: "Nº pacientes avaliados" };
+        const confRow: any = { Indicador: "Conformidade" };
+        const pctRow: any = { Indicador: "%" };
+        months.forEach((m, i) => {
+          const d = getMetaMonthData(meta.prefix, m);
+          avRow[monthLabels[i]] = d.avaliados || "";
+          confRow[monthLabels[i]] = d.conformes || "";
+          pctRow[monthLabels[i]] = d.pct !== null ? `${d.pct}%` : "";
+        });
+        avRow["Média"] = "";
+        confRow["Média"] = "";
+        pctRow["Média"] = getMetaAvg(meta.prefix) !== null ? `${getMetaAvg(meta.prefix)}%` : "";
+        rows.push(avRow, confRow, pctRow, {});
+      });
+      const ws = XLSX.utils.json_to_sheet(rows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Consolidado NSP");
+      XLSX.writeFile(wb, `consolidado-auditorias-nsp-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+    };
+
     return (
       <div className="space-y-4">
         <Button variant="ghost" size="sm" onClick={() => setView("home")} className="gap-2">
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
 
-        <h2 className="text-lg font-semibold flex items-center gap-2">
-          <BarChart3 className="h-5 w-5 text-primary" />
-          Consolidado – {selectedForm.nome}
-        </h2>
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold flex items-center gap-2">
+            <BarChart3 className="h-5 w-5 text-primary" />
+            Consolidado Mensal – Auditorias de Segurança do Paciente
+          </h2>
+          <ExportDropdown onExportPDF={exportConsolidadoPDF} onExportExcel={exportConsolidadoExcel} />
+        </div>
 
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -497,80 +603,114 @@ export function FormulariosQualidade() {
             <p className="text-xs text-muted-foreground">Auditorias Realizadas</p>
           </CardContent></Card>
           <Card><CardContent className="pt-4 pb-3 text-center">
-            <p className={`text-2xl font-bold ${avgConf >= 80 ? "text-green-600" : avgConf >= 60 ? "text-yellow-600" : "text-red-600"}`}>{avgConf}%</p>
-            <p className="text-xs text-muted-foreground">Conformidade Média</p>
+            <p className="text-2xl font-bold">{months.length}</p>
+            <p className="text-xs text-muted-foreground">Meses com Dados</p>
           </CardContent></Card>
-          <Card><CardContent className="pt-4 pb-3 text-center">
-            <p className="text-2xl font-bold">{Object.keys(sectorStats).length}</p>
-            <p className="text-xs text-muted-foreground">Setores Auditados</p>
-          </CardContent></Card>
-          <Card><CardContent className="pt-4 pb-3 text-center">
-            <p className="text-2xl font-bold">{Object.keys(questionStats).length}</p>
-            <p className="text-xs text-muted-foreground">Itens Avaliados</p>
-          </CardContent></Card>
+          {META_SECTIONS.slice(0, 2).map(meta => {
+            const avg = getMetaAvg(meta.prefix);
+            return (
+              <Card key={meta.prefix}><CardContent className="pt-4 pb-3 text-center">
+                <p className={`text-2xl font-bold ${avg !== null && avg >= 80 ? "text-green-600" : avg !== null && avg >= 60 ? "text-yellow-600" : "text-red-600"}`}>
+                  {avg !== null ? `${avg}%` : "-"}
+                </p>
+                <p className="text-xs text-muted-foreground truncate">{meta.label}</p>
+              </CardContent></Card>
+            );
+          })}
         </div>
 
-        {/* Per-sector */}
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Conformidade por Setor</CardTitle></CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {Object.entries(sectorStats).sort((a, b) => b[1].avgPct - a[1].avgPct).map(([setor, s]) => (
-                <div key={setor} className="flex items-center gap-3">
-                  <span className="text-sm w-32 truncate">{setor}</span>
-                  <div className="flex-1 bg-muted rounded-full h-3">
-                    <div
-                      className={`h-3 rounded-full transition-all ${s.avgPct >= 80 ? "bg-green-500" : s.avgPct >= 60 ? "bg-yellow-500" : "bg-red-500"}`}
-                      style={{ width: `${s.avgPct}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-medium w-12 text-right">{s.avgPct}%</span>
-                  <span className="text-xs text-muted-foreground w-16">({s.total} aud.)</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Per-question */}
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm">Conformidade por Item</CardTitle></CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Código</TableHead>
-                    <TableHead>Conforme</TableHead>
-                    <TableHead>Não Conforme</TableHead>
-                    <TableHead>N/A</TableHead>
-                    <TableHead>% Conf.</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {Object.entries(questionStats).sort(([a], [b]) => a.localeCompare(b)).map(([code, s]) => {
-                    const avaliadas = s.conforme + s.nao_conforme;
-                    const pct = avaliadas > 0 ? Math.round((s.conforme / avaliadas) * 100) : 0;
-                    return (
-                      <TableRow key={code}>
-                        <TableCell className="font-mono text-xs">{code}</TableCell>
-                        <TableCell className="text-green-600 font-medium">{s.conforme}</TableCell>
-                        <TableCell className="text-red-600 font-medium">{s.nao_conforme}</TableCell>
-                        <TableCell className="text-muted-foreground">{s.na}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <div className={`w-2 h-2 rounded-full ${pct >= 80 ? "bg-green-500" : pct >= 60 ? "bg-yellow-500" : "bg-red-500"}`} />
-                            <span className="font-medium">{pct}%</span>
-                          </div>
+        {/* Monthly tables per meta — like the Excel */}
+        {META_SECTIONS.map((meta, idx) => {
+          const Icon = META_ICONS[idx] || Target;
+          const avg = getMetaAvg(meta.prefix);
+          return (
+            <Card key={meta.prefix}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Icon className="h-4 w-4 text-primary" />
+                  {meta.label}
+                  {avg !== null && (
+                    <Badge variant={avg >= 80 ? "default" : avg >= 60 ? "secondary" : "destructive"} className="ml-auto">
+                      Média: {avg}%
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="min-w-[180px]">Indicador</TableHead>
+                        <TableHead className="text-center min-w-[50px]">Un.</TableHead>
+                        {monthLabels.map(ml => (
+                          <TableHead key={ml} className="text-center min-w-[60px]">{ml}</TableHead>
+                        ))}
+                        <TableHead className="text-center min-w-[60px] font-bold">Média</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {/* Row: Número de pacientes avaliados */}
+                      <TableRow>
+                        <TableCell className="text-sm">Número de pacientes avaliados</TableCell>
+                        <TableCell className="text-center text-xs text-muted-foreground">Nº</TableCell>
+                        {months.map(m => {
+                          const d = getMetaMonthData(meta.prefix, m);
+                          return <TableCell key={m} className="text-center font-medium">{d.avaliados || "-"}</TableCell>;
+                        })}
+                        <TableCell className="text-center font-bold">
+                          {(() => {
+                            const vals = months.map(m => getMetaMonthData(meta.prefix, m).avaliados).filter(v => v > 0);
+                            return vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : "-";
+                          })()}
                         </TableCell>
                       </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-          </CardContent>
-        </Card>
+                      {/* Row: Conformidade */}
+                      <TableRow>
+                        <TableCell className="text-sm">Conformidade</TableCell>
+                        <TableCell className="text-center text-xs text-muted-foreground">Nº</TableCell>
+                        {months.map(m => {
+                          const d = getMetaMonthData(meta.prefix, m);
+                          return <TableCell key={m} className="text-center font-medium">{d.conformes || "-"}</TableCell>;
+                        })}
+                        <TableCell className="text-center font-bold">
+                          {(() => {
+                            const vals = months.map(m => getMetaMonthData(meta.prefix, m).conformes).filter(v => v > 0);
+                            return vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : "-";
+                          })()}
+                        </TableCell>
+                      </TableRow>
+                      {/* Row: % */}
+                      <TableRow className="bg-muted/30">
+                        <TableCell className="text-sm font-medium">Taxa de Conformidade</TableCell>
+                        <TableCell className="text-center text-xs text-muted-foreground">%</TableCell>
+                        {months.map(m => {
+                          const d = getMetaMonthData(meta.prefix, m);
+                          return (
+                            <TableCell key={m} className="text-center">
+                              {d.pct !== null ? (
+                                <span className={`font-bold ${d.pct >= 80 ? "text-green-600" : d.pct >= 60 ? "text-yellow-600" : "text-red-600"}`}>
+                                  {d.pct}%
+                                </span>
+                              ) : "-"}
+                            </TableCell>
+                          );
+                        })}
+                        <TableCell className="text-center">
+                          {avg !== null ? (
+                            <span className={`font-bold ${avg >= 80 ? "text-green-600" : avg >= 60 ? "text-yellow-600" : "text-red-600"}`}>
+                              {avg}%
+                            </span>
+                          ) : "-"}
+                        </TableCell>
+                      </TableRow>
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     );
   }
