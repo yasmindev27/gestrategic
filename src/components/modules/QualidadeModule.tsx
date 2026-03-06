@@ -1322,21 +1322,27 @@ export const QualidadeModule = () => {
 
                 {/* Distribuição por Responsável */}
                 {(() => {
-                  const respSetores: Record<string, Set<string>> = {};
+                  const RESP_SETORES_MAP: Record<string, string> = {
+                    "Juliane Machado": "Enfermagem, Internação, Urgência, Classificação, Medicação",
+                    "Marcela Freitas": "Corpo Clínico",
+                    "Arthur Villac": "Laboratório",
+                    "Cristina Angelina": "Farmácia",
+                    "Bruce Lee": "Administrativo, Recepção, SESMT",
+                    "Cordeiro": "Restaurante/Nutrição",
+                    "Monica de Jesus": "SHL/Higienização",
+                    "Maikon Junior": "Manutenção/Infraestrutura",
+                  };
                   const respCount: Record<string, number> = {};
                   incidentes.forEach(i => {
                     const r = i.responsavel_tratativa_nome || "Sem responsável";
                     respCount[r] = (respCount[r] || 0) + 1;
-                    if (!respSetores[r]) respSetores[r] = new Set();
-                    const setorNorm = normalizeSetor(i.setor);
-                    respSetores[r].add(setorNorm);
                   });
                   const topResp = Object.entries(respCount).sort((a, b) => b[1] - a[1]).slice(0, 12);
                   const respData = topResp.map(([nome, count]) => {
-                    const setores = Array.from(respSetores[nome] || []).slice(0, 3).join(", ");
-                    const label = `${nome} (${setores})`;
+                    const setores = RESP_SETORES_MAP[nome];
+                    const label = setores ? `${nome} (${setores})` : nome;
                     return {
-                      nome: label.length > 45 ? label.slice(0, 45) + "..." : label,
+                      nome: label.length > 50 ? label.slice(0, 50) + "..." : label,
                       total: count,
                     };
                   });
