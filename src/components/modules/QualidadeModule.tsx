@@ -1287,9 +1287,41 @@ export const QualidadeModule = () => {
                   </CardContent>
                 </Card>
 
-                {/* Distribuição por Responsável - logo abaixo */}
+                {/* Setor Notificante (Origem) */}
                 {(() => {
-                  // Agrupa setores por responsável
+                  const origemCount: Record<string, number> = {};
+                  incidentes.forEach(i => {
+                    const o = i.setor_origem || "Não informado";
+                    const normalized = normalizeSetor(o);
+                    origemCount[normalized] = (origemCount[normalized] || 0) + 1;
+                  });
+                  const topOrigem = Object.entries(origemCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
+                  const origemData = topOrigem.map(([nome, count]) => ({
+                    nome: nome.length > 30 ? nome.slice(0, 30) + "..." : nome,
+                    total: count,
+                  }));
+                  return (
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-semibold">Setor Notificante (Origem)</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={300}>
+                          <BarChart data={origemData} layout="vertical" margin={{ left: 10, right: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                            <YAxis type="category" dataKey="nome" width={180} tick={{ fontSize: 10 }} />
+                            <Tooltip />
+                            <Bar dataKey="total" name="Notificações" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={16} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  );
+                })()}
+
+                {/* Distribuição por Responsável */}
+                {(() => {
                   const respSetores: Record<string, Set<string>> = {};
                   const respCount: Record<string, number> = {};
                   incidentes.forEach(i => {
@@ -1324,39 +1356,6 @@ export const QualidadeModule = () => {
                             <Bar dataKey="total" name="Incidentes" radius={[0, 4, 4, 0]} barSize={16}>
                               {respData.map((_, i) => <Cell key={i} fill={RESP_COLORS[i % RESP_COLORS.length]} />)}
                             </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </CardContent>
-                    </Card>
-                  );
-                })()}
-
-                {/* Setor Notificante (Origem) - full width */}
-                {(() => {
-                  const origemCount: Record<string, number> = {};
-                  incidentes.forEach(i => {
-                    const o = i.setor_origem || "Não informado";
-                    const normalized = normalizeSetor(o);
-                    origemCount[normalized] = (origemCount[normalized] || 0) + 1;
-                  });
-                  const topOrigem = Object.entries(origemCount).sort((a, b) => b[1] - a[1]).slice(0, 10);
-                  const origemData = topOrigem.map(([nome, count]) => ({
-                    nome: nome.length > 30 ? nome.slice(0, 30) + "..." : nome,
-                    total: count,
-                  }));
-                  return (
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-semibold">Setor Notificante (Origem)</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ResponsiveContainer width="100%" height={300}>
-                          <BarChart data={origemData} layout="vertical" margin={{ left: 10, right: 20 }}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
-                            <YAxis type="category" dataKey="nome" width={180} tick={{ fontSize: 10 }} />
-                            <Tooltip />
-                            <Bar dataKey="total" name="Notificações" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={16} />
                           </BarChart>
                         </ResponsiveContainer>
                       </CardContent>
