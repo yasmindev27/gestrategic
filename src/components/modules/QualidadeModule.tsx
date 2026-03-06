@@ -181,6 +181,11 @@ export const QualidadeModule = () => {
   const [tratativaStatus, setTratativaStatus] = useState("");
   const [tratativaEvidencia, setTratativaEvidencia] = useState<File | null>(null);
   const [uploadingEvidencia, setUploadingEvidencia] = useState(false);
+  const [iaSugestaoClassificacao, setIaSugestaoClassificacao] = useState("");
+  const [iaSugestaoRisco, setIaSugestaoRisco] = useState("");
+  const [iaSugestaoResponsavel, setIaSugestaoResponsavel] = useState("");
+  const [iaSugestaoPlano, setIaSugestaoPlano] = useState("");
+  const [iaSugestaoEvidencia, setIaSugestaoEvidencia] = useState("");
   
   // Form data
   const [incidenteForm, setIncidenteForm] = useState({
@@ -497,18 +502,66 @@ export const QualidadeModule = () => {
             setor: incidente.setor,
             paciente_envolvido: incidente.paciente_envolvido,
           },
-          tipo_analise: "classificacao",
+          tipo_analise: "completa",
         },
       });
       if (error) throw error;
       if (!data?.success) throw new Error(data?.error || "Erro na análise");
-      setIaReviewResult({ incidenteId: incidente.id, resultado: data.analise });
+      
+      const resultado = data.analise;
+      setIaReviewResult({ incidenteId: incidente.id, resultado });
+      
+      // Pre-fill editable fields from AI suggestions
+      setIaSugestaoClassificacao(resultado.classificacao_sugerida?.tipo || incidente.tipo_incidente);
+      setIaSugestaoRisco(incidente.classificacao_risco);
+      setIaSugestaoResponsavel("");
+      setIaSugestaoPlano(
+        resultado.plano_acao?.map((a: any) => `• ${a.acao} (${a.responsavel_sugerido} - ${a.prazo_sugerido})`).join("\n") || ""
+      );
+      setIaSugestaoEvidencia(
+        resultado.plano_acao?.map((a: any) => a.acao).filter(Boolean).join("; ") || ""
+      );
       setIaReviewDialog(true);
     } catch (err: any) {
       toast({ title: "Erro", description: err.message || "Falha na análise de IA", variant: "destructive" });
     } finally {
       setIaReviewLoading(null);
     }
+  };
+
+  // Apply IA suggestions to the incident
+  const handleApplyIASuggestions = async () => {
+    if (!iaReviewResult) return;
+    setIsSubmitting(true);
+    try {
+      const updateData: Record<string, any> = {
+        tipo_incidente: iaSugestaoClassificacao,
+        classificacao_risco: iaSugestaoRisco,
+        plano_acao: iaSugestaoPlano || null,
+      };
+
+      if (iaSugestaoResponsavel) {
+        const usuario = usuarios.find(u => u.user_id === iaSugestaoResponsavel);
+        if (usuario) {
+          updateData.responsavel_tratativa_id = usuario.user_id;
+          updateData.responsavel_tratativa_nome = usuario.full_name;
+          updateData.status = "em_analise";
+        }
+      }
+
+      const { error } = await supabase.from("incidentes_nsp")
+        .update(updateData)
+        .eq("id", iaReviewResult.incidenteId);
+      if (error) throw error;
+
+      toast({ title: "Sucesso", description: "Sugestões da IA aplicadas com sucesso" });
+      setIaReviewDialog(false);
+      setIaReviewResult(null);
+      loadData();
+    } catch (err: any) {
+      toast({ title: "Erro", description: "Falha ao aplicar sugestões", variant: "destructive" });
+    }
+    setIsSubmitting(false);
   };
 
   // Assign responsible and create agenda notification
@@ -1742,43 +1795,139 @@ export const QualidadeModule = () => {
         onImportComplete={loadData}
       />
 
-      {/* Dialog: Revisão IA de Classificação */}
+      {/* Dialog: Revisão IA Completa */}
       <Dialog open={iaReviewDialog} onOpenChange={setIaReviewDialog}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Bot className="h-5 w-5 text-primary" />
-              Revisão de Classificação por IA
+              Assistente IA - Sugestões de Tratativa
             </DialogTitle>
           </DialogHeader>
-          {iaReviewResult?.resultado?.classificacao_sugerida && (
-            <div className="space-y-4">
-              <Card className="bg-muted/50">
-                <CardContent className="pt-4 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium">Classificação Sugerida</span>
-                    <Badge variant="default">{iaReviewResult.resultado.classificacao_sugerida.label}</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Confiança</span>
-                    <span className="text-sm font-semibold">{iaReviewResult.resultado.classificacao_sugerida.confianca}%</span>
-                  </div>
-                  <div>
-                    <span className="text-sm text-muted-foreground">Justificativa</span>
-                    <p className="text-sm mt-1">{iaReviewResult.resultado.classificacao_sugerida.justificativa}</p>
-                  </div>
-                </CardContent>
-              </Card>
+          {iaReviewResult?.resultado && (
+            <div className="space-y-5">
+              {/* AI Summary */}
               {iaReviewResult.resultado.resumo_tecnico && (
+                <Card className="bg-muted/50 border-primary/20">
+                  <CardContent className="pt-4">
+                    <p className="text-sm font-medium mb-1">Resumo Técnico da IA</p>
+                    <p className="text-sm text-muted-foreground">{iaReviewResult.resultado.resumo_tecnico}</p>
+                    {iaReviewResult.resultado.classificacao_sugerida && (
+                      <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                        <span>Confiança: <strong>{iaReviewResult.resultado.classificacao_sugerida.confianca}%</strong></span>
+                        <span>•</span>
+                        <span>Justificativa: {iaReviewResult.resultado.classificacao_sugerida.justificativa}</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Editable: Classification */}
+              <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label className="text-muted-foreground">Resumo Técnico</Label>
-                  <p className="text-sm mt-1">{iaReviewResult.resultado.resumo_tecnico}</p>
+                  <Label>Classificação do Incidente</Label>
+                  <Select value={iaSugestaoClassificacao} onValueChange={setIaSugestaoClassificacao}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {tiposIncidente.map(t => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {iaReviewResult.resultado.classificacao_sugerida && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Sugestão IA: <strong>{iaReviewResult.resultado.classificacao_sugerida.label}</strong>
+                    </p>
+                  )}
                 </div>
+                <div>
+                  <Label>Classificação de Risco</Label>
+                  <Select value={iaSugestaoRisco} onValueChange={setIaSugestaoRisco}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {classificacoesRisco.map(c => (
+                        <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Editable: Responsible */}
+              <div>
+                <Label>Responsável pela Tratativa</Label>
+                <Select value={iaSugestaoResponsavel} onValueChange={setIaSugestaoResponsavel}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecionar responsável..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {usuarios.map(u => (
+                      <SelectItem key={u.user_id} value={u.user_id}>{u.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {iaReviewResult.resultado.plano_acao?.[0]?.responsavel_sugerido && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Sugestão IA: <strong>{iaReviewResult.resultado.plano_acao[0].responsavel_sugerido}</strong>
+                  </p>
+                )}
+              </div>
+
+              {/* Editable: Action Plan */}
+              <div>
+                <Label>Plano de Ação</Label>
+                <Textarea 
+                  value={iaSugestaoPlano} 
+                  onChange={e => setIaSugestaoPlano(e.target.value)} 
+                  rows={5}
+                  placeholder="Plano de ação sugerido pela IA..."
+                />
+              </div>
+
+              {/* Suggested Evidence */}
+              <div>
+                <Label>Evidências Sugeridas</Label>
+                <Textarea 
+                  value={iaSugestaoEvidencia} 
+                  onChange={e => setIaSugestaoEvidencia(e.target.value)} 
+                  rows={2}
+                  placeholder="Tipos de evidência recomendados..."
+                />
+                <p className="text-xs text-muted-foreground mt-1">Descreva os tipos de evidência necessários para conclusão.</p>
+              </div>
+
+              {/* Causes (read-only from AI) */}
+              {iaReviewResult.resultado.causas_provaveis?.length > 0 && (
+                <Card className="bg-muted/30">
+                  <CardContent className="pt-4">
+                    <p className="text-sm font-medium mb-2">Causas Prováveis (Protocolo de Londres)</p>
+                    <div className="space-y-2">
+                      {iaReviewResult.resultado.causas_provaveis.map((c: any, idx: number) => (
+                        <div key={idx} className="flex items-start gap-2 text-sm">
+                          <Badge variant="outline" className="text-xs shrink-0">{c.probabilidade}</Badge>
+                          <span>{c.descricao}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
               )}
             </div>
           )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIaReviewDialog(false)}>Fechar</Button>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setIaReviewDialog(false)}>Cancelar</Button>
+            <Button onClick={handleApplyIASuggestions} disabled={isSubmitting}>
+              {isSubmitting ? (
+                <><Loader2 className="h-4 w-4 mr-1 animate-spin" /> Aplicando...</>
+              ) : (
+                <><CheckCircle2 className="h-4 w-4 mr-1" /> Aceitar e Aplicar</>
+              )}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
