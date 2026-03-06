@@ -502,31 +502,32 @@ export function FormulariosQualidade() {
     const normalizeProcedencia = (setor: string) => {
       const s = (setor || "").toLowerCase().trim();
       if (/intern/i.test(s)) return "Unidade de Internação";
-      if (/emerg|urg/i.test(s)) return "Emergência";
-      if (/recep/i.test(s)) return "Recepção";
+      if (/emerg|urg|sala.*verm/i.test(s)) return "Emergência";
+      if (/recep|acolh/i.test(s)) return "Recepção";
       if (/raio|rx/i.test(s)) return "Raio-x";
-      if (/labor/i.test(s)) return "Laboratório";
+      if (/labor|villac/i.test(s)) return "Laboratório";
       if (/farm/i.test(s)) return "Farmácia";
-      if (/admin/i.test(s)) return "Áreas Administrativas";
-      if (/corpo.*cl|medic|clin/i.test(s)) return "Corpo Clínico";
-      if (/apoio/i.test(s)) return "Áreas de Apoio";
+      if (/admin|ti$|tecnolog/i.test(s)) return "Áreas Administrativas";
+      if (/corpo.*cl|m[eé]dic[oa]|cl[ií]n/i.test(s)) return "Corpo Clínico";
+      if (/apoio|manut|cozin|sesmt|roup/i.test(s)) return "Áreas de Apoio";
       if (/classif/i.test(s)) return "Classificação";
       if (/medica[çc]/i.test(s)) return "Medicação";
       if (/observa/i.test(s)) return "Observação";
+      if (/qualidade|nsp|scir|scih|ouvi|psico|líder|lider|enfer|assist/i.test(s)) return "Áreas de Apoio";
       return "Outros";
     };
 
-    // Normalize categoria_operacional for tipo OMS
-    const normalizeTipoOMS = (cat: string) => {
-      const c = (cat || "").toLowerCase();
-      if (/admin.*cl[ií]n|processo|procedimento/i.test(c)) return "Administração Clínica / Processo";
-      if (/documenta/i.test(c)) return "Documentação";
-      if (/medica[çc]/i.test(c)) return "Medicação";
-      if (/comporta/i.test(c)) return "Comportamento";
-      if (/infra|instala|edif/i.test(c)) return "Infraestrutura / Instalações";
-      if (/recurso|gest[aã]o.*org/i.test(c)) return "Recursos / Gestão Organizacional";
-      if (/equip/i.test(c)) return "Equipamentos Médicos";
-      return "Outros";
+    // Normalize incidente for tipo OMS based on descricao + setor since categoria_operacional is null
+    const normalizeTipoOMS = (inc: any) => {
+      const d = ((inc.descricao || "") + " " + (inc.categoria_operacional || "")).toLowerCase();
+      if (/medica[çcm]|prescri|dose|droga|omiss[aã]o.*medic|via.*errada|horário|diluição|alergia.*medic|medicamento/i.test(d)) return "Medicação";
+      if (/queda|escorr|tropeç/i.test(d)) return "Comportamento";
+      if (/infra|instala|vazam|goter|energia|ar.*condic|manut|estrut|telhad|lamp|piso/i.test(d)) return "Infraestrutura / Instalações";
+      if (/equip|monitor|bomba.*infus|ventilador|maca|cadeira.*rodas|desfibrilador|oxímetro/i.test(d)) return "Equipamentos Médicos";
+      if (/prontuário|document|registr|evolu[çc]|identif.*paciente|pulseira|nome.*errado/i.test(d)) return "Documentação";
+      if (/rh |escala|falt.*profiss|dimens|recurso.*human|gestão/i.test(d)) return "Recursos / Gestão Organizacional";
+      if (/agress|conflito|ameaça|violênc|fuga|evasão|recusa|comporta/i.test(d)) return "Comportamento";
+      return "Administração Clínica / Processo";
     };
 
     // Section rendering helper
@@ -614,7 +615,7 @@ export function FormulariosQualidade() {
 
     // ── 2.2 TIPO DE INCIDENTES - OMS ──
     const TIPOS_OMS = ["Administração Clínica / Processo", "Documentação", "Medicação", "Comportamento", "Infraestrutura / Instalações", "Recursos / Gestão Organizacional", "Equipamentos Médicos", "Outros"];
-    const omsCount = (month: string, tipo: string) => incByMonth(month).filter(i => normalizeTipoOMS(i.categoria_operacional || "") === tipo).length;
+    const omsCount = (month: string, tipo: string) => incByMonth(month).filter(i => normalizeTipoOMS(i) === tipo).length;
     const omsRows: typeof processoRows = [];
     TIPOS_OMS.forEach((tipo, idx) => {
       const vals = months.map(m => omsCount(m, tipo));
@@ -660,33 +661,45 @@ export function FormulariosQualidade() {
 
     // ── 4. INDICADORES DE RESULTADO ──
     const RESULTADO_ITEMS = [
-      { label: "4.1 Taxa de incidentes - Identificação do Paciente", filter: (i: any) => /identifi/i.test(i.categoria_operacional || "") || /identifi/i.test(i.descricao || "") },
-      { label: "4.2 Taxa de incidentes - Comunicação Efetiva", filter: (i: any) => /comunica/i.test(i.categoria_operacional || "") || /comunica/i.test(i.descricao || "") },
-      { label: "4.3 Taxa de incidentes - Medicamentos", filter: (i: any) => /medica[çcm]/i.test(i.categoria_operacional || "") },
-      { label: "4.6 Taxa de incidentes - Quedas", filter: (i: any) => /queda/i.test(i.categoria_operacional || "") || /queda/i.test(i.descricao || "") },
-      { label: "4.7 Taxa de incidentes - Retirada não programada de Dispositivos", filter: (i: any) => /retir|dispos/i.test(i.categoria_operacional || "") },
-      { label: "4.8 Taxa de incidentes - Lesão de Pele", filter: (i: any) => /les[aã]o.*pele|lpp/i.test(i.categoria_operacional || "") || /les[aã]o.*pele|lpp/i.test(i.descricao || "") },
-      { label: "4.9 Taxa de incidentes - Flebite", filter: (i: any) => /flebit/i.test(i.categoria_operacional || "") || /flebit/i.test(i.descricao || "") },
-      { label: "4.10 Taxa de incidentes - Outros", filter: (_: any) => true }, // fallback
-      { label: "4.11 Taxa de incidentes - Farmacovigilância", filter: (i: any) => /farmaco/i.test(i.categoria_operacional || "") },
-      { label: "4.12 Taxa de incidentes - Tecnovigilância", filter: (i: any) => /tecno/i.test(i.categoria_operacional || "") || /equip/i.test(i.categoria_operacional || "") },
+      { label: "4.1 Taxa de incidentes - Identificação do Paciente", filter: (i: any) => /identifi.*paciente|pulseira|nome.*errado|troca.*paciente|paciente.*errad/i.test((i.descricao || "") + " " + (i.categoria_operacional || "")) },
+      { label: "4.2 Taxa de incidentes - Comunicação Efetiva", filter: (i: any) => /comunica|repasse|inform.*incomplet|passagem.*plant[aã]o/i.test((i.descricao || "") + " " + (i.categoria_operacional || "")) },
+      { label: "4.3 Taxa de incidentes - Medicamentos", filter: (i: any) => /medica[çcm]|prescri|dose|droga|omiss[aã]o.*medic|via.*errada|horário|diluição|alergia.*medic|medicamento/i.test((i.descricao || "") + " " + (i.categoria_operacional || "")) },
+      { label: "4.4 Taxa de incidentes - Cirurgia Segura", filter: (i: any) => /cirurg|cirúrg|procediment.*cirúrg|bloco/i.test((i.descricao || "") + " " + (i.categoria_operacional || "")) },
+      { label: "4.5 Taxa de incidentes - Higiene das Mãos", filter: (i: any) => /higien.*m[aã]o|lavagem.*m[aã]o|alcool.*gel|antissep/i.test((i.descricao || "") + " " + (i.categoria_operacional || "")) },
+      { label: "4.6 Taxa de incidentes - Quedas", filter: (i: any) => /queda|ca[ií]u|escorr/i.test((i.descricao || "") + " " + (i.categoria_operacional || "")) },
+      { label: "4.7 Taxa de incidentes - Retirada não programada de Dispositivos", filter: (i: any) => /retir.*dispos|extuba|perda.*acesso|arrancou.*sonda|retirada.*cateter/i.test((i.descricao || "") + " " + (i.categoria_operacional || "")) },
+      { label: "4.8 Taxa de incidentes - Lesão de Pele / LPP", filter: (i: any) => /les[aã]o.*p(ele|ress)|lpp|úlcera.*press|escara/i.test((i.descricao || "") + " " + (i.categoria_operacional || "")) },
+      { label: "4.9 Taxa de incidentes - Flebite", filter: (i: any) => /flebit|flebite|inflam.*veia|acesso.*venoso.*inflam/i.test((i.descricao || "") + " " + (i.categoria_operacional || "")) },
+      { label: "4.10 Taxa de incidentes - Farmacovigilância", filter: (i: any) => /farmaco|rea[çc][aã]o.*advers|efeito.*advers|anafilax/i.test((i.descricao || "") + " " + (i.categoria_operacional || "")) },
+      { label: "4.11 Taxa de incidentes - Tecnovigilância", filter: (i: any) => /tecno|equip.*defeito|equip.*quebr|monitor.*falh|bomba.*infus.*falh/i.test((i.descricao || "") + " " + (i.categoria_operacional || "")) },
+      { label: "4.12 Taxa de incidentes - Outros", filter: (_: any) => true },
     ];
 
+    const specificFilters = RESULTADO_ITEMS.filter(it => it.label !== "4.12 Taxa de incidentes - Outros");
     const resultadoRows: typeof processoRows = [];
-    RESULTADO_ITEMS.forEach(item => {
-      if (item.label === "4.10 Taxa de incidentes - Outros") return; // skip "outros" for now, calculated separately
+    specificFilters.forEach(item => {
       const vals = months.map(m => incByMonth(m).filter(item.filter).length);
       resultadoRows.push({ label: item.label, unit: "Nº", values: vals.map(v => v || ""), avg: calcAvg(vals.filter(v => v > 0)) });
       resultadoRows.push({ label: "", unit: "%", values: months.map((m, i) => calcPct(vals[i], incByMonth(m).length)), avg: "" });
     });
+    // "Outros" = incidents not matching any specific filter
+    const outrosVals = months.map(m => {
+      const all = incByMonth(m);
+      const matched = new Set<string>();
+      specificFilters.forEach(item => all.filter(item.filter).forEach(i => matched.add(i.id)));
+      return all.length - matched.size;
+    });
+    resultadoRows.push({ label: "4.12 Taxa de incidentes - Outros", unit: "Nº", values: outrosVals.map(v => v || ""), avg: calcAvg(outrosVals.filter(v => v > 0)) });
+    resultadoRows.push({ label: "", unit: "%", values: months.map((m, i) => calcPct(outrosVals[i], incByMonth(m).length)), avg: "" });
 
     // Export
     const exportConsolidadoExcel = () => {
       const allSections = [
+        { title: "1. INDICADORES DE ESTRUTURA", rows: estruturaRows },
         { title: "2. INDICADORES DE PROCESSO", rows: processoRows },
-        { title: "2.2 Procedência das Notificações", rows: procedenciaRows },
+        { title: "2.1 Procedência das Notificações", rows: procedenciaRows },
         { title: "2.2 Tipo de Incidentes - OMS", rows: omsRows },
-        { title: "AUDITORIAS DE SEGURANÇA DO PACIENTE", rows: auditRows },
+        { title: "3. AUDITORIAS DE SEGURANÇA DO PACIENTE", rows: auditRows },
         { title: "4. INDICADORES DE RESULTADO", rows: resultadoRows },
       ];
       const data: any[] = [];
@@ -728,10 +741,11 @@ export function FormulariosQualidade() {
         startY = (doc as any).lastAutoTable.finalY + 3;
       };
 
+      renderPdfSection("1. INDICADORES DE ESTRUTURA", estruturaRows);
       renderPdfSection("2. INDICADORES DE PROCESSO", processoRows);
-      renderPdfSection("2.2 Procedência das Notificações", procedenciaRows);
+      renderPdfSection("2.1 Procedência das Notificações", procedenciaRows);
       renderPdfSection("2.2 Tipo de Incidentes - OMS", omsRows);
-      renderPdfSection("AUDITORIAS DE SEGURANÇA DO PACIENTE", auditRows);
+      renderPdfSection("3. AUDITORIAS DE SEGURANÇA DO PACIENTE", auditRows);
       renderPdfSection("4. INDICADORES DE RESULTADO", resultadoRows);
 
       doc.save(`consolidado-nsp-${format(new Date(), "yyyy-MM-dd")}.pdf`);
@@ -771,8 +785,9 @@ export function FormulariosQualidade() {
           </CardContent></Card>
         </div>
 
+        {renderSection("1. INDICADORES DE ESTRUTURA", estruturaRows)}
         {renderSection("2. INDICADORES DE PROCESSO", processoRows)}
-        {renderSection("2.2 Procedência das Notificações", procedenciaRows)}
+        {renderSection("2.1 Procedência das Notificações", procedenciaRows)}
         {renderSection("2.2 Tipo de Incidentes - OMS", omsRows)}
         {renderSection("AUDITORIAS DE SEGURANÇA DO PACIENTE", auditRows)}
         {renderSection("4. INDICADORES DE RESULTADO", resultadoRows)}
