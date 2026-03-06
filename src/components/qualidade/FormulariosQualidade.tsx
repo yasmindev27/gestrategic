@@ -25,6 +25,11 @@ import { ExportDropdown } from "@/components/ui/export-dropdown";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 import * as XLSX from "xlsx";
+import {
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  AreaChart, Area
+} from "recharts";
 
 interface FormularioConfig {
   id: string;
@@ -797,11 +802,160 @@ export function FormulariosQualidade() {
           </CardContent></Card>
         </div>
 
+        {/* ── DASHBOARD VISUAL ── */}
+        {(() => {
+          // Data for evolution chart
+          const evolucaoData = months.map((m, idx) => {
+            const total = incByMonth(m).length;
+            const semDano = incByMonth(m).filter(i => i.tipo_incidente === "incidente_sem_dano").length;
+            const quaseErro = incByMonth(m).filter(i => i.tipo_incidente === "quase_erro").length;
+            const eventoAdverso = incByMonth(m).filter(i => i.tipo_incidente === "evento_adverso").length;
+            return { mes: monthLabels[idx], total, semDano, quaseErro, eventoAdverso };
+          });
+
+          // Data for classification pie
+          const classData = [
+            { name: "Sem Dano", value: incidentesFiltrados.filter(i => i.tipo_incidente === "incidente_sem_dano").length, color: "hsl(210, 70%, 50%)" },
+            { name: "Quase Erro", value: incidentesFiltrados.filter(i => i.tipo_incidente === "quase_erro").length, color: "hsl(45, 90%, 50%)" },
+            { name: "Evento Adverso", value: incidentesFiltrados.filter(i => i.tipo_incidente === "evento_adverso").length, color: "hsl(0, 70%, 50%)" },
+          ].filter(d => d.value > 0);
+
+          // Data for risk severity bar
+          const riscoData = [
+            { name: "Leve", value: incidentesFiltrados.filter(i => i.classificacao_risco === "leve").length, fill: "hsl(210, 60%, 55%)" },
+            { name: "Moderado", value: incidentesFiltrados.filter(i => i.classificacao_risco === "moderado").length, fill: "hsl(45, 85%, 50%)" },
+            { name: "Grave", value: incidentesFiltrados.filter(i => i.classificacao_risco === "grave").length, fill: "hsl(25, 85%, 50%)" },
+            { name: "Catastrófico", value: incidentesFiltrados.filter(i => i.classificacao_risco === "catastrofico").length, fill: "hsl(0, 70%, 45%)" },
+          ].filter(d => d.value > 0);
+
+          // Data for procedência pie
+          const procData = PROCEDENCIAS.map(proc => ({
+            name: proc,
+            value: incidentesFiltrados.filter(i => normalizeProcedencia(i.setor_origem || i.setor) === proc).length,
+          })).filter(d => d.value > 0).sort((a, b) => b.value - a.value).slice(0, 8);
+          const PROC_COLORS = ["hsl(210,70%,35%)", "hsl(210,60%,50%)", "hsl(195,70%,45%)", "hsl(180,50%,45%)", "hsl(160,50%,45%)", "hsl(140,45%,45%)", "hsl(45,80%,50%)", "hsl(25,70%,50%)"];
+
+          // Data for OMS types bar
+          const omsData = TIPOS_OMS.map(tipo => ({
+            name: tipo.length > 20 ? tipo.substring(0, 18) + "..." : tipo,
+            fullName: tipo,
+            value: incidentesFiltrados.filter(i => normalizeTipoOMS(i) === tipo).length,
+          })).filter(d => d.value > 0).sort((a, b) => b.value - a.value);
+
+          return (
+            <>
+              {/* Row 1: Evolution + Classification */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                <Card className="lg:col-span-2">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold">Evolução Mensal de Notificações</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={280}>
+                      <AreaChart data={evolucaoData}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis dataKey="mes" tick={{ fontSize: 10 }} />
+                        <YAxis tick={{ fontSize: 10 }} />
+                        <Tooltip contentStyle={{ fontSize: 12 }} />
+                        <Legend wrapperStyle={{ fontSize: 11 }} />
+                        <Area type="monotone" dataKey="total" name="Total" stroke="hsl(210,70%,35%)" fill="hsl(210,70%,35%)" fillOpacity={0.15} strokeWidth={2} />
+                        <Area type="monotone" dataKey="semDano" name="Sem Dano" stroke="hsl(210,60%,55%)" fill="hsl(210,60%,55%)" fillOpacity={0.1} strokeWidth={1.5} />
+                        <Area type="monotone" dataKey="quaseErro" name="Quase Erro" stroke="hsl(45,85%,50%)" fill="hsl(45,85%,50%)" fillOpacity={0.1} strokeWidth={1.5} />
+                        <Area type="monotone" dataKey="eventoAdverso" name="Evento Adverso" stroke="hsl(0,70%,50%)" fill="hsl(0,70%,50%)" fillOpacity={0.1} strokeWidth={1.5} />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold">Classificação dos Incidentes</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={220}>
+                      <PieChart>
+                        <Pie data={classData} cx="50%" cy="50%" innerRadius={45} outerRadius={75} dataKey="value" paddingAngle={3} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} style={{ fontSize: 9 }}>
+                          {classData.map((entry, idx) => <Cell key={idx} fill={entry.color} />)}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                    <div className="flex flex-wrap gap-2 justify-center mt-1">
+                      {classData.map((d, i) => (
+                        <div key={i} className="flex items-center gap-1.5 text-xs">
+                          <div className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} />
+                          <span className="text-muted-foreground">{d.name}: <strong>{d.value}</strong></span>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Row 2: Risk Severity + Procedência */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold">Gravidade do Risco</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={240}>
+                      <BarChart data={riscoData} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                        <XAxis type="number" tick={{ fontSize: 10 }} />
+                        <YAxis dataKey="name" type="category" tick={{ fontSize: 11 }} width={90} />
+                        <Tooltip contentStyle={{ fontSize: 12 }} />
+                        <Bar dataKey="value" name="Incidentes" radius={[0, 4, 4, 0]}>
+                          {riscoData.map((entry, idx) => <Cell key={idx} fill={entry.fill} />)}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold">Procedência das Notificações</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={240}>
+                      <PieChart>
+                        <Pie data={procData} cx="50%" cy="50%" outerRadius={80} dataKey="value" label={({ name, value }) => `${name}: ${value}`} labelLine={true} style={{ fontSize: 8 }}>
+                          {procData.map((_, idx) => <Cell key={idx} fill={PROC_COLORS[idx % PROC_COLORS.length]} />)}
+                        </Pie>
+                        <Tooltip />
+                      </PieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Row 3: OMS Types */}
+              <Card>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-semibold">Tipo de Incidentes – Classificação OMS</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ResponsiveContainer width="100%" height={260}>
+                    <BarChart data={omsData}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={{ fontSize: 9 }} interval={0} angle={-15} textAnchor="end" height={60} />
+                      <YAxis tick={{ fontSize: 10 }} />
+                      <Tooltip contentStyle={{ fontSize: 12 }} formatter={(value: any, name: any, props: any) => [value, props.payload.fullName]} />
+                      <Bar dataKey="value" name="Incidentes" fill="hsl(210,70%,35%)" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </CardContent>
+              </Card>
+            </>
+          );
+        })()}
+
         {renderSection("1. INDICADORES DE ESTRUTURA", estruturaRows)}
         {renderSection("2. INDICADORES DE PROCESSO", processoRows)}
         {renderSection("2.1 Procedência das Notificações", procedenciaRows)}
         {renderSection("2.2 Tipo de Incidentes - OMS", omsRows)}
-        {renderSection("AUDITORIAS DE SEGURANÇA DO PACIENTE", auditRows)}
+        {renderSection("3. AUDITORIAS DE SEGURANÇA DO PACIENTE", auditRows)}
         {renderSection("4. INDICADORES DE RESULTADO", resultadoRows)}
       </div>
     );
