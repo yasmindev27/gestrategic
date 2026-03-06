@@ -104,24 +104,42 @@ interface Auditoria {
   created_by_nome: string;
 }
 
-/** Normaliza nome de setor: remove acentos, capitaliza. "urgencia" e "Urgência" → "Urgência" */
+/** Normaliza nome de setor: remove acentos, agrupa variações em nomes canônicos */
 const normalizeSetor = (s: string): string => {
   const lower = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-  // Mapa de nomes canônicos
-  const map: Record<string, string> = {
-    "urgencia": "Urgência",
-    "emergencia": "Emergência",
-    "pediatria": "Pediatria",
-    "isolamento": "Isolamento",
-    "internacao": "Internação",
-    "medicacao": "Medicação",
-    "laboratorio": "Laboratório",
-    "recepcao": "Recepção",
-    "classificacao": "Classificação",
-    "sutura": "Sutura",
-    "raio-x": "Raio-X",
-  };
-  return map[lower] || s.charAt(0).toUpperCase() + s.slice(1);
+
+  // Regras de agrupamento por substring (ordem importa: mais específico primeiro)
+  const rules: [RegExp, string][] = [
+    [/samu/i, "SAMU"],
+    [/sesmt|seguranca do trabalho/i, "SESMT"],
+    [/shl|higienizacao|limpeza|faxina/i, "SHL/Higienização"],
+    [/restaurante|cozinha|nutricao/i, "Restaurante/Nutrição"],
+    [/transporte/i, "Transporte"],
+    [/nir/i, "NIR"],
+    [/nsp|qualidade/i, "NSP/Qualidade"],
+    [/raio.?x|radiologia/i, "Raio-X"],
+    [/farmacia/i, "Farmácia"],
+    [/laboratorio|coleta/i, "Laboratório"],
+    [/manutencao|infraestrutura/i, "Manutenção/Infraestrutura"],
+    [/assistencia social/i, "Assistência Social"],
+    [/triagem|classificacao|acolhimento/i, "Classificação/Acolhimento"],
+    [/recepcao|portaria|administrativ/i, "Administrativo/Recepção"],
+    [/consultorio|corpo.?clinic|medic|equipe.?medic/i, "Corpo Clínico"],
+    [/sutura/i, "Sutura"],
+    [/sala.?vermelha|emergencia/i, "Emergência"],
+    [/sala.?de.?medicacao|medicacao/i, "Medicação"],
+    [/internacao|observacao/i, "Internação"],
+    [/urgencia/i, "Urgência"],
+    [/enfermagem|tecnic/i, "Enfermagem"],
+    [/pediatr/i, "Pediatria"],
+    [/gerencia/i, "Gerência"],
+  ];
+
+  for (const [regex, canonical] of rules) {
+    if (regex.test(lower)) return canonical;
+  }
+
+  return s.charAt(0).toUpperCase() + s.slice(1);
 };
 
 const tiposIncidente = [
