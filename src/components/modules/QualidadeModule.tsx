@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { useRealtimeSync, REALTIME_PRESETS } from "@/hooks/useRealtimeSync";
@@ -28,6 +28,7 @@ import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import { DashboardConformidade, MetasSegurancaPaciente } from "@/components/qualidade";
 import { RiscosOperacionaisChart, AnalisarIncidenteIA, ImportarIncidentesDialog } from "@/components/gestao-incidentes";
 import * as XLSX from "xlsx";
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, AreaChart, Area } from "recharts";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -1092,168 +1093,198 @@ export const QualidadeModule = () => {
             const taxaEncerramento = totalIncidentes > 0 ? Math.round((encerrados / totalIncidentes) * 100) : 0;
             const taxaTratativa = totalIncidentes > 0 ? Math.round((comResponsavel / totalIncidentes) * 100) : 0;
 
-            // By risk
             const leves = incidentes.filter(i => i.classificacao_risco === "leve").length;
             const moderados = incidentes.filter(i => i.classificacao_risco === "moderado").length;
             const graves = incidentes.filter(i => i.classificacao_risco === "grave").length;
             const catastroficos = incidentes.filter(i => i.classificacao_risco === "catastrofico").length;
 
-            // By type
             const eventosAdversos = incidentes.filter(i => i.tipo_incidente === "evento_adverso").length;
             const quaseErros = incidentes.filter(i => i.tipo_incidente === "quase_erro").length;
             const semDano = incidentes.filter(i => i.tipo_incidente === "incidente_sem_dano").length;
 
-            // Top sectors
             const setorCount: Record<string, number> = {};
             incidentes.forEach(i => { setorCount[i.setor] = (setorCount[i.setor] || 0) + 1; });
-            const topSetores = Object.entries(setorCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+            const topSetores = Object.entries(setorCount).sort((a, b) => b[1] - a[1]).slice(0, 6);
+
+            const RISK_COLORS = ["hsl(142 71% 45%)", "hsl(48 96% 53%)", "hsl(25 95% 53%)", "hsl(0 84% 60%)"];
+            const TYPE_COLORS = ["hsl(0 84% 60%)", "hsl(48 96% 53%)", "hsl(210 60% 55%)"];
+            const STATUS_COLORS = ["hsl(48 96% 53%)", "hsl(210 60% 55%)", "hsl(142 71% 45%)"];
+
+            const riskData = [
+              { name: "Leve", value: leves },
+              { name: "Moderado", value: moderados },
+              { name: "Grave", value: graves },
+              { name: "Catastrófico", value: catastroficos },
+            ].filter(d => d.value > 0);
+
+            const typeData = [
+              { name: "Evento Adverso", value: eventosAdversos },
+              { name: "Quase Erro", value: quaseErros },
+              { name: "Sem Dano", value: semDano },
+            ].filter(d => d.value > 0);
+
+            const statusData = [
+              { name: "Aguardando", value: pendentes },
+              { name: "Em Análise", value: emAnalise },
+              { name: "Encerrados", value: encerrados },
+            ].filter(d => d.value > 0);
+
+            const setorData = topSetores.map(([setor, count]) => ({
+              setor: setor.length > 18 ? setor.slice(0, 18) + "..." : setor,
+              total: count,
+            }));
+
+            // Monthly trend
+            const monthMap: Record<string, { notificado: number; encerrado: number }> = {};
+            incidentes.forEach(i => {
+              const m = format(new Date(i.data_ocorrencia), "MMM/yy", { locale: ptBR });
+              if (!monthMap[m]) monthMap[m] = { notificado: 0, encerrado: 0 };
+              monthMap[m].notificado += 1;
+              if (i.status === "encerrado") monthMap[m].encerrado += 1;
+            });
+            const trendData = Object.entries(monthMap).slice(-6).map(([mes, v]) => ({ mes, ...v }));
+
+            // Treatment funnel
+            const funnelSteps = [
+              { label: "Notificados", value: totalIncidentes, pct: 100 },
+              { label: "Com Responsável", value: comResponsavel, pct: totalIncidentes > 0 ? Math.round((comResponsavel / totalIncidentes) * 100) : 0 },
+              { label: "Com Plano", value: comPlano, pct: totalIncidentes > 0 ? Math.round((comPlano / totalIncidentes) * 100) : 0 },
+              { label: "Com Evidência", value: comEvidencia, pct: totalIncidentes > 0 ? Math.round((comEvidencia / totalIncidentes) * 100) : 0 },
+              { label: "Encerrados", value: encerrados, pct: taxaEncerramento },
+            ];
 
             return (
               <div className="space-y-4">
-                {/* Row 1: Key metrics */}
+                {/* KPI Row */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <StatCard title="Total de Notificações" value={totalIncidentes} icon={AlertTriangle} variant="default" />
                   <StatCard title="Taxa de Encerramento" value={`${taxaEncerramento}%`} icon={CheckCircle2} variant="success" />
-                  <StatCard title="Taxa de Atribuição" value={`${taxaTratativa}%`} icon={UserCheck} variant="info" />
                   <StatCard title="Sem Responsável" value={semResponsavel} icon={AlertCircle} variant="destructive" />
-                  <StatCard title="Com Plano de Ação" value={comPlano} icon={ClipboardCheck} variant="primary" />
+                  <StatCard title="Taxa de Atribuição" value={`${taxaTratativa}%`} icon={UserCheck} variant="info" />
                 </div>
 
+                {/* Charts Row 1: Donuts */}
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold">Status das Notificações</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <PieChart>
+                          <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
+                            {statusData.map((_, i) => <Cell key={i} fill={STATUS_COLORS[i % STATUS_COLORS.length]} />)}
+                          </Pie>
+                          <Tooltip />
+                          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px" }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold">Classificação de Risco</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <PieChart>
+                          <Pie data={riskData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
+                            {riskData.map((_, i) => <Cell key={i} fill={RISK_COLORS[i % RISK_COLORS.length]} />)}
+                          </Pie>
+                          <Tooltip />
+                          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px" }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold">Tipo de Incidente</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <PieChart>
+                          <Pie data={typeData} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
+                            {typeData.map((_, i) => <Cell key={i} fill={TYPE_COLORS[i % TYPE_COLORS.length]} />)}
+                          </Pie>
+                          <Tooltip />
+                          <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px" }} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Charts Row 2: Bar + Area */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                  {/* Status Overview */}
                   <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Status das Notificações</CardTitle>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold">Incidentes por Setor</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Notificados (Aguardando)</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-32 h-2 rounded-full bg-muted overflow-hidden">
-                              <div className="h-full rounded-full bg-amber-500" style={{ width: `${totalIncidentes > 0 ? (pendentes/totalIncidentes)*100 : 0}%` }} />
-                            </div>
-                            <span className="text-sm font-semibold w-8 text-right">{pendentes}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Em Análise</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-32 h-2 rounded-full bg-muted overflow-hidden">
-                              <div className="h-full rounded-full bg-blue-500" style={{ width: `${totalIncidentes > 0 ? (emAnalise/totalIncidentes)*100 : 0}%` }} />
-                            </div>
-                            <span className="text-sm font-semibold w-8 text-right">{emAnalise}</span>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm">Encerrados</span>
-                          <div className="flex items-center gap-2">
-                            <div className="w-32 h-2 rounded-full bg-muted overflow-hidden">
-                              <div className="h-full rounded-full bg-emerald-500" style={{ width: `${totalIncidentes > 0 ? (encerrados/totalIncidentes)*100 : 0}%` }} />
-                            </div>
-                            <span className="text-sm font-semibold w-8 text-right">{encerrados}</span>
-                          </div>
-                        </div>
-                      </div>
+                      {setorData.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-8">Sem dados</p>
+                      ) : (
+                        <ResponsiveContainer width="100%" height={220}>
+                          <BarChart data={setorData} layout="vertical" margin={{ left: 10, right: 20 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11 }} />
+                            <YAxis type="category" dataKey="setor" width={120} tick={{ fontSize: 11 }} />
+                            <Tooltip />
+                            <Bar dataKey="total" name="Incidentes" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} barSize={18} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      )}
                     </CardContent>
                   </Card>
 
-                  {/* Classification by Risk */}
                   <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Classificação de Risco</CardTitle>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm font-semibold">Evolução Mensal</CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-3">
-                        {[
-                          { label: "Leve", count: leves, color: "bg-green-500" },
-                          { label: "Moderado", count: moderados, color: "bg-yellow-500" },
-                          { label: "Grave", count: graves, color: "bg-orange-500" },
-                          { label: "Catastrófico", count: catastroficos, color: "bg-red-600" },
-                        ].map(r => (
-                          <div key={r.label} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <div className={`w-3 h-3 rounded-full ${r.color}`} />
-                              <span className="text-sm">{r.label}</span>
-                            </div>
-                            <span className="text-sm font-semibold">{r.count}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* By Type */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Por Tipo de Incidente</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {[
-                          { label: "Evento Adverso", count: eventosAdversos, icon: AlertCircle },
-                          { label: "Quase Erro (Near Miss)", count: quaseErros, icon: AlertTriangle },
-                          { label: "Incidente sem Dano", count: semDano, icon: Clock },
-                        ].map(t => (
-                          <div key={t.label} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <t.icon className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm">{t.label}</span>
-                            </div>
-                            <span className="text-sm font-semibold">{t.count}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Top Sectors */}
-                  <Card>
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base">Setores com Mais Incidentes</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-3">
-                        {topSetores.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">Sem dados</p>
-                        ) : topSetores.map(([setor, count]) => (
-                          <div key={setor} className="flex items-center justify-between">
-                            <span className="text-sm truncate max-w-[180px]">{setor}</span>
-                            <div className="flex items-center gap-2">
-                              <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
-                                <div className="h-full rounded-full bg-primary" style={{ width: `${(count / (topSetores[0]?.[1] || 1)) * 100}%` }} />
-                              </div>
-                              <span className="text-sm font-semibold w-6 text-right">{count}</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      {trendData.length === 0 ? (
+                        <p className="text-sm text-muted-foreground text-center py-8">Sem dados</p>
+                      ) : (
+                        <ResponsiveContainer width="100%" height={220}>
+                          <AreaChart data={trendData} margin={{ left: 0, right: 10 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                            <XAxis dataKey="mes" tick={{ fontSize: 11 }} />
+                            <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                            <Tooltip />
+                            <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: "12px" }} />
+                            <Area type="monotone" dataKey="notificado" name="Notificados" stroke="hsl(48 96% 53%)" fill="hsl(48 96% 53% / 0.15)" strokeWidth={2} />
+                            <Area type="monotone" dataKey="encerrado" name="Encerrados" stroke="hsl(142 71% 45%)" fill="hsl(142 71% 45% / 0.15)" strokeWidth={2} />
+                          </AreaChart>
+                        </ResponsiveContainer>
+                      )}
                     </CardContent>
                   </Card>
                 </div>
 
-                {/* Tratativa Progress */}
+                {/* Treatment Funnel */}
                 <Card>
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Progresso das Tratativas</CardTitle>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold">Funil de Tratativa</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center p-3 rounded-lg bg-muted/50">
-                        <p className="text-2xl font-bold text-foreground">{comResponsavel}</p>
-                        <p className="text-xs text-muted-foreground">Com Responsável</p>
-                      </div>
-                      <div className="text-center p-3 rounded-lg bg-muted/50">
-                        <p className="text-2xl font-bold text-foreground">{comPlano}</p>
-                        <p className="text-xs text-muted-foreground">Com Plano de Ação</p>
-                      </div>
-                      <div className="text-center p-3 rounded-lg bg-muted/50">
-                        <p className="text-2xl font-bold text-foreground">{comEvidencia}</p>
-                        <p className="text-xs text-muted-foreground">Com Evidência</p>
-                      </div>
-                      <div className="text-center p-3 rounded-lg bg-muted/50">
-                        <p className="text-2xl font-bold text-foreground">{encerrados}</p>
-                        <p className="text-xs text-muted-foreground">Concluídos</p>
-                      </div>
+                    <div className="flex items-end gap-3 justify-between px-2">
+                      {funnelSteps.map((step, idx) => (
+                        <div key={step.label} className="flex-1 flex flex-col items-center gap-1">
+                          <span className="text-lg font-bold text-foreground">{step.value}</span>
+                          <div
+                            className="w-full rounded-md transition-all"
+                            style={{
+                              height: `${Math.max(step.pct * 1.2, 12)}px`,
+                              background: `hsl(var(--primary) / ${1 - idx * 0.15})`,
+                            }}
+                          />
+                          <span className="text-[10px] text-muted-foreground text-center leading-tight mt-1">{step.label}</span>
+                          <span className="text-[10px] font-semibold text-primary">{step.pct}%</span>
+                        </div>
+                      ))}
                     </div>
                   </CardContent>
                 </Card>
