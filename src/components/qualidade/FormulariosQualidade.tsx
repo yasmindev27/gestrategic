@@ -358,7 +358,7 @@ export function FormulariosQualidade() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6 pt-4">
-                {/* Module description */}
+                {/* Meta description */}
                 {MODULE_DESCRIPTIONS[moduleNum] && (
                   <p className="text-xs text-muted-foreground italic border-l-2 border-primary/30 pl-3">
                     {MODULE_DESCRIPTIONS[moduleNum]}
@@ -427,7 +427,7 @@ export function FormulariosQualidade() {
                   </div>
                 )}
 
-                {/* Module 5: Profissional Auditado */}
+                {/* Meta 5: Profissional Auditado */}
                 {moduleNum === 5 && (
                   <div className="space-y-1 pt-2 border-t">
                     <Label className="text-xs">Profissional Auditado *</Label>
@@ -442,7 +442,7 @@ export function FormulariosQualidade() {
                   </div>
                 )}
 
-                {/* Module 3: Dados Complementares LPP */}
+                {/* Meta 3: Dados Complementares LPP */}
                 {moduleNum === 3 && (
                   <div className="space-y-4 pt-2 border-t">
                     <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dados Complementares</h4>
@@ -469,7 +469,7 @@ export function FormulariosQualidade() {
                   </div>
                 )}
 
-                {/* Module 6: Dados Complementares Queda */}
+                {/* Meta 6: Dados Complementares Queda */}
                 {moduleNum === 6 && (
                   <div className="space-y-4 pt-2 border-t">
                     <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dados Complementares</h4>
@@ -1141,7 +1141,7 @@ export function FormulariosQualidade() {
     : 0;
 
   if (!activeForm) {
-    return <EmptyState icon={ShieldCheck} title="Nenhum formulário configurado" description="Configure formulários de auditoria no módulo administrativo." />;
+    return <EmptyState icon={ShieldCheck} title="Nenhum formulário configurado" description="Configure formulários de auditoria no painel administrativo." />;
   }
 
   return (
@@ -1242,7 +1242,7 @@ export function FormulariosQualidade() {
           <p className="text-sm text-muted-foreground leading-relaxed">
             A auditoria de segurança do paciente avalia a conformidade com as 6 Metas Internacionais de Segurança do Paciente
             estabelecidas pela OMS/ONA: identificação correta, comunicação efetiva, segurança de medicamentos de alta vigilância,
-            cirurgia segura, prevenção de infecções e prevenção de quedas/lesão por pressão. Este módulo permite o registro
+            cirurgia segura, prevenção de infecções e prevenção de quedas/lesão por pressão. Este painel permite o registro
             padronizado, acompanhamento por setor e análise consolidada dos indicadores de conformidade.
           </p>
         </CardContent>
