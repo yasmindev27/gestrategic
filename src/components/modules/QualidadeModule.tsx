@@ -786,7 +786,7 @@ export const QualidadeModule = () => {
                           <TableHead>Setor</TableHead>
                           <TableHead>Classificação</TableHead>
                           <TableHead>Status</TableHead>
-                          <TableHead className="text-right">Ações</TableHead>
+                          
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -805,31 +805,6 @@ export const QualidadeModule = () => {
                                 status={mapStatusToType(i.status)} 
                                 label={statusIncidente.find(s => s.value === i.status)?.label || i.status} 
                               />
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <div className="flex gap-1 justify-end">
-                                <Button size="sm" variant="outline" onClick={() => {
-                                  setSelectedIncidente(i);
-                                  setDetalhesDialog(true);
-                                }}>
-                                  <Eye className="h-4 w-4 mr-1" />
-                                  Ver
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => {
-                                  setSelectedIncidente(i);
-                                  setAnaliseDialog(true);
-                                }}>
-                                  <Target className="h-4 w-4 mr-1" />
-                                  Analisar
-                                </Button>
-                                <Button size="sm" variant="outline" onClick={() => {
-                                  setSelectedIncidente(i);
-                                  setAcaoDialog(true);
-                                }}>
-                                  <ClipboardCheck className="h-4 w-4 mr-1" />
-                                  Ação
-                                </Button>
-                              </div>
                             </TableCell>
                           </TableRow>
                         ))}
