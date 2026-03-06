@@ -104,6 +104,26 @@ interface Auditoria {
   created_by_nome: string;
 }
 
+/** Normaliza nome de setor: remove acentos, capitaliza. "urgencia" e "Urgência" → "Urgência" */
+const normalizeSetor = (s: string): string => {
+  const lower = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+  // Mapa de nomes canônicos
+  const map: Record<string, string> = {
+    "urgencia": "Urgência",
+    "emergencia": "Emergência",
+    "pediatria": "Pediatria",
+    "isolamento": "Isolamento",
+    "internacao": "Internação",
+    "medicacao": "Medicação",
+    "laboratorio": "Laboratório",
+    "recepcao": "Recepção",
+    "classificacao": "Classificação",
+    "sutura": "Sutura",
+    "raio-x": "Raio-X",
+  };
+  return map[lower] || s.charAt(0).toUpperCase() + s.slice(1);
+};
+
 const tiposIncidente = [
   { value: "evento_adverso", label: "Evento Adverso" },
   { value: "quase_erro", label: "Quase Erro (Near Miss)" },
@@ -1109,7 +1129,7 @@ export const QualidadeModule = () => {
             const semDano = incidentes.filter(i => i.tipo_incidente === "incidente_sem_dano").length;
 
             const setorCount: Record<string, number> = {};
-            incidentes.forEach(i => { setorCount[i.setor] = (setorCount[i.setor] || 0) + 1; });
+            incidentes.forEach(i => { const key = normalizeSetor(i.setor); setorCount[key] = (setorCount[key] || 0) + 1; });
             const topSetores = Object.entries(setorCount).sort((a, b) => b[1] - a[1]).slice(0, 6);
 
             const RISK_COLORS = ["hsl(142 71% 45%)", "hsl(48 96% 53%)", "hsl(25 95% 53%)", "hsl(0 84% 60%)"];
