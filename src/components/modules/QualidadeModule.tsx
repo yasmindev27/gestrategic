@@ -25,7 +25,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, mapStatusToType } from "@/components/ui/status-badge";
 import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
-import { DashboardConformidade } from "@/components/qualidade";
+import { DashboardConformidade, MetasSegurancaPaciente } from "@/components/qualidade";
 import { RiscosOperacionaisChart, AnalisarIncidenteIA } from "@/components/gestao-incidentes";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
@@ -133,7 +133,7 @@ export const QualidadeModule = () => {
   const { logAction } = useLogAccess();
   useRealtimeSync(REALTIME_PRESETS.qualidade);
   const { toast } = useToast();
-  const [activeTab, setActiveTab] = useState("conformidade");
+  const [activeTab, setActiveTab] = useState("metas");
   
   // Data states
   const [incidentes, setIncidentes] = useState<Incidente[]>([]);
@@ -578,10 +578,15 @@ export const QualidadeModule = () => {
   return (
     <div className="space-y-6">
       <SectionHeader 
-        title="Qualidade / NSP" 
-        description="Gestão de incidentes, análises e auditorias - Núcleo de Segurança do Paciente"
+        title="Qualidade / NSP - ONA Nível 1" 
+        description="Gestão de incidentes, metas de segurança e conformidade - Núcleo de Segurança do Paciente"
       >
-        <ActionButton type="add" label="Nova Notificação" onClick={() => setIncidenteDialog(true)} />
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="border-primary text-primary font-semibold px-3 py-1">
+            ONA N1
+          </Badge>
+          <ActionButton type="add" label="Nova Notificação" onClick={() => setIncidenteDialog(true)} />
+        </div>
       </SectionHeader>
 
       {/* Stats Cards */}
@@ -597,12 +602,21 @@ export const QualidadeModule = () => {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="metas" className="gap-1">
+            <Target className="h-4 w-4" />
+            Metas de Segurança
+          </TabsTrigger>
           <TabsTrigger value="conformidade" className="gap-1">
             <TrendingUp className="h-4 w-4" />
             Conformidade
           </TabsTrigger>
           <TabsTrigger value="incidentes">Incidentes</TabsTrigger>
         </TabsList>
+
+        {/* Metas de Segurança do Paciente - ONA Nível 1 */}
+        <TabsContent value="metas" className="mt-4">
+          <MetasSegurancaPaciente />
+        </TabsContent>
 
         {/* Dashboard de Conformidade */}
         <TabsContent value="conformidade" className="mt-4">
