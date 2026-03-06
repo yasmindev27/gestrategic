@@ -148,7 +148,7 @@ export const useConformidadeIndicadores = () => {
       // ========== INDICADORES DE INFRAESTRUTURA ==========
       const rondasRealizadas = rondas.length;
       const diasNoMes = new Date().getDate();
-      const rondasEsperadas = diasNoMes * 2; // 2 rondas por dia esperadas
+      const rondasEsperadas = diasNoMes * 2;
       const taxaRondas = rondasEsperadas > 0 
         ? Math.min((rondasRealizadas / rondasEsperadas) * 100, 100) 
         : 100;
@@ -178,7 +178,36 @@ export const useConformidadeIndicadores = () => {
         ? (leitosOcupados / bedRecords.length) * 100 
         : 0;
 
-      // Montar indicadores por módulo
+      // Novos indicadores baseados em incidentes
+      const comResponsavel = incidentes.filter(i => i.responsavel_tratativa_nome).length;
+      const taxaAtribuicao = incidentes.length > 0 
+        ? (comResponsavel / incidentes.length) * 100 
+        : 100;
+
+      const comPlano = incidentes.filter(i => i.plano_acao).length;
+      const taxaPlanoAcao = incidentes.length > 0 
+        ? (comPlano / incidentes.length) * 100 
+        : 100;
+
+      const comEvidencia = incidentes.filter(i => i.evidencia_url).length;
+      const taxaEvidencia = incidentes.length > 0 
+        ? (comEvidencia / incidentes.length) * 100 
+        : 100;
+
+      // Risco crítico: incidentes graves ou catastróficos abertos
+      const incidentesCriticos = incidentes.filter(
+        i => (i.classificacao_risco === "grave" || i.classificacao_risco === "catastrofico") && i.status !== "encerrado"
+      ).length;
+
+      // Tempo médio de tratativa (da notificação ao encerramento, em dias)
+      const encerradosComDatas = incidentes.filter(i => i.status === "encerrado" && i.data_conclusao && i.data_ocorrencia);
+      const tempoMedioTratativaDias = encerradosComDatas.length > 0
+        ? encerradosComDatas.reduce((acc, i) => {
+            const dias = differenceInHours(parseISO(i.data_conclusao!), parseISO(i.data_ocorrencia)) / 24;
+            return acc + Math.max(dias, 0);
+          }, 0) / encerradosComDatas.length
+        : 0;
+
       const indicadoresSegurancaPaciente: IndicadorONA[] = [
         {
           id: "inc_encerramento",
@@ -190,6 +219,61 @@ export const useConformidadeIndicadores = () => {
           status: calcularStatus(taxaEncerramento, 90),
           tendencia: "estavel",
           descricao: "Percentual de incidentes encerrados em relação ao total notificado",
+        },
+        {
+          id: "inc_atribuicao",
+          nome: "Taxa de Atribuição de Responsável",
+          categoria: "seguranca_paciente",
+          meta: 95,
+          valor_atual: taxaAtribuicao,
+          unidade: "%",
+          status: calcularStatus(taxaAtribuicao, 95),
+          tendencia: "estavel",
+          descricao: "Percentual de incidentes com responsável designado para tratativa",
+        },
+        {
+          id: "inc_plano_acao",
+          nome: "Taxa de Plano de Ação",
+          categoria: "seguranca_paciente",
+          meta: 85,
+          valor_atual: taxaPlanoAcao,
+          unidade: "%",
+          status: calcularStatus(taxaPlanoAcao, 85),
+          tendencia: "estavel",
+          descricao: "Percentual de incidentes com plano de ação registrado",
+        },
+        {
+          id: "inc_evidencia",
+          nome: "Taxa de Evidências Anexadas",
+          categoria: "seguranca_paciente",
+          meta: 80,
+          valor_atual: taxaEvidencia,
+          unidade: "%",
+          status: calcularStatus(taxaEvidencia, 80),
+          tendencia: "estavel",
+          descricao: "Percentual de incidentes com evidência documental anexada",
+        },
+        {
+          id: "inc_criticos_abertos",
+          nome: "Incidentes Críticos em Aberto",
+          categoria: "seguranca_paciente",
+          meta: 0,
+          valor_atual: incidentesCriticos,
+          unidade: "",
+          status: incidentesCriticos === 0 ? "conforme" : incidentesCriticos <= 2 ? "alerta" : "nao_conforme",
+          tendencia: "estavel",
+          descricao: "Quantidade de incidentes graves/catastróficos ainda sem encerramento",
+        },
+        {
+          id: "inc_tempo_tratativa",
+          nome: "Tempo Médio de Tratativa",
+          categoria: "seguranca_paciente",
+          meta: 15,
+          valor_atual: Math.round(tempoMedioTratativaDias * 10) / 10,
+          unidade: " dias",
+          status: calcularStatus(tempoMedioTratativaDias, 15, "menor_melhor"),
+          tendencia: "estavel",
+          descricao: "Média de dias entre a notificação e o encerramento do incidente",
         },
         {
           id: "acoes_implementadas",
