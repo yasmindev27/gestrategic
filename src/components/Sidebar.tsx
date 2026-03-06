@@ -243,6 +243,12 @@ const Sidebar = ({
     if (!items.some(item => item.id === "lms")) {
       items.push({ icon: GraduationCap, label: "Treinamentos", id: "lms" });
     }
+    if (!items.some(item => item.id === "documentos-interact")) {
+      items.push({ icon: FileText, label: "Docs Interact", id: "documentos-interact", category: "integracao" });
+    }
+    if (!items.some(item => item.id === "salus")) {
+      items.push({ icon: Stethoscope, label: "Sistema Salus", id: "salus", category: "integracao" });
+    }
     return items;
   };
 
