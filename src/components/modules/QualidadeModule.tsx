@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { AlertTriangle, ClipboardCheck, BarChart3, FileText, Plus, Eye, Pencil, ShieldX, TrendingUp, AlertCircle, CheckCircle2, Clock, Target, Stethoscope, Brain, Send, UserCheck, Upload, Bot, Loader2, Users } from "lucide-react";
+import { AlertTriangle, ClipboardCheck, BarChart3, FileText, Plus, Eye, Pencil, ShieldX, TrendingUp, AlertCircle, CheckCircle2, Clock, Target, Stethoscope, Brain, Send, UserCheck, Upload, Bot, Loader2, Users, Paperclip } from "lucide-react";
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
 import { StatCard } from "@/components/ui/stat-card";
 import { SearchInput } from "@/components/ui/search-input";
@@ -50,6 +50,11 @@ interface Incidente {
   paciente_prontuario: string | null;
   observacoes: string | null;
   created_at: string;
+  responsavel_tratativa_id: string | null;
+  responsavel_tratativa_nome: string | null;
+  plano_acao: string | null;
+  evidencia_url: string | null;
+  data_conclusao: string | null;
 }
 
 interface Analise {
@@ -170,6 +175,12 @@ export const QualidadeModule = () => {
   const [iaReviewDialog, setIaReviewDialog] = useState(false);
   const [responsavelDialog, setResponsavelDialog] = useState(false);
   const [responsavelIncidente, setResponsavelIncidente] = useState<Incidente | null>(null);
+  const [tratativaDialog, setTratativaDialog] = useState(false);
+  const [tratativaIncidente, setTratativaIncidente] = useState<Incidente | null>(null);
+  const [tratativaPlano, setTratativaPlano] = useState("");
+  const [tratativaStatus, setTratativaStatus] = useState("");
+  const [tratativaEvidencia, setTratativaEvidencia] = useState<File | null>(null);
+  const [uploadingEvidencia, setUploadingEvidencia] = useState(false);
   
   // Form data
   const [incidenteForm, setIncidenteForm] = useState({
@@ -511,9 +522,13 @@ export const QualidadeModule = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
 
-      // Update incident status to em_analise
+      // Update incident with responsible and status
       await supabase.from("incidentes_nsp")
-        .update({ status: "em_analise" })
+        .update({ 
+          status: "em_analise",
+          responsavel_tratativa_id: userId,
+          responsavel_tratativa_nome: usuario.full_name,
+        })
         .eq("id", responsavelIncidente.id);
 
       // Create agenda item for the responsible
@@ -549,6 +564,56 @@ export const QualidadeModule = () => {
       toast({ title: "Erro", description: "Falha ao atribuir responsável", variant: "destructive" });
     }
     setIsSubmitting(false);
+  };
+
+  // Open tratativa dialog
+  const openTratativaDialog = (incidente: Incidente) => {
+    setTratativaIncidente(incidente);
+    setTratativaPlano(incidente.plano_acao || "");
+    setTratativaStatus(incidente.status);
+    setTratativaEvidencia(null);
+    setTratativaDialog(true);
+  };
+
+  // Save tratativa (plan, status, evidence)
+  const handleSaveTratativa = async () => {
+    if (!tratativaIncidente) return;
+    setUploadingEvidencia(true);
+    try {
+      let evidenciaUrl = tratativaIncidente.evidencia_url;
+      if (tratativaEvidencia) {
+        const fileExt = tratativaEvidencia.name.split(".").pop();
+        const filePath = `${tratativaIncidente.id}/${Date.now()}.${fileExt}`;
+        const { error: uploadError } = await supabase.storage
+          .from("incidentes-evidencias")
+          .upload(filePath, tratativaEvidencia);
+        if (uploadError) throw uploadError;
+        const { data: urlData } = await supabase.storage
+          .from("incidentes-evidencias")
+          .createSignedUrl(filePath, 60 * 60 * 24 * 365);
+        evidenciaUrl = urlData?.signedUrl || null;
+      }
+      const updateData: Record<string, any> = {
+        plano_acao: tratativaPlano || null,
+        status: tratativaStatus,
+        evidencia_url: evidenciaUrl,
+      };
+      if (tratativaStatus === "encerrado") {
+        updateData.data_conclusao = new Date().toISOString();
+      }
+      const { error } = await supabase.from("incidentes_nsp")
+        .update(updateData)
+        .eq("id", tratativaIncidente.id);
+      if (error) throw error;
+      toast({ title: "Sucesso", description: "Tratativa atualizada com sucesso" });
+      setTratativaDialog(false);
+      setTratativaIncidente(null);
+      loadData();
+    } catch (err: any) {
+      console.error("Erro ao salvar tratativa:", err);
+      toast({ title: "Erro", description: "Falha ao salvar tratativa", variant: "destructive" });
+    }
+    setUploadingEvidencia(false);
   };
 
   const resetIncidenteForm = () => setIncidenteForm({
@@ -852,15 +917,15 @@ export const QualidadeModule = () => {
                     <div>
                       <h3 className="text-lg font-semibold">Tratamento de Notificações</h3>
                       <p className="text-sm text-muted-foreground">
-                        Visualize, atribua responsáveis e utilize IA para revisar classificações.
+                        Visualize, atribua responsáveis, gerencie tratativas e utilize IA para revisar classificações.
                       </p>
                     </div>
                   </div>
-                  {incidentes.filter(i => i.status !== "encerrado").length === 0 ? (
+                  {incidentes.length === 0 ? (
                     <EmptyState
                       icon={CheckCircle2}
-                      title="Nenhuma notificação pendente"
-                      description="Todas as notificações foram tratadas"
+                      title="Nenhuma notificação"
+                      description="Nenhuma notificação registrada"
                     />
                   ) : (
                     <Table>
@@ -870,12 +935,15 @@ export const QualidadeModule = () => {
                           <TableHead>Data</TableHead>
                           <TableHead>Setor</TableHead>
                           <TableHead>Classificação</TableHead>
+                          <TableHead>Responsável</TableHead>
+                          <TableHead>Plano de Ação</TableHead>
+                          <TableHead>Evidência</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead className="text-right">Ações</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {incidentes.filter(i => i.status !== "encerrado").map(i => (
+                        {incidentes.map(i => (
                           <TableRow key={i.id}>
                             <TableCell className="font-mono text-sm">{i.numero_notificacao}</TableCell>
                             <TableCell>{format(new Date(i.data_ocorrencia), "dd/MM/yyyy")}</TableCell>
@@ -884,6 +952,22 @@ export const QualidadeModule = () => {
                               <Badge className={`${getRiscoColor(i.classificacao_risco)} text-white`}>
                                 {classificacoesRisco.find(c => c.value === i.classificacao_risco)?.label}
                               </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm">
+                              {i.responsavel_tratativa_nome || <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell className="text-sm max-w-[150px] truncate" title={i.plano_acao || ""}>
+                              {i.plano_acao ? i.plano_acao.substring(0, 50) + (i.plano_acao.length > 50 ? "..." : "") : <span className="text-muted-foreground">—</span>}
+                            </TableCell>
+                            <TableCell>
+                              {i.evidencia_url ? (
+                                <a href={i.evidencia_url} target="_blank" rel="noopener noreferrer">
+                                  <Badge variant="outline" className="cursor-pointer gap-1">
+                                    <Paperclip className="h-3 w-3" />
+                                    Anexo
+                                  </Badge>
+                                </a>
+                              ) : <span className="text-muted-foreground text-sm">—</span>}
                             </TableCell>
                             <TableCell>
                               <StatusBadge 
@@ -919,6 +1003,10 @@ export const QualidadeModule = () => {
                                 }}>
                                   <Users className="h-4 w-4 mr-1" />
                                   Responsável
+                                </Button>
+                                <Button size="sm" variant="default" onClick={() => openTratativaDialog(i)}>
+                                  <ClipboardCheck className="h-4 w-4 mr-1" />
+                                  Tratativa
                                 </Button>
                               </div>
                             </TableCell>
@@ -1547,6 +1635,96 @@ export const QualidadeModule = () => {
               </div>
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog: Tratativa de Notificação */}
+      <Dialog open={tratativaDialog} onOpenChange={(open) => {
+        setTratativaDialog(open);
+        if (!open) setTratativaIncidente(null);
+      }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardCheck className="h-5 w-5" />
+              Tratativa de Notificação
+            </DialogTitle>
+          </DialogHeader>
+          {tratativaIncidente && (
+            <div className="space-y-4">
+              <Card className="bg-muted/50">
+                <CardContent className="pt-4 space-y-1">
+                  <p className="text-sm font-medium">{tratativaIncidente.numero_notificacao}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {tratativaIncidente.setor} • {classificacoesRisco.find(c => c.value === tratativaIncidente.classificacao_risco)?.label}
+                    {tratativaIncidente.responsavel_tratativa_nome && ` • Responsável: ${tratativaIncidente.responsavel_tratativa_nome}`}
+                  </p>
+                </CardContent>
+              </Card>
+
+              <div>
+                <Label>Plano de Ação</Label>
+                <Textarea 
+                  value={tratativaPlano} 
+                  onChange={e => setTratativaPlano(e.target.value)} 
+                  placeholder="Descreva o plano de ação para esta notificação..."
+                  rows={4}
+                />
+              </div>
+
+              <div>
+                <Label>Status da Notificação</Label>
+                <Select value={tratativaStatus} onValueChange={setTratativaStatus}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {statusIncidente.map(s => (
+                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <Label>Anexar Evidência</Label>
+                <Input 
+                  type="file" 
+                  accept="image/*,.pdf,.doc,.docx"
+                  onChange={e => setTratativaEvidencia(e.target.files?.[0] || null)}
+                  className="mt-1"
+                />
+                {tratativaIncidente.evidencia_url && !tratativaEvidencia && (
+                  <div className="mt-2">
+                    <a href={tratativaIncidente.evidencia_url} target="_blank" rel="noopener noreferrer">
+                      <Badge variant="outline" className="cursor-pointer gap-1">
+                        <Paperclip className="h-3 w-3" />
+                        Evidência atual anexada
+                      </Badge>
+                    </a>
+                  </div>
+                )}
+              </div>
+
+              {tratativaStatus === "encerrado" && !tratativaEvidencia && !tratativaIncidente.evidencia_url && (
+                <p className="text-sm text-amber-600 flex items-center gap-1">
+                  <AlertTriangle className="h-4 w-4" />
+                  Recomenda-se anexar evidência antes de encerrar a notificação.
+                </p>
+              )}
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTratativaDialog(false)}>Cancelar</Button>
+            <Button onClick={handleSaveTratativa} disabled={uploadingEvidencia}>
+              {uploadingEvidencia ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  Salvando...
+                </>
+              ) : "Salvar Tratativa"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
