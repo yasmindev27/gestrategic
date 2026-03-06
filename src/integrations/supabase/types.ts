@@ -3080,8 +3080,10 @@ export type Database = {
           categoria_operacional: string | null
           classificacao_risco: string
           created_at: string
+          data_conclusao: string | null
           data_ocorrencia: string
           descricao: string
+          evidencia_url: string | null
           id: string
           local_ocorrencia: string
           notificacao_anonima: boolean | null
@@ -3092,6 +3094,9 @@ export type Database = {
           paciente_envolvido: boolean | null
           paciente_nome: string | null
           paciente_prontuario: string | null
+          plano_acao: string | null
+          responsavel_tratativa_id: string | null
+          responsavel_tratativa_nome: string | null
           setor: string
           setor_origem: string | null
           status: string
@@ -3102,8 +3107,10 @@ export type Database = {
           categoria_operacional?: string | null
           classificacao_risco: string
           created_at?: string
+          data_conclusao?: string | null
           data_ocorrencia: string
           descricao: string
+          evidencia_url?: string | null
           id?: string
           local_ocorrencia: string
           notificacao_anonima?: boolean | null
@@ -3114,6 +3121,9 @@ export type Database = {
           paciente_envolvido?: boolean | null
           paciente_nome?: string | null
           paciente_prontuario?: string | null
+          plano_acao?: string | null
+          responsavel_tratativa_id?: string | null
+          responsavel_tratativa_nome?: string | null
           setor: string
           setor_origem?: string | null
           status?: string
@@ -3124,8 +3134,10 @@ export type Database = {
           categoria_operacional?: string | null
           classificacao_risco?: string
           created_at?: string
+          data_conclusao?: string | null
           data_ocorrencia?: string
           descricao?: string
+          evidencia_url?: string | null
           id?: string
           local_ocorrencia?: string
           notificacao_anonima?: boolean | null
@@ -3136,6 +3148,9 @@ export type Database = {
           paciente_envolvido?: boolean | null
           paciente_nome?: string | null
           paciente_prontuario?: string | null
+          plano_acao?: string | null
+          responsavel_tratativa_id?: string | null
+          responsavel_tratativa_nome?: string | null
           setor?: string
           setor_origem?: string | null
           status?: string
