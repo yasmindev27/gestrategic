@@ -1247,10 +1247,10 @@ export const QualidadeModule = () => {
                   </Card>
                 </div>
 
-                {/* Incidentes por Setor - full width */}
+                {/* Setores Notificados - full width */}
                 <Card>
                   <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-semibold">Incidentes por Setor</CardTitle>
+                    <CardTitle className="text-sm font-semibold">Setores Notificados</CardTitle>
                   </CardHeader>
                   <CardContent>
                     {setorData.length === 0 ? (
