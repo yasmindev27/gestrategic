@@ -130,6 +130,13 @@ export function MetasSegurancaPaciente() {
     ).length;
     const score6 = Math.max(0, 100 - (incidentesQuedas * 8));
 
+    // Tratativa stats for enriching indicators
+    const totalInc = incidentes.length;
+    const comResp = incidentes.filter(i => i.responsavel_tratativa_nome).length;
+    const comPlano = incidentes.filter(i => i.plano_acao).length;
+    const comEvid = incidentes.filter(i => i.evidencia_url).length;
+    const encerrados = incidentes.filter(i => i.status === "encerrado").length;
+
     return [
       {
         id: "meta1",
@@ -148,6 +155,7 @@ export function MetasSegurancaPaciente() {
         indicadores: [
           { nome: "Incidentes de identificação", valor: incidentesIdentificacao, meta: 0, unidade: "" },
           { nome: "Score de conformidade", valor: score1, meta: 95, unidade: "%" },
+          { nome: "Tratativas atribuídas", valor: totalInc > 0 ? Math.round((comResp / totalInc) * 100) : 100, meta: 95, unidade: "%" },
         ],
       },
       {
@@ -186,6 +194,7 @@ export function MetasSegurancaPaciente() {
         indicadores: [
           { nome: "Incidentes com medicamentos", valor: incidentesMedicamentos, meta: 0, unidade: "" },
           { nome: "Score de conformidade", valor: score3, meta: 90, unidade: "%" },
+          { nome: "Com plano de ação", valor: totalInc > 0 ? Math.round((comPlano / totalInc) * 100) : 100, meta: 85, unidade: "%" },
         ],
       },
       {
@@ -243,6 +252,7 @@ export function MetasSegurancaPaciente() {
         indicadores: [
           { nome: "Incidentes de queda/LPP", valor: incidentesQuedas, meta: 0, unidade: "" },
           { nome: "Score de conformidade", valor: score6, meta: 90, unidade: "%" },
+          { nome: "Com evidência anexada", valor: totalInc > 0 ? Math.round((comEvid / totalInc) * 100) : 100, meta: 80, unidade: "%" },
         ],
       },
     ];
