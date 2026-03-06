@@ -694,6 +694,7 @@ export const QualidadeModule = () => {
                         <TableRow>
                           <TableHead className="whitespace-nowrap">Nº</TableHead>
                           <TableHead className="whitespace-nowrap">Data de Abertura</TableHead>
+                          <TableHead className="whitespace-nowrap">Notificante</TableHead>
                           <TableHead className="whitespace-nowrap">Nome do Paciente</TableHead>
                           <TableHead className="whitespace-nowrap">Nº Prontuário</TableHead>
                           <TableHead className="whitespace-nowrap">Data do Ocorrido</TableHead>
@@ -703,8 +704,6 @@ export const QualidadeModule = () => {
                           <TableHead className="whitespace-nowrap">Correção/Ação Imediata</TableHead>
                           <TableHead className="whitespace-nowrap">Classificação</TableHead>
                           <TableHead className="whitespace-nowrap">Dano</TableHead>
-                          <TableHead className="whitespace-nowrap">Notificante</TableHead>
-                          
                         </TableRow>
                       </TableHeader>
                       <TableBody>
@@ -722,6 +721,7 @@ export const QualidadeModule = () => {
                             <TableRow key={i.id}>
                               <TableCell className="font-mono text-sm whitespace-nowrap">{i.numero_notificacao}</TableCell>
                               <TableCell className="whitespace-nowrap">{format(new Date(i.created_at), "dd/MM/yyyy HH:mm")}</TableCell>
+                              <TableCell className="text-sm">{i.notificacao_anonima ? "Anônimo" : i.notificador_nome || "-"}</TableCell>
                               <TableCell className="text-sm max-w-[150px] truncate">{i.paciente_nome || "-"}</TableCell>
                               <TableCell className="text-sm">{i.paciente_prontuario || "-"}</TableCell>
                               <TableCell className="whitespace-nowrap">{format(new Date(i.data_ocorrencia), "dd/MM/yyyy HH:mm")}</TableCell>
@@ -735,7 +735,6 @@ export const QualidadeModule = () => {
                                   {dano}
                                 </Badge>
                               </TableCell>
-                              <TableCell className="text-sm">{i.notificacao_anonima ? "Anônimo" : i.notificador_nome || "-"}</TableCell>
                             </TableRow>
                           );
                         })}
