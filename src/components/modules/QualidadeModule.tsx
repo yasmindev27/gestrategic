@@ -140,7 +140,7 @@ export const QualidadeModule = () => {
   useRealtimeSync(REALTIME_PRESETS.qualidade);
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("metas");
-  const [incidentesView, setIncidentesView] = useState<"lista" | "tratamento">("lista");
+  const [incidentesView, setIncidentesView] = useState<"lista" | "tratamento" | "dashboard">("lista");
   
   // Data states
   const [incidentes, setIncidentes] = useState<Incidente[]>([]);
@@ -792,6 +792,13 @@ export const QualidadeModule = () => {
             >
               Tratamento de Notificações
             </Button>
+            <Button
+              variant={incidentesView === "dashboard" ? "default" : "outline"}
+              onClick={() => setIncidentesView("dashboard")}
+            >
+              <BarChart3 className="h-4 w-4 mr-1" />
+              Dashboard
+            </Button>
           </div>
 
           {incidentesView === "lista" && (
@@ -1019,6 +1026,187 @@ export const QualidadeModule = () => {
               </CardContent>
             </Card>
           )}
+
+          {incidentesView === "dashboard" && (() => {
+            const totalIncidentes = incidentes.length;
+            const pendentes = incidentes.filter(i => i.status === "notificado").length;
+            const emAnalise = incidentes.filter(i => i.status === "em_analise").length;
+            const encerrados = incidentes.filter(i => i.status === "encerrado").length;
+            const comResponsavel = incidentes.filter(i => i.responsavel_tratativa_nome).length;
+            const semResponsavel = incidentes.filter(i => !i.responsavel_tratativa_nome && i.status !== "encerrado").length;
+            const comPlano = incidentes.filter(i => i.plano_acao).length;
+            const comEvidencia = incidentes.filter(i => i.evidencia_url).length;
+            const taxaEncerramento = totalIncidentes > 0 ? Math.round((encerrados / totalIncidentes) * 100) : 0;
+            const taxaTratativa = totalIncidentes > 0 ? Math.round((comResponsavel / totalIncidentes) * 100) : 0;
+
+            // By risk
+            const leves = incidentes.filter(i => i.classificacao_risco === "leve").length;
+            const moderados = incidentes.filter(i => i.classificacao_risco === "moderado").length;
+            const graves = incidentes.filter(i => i.classificacao_risco === "grave").length;
+            const catastroficos = incidentes.filter(i => i.classificacao_risco === "catastrofico").length;
+
+            // By type
+            const eventosAdversos = incidentes.filter(i => i.tipo_incidente === "evento_adverso").length;
+            const quaseErros = incidentes.filter(i => i.tipo_incidente === "quase_erro").length;
+            const semDano = incidentes.filter(i => i.tipo_incidente === "incidente_sem_dano").length;
+
+            // Top sectors
+            const setorCount: Record<string, number> = {};
+            incidentes.forEach(i => { setorCount[i.setor] = (setorCount[i.setor] || 0) + 1; });
+            const topSetores = Object.entries(setorCount).sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+            return (
+              <div className="space-y-4">
+                {/* Row 1: Key metrics */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <StatCard title="Taxa de Encerramento" value={`${taxaEncerramento}%`} icon={CheckCircle2} variant="success" />
+                  <StatCard title="Taxa de Atribuição" value={`${taxaTratativa}%`} icon={UserCheck} variant="info" />
+                  <StatCard title="Sem Responsável" value={semResponsavel} icon={AlertCircle} variant="destructive" />
+                  <StatCard title="Com Plano de Ação" value={comPlano} icon={ClipboardCheck} variant="primary" />
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                  {/* Status Overview */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Status das Notificações</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">Notificados (Aguardando)</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-32 h-2 rounded-full bg-muted overflow-hidden">
+                              <div className="h-full rounded-full bg-amber-500" style={{ width: `${totalIncidentes > 0 ? (pendentes/totalIncidentes)*100 : 0}%` }} />
+                            </div>
+                            <span className="text-sm font-semibold w-8 text-right">{pendentes}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">Em Análise</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-32 h-2 rounded-full bg-muted overflow-hidden">
+                              <div className="h-full rounded-full bg-blue-500" style={{ width: `${totalIncidentes > 0 ? (emAnalise/totalIncidentes)*100 : 0}%` }} />
+                            </div>
+                            <span className="text-sm font-semibold w-8 text-right">{emAnalise}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm">Encerrados</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-32 h-2 rounded-full bg-muted overflow-hidden">
+                              <div className="h-full rounded-full bg-emerald-500" style={{ width: `${totalIncidentes > 0 ? (encerrados/totalIncidentes)*100 : 0}%` }} />
+                            </div>
+                            <span className="text-sm font-semibold w-8 text-right">{encerrados}</span>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Classification by Risk */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Classificação de Risco</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {[
+                          { label: "Leve", count: leves, color: "bg-green-500" },
+                          { label: "Moderado", count: moderados, color: "bg-yellow-500" },
+                          { label: "Grave", count: graves, color: "bg-orange-500" },
+                          { label: "Catastrófico", count: catastroficos, color: "bg-red-600" },
+                        ].map(r => (
+                          <div key={r.label} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className={`w-3 h-3 rounded-full ${r.color}`} />
+                              <span className="text-sm">{r.label}</span>
+                            </div>
+                            <span className="text-sm font-semibold">{r.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* By Type */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Por Tipo de Incidente</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {[
+                          { label: "Evento Adverso", count: eventosAdversos, icon: AlertCircle },
+                          { label: "Quase Erro (Near Miss)", count: quaseErros, icon: AlertTriangle },
+                          { label: "Incidente sem Dano", count: semDano, icon: Clock },
+                        ].map(t => (
+                          <div key={t.label} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <t.icon className="h-4 w-4 text-muted-foreground" />
+                              <span className="text-sm">{t.label}</span>
+                            </div>
+                            <span className="text-sm font-semibold">{t.count}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Top Sectors */}
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base">Setores com Mais Incidentes</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {topSetores.length === 0 ? (
+                          <p className="text-sm text-muted-foreground">Sem dados</p>
+                        ) : topSetores.map(([setor, count]) => (
+                          <div key={setor} className="flex items-center justify-between">
+                            <span className="text-sm truncate max-w-[180px]">{setor}</span>
+                            <div className="flex items-center gap-2">
+                              <div className="w-24 h-2 rounded-full bg-muted overflow-hidden">
+                                <div className="h-full rounded-full bg-primary" style={{ width: `${(count / (topSetores[0]?.[1] || 1)) * 100}%` }} />
+                              </div>
+                              <span className="text-sm font-semibold w-6 text-right">{count}</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Tratativa Progress */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-base">Progresso das Tratativas</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center p-3 rounded-lg bg-muted/50">
+                        <p className="text-2xl font-bold text-foreground">{comResponsavel}</p>
+                        <p className="text-xs text-muted-foreground">Com Responsável</p>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-muted/50">
+                        <p className="text-2xl font-bold text-foreground">{comPlano}</p>
+                        <p className="text-xs text-muted-foreground">Com Plano de Ação</p>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-muted/50">
+                        <p className="text-2xl font-bold text-foreground">{comEvidencia}</p>
+                        <p className="text-xs text-muted-foreground">Com Evidência</p>
+                      </div>
+                      <div className="text-center p-3 rounded-lg bg-muted/50">
+                        <p className="text-2xl font-bold text-foreground">{encerrados}</p>
+                        <p className="text-xs text-muted-foreground">Concluídos</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })()}
         </TabsContent>
       </Tabs>
 
