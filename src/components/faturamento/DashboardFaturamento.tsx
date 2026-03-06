@@ -840,7 +840,7 @@ export function DashboardFaturamento() {
                         </Badge>
                         <span className="text-xs text-muted-foreground">
                           {item.progressoMeta > 100
-                            ? `🔥 ${item.progressoMeta}% da meta (${item.meta}) — Excedente!`
+                            ? `${item.progressoMeta}% da meta (${item.meta}) — Excedente!`
                             : `${item.progressoMeta}% da meta (${item.meta})`}
                         </span>
                       </div>
@@ -909,7 +909,7 @@ export function DashboardFaturamento() {
                         </span>
                         {item.taxaConclusao > 100 && (
                           <span className="text-xs text-green-600 font-medium">
-                            🔥 Excedente +{item.taxaConclusao - 100}%
+                            Excedente +{item.taxaConclusao - 100}%
                           </span>
                         )}
                       </div>

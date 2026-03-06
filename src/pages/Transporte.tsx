@@ -163,7 +163,7 @@ const Transporte = () => {
         km_rodados: kmTotal,
       }).eq("id", finalizarMissaoId);
       if (error) throw error;
-      toast({ title: `Transporte finalizado! ${kmTotal} km percorridos. ✅` });
+      toast({ title: `Transporte finalizado! ${kmTotal} km percorridos.` });
       setSelectedMissao(null);
       loadMissoes(userName);
     } catch (err: any) {
