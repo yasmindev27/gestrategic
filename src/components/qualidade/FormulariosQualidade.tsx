@@ -100,7 +100,11 @@ export function FormulariosQualidade() {
   const [secoes, setSecoes] = useState<SecaoConfig[]>([]);
   const [perguntas, setPerguntas] = useState<PerguntaConfig[]>([]);
   const [respostas, setRespostas] = useState<Record<string, string>>({});
-  const [auditoriaForm, setAuditoriaForm] = useState({ setor: "", observacoes: "", prontuario: "", paciente: "" });
+  const [auditoriaForm, setAuditoriaForm] = useState({
+    setor: "", observacoes: "", prontuario: "", paciente: "", pacienteRA: "",
+    scoreRisco: "", possuiLPP: "", grauLPP: "", apresentouQueda: "", notificacaoAberta: "",
+    profissionalAuditado: "",
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Historico state
@@ -125,7 +129,7 @@ export function FormulariosQualidade() {
   const handleOpenForm = async (form: FormularioConfig) => {
     setSelectedForm(form);
     setRespostas({});
-    setAuditoriaForm({ setor: "", observacoes: "", prontuario: "", paciente: "" });
+    setAuditoriaForm({ setor: "", observacoes: "", prontuario: "", paciente: "", pacienteRA: "", scoreRisco: "", possuiLPP: "", grauLPP: "", apresentouQueda: "", notificacaoAberta: "", profissionalAuditado: "" });
     const [secRes, pergRes] = await Promise.all([
       supabase.from("auditoria_secoes_config").select("*").eq("formulario_id", form.id).order("ordem"),
       supabase.from("auditoria_perguntas_config").select("*").eq("ativo", true).order("ordem"),
@@ -159,7 +163,14 @@ export function FormulariosQualidade() {
         observacoes: auditoriaForm.observacoes || null,
         numero_prontuario: auditoriaForm.prontuario || null,
         paciente_iniciais: auditoriaForm.paciente || null,
+        paciente_ra: auditoriaForm.pacienteRA || null,
         unidade_atendimento: auditoriaForm.setor,
+        score_risco: auditoriaForm.scoreRisco || null,
+        possui_lpp: auditoriaForm.possuiLPP === "sim" ? true : auditoriaForm.possuiLPP === "nao" ? false : null,
+        grau_lpp: auditoriaForm.grauLPP || null,
+        apresentou_queda: auditoriaForm.apresentouQueda === "sim" ? true : auditoriaForm.apresentouQueda === "nao" ? false : null,
+        notificacao_aberta: auditoriaForm.notificacaoAberta || null,
+        profissional_auditado: auditoriaForm.profissionalAuditado || null,
       });
       if (error) throw error;
       toast({ title: "Sucesso", description: "Auditoria registrada com sucesso!" });
@@ -282,10 +293,10 @@ export function FormulariosQualidade() {
           </div>
         </div>
 
-        {/* Identificação */}
+        {/* Identificação Geral */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-sm">Identificação da Auditoria</CardTitle>
+            <CardTitle className="text-sm">Informações Gerais</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
@@ -293,58 +304,182 @@ export function FormulariosQualidade() {
               <Select value={auditoriaForm.setor} onValueChange={v => setAuditoriaForm(p => ({ ...p, setor: v }))}>
                 <SelectTrigger><SelectValue placeholder="Selecione o setor" /></SelectTrigger>
                 <SelectContent>
-                  {(selectedForm.setores || ["Internação", "Urgência", "Medicação", "Classificação", "Observação"]).map(s => (
+                  {["Isolamento", "Pediatria", "Enfermaria Masculina", "Enfermaria Feminina", "Urgência", "Medicação", "Recepção", "Sutura", "Internação", "Laboratório", "Raio-X", "Consultórios Médicos", "Classificação 1", "Classificação 2"].map(s => (
                     <SelectItem key={s} value={s}>{s}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Nº Prontuário</Label>
-              <Input value={auditoriaForm.prontuario} onChange={e => setAuditoriaForm(p => ({ ...p, prontuario: e.target.value }))} placeholder="Opcional" />
+              <Label className="text-xs">Iniciais do Paciente *</Label>
+              <Input value={auditoriaForm.paciente} onChange={e => setAuditoriaForm(p => ({ ...p, paciente: e.target.value }))} placeholder="Ex: J.S." />
             </div>
             <div className="space-y-1">
-              <Label className="text-xs">Iniciais do Paciente</Label>
-              <Input value={auditoriaForm.paciente} onChange={e => setAuditoriaForm(p => ({ ...p, paciente: e.target.value }))} placeholder="Ex: J.S." />
+              <Label className="text-xs">RA do Paciente</Label>
+              <Input value={auditoriaForm.pacienteRA} onChange={e => setAuditoriaForm(p => ({ ...p, pacienteRA: e.target.value }))} placeholder="Registro de Atendimento" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Nº Prontuário</Label>
+              <Input value={auditoriaForm.prontuario} onChange={e => setAuditoriaForm(p => ({ ...p, prontuario: e.target.value }))} placeholder="Opcional" />
             </div>
           </CardContent>
         </Card>
 
-        {/* Seções e Perguntas */}
+        {/* Seções e Perguntas - Split into Paciente / Colaborador */}
         {secoes.map((secao, idx) => {
           const perguntasSecao = perguntas.filter(p => p.secao_id === secao.id);
           const Icon = META_ICONS[idx] || Target;
+          const pergPaciente = perguntasSecao.filter(p => p.codigo.includes("_P") || p.codigo.includes("_E") || (!p.codigo.includes("_C") && !p.codigo.includes("_P")));
+          const pergColaborador = perguntasSecao.filter(p => p.codigo.includes("_C"));
+          const moduleNum = idx + 1;
+
           return (
             <Card key={secao.id}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Icon className="h-4 w-4 text-primary" />
+              <CardHeader className="pb-3 bg-[hsl(210,70%,20%)] rounded-t-lg">
+                <CardTitle className="text-sm text-white flex items-center gap-2">
+                  <Icon className="h-4 w-4" />
                   {secao.nome}
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {perguntasSecao.map((p, pIdx) => (
-                  <div key={p.id} className="space-y-2">
-                    <Label className="text-sm font-normal">
-                      <span className="font-semibold text-muted-foreground mr-1">{pIdx + 1}.</span>
-                      {p.label}
-                    </Label>
-                    <RadioGroup
-                      value={respostas[p.codigo] || ""}
-                      onValueChange={v => setRespostas(prev => ({ ...prev, [p.codigo]: v }))}
-                      className="flex flex-wrap gap-3"
-                    >
-                      {p.opcoes.map(opt => (
-                        <div key={opt} className="flex items-center gap-1.5">
-                          <RadioGroupItem value={opt} id={`${p.codigo}-${opt}`} />
-                          <Label htmlFor={`${p.codigo}-${opt}`} className="text-sm cursor-pointer font-normal">
-                            {OPCAO_FULL[opt] || opt}
-                          </Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
+              <CardContent className="space-y-6 pt-4">
+                {/* Avaliação com Paciente / Avaliação */}
+                {pergPaciente.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">
+                      {moduleNum === 4 ? "Avaliação dos Critérios" : moduleNum === 5 ? "Avaliação" : "Avaliação com Paciente"}
+                    </h4>
+                    {pergPaciente.map((p, pIdx) => (
+                      <div key={p.id} className="space-y-2">
+                        <Label className="text-sm font-normal">
+                          <span className="font-semibold text-muted-foreground mr-1">{pIdx + 1}.</span>
+                          {p.label}
+                        </Label>
+                        <RadioGroup
+                          value={respostas[p.codigo] || ""}
+                          onValueChange={v => setRespostas(prev => ({ ...prev, [p.codigo]: v }))}
+                          className="flex flex-wrap gap-3"
+                        >
+                          {p.opcoes.map(opt => (
+                            <div key={opt} className="flex items-center gap-1.5">
+                              <RadioGroupItem value={opt} id={`${p.codigo}-${opt}`} />
+                              <Label htmlFor={`${p.codigo}-${opt}`} className="text-sm cursor-pointer font-normal">
+                                {OPCAO_FULL[opt] || opt}
+                              </Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
+
+                {/* Avaliação com Colaborador */}
+                {pergColaborador.length > 0 && (
+                  <div className="space-y-4">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider border-b pb-1">
+                      Avaliação com Colaborador
+                    </h4>
+                    {pergColaborador.map((p, pIdx) => (
+                      <div key={p.id} className="space-y-2">
+                        <Label className="text-sm font-normal">
+                          <span className="font-semibold text-muted-foreground mr-1">{pIdx + 1}.</span>
+                          {p.label}
+                        </Label>
+                        <RadioGroup
+                          value={respostas[p.codigo] || ""}
+                          onValueChange={v => setRespostas(prev => ({ ...prev, [p.codigo]: v }))}
+                          className="flex flex-wrap gap-3"
+                        >
+                          {p.opcoes.map(opt => (
+                            <div key={opt} className="flex items-center gap-1.5">
+                              <RadioGroupItem value={opt} id={`${p.codigo}-${opt}`} />
+                              <Label htmlFor={`${p.codigo}-${opt}`} className="text-sm cursor-pointer font-normal">
+                                {OPCAO_FULL[opt] || opt}
+                              </Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Module 5: Profissional Auditado */}
+                {moduleNum === 5 && (
+                  <div className="space-y-1 pt-2 border-t">
+                    <Label className="text-xs">Profissional Auditado *</Label>
+                    <Select value={auditoriaForm.profissionalAuditado} onValueChange={v => setAuditoriaForm(p => ({ ...p, profissionalAuditado: v }))}>
+                      <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                      <SelectContent>
+                        {["Auxiliar/Técnico de Enfermagem", "Enfermeiro", "Médico", "Outro"].map(s => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Module 3: Dados Complementares LPP */}
+                {moduleNum === 3 && (
+                  <div className="space-y-4 pt-2 border-t">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dados Complementares</h4>
+                    <div className="space-y-2">
+                      <Label className="text-sm">Paciente auditado com Lesão por Pressão? *</Label>
+                      <RadioGroup value={auditoriaForm.possuiLPP} onValueChange={v => setAuditoriaForm(p => ({ ...p, possuiLPP: v }))} className="flex gap-4">
+                        <div className="flex items-center gap-1.5"><RadioGroupItem value="sim" id="lpp-sim" /><Label htmlFor="lpp-sim" className="text-sm cursor-pointer">Sim</Label></div>
+                        <div className="flex items-center gap-1.5"><RadioGroupItem value="nao" id="lpp-nao" /><Label htmlFor="lpp-nao" className="text-sm cursor-pointer">Não</Label></div>
+                      </RadioGroup>
+                    </div>
+                    {auditoriaForm.possuiLPP === "sim" && (
+                      <div className="space-y-1">
+                        <Label className="text-xs">Grau da LPP *</Label>
+                        <Select value={auditoriaForm.grauLPP} onValueChange={v => setAuditoriaForm(p => ({ ...p, grauLPP: v }))}>
+                          <SelectTrigger><SelectValue placeholder="Selecione o grau" /></SelectTrigger>
+                          <SelectContent>
+                            {["Grau I", "Grau II", "Grau III", "Grau IV", "Não se aplica"].map(g => (
+                              <SelectItem key={g} value={g}>{g}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Module 6: Dados Complementares Queda */}
+                {moduleNum === 6 && (
+                  <div className="space-y-4 pt-2 border-t">
+                    <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Dados Complementares</h4>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Score de risco — Morse (adulto) / Humpty Dumpty (criança) *</Label>
+                      <Select value={auditoriaForm.scoreRisco} onValueChange={v => setAuditoriaForm(p => ({ ...p, scoreRisco: v }))}>
+                        <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                        <SelectContent>
+                          {["Sem Risco (0-24 pts) adulto", "Baixo Risco (25-50 pts) adulto", "Alto Risco (≥51 pts) adulto", "Baixo Risco (7-11 pts) pediátrico", "Alto Risco (12-22 pts) pediátrico"].map(s => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm">Paciente auditado apresentou queda durante internação? *</Label>
+                      <RadioGroup value={auditoriaForm.apresentouQueda} onValueChange={v => setAuditoriaForm(p => ({ ...p, apresentouQueda: v }))} className="flex gap-4">
+                        <div className="flex items-center gap-1.5"><RadioGroupItem value="sim" id="queda-sim" /><Label htmlFor="queda-sim" className="text-sm cursor-pointer">Sim</Label></div>
+                        <div className="flex items-center gap-1.5"><RadioGroupItem value="nao" id="queda-nao" /><Label htmlFor="queda-nao" className="text-sm cursor-pointer">Não</Label></div>
+                      </RadioGroup>
+                    </div>
+                    {auditoriaForm.apresentouQueda === "sim" && (
+                      <div className="space-y-2">
+                        <Label className="text-sm">Foi aberto notificação de incidentes? *</Label>
+                        <RadioGroup value={auditoriaForm.notificacaoAberta} onValueChange={v => setAuditoriaForm(p => ({ ...p, notificacaoAberta: v }))} className="flex gap-4">
+                          <div className="flex items-center gap-1.5"><RadioGroupItem value="sim" id="notif-sim" /><Label htmlFor="notif-sim" className="text-sm cursor-pointer">Sim</Label></div>
+                          <div className="flex items-center gap-1.5"><RadioGroupItem value="nao" id="notif-nao" /><Label htmlFor="notif-nao" className="text-sm cursor-pointer">Não</Label></div>
+                          <div className="flex items-center gap-1.5"><RadioGroupItem value="nao_aplica" id="notif-na" /><Label htmlFor="notif-na" className="text-sm cursor-pointer">N/A</Label></div>
+                        </RadioGroup>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           );
@@ -353,12 +488,12 @@ export function FormulariosQualidade() {
         {/* Observações */}
         <Card>
           <CardContent className="pt-4">
-            <Label className="text-xs">Observações Gerais</Label>
+            <Label className="text-xs">Observações / Não Conformidades / Ações de Melhoria *</Label>
             <Textarea
               value={auditoriaForm.observacoes}
               onChange={e => setAuditoriaForm(p => ({ ...p, observacoes: e.target.value }))}
-              placeholder="Observações adicionais da auditoria..."
-              rows={3}
+              placeholder="Registre observações, não conformidades ou ações de melhoria identificadas..."
+              rows={4}
               className="mt-1"
             />
           </CardContent>
