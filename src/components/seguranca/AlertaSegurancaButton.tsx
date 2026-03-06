@@ -60,7 +60,7 @@ export function AlertaSegurancaButton({ collapsed = false }: AlertaSegurancaButt
         const userIds = securityUsers.map(u => u.user_id);
         sendPushToUsers(
           userIds,
-          tipo === "urgente" ? "🚨 ALERTA URGENTE!" : "⚠️ Pedido de Apoio",
+          tipo === "urgente" ? "ALERTA URGENTE!" : "Pedido de Apoio",
           `${profile?.full_name || "Colaborador"} - ${profile?.setor || "Setor não informado"}${observacao ? `: ${observacao}` : ""}`,
           { tipo: "seguranca", tag: "seguranca-alert" }
         );

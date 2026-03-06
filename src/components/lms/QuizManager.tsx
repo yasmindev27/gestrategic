@@ -97,7 +97,7 @@ export default function QuizManager() {
       if (data?.error) throw new Error(data.error);
       if (data?.perguntas && Array.isArray(data.perguntas)) {
         setGeneratedQuestions(data.perguntas);
-        toast({ title: `✨ ${data.perguntas.length} perguntas geradas com IA!`, description: "Revise e edite antes de salvar." });
+        toast({ title: `${data.perguntas.length} perguntas geradas com IA`, description: "Revise e edite antes de salvar." });
       } else {
         throw new Error("Resposta inválida da IA");
       }
@@ -174,7 +174,7 @@ export default function QuizManager() {
                   disabled={isGenerating}
                   className="shrink-0"
                 >
-                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Gerando...</> : <>✨ Gerar Quiz Automaticamente</>}
+                  {isGenerating ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Gerando...</> : <>Gerar Quiz Automaticamente</>}
                 </Button>
               </div>
 
