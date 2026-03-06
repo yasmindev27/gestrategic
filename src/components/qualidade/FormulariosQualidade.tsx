@@ -86,6 +86,7 @@ export function FormulariosQualidade() {
   const { toast } = useToast();
   const [formularios, setFormularios] = useState<FormularioConfig[]>([]);
   const [registros, setRegistros] = useState<AuditoriaRegistro[]>([]);
+  const [incidentes, setIncidentes] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [view, setView] = useState<View>("home");
   const [selectedForm, setSelectedForm] = useState<FormularioConfig | null>(null);
@@ -105,12 +106,14 @@ export function FormulariosQualidade() {
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
-    const [formRes, regRes] = await Promise.all([
+    const [formRes, regRes, incRes] = await Promise.all([
       supabase.from("auditoria_formularios_config").select("*").eq("ativo", true).order("ordem"),
       supabase.from("auditorias_seguranca_paciente").select("*").order("created_at", { ascending: false }).limit(200),
+      supabase.from("incidentes_nsp").select("*").order("data_ocorrencia", { ascending: false }),
     ]);
     if (formRes.data) setFormularios(formRes.data);
     if (regRes.data) setRegistros(regRes.data as any);
+    if (incRes.data) setIncidentes(incRes.data);
     setIsLoading(false);
   };
 
@@ -480,19 +483,146 @@ export function FormulariosQualidade() {
   if (view === "consolidado" && selectedForm) {
     const tipoRegistros = registros.filter(r => r.tipo === selectedForm.tipo);
 
-    // Build monthly columns
+    // Build monthly columns from BOTH incidentes and auditorias
     const monthSet = new Set<string>();
-    tipoRegistros.forEach(r => {
-      const d = new Date(r.data_auditoria);
-      monthSet.add(format(d, "yyyy-MM"));
-    });
+    incidentes.forEach(i => monthSet.add(format(new Date(i.data_ocorrencia), "yyyy-MM")));
+    tipoRegistros.forEach(r => monthSet.add(format(new Date(r.data_auditoria), "yyyy-MM")));
     const months = [...monthSet].sort();
     const monthLabels = months.map(m => {
       const d = new Date(m + "-01");
       return format(d, "MMM/yy", { locale: ptBR }).replace(/^./, c => c.toUpperCase());
     });
 
-    // Meta sections from question codes (M1_, M2_, etc.)
+    // Helper: get incidentes for a month
+    const incByMonth = (month: string) => incidentes.filter(i => format(new Date(i.data_ocorrencia), "yyyy-MM") === month);
+    const calcAvg = (vals: number[]) => vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : "";
+    const calcPct = (num: number, den: number) => den > 0 ? ((num / den) * 100).toFixed(1) : "";
+
+    // Normalize setor_origem for procedência
+    const normalizeProcedencia = (setor: string) => {
+      const s = (setor || "").toLowerCase().trim();
+      if (/intern/i.test(s)) return "Unidade de Internação";
+      if (/emerg|urg/i.test(s)) return "Emergência";
+      if (/recep/i.test(s)) return "Recepção";
+      if (/raio|rx/i.test(s)) return "Raio-x";
+      if (/labor/i.test(s)) return "Laboratório";
+      if (/farm/i.test(s)) return "Farmácia";
+      if (/admin/i.test(s)) return "Áreas Administrativas";
+      if (/corpo.*cl|medic|clin/i.test(s)) return "Corpo Clínico";
+      if (/apoio/i.test(s)) return "Áreas de Apoio";
+      if (/classif/i.test(s)) return "Classificação";
+      if (/medica[çc]/i.test(s)) return "Medicação";
+      if (/observa/i.test(s)) return "Observação";
+      return "Outros";
+    };
+
+    // Normalize categoria_operacional for tipo OMS
+    const normalizeTipoOMS = (cat: string) => {
+      const c = (cat || "").toLowerCase();
+      if (/admin.*cl[ií]n|processo|procedimento/i.test(c)) return "Administração Clínica / Processo";
+      if (/documenta/i.test(c)) return "Documentação";
+      if (/medica[çc]/i.test(c)) return "Medicação";
+      if (/comporta/i.test(c)) return "Comportamento";
+      if (/infra|instala|edif/i.test(c)) return "Infraestrutura / Instalações";
+      if (/recurso|gest[aã]o.*org/i.test(c)) return "Recursos / Gestão Organizacional";
+      if (/equip/i.test(c)) return "Equipamentos Médicos";
+      return "Outros";
+    };
+
+    // Section rendering helper
+    const renderSection = (title: string, rows: { label: string; unit: string; values: (string | number)[]; avg: string | number }[]) => (
+      <Card key={title}>
+        <CardHeader className="pb-1 bg-[hsl(210,70%,20%)] rounded-t-lg">
+          <CardTitle className="text-sm text-white font-bold">{title}</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[220px] text-xs">Indicador</TableHead>
+                  <TableHead className="text-center text-xs w-[40px]">Un.</TableHead>
+                  {monthLabels.map(ml => <TableHead key={ml} className="text-center text-xs min-w-[55px]">{ml}</TableHead>)}
+                  <TableHead className="text-center text-xs min-w-[55px] font-bold bg-muted/50">Média</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rows.map((row, ri) => (
+                  <TableRow key={ri} className={row.unit === "%" ? "bg-muted/20" : ""}>
+                    <TableCell className="text-xs py-1.5">{row.label}</TableCell>
+                    <TableCell className="text-center text-xs text-muted-foreground py-1.5">{row.unit}</TableCell>
+                    {row.values.map((v, vi) => (
+                      <TableCell key={vi} className="text-center text-xs font-medium py-1.5">
+                        {row.unit === "%" && typeof v === "string" && v !== "" && v !== "-" ? (
+                          <span className={`font-bold ${parseFloat(v) >= 80 ? "text-green-600" : parseFloat(v) >= 60 ? "text-yellow-600" : "text-red-600"}`}>{v}%</span>
+                        ) : (v || "-")}
+                      </TableCell>
+                    ))}
+                    <TableCell className="text-center text-xs font-bold py-1.5 bg-muted/30">
+                      {row.unit === "%" && row.avg !== "" && row.avg !== "-" ? (
+                        <span className={`font-bold ${parseFloat(String(row.avg)) >= 80 ? "text-green-600" : parseFloat(String(row.avg)) >= 60 ? "text-yellow-600" : "text-red-600"}`}>{row.avg}%</span>
+                      ) : (row.avg || "-")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    );
+
+    // ── 1. INDICADORES DE ESTRUTURA ──
+    const estruturaRows = [
+      {
+        label: "Número Total de Notificações de Incidentes",
+        unit: "Nº",
+        values: months.map(m => incByMonth(m).length || ""),
+        avg: calcAvg(months.map(m => incByMonth(m).length).filter(v => v > 0)),
+      },
+    ];
+
+    // ── 2. INDICADORES DE PROCESSO ──
+    const classCounts = (month: string, tipo: string) => incByMonth(month).filter(i => i.tipo_incidente === tipo).length;
+    const riscoCounts = (month: string, risco: string) => incByMonth(month).filter(i => i.classificacao_risco === risco).length;
+
+    const processoRows = [
+      { label: "Número Total de Notificações", unit: "Nº", values: months.map(m => incByMonth(m).length || ""), avg: calcAvg(months.map(m => incByMonth(m).length).filter(v => v > 0)) },
+      { label: "Sem Dano", unit: "Nº", values: months.map(m => classCounts(m, "incidente_sem_dano") || ""), avg: calcAvg(months.map(m => classCounts(m, "incidente_sem_dano")).filter(v => v > 0)) },
+      { label: "", unit: "%", values: months.map(m => calcPct(classCounts(m, "incidente_sem_dano"), incByMonth(m).length)), avg: "" },
+      { label: "Quase Erro \"Near Miss\"", unit: "Nº", values: months.map(m => classCounts(m, "quase_erro") || ""), avg: calcAvg(months.map(m => classCounts(m, "quase_erro")).filter(v => v > 0)) },
+      { label: "", unit: "%", values: months.map(m => calcPct(classCounts(m, "quase_erro"), incByMonth(m).length)), avg: "" },
+      { label: "Com Dano / Evento Adverso", unit: "Nº", values: months.map(m => classCounts(m, "evento_adverso") || ""), avg: calcAvg(months.map(m => classCounts(m, "evento_adverso")).filter(v => v > 0)) },
+      { label: "", unit: "%", values: months.map(m => calcPct(classCounts(m, "evento_adverso"), incByMonth(m).length)), avg: "" },
+      { label: "  Dano Leve", unit: "Nº", values: months.map(m => riscoCounts(m, "leve") || ""), avg: calcAvg(months.map(m => riscoCounts(m, "leve")).filter(v => v > 0)) },
+      { label: "  Dano Moderado", unit: "Nº", values: months.map(m => riscoCounts(m, "moderado") || ""), avg: calcAvg(months.map(m => riscoCounts(m, "moderado")).filter(v => v > 0)) },
+      { label: "  Dano Grave", unit: "Nº", values: months.map(m => riscoCounts(m, "grave") || ""), avg: calcAvg(months.map(m => riscoCounts(m, "grave")).filter(v => v > 0)) },
+      { label: "  Catastrófico", unit: "Nº", values: months.map(m => riscoCounts(m, "catastrofico") || ""), avg: calcAvg(months.map(m => riscoCounts(m, "catastrofico")).filter(v => v > 0)) },
+    ];
+
+    // ── 2.2 PROCEDÊNCIA DAS NOTIFICAÇÕES ──
+    const PROCEDENCIAS = ["Unidade de Internação", "Emergência", "Recepção", "Raio-x", "Laboratório", "Farmácia", "Áreas Administrativas", "Corpo Clínico", "Áreas de Apoio", "Classificação", "Medicação", "Observação", "Outros"];
+    const procCount = (month: string, proc: string) => incByMonth(month).filter(i => normalizeProcedencia(i.setor_origem || i.setor) === proc).length;
+    const procedenciaRows: typeof processoRows = [];
+    PROCEDENCIAS.forEach(proc => {
+      const vals = months.map(m => procCount(m, proc));
+      if (vals.some(v => v > 0)) {
+        procedenciaRows.push({ label: proc, unit: "Nº", values: vals.map(v => v || ""), avg: calcAvg(vals.filter(v => v > 0)) });
+        procedenciaRows.push({ label: "", unit: "%", values: months.map((m, i) => calcPct(vals[i], incByMonth(m).length)), avg: "" });
+      }
+    });
+
+    // ── 2.2 TIPO DE INCIDENTES - OMS ──
+    const TIPOS_OMS = ["Administração Clínica / Processo", "Documentação", "Medicação", "Comportamento", "Infraestrutura / Instalações", "Recursos / Gestão Organizacional", "Equipamentos Médicos", "Outros"];
+    const omsCount = (month: string, tipo: string) => incByMonth(month).filter(i => normalizeTipoOMS(i.categoria_operacional || "") === tipo).length;
+    const omsRows: typeof processoRows = [];
+    TIPOS_OMS.forEach((tipo, idx) => {
+      const vals = months.map(m => omsCount(m, tipo));
+      omsRows.push({ label: `2.2.${idx + 1} ${tipo}`, unit: "Nº", values: vals.map(v => v || ""), avg: calcAvg(vals.filter(v => v > 0)) });
+      omsRows.push({ label: "", unit: "%", values: months.map((m, i) => calcPct(vals[i], incByMonth(m).length)), avg: "" });
+    });
+
+    // ── AUDITORIAS DE SEGURANÇA DO PACIENTE ──
     const META_SECTIONS = [
       { prefix: "M1_", label: "Identificação Correta do Paciente" },
       { prefix: "M2_", label: "Comunicação Efetiva" },
@@ -502,84 +632,109 @@ export function FormulariosQualidade() {
       { prefix: "M6_", label: "Prevenção Lesão por Pressão" },
     ];
 
-    // For each meta & month: count avaliados, conformes, %
     const getMetaMonthData = (prefix: string, month: string) => {
       const monthRegs = tipoRegistros.filter(r => format(new Date(r.data_auditoria), "yyyy-MM") === month);
-      let avaliados = 0;
-      let conformes = 0;
+      let avaliados = 0, conformes = 0;
       monthRegs.forEach(r => {
         if (!r.respostas || typeof r.respostas !== "object") return;
         const entries = Object.entries(r.respostas as Record<string, string>).filter(([k]) => k.startsWith(prefix));
         if (entries.length === 0) return;
         avaliados++;
-        const metaConformes = entries.filter(([, v]) => v === "conforme" || v === "sim").length;
-        const metaAvaliadas = entries.filter(([, v]) => v !== "nao_aplica").length;
-        if (metaAvaliadas > 0 && metaConformes === metaAvaliadas) conformes++;
+        const mc = entries.filter(([, v]) => v === "conforme" || v === "sim").length;
+        const ma = entries.filter(([, v]) => v !== "nao_aplica").length;
+        if (ma > 0 && mc === ma) conformes++;
       });
-      const pct = avaliados > 0 ? Math.round((conformes / avaliados) * 100) : null;
-      return { avaliados, conformes, pct };
+      return { avaliados, conformes, pct: avaliados > 0 ? ((conformes / avaliados) * 100).toFixed(1) : "" };
     };
 
-    // Global averages per meta
-    const getMetaAvg = (prefix: string) => {
-      const vals = months.map(m => getMetaMonthData(prefix, m)).filter(d => d.avaliados > 0);
-      if (vals.length === 0) return null;
-      return Math.round(vals.reduce((a, v) => a + (v.pct || 0), 0) / vals.length);
-    };
+    const auditRows: typeof processoRows = [];
+    META_SECTIONS.forEach(meta => {
+      auditRows.push({ label: meta.label, unit: "", values: months.map(() => ""), avg: "" }); // section header row
+      const avVals = months.map(m => getMetaMonthData(meta.prefix, m).avaliados);
+      const confVals = months.map(m => getMetaMonthData(meta.prefix, m).conformes);
+      const pctVals = months.map(m => getMetaMonthData(meta.prefix, m).pct);
+      auditRows.push({ label: "Número de pacientes avaliados", unit: "Nº", values: avVals.map(v => v || ""), avg: calcAvg(avVals.filter(v => v > 0)) });
+      auditRows.push({ label: "Conformidade", unit: "Nº", values: confVals.map(v => v || ""), avg: calcAvg(confVals.filter(v => v > 0)) });
+      auditRows.push({ label: "", unit: "%", values: pctVals as any, avg: (() => { const v = pctVals.filter(p => p !== ""); return v.length > 0 ? (v.reduce((a, b) => a + parseFloat(b as string), 0) / v.length).toFixed(1) : ""; })() });
+    });
 
-    const totalAuditorias = tipoRegistros.length;
+    // ── 4. INDICADORES DE RESULTADO ──
+    const RESULTADO_ITEMS = [
+      { label: "4.1 Taxa de incidentes - Identificação do Paciente", filter: (i: any) => /identifi/i.test(i.categoria_operacional || "") || /identifi/i.test(i.descricao || "") },
+      { label: "4.2 Taxa de incidentes - Comunicação Efetiva", filter: (i: any) => /comunica/i.test(i.categoria_operacional || "") || /comunica/i.test(i.descricao || "") },
+      { label: "4.3 Taxa de incidentes - Medicamentos", filter: (i: any) => /medica[çcm]/i.test(i.categoria_operacional || "") },
+      { label: "4.6 Taxa de incidentes - Quedas", filter: (i: any) => /queda/i.test(i.categoria_operacional || "") || /queda/i.test(i.descricao || "") },
+      { label: "4.7 Taxa de incidentes - Retirada não programada de Dispositivos", filter: (i: any) => /retir|dispos/i.test(i.categoria_operacional || "") },
+      { label: "4.8 Taxa de incidentes - Lesão de Pele", filter: (i: any) => /les[aã]o.*pele|lpp/i.test(i.categoria_operacional || "") || /les[aã]o.*pele|lpp/i.test(i.descricao || "") },
+      { label: "4.9 Taxa de incidentes - Flebite", filter: (i: any) => /flebit/i.test(i.categoria_operacional || "") || /flebit/i.test(i.descricao || "") },
+      { label: "4.10 Taxa de incidentes - Outros", filter: (_: any) => true }, // fallback
+      { label: "4.11 Taxa de incidentes - Farmacovigilância", filter: (i: any) => /farmaco/i.test(i.categoria_operacional || "") },
+      { label: "4.12 Taxa de incidentes - Tecnovigilância", filter: (i: any) => /tecno/i.test(i.categoria_operacional || "") || /equip/i.test(i.categoria_operacional || "") },
+    ];
+
+    const resultadoRows: typeof processoRows = [];
+    RESULTADO_ITEMS.forEach(item => {
+      if (item.label === "4.10 Taxa de incidentes - Outros") return; // skip "outros" for now, calculated separately
+      const vals = months.map(m => incByMonth(m).filter(item.filter).length);
+      resultadoRows.push({ label: item.label, unit: "Nº", values: vals.map(v => v || ""), avg: calcAvg(vals.filter(v => v > 0)) });
+      resultadoRows.push({ label: "", unit: "%", values: months.map((m, i) => calcPct(vals[i], incByMonth(m).length)), avg: "" });
+    });
+
+    // Export
+    const exportConsolidadoExcel = () => {
+      const allSections = [
+        { title: "2. INDICADORES DE PROCESSO", rows: processoRows },
+        { title: "2.2 Procedência das Notificações", rows: procedenciaRows },
+        { title: "2.2 Tipo de Incidentes - OMS", rows: omsRows },
+        { title: "AUDITORIAS DE SEGURANÇA DO PACIENTE", rows: auditRows },
+        { title: "4. INDICADORES DE RESULTADO", rows: resultadoRows },
+      ];
+      const data: any[] = [];
+      allSections.forEach(sec => {
+        data.push({ Indicador: sec.title });
+        sec.rows.forEach(r => {
+          const row: any = { Indicador: r.label, "Un.": r.unit };
+          months.forEach((_, i) => { row[monthLabels[i]] = r.values[i] || ""; });
+          row["Média"] = r.avg;
+          data.push(row);
+        });
+        data.push({});
+      });
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Consolidado NSP");
+      XLSX.writeFile(wb, `consolidado-nsp-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+    };
 
     const exportConsolidadoPDF = () => {
       const doc = new jsPDF({ orientation: "landscape" });
-      doc.setFontSize(12);
-      doc.text("AUDITORIAS DE SEGURANÇA DO PACIENTE - Consolidado Mensal", 14, 15);
+      doc.setFontSize(11);
+      doc.text("UNIDADE DE NEGÓCIO - NÚCLEO DE SEGURANÇA DO PACIENTE", 14, 12);
+      doc.setFontSize(8);
+      doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy")}`, 14, 17);
       let startY = 22;
 
-      META_SECTIONS.forEach(meta => {
-        const head = [["", ...monthLabels, "Média"]];
-        const avRow = ["Nº pacientes avaliados", ...months.map(m => String(getMetaMonthData(meta.prefix, m).avaliados || "")), ""];
-        const confRow = ["Conformidade", ...months.map(m => String(getMetaMonthData(meta.prefix, m).conformes || "")), ""];
-        const pctRow = ["%", ...months.map(m => {
-          const d = getMetaMonthData(meta.prefix, m);
-          return d.pct !== null ? `${d.pct}%` : "";
-        }), getMetaAvg(meta.prefix) !== null ? `${getMetaAvg(meta.prefix)}%` : ""];
-
+      const renderPdfSection = (title: string, rows: typeof processoRows) => {
+        if (startY > 170) { doc.addPage(); startY = 15; }
         autoTable(doc, {
           startY,
-          head: [[{ content: meta.label, colSpan: months.length + 2, styles: { halign: "left", fillColor: [30, 58, 95], textColor: 255 } }]],
-          body: [avRow, confRow, pctRow],
-          styles: { fontSize: 7, cellPadding: 2 },
+          head: [[{ content: title, colSpan: months.length + 3, styles: { halign: "left", fillColor: [30, 58, 95], textColor: 255, fontSize: 8 } }]],
+          body: rows.map(r => [r.label, r.unit, ...r.values.map(v => String(v)), String(r.avg)]),
+          styles: { fontSize: 6, cellPadding: 1.5 },
+          headStyles: { fontSize: 7 },
           theme: "grid",
           margin: { bottom: 10 },
         });
-        startY = (doc as any).lastAutoTable.finalY + 4;
-      });
+        startY = (doc as any).lastAutoTable.finalY + 3;
+      };
 
-      doc.save(`consolidado-auditorias-nsp-${format(new Date(), "yyyy-MM-dd")}.pdf`);
-    };
+      renderPdfSection("2. INDICADORES DE PROCESSO", processoRows);
+      renderPdfSection("2.2 Procedência das Notificações", procedenciaRows);
+      renderPdfSection("2.2 Tipo de Incidentes - OMS", omsRows);
+      renderPdfSection("AUDITORIAS DE SEGURANÇA DO PACIENTE", auditRows);
+      renderPdfSection("4. INDICADORES DE RESULTADO", resultadoRows);
 
-    const exportConsolidadoExcel = () => {
-      const rows: any[] = [];
-      META_SECTIONS.forEach(meta => {
-        rows.push({ Indicador: meta.label });
-        const avRow: any = { Indicador: "Nº pacientes avaliados" };
-        const confRow: any = { Indicador: "Conformidade" };
-        const pctRow: any = { Indicador: "%" };
-        months.forEach((m, i) => {
-          const d = getMetaMonthData(meta.prefix, m);
-          avRow[monthLabels[i]] = d.avaliados || "";
-          confRow[monthLabels[i]] = d.conformes || "";
-          pctRow[monthLabels[i]] = d.pct !== null ? `${d.pct}%` : "";
-        });
-        avRow["Média"] = "";
-        confRow["Média"] = "";
-        pctRow["Média"] = getMetaAvg(meta.prefix) !== null ? `${getMetaAvg(meta.prefix)}%` : "";
-        rows.push(avRow, confRow, pctRow, {});
-      });
-      const ws = XLSX.utils.json_to_sheet(rows);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Consolidado NSP");
-      XLSX.writeFile(wb, `consolidado-auditorias-nsp-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+      doc.save(`consolidado-nsp-${format(new Date(), "yyyy-MM-dd")}.pdf`);
     };
 
     return (
@@ -588,10 +743,10 @@ export function FormulariosQualidade() {
           <ArrowLeft className="h-4 w-4" /> Voltar
         </Button>
 
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <h2 className="text-lg font-semibold flex items-center gap-2">
             <BarChart3 className="h-5 w-5 text-primary" />
-            Consolidado Mensal – Auditorias de Segurança do Paciente
+            Consolidado Mensal – Núcleo de Segurança do Paciente
           </h2>
           <ExportDropdown onExportPDF={exportConsolidadoPDF} onExportExcel={exportConsolidadoExcel} />
         </div>
@@ -599,118 +754,28 @@ export function FormulariosQualidade() {
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <Card><CardContent className="pt-4 pb-3 text-center">
-            <p className="text-2xl font-bold">{totalAuditorias}</p>
+            <p className="text-2xl font-bold">{incidentes.length}</p>
+            <p className="text-xs text-muted-foreground">Total Notificações</p>
+          </CardContent></Card>
+          <Card><CardContent className="pt-4 pb-3 text-center">
+            <p className="text-2xl font-bold">{tipoRegistros.length}</p>
             <p className="text-xs text-muted-foreground">Auditorias Realizadas</p>
           </CardContent></Card>
           <Card><CardContent className="pt-4 pb-3 text-center">
             <p className="text-2xl font-bold">{months.length}</p>
             <p className="text-xs text-muted-foreground">Meses com Dados</p>
           </CardContent></Card>
-          {META_SECTIONS.slice(0, 2).map(meta => {
-            const avg = getMetaAvg(meta.prefix);
-            return (
-              <Card key={meta.prefix}><CardContent className="pt-4 pb-3 text-center">
-                <p className={`text-2xl font-bold ${avg !== null && avg >= 80 ? "text-green-600" : avg !== null && avg >= 60 ? "text-yellow-600" : "text-red-600"}`}>
-                  {avg !== null ? `${avg}%` : "-"}
-                </p>
-                <p className="text-xs text-muted-foreground truncate">{meta.label}</p>
-              </CardContent></Card>
-            );
-          })}
+          <Card><CardContent className="pt-4 pb-3 text-center">
+            <p className="text-2xl font-bold">{incidentes.filter(i => i.tipo_incidente === "evento_adverso").length}</p>
+            <p className="text-xs text-muted-foreground">Eventos Adversos</p>
+          </CardContent></Card>
         </div>
 
-        {/* Monthly tables per meta — like the Excel */}
-        {META_SECTIONS.map((meta, idx) => {
-          const Icon = META_ICONS[idx] || Target;
-          const avg = getMetaAvg(meta.prefix);
-          return (
-            <Card key={meta.prefix}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <Icon className="h-4 w-4 text-primary" />
-                  {meta.label}
-                  {avg !== null && (
-                    <Badge variant={avg >= 80 ? "default" : avg >= 60 ? "secondary" : "destructive"} className="ml-auto">
-                      Média: {avg}%
-                    </Badge>
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="overflow-x-auto">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="min-w-[180px]">Indicador</TableHead>
-                        <TableHead className="text-center min-w-[50px]">Un.</TableHead>
-                        {monthLabels.map(ml => (
-                          <TableHead key={ml} className="text-center min-w-[60px]">{ml}</TableHead>
-                        ))}
-                        <TableHead className="text-center min-w-[60px] font-bold">Média</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {/* Row: Número de pacientes avaliados */}
-                      <TableRow>
-                        <TableCell className="text-sm">Número de pacientes avaliados</TableCell>
-                        <TableCell className="text-center text-xs text-muted-foreground">Nº</TableCell>
-                        {months.map(m => {
-                          const d = getMetaMonthData(meta.prefix, m);
-                          return <TableCell key={m} className="text-center font-medium">{d.avaliados || "-"}</TableCell>;
-                        })}
-                        <TableCell className="text-center font-bold">
-                          {(() => {
-                            const vals = months.map(m => getMetaMonthData(meta.prefix, m).avaliados).filter(v => v > 0);
-                            return vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : "-";
-                          })()}
-                        </TableCell>
-                      </TableRow>
-                      {/* Row: Conformidade */}
-                      <TableRow>
-                        <TableCell className="text-sm">Conformidade</TableCell>
-                        <TableCell className="text-center text-xs text-muted-foreground">Nº</TableCell>
-                        {months.map(m => {
-                          const d = getMetaMonthData(meta.prefix, m);
-                          return <TableCell key={m} className="text-center font-medium">{d.conformes || "-"}</TableCell>;
-                        })}
-                        <TableCell className="text-center font-bold">
-                          {(() => {
-                            const vals = months.map(m => getMetaMonthData(meta.prefix, m).conformes).filter(v => v > 0);
-                            return vals.length > 0 ? Math.round(vals.reduce((a, b) => a + b, 0) / vals.length) : "-";
-                          })()}
-                        </TableCell>
-                      </TableRow>
-                      {/* Row: % */}
-                      <TableRow className="bg-muted/30">
-                        <TableCell className="text-sm font-medium">Taxa de Conformidade</TableCell>
-                        <TableCell className="text-center text-xs text-muted-foreground">%</TableCell>
-                        {months.map(m => {
-                          const d = getMetaMonthData(meta.prefix, m);
-                          return (
-                            <TableCell key={m} className="text-center">
-                              {d.pct !== null ? (
-                                <span className={`font-bold ${d.pct >= 80 ? "text-green-600" : d.pct >= 60 ? "text-yellow-600" : "text-red-600"}`}>
-                                  {d.pct}%
-                                </span>
-                              ) : "-"}
-                            </TableCell>
-                          );
-                        })}
-                        <TableCell className="text-center">
-                          {avg !== null ? (
-                            <span className={`font-bold ${avg >= 80 ? "text-green-600" : avg >= 60 ? "text-yellow-600" : "text-red-600"}`}>
-                              {avg}%
-                            </span>
-                          ) : "-"}
-                        </TableCell>
-                      </TableRow>
-                    </TableBody>
-                  </Table>
-                </div>
-              </CardContent>
-            </Card>
-          );
-        })}
+        {renderSection("2. INDICADORES DE PROCESSO", processoRows)}
+        {renderSection("2.2 Procedência das Notificações", procedenciaRows)}
+        {renderSection("2.2 Tipo de Incidentes - OMS", omsRows)}
+        {renderSection("AUDITORIAS DE SEGURANÇA DO PACIENTE", auditRows)}
+        {renderSection("4. INDICADORES DE RESULTADO", resultadoRows)}
       </div>
     );
   }
