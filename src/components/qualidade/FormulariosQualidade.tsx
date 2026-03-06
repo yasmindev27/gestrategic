@@ -80,7 +80,7 @@ const OPCAO_FULL: Record<string, string> = {
   sim: "Sim", nao: "Não",
 };
 
-const META_ICONS = [Target, Users, Pill, Scissors, Hand, PersonStanding];
+const META_ICONS = [Target, Users, Pill, PersonStanding, Hand, ShieldCheck];
 
 export function FormulariosQualidade() {
   const { toast } = useToast();
