@@ -676,8 +676,7 @@ export const QualidadeModule = () => {
             </CardContent>
           </Card>
 
-          <div className="grid grid-cols-1 xl:grid-cols-[1fr_1fr] gap-4">
-            {/* Tabela de Incidentes */}
+          {/* Tabela de Incidentes */}
             <Card className="overflow-auto">
               <CardContent className="pt-4">
                 {filteredIncidentes.length === 0 ? (
@@ -708,11 +707,9 @@ export const QualidadeModule = () => {
                       </TableHeader>
                       <TableBody>
                         {filteredIncidentes.map(i => {
-                          // Extract correction from description if embedded
                           const descParts = i.descricao.split("\n\nCorreção/Ação imediata: ");
                           const descricaoPura = descParts[0];
                           const correcao = descParts[1] || "-";
-                          // Extract "Classificação original" and dano from observacoes
                           const classificacaoOriginal = i.observacoes?.replace("Classificação original: ", "") || 
                             tiposIncidente.find(t => t.value === i.tipo_incidente)?.label || "-";
                           const dano = classificacoesRisco.find(c => c.value === i.classificacao_risco)?.label || "-";
@@ -744,10 +741,6 @@ export const QualidadeModule = () => {
                 )}
               </CardContent>
             </Card>
-
-            {/* Dashboard de Riscos Operacionais */}
-            <RiscosOperacionaisChart />
-          </div>
         </TabsContent>
       </Tabs>
 
