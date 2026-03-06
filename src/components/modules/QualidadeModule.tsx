@@ -675,82 +675,85 @@ export const QualidadeModule = () => {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="pt-4">
-              {filteredIncidentes.length === 0 ? (
-                <EmptyState
-                  icon={AlertTriangle}
-                  title="Nenhum incidente encontrado"
-                  description="Registre notificações de incidentes de segurança"
-                  action={{ label: "Nova Notificação", onClick: () => setIncidenteDialog(true) }}
-                />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Número</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Setor</TableHead>
-                      <TableHead>Risco</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredIncidentes.map(i => (
-                      <TableRow key={i.id}>
-                        <TableCell className="font-mono text-sm">{i.numero_notificacao}</TableCell>
-                        <TableCell>{format(new Date(i.data_ocorrencia), "dd/MM/yyyy HH:mm")}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline">
-                            {tiposIncidente.find(t => t.value === i.tipo_incidente)?.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>{i.setor}</TableCell>
-                        <TableCell>
-                          <Badge className={`${getRiscoColor(i.classificacao_risco)} text-white`}>
-                            {classificacoesRisco.find(c => c.value === i.classificacao_risco)?.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge 
-                            status={mapStatusToType(i.status)} 
-                            label={statusIncidente.find(s => s.value === i.status)?.label || i.status} 
-                          />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex gap-1 justify-end">
-                            <Button size="icon" variant="ghost" onClick={() => {
-                              setSelectedIncidente(i);
-                              setDetalhesDialog(true);
-                            }}>
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                            <Button size="icon" variant="ghost" onClick={() => {
-                              setSelectedIncidente(i);
-                              setAnaliseDialog(true);
-                            }}>
-                              <Target className="h-4 w-4" />
-                            </Button>
-                            <Button size="icon" variant="ghost" onClick={() => {
-                              setSelectedIncidente(i);
-                              setAcaoDialog(true);
-                            }}>
-                              <ClipboardCheck className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
+          <div className="grid grid-cols-1 xl:grid-cols-[1fr_1fr] gap-4">
+            {/* Tabela de Incidentes */}
+            <Card>
+              <CardContent className="pt-4">
+                {filteredIncidentes.length === 0 ? (
+                  <EmptyState
+                    icon={AlertTriangle}
+                    title="Nenhum incidente encontrado"
+                    description="Registre notificações de incidentes de segurança"
+                    action={{ label: "Nova Notificação", onClick: () => setIncidenteDialog(true) }}
+                  />
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Número</TableHead>
+                        <TableHead>Data</TableHead>
+                        <TableHead>Tipo</TableHead>
+                        <TableHead>Setor</TableHead>
+                        <TableHead>Risco</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredIncidentes.map(i => (
+                        <TableRow key={i.id}>
+                          <TableCell className="font-mono text-sm">{i.numero_notificacao}</TableCell>
+                          <TableCell>{format(new Date(i.data_ocorrencia), "dd/MM/yyyy HH:mm")}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {tiposIncidente.find(t => t.value === i.tipo_incidente)?.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{i.setor}</TableCell>
+                          <TableCell>
+                            <Badge className={`${getRiscoColor(i.classificacao_risco)} text-white`}>
+                              {classificacoesRisco.find(c => c.value === i.classificacao_risco)?.label}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <StatusBadge 
+                              status={mapStatusToType(i.status)} 
+                              label={statusIncidente.find(s => s.value === i.status)?.label || i.status} 
+                            />
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex gap-1 justify-end">
+                              <Button size="icon" variant="ghost" onClick={() => {
+                                setSelectedIncidente(i);
+                                setDetalhesDialog(true);
+                              }}>
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" onClick={() => {
+                                setSelectedIncidente(i);
+                                setAnaliseDialog(true);
+                              }}>
+                                <Target className="h-4 w-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" onClick={() => {
+                                setSelectedIncidente(i);
+                                setAcaoDialog(true);
+                              }}>
+                                <ClipboardCheck className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+            </Card>
 
-          {/* Dashboard de Riscos Operacionais */}
-          <RiscosOperacionaisChart />
+            {/* Dashboard de Riscos Operacionais */}
+            <RiscosOperacionaisChart />
+          </div>
         </TabsContent>
       </Tabs>
 
