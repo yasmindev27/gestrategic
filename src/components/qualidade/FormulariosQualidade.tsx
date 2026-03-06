@@ -87,6 +87,15 @@ const OPCAO_FULL: Record<string, string> = {
 
 const META_ICONS = [Target, Users, Pill, PersonStanding, Hand, ShieldCheck];
 
+const MODULE_DESCRIPTIONS: Record<number, string> = {
+  1: "Assegurar que o cuidado seja prestado à pessoa a qual se destina. Meta de Segurança do Paciente.",
+  2: "Identificar fragilidades, prevenir erros de medicação e eventos adversos, propor melhorias e assegurar a conformidade com a meta de segurança do paciente.",
+  3: "Identificar fragilidades, propor melhorias e assegurar a redução da incidência de lesões por pressão, promovendo segurança e qualidade da assistência.",
+  4: "Avaliar a conformidade e efetividade dos processos de comunicação entre equipes, verificar o uso adequado de instrumentos institucionais e subsidiar ações de melhoria contínua.",
+  5: "Monitorar a conformidade com o protocolo, identificar fragilidades, propor ações corretivas e assegurar a melhoria contínua na prevenção e controle de IRAS.",
+  6: "Avaliar a conformidade dos processos de identificação de risco e prevenção de quedas, promovendo segurança e qualidade na assistência ao paciente.",
+};
+
 export function FormulariosQualidade() {
   const { toast } = useToast();
   const [formularios, setFormularios] = useState<FormularioConfig[]>([]);
@@ -105,6 +114,7 @@ export function FormulariosQualidade() {
     scoreRisco: "", possuiLPP: "", grauLPP: "", apresentouQueda: "", notificacaoAberta: "",
     profissionalAuditado: "",
   });
+  const [responsavelNome, setResponsavelNome] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Historico state
@@ -140,6 +150,13 @@ export function FormulariosQualidade() {
       setPerguntas((pergRes.data as PerguntaConfig[]).filter(p => secIds.has(p.secao_id)));
     }
     setView("form");
+
+    // Load responsável name from auth
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle();
+      setResponsavelNome(profile?.full_name || user.email || "");
+    }
   };
 
   const handleSubmit = async () => {
@@ -151,13 +168,12 @@ export function FormulariosQualidade() {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
-      const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).maybeSingle();
 
       const { error } = await supabase.from("auditorias_seguranca_paciente").insert({
         tipo: selectedForm.tipo,
         setor: auditoriaForm.setor,
         auditor_id: user.id,
-        auditor_nome: profile?.full_name || user.email || "",
+        auditor_nome: responsavelNome || user.email || "",
         data_auditoria: new Date().toISOString().split("T")[0],
         respostas,
         observacoes: auditoriaForm.observacoes || null,
@@ -342,6 +358,13 @@ export function FormulariosQualidade() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6 pt-4">
+                {/* Module description */}
+                {MODULE_DESCRIPTIONS[moduleNum] && (
+                  <p className="text-xs text-muted-foreground italic border-l-2 border-primary/30 pl-3">
+                    {MODULE_DESCRIPTIONS[moduleNum]}
+                  </p>
+                )}
+
                 {/* Avaliação com Paciente / Avaliação */}
                 {pergPaciente.length > 0 && (
                   <div className="space-y-4">
@@ -487,7 +510,7 @@ export function FormulariosQualidade() {
 
         {/* Observações */}
         <Card>
-          <CardContent className="pt-4">
+          <CardContent className="pt-4 space-y-4">
             <Label className="text-xs">Observações / Não Conformidades / Ações de Melhoria *</Label>
             <Textarea
               value={auditoriaForm.observacoes}
@@ -496,6 +519,20 @@ export function FormulariosQualidade() {
               rows={4}
               className="mt-1"
             />
+          </CardContent>
+        </Card>
+
+        {/* Responsável */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm">Responsável</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              <Label className="text-xs">Profissional responsável pela auditoria *</Label>
+              <Input value={responsavelNome} readOnly className="bg-muted cursor-not-allowed" />
+              <p className="text-xs text-muted-foreground">Preenchido automaticamente com o usuário logado.</p>
+            </div>
           </CardContent>
         </Card>
 
