@@ -16,7 +16,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { AlertTriangle, ClipboardCheck, BarChart3, FileText, Plus, Eye, Pencil, ShieldX, TrendingUp, AlertCircle, CheckCircle2, Clock, Target, Stethoscope, Brain, Send, UserCheck } from "lucide-react";
+import { AlertTriangle, ClipboardCheck, BarChart3, FileText, Plus, Eye, Pencil, ShieldX, TrendingUp, AlertCircle, CheckCircle2, Clock, Target, Stethoscope, Brain, Send, UserCheck, Upload } from "lucide-react";
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
 import { StatCard } from "@/components/ui/stat-card";
 import { SearchInput } from "@/components/ui/search-input";
@@ -26,7 +26,7 @@ import { StatusBadge, mapStatusToType } from "@/components/ui/status-badge";
 import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
 import { DashboardConformidade, MetasSegurancaPaciente } from "@/components/qualidade";
-import { RiscosOperacionaisChart, AnalisarIncidenteIA } from "@/components/gestao-incidentes";
+import { RiscosOperacionaisChart, AnalisarIncidenteIA, ImportarIncidentesDialog } from "@/components/gestao-incidentes";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -158,6 +158,7 @@ export const QualidadeModule = () => {
   const [auditoriaDialog, setAuditoriaDialog] = useState(false);
   const [detalhesDialog, setDetalhesDialog] = useState(false);
   const [encaminharDialog, setEncaminharDialog] = useState(false);
+  const [importarDialog, setImportarDialog] = useState(false);
   const [selectedIncidente, setSelectedIncidente] = useState<Incidente | null>(null);
   const [selectedAcao, setSelectedAcao] = useState<Acao | null>(null);
   const [novoResponsavel, setNovoResponsavel] = useState("");
@@ -585,6 +586,10 @@ export const QualidadeModule = () => {
           <Badge variant="outline" className="border-primary text-primary font-semibold px-3 py-1">
             ONA N1
           </Badge>
+          <Button variant="outline" size="sm" onClick={() => setImportarDialog(true)}>
+            <Upload className="h-4 w-4 mr-2" />
+            Importar XLSX
+          </Button>
           <ActionButton type="add" label="Nova Notificação" onClick={() => setIncidenteDialog(true)} />
         </div>
       </SectionHeader>
@@ -1273,6 +1278,13 @@ export const QualidadeModule = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dialog: Importar Incidentes */}
+      <ImportarIncidentesDialog 
+        open={importarDialog} 
+        onOpenChange={setImportarDialog}
+        onImportComplete={loadData}
+      />
     </div>
   );
 };
