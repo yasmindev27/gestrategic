@@ -212,7 +212,7 @@ export function IncidentesList({ refreshTrigger }: IncidentesListProps) {
                   <TableRow key={inc.id}>
                     <TableCell className="font-mono text-sm">{inc.numero_notificacao}</TableCell>
                     <TableCell className="text-sm">
-                      {format(new Date(inc.data_ocorrencia), "dd/MM/yy HH:mm")}
+                      {format(new Date(inc.data_ocorrencia), "dd/MM/yyyy HH:mm")}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-xs">
