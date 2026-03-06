@@ -25,9 +25,8 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, mapStatusToType } from "@/components/ui/status-badge";
 import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
-import { AuditoriasSegurancaPaciente, DashboardConformidade } from "@/components/qualidade";
-import { EditorFormulariosAuditoria } from "@/components/qualidade/EditorFormulariosAuditoria";
-import { RiscosOperacionaisChart, DashboardIAIncidentes, ReportarIncidenteRapido, AnalisarIncidenteIA } from "@/components/gestao-incidentes";
+import { DashboardConformidade } from "@/components/qualidade";
+import { RiscosOperacionaisChart, AnalisarIncidenteIA } from "@/components/gestao-incidentes";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -583,7 +582,6 @@ export const QualidadeModule = () => {
         description="Gestão de incidentes, análises e auditorias - Núcleo de Segurança do Paciente"
       >
         <ActionButton type="add" label="Nova Notificação" onClick={() => setIncidenteDialog(true)} />
-        <ActionButton type="add" label="Nova Auditoria" onClick={() => setAuditoriaDialog(true)} variant="outline" />
       </SectionHeader>
 
       {/* Stats Cards */}
@@ -603,30 +601,7 @@ export const QualidadeModule = () => {
             <TrendingUp className="h-4 w-4" />
             Conformidade
           </TabsTrigger>
-          <TabsTrigger value="reportar" className="gap-1">
-            <Plus className="h-4 w-4" />
-            Reportar
-          </TabsTrigger>
           <TabsTrigger value="incidentes">Incidentes</TabsTrigger>
-          <TabsTrigger value="riscos" className="gap-1">
-            <BarChart3 className="h-4 w-4" />
-            Riscos
-          </TabsTrigger>
-          <TabsTrigger value="ia" className="gap-1">
-            <Brain className="h-4 w-4" />
-            Análise IA
-          </TabsTrigger>
-          <TabsTrigger value="acoes">Ações</TabsTrigger>
-          <TabsTrigger value="auditorias">Auditorias</TabsTrigger>
-          <TabsTrigger value="auditorias-seguranca" className="gap-1">
-            <Stethoscope className="h-4 w-4" />
-            Seg. Paciente
-          </TabsTrigger>
-          <TabsTrigger value="indicadores">Indicadores</TabsTrigger>
-          <TabsTrigger value="editor-formularios" className="gap-1">
-            <Pencil className="h-4 w-4" />
-            Editor
-          </TabsTrigger>
         </TabsList>
 
         {/* Dashboard de Conformidade */}
@@ -634,43 +609,7 @@ export const QualidadeModule = () => {
           <DashboardConformidade />
         </TabsContent>
 
-        {/* Tab: Reportar Incidente */}
-        <TabsContent value="reportar" className="mt-4">
-          <div className="grid gap-6 lg:grid-cols-3">
-            <div className="lg:col-span-2">
-              <ReportarIncidenteRapido onIncidenteRegistrado={() => loadData()} />
-            </div>
-            <div className="space-y-4">
-              <Card>
-                <CardHeader className="pb-3">
-                  <CardTitle className="text-base">Por que reportar?</CardTitle>
-                </CardHeader>
-                <CardContent className="text-sm text-muted-foreground space-y-3">
-                  <p>
-                    <strong>Quase-erros</strong> são eventos que poderiam ter causado dano, 
-                    mas foram interceptados a tempo. Reportá-los ajuda a prevenir incidentes reais.
-                  </p>
-                  <p>
-                    <strong>Cultura justa:</strong> O objetivo não é punir, mas aprender. 
-                    Sua notificação é fundamental para a segurança de todos.
-                  </p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-        </TabsContent>
-
-        {/* Tab: Riscos Operacionais */}
-        <TabsContent value="riscos" className="mt-4">
-          <RiscosOperacionaisChart />
-        </TabsContent>
-
-        {/* Tab: Análise IA */}
-        <TabsContent value="ia" className="mt-4">
-          <DashboardIAIncidentes />
-        </TabsContent>
-
-        {/* Incidentes Tab */}
+        {/* Incidentes Tab (com Riscos Operacionais) */}
         <TabsContent value="incidentes" className="space-y-4">
           <Card>
             <CardContent className="pt-4">
@@ -790,219 +729,9 @@ export const QualidadeModule = () => {
               )}
             </CardContent>
           </Card>
-        </TabsContent>
 
-        {/* Ações Tab */}
-        <TabsContent value="acoes" className="space-y-4">
-          <Card>
-            <CardContent className="pt-4">
-              {acoes.length === 0 ? (
-                <EmptyState
-                  icon={ClipboardCheck}
-                  title="Nenhuma ação registrada"
-                  description="Registre ações corretivas e preventivas a partir dos incidentes"
-                />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Responsável</TableHead>
-                      <TableHead>Prazo</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {acoes.map(a => (
-                      <TableRow key={a.id}>
-                        <TableCell>
-                          <Badge variant={a.tipo_acao === "corretiva" ? "default" : "secondary"}>
-                            {a.tipo_acao === "corretiva" ? "Corretiva" : "Preventiva"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="max-w-xs truncate">{a.descricao}</TableCell>
-                        <TableCell>{a.responsavel_nome}</TableCell>
-                        <TableCell>{format(new Date(a.prazo), "dd/MM/yyyy")}</TableCell>
-                        <TableCell>
-                          <StatusBadge status={mapStatusToType(a.status)} label={a.status} />
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            onClick={() => openEncaminharDialog(a)}
-                            className="gap-1"
-                          >
-                            <Send className="h-3 w-3" />
-                            Encaminhar
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Auditorias Tab */}
-        <TabsContent value="auditorias" className="space-y-4">
-          <Card>
-            <CardContent className="pt-4">
-              {auditorias.length === 0 ? (
-                <EmptyState
-                  icon={FileText}
-                  title="Nenhuma auditoria registrada"
-                  description="Registre auditorias internas e externas"
-                  action={{ label: "Nova Auditoria", onClick: () => setAuditoriaDialog(true) }}
-                />
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Título</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Auditor</TableHead>
-                      <TableHead>Setor</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {auditorias.map(a => (
-                      <TableRow key={a.id}>
-                        <TableCell>
-                          <Badge variant={a.tipo_auditoria === "interna" ? "outline" : "default"}>
-                            {a.tipo_auditoria === "interna" ? "Interna" : "Externa"}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-medium">{a.titulo}</TableCell>
-                        <TableCell>{format(new Date(a.data_auditoria), "dd/MM/yyyy")}</TableCell>
-                        <TableCell>{a.auditor}</TableCell>
-                        <TableCell>{a.setor_auditado}</TableCell>
-                        <TableCell>
-                          <StatusBadge status={mapStatusToType(a.status)} label={a.status} />
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* Auditorias de Segurança do Paciente Tab */}
-        <TabsContent value="auditorias-seguranca" className="space-y-4">
-          <AuditoriasSegurancaPaciente currentUser={currentUser} />
-        </TabsContent>
-
-        {/* Indicadores Tab */}
-        <TabsContent value="indicadores" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Incidentes por Tipo</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {tiposIncidente.map(tipo => {
-                    const count = incidentes.filter(i => i.tipo_incidente === tipo.value).length;
-                    const percent = stats.total > 0 ? ((count / stats.total) * 100).toFixed(1) : 0;
-                    return (
-                      <div key={tipo.value} className="flex justify-between items-center">
-                        <span className="text-sm">{tipo.label}</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-24 h-2 bg-muted rounded-full overflow-hidden">
-                            <div 
-                              className="h-full bg-primary rounded-full" 
-                              style={{ width: `${percent}%` }}
-                            />
-                          </div>
-                          <span className="text-sm font-medium w-8 text-right">{count}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Incidentes por Classificação de Risco</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {classificacoesRisco.map(risco => {
-                    const count = incidentes.filter(i => i.classificacao_risco === risco.value).length;
-                    return (
-                      <div key={risco.value} className="flex justify-between items-center">
-                        <div className="flex items-center gap-2">
-                          <div className={`w-3 h-3 rounded-full ${risco.color}`} />
-                          <span className="text-sm">{risco.label}</span>
-                        </div>
-                        <span className="text-sm font-medium">{count}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Incidentes por Setor</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 max-h-64 overflow-y-auto">
-                  {setoresHospitalares.map(setor => {
-                    const count = incidentes.filter(i => i.setor === setor).length;
-                    if (count === 0) return null;
-                    return (
-                      <div key={setor} className="flex justify-between items-center">
-                        <span className="text-sm">{setor}</span>
-                        <span className="text-sm font-medium">{count}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">Status das Ações</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {["pendente", "em_andamento", "concluida", "cancelada"].map(status => {
-                    const count = acoes.filter(a => a.status === status).length;
-                    const labels: Record<string, string> = {
-                      pendente: "Pendente",
-                      em_andamento: "Em Andamento",
-                      concluida: "Concluída",
-                      cancelada: "Cancelada",
-                    };
-                    return (
-                      <div key={status} className="flex justify-between items-center">
-                        <span className="text-sm">{labels[status]}</span>
-                        <span className="text-sm font-medium">{count}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
-
-        {/* Editor de Formulários */}
-        <TabsContent value="editor-formularios" className="mt-4">
-          <EditorFormulariosAuditoria />
+          {/* Dashboard de Riscos Operacionais */}
+          <RiscosOperacionaisChart />
         </TabsContent>
       </Tabs>
 
