@@ -135,6 +135,7 @@ export const QualidadeModule = () => {
   useRealtimeSync(REALTIME_PRESETS.qualidade);
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState("metas");
+  const [incidentesView, setIncidentesView] = useState<"lista" | "tratamento">("lista");
   
   // Data states
   const [incidentes, setIncidentes] = useState<Incidente[]>([]);
@@ -631,50 +632,68 @@ export const QualidadeModule = () => {
 
         {/* Incidentes Tab (com Riscos Operacionais) */}
         <TabsContent value="incidentes" className="space-y-4">
-          <Card>
-            <CardContent className="pt-4">
-              <div className="flex flex-wrap items-end gap-4">
-                <SearchInput
-                  value={searchTerm}
-                  onChange={setSearchTerm}
-                  placeholder="Buscar incidente..."
-                  className="w-[250px]"
-                />
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    {statusIncidente.map(s => (
-                      <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={tipoFilter} onValueChange={setTipoFilter}>
-                  <SelectTrigger className="w-[180px]">
-                    <SelectValue placeholder="Tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos</SelectItem>
-                    {tiposIncidente.map(t => (
-                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <DateRangeFilter
-                  startDate={dataInicio}
-                  endDate={dataFim}
-                  onStartDateChange={setDataInicio}
-                  onEndDateChange={setDataFim}
-                  showPresets={false}
-                />
-                <div className="ml-auto">
-                  <ExportDropdown onExportExcel={exportToExcel} onExportPDF={exportToPDF} />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Sub-navigation buttons */}
+          <div className="flex gap-2">
+            <Button
+              variant={incidentesView === "lista" ? "default" : "outline"}
+              onClick={() => setIncidentesView("lista")}
+            >
+              Lista de Incidentes Notificados
+            </Button>
+            <Button
+              variant={incidentesView === "tratamento" ? "default" : "outline"}
+              onClick={() => setIncidentesView("tratamento")}
+            >
+              Tratamento de Notificações
+            </Button>
+          </div>
+
+          {incidentesView === "lista" && (
+            <>
+              <Card>
+                <CardContent className="pt-4">
+                  <div className="flex flex-wrap items-end gap-4">
+                    <SearchInput
+                      value={searchTerm}
+                      onChange={setSearchTerm}
+                      placeholder="Buscar incidente..."
+                      className="w-[250px]"
+                    />
+                    <Select value={statusFilter} onValueChange={setStatusFilter}>
+                      <SelectTrigger className="w-[150px]">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
+                        {statusIncidente.map(s => (
+                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={tipoFilter} onValueChange={setTipoFilter}>
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Tipo" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
+                        {tiposIncidente.map(t => (
+                          <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <DateRangeFilter
+                      startDate={dataInicio}
+                      endDate={dataFim}
+                      onStartDateChange={setDataInicio}
+                      onEndDateChange={setDataFim}
+                      showPresets={false}
+                    />
+                    <div className="ml-auto">
+                      <ExportDropdown onExportExcel={exportToExcel} onExportPDF={exportToPDF} />
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
           {/* Tabela de Incidentes */}
             <Card className="overflow-auto">
@@ -741,6 +760,86 @@ export const QualidadeModule = () => {
                 )}
               </CardContent>
             </Card>
+            </>
+          )}
+
+          {incidentesView === "tratamento" && (
+            <Card>
+              <CardContent className="pt-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold">Tratamento de Notificações</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Selecione um incidente na lista para realizar análise, plano de ação e encerramento.
+                  </p>
+                  {incidentes.filter(i => i.status !== "encerrado").length === 0 ? (
+                    <EmptyState
+                      icon={CheckCircle2}
+                      title="Nenhuma notificação pendente"
+                      description="Todas as notificações foram tratadas"
+                    />
+                  ) : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nº</TableHead>
+                          <TableHead>Data</TableHead>
+                          <TableHead>Setor</TableHead>
+                          <TableHead>Classificação</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead className="text-right">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {incidentes.filter(i => i.status !== "encerrado").map(i => (
+                          <TableRow key={i.id}>
+                            <TableCell className="font-mono text-sm">{i.numero_notificacao}</TableCell>
+                            <TableCell>{format(new Date(i.data_ocorrencia), "dd/MM/yyyy")}</TableCell>
+                            <TableCell>{i.setor}</TableCell>
+                            <TableCell>
+                              <Badge className={`${getRiscoColor(i.classificacao_risco)} text-white`}>
+                                {classificacoesRisco.find(c => c.value === i.classificacao_risco)?.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <StatusBadge 
+                                status={mapStatusToType(i.status)} 
+                                label={statusIncidente.find(s => s.value === i.status)?.label || i.status} 
+                              />
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex gap-1 justify-end">
+                                <Button size="sm" variant="outline" onClick={() => {
+                                  setSelectedIncidente(i);
+                                  setDetalhesDialog(true);
+                                }}>
+                                  <Eye className="h-4 w-4 mr-1" />
+                                  Ver
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => {
+                                  setSelectedIncidente(i);
+                                  setAnaliseDialog(true);
+                                }}>
+                                  <Target className="h-4 w-4 mr-1" />
+                                  Analisar
+                                </Button>
+                                <Button size="sm" variant="outline" onClick={() => {
+                                  setSelectedIncidente(i);
+                                  setAcaoDialog(true);
+                                }}>
+                                  <ClipboardCheck className="h-4 w-4 mr-1" />
+                                  Ação
+                                </Button>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
