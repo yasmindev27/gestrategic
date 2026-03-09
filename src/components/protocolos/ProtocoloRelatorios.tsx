@@ -130,38 +130,33 @@ export const ProtocoloRelatorios = ({ tipo, titulo, onBack }: Props) => {
               <p className="text-xs mt-1">Total carregado: {atendimentos?.length || 0}</p>
             </div>
           ) : (
-            <Table>
+             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-10"></TableHead>
                   <TableHead>Prontuário</TableHead>
                   <TableHead>Paciente</TableHead>
                   <TableHead>Chegada</TableHead>
-                  <TableHead>Tempo (min)</TableHead>
-                  <TableHead>Meta</TableHead>
+                  <TableHead className="text-center">Tempo (min)</TableHead>
+                  <TableHead className="text-center">Meta</TableHead>
                   <TableHead>Competência</TableHead>
                   <TableHead>Classificação</TableHead>
+                  <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.map((a: any) => (
-                  <TableRow key={a.id} className="cursor-pointer hover:bg-muted/50" onClick={() => setSelectedAtendimento(a)}>
-                    <TableCell>
-                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); setSelectedAtendimento(a); }}>
-                        <Eye className="h-4 w-4 text-muted-foreground" />
-                      </Button>
-                    </TableCell>
+                  <TableRow key={a.id}>
                     <TableCell className="font-medium">{a.record_number || '-'}</TableCell>
                     <TableCell>{a.patient_name || '-'}</TableCell>
                     <TableCell className="text-sm">
                       {a.arrival_time ? format(safeDt(a.arrival_time), 'dd/MM/yyyy HH:mm') : '-'}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       <span className={a.porta_ecg_minutes != null && a.porta_ecg_minutes <= 10 ? 'text-emerald-600 font-medium' : a.porta_ecg_minutes != null ? 'text-destructive font-medium' : ''}>
                         {a.porta_ecg_minutes ?? '-'}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-center">
                       <Badge variant={a.within_target ? 'default' : 'destructive'}>
                         {a.within_target ? 'Sim' : 'Não'}
                       </Badge>
@@ -169,6 +164,11 @@ export const ProtocoloRelatorios = ({ tipo, titulo, onBack }: Props) => {
                     <TableCell className="text-sm text-muted-foreground">{a.competency || '-'}</TableCell>
                     <TableCell>
                       <Badge variant="outline">{a.risk_classification || '-'}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setSelectedAtendimento(a)}>
+                        <Eye className="h-4 w-4 text-muted-foreground" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
