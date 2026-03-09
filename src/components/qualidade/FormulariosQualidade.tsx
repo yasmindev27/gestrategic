@@ -14,6 +14,9 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { getBrasiliaDateString } from "@/lib/brasilia-time";
 import { ptBR } from "date-fns/locale";
+
+/** Converte data yyyy-MM-dd sem saltar fuso (adiciona T12:00:00) */
+const safeDate = (d: string) => new Date(d.includes("T") ? d : `${d}T12:00:00`);
 import {
   ShieldCheck, ClipboardPlus, FileText, BarChart3, Eye,
   ClipboardCheck, ArrowLeft, CheckCircle2, AlertTriangle, Clock,
