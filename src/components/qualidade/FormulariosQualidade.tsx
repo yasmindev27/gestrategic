@@ -605,7 +605,7 @@ export function FormulariosQualidade() {
                       const conf = calcConformidade(r.respostas);
                       return (
                         <TableRow key={r.id}>
-                          <TableCell className="whitespace-nowrap">{format(new Date(r.data_auditoria), "dd/MM/yyyy")}</TableCell>
+                          <TableCell className="whitespace-nowrap">{format(safeDate(r.data_auditoria), "dd/MM/yyyy")}</TableCell>
                           <TableCell>{r.setor}</TableCell>
                           <TableCell>{r.auditor_nome}</TableCell>
                           <TableCell>{r.numero_prontuario || "-"}</TableCell>
