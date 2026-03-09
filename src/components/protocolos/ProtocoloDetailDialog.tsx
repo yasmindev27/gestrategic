@@ -46,7 +46,7 @@ function BoolBadge({ value, label }: { value: boolean | null | undefined; label:
 
 function formatDt(val: string | null | undefined) {
   if (!val) return null;
-  try { return format(new Date(val), 'dd/MM/yyyy HH:mm'); } catch { return val; }
+  try { return format(new Date(val.includes("T") ? val : `${val}T12:00:00`), 'dd/MM/yyyy HH:mm'); } catch { return val; }
 }
 
 export const ProtocoloDetailDialog = ({ open, onOpenChange, atendimento, tipo }: Props) => {
