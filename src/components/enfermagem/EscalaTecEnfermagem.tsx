@@ -326,6 +326,8 @@ export function EscalaTecEnfermagem({ tipo = 'tecnicos' }: EscalaTecEnfermagemPr
       const { data: userData } = await supabase.auth.getUser();
       const defaultCoord = tipo === 'farmacia' 
         ? { coordenadora_nome: 'Cristina Angelina da Silva', coordenadora_coren: '' }
+        : tipo === 'laboratorio'
+        ? { coordenadora_nome: 'Artur Araujo Gontijo Vargas - Coordenador Biomédico RT', coordenadora_coren: '' }
         : {};
       const { data, error } = await supabase
         .from('escalas_tec_enfermagem')
