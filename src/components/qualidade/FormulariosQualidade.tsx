@@ -139,7 +139,7 @@ export function FormulariosQualidade() {
   const handleOpenForm = async (form: FormularioConfig) => {
     setSelectedForm(form);
     setRespostas({});
-    setAuditoriaForm({ setor: "", observacoes: "", prontuario: "", paciente: "", pacienteRA: "", scoreRisco: "", possuiLPP: "", grauLPP: "", apresentouQueda: "", notificacaoAberta: "", profissionalAuditado: "" });
+    setAuditoriaForm({ setor: "", observacoes: "", prontuario: "", paciente: "", pacienteRA: "", scoreRisco: "", possuiLPP: "", grauLPP: "", apresentouQueda: "", notificacaoAberta: "", profissionalAuditado: "", dataAuditoria: format(new Date(), "yyyy-MM-dd") });
     const [secRes, pergRes] = await Promise.all([
       supabase.from("auditoria_secoes_config").select("*").eq("formulario_id", form.id).order("ordem"),
       supabase.from("auditoria_perguntas_config").select("*").eq("ativo", true).order("ordem"),
