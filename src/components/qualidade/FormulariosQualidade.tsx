@@ -112,7 +112,7 @@ export function FormulariosQualidade() {
   const [auditoriaForm, setAuditoriaForm] = useState({
     setor: "", observacoes: "", prontuario: "", paciente: "", pacienteRA: "",
     scoreRisco: "", possuiLPP: "", grauLPP: "", apresentouQueda: "", notificacaoAberta: "",
-    profissionalAuditado: "",
+    profissionalAuditado: "", dataAuditoria: format(new Date(), "yyyy-MM-dd"),
   });
   const [responsavelNome, setResponsavelNome] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -139,7 +139,7 @@ export function FormulariosQualidade() {
   const handleOpenForm = async (form: FormularioConfig) => {
     setSelectedForm(form);
     setRespostas({});
-    setAuditoriaForm({ setor: "", observacoes: "", prontuario: "", paciente: "", pacienteRA: "", scoreRisco: "", possuiLPP: "", grauLPP: "", apresentouQueda: "", notificacaoAberta: "", profissionalAuditado: "" });
+    setAuditoriaForm({ setor: "", observacoes: "", prontuario: "", paciente: "", pacienteRA: "", scoreRisco: "", possuiLPP: "", grauLPP: "", apresentouQueda: "", notificacaoAberta: "", profissionalAuditado: "", dataAuditoria: format(new Date(), "yyyy-MM-dd") });
     const [secRes, pergRes] = await Promise.all([
       supabase.from("auditoria_secoes_config").select("*").eq("formulario_id", form.id).order("ordem"),
       supabase.from("auditoria_perguntas_config").select("*").eq("ativo", true).order("ordem"),
@@ -174,7 +174,7 @@ export function FormulariosQualidade() {
         setor: auditoriaForm.setor,
         auditor_id: user.id,
         auditor_nome: responsavelNome || user.email || "",
-        data_auditoria: new Date().toISOString().split("T")[0],
+        data_auditoria: auditoriaForm.dataAuditoria || format(new Date(), "yyyy-MM-dd"),
         respostas,
         observacoes: auditoriaForm.observacoes || null,
         numero_prontuario: auditoriaForm.prontuario || null,
@@ -325,6 +325,10 @@ export function FormulariosQualidade() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Data da Auditoria *</Label>
+              <Input type="date" value={auditoriaForm.dataAuditoria} onChange={e => setAuditoriaForm(p => ({ ...p, dataAuditoria: e.target.value }))} />
             </div>
             <div className="space-y-1">
               <Label className="text-xs">Iniciais do Paciente *</Label>
