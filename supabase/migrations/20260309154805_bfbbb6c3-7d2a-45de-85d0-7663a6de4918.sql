@@ -1,0 +1,2 @@
+ALTER TABLE public.profissionais_saude DROP CONSTRAINT profissionais_saude_tipo_check;
+ALTER TABLE public.profissionais_saude ADD CONSTRAINT profissionais_saude_tipo_check CHECK (tipo = ANY (ARRAY['medico'::text, 'enfermagem'::text, 'laboratorio'::text, 'radiologia'::text, 'farmacia'::text, 'administrativo'::text]));
