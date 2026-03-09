@@ -154,7 +154,7 @@ export const ProtocoloRelatorios = ({ tipo, titulo, onBack }: Props) => {
                     <TableCell className="font-medium">{a.record_number || '-'}</TableCell>
                     <TableCell>{a.patient_name || '-'}</TableCell>
                     <TableCell className="text-sm">
-                      {a.arrival_time ? format(new Date(a.arrival_time), 'dd/MM/yyyy HH:mm') : '-'}
+                      {a.arrival_time ? format(safeDt(a.arrival_time), 'dd/MM/yyyy HH:mm') : '-'}
                     </TableCell>
                     <TableCell>
                       <span className={a.porta_ecg_minutes != null && a.porta_ecg_minutes <= 10 ? 'text-emerald-600 font-medium' : a.porta_ecg_minutes != null ? 'text-destructive font-medium' : ''}>
