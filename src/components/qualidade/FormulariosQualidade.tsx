@@ -71,7 +71,15 @@ interface AuditoriaRegistro {
   observacoes: string | null;
   numero_prontuario: string | null;
   paciente_iniciais: string | null;
+  paciente_ra: string | null;
   unidade_atendimento: string | null;
+  score_risco: string | null;
+  possui_lpp: boolean | null;
+  grau_lpp: string | null;
+  apresentou_queda: boolean | null;
+  notificacao_aberta: string | null;
+  profissional_auditado: string | null;
+  satisfacao_geral: number | null;
   created_at: string;
 }
 
@@ -122,6 +130,8 @@ export function FormulariosQualidade() {
   const [searchTerm, setSearchTerm] = useState("");
   const [detalhesDialog, setDetalhesDialog] = useState(false);
   const [registroSelecionado, setRegistroSelecionado] = useState<AuditoriaRegistro | null>(null);
+  const [detalhesSecoes, setDetalhesSecoes] = useState<SecaoConfig[]>([]);
+  const [detalhesPerguntas, setDetalhesPerguntas] = useState<PerguntaConfig[]>([]);
 
   useEffect(() => { loadData(); }, []);
 
@@ -604,7 +614,22 @@ export function FormulariosQualidade() {
                             </div>
                           </TableCell>
                           <TableCell className="text-right">
-                            <Button size="sm" variant="outline" onClick={() => { setRegistroSelecionado(r); setDetalhesDialog(true); }}>
+                            <Button size="sm" variant="outline" onClick={async () => {
+                              setRegistroSelecionado(r);
+                              // Load sections and questions for this form type
+                              const form = formularios.find(f => f.tipo === r.tipo);
+                              if (form) {
+                                const [secRes, pergRes] = await Promise.all([
+                                  supabase.from("auditoria_secoes_config").select("*").eq("formulario_id", form.id).order("ordem"),
+                                  supabase.from("auditoria_perguntas_config").select("*").eq("ativo", true).order("ordem"),
+                                ]);
+                                const secs = secRes.data || [];
+                                setDetalhesSecoes(secs);
+                                const secIds = new Set(secs.map((s: any) => s.id));
+                                setDetalhesPerguntas((pergRes.data || []).filter((p: any) => secIds.has(p.secao_id)));
+                              }
+                              setDetalhesDialog(true);
+                            }}>
                               <Eye className="h-4 w-4 mr-1" /> Ver
                             </Button>
                           </TableCell>
@@ -620,38 +645,181 @@ export function FormulariosQualidade() {
 
         {/* Detalhes Dialog */}
         <Dialog open={detalhesDialog} onOpenChange={setDetalhesDialog}>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Detalhes da Auditoria</DialogTitle>
+              <DialogTitle className="flex items-center gap-2">
+                <ClipboardCheck className="h-5 w-5 text-primary" />
+                Detalhes da Auditoria
+              </DialogTitle>
             </DialogHeader>
-            {registroSelecionado && (
-              <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div><Label className="text-muted-foreground">Setor</Label><p className="font-medium">{registroSelecionado.setor}</p></div>
-                  <div><Label className="text-muted-foreground">Data</Label><p className="font-medium">{format(new Date(registroSelecionado.data_auditoria), "dd/MM/yyyy")}</p></div>
-                  <div><Label className="text-muted-foreground">Auditor</Label><p className="font-medium">{registroSelecionado.auditor_nome}</p></div>
-                  <div><Label className="text-muted-foreground">Prontuário</Label><p className="font-medium">{registroSelecionado.numero_prontuario || "-"}</p></div>
-                </div>
-                {registroSelecionado.respostas && typeof registroSelecionado.respostas === "object" && (
+            {registroSelecionado && (() => {
+              const conf = calcConformidade(registroSelecionado.respostas);
+              const respostasMap = (registroSelecionado.respostas || {}) as Record<string, string>;
+              // Build pergunta label map
+              const perguntaLabelMap: Record<string, string> = {};
+              const perguntaSecaoMap: Record<string, string> = {};
+              detalhesPerguntas.forEach(p => {
+                perguntaLabelMap[p.codigo] = p.label;
+                perguntaSecaoMap[p.codigo] = p.secao_id;
+              });
+
+              return (
+                <div className="space-y-5">
+                  {/* Conformity Summary Banner */}
+                  <div className={`rounded-lg p-4 border ${conf.pct >= 80 ? "bg-green-50 border-green-200" : conf.pct >= 60 ? "bg-yellow-50 border-yellow-200" : "bg-red-50 border-red-200"}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Conformidade Geral</p>
+                        <p className={`text-3xl font-bold ${conf.pct >= 80 ? "text-green-700" : conf.pct >= 60 ? "text-yellow-700" : "text-red-700"}`}>
+                          {conf.pct}%
+                        </p>
+                      </div>
+                      <div className="text-right text-sm">
+                        <p><span className="font-semibold text-green-700">{conf.conformes}</span> <span className="text-muted-foreground">conformes</span></p>
+                        <p><span className="font-semibold text-red-700">{conf.total - conf.conformes}</span> <span className="text-muted-foreground">não conformes</span></p>
+                        <p className="text-muted-foreground">{conf.total} itens avaliados</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Patient & Audit Info */}
                   <Card>
-                    <CardHeader className="pb-2"><CardTitle className="text-sm">Respostas</CardTitle></CardHeader>
-                    <CardContent className="space-y-2">
-                      {Object.entries(registroSelecionado.respostas as Record<string, string>).map(([key, val]) => (
-                        <div key={key} className="flex items-center justify-between text-sm border-b pb-1 last:border-0">
-                          <span className="text-muted-foreground">{key}</span>
-                          <Badge variant={val === "conforme" || val === "sim" ? "default" : val === "nao_conforme" || val === "nao" ? "destructive" : "secondary"}>
-                            {OPCAO_FULL[val] || val}
-                          </Badge>
+                    <CardContent className="pt-4">
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Data da Auditoria</Label>
+                          <p className="font-medium">{format(new Date(registroSelecionado.data_auditoria + "T12:00:00"), "dd/MM/yyyy")}</p>
                         </div>
-                      ))}
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Setor Auditado</Label>
+                          <p className="font-medium">{registroSelecionado.setor}</p>
+                        </div>
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Auditor</Label>
+                          <p className="font-medium">{registroSelecionado.auditor_nome}</p>
+                        </div>
+                        {registroSelecionado.paciente_iniciais && (
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Paciente (Iniciais)</Label>
+                            <p className="font-medium">{registroSelecionado.paciente_iniciais}</p>
+                          </div>
+                        )}
+                        {registroSelecionado.paciente_ra && (
+                          <div>
+                            <Label className="text-xs text-muted-foreground">RA do Paciente</Label>
+                            <p className="font-medium">{registroSelecionado.paciente_ra}</p>
+                          </div>
+                        )}
+                        {registroSelecionado.numero_prontuario && (
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Prontuário</Label>
+                            <p className="font-medium">{registroSelecionado.numero_prontuario}</p>
+                          </div>
+                        )}
+                        {registroSelecionado.profissional_auditado && (
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Profissional Auditado</Label>
+                            <p className="font-medium">{registroSelecionado.profissional_auditado}</p>
+                          </div>
+                        )}
+                        {registroSelecionado.score_risco && (
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Score de Risco</Label>
+                            <p className="font-medium">{registroSelecionado.score_risco}</p>
+                          </div>
+                        )}
+                        {registroSelecionado.possui_lpp !== null && (
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Possui LPP</Label>
+                            <p className="font-medium">{registroSelecionado.possui_lpp ? `Sim${registroSelecionado.grau_lpp ? ` (Grau ${registroSelecionado.grau_lpp})` : ""}` : "Não"}</p>
+                          </div>
+                        )}
+                        {registroSelecionado.apresentou_queda !== null && (
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Apresentou Queda</Label>
+                            <p className="font-medium">{registroSelecionado.apresentou_queda ? "Sim" : "Não"}</p>
+                          </div>
+                        )}
+                        {registroSelecionado.notificacao_aberta && (
+                          <div>
+                            <Label className="text-xs text-muted-foreground">Notificação Aberta</Label>
+                            <p className="font-medium">{registroSelecionado.notificacao_aberta}</p>
+                          </div>
+                        )}
+                      </div>
                     </CardContent>
                   </Card>
-                )}
-                {registroSelecionado.observacoes && (
-                  <div><Label className="text-muted-foreground">Observações</Label><p className="text-sm whitespace-pre-wrap">{registroSelecionado.observacoes}</p></div>
-                )}
-              </div>
-            )}
+
+                  {/* Responses grouped by section */}
+                  {detalhesSecoes.length > 0 ? (
+                    detalhesSecoes.map(secao => {
+                      const secPerguntas = detalhesPerguntas.filter(p => p.secao_id === secao.id);
+                      const respondidas = secPerguntas.filter(p => respostasMap[p.codigo]);
+                      if (respondidas.length === 0) return null;
+                      const secConformes = respondidas.filter(p => respostasMap[p.codigo] === "conforme" || respostasMap[p.codigo] === "sim").length;
+                      const secAvaliadas = respondidas.filter(p => respostasMap[p.codigo] !== "nao_aplica").length;
+                      const secPct = secAvaliadas > 0 ? Math.round((secConformes / secAvaliadas) * 100) : 0;
+
+                      return (
+                        <Card key={secao.id}>
+                          <CardHeader className="pb-2">
+                            <div className="flex items-center justify-between">
+                              <CardTitle className="text-sm font-semibold">{secao.nome}</CardTitle>
+                              <Badge variant={secPct >= 80 ? "default" : secPct >= 60 ? "secondary" : "destructive"} className="text-xs">
+                                {secPct}% ({secConformes}/{secAvaliadas})
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="space-y-1">
+                            {respondidas.map(p => {
+                              const val = respostasMap[p.codigo];
+                              return (
+                                <div key={p.codigo} className="flex items-start justify-between gap-3 py-1.5 border-b border-border/50 last:border-0">
+                                  <span className="text-sm text-foreground leading-snug flex-1">{p.label}</span>
+                                  <Badge 
+                                    variant={val === "conforme" || val === "sim" ? "default" : val === "nao_conforme" || val === "nao" ? "destructive" : "secondary"}
+                                    className="shrink-0 text-xs"
+                                  >
+                                    {OPCAO_FULL[val] || val}
+                                  </Badge>
+                                </div>
+                              );
+                            })}
+                          </CardContent>
+                        </Card>
+                      );
+                    })
+                  ) : (
+                    /* Fallback: show raw responses if no section config loaded */
+                    Object.keys(respostasMap).length > 0 && (
+                      <Card>
+                        <CardHeader className="pb-2"><CardTitle className="text-sm">Respostas</CardTitle></CardHeader>
+                        <CardContent className="space-y-1">
+                          {Object.entries(respostasMap).map(([key, val]) => (
+                            <div key={key} className="flex items-start justify-between gap-3 py-1.5 border-b border-border/50 last:border-0">
+                              <span className="text-sm text-foreground leading-snug flex-1">{perguntaLabelMap[key] || key}</span>
+                              <Badge variant={val === "conforme" || val === "sim" ? "default" : val === "nao_conforme" || val === "nao" ? "destructive" : "secondary"} className="shrink-0 text-xs">
+                                {OPCAO_FULL[val] || val}
+                              </Badge>
+                            </div>
+                          ))}
+                        </CardContent>
+                      </Card>
+                    )
+                  )}
+
+                  {/* Observations */}
+                  {registroSelecionado.observacoes && (
+                    <Card>
+                      <CardHeader className="pb-2"><CardTitle className="text-sm">Observações</CardTitle></CardHeader>
+                      <CardContent>
+                        <p className="text-sm whitespace-pre-wrap text-muted-foreground">{registroSelecionado.observacoes}</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              );
+            })()}
             <DialogFooter>
               <Button variant="outline" onClick={() => setDetalhesDialog(false)}>Fechar</Button>
             </DialogFooter>
