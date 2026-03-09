@@ -274,7 +274,7 @@ export function FormulariosQualidade() {
       body: filteredRegistros.map(r => {
         const c = calcConformidade(r.respostas);
         return [
-          format(new Date(r.data_auditoria), "dd/MM/yyyy"),
+          format(safeDate(r.data_auditoria), "dd/MM/yyyy"),
           r.setor, r.auditor_nome, r.numero_prontuario || "-", `${c.pct}% (${c.conformes}/${c.total})`
         ];
       }),
