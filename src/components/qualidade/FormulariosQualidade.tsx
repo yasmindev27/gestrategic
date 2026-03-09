@@ -71,7 +71,15 @@ interface AuditoriaRegistro {
   observacoes: string | null;
   numero_prontuario: string | null;
   paciente_iniciais: string | null;
+  paciente_ra: string | null;
   unidade_atendimento: string | null;
+  score_risco: string | null;
+  possui_lpp: boolean | null;
+  grau_lpp: string | null;
+  apresentou_queda: boolean | null;
+  notificacao_aberta: string | null;
+  profissional_auditado: string | null;
+  satisfacao_geral: number | null;
   created_at: string;
 }
 
