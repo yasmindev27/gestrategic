@@ -288,7 +288,7 @@ export function FormulariosQualidade() {
     const data = filteredRegistros.map(r => {
       const c = calcConformidade(r.respostas);
       return {
-        Data: format(new Date(r.data_auditoria), "dd/MM/yyyy"),
+        Data: format(safeDate(r.data_auditoria), "dd/MM/yyyy"),
         Setor: r.setor, Auditor: r.auditor_nome,
         Prontuário: r.numero_prontuario || "", Paciente: r.paciente_iniciais || "",
         "Conformidade %": c.pct, Conformes: c.conformes, Total: c.total,
