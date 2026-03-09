@@ -130,6 +130,8 @@ export function FormulariosQualidade() {
   const [searchTerm, setSearchTerm] = useState("");
   const [detalhesDialog, setDetalhesDialog] = useState(false);
   const [registroSelecionado, setRegistroSelecionado] = useState<AuditoriaRegistro | null>(null);
+  const [detalhesSecoes, setDetalhesSecoes] = useState<SecaoConfig[]>([]);
+  const [detalhesPerguntas, setDetalhesPerguntas] = useState<PerguntaConfig[]>([]);
 
   useEffect(() => { loadData(); }, []);
 
