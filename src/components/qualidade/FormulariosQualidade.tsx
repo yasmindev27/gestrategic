@@ -175,7 +175,7 @@ export function FormulariosQualidade() {
         setor: auditoriaForm.setor,
         auditor_id: user.id,
         auditor_nome: responsavelNome || user.email || "",
-        data_auditoria: auditoriaForm.dataAuditoria || format(new Date(), "yyyy-MM-dd"),
+        data_auditoria: auditoriaForm.dataAuditoria || getBrasiliaDateString(),
         respostas,
         observacoes: auditoriaForm.observacoes || null,
         numero_prontuario: auditoriaForm.prontuario || null,
