@@ -46,7 +46,7 @@ function BoolBadge({ value, label }: { value: boolean | null | undefined; label:
 
 function formatDt(val: string | null | undefined) {
   if (!val) return null;
-  try { return format(new Date(val), 'dd/MM/yyyy HH:mm'); } catch { return val; }
+  try { return format(new Date(val.includes("T") ? val : `${val}T12:00:00`), 'dd/MM/yyyy HH:mm'); } catch { return val; }
 }
 
 export const ProtocoloDetailDialog = ({ open, onOpenChange, atendimento, tipo }: Props) => {
@@ -55,23 +55,46 @@ export const ProtocoloDetailDialog = ({ open, onOpenChange, atendimento, tipo }:
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] p-0">
+      <DialogContent className="max-w-3xl max-h-[90vh] p-0">
         <DialogHeader className="p-6 pb-3">
           <DialogTitle className="flex items-center gap-2 text-lg">
             <FileText className="h-5 w-5 text-primary" />
             Detalhes do Atendimento
           </DialogTitle>
-          <div className="flex items-center gap-2 mt-2">
-            <Badge variant={a.within_target ? 'default' : 'destructive'}>
-              {a.within_target ? 'Dentro da Meta' : 'Fora da Meta'}
-            </Badge>
-            <Badge variant="outline">{a.risk_classification || 'Sem classificação'}</Badge>
-            <Badge variant="secondary">{a.competency}</Badge>
-          </div>
         </DialogHeader>
 
-        <ScrollArea className="max-h-[calc(90vh-120px)] px-6 pb-6">
+        <ScrollArea className="max-h-[calc(90vh-100px)] px-6 pb-6">
           <div className="space-y-2">
+            {/* Meta Summary Banner */}
+            <div className={`rounded-lg p-4 border ${a.within_target ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  {a.within_target
+                    ? <CheckCircle2 className="h-8 w-8 text-green-600" />
+                    : <XCircle className="h-8 w-8 text-red-600" />}
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Status da Meta</p>
+                    <p className={`text-xl font-bold ${a.within_target ? "text-green-700" : "text-red-700"}`}>
+                      {a.within_target ? 'Dentro da Meta' : 'Fora da Meta'}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right space-y-1">
+                  <div className="flex items-center gap-2 justify-end">
+                    <Badge variant="outline">{a.risk_classification || 'Sem classificação'}</Badge>
+                    <Badge variant="secondary">{a.competency}</Badge>
+                  </div>
+                  {a.porta_ecg_minutes != null && (
+                    <p className="text-sm">
+                      <span className="text-muted-foreground">Tempo: </span>
+                      <span className={`font-bold ${a.within_target ? "text-green-700" : "text-red-700"}`}>
+                        {a.porta_ecg_minutes} min
+                      </span>
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
             {/* Identificação */}
             <Section title="Identificação do Paciente">
               <InfoRow label="Prontuário" value={a.record_number} icon={<FileText className="h-4 w-4" />} />

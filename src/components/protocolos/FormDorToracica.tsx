@@ -291,7 +291,7 @@ export const FormDorToracica = ({ onBack }: Props) => {
                             <StatusBadge withinTarget={att.within_target} minutes={att.porta_ecg_minutes} />
                           </div>
                           <p className="text-sm text-muted-foreground">{att.patient_name || 'Paciente não identificado'}{att.age && ` • ${att.age} anos`}</p>
-                          <p className="text-xs text-muted-foreground">{format(new Date(att.arrival_time), "dd/MM/yyyy 'às' HH:mm")}</p>
+                          <p className="text-xs text-muted-foreground">{format(new Date(att.arrival_time.includes("T") ? att.arrival_time : `${att.arrival_time}T12:00:00`), "dd/MM/yyyy 'às' HH:mm")}</p>
                         </div>
                         <AlertDialog>
                           <AlertDialogTrigger asChild>

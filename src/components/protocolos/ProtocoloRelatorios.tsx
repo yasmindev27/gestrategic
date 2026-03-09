@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Search, FileText, Loader2, Eye } from 'lucide-react';
 import { useProtocoloAtendimentos, TipoProtocolo } from '@/hooks/useProtocoloAtendimentos';
 import { format } from 'date-fns';
+
+const safeDt = (d: string) => new Date(d.includes("T") ? d : `${d}T12:00:00`);
 import { ExportDropdown } from '@/components/ui/export-dropdown';
 import { ProtocoloDetailDialog } from './ProtocoloDetailDialog';
 import * as XLSX from 'xlsx';
@@ -44,7 +46,7 @@ export const ProtocoloRelatorios = ({ tipo, titulo, onBack }: Props) => {
     const data = filtered.map((a: any) => ({
       'Prontuário': a.record_number || '-',
       'Paciente': a.patient_name || '-',
-      'Chegada': a.arrival_time ? format(new Date(a.arrival_time), 'dd/MM/yyyy HH:mm') : '-',
+      'Chegada': a.arrival_time ? format(safeDt(a.arrival_time), 'dd/MM/yyyy HH:mm') : '-',
       'Tempo Porta-ECG (min)': a.porta_ecg_minutes ?? '-',
       'Dentro da Meta': a.within_target ? 'Sim' : 'Não',
       'Competência': a.competency || '-',
@@ -69,7 +71,7 @@ export const ProtocoloRelatorios = ({ tipo, titulo, onBack }: Props) => {
       body: filtered.map((a: any) => [
         a.record_number || '-',
         a.patient_name || '-',
-        a.arrival_time ? format(new Date(a.arrival_time), 'dd/MM/yyyy HH:mm') : '-',
+        a.arrival_time ? format(safeDt(a.arrival_time), 'dd/MM/yyyy HH:mm') : '-',
         a.porta_ecg_minutes ?? '-',
         a.within_target ? 'Sim' : 'Não',
         a.competency || '-',
@@ -152,7 +154,7 @@ export const ProtocoloRelatorios = ({ tipo, titulo, onBack }: Props) => {
                     <TableCell className="font-medium">{a.record_number || '-'}</TableCell>
                     <TableCell>{a.patient_name || '-'}</TableCell>
                     <TableCell className="text-sm">
-                      {a.arrival_time ? format(new Date(a.arrival_time), 'dd/MM/yyyy HH:mm') : '-'}
+                      {a.arrival_time ? format(safeDt(a.arrival_time), 'dd/MM/yyyy HH:mm') : '-'}
                     </TableCell>
                     <TableCell>
                       <span className={a.porta_ecg_minutes != null && a.porta_ecg_minutes <= 10 ? 'text-emerald-600 font-medium' : a.porta_ecg_minutes != null ? 'text-destructive font-medium' : ''}>
