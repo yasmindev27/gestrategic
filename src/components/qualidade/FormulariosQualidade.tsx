@@ -112,7 +112,7 @@ export function FormulariosQualidade() {
   const [auditoriaForm, setAuditoriaForm] = useState({
     setor: "", observacoes: "", prontuario: "", paciente: "", pacienteRA: "",
     scoreRisco: "", possuiLPP: "", grauLPP: "", apresentouQueda: "", notificacaoAberta: "",
-    profissionalAuditado: "",
+    profissionalAuditado: "", dataAuditoria: format(new Date(), "yyyy-MM-dd"),
   });
   const [responsavelNome, setResponsavelNome] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
