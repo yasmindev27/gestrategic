@@ -999,7 +999,7 @@ export function FormulariosQualidade() {
     ];
 
     const getMetaMonthData = (prefix: string, month: string) => {
-      const monthRegs = tipoRegistros.filter(r => format(new Date(r.data_auditoria), "yyyy-MM") === month);
+      const monthRegs = tipoRegistros.filter(r => format(safeDate(r.data_auditoria), "yyyy-MM") === month);
       let avaliados = 0, conformes = 0;
       monthRegs.forEach(r => {
         if (!r.respostas || typeof r.respostas !== "object") return;
