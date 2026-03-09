@@ -14,6 +14,9 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { getBrasiliaDateString } from "@/lib/brasilia-time";
 import { ptBR } from "date-fns/locale";
+
+/** Converte data yyyy-MM-dd sem saltar fuso (adiciona T12:00:00) */
+const safeDate = (d: string) => new Date(d.includes("T") ? d : `${d}T12:00:00`);
 import {
   ShieldCheck, ClipboardPlus, FileText, BarChart3, Eye,
   ClipboardCheck, ArrowLeft, CheckCircle2, AlertTriangle, Clock,
@@ -271,7 +274,7 @@ export function FormulariosQualidade() {
       body: filteredRegistros.map(r => {
         const c = calcConformidade(r.respostas);
         return [
-          format(new Date(r.data_auditoria), "dd/MM/yyyy"),
+          format(safeDate(r.data_auditoria), "dd/MM/yyyy"),
           r.setor, r.auditor_nome, r.numero_prontuario || "-", `${c.pct}% (${c.conformes}/${c.total})`
         ];
       }),
@@ -285,7 +288,7 @@ export function FormulariosQualidade() {
     const data = filteredRegistros.map(r => {
       const c = calcConformidade(r.respostas);
       return {
-        Data: format(new Date(r.data_auditoria), "dd/MM/yyyy"),
+        Data: format(safeDate(r.data_auditoria), "dd/MM/yyyy"),
         Setor: r.setor, Auditor: r.auditor_nome,
         Prontuário: r.numero_prontuario || "", Paciente: r.paciente_iniciais || "",
         "Conformidade %": c.pct, Conformes: c.conformes, Total: c.total,
@@ -602,7 +605,7 @@ export function FormulariosQualidade() {
                       const conf = calcConformidade(r.respostas);
                       return (
                         <TableRow key={r.id}>
-                          <TableCell className="whitespace-nowrap">{format(new Date(r.data_auditoria), "dd/MM/yyyy")}</TableCell>
+                          <TableCell className="whitespace-nowrap">{format(safeDate(r.data_auditoria), "dd/MM/yyyy")}</TableCell>
                           <TableCell>{r.setor}</TableCell>
                           <TableCell>{r.auditor_nome}</TableCell>
                           <TableCell>{r.numero_prontuario || "-"}</TableCell>
@@ -688,7 +691,7 @@ export function FormulariosQualidade() {
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                         <div>
                           <Label className="text-xs text-muted-foreground">Data da Auditoria</Label>
-                          <p className="font-medium">{format(new Date(registroSelecionado.data_auditoria + "T12:00:00"), "dd/MM/yyyy")}</p>
+                          <p className="font-medium">{format(safeDate(registroSelecionado.data_auditoria), "dd/MM/yyyy")}</p>
                         </div>
                         <div>
                           <Label className="text-xs text-muted-foreground">Setor Auditado</Label>
@@ -841,7 +844,7 @@ export function FormulariosQualidade() {
       if (m <= currentMonth) monthSet.add(m);
     });
     tipoRegistros.forEach(r => {
-      const m = format(new Date(r.data_auditoria), "yyyy-MM");
+      const m = format(safeDate(r.data_auditoria), "yyyy-MM");
       if (m <= currentMonth) monthSet.add(m);
     });
     const months = [...monthSet].sort();
@@ -996,7 +999,7 @@ export function FormulariosQualidade() {
     ];
 
     const getMetaMonthData = (prefix: string, month: string) => {
-      const monthRegs = tipoRegistros.filter(r => format(new Date(r.data_auditoria), "yyyy-MM") === month);
+      const monthRegs = tipoRegistros.filter(r => format(safeDate(r.data_auditoria), "yyyy-MM") === month);
       let avaliados = 0, conformes = 0;
       monthRegs.forEach(r => {
         if (!r.respostas || typeof r.respostas !== "object") return;
