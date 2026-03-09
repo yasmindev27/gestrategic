@@ -341,7 +341,7 @@ export const FormSepsePediatrico = ({ onBack }: Props) => {
                             {attendance.age && ` • ${attendance.age} anos`}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(attendance.arrival_time), "dd/MM/yyyy 'às' HH:mm")}
+                            {format(new Date(attendance.arrival_time.includes("T") ? attendance.arrival_time : `${attendance.arrival_time}T12:00:00`), "dd/MM/yyyy 'às' HH:mm")}
                           </p>
                         </div>
                         <div className="flex gap-2">
