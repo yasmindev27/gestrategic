@@ -7,6 +7,8 @@ import { Badge } from '@/components/ui/badge';
 import { ArrowLeft, Search, FileText, Loader2, Eye } from 'lucide-react';
 import { useProtocoloAtendimentos, TipoProtocolo } from '@/hooks/useProtocoloAtendimentos';
 import { format } from 'date-fns';
+
+const safeDt = (d: string) => new Date(d.includes("T") ? d : `${d}T12:00:00`);
 import { ExportDropdown } from '@/components/ui/export-dropdown';
 import { ProtocoloDetailDialog } from './ProtocoloDetailDialog';
 import * as XLSX from 'xlsx';
