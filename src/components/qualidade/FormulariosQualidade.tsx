@@ -327,6 +327,10 @@ export function FormulariosQualidade() {
               </Select>
             </div>
             <div className="space-y-1">
+              <Label className="text-xs">Data da Auditoria *</Label>
+              <Input type="date" value={auditoriaForm.dataAuditoria} onChange={e => setAuditoriaForm(p => ({ ...p, dataAuditoria: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
               <Label className="text-xs">Iniciais do Paciente *</Label>
               <Input value={auditoriaForm.paciente} onChange={e => setAuditoriaForm(p => ({ ...p, paciente: e.target.value }))} placeholder="Ex: J.S." />
             </div>
