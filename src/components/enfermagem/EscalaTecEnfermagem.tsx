@@ -31,7 +31,7 @@ import autoTable from 'jspdf-autotable';
    CONFIGURAÇÕES POR TIPO DE ESCALA
    ===================================================== */
 
-export type EscalaTipo = 'tecnicos' | 'enfermeiros' | 'radiologia' | 'administrativa' | 'farmacia';
+export type EscalaTipo = 'tecnicos' | 'enfermeiros' | 'radiologia' | 'administrativa' | 'farmacia' | 'laboratorio';
 
 interface SetorCode {
   code: string;
