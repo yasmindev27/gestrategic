@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, Calendar, Package, FlaskConical } from "lucide-react";
 import { InventarioModule } from "./InventarioModule";
-import { EscalaLaboratorioModule } from "./EscalaLaboratorioModule";
+import { EscalaTecEnfermagem } from "@/components/enfermagem";
 import ExternalViewer from "@/components/ExternalViewer";
 
 const RESULTADOS_URL = "https://portal.worklabweb.com.br/resultados-on-line/2079";
