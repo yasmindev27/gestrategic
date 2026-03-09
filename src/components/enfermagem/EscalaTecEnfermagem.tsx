@@ -31,7 +31,7 @@ import autoTable from 'jspdf-autotable';
    CONFIGURAÇÕES POR TIPO DE ESCALA
    ===================================================== */
 
-export type EscalaTipo = 'tecnicos' | 'enfermeiros' | 'radiologia' | 'administrativa' | 'farmacia';
+export type EscalaTipo = 'tecnicos' | 'enfermeiros' | 'radiologia' | 'administrativa' | 'farmacia' | 'laboratorio';
 
 interface SetorCode {
   code: string;
@@ -169,6 +169,32 @@ const ESCALA_CONFIGS: Record<EscalaTipo, EscalaTipoConfig> = {
       { code: 'P', label: 'Plantão 24h', color: 'bg-red-100 text-red-800' },
       { code: 'DISP', label: 'Dispensação', color: 'bg-green-100 text-green-800' },
       { code: 'CTR', label: 'Controle/Estoque', color: 'bg-blue-100 text-blue-800' },
+      { code: 'HE', label: 'Hora Extra', color: 'bg-orange-100 text-orange-800' },
+      { code: 'FE', label: 'Férias', color: 'bg-emerald-100 text-emerald-800' },
+      { code: 'BH', label: 'Banco de Horas', color: 'bg-cyan-100 text-cyan-800' },
+      { code: 'AF', label: 'Afastamento', color: 'bg-gray-200 text-gray-700' },
+    ],
+    grupos: [
+      { value: 'noturno_impar', label: 'Noturno (Ímpares)', horario: '19:00 AS 07:00' },
+      { value: 'noturno_par', label: 'Noturno (Pares)', horario: '19:00 AS 07:00' },
+      { value: 'diurno_impar', label: 'Diurno (Ímpares)', horario: '07:00 AS 19:00' },
+      { value: 'diurno_par', label: 'Diurno (Pares)', horario: '07:00 AS 19:00' },
+      { value: 'especial', label: 'Especial', horario: '' },
+    ],
+  },
+  laboratorio: {
+    titulo: 'ESCALA DE SERVIÇO DO LABORATÓRIO',
+    tituloCard: 'Escala do Laboratório',
+    registroLabel: 'Matrícula',
+    pdfFilename: 'Escala_Laboratorio',
+    setorCodes: [
+      { code: '', label: 'Folga', color: 'bg-gray-50 text-gray-400' },
+      { code: 'D', label: 'Diurno 07:00-19:00', color: 'bg-yellow-100 text-yellow-800' },
+      { code: 'N', label: 'Noturno 19:00-07:00', color: 'bg-indigo-100 text-indigo-800' },
+      { code: 'P', label: 'Plantão 24h', color: 'bg-red-100 text-red-800' },
+      { code: 'COL', label: 'Coleta', color: 'bg-green-100 text-green-800' },
+      { code: 'TEC', label: 'Técnico Bancada', color: 'bg-blue-100 text-blue-800' },
+      { code: 'REC', label: 'Recepção Lab', color: 'bg-purple-100 text-purple-800' },
       { code: 'HE', label: 'Hora Extra', color: 'bg-orange-100 text-orange-800' },
       { code: 'FE', label: 'Férias', color: 'bg-emerald-100 text-emerald-800' },
       { code: 'BH', label: 'Banco de Horas', color: 'bg-cyan-100 text-cyan-800' },
