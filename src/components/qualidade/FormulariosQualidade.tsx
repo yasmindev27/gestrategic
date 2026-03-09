@@ -691,7 +691,7 @@ export function FormulariosQualidade() {
                       <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
                         <div>
                           <Label className="text-xs text-muted-foreground">Data da Auditoria</Label>
-                          <p className="font-medium">{format(new Date(registroSelecionado.data_auditoria + "T12:00:00"), "dd/MM/yyyy")}</p>
+                          <p className="font-medium">{format(safeDate(registroSelecionado.data_auditoria), "dd/MM/yyyy")}</p>
                         </div>
                         <div>
                           <Label className="text-xs text-muted-foreground">Setor Auditado</Label>
