@@ -89,7 +89,7 @@ export const LaboratorioModule = () => {
         {!isMedicosOnly && (
           <>
             <TabsContent value="escala" className="mt-6">
-              <EscalaLaboratorioModule />
+              <EscalaTecEnfermagem tipo="laboratorio" />
             </TabsContent>
 
             <TabsContent value="inventario" className="mt-6">
