@@ -46,7 +46,7 @@ export const ProtocoloRelatorios = ({ tipo, titulo, onBack }: Props) => {
     const data = filtered.map((a: any) => ({
       'Prontuário': a.record_number || '-',
       'Paciente': a.patient_name || '-',
-      'Chegada': a.arrival_time ? format(new Date(a.arrival_time), 'dd/MM/yyyy HH:mm') : '-',
+      'Chegada': a.arrival_time ? format(safeDt(a.arrival_time), 'dd/MM/yyyy HH:mm') : '-',
       'Tempo Porta-ECG (min)': a.porta_ecg_minutes ?? '-',
       'Dentro da Meta': a.within_target ? 'Sim' : 'Não',
       'Competência': a.competency || '-',
