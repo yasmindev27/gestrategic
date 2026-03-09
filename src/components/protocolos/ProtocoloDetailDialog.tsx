@@ -1,9 +1,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
+import { Card, CardContent } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { format } from 'date-fns';
-import { CheckCircle2, XCircle, Clock, User, FileText, Activity, Thermometer, Heart, Beaker, Ambulance } from 'lucide-react';
+import { CheckCircle2, XCircle, FileText } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -12,46 +12,76 @@ interface Props {
   tipo: string;
 }
 
-function InfoRow({ label, value, icon }: { label: string; value: React.ReactNode; icon?: React.ReactNode }) {
-  if (value === null || value === undefined || value === '' || value === '-') return null;
-  return (
-    <div className="flex items-start gap-3 py-2">
-      {icon && <div className="mt-0.5 text-muted-foreground">{icon}</div>}
-      <div className="flex-1 min-w-0">
-        <p className="text-xs text-muted-foreground font-medium uppercase tracking-wide">{label}</p>
-        <p className="text-sm text-foreground mt-0.5">{typeof value === 'string' ? value : value}</p>
-      </div>
-    </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div className="space-y-1">
-      <h3 className="text-sm font-semibold text-primary flex items-center gap-2 pt-3 pb-1">{title}</h3>
-      <Separator className="mb-2" />
-      <div className="space-y-0">{children}</div>
-    </div>
-  );
-}
-
-function BoolBadge({ value, label }: { value: boolean | null | undefined; label: string }) {
-  if (value === null || value === undefined) return null;
-  return (
-    <Badge variant={value ? 'default' : 'outline'} className="text-xs mr-1 mb-1">
-      {value ? '✓' : '✗'} {label}
-    </Badge>
-  );
-}
-
 function formatDt(val: string | null | undefined) {
-  if (!val) return null;
+  if (!val) return '-';
   try { return format(new Date(val.includes("T") ? val : `${val}T12:00:00`), 'dd/MM/yyyy HH:mm'); } catch { return val; }
+}
+
+function InfoField({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="text-sm font-medium text-foreground">{value || '-'}</p>
+    </div>
+  );
+}
+
+function SectionCard({ title, badge, children }: { title: string; badge?: React.ReactNode; children: React.ReactNode }) {
+  return (
+    <Card>
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          {badge}
+        </div>
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ItemRow({ label, value, variant }: { label: string; value: string; variant?: 'success' | 'destructive' | 'outline' }) {
+  const badgeVariant = variant === 'success' ? 'default' : variant === 'destructive' ? 'destructive' : 'outline';
+  return (
+    <div className="flex items-center justify-between py-1.5 border-b last:border-b-0">
+      <span className="text-sm text-foreground">{label}</span>
+      <Badge variant={badgeVariant} className="text-xs">{value}</Badge>
+    </div>
+  );
+}
+
+function BoolItem({ value, label }: { value: boolean | null | undefined; label: string }) {
+  if (value === null || value === undefined) return null;
+  return <ItemRow label={label} value={value ? 'Sim' : 'Nao'} variant={value ? 'success' : 'outline'} />;
 }
 
 export const ProtocoloDetailDialog = ({ open, onOpenChange, atendimento, tipo }: Props) => {
   if (!atendimento) return null;
   const a = atendimento;
+
+  // Count condutas
+  const condutaFields = [
+    a.conduct_medication, a.conduct_oxygen, a.conduct_monitoring,
+    a.conduct_referral, a.conduct_observation, a.conduct_transfer,
+    a.conduct_high_risk, a.conduct_moderate_risk, a.conduct_low_risk,
+    a.necessidade_uti, a.kit_sepse_coletado,
+  ].filter(v => v !== null && v !== undefined);
+  const condutasSim = condutaFields.filter(Boolean).length;
+
+  // Count SIRS
+  const sirsFields = [
+    a.sirs_temp_alta, a.sirs_temp_baixa, a.sirs_fc_alta, a.sirs_fr_alta,
+    a.sirs_leucocitose, a.sirs_leucopenia, a.sirs_celulas_jovens,
+    a.sirs_plaquetas, a.sirs_lactato, a.sirs_bilirrubina, a.sirs_creatinina,
+    a.disfuncao_pa_baixa, a.disfuncao_sato2_baixa, a.disfuncao_consciencia,
+  ].filter(v => v !== null && v !== undefined);
+  const sirsSim = sirsFields.filter(Boolean).length;
+
+  const focoFields = [
+    a.foco_pulmonar, a.foco_urinario, a.foco_abdominal,
+    a.foco_pele_partes_moles, a.foco_corrente_sanguinea_cateter, a.foco_sem_foco_definido,
+  ].filter(v => v !== null && v !== undefined);
+  const focoSim = focoFields.filter(Boolean).length;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -64,216 +94,246 @@ export const ProtocoloDetailDialog = ({ open, onOpenChange, atendimento, tipo }:
         </DialogHeader>
 
         <ScrollArea className="max-h-[calc(90vh-100px)] px-6 pb-6">
-          <div className="space-y-2">
-            {/* Meta Summary Banner */}
-            <div className={`rounded-lg p-4 border ${a.within_target ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  {a.within_target
-                    ? <CheckCircle2 className="h-8 w-8 text-green-600" />
-                    : <XCircle className="h-8 w-8 text-red-600" />}
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Status da Meta</p>
-                    <p className={`text-xl font-bold ${a.within_target ? "text-green-700" : "text-red-700"}`}>
-                      {a.within_target ? 'Dentro da Meta' : 'Fora da Meta'}
+          <div className="space-y-4">
+
+            {/* === Banner de Meta === */}
+            <Card className={`border-2 ${a.within_target ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}`}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    {a.within_target
+                      ? <CheckCircle2 className="h-10 w-10 text-green-600" />
+                      : <XCircle className="h-10 w-10 text-red-600" />}
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wide font-medium">Status da Meta</p>
+                      <p className={`text-2xl font-bold ${a.within_target ? 'text-green-700' : 'text-red-700'}`}>
+                        {a.within_target ? 'Dentro da Meta' : 'Fora da Meta'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right space-y-1">
+                    {a.porta_ecg_minutes != null && (
+                      <p className={`text-xl font-bold ${a.within_target ? 'text-green-700' : 'text-red-700'}`}>
+                        {a.porta_ecg_minutes} min
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      {tipo === 'dor_toracica' ? 'Porta-ECG' : 'Porta-ATB'}
                     </p>
                   </div>
                 </div>
-                <div className="text-right space-y-1">
-                  <div className="flex items-center gap-2 justify-end">
-                    <Badge variant="outline">{a.risk_classification || 'Sem classificação'}</Badge>
-                    <Badge variant="secondary">{a.competency}</Badge>
-                  </div>
-                  {a.porta_ecg_minutes != null && (
-                    <p className="text-sm">
-                      <span className="text-muted-foreground">Tempo: </span>
-                      <span className={`font-bold ${a.within_target ? "text-green-700" : "text-red-700"}`}>
-                        {a.porta_ecg_minutes} min
-                      </span>
-                    </p>
+              </CardContent>
+            </Card>
+
+            {/* === Identificação do Paciente (grid) === */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="grid grid-cols-3 gap-4">
+                  <InfoField label="Data de Chegada" value={formatDt(a.arrival_time)} />
+                  <InfoField label="Classificação de Risco" value={a.risk_classification} />
+                  <InfoField label="Competência" value={a.competency} />
+
+                  <InfoField label="Paciente" value={a.patient_name} />
+                  <InfoField label="Prontuário" value={a.record_number} />
+                  <InfoField label="Sexo" value={a.sex === 'M' ? 'Masculino' : a.sex === 'F' ? 'Feminino' : a.sex || '-'} />
+
+                  <InfoField label="Idade" value={a.age != null ? `${a.age} anos` : '-'} />
+                  {tipo === 'dor_toracica' && (
+                    <>
+                      <InfoField label="Hora do ECG" value={formatDt(a.ecg_time)} />
+                      <InfoField label="1o Atendimento Medico" value={formatDt(a.first_doctor_time)} />
+                    </>
+                  )}
+                  {(tipo === 'sepse_adulto' || tipo === 'sepse_pediatrico') && (
+                    <>
+                      <InfoField label="Abertura do Protocolo" value={formatDt(a.protocol_opened_at)} />
+                      <InfoField label="Setor que Abriu" value={a.protocol_opened_by_sector} />
+                    </>
                   )}
                 </div>
-              </div>
-            </div>
-            {/* Identificação */}
-            <Section title="Identificação do Paciente">
-              <InfoRow label="Prontuário" value={a.record_number} icon={<FileText className="h-4 w-4" />} />
-              <InfoRow label="Paciente" value={a.patient_name} icon={<User className="h-4 w-4" />} />
-              <div className="flex gap-6">
-                <InfoRow label="Sexo" value={a.sex === 'M' ? 'Masculino' : a.sex === 'F' ? 'Feminino' : a.sex} />
-                <InfoRow label="Idade" value={a.age != null ? `${a.age} anos` : null} />
-              </div>
-            </Section>
+              </CardContent>
+            </Card>
 
-            {/* Tempos */}
-            <Section title="Tempos do Protocolo">
-              <InfoRow label="Hora de Chegada" value={formatDt(a.arrival_time)} icon={<Clock className="h-4 w-4" />} />
-              {tipo === 'dor_toracica' && (
-                <>
-                  <InfoRow label="Hora do ECG" value={formatDt(a.ecg_time)} icon={<Activity className="h-4 w-4" />} />
-                  <InfoRow label="Tempo Porta-ECG" value={a.porta_ecg_minutes != null ? `${a.porta_ecg_minutes} minutos` : null} />
-                  <InfoRow label="1º Atendimento Médico" value={formatDt(a.first_doctor_time)} />
-                </>
-              )}
-              {(tipo === 'sepse_adulto' || tipo === 'sepse_pediatrico') && (
-                <>
-                  <InfoRow label="Abertura do Protocolo" value={formatDt(a.protocol_opened_at)} icon={<Activity className="h-4 w-4" />} />
-                  <InfoRow label="Setor que Abriu" value={a.protocol_opened_by_sector} />
-                  <InfoRow label="Tempo Porta-ATB" value={a.porta_ecg_minutes != null ? `${a.porta_ecg_minutes} minutos` : null} />
-                </>
-              )}
-            </Section>
-
-            {/* Dor Torácica - Detalhes */}
+            {/* === Dor Torácica - Caracterização === */}
             {tipo === 'dor_toracica' && (a.pain_location || a.pain_characteristic || a.pain_onset_date) && (
-              <Section title="Caracterização da Dor">
-                <InfoRow label="Localização" value={a.pain_location} icon={<Heart className="h-4 w-4" />} />
-                <InfoRow label="Característica" value={a.pain_characteristic} />
-                <InfoRow label="Irradiação" value={a.pain_irradiation} />
-                <InfoRow label="Associação" value={a.pain_association} />
-                <InfoRow label="Data de Início" value={a.pain_onset_date} />
-                <InfoRow label="Hora de Início" value={a.pain_onset_time} />
-                <InfoRow label="Duração" value={a.pain_duration} />
-                <InfoRow label="Referência" value={a.pain_referral} />
-              </Section>
+              <SectionCard title="Caracterização da Dor">
+                <div className="grid grid-cols-3 gap-4">
+                  <InfoField label="Localização" value={a.pain_location} />
+                  <InfoField label="Característica" value={a.pain_characteristic} />
+                  <InfoField label="Irradiação" value={a.pain_irradiation} />
+                  <InfoField label="Associação" value={a.pain_association} />
+                  <InfoField label="Data de Início" value={a.pain_onset_date} />
+                  <InfoField label="Hora de Início" value={a.pain_onset_time} />
+                  <InfoField label="Duração" value={a.pain_duration} />
+                  <InfoField label="Referência" value={a.pain_referral} />
+                </div>
+              </SectionCard>
             )}
 
-            {/* Sepse - Critérios SIRS */}
-            {(tipo === 'sepse_adulto' || tipo === 'sepse_pediatrico') && (
-              <Section title="Critérios SIRS / Disfunção Orgânica">
-                <div className="flex flex-wrap gap-1 py-1">
-                  <BoolBadge value={a.sirs_temp_alta} label="Temp > 38°C" />
-                  <BoolBadge value={a.sirs_temp_baixa} label="Temp < 36°C" />
-                  <BoolBadge value={a.sirs_fc_alta} label="FC Elevada" />
-                  <BoolBadge value={a.sirs_fr_alta} label="FR Elevada" />
-                  <BoolBadge value={a.sirs_leucocitose} label="Leucocitose" />
-                  <BoolBadge value={a.sirs_leucopenia} label="Leucopenia" />
-                  <BoolBadge value={a.sirs_celulas_jovens} label="Céls. Jovens" />
-                  <BoolBadge value={a.sirs_plaquetas} label="Plaquetas" />
-                  <BoolBadge value={a.sirs_lactato} label="Lactato" />
-                  <BoolBadge value={a.sirs_bilirrubina} label="Bilirrubina" />
-                  <BoolBadge value={a.sirs_creatinina} label="Creatinina" />
-                </div>
-                <div className="flex flex-wrap gap-1 py-1">
-                  <BoolBadge value={a.disfuncao_pa_baixa} label="PA Baixa" />
-                  <BoolBadge value={a.disfuncao_sato2_baixa} label="SatO2 Baixa" />
-                  <BoolBadge value={a.disfuncao_consciencia} label="Alt. Consciência" />
-                </div>
-              </Section>
-            )}
-
-            {/* Sepse - Foco Infeccioso */}
-            {(tipo === 'sepse_adulto' || tipo === 'sepse_pediatrico') && (
-              <Section title="Foco Infeccioso">
-                <div className="flex flex-wrap gap-1 py-1">
-                  <BoolBadge value={a.foco_pulmonar} label="Pulmonar" />
-                  <BoolBadge value={a.foco_urinario} label="Urinário" />
-                  <BoolBadge value={a.foco_abdominal} label="Abdominal" />
-                  <BoolBadge value={a.foco_pele_partes_moles} label="Pele/Partes Moles" />
-                  <BoolBadge value={a.foco_corrente_sanguinea_cateter} label="Corrente Sanguínea/Cateter" />
-                  <BoolBadge value={a.foco_sem_foco_definido} label="Sem Foco Definido" />
-                </div>
-              </Section>
-            )}
-
-            {/* Sinais Vitais */}
+            {/* === Sinais Vitais === */}
             {(a.vital_pa || a.vital_fc || a.vital_fr || a.vital_spo2 || a.vital_temperatura) && (
-              <Section title="Sinais Vitais">
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-x-4">
-                  <InfoRow label="PA" value={a.vital_pa} />
-                  <InfoRow label="FC" value={a.vital_fc != null ? `${a.vital_fc} bpm` : null} />
-                  <InfoRow label="FR" value={a.vital_fr != null ? `${a.vital_fr} irpm` : null} />
-                  <InfoRow label="SpO2" value={a.vital_spo2 != null ? `${a.vital_spo2}%` : null} />
-                  <InfoRow label="Temperatura" value={a.vital_temperatura != null ? `${a.vital_temperatura}°C` : null} />
+              <SectionCard title="Sinais Vitais">
+                <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
+                  <InfoField label="PA" value={a.vital_pa} />
+                  <InfoField label="FC" value={a.vital_fc != null ? `${a.vital_fc} bpm` : '-'} />
+                  <InfoField label="FR" value={a.vital_fr != null ? `${a.vital_fr} irpm` : '-'} />
+                  <InfoField label="SpO2" value={a.vital_spo2 != null ? `${a.vital_spo2}%` : '-'} />
+                  <InfoField label="Temp" value={a.vital_temperatura != null ? `${a.vital_temperatura} C` : '-'} />
                 </div>
-              </Section>
+              </SectionCard>
             )}
 
-            {/* Condutas */}
-            <Section title="Condutas">
-              <div className="flex flex-wrap gap-1 py-1">
-                <BoolBadge value={a.conduct_medication} label="Medicação" />
-                <BoolBadge value={a.conduct_oxygen} label="Oxigênio" />
-                <BoolBadge value={a.conduct_monitoring} label="Monitorização" />
-                <BoolBadge value={a.conduct_referral} label="Encaminhamento" />
-                <BoolBadge value={a.conduct_observation} label="Observação" />
-                <BoolBadge value={a.conduct_transfer} label="Transferência" />
-                <BoolBadge value={a.conduct_high_risk} label="Alto Risco" />
-                <BoolBadge value={a.conduct_moderate_risk} label="Risco Moderado" />
-                <BoolBadge value={a.conduct_low_risk} label="Baixo Risco" />
-                <BoolBadge value={a.necessidade_uti} label="Necessidade UTI" />
-                <BoolBadge value={a.kit_sepse_coletado} label="Kit Sepse Coletado" />
-              </div>
-            </Section>
+            {/* === SIRS / Disfunção === */}
+            {(tipo === 'sepse_adulto' || tipo === 'sepse_pediatrico') && sirsFields.length > 0 && (
+              <SectionCard
+                title="Critérios SIRS / Disfunção Orgânica"
+                badge={<Badge variant="outline">{sirsSim}/{sirsFields.length} positivos</Badge>}
+              >
+                <div className="space-y-0">
+                  <BoolItem value={a.sirs_temp_alta} label="Temperatura maior que 38 C" />
+                  <BoolItem value={a.sirs_temp_baixa} label="Temperatura menor que 36 C" />
+                  <BoolItem value={a.sirs_fc_alta} label="FC Elevada" />
+                  <BoolItem value={a.sirs_fr_alta} label="FR Elevada" />
+                  <BoolItem value={a.sirs_leucocitose} label="Leucocitose" />
+                  <BoolItem value={a.sirs_leucopenia} label="Leucopenia" />
+                  <BoolItem value={a.sirs_celulas_jovens} label="Células Jovens" />
+                  <BoolItem value={a.sirs_plaquetas} label="Plaquetas" />
+                  <BoolItem value={a.sirs_lactato} label="Lactato" />
+                  <BoolItem value={a.sirs_bilirrubina} label="Bilirrubina" />
+                  <BoolItem value={a.sirs_creatinina} label="Creatinina" />
+                  <BoolItem value={a.disfuncao_pa_baixa} label="PA Baixa" />
+                  <BoolItem value={a.disfuncao_sato2_baixa} label="SatO2 Baixa" />
+                  <BoolItem value={a.disfuncao_consciencia} label="Alteração de Consciência" />
+                </div>
+              </SectionCard>
+            )}
 
-            {/* Sepse - Antibioticoterapia */}
+            {/* === Foco Infeccioso === */}
+            {(tipo === 'sepse_adulto' || tipo === 'sepse_pediatrico') && focoFields.length > 0 && (
+              <SectionCard
+                title="Foco Infeccioso"
+                badge={<Badge variant="outline">{focoSim}/{focoFields.length} identificados</Badge>}
+              >
+                <div className="space-y-0">
+                  <BoolItem value={a.foco_pulmonar} label="Pulmonar" />
+                  <BoolItem value={a.foco_urinario} label="Urinário" />
+                  <BoolItem value={a.foco_abdominal} label="Abdominal" />
+                  <BoolItem value={a.foco_pele_partes_moles} label="Pele / Partes Moles" />
+                  <BoolItem value={a.foco_corrente_sanguinea_cateter} label="Corrente Sanguínea / Cateter" />
+                  <BoolItem value={a.foco_sem_foco_definido} label="Sem Foco Definido" />
+                </div>
+              </SectionCard>
+            )}
+
+            {/* === Condutas === */}
+            {condutaFields.length > 0 && (
+              <SectionCard
+                title="Condutas"
+                badge={<Badge variant="outline">{condutasSim}/{condutaFields.length} aplicadas</Badge>}
+              >
+                <div className="space-y-0">
+                  <BoolItem value={a.conduct_medication} label="Medicação" />
+                  <BoolItem value={a.conduct_oxygen} label="Oxigênio" />
+                  <BoolItem value={a.conduct_monitoring} label="Monitorização" />
+                  <BoolItem value={a.conduct_referral} label="Encaminhamento" />
+                  <BoolItem value={a.conduct_observation} label="Observação" />
+                  <BoolItem value={a.conduct_transfer} label="Transferência" />
+                  <BoolItem value={a.conduct_high_risk} label="Alto Risco" />
+                  <BoolItem value={a.conduct_moderate_risk} label="Risco Moderado" />
+                  <BoolItem value={a.conduct_low_risk} label="Baixo Risco" />
+                  <BoolItem value={a.necessidade_uti} label="Necessidade UTI" />
+                  <BoolItem value={a.kit_sepse_coletado} label="Kit Sepse Coletado" />
+                </div>
+              </SectionCard>
+            )}
+
+            {/* === Antibioticoterapia === */}
             {(tipo === 'sepse_adulto' || tipo === 'sepse_pediatrico') && (a.atb1_nome || a.atb2_nome) && (
-              <Section title="Antibioticoterapia">
+              <SectionCard title="Antibioticoterapia">
                 {a.atb1_nome && (
-                  <div className="bg-muted/50 rounded-lg p-3 mb-2">
-                    <p className="text-xs font-medium text-muted-foreground">ATB 1</p>
-                    <p className="text-sm">{a.atb1_nome} — {a.atb1_dose}</p>
+                  <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+                    <p className="text-xs text-muted-foreground font-medium">ATB 1</p>
+                    <p className="text-sm font-medium">{a.atb1_nome} - {a.atb1_dose}</p>
                     <p className="text-xs text-muted-foreground">Via: {a.atb1_via} | Início: {a.atb1_data} {a.atb1_hora}</p>
                   </div>
                 )}
                 {a.atb2_nome && (
-                  <div className="bg-muted/50 rounded-lg p-3">
-                    <p className="text-xs font-medium text-muted-foreground">ATB 2</p>
-                    <p className="text-sm">{a.atb2_nome} — {a.atb2_dose}</p>
+                  <div className="rounded-lg bg-muted/50 p-3 space-y-1">
+                    <p className="text-xs text-muted-foreground font-medium">ATB 2</p>
+                    <p className="text-sm font-medium">{a.atb2_nome} - {a.atb2_dose}</p>
                     <p className="text-xs text-muted-foreground">Via: {a.atb2_via} | Início: {a.atb2_data} {a.atb2_hora}</p>
                   </div>
                 )}
-              </Section>
+              </SectionCard>
             )}
 
-            {/* Trombólise (Dor Torácica) */}
+            {/* === Trombólise (Dor Torácica) === */}
             {tipo === 'dor_toracica' && (a.thrombolysis_time || a.thrombolysis_type) && (
-              <Section title="Trombólise">
-                <InfoRow label="Horário" value={formatDt(a.thrombolysis_time)} icon={<Ambulance className="h-4 w-4" />} />
-                <InfoRow label="Tipo" value={a.thrombolysis_type} />
-                <BoolBadge value={a.thrombolysis_complication} label="Complicação" />
-                <InfoRow label="Conduta" value={a.thrombolysis_conduct} />
-                <InfoRow label="Chegada SAMU" value={formatDt(a.samu_arrival_time)} />
-                <InfoRow label="Hospital Destino" value={a.destination_hospital} />
-              </Section>
+              <SectionCard title="Trombólise">
+                <div className="grid grid-cols-2 gap-4">
+                  <InfoField label="Horário" value={formatDt(a.thrombolysis_time)} />
+                  <InfoField label="Tipo" value={a.thrombolysis_type} />
+                  <InfoField label="Conduta" value={a.thrombolysis_conduct} />
+                  <InfoField label="Hospital Destino" value={a.destination_hospital} />
+                  <InfoField label="Chegada SAMU" value={formatDt(a.samu_arrival_time)} />
+                </div>
+                <BoolItem value={a.thrombolysis_complication} label="Complicação" />
+              </SectionCard>
             )}
 
-            {/* Laboratório Sepse */}
+            {/* === Lab Sepse === */}
             {(tipo === 'sepse_adulto' || tipo === 'sepse_pediatrico') && (a.lab_villac_horario_chamado || a.lab_villac_horario_coleta) && (
-              <Section title="Laboratório">
-                <InfoRow label="Horário Chamado Lab" value={formatDt(a.lab_villac_horario_chamado)} icon={<Beaker className="h-4 w-4" />} />
-                <InfoRow label="Horário Coleta Lab" value={formatDt(a.lab_villac_horario_coleta)} />
-              </Section>
+              <SectionCard title="Laboratório">
+                <div className="grid grid-cols-2 gap-4">
+                  <InfoField label="Horário Chamado Lab" value={formatDt(a.lab_villac_horario_chamado)} />
+                  <InfoField label="Horário Coleta Lab" value={formatDt(a.lab_villac_horario_coleta)} />
+                </div>
+              </SectionCard>
             )}
 
-            {/* Diagnóstico e Observações */}
-            {(a.initial_diagnosis || a.medical_report || a.action_plan || a.admin_observations) && (
-              <Section title="Diagnóstico e Observações">
-                <InfoRow label="Diagnóstico Inicial" value={a.initial_diagnosis} />
-                <InfoRow label="Relatório Médico" value={a.medical_report} />
-                <InfoRow label="Plano de Ação" value={a.action_plan} />
-                <InfoRow label="Observações Administrativas" value={a.admin_observations} />
-              </Section>
-            )}
-
-            {/* Suspeita Sepse */}
+            {/* === Suspeita Sepse === */}
             {(tipo === 'sepse_adulto' || tipo === 'sepse_pediatrico') && a.sepse_suspeita && (
-              <Section title="Suspeita de Sepse">
-                <BoolBadge value={a.sepse_suspeita} label="Confirmada" />
-                <InfoRow label="Motivo" value={a.sepse_motivo} />
-                <InfoRow label="Horário" value={formatDt(a.sepse_horario)} />
-                <InfoRow label="Médico" value={a.sepse_medico} />
-              </Section>
+              <SectionCard title="Suspeita de Sepse">
+                <div className="grid grid-cols-2 gap-4">
+                  <InfoField label="Motivo" value={a.sepse_motivo} />
+                  <InfoField label="Horário" value={formatDt(a.sepse_horario)} />
+                  <InfoField label="Médico" value={a.sepse_medico} />
+                </div>
+                <BoolItem value={a.sepse_suspeita} label="Confirmada" />
+              </SectionCard>
             )}
 
-            {/* Enfermagem */}
-            {(a.enfermeiro_responsavel || a.enfermeiro_coren || a.enfermeiro_setor) && (
-              <Section title="Avaliação da Enfermagem">
-                <InfoRow label="Enfermeiro Responsável" value={a.enfermeiro_responsavel} icon={<User className="h-4 w-4" />} />
-                <InfoRow label="COREN" value={a.enfermeiro_coren} />
-                <InfoRow label="Setor" value={a.enfermeiro_setor} />
-              </Section>
+            {/* === Diagnóstico e Observações === */}
+            {(a.initial_diagnosis || a.medical_report || a.action_plan || a.admin_observations) && (
+              <SectionCard title="Diagnóstico e Observações">
+                <div className="space-y-3">
+                  {a.initial_diagnosis && (
+                    <div><p className="text-xs text-muted-foreground">Diagnóstico Inicial</p><p className="text-sm">{a.initial_diagnosis}</p></div>
+                  )}
+                  {a.medical_report && (
+                    <div><p className="text-xs text-muted-foreground">Relatório Médico</p><p className="text-sm">{a.medical_report}</p></div>
+                  )}
+                  {a.action_plan && (
+                    <div><p className="text-xs text-muted-foreground">Plano de Ação</p><p className="text-sm">{a.action_plan}</p></div>
+                  )}
+                  {a.admin_observations && (
+                    <div><p className="text-xs text-muted-foreground">Observações</p><p className="text-sm">{a.admin_observations}</p></div>
+                  )}
+                </div>
+              </SectionCard>
             )}
+
+            {/* === Enfermagem === */}
+            {(a.enfermeiro_responsavel || a.enfermeiro_coren) && (
+              <SectionCard title="Enfermagem">
+                <div className="grid grid-cols-3 gap-4">
+                  <InfoField label="Enfermeiro Responsável" value={a.enfermeiro_responsavel} />
+                  <InfoField label="COREN" value={a.enfermeiro_coren} />
+                  <InfoField label="Setor" value={a.enfermeiro_setor} />
+                </div>
+              </SectionCard>
+            )}
+
           </div>
         </ScrollArea>
       </DialogContent>
