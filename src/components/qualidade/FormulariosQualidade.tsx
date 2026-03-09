@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { getBrasiliaDateString } from "@/lib/brasilia-time";
 import { ptBR } from "date-fns/locale";
 import {
   ShieldCheck, ClipboardPlus, FileText, BarChart3, Eye,
