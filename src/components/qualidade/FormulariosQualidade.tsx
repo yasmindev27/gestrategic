@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
+import { getBrasiliaDateString } from "@/lib/brasilia-time";
 import { ptBR } from "date-fns/locale";
 import {
   ShieldCheck, ClipboardPlus, FileText, BarChart3, Eye,
@@ -112,7 +113,7 @@ export function FormulariosQualidade() {
   const [auditoriaForm, setAuditoriaForm] = useState({
     setor: "", observacoes: "", prontuario: "", paciente: "", pacienteRA: "",
     scoreRisco: "", possuiLPP: "", grauLPP: "", apresentouQueda: "", notificacaoAberta: "",
-    profissionalAuditado: "", dataAuditoria: format(new Date(), "yyyy-MM-dd"),
+    profissionalAuditado: "", dataAuditoria: getBrasiliaDateString(),
   });
   const [responsavelNome, setResponsavelNome] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -139,7 +140,7 @@ export function FormulariosQualidade() {
   const handleOpenForm = async (form: FormularioConfig) => {
     setSelectedForm(form);
     setRespostas({});
-    setAuditoriaForm({ setor: "", observacoes: "", prontuario: "", paciente: "", pacienteRA: "", scoreRisco: "", possuiLPP: "", grauLPP: "", apresentouQueda: "", notificacaoAberta: "", profissionalAuditado: "", dataAuditoria: format(new Date(), "yyyy-MM-dd") });
+    setAuditoriaForm({ setor: "", observacoes: "", prontuario: "", paciente: "", pacienteRA: "", scoreRisco: "", possuiLPP: "", grauLPP: "", apresentouQueda: "", notificacaoAberta: "", profissionalAuditado: "", dataAuditoria: getBrasiliaDateString() });
     const [secRes, pergRes] = await Promise.all([
       supabase.from("auditoria_secoes_config").select("*").eq("formulario_id", form.id).order("ordem"),
       supabase.from("auditoria_perguntas_config").select("*").eq("ativo", true).order("ordem"),
@@ -174,7 +175,7 @@ export function FormulariosQualidade() {
         setor: auditoriaForm.setor,
         auditor_id: user.id,
         auditor_nome: responsavelNome || user.email || "",
-        data_auditoria: auditoriaForm.dataAuditoria || format(new Date(), "yyyy-MM-dd"),
+        data_auditoria: auditoriaForm.dataAuditoria || getBrasiliaDateString(),
         respostas,
         observacoes: auditoriaForm.observacoes || null,
         numero_prontuario: auditoriaForm.prontuario || null,
