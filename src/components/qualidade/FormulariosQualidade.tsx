@@ -844,7 +844,7 @@ export function FormulariosQualidade() {
       if (m <= currentMonth) monthSet.add(m);
     });
     tipoRegistros.forEach(r => {
-      const m = format(new Date(r.data_auditoria), "yyyy-MM");
+      const m = format(safeDate(r.data_auditoria), "yyyy-MM");
       if (m <= currentMonth) monthSet.add(m);
     });
     const months = [...monthSet].sort();
