@@ -76,9 +76,15 @@ const rangeToDays: Record<DateRange, number> = { "1d": 1, "7d": 7, "30d": 30, "9
 
 function groupByKey(date: string, gran: Granularity): string {
   const d = parseISO(date);
-  if (gran === "day") return format(d, "dd/MM");
-  if (gran === "week") return `Sem ${format(startOfWeek(d, { locale: ptBR }), "dd/MM")}`;
-  return format(startOfMonth(d), "MMM/yy", { locale: ptBR });
+  if (gran === "day") return format(d, "yyyy-MM-dd"); // sortable key
+  if (gran === "week") return format(startOfWeek(d, { locale: ptBR }), "yyyy-MM-dd");
+  return format(startOfMonth(d), "yyyy-MM");
+}
+
+function formatGroupLabel(key: string, gran: Granularity): string {
+  if (gran === "day") return format(parseISO(key), "dd/MM");
+  if (gran === "week") return `Sem ${format(parseISO(key), "dd/MM")}`;
+  return format(parseISO(key + "-01"), "MMM/yy", { locale: ptBR });
 }
 
 export function DashboardFaturamento() {
