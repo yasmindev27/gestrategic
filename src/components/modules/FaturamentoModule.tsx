@@ -853,7 +853,7 @@ export const FaturamentoModule = () => {
 
           {(datePreset || statusFilter !== "todos") && (
             <p className="text-xs text-muted-foreground">
-              Exibindo <span className="font-medium text-foreground">{displayData.length}</span> registro(s) filtrado(s)
+              Exibindo <span className="font-medium text-foreground">{displayCount}</span> registro(s) filtrado(s)
             </p>
           )}
         </CardContent>
