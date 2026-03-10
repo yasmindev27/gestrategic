@@ -227,48 +227,33 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
       <div className="space-y-5">
         {/* ===== KPI SUMMARY ===== */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <Card className="border-l-4 border-l-primary/60 hover:shadow-md transition-shadow">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <ClipboardList className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{pendentes.length}</p>
-                <p className="text-xs text-muted-foreground">Casos em aberto</p>
-              </div>
+          <Card className="hover:shadow-sm transition-shadow">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Casos em aberto</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{pendentes.length}</p>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-l-blue-500/60 hover:shadow-md transition-shadow">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <FileText className="h-5 w-5 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{passagens.length}</p>
-                <p className="text-xs text-muted-foreground">Passagens registradas</p>
-              </div>
+          <Card className="hover:shadow-sm transition-shadow">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Passagens registradas</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{passagens.length}</p>
             </CardContent>
           </Card>
-          <Card className={`border-l-4 hover:shadow-md transition-shadow ${pendentesSuporteCount > 0 ? "border-l-destructive/60 animate-pulse" : "border-l-amber-500/60"}`}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${pendentesSuporteCount > 0 ? "bg-destructive/10" : "bg-amber-500/10"}`}>
-                <Inbox className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{pendentesSuporteCount}</p>
-                <p className="text-xs text-muted-foreground">Suporte pendente</p>
-              </div>
+          <Card className={`hover:shadow-sm transition-shadow ${pendentesSuporteCount > 0 ? "border-destructive/40" : ""}`}>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Suporte pendente</p>
+              <p className={`text-2xl font-bold mt-1 ${pendentesSuporteCount > 0 ? "text-destructive" : "text-foreground"}`}>{pendentesSuporteCount}</p>
             </CardContent>
           </Card>
         </div>
 
         {/* ===== AÇÕES RÁPIDAS ===== */}
         <div className="flex flex-wrap gap-3">
-          <Button onClick={() => setShowPassagemForm(!showPassagemForm)} variant={showPassagemForm ? "secondary" : "default"} className="gap-2">
-            <Send className="h-4 w-4" /> {showPassagemForm ? "Fechar Formulário" : "Nova Passagem"}
+          <Button onClick={() => setShowPassagemForm(!showPassagemForm)} variant={showPassagemForm ? "secondary" : "default"} size="sm">
+            {showPassagemForm ? "Fechar Formulário" : "Nova Passagem"}
           </Button>
-          <Button onClick={() => setSuporteDialog(true)} variant="outline" className="gap-2">
-            <HandHeart className="h-4 w-4" /> Solicitar Suporte
+          <Button onClick={() => setSuporteDialog(true)} variant="outline" size="sm">
+            Solicitar Suporte
           </Button>
         </div>
 
@@ -276,9 +261,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
         {showPassagemForm && (
           <Card className="border-primary/30 shadow-sm animate-in slide-in-from-top-2 duration-200">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Send className="h-4 w-4 text-primary" /> Registrar Passagem de Plantão
-              </CardTitle>
+              <CardTitle className="text-base">Registrar Passagem de Plantão</CardTitle>
               <CardDescription>
                 Registre as pendências e casos que ficam para o próximo turno
               </CardDescription>
@@ -326,8 +309,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
               )}
 
               <div className="flex gap-3 pt-1">
-                <Button onClick={handleSubmitPassagem} disabled={isSubmitting} className="gap-2">
-                  <Send className="h-4 w-4" />
+                <Button onClick={handleSubmitPassagem} disabled={isSubmitting} size="sm">
                   {isSubmitting ? "Registrando..." : "Registrar Passagem"}
                 </Button>
                 <Button variant="ghost" onClick={() => setShowPassagemForm(false)}>Cancelar</Button>
@@ -338,10 +320,9 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
 
         {/* ===== SOLICITAÇÕES DE SUPORTE RECEBIDAS (inline alert) ===== */}
         {pendentesSuporteCount > 0 && (
-          <Card className="border-amber-500/40 bg-amber-50/50 dark:bg-amber-950/20 shadow-sm">
+          <Card className="border-destructive/30">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                <AlertCircle className="h-4 w-4" />
+              <CardTitle className="text-base text-destructive">
                 {pendentesSuporteCount} solicitação(ões) de suporte aguardando resposta
               </CardTitle>
             </CardHeader>
@@ -380,19 +361,19 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
         {recebidas.filter(s => s.status === "aceito").length > 0 && (
           <Card className="border-blue-500/30">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                <ArrowRightLeft className="h-4 w-4" /> Acompanhamentos em andamento
+              <CardTitle className="text-sm text-muted-foreground">
+                Acompanhamentos em andamento
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               {recebidas.filter(s => s.status === "aceito").map(s => (
-                <div key={s.id} className="flex items-center justify-between p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/30">
+                <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
                   <div>
                     <span className="text-sm font-medium">{s.paciente_nome}</span>
                     <p className="text-xs text-muted-foreground">De: {s.solicitante_nome}</p>
                   </div>
                   <Button size="sm" variant="outline" onClick={() => { setRespostaDialog(s); setRespostaText(""); }}>
-                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Concluir
+                    Concluir
                   </Button>
                 </div>
               ))}
@@ -405,7 +386,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
           <Collapsible>
             <CollapsibleTrigger asChild>
               <Button variant="ghost" className="w-full justify-between text-sm text-muted-foreground hover:text-foreground">
-                <span className="flex items-center gap-2"><HandHeart className="h-4 w-4" /> Minhas solicitações enviadas ({enviadas.length})</span>
+                <span>Minhas solicitações enviadas ({enviadas.length})</span>
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </CollapsibleTrigger>
@@ -443,7 +424,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
         <Collapsible open={showHistorico} onOpenChange={setShowHistorico}>
           <CollapsibleTrigger asChild>
             <Button variant="ghost" className="w-full justify-between text-sm font-medium">
-              <span className="flex items-center gap-2"><Clock className="h-4 w-4" /> Histórico de Passagens ({passagens.length})</span>
+              <span>Histórico de Passagens ({passagens.length})</span>
               {showHistorico ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
           </CollapsibleTrigger>
@@ -458,9 +439,6 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
                     onClick={() => setExpandedPassagem(expandedPassagem === p.id ? null : p.id)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded-full bg-muted">
-                        <User className="h-3.5 w-3.5 text-muted-foreground" />
-                      </div>
                       <div>
                         <span className="font-medium text-sm">{p.profissional_nome}</span>
                         <span className="text-xs text-muted-foreground ml-2">
@@ -510,7 +488,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
       <Dialog open={suporteDialog} onOpenChange={setSuporteDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><HandHeart className="h-5 w-5 text-primary" /> Solicitar Suporte</DialogTitle>
+            <DialogTitle>Solicitar Suporte</DialogTitle>
             <DialogDescription>Solicite acompanhamento ou suporte de outra profissional</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -543,8 +521,8 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSuporteDialog(false)}>Cancelar</Button>
-            <Button onClick={handleCreateSuporte} disabled={isSubmitting} className="gap-2">
-              <Send className="h-4 w-4" /> {isSubmitting ? "Enviando..." : "Enviar Solicitação"}
+            <Button onClick={handleCreateSuporte} disabled={isSubmitting}>
+              {isSubmitting ? "Enviando..." : "Enviar Solicitação"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -577,14 +555,14 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
             {respostaDialog?.status === "pendente" && (
               <>
                 <Button variant="outline" onClick={() => handleResponder("recusado")} disabled={isSubmitting}>Recusar</Button>
-                <Button onClick={() => handleResponder("aceito")} disabled={isSubmitting} className="gap-1.5">
-                  <CheckCircle2 className="h-4 w-4" /> Aceitar
+                <Button onClick={() => handleResponder("aceito")} disabled={isSubmitting}>
+                  Aceitar
                 </Button>
               </>
             )}
             {respostaDialog?.status === "aceito" && (
-              <Button onClick={() => handleResponder("concluido")} disabled={isSubmitting} className="gap-1.5">
-                <CheckCircle2 className="h-4 w-4" /> Marcar como Concluído
+              <Button onClick={() => handleResponder("concluido")} disabled={isSubmitting}>
+                Marcar como Concluído
               </Button>
             )}
           </DialogFooter>
