@@ -796,6 +796,14 @@ export const AssistenciaSocialModule = () => {
                 />
               </div>
             </div>
+            <div>
+              <Label>Local do Atendimento *</Label>
+              <Input 
+                value={atendimentoForm.local_atendimento} 
+                onChange={e => setAtendimentoForm({...atendimentoForm, local_atendimento: e.target.value})} 
+                placeholder="Ex: Sala de Observação, Consultório 2, Recepção..."
+              />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Tipo de Atendimento *</Label>
