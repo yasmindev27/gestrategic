@@ -43,7 +43,7 @@ export const ChamadosDashboard = () => {
     status: "todos",
   });
 
-  // Fetch chamados
+  // Fetch chamados and first comments for response time
   useEffect(() => {
     const fetchChamados = async () => {
       setIsLoading(true);
@@ -63,7 +63,29 @@ export const ChamadosDashboard = () => {
         const { data, error } = await query;
         if (error) throw error;
         
-        setChamados((data || []) as Chamado[]);
+        const chamadosData = (data || []) as Chamado[];
+        
+        // Fetch first comment per chamado for accurate first-response time
+        if (chamadosData.length > 0) {
+          const chamadoIds = chamadosData.map(c => c.id);
+          const { data: comentarios } = await supabase
+            .from("chamados_comentarios")
+            .select("chamado_id, created_at")
+            .in("chamado_id", chamadoIds.slice(0, 200))
+            .order("created_at", { ascending: true });
+          
+          if (comentarios) {
+            const firstCommentMap = new Map<string, string>();
+            comentarios.forEach(c => {
+              if (!firstCommentMap.has(c.chamado_id)) {
+                firstCommentMap.set(c.chamado_id, c.created_at);
+              }
+            });
+            setFirstResponseMap(firstCommentMap);
+          }
+        }
+        
+        setChamados(chamadosData);
       } catch (error) {
         console.error("Error fetching chamados:", error);
         toast({
