@@ -220,7 +220,7 @@ export const AssistenciaSocialModule = () => {
       supabase.from("assistencia_social_pacientes").select("id, nome_completo, numero_prontuario, setor_atendimento, created_at").order("created_at", { ascending: false }),
       supabase.from("assistencia_social_atendimentos").select("*").order("data_atendimento", { ascending: false }),
       supabase.from("assistencia_social_encaminhamentos").select("*").order("data_encaminhamento", { ascending: false }),
-      supabase.from("bed_records").select("sector, bed_number, patient_name, hipotese_diagnostica, data_internacao, motivo_alta, shift_date")
+      supabase.from("bed_records").select("sector, bed_number, patient_name, hipotese_diagnostica, data_internacao, motivo_alta, data_alta, shift_date")
         .not("patient_name", "is", null).neq("patient_name", "")
         .order("shift_date", { ascending: false }).limit(500),
     ]);
