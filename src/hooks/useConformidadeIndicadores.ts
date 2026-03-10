@@ -137,7 +137,8 @@ export const useConformidadeIndicadores = () => {
 
       const chamadosDentroSLA = chamados.filter(c => {
         if (!c.data_resolucao || !c.data_abertura) return false;
-        const horasResolucao = differenceInHours(parseISO(c.data_resolucao), parseISO(c.data_abertura));
+        // Use minutes/60 for precision consistent with ChamadosDashboard
+        const horasResolucao = differenceInMinutes(parseISO(c.data_resolucao), parseISO(c.data_abertura)) / 60;
         const slaHoras = SLA_HORAS[c.prioridade as keyof typeof SLA_HORAS] || 24;
         return horasResolucao <= slaHoras;
       }).length;
