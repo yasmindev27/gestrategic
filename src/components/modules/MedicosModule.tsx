@@ -397,6 +397,10 @@ const MedicosModule = ({ onOpenExternal }: { onOpenExternal?: (url: string, titl
             <BarChart3 className="h-4 w-4" />
             Indicadores NSP
           </TabsTrigger>
+          <TabsTrigger value="perfil-epidemiologico" className="gap-2 text-sm px-4 py-2">
+            <Activity className="h-4 w-4" />
+            Perfil Epidemiológico
+          </TabsTrigger>
           <TabsTrigger value="avaliacao-prontuarios" className="gap-2 text-sm px-4 py-2">
             <ClipboardCheck className="h-4 w-4" />
             Avaliação de Prontuários
