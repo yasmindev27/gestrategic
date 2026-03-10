@@ -765,19 +765,35 @@ export const AssistenciaSocialModule = () => {
           </DialogHeader>
           <div className="grid gap-4">
             <div>
-              <Label>Paciente *</Label>
-              <Select value={atendimentoForm.paciente_id} onValueChange={v => setAtendimentoForm({...atendimentoForm, paciente_id: v})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o paciente..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {pacientes.map(p => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nome_completo} {p.numero_prontuario ? `(${p.numero_prontuario})` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Nome do Paciente *</Label>
+              <Input 
+                value={atendimentoForm.paciente_nome} 
+                onChange={e => setAtendimentoForm({...atendimentoForm, paciente_nome: e.target.value})} 
+                placeholder="Digite o nome do paciente..."
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Setor de Atendimento *</Label>
+                <Select value={atendimentoForm.setor_atendimento} onValueChange={v => setAtendimentoForm({...atendimentoForm, setor_atendimento: v})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {setoresAtendimento.map(s => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Nº Prontuário</Label>
+                <Input 
+                  value={atendimentoForm.numero_prontuario} 
+                  onChange={e => setAtendimentoForm({...atendimentoForm, numero_prontuario: e.target.value})} 
+                  placeholder="Opcional"
+                />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
