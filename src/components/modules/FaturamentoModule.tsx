@@ -631,10 +631,9 @@ export const FaturamentoModule = () => {
     return avaliacoesMap.has(saidaId);
   };
 
-  // Data is now server-side filtered; just return current data
-  const displayData = activeTab === "lista" ? saidas 
-    : activeTab === "faltantes" ? prontuariosFaltantes 
-    : [];
+  // Data is now server-side filtered; return current data per active tab
+  const displayData = activeTab === "faltantes" ? prontuariosFaltantes : [];
+  const displayCount = activeTab === "avaliados" ? avaliacoes.length : displayData.length;
 
   const handleViewAvaliacao = (saidaId: string) => {
     const avaliacao = avaliacoesMap.get(saidaId);
