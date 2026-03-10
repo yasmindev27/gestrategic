@@ -227,37 +227,22 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
       <div className="space-y-5">
         {/* ===== KPI SUMMARY ===== */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <Card className="border-l-4 border-l-primary/60 hover:shadow-md transition-shadow">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-primary/10">
-                <ClipboardList className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{pendentes.length}</p>
-                <p className="text-xs text-muted-foreground">Casos em aberto</p>
-              </div>
+          <Card className="hover:shadow-sm transition-shadow">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Casos em aberto</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{pendentes.length}</p>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-l-blue-500/60 hover:shadow-md transition-shadow">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-blue-500/10">
-                <FileText className="h-5 w-5 text-blue-500" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{passagens.length}</p>
-                <p className="text-xs text-muted-foreground">Passagens registradas</p>
-              </div>
+          <Card className="hover:shadow-sm transition-shadow">
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Passagens registradas</p>
+              <p className="text-2xl font-bold text-foreground mt-1">{passagens.length}</p>
             </CardContent>
           </Card>
-          <Card className={`border-l-4 hover:shadow-md transition-shadow ${pendentesSuporteCount > 0 ? "border-l-destructive/60 animate-pulse" : "border-l-amber-500/60"}`}>
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className={`p-2 rounded-lg ${pendentesSuporteCount > 0 ? "bg-destructive/10" : "bg-amber-500/10"}`}>
-                <Inbox className="h-5 w-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold text-foreground">{pendentesSuporteCount}</p>
-                <p className="text-xs text-muted-foreground">Suporte pendente</p>
-              </div>
+          <Card className={`hover:shadow-sm transition-shadow ${pendentesSuporteCount > 0 ? "border-destructive/40" : ""}`}>
+            <CardContent className="p-4">
+              <p className="text-xs text-muted-foreground">Suporte pendente</p>
+              <p className={`text-2xl font-bold mt-1 ${pendentesSuporteCount > 0 ? "text-destructive" : "text-foreground"}`}>{pendentesSuporteCount}</p>
             </CardContent>
           </Card>
         </div>
