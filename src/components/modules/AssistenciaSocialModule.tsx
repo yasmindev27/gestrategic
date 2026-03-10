@@ -1028,7 +1028,7 @@ const ReportSection = ({ atendimentos: allAtendimentos, encaminhamentos: allEnca
     { req: "Monitoramento de indicadores de produtividade profissional", met: profData.length > 0 },
     { req: "Taxa de resolutividade ≥ 80%", met: taxaResolutividade >= 80 },
     { req: "Efetividade dos encaminhamentos ≥ 70%", met: taxaEfetividade >= 70 },
-    { req: "Corrida de leito — acompanhamento de pacientes internados", met: bedPatients.length > 0 },
+    { req: "Corrida de leito — acompanhamento de pacientes internados", met: bedPatients.length > 0 && atendimentos.some(a => a.observacoes?.includes("Setor de Internação:")) },
     { req: "Documentação e evolução dos atendimentos", met: totalAtend > 0 },
     { req: "Integração multiprofissional", met: profData.length > 1 },
     { req: "Identificação de vulnerabilidades e riscos psicossociais", met: motivoData.length > 0 },
