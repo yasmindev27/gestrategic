@@ -144,7 +144,9 @@ export const AssistenciaSocialModule = () => {
   });
   
   const [atendimentoForm, setAtendimentoForm] = useState({
-    paciente_id: "",
+    paciente_nome: "",
+    setor_atendimento: "",
+    numero_prontuario: "",
     tipo_atendimento: "",
     motivo: "",
     descricao: "",
