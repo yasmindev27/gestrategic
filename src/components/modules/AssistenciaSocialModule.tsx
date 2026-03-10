@@ -147,6 +147,7 @@ export const AssistenciaSocialModule = () => {
     paciente_nome: "",
     setor_atendimento: "",
     numero_prontuario: "",
+    local_atendimento: "",
     tipo_atendimento: "",
     motivo: "",
     descricao: "",
