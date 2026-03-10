@@ -243,7 +243,7 @@ export const AssistenciaSocialModule = () => {
   };
 
   const handleCreateAtendimento = async () => {
-    if (!atendimentoForm.paciente_nome || !atendimentoForm.setor_atendimento || !atendimentoForm.tipo_atendimento || !atendimentoForm.motivo || !atendimentoForm.descricao) {
+    if (!atendimentoForm.paciente_nome || !atendimentoForm.setor_atendimento || !atendimentoForm.local_atendimento || !atendimentoForm.tipo_atendimento || !atendimentoForm.motivo || !atendimentoForm.descricao) {
       toast({ title: "Erro", description: "Preencha todos os campos obrigatórios", variant: "destructive" });
       return;
     }
