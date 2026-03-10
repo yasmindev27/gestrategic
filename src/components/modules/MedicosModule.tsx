@@ -753,6 +753,10 @@ const MedicosModule = ({ onOpenExternal }: { onOpenExternal?: (url: string, titl
           <IndicadoresNSP />
         </TabsContent>
 
+        <TabsContent value="perfil-epidemiologico" className="mt-6">
+          <IndicadoresUPA />
+        </TabsContent>
+
         <TabsContent value="avaliacao-prontuarios" className="mt-6">
           <AvaliacaoProntuariosCC />
         </TabsContent>
