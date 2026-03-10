@@ -236,14 +236,7 @@ export const AssistenciaSocialModule = () => {
     if (encaminhamentosRes.data) setEncaminhamentos(encaminhamentosRes.data);
 
     if (bedRes.data) {
-      // For each bed, keep only the most recent record (by shift_date DESC, shift_type 'noturno' > 'diurno')
-      const seen = new Map<string, typeof bedRes.data[0]>();
-      for (const r of bedRes.data) {
-        const key = `${r.sector}|${r.bed_number}`;
-        if (!seen.has(key)) seen.set(key, r);
-      }
-      
-      // Also check: if ANY record for a patient has discharge, consider them discharged
+      // Collect all patients who have ANY discharge record
       const dischargedPatients = new Set<string>();
       for (const r of bedRes.data) {
         if ((r.motivo_alta || r.data_alta) && r.patient_name) {
@@ -251,9 +244,18 @@ export const AssistenciaSocialModule = () => {
         }
       }
       
+      // Dedup by PATIENT NAME (not bed) — keep most recent record per patient
+      const seenByPatient = new Map<string, typeof bedRes.data[0]>();
+      for (const r of bedRes.data) {
+        if (!r.patient_name) continue;
+        const patientKey = r.patient_name.trim().toLowerCase();
+        if (dischargedPatients.has(patientKey)) continue; // skip discharged
+        if (r.motivo_alta || r.data_alta) continue;
+        if (!seenByPatient.has(patientKey)) seenByPatient.set(patientKey, r);
+      }
+      
       setBedPatients(
-        Array.from(seen.values())
-          .filter(r => !r.motivo_alta && !r.data_alta && !dischargedPatients.has((r.patient_name || '').trim().toLowerCase()))
+        Array.from(seenByPatient.values())
           .map(r => ({
             sector: r.sector,
             bed_number: r.bed_number,
