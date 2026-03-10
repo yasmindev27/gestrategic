@@ -205,6 +205,17 @@ const Sidebar = ({
       );
       return items;
     }
+    if (isAssistenciaSocial) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: Heart, label: "Assist. Social/Psicologia", id: "assistencia-social" },
+        { icon: Calendar, label: "Agenda", id: "agenda" },
+        { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
+        { icon: GraduationCap, label: "Treinamentos", id: "lms" },
+        { icon: MessageSquare, label: "Chat", id: "chat" }
+      );
+      return items;
+    }
     if (isSeguranca) {
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
