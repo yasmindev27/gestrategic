@@ -373,7 +373,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
                     <p className="text-xs text-muted-foreground">De: {s.solicitante_nome}</p>
                   </div>
                   <Button size="sm" variant="outline" onClick={() => { setRespostaDialog(s); setRespostaText(""); }}>
-                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Concluir
+                    Concluir
                   </Button>
                 </div>
               ))}
