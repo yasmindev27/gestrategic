@@ -1051,9 +1051,13 @@ export const AssistenciaSocialModule = () => {
                     <SelectValue placeholder="Selecione o setor..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {setoresAtendimento.map(s => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
+                    {(() => {
+                      const setoresMapa = [...new Set(bedPatients.map(b => b.sector.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())))].sort();
+                      const lista = setoresMapa.length > 0 ? setoresMapa : setoresAtendimento;
+                      return lista.map(s => (
+                        <SelectItem key={s} value={s}>{s}</SelectItem>
+                      ));
+                    })()}
                   </SelectContent>
                 </Select>
               </div>
