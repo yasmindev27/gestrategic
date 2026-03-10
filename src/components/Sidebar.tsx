@@ -42,7 +42,7 @@ const Sidebar = ({
     role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
     isLaboratorio, isTecnico, isRecepcao, isClassificacao, isNir,
     isFaturamento, isRHDP, isQualidade, isNSP, isMedicos, isEnfermagem,
-    isSeguranca
+    isSeguranca, isAssistenciaSocial
   } = useUserRole();
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
