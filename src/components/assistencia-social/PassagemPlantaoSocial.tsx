@@ -249,11 +249,11 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
 
         {/* ===== AÇÕES RÁPIDAS ===== */}
         <div className="flex flex-wrap gap-3">
-          <Button onClick={() => setShowPassagemForm(!showPassagemForm)} variant={showPassagemForm ? "secondary" : "default"} className="gap-2">
-            <Send className="h-4 w-4" /> {showPassagemForm ? "Fechar Formulário" : "Nova Passagem"}
+          <Button onClick={() => setShowPassagemForm(!showPassagemForm)} variant={showPassagemForm ? "secondary" : "default"} size="sm">
+            {showPassagemForm ? "Fechar Formulário" : "Nova Passagem"}
           </Button>
-          <Button onClick={() => setSuporteDialog(true)} variant="outline" className="gap-2">
-            <HandHeart className="h-4 w-4" /> Solicitar Suporte
+          <Button onClick={() => setSuporteDialog(true)} variant="outline" size="sm">
+            Solicitar Suporte
           </Button>
         </div>
 
