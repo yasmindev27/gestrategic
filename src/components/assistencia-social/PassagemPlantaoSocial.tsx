@@ -555,8 +555,8 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
             {respostaDialog?.status === "pendente" && (
               <>
                 <Button variant="outline" onClick={() => handleResponder("recusado")} disabled={isSubmitting}>Recusar</Button>
-                <Button onClick={() => handleResponder("aceito")} disabled={isSubmitting} className="gap-1.5">
-                  <CheckCircle2 className="h-4 w-4" /> Aceitar
+                <Button onClick={() => handleResponder("aceito")} disabled={isSubmitting}>
+                  Aceitar
                 </Button>
               </>
             )}
