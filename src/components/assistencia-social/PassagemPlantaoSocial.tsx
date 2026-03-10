@@ -123,8 +123,6 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
 
   // Computed
   const pendentes = atendimentos.filter(a => a.status !== "finalizado");
-  const currentHour = new Date().getHours();
-  const currentTurno = currentHour >= 7 && currentHour < 19 ? "diurno" : "noturno";
 
   const recebidas = useMemo(() => solicitacoes.filter(s =>
     s.destinatario_id === currentUser.id || (!s.destinatario_id && s.solicitante_id !== currentUser.id)
