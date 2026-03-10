@@ -38,13 +38,7 @@ interface Paciente {
   id: string;
   nome_completo: string;
   numero_prontuario: string | null;
-  cpf: string | null;
-  cns: string | null;
-  data_nascimento: string | null;
-  telefone: string | null;
-  endereco: string | null;
   setor_atendimento: string;
-  observacoes: string | null;
   created_at: string;
 }
 
@@ -60,6 +54,7 @@ interface Atendimento {
   status: string;
   observacoes: string | null;
   created_at: string;
+  updated_at: string;
   paciente?: Paciente;
 }
 
