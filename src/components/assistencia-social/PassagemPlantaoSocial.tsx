@@ -357,7 +357,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
 
         {/* ===== SOLICITAÇÕES ACEITAS (em andamento) ===== */}
         {recebidas.filter(s => s.status === "aceito").length > 0 && (
-          <Card className="border-blue-500/30">
+          <Card className="border-primary/30">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-muted-foreground">
                 Acompanhamentos em andamento
