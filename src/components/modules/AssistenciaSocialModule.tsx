@@ -112,8 +112,10 @@ export const AssistenciaSocialModule = () => {
   const [pacientes, setPacientes] = useState<Paciente[]>([]);
   const [atendimentos, setAtendimentos] = useState<Atendimento[]>([]);
   const [encaminhamentos, setEncaminhamentos] = useState<Encaminhamento[]>([]);
+  const [bedPatients, setBedPatients] = useState<{ sector: string; bed_number: string; patient_name: string; hipotese_diagnostica: string | null; data_internacao: string | null }[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasPermission, setHasPermission] = useState(false);
+  const [bedSearchTerm, setBedSearchTerm] = useState("");
   
   // Form states
   const [searchTerm, setSearchTerm] = useState("");
