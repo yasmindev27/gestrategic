@@ -593,38 +593,80 @@ export const AssistenciaSocialModule = () => {
           </Card>
         </TabsContent>
 
-        {/* Pacientes Tab */}
-        <TabsContent value="pacientes" className="space-y-4">
+        {/* Corrida de Leito Tab */}
+        <TabsContent value="corrida-leito" className="space-y-4">
           <Card>
-            <CardContent className="pt-4">
-              {pacientes.length === 0 ? (
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BedDouble className="h-5 w-5" />
+                Pacientes Internados — Mapa de Leitos
+              </CardTitle>
+              <CardDescription>Pacientes ativos com base no mapa de leitos do NIR</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SearchInput
+                value={bedSearchTerm}
+                onChange={setBedSearchTerm}
+                placeholder="Buscar paciente ou setor..."
+                className="w-[300px] mb-4"
+              />
+              {bedPatients.length === 0 ? (
                 <EmptyState
-                  icon={Users}
-                  title="Nenhum paciente cadastrado"
-                  description="Cadastre pacientes para registrar atendimentos"
-                  action={{ label: "Novo Paciente", onClick: () => setPacienteDialog(true) }}
+                  icon={BedDouble}
+                  title="Nenhum paciente internado"
+                  description="Não há pacientes ativos no mapa de leitos"
                 />
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Nome</TableHead>
-                      <TableHead>Prontuário</TableHead>
-                      <TableHead>CPF</TableHead>
                       <TableHead>Setor</TableHead>
-                      <TableHead>Cadastrado em</TableHead>
+                      <TableHead>Leito</TableHead>
+                      <TableHead>Paciente</TableHead>
+                      <TableHead>Hipótese Diagnóstica</TableHead>
+                      <TableHead>Data Internação</TableHead>
+                      <TableHead className="text-right">Ação</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {pacientes.map(p => (
-                      <TableRow key={p.id}>
-                        <TableCell className="font-medium">{p.nome_completo}</TableCell>
-                        <TableCell>{p.numero_prontuario || "-"}</TableCell>
-                        <TableCell>{p.cpf || "-"}</TableCell>
-                        <TableCell>{p.setor_atendimento}</TableCell>
-                        <TableCell>{format(new Date(p.created_at), "dd/MM/yyyy")}</TableCell>
-                      </TableRow>
-                    ))}
+                    {bedPatients
+                      .filter(b => {
+                        if (!bedSearchTerm) return true;
+                        const term = bedSearchTerm.toLowerCase();
+                        return b.patient_name.toLowerCase().includes(term) || 
+                               b.sector.toLowerCase().includes(term) ||
+                               b.bed_number.toLowerCase().includes(term);
+                      })
+                      .map((b, idx) => {
+                        const sectorLabel = b.sector.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                        return (
+                          <TableRow key={`${b.sector}-${b.bed_number}-${idx}`}>
+                            <TableCell>
+                              <Badge variant="outline">{sectorLabel}</Badge>
+                            </TableCell>
+                            <TableCell className="font-medium">{b.bed_number}</TableCell>
+                            <TableCell className="font-medium uppercase">{b.patient_name}</TableCell>
+                            <TableCell>{b.hipotese_diagnostica || "-"}</TableCell>
+                            <TableCell>
+                              {b.data_internacao ? format(new Date(b.data_internacao), "dd/MM/yyyy") : "-"}
+                            </TableCell>
+                            <TableCell className="text-right">
+                              <Button size="sm" variant="outline" onClick={() => {
+                                setAtendimentoForm(prev => ({
+                                  ...prev,
+                                  paciente_nome: b.patient_name,
+                                  setor_atendimento: sectorLabel,
+                                  local_atendimento: `Leito ${b.bed_number} - ${sectorLabel}`,
+                                }));
+                                setAtendimentoDialog(true);
+                              }}>
+                                <Plus className="h-3 w-3 mr-1" />
+                                Atender
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                   </TableBody>
                 </Table>
               )}
