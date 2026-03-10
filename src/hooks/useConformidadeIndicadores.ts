@@ -167,7 +167,7 @@ export const useConformidadeIndicadores = () => {
         ? (vacinasEmDia / vacinas.length) * 100 
         : 100;
 
-      const escalasPreenchidas = escalas.filter(e => e.status === "confirmada").length;
+      const escalasPreenchidas = escalas.filter(e => e.status === "confirmado").length;
       const taxaEscalas = escalas.length > 0 
         ? (escalasPreenchidas / escalas.length) * 100 
         : 100;
