@@ -261,7 +261,7 @@ export const SolicitacoesSuporte = ({ currentUser }: Props) => {
                       <TableCell className="text-sm">{s.paciente_nome}</TableCell>
                       <TableCell className="text-sm">{tiposSuporte.find(t => t.value === s.tipo_suporte)?.label || s.tipo_suporte}</TableCell>
                       <TableCell>
-                        <StatusBadge status={statusMap[s.status]?.label || s.status} type={statusMap[s.status]?.type || "info"} />
+                        <StatusBadge status={(statusMap[s.status]?.type || "info") as "info" | "warning" | "success" | "error"} label={statusMap[s.status]?.label || s.status} />
                       </TableCell>
                       <TableCell className="text-sm max-w-[200px] truncate">{s.resposta || "—"}</TableCell>
                     </TableRow>
