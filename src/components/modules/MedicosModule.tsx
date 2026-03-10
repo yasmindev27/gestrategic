@@ -5,7 +5,7 @@ import {
   Stethoscope, Plus, Upload, Calendar, Clock, MapPin, 
   ChevronLeft, ChevronRight, Users, Download, FileSpreadsheet,
   MoreHorizontal, Pencil, Trash2, CheckCircle, AlertCircle, ExternalLink,
-  BarChart3, ClipboardCheck
+  BarChart3, ClipboardCheck, Activity
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
