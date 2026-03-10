@@ -320,10 +320,9 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
 
         {/* ===== SOLICITAÇÕES DE SUPORTE RECEBIDAS (inline alert) ===== */}
         {pendentesSuporteCount > 0 && (
-          <Card className="border-amber-500/40 bg-amber-50/50 dark:bg-amber-950/20 shadow-sm">
+          <Card className="border-destructive/30">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                <AlertCircle className="h-4 w-4" />
+              <CardTitle className="text-base text-destructive">
                 {pendentesSuporteCount} solicitação(ões) de suporte aguardando resposta
               </CardTitle>
             </CardHeader>
