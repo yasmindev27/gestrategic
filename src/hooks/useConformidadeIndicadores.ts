@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { differenceInHours, parseISO, startOfMonth, endOfMonth } from "date-fns";
+import { differenceInHours, differenceInMinutes, parseISO, startOfMonth, endOfMonth } from "date-fns";
 
 // SLA em horas por prioridade (conforme ONA/ISO 9001)
 const SLA_HORAS = {

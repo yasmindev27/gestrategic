@@ -176,8 +176,10 @@ export const ChamadosDashboard = () => {
     }>();
 
     filteredChamados.forEach((c) => {
-      const id = c.atribuido_para || c.solicitante_id;
-      const nome = c.atribuido_para ? "Atendente" : c.solicitante_nome;
+      // Only count chamados that have an assigned attendant for productivity metrics
+      if (!c.atribuido_para) return;
+      const id = c.atribuido_para;
+      const nome = "Atendente";
       
       if (!atendenteMap.has(id)) {
         atendenteMap.set(id, { id, nome, chamados: [] });

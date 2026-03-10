@@ -45,7 +45,10 @@ export function IndicadoresUPA() {
 
   // Risk classification data for chart
   const riskData = ['Azul', 'Verde', 'Amarelo', 'Laranja', 'Vermelho', 'Branco'].map(color => {
-    const ind = filteredIndicators.find(i => i.indicador.includes(color));
+    // Match only risk classification indicators, not arbitrary color mentions
+    const ind = filteredIndicators.find(i => 
+      i.indicador.startsWith('Classificação') && i.indicador.includes(color)
+    );
     return { name: color, value: Number(ind?.valor_numero || 0), fill: RISK_COLORS[color] };
   }).filter(d => d.value > 0);
 
