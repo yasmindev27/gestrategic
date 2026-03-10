@@ -105,6 +105,10 @@ const setoresAtendimento = [
   "Sala Vermelha", "Sala Verde", "Ambulatório", "Recepção", "Outro"
 ];
 
+const locaisAtendimento = [
+  "Medicação", "Recepção Externa", "Recepção Interna", "Sala de Espera", "Radiologia", "Corredor"
+];
+
 export const AssistenciaSocialModule = () => {
   const { isAdmin, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
