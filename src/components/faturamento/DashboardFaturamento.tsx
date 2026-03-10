@@ -199,6 +199,8 @@ export function DashboardFaturamento() {
 
   const kpis = useMemo(() => {
     const total = saidas.length;
+    // Total global de saídas para cálculo preciso da taxa de pendência
+    const totalSaidasGeral = Math.max(total, totalPendentesGeral);
     const avaliados = avaliacoes.filter((a) => a.is_finalizada).length;
     const avaliadoIds = new Set(
       avaliacoes.filter((a) => a.is_finalizada && a.saida_prontuario_id).map((a) => a.saida_prontuario_id!)
