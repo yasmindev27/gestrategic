@@ -202,15 +202,20 @@ export const AssistenciaSocialModule = () => {
   };
 
   const loadData = async () => {
-    const [pacientesRes, atendimentosRes, encaminhamentosRes] = await Promise.all([
+    const today = new Date().toISOString().split('T')[0];
+    const [pacientesRes, atendimentosRes, encaminhamentosRes, bedRes] = await Promise.all([
       supabase.from("assistencia_social_pacientes").select("*").order("created_at", { ascending: false }),
       supabase.from("assistencia_social_atendimentos").select("*").order("data_atendimento", { ascending: false }),
       supabase.from("assistencia_social_encaminhamentos").select("*").order("data_encaminhamento", { ascending: false }),
+      supabase.from("bed_records").select("sector, bed_number, patient_name, hipotese_diagnostica, data_internacao, motivo_alta, shift_date")
+        .not("patient_name", "is", null)
+        .neq("patient_name", "")
+        .order("shift_date", { ascending: false })
+        .limit(500),
     ]);
 
     if (pacientesRes.data) setPacientes(pacientesRes.data);
     if (atendimentosRes.data) {
-      // Join with pacientes
       const atendimentosWithPaciente = atendimentosRes.data.map(a => ({
         ...a,
         paciente: pacientesRes.data?.find(p => p.id === a.paciente_id)
@@ -218,6 +223,23 @@ export const AssistenciaSocialModule = () => {
       setAtendimentos(atendimentosWithPaciente);
     }
     if (encaminhamentosRes.data) setEncaminhamentos(encaminhamentosRes.data);
+
+    // Deduplicate bed records: keep most recent per sector+bed, only active (no motivo_alta)
+    if (bedRes.data) {
+      const seen = new Map<string, typeof bedRes.data[0]>();
+      for (const r of bedRes.data) {
+        const key = `${r.sector}|${r.bed_number}`;
+        if (!seen.has(key)) seen.set(key, r);
+      }
+      const active = Array.from(seen.values()).filter(r => !r.motivo_alta);
+      setBedPatients(active.map(r => ({
+        sector: r.sector,
+        bed_number: r.bed_number,
+        patient_name: r.patient_name?.trim() || '',
+        hipotese_diagnostica: r.hipotese_diagnostica,
+        data_internacao: r.data_internacao,
+      })).sort((a, b) => a.sector.localeCompare(b.sector) || a.bed_number.localeCompare(b.bed_number, undefined, { numeric: true })));
+    }
   };
 
   const handleCreatePaciente = async () => {
