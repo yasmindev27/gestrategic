@@ -878,7 +878,7 @@ export const AssistenciaSocialModule = () => {
                       <div key={e.id} className="border rounded p-3 text-sm">
                         <div className="flex justify-between items-center">
                           <Badge variant="outline">{tiposEncaminhamento.find(t => t.value === e.tipo_encaminhamento)?.label || e.tipo_encaminhamento}</Badge>
-                          <StatusBadge status={mapStatusToType(e.status)} label={e.status} showIcon={false} />
+                          <StatusBadge status={mapStatusToType(e.status)} label={statusEncaminhamento.find(s => s.value === e.status)?.label || e.status} showIcon={false} />
                         </div>
                         {e.destino && <p className="text-muted-foreground mt-1">{e.destino}</p>}
                       </div>
