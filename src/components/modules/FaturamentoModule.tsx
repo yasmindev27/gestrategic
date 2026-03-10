@@ -382,43 +382,8 @@ export const FaturamentoModule = () => {
           setProntuariosFaltantes([]);
         }
         setSaidas([]);
-        setAvaliacoes([]);
-      } else {
-        // Lista Geral - server-side paginated
-        let query = supabase
-          .from("saida_prontuarios")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .range(from, from + PAGE_SIZE - 1);
-
-        query = applyFiltersToQuery(query);
-
-        const { data, error } = await query;
-        if (error) throw error;
-
-        const rows = (data || []) as SaidaProntuario[];
-        setSaidas(rows);
-
-        // Fetch avaliacoes only for visible saidas (batch lookup)
-        if (rows.length > 0) {
-          const ids = rows.map(r => r.id);
-          const { data: avData } = await supabase
-            .from("avaliacoes_prontuarios")
-            .select("*")
-            .eq("is_finalizada", true)
-            .in("saida_prontuario_id", ids);
-
-          const map = new Map<string, Avaliacao>();
-          (avData || []).forEach((a: any) => {
-            if (a.saida_prontuario_id) map.set(a.saida_prontuario_id, a as Avaliacao);
-          });
-          setAvaliacoesMap(map);
-        } else {
-          setAvaliacoesMap(new Map());
-        }
-        setProntuariosFaltantes([]);
-        setAvaliacoes([]);
-      }
+         setAvaliacoes([]);
+       }
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
