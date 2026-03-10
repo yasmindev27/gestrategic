@@ -436,8 +436,7 @@ export const AssistenciaSocialModule = () => {
         title="Assistência Social" 
         description="Gestão de atendimentos e acompanhamentos sociais"
       >
-        <ActionButton type="add" label="Novo Paciente" onClick={() => setPacienteDialog(true)} />
-        <ActionButton type="add" label="Novo Atendimento" onClick={() => setAtendimentoDialog(true)} variant="outline" />
+        <ActionButton type="add" label="Novo Atendimento" onClick={() => setAtendimentoDialog(true)} />
       </SectionHeader>
 
       {/* Stats Cards */}
