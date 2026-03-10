@@ -42,7 +42,7 @@ const Sidebar = ({
     role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
     isLaboratorio, isTecnico, isRecepcao, isClassificacao, isNir,
     isFaturamento, isRHDP, isQualidade, isNSP, isMedicos, isEnfermagem,
-    isSeguranca
+    isSeguranca, isAssistenciaSocial
   } = useUserRole();
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
@@ -202,6 +202,17 @@ const Sidebar = ({
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: AlertTriangle, label: "Qualidade/NSP", id: "qualidade" },
         { icon: Calendar, label: "Agenda", id: "agenda" }
+      );
+      return items;
+    }
+    if (isAssistenciaSocial) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: Heart, label: "Assist. Social/Psicologia", id: "assistencia-social" },
+        { icon: Calendar, label: "Agenda", id: "agenda" },
+        { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
+        { icon: GraduationCap, label: "Treinamentos", id: "lms" },
+        { icon: MessageSquare, label: "Chat", id: "chat" }
       );
       return items;
     }
