@@ -226,7 +226,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
     <TooltipProvider>
       <div className="space-y-5">
         {/* ===== KPI SUMMARY ===== */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Card className="border-l-4 border-l-primary/60 hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
