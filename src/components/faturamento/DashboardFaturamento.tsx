@@ -238,7 +238,8 @@ export function DashboardFaturamento() {
       total,
       avaliados,
       pendentes: totalPendentesGeral,
-      taxaPendencia: total > 0 ? ((totalPendentesGeral / total) * 100).toFixed(1) : "0.0",
+      // Use totalPendentesGeral consistently with global total for accurate percentage
+      taxaPendencia: (totalSaidasGeral > 0) ? ((totalPendentesGeral / totalSaidasGeral) * 100).toFixed(1) : "0.0",
       tempoMedio,
       mediaLancamentosDia: mediaLancamentosDia.toFixed(0),
       mediaAvaliacoesDia: mediaAvaliacoesDia.toFixed(0),
@@ -246,6 +247,7 @@ export function DashboardFaturamento() {
       metaDiariaAtingida,
       metaDiariaTotal: META_DIARIA_TOTAL,
       numProfissionais,
+      totalSaidasGeral,
     };
   }, [saidas, avaliacoes, dateRange, totalPendentesGeral]);
 
