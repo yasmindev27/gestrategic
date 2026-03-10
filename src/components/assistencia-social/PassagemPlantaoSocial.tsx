@@ -488,7 +488,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
       <Dialog open={suporteDialog} onOpenChange={setSuporteDialog}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><HandHeart className="h-5 w-5 text-primary" /> Solicitar Suporte</DialogTitle>
+            <DialogTitle>Solicitar Suporte</DialogTitle>
             <DialogDescription>Solicite acompanhamento ou suporte de outra profissional</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
