@@ -243,7 +243,7 @@ export const AssistenciaSocialModule = () => {
       }
       setBedPatients(
         Array.from(seen.values())
-          .filter(r => !r.motivo_alta)
+          .filter(r => !r.motivo_alta && !r.data_alta)
           .map(r => ({
             sector: r.sector,
             bed_number: r.bed_number,
