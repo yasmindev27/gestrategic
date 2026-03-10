@@ -677,6 +677,16 @@ export const AssistenciaSocialModule = () => {
           </Card>
         </TabsContent>
 
+        {/* ======= PASSAGEM DE PLANTÃO TAB ======= */}
+        <TabsContent value="passagem" className="space-y-4">
+          <PassagemPlantaoSocial currentUser={currentUser} atendimentos={atendimentos} onRefresh={loadData} />
+        </TabsContent>
+
+        {/* ======= SOLICITAÇÕES DE SUPORTE TAB ======= */}
+        <TabsContent value="suporte" className="space-y-4">
+          <SolicitacoesSuporte currentUser={currentUser} />
+        </TabsContent>
+
         {/* ======= RELATÓRIOS ONA TAB ======= */}
         <TabsContent value="relatorios" className="space-y-4">
           <ReportSection atendimentos={atendimentos} encaminhamentos={encaminhamentos} bedPatients={bedPatients} />
