@@ -902,14 +902,53 @@ export const AssistenciaSocialModule = () => {
 };
 
 // ======= REPORT SECTION (extracted for readability) =======
-const ReportSection = ({ atendimentos, encaminhamentos, bedPatients }: {
+const ReportSection = ({ atendimentos: allAtendimentos, encaminhamentos: allEncaminhamentos, bedPatients }: {
   atendimentos: Atendimento[];
   encaminhamentos: Encaminhamento[];
   bedPatients: BedPatient[];
 }) => {
   const COLORS = ['hsl(var(--primary))', '#16a34a', '#eab308', '#ea580c', '#dc2626', '#8b5cf6', '#06b6d4', '#f97316'];
   const now = new Date();
-  const months = eachMonthOfInterval({ start: subMonths(startOfMonth(now), 5), end: startOfMonth(now) });
+
+  // --- Filters ---
+  const [rptDataInicio, setRptDataInicio] = useState("");
+  const [rptDataFim, setRptDataFim] = useState("");
+  const [rptStatus, setRptStatus] = useState("todos");
+  const [rptProfissional, setRptProfissional] = useState("todos");
+  const [rptArea, setRptArea] = useState("todos");
+
+  const profissionaisUnicos = useMemo(() => {
+    const s = new Set(allAtendimentos.map(a => a.profissional_nome));
+    return Array.from(s).sort();
+  }, [allAtendimentos]);
+
+  // Filtered data
+  const atendimentos = useMemo(() => allAtendimentos.filter(a => {
+    if (rptDataInicio && new Date(a.data_atendimento) < new Date(rptDataInicio)) return false;
+    if (rptDataFim && new Date(a.data_atendimento) > new Date(rptDataFim + "T23:59:59")) return false;
+    if (rptStatus !== "todos" && a.status !== rptStatus) return false;
+    if (rptProfissional !== "todos" && a.profissional_nome !== rptProfissional) return false;
+    if (rptArea !== "todos") {
+      const tipoInfo = tiposAtendimento.find(t => t.value === a.tipo_atendimento);
+      if (tipoInfo && tipoInfo.area !== rptArea && tipoInfo.area !== "ambos") return false;
+    }
+    return true;
+  }), [allAtendimentos, rptDataInicio, rptDataFim, rptStatus, rptProfissional, rptArea]);
+
+  const atendimentoIds = useMemo(() => new Set(atendimentos.map(a => a.id)), [atendimentos]);
+
+  const encaminhamentos = useMemo(() => allEncaminhamentos.filter(e => {
+    if (!atendimentoIds.has(e.atendimento_id)) return false;
+    if (rptDataInicio && new Date(e.data_encaminhamento) < new Date(rptDataInicio)) return false;
+    if (rptDataFim && new Date(e.data_encaminhamento) > new Date(rptDataFim + "T23:59:59")) return false;
+    return true;
+  }), [allEncaminhamentos, atendimentoIds, rptDataInicio, rptDataFim]);
+
+  const months = useMemo(() => {
+    const start = rptDataInicio ? startOfMonth(new Date(rptDataInicio)) : subMonths(startOfMonth(now), 5);
+    const end = rptDataFim ? startOfMonth(new Date(rptDataFim)) : startOfMonth(now);
+    return eachMonthOfInterval({ start, end });
+  }, [rptDataInicio, rptDataFim]);
 
   const totalAtend = atendimentos.length;
   const totalEnc = encaminhamentos.length;
@@ -923,7 +962,7 @@ const ReportSection = ({ atendimentos, encaminhamentos, bedPatients }: {
   const taxaEfetividade = totalEnc > 0 ? (encRealizados / totalEnc) * 100 : 0;
   const taxaRetorno = totalEnc > 0 ? (comRetorno / totalEnc) * 100 : 0;
 
-  // Tempo médio de resolução: diferença entre updated_at (finalização) e data_atendimento (início)
+  // Tempo médio de resolução
   const atendFin = atendimentos.filter(a => a.status === 'finalizado' && a.updated_at);
   let tempoMedio = 0;
   if (atendFin.length > 0) {
@@ -962,6 +1001,9 @@ const ReportSection = ({ atendimentos, encaminhamentos, bedPatients }: {
   const setorCount: Record<string, number> = {};
   atendimentos.forEach(a => { const s = a.paciente?.setor_atendimento || 'N/I'; setorCount[s] = (setorCount[s] || 0) + 1; });
   const setorData = Object.entries(setorCount).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+
+  const hasFilters = rptDataInicio || rptDataFim || rptStatus !== "todos" || rptProfissional !== "todos" || rptArea !== "todos";
+  const clearFilters = () => { setRptDataInicio(""); setRptDataFim(""); setRptStatus("todos"); setRptProfissional("todos"); setRptArea("todos"); };
 
   const OnaIndicator = ({ label, value, meta, metaLabel }: { label: string; value: number; meta: number; metaLabel: string }) => (
     <div className="p-4 rounded-lg border bg-card">
