@@ -657,7 +657,7 @@ export const AssistenciaSocialModule = () => {
                         <TableCell>{e.destino || "-"}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{e.motivo}</TableCell>
                         <TableCell>
-                          <StatusBadge status={mapStatusToType(e.status)} label={e.status} />
+                          <StatusBadge status={mapStatusToType(e.status)} label={statusEncaminhamento.find(s => s.value === e.status)?.label || e.status} />
                         </TableCell>
                         <TableCell>{e.registrado_por_nome}</TableCell>
                       </TableRow>
