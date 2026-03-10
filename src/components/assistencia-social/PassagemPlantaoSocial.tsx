@@ -367,7 +367,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
             </CardHeader>
             <CardContent className="space-y-2">
               {recebidas.filter(s => s.status === "aceito").map(s => (
-                <div key={s.id} className="flex items-center justify-between p-3 rounded-lg bg-blue-50/50 dark:bg-blue-950/20 border border-blue-200/50 dark:border-blue-800/30">
+                <div key={s.id} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
                   <div>
                     <span className="text-sm font-medium">{s.paciente_nome}</span>
                     <p className="text-xs text-muted-foreground">De: {s.solicitante_nome}</p>
