@@ -613,7 +613,7 @@ export function DashboardFaturamento() {
               {selectedPeriod && (
                 <div className="flex items-center gap-2 mb-3">
                   <Badge variant="secondary" className="text-xs">
-                    Filtrando: {selectedPeriod}
+                    Filtrando: {chartData.find(d => d.periodo === selectedPeriod)?.label || selectedPeriod}
                   </Badge>
                   <Button
                     variant="ghost"
