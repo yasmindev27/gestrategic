@@ -863,14 +863,10 @@ export const FaturamentoModule = () => {
       <Card>
         <CardHeader>
           <CardTitle>
-            {activeTab === "lista" && "Lista de Prontuários"}
-            {activeTab === "faltantes" && "Prontuários Faltantes"}
-            {activeTab === "avaliados" && "Prontuários Avaliados"}
+            {activeTab === "faltantes" ? "Prontuários Faltantes" : "Prontuários Avaliados"}
           </CardTitle>
           <CardDescription>
-            {activeTab === "lista" && "Todos os prontuários registrados no sistema"}
-            {activeTab === "faltantes" && "Prontuários que ainda não foram avaliados"}
-            {activeTab === "avaliados" && "Prontuários com avaliação finalizada"}
+            {activeTab === "faltantes" ? "Prontuários que ainda não foram avaliados" : "Prontuários com avaliação finalizada"}
           </CardDescription>
         </CardHeader>
         <CardContent>
