@@ -677,10 +677,8 @@ export const AssistenciaSocialModule = () => {
         </TabsContent>
 
         {/* ======= PASSAGEM DE PLANTÃO + SUPORTE TAB ======= */}
-        <TabsContent value="passagem" className="space-y-8">
+        <TabsContent value="passagem" className="space-y-4">
           <PassagemPlantaoSocial currentUser={currentUser} atendimentos={atendimentos} onRefresh={loadData} />
-          <Separator />
-          <SolicitacoesSuporte currentUser={currentUser} />
         </TabsContent>
 
         {/* ======= RELATÓRIOS ONA TAB ======= */}
