@@ -361,8 +361,8 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
         {recebidas.filter(s => s.status === "aceito").length > 0 && (
           <Card className="border-blue-500/30">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm flex items-center gap-2 text-blue-600 dark:text-blue-400">
-                <ArrowRightLeft className="h-4 w-4" /> Acompanhamentos em andamento
+              <CardTitle className="text-sm text-muted-foreground">
+                Acompanhamentos em andamento
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
