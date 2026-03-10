@@ -242,26 +242,58 @@ export const AssistenciaSocialModule = () => {
   };
 
   const handleCreateAtendimento = async () => {
-    if (!atendimentoForm.paciente_id || !atendimentoForm.tipo_atendimento || !atendimentoForm.motivo || !atendimentoForm.descricao) {
+    if (!atendimentoForm.paciente_nome || !atendimentoForm.setor_atendimento || !atendimentoForm.tipo_atendimento || !atendimentoForm.motivo || !atendimentoForm.descricao) {
       toast({ title: "Erro", description: "Preencha todos os campos obrigatórios", variant: "destructive" });
       return;
     }
     
     setIsSubmitting(true);
-    const { error } = await supabase.from("assistencia_social_atendimentos").insert({
-      ...atendimentoForm,
-      profissional_id: currentUser.id,
-      profissional_nome: currentUser.nome,
-    });
-    
-    if (error) {
-      toast({ title: "Erro", description: "Falha ao registrar atendimento", variant: "destructive" });
-    } else {
+    try {
+      // Create or find patient by name + setor
+      let pacienteId: string;
+      const { data: existingPaciente } = await supabase
+        .from("assistencia_social_pacientes")
+        .select("id")
+        .ilike("nome_completo", atendimentoForm.paciente_nome.trim())
+        .eq("setor_atendimento", atendimentoForm.setor_atendimento)
+        .maybeSingle();
+
+      if (existingPaciente) {
+        pacienteId = existingPaciente.id;
+      } else {
+        const { data: newPaciente, error: pacienteError } = await supabase
+          .from("assistencia_social_pacientes")
+          .insert({
+            nome_completo: atendimentoForm.paciente_nome.trim(),
+            setor_atendimento: atendimentoForm.setor_atendimento,
+            numero_prontuario: atendimentoForm.numero_prontuario || null,
+            created_by: currentUser.id,
+          })
+          .select("id")
+          .single();
+        if (pacienteError || !newPaciente) throw pacienteError;
+        pacienteId = newPaciente.id;
+      }
+
+      const { error } = await supabase.from("assistencia_social_atendimentos").insert({
+        paciente_id: pacienteId,
+        tipo_atendimento: atendimentoForm.tipo_atendimento,
+        motivo: atendimentoForm.motivo,
+        descricao: atendimentoForm.descricao,
+        status: atendimentoForm.status,
+        observacoes: atendimentoForm.observacoes || null,
+        profissional_id: currentUser.id,
+        profissional_nome: currentUser.nome,
+      });
+      
+      if (error) throw error;
       toast({ title: "Sucesso", description: "Atendimento registrado" });
       setAtendimentoDialog(false);
       resetAtendimentoForm();
       loadData();
       logAction("Assistência Social", "registro_atendimento", { tipo: atendimentoForm.tipo_atendimento });
+    } catch (error) {
+      toast({ title: "Erro", description: "Falha ao registrar atendimento", variant: "destructive" });
     }
     setIsSubmitting(false);
   };
