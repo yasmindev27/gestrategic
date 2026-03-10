@@ -129,9 +129,13 @@ export const ChamadosDashboard = () => {
       ? (dentroDeSLA / resolvidos.length) * 100 
       : 0;
 
-    // Taxa de reabertura (simplificado - considerando chamados com status aberto que já foram resolvidos)
-    // Em um cenário real, precisaríamos de um histórico de status
-    const taxaReabertura = 0; // Placeholder
+    // Taxa de reabertura: chamados abertos que já tiveram uma resolução anterior
+    const reabertos = filteredChamados.filter(
+      (c) => c.status === "aberto" && c.data_resolucao !== null
+    ).length;
+    const taxaReabertura = filteredChamados.length > 0
+      ? (reabertos / filteredChamados.length) * 100
+      : 0;
 
     // Média por atendente
     const atendentes = new Set(filteredChamados.map((c) => c.atribuido_para).filter(Boolean));
