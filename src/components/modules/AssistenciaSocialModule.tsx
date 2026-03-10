@@ -458,8 +458,8 @@ export const AssistenciaSocialModule = () => {
   return (
     <div className="space-y-6">
       <SectionHeader 
-        title="Assistência Social" 
-        description="Gestão de atendimentos e acompanhamentos sociais"
+        title="Assistente Social / Psicologia" 
+        description="Gestão de atendimentos sociais e acompanhamentos psicológicos"
       >
         <ActionButton type="add" label="Novo Atendimento" onClick={() => setAtendimentoDialog(true)} />
       </SectionHeader>
