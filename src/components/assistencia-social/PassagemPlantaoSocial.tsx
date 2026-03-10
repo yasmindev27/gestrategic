@@ -16,9 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  ClipboardList, Send, Clock, User, ChevronDown, ChevronUp, HandHeart,
-  MessageSquare, CheckCircle2, Plus, AlertCircle, ArrowRightLeft, FileText,
-  Sun, Moon, Inbox, ArrowUpRight,
+  ChevronDown, ChevronUp, ArrowUpRight, MessageSquare,
 } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
