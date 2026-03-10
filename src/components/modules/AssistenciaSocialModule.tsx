@@ -1034,7 +1034,13 @@ const ReportSection = ({ atendimentos: allAtendimentos, encaminhamentos: allEnca
   const checklistItems = [
     { req: "Registro sistemático dos atendimentos realizados", met: totalAtend > 0 },
     { req: "Identificação e classificação das demandas sociais e psicológicas", met: tipoData.length > 0 },
-    { req: "Separação por área de atuação (Serviço Social / Psicologia)", met: true },
+    { req: "Separação por área de atuação (Serviço Social / Psicologia)", met: (() => {
+      const tiposSocial = tiposAtendimento.filter(t => t.area === 'social' || t.area === 'ambos').map(t => t.value);
+      const tiposPsico = tiposAtendimento.filter(t => t.area === 'psicologia' || t.area === 'ambos').map(t => t.value);
+      const temSocial = atendimentos.some(a => a.observacoes?.includes('Área: Serviço Social') || tiposSocial.includes(a.tipo_atendimento));
+      const temPsico = atendimentos.some(a => a.observacoes?.includes('Área: Psicologia') || tiposPsico.includes(a.tipo_atendimento));
+      return temSocial && temPsico;
+    })() },
     { req: "Encaminhamentos para rede RAPS/SUAS (CRAS, CREAS, CAPS)", met: totalEnc > 0 },
     { req: "Acompanhamento dos encaminhamentos (contra-referência)", met: taxaRetorno > 0 },
     { req: "Monitoramento de indicadores de produtividade profissional", met: profData.length > 0 },
