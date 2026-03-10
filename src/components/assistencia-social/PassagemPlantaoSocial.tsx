@@ -309,8 +309,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
               )}
 
               <div className="flex gap-3 pt-1">
-                <Button onClick={handleSubmitPassagem} disabled={isSubmitting} className="gap-2">
-                  <Send className="h-4 w-4" />
+                <Button onClick={handleSubmitPassagem} disabled={isSubmitting} size="sm">
                   {isSubmitting ? "Registrando..." : "Registrar Passagem"}
                 </Button>
                 <Button variant="ghost" onClick={() => setShowPassagemForm(false)}>Cancelar</Button>
