@@ -424,7 +424,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
         <Collapsible open={showHistorico} onOpenChange={setShowHistorico}>
           <CollapsibleTrigger asChild>
             <Button variant="ghost" className="w-full justify-between text-sm font-medium">
-              <span className="flex items-center gap-2"><Clock className="h-4 w-4" /> Histórico de Passagens ({passagens.length})</span>
+              <span>Histórico de Passagens ({passagens.length})</span>
               {showHistorico ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
             </Button>
           </CollapsibleTrigger>
