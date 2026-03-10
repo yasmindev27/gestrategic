@@ -1049,19 +1049,15 @@ export const AssistenciaSocialModule = () => {
                 />
               </div>
               <div>
-                <Label>Setor de Internação *</Label>
+                <Label>Local de Atendimento *</Label>
                 <Select value={atendimentoForm.setor_atendimento} onValueChange={v => setAtendimentoForm({...atendimentoForm, setor_atendimento: v})}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o setor..." />
+                    <SelectValue placeholder="Selecione o local..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {(() => {
-                      const setoresMapa = [...new Set(bedPatients.map(b => b.sector.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())))].sort();
-                      const lista = setoresMapa.length > 0 ? setoresMapa : setoresAtendimento;
-                      return lista.map(s => (
-                        <SelectItem key={s} value={s}>{s}</SelectItem>
-                      ));
-                    })()}
+                    {locaisAtendimento.map(s => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
