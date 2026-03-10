@@ -902,14 +902,53 @@ export const AssistenciaSocialModule = () => {
 };
 
 // ======= REPORT SECTION (extracted for readability) =======
-const ReportSection = ({ atendimentos, encaminhamentos, bedPatients }: {
+const ReportSection = ({ atendimentos: allAtendimentos, encaminhamentos: allEncaminhamentos, bedPatients }: {
   atendimentos: Atendimento[];
   encaminhamentos: Encaminhamento[];
   bedPatients: BedPatient[];
 }) => {
   const COLORS = ['hsl(var(--primary))', '#16a34a', '#eab308', '#ea580c', '#dc2626', '#8b5cf6', '#06b6d4', '#f97316'];
   const now = new Date();
-  const months = eachMonthOfInterval({ start: subMonths(startOfMonth(now), 5), end: startOfMonth(now) });
+
+  // --- Filters ---
+  const [rptDataInicio, setRptDataInicio] = useState("");
+  const [rptDataFim, setRptDataFim] = useState("");
+  const [rptStatus, setRptStatus] = useState("todos");
+  const [rptProfissional, setRptProfissional] = useState("todos");
+  const [rptArea, setRptArea] = useState("todos");
+
+  const profissionaisUnicos = useMemo(() => {
+    const s = new Set(allAtendimentos.map(a => a.profissional_nome));
+    return Array.from(s).sort();
+  }, [allAtendimentos]);
+
+  // Filtered data
+  const atendimentos = useMemo(() => allAtendimentos.filter(a => {
+    if (rptDataInicio && new Date(a.data_atendimento) < new Date(rptDataInicio)) return false;
+    if (rptDataFim && new Date(a.data_atendimento) > new Date(rptDataFim + "T23:59:59")) return false;
+    if (rptStatus !== "todos" && a.status !== rptStatus) return false;
+    if (rptProfissional !== "todos" && a.profissional_nome !== rptProfissional) return false;
+    if (rptArea !== "todos") {
+      const tipoInfo = tiposAtendimento.find(t => t.value === a.tipo_atendimento);
+      if (tipoInfo && tipoInfo.area !== rptArea && tipoInfo.area !== "ambos") return false;
+    }
+    return true;
+  }), [allAtendimentos, rptDataInicio, rptDataFim, rptStatus, rptProfissional, rptArea]);
+
+  const atendimentoIds = useMemo(() => new Set(atendimentos.map(a => a.id)), [atendimentos]);
+
+  const encaminhamentos = useMemo(() => allEncaminhamentos.filter(e => {
+    if (!atendimentoIds.has(e.atendimento_id)) return false;
+    if (rptDataInicio && new Date(e.data_encaminhamento) < new Date(rptDataInicio)) return false;
+    if (rptDataFim && new Date(e.data_encaminhamento) > new Date(rptDataFim + "T23:59:59")) return false;
+    return true;
+  }), [allEncaminhamentos, atendimentoIds, rptDataInicio, rptDataFim]);
+
+  const months = useMemo(() => {
+    const start = rptDataInicio ? startOfMonth(new Date(rptDataInicio)) : subMonths(startOfMonth(now), 5);
+    const end = rptDataFim ? startOfMonth(new Date(rptDataFim)) : startOfMonth(now);
+    return eachMonthOfInterval({ start, end });
+  }, [rptDataInicio, rptDataFim]);
 
   const totalAtend = atendimentos.length;
   const totalEnc = encaminhamentos.length;
@@ -923,7 +962,7 @@ const ReportSection = ({ atendimentos, encaminhamentos, bedPatients }: {
   const taxaEfetividade = totalEnc > 0 ? (encRealizados / totalEnc) * 100 : 0;
   const taxaRetorno = totalEnc > 0 ? (comRetorno / totalEnc) * 100 : 0;
 
-  // Tempo médio de resolução: diferença entre updated_at (finalização) e data_atendimento (início)
+  // Tempo médio de resolução
   const atendFin = atendimentos.filter(a => a.status === 'finalizado' && a.updated_at);
   let tempoMedio = 0;
   if (atendFin.length > 0) {
@@ -963,6 +1002,9 @@ const ReportSection = ({ atendimentos, encaminhamentos, bedPatients }: {
   atendimentos.forEach(a => { const s = a.paciente?.setor_atendimento || 'N/I'; setorCount[s] = (setorCount[s] || 0) + 1; });
   const setorData = Object.entries(setorCount).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 
+  const hasFilters = rptDataInicio || rptDataFim || rptStatus !== "todos" || rptProfissional !== "todos" || rptArea !== "todos";
+  const clearFilters = () => { setRptDataInicio(""); setRptDataFim(""); setRptStatus("todos"); setRptProfissional("todos"); setRptArea("todos"); };
+
   const OnaIndicator = ({ label, value, meta, metaLabel }: { label: string; value: number; meta: number; metaLabel: string }) => (
     <div className="p-4 rounded-lg border bg-card">
       <div className="flex items-center justify-between mb-2">
@@ -995,6 +1037,62 @@ const ReportSection = ({ atendimentos, encaminhamentos, bedPatients }: {
 
   return (
     <>
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-4">
+          <div className="flex flex-wrap items-end gap-4">
+            <div>
+              <Label className="text-xs text-muted-foreground">Data Início</Label>
+              <Input type="date" value={rptDataInicio} onChange={e => setRptDataInicio(e.target.value)} className="w-[150px]" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Data Fim</Label>
+              <Input type="date" value={rptDataFim} onChange={e => setRptDataFim(e.target.value)} className="w-[150px]" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Status</Label>
+              <Select value={rptStatus} onValueChange={setRptStatus}>
+                <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {statusAtendimento.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Área</Label>
+              <Select value={rptArea} onValueChange={setRptArea}>
+                <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todas</SelectItem>
+                  {areasAtuacao.map(a => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Profissional</Label>
+              <Select value={rptProfissional} onValueChange={setRptProfissional}>
+                <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {profissionaisUnicos.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            {hasFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-muted-foreground">
+                Limpar filtros
+              </Button>
+            )}
+          </div>
+          {hasFilters && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Exibindo {totalAtend} atendimentos e {totalEnc} encaminhamentos com os filtros aplicados
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="pt-6">
@@ -1006,7 +1104,7 @@ const ReportSection = ({ atendimentos, encaminhamentos, bedPatients }: {
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Período: {format(subMonths(now, 5), "MMM/yyyy", { locale: ptBR })} a {format(now, "MMM/yyyy", { locale: ptBR })} • Gerado em: {format(now, "dd/MM/yyyy HH:mm")}
+            Período: {rptDataInicio ? format(new Date(rptDataInicio), "dd/MM/yyyy") : format(subMonths(now, 5), "MMM/yyyy", { locale: ptBR })} a {rptDataFim ? format(new Date(rptDataFim), "dd/MM/yyyy") : format(now, "MMM/yyyy", { locale: ptBR })} • Gerado em: {format(now, "dd/MM/yyyy HH:mm")}
           </p>
         </CardContent>
       </Card>
