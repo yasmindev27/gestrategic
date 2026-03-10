@@ -469,10 +469,6 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs gap-1">
-                        {p.turno === "diurno" ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
-                        {p.turno === "diurno" ? "Diurno" : "Noturno"}
-                      </Badge>
                       {p.itens && p.itens.length > 0 && (
                         <Badge variant="secondary" className="text-xs">{p.itens.length} caso(s)</Badge>
                       )}
