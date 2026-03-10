@@ -521,8 +521,8 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setSuporteDialog(false)}>Cancelar</Button>
-            <Button onClick={handleCreateSuporte} disabled={isSubmitting} className="gap-2">
-              <Send className="h-4 w-4" /> {isSubmitting ? "Enviando..." : "Enviar Solicitação"}
+            <Button onClick={handleCreateSuporte} disabled={isSubmitting}>
+              {isSubmitting ? "Enviando..." : "Enviar Solicitação"}
             </Button>
           </DialogFooter>
         </DialogContent>
