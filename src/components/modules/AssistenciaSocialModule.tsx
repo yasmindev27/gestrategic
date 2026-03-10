@@ -1037,6 +1037,62 @@ const ReportSection = ({ atendimentos: allAtendimentos, encaminhamentos: allEnca
 
   return (
     <>
+      {/* Filters */}
+      <Card>
+        <CardContent className="pt-4">
+          <div className="flex flex-wrap items-end gap-4">
+            <div>
+              <Label className="text-xs text-muted-foreground">Data Início</Label>
+              <Input type="date" value={rptDataInicio} onChange={e => setRptDataInicio(e.target.value)} className="w-[150px]" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Data Fim</Label>
+              <Input type="date" value={rptDataFim} onChange={e => setRptDataFim(e.target.value)} className="w-[150px]" />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Status</Label>
+              <Select value={rptStatus} onValueChange={setRptStatus}>
+                <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {statusAtendimento.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Área</Label>
+              <Select value={rptArea} onValueChange={setRptArea}>
+                <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todas</SelectItem>
+                  {areasAtuacao.map(a => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Profissional</Label>
+              <Select value={rptProfissional} onValueChange={setRptProfissional}>
+                <SelectTrigger className="w-[200px]"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {profissionaisUnicos.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            {hasFilters && (
+              <Button variant="ghost" size="sm" onClick={clearFilters} className="text-xs text-muted-foreground">
+                Limpar filtros
+              </Button>
+            )}
+          </div>
+          {hasFilters && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Exibindo {totalAtend} atendimentos e {totalEnc} encaminhamentos com os filtros aplicados
+            </p>
+          )}
+        </CardContent>
+      </Card>
+
       {/* Header */}
       <Card className="border-primary/30 bg-primary/5">
         <CardContent className="pt-6">
@@ -1048,7 +1104,7 @@ const ReportSection = ({ atendimentos: allAtendimentos, encaminhamentos: allEnca
             </div>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Período: {format(subMonths(now, 5), "MMM/yyyy", { locale: ptBR })} a {format(now, "MMM/yyyy", { locale: ptBR })} • Gerado em: {format(now, "dd/MM/yyyy HH:mm")}
+            Período: {rptDataInicio ? format(new Date(rptDataInicio), "dd/MM/yyyy") : format(subMonths(now, 5), "MMM/yyyy", { locale: ptBR })} a {rptDataFim ? format(new Date(rptDataFim), "dd/MM/yyyy") : format(now, "MMM/yyyy", { locale: ptBR })} • Gerado em: {format(now, "dd/MM/yyyy HH:mm")}
           </p>
         </CardContent>
       </Card>
