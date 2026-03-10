@@ -762,6 +762,16 @@ export const AssistenciaSocialModule = () => {
                 <Textarea rows={5} value={atendimentoForm.descricao} onChange={e => setAtendimentoForm({...atendimentoForm, descricao: e.target.value})} placeholder="Descreva detalhadamente o atendimento realizado, condutas e orientações..." />
               </div>
               <div>
+                <Label>Evolução de Prontuário realizada no Sistema Salus? *</Label>
+                <Select value={atendimentoForm.evolucao_salus} onValueChange={v => setAtendimentoForm({...atendimentoForm, evolucao_salus: v})}>
+                  <SelectTrigger className={!atendimentoForm.evolucao_salus ? "border-destructive" : ""}><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
                 <Label>Observações Adicionais</Label>
                 <Textarea rows={2} value={atendimentoForm.observacoes} onChange={e => setAtendimentoForm({...atendimentoForm, observacoes: e.target.value})} placeholder="Informações complementares (opcional)" />
               </div>
