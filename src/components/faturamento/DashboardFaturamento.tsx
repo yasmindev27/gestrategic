@@ -653,7 +653,7 @@ export function DashboardFaturamento() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis dataKey="periodo" tick={{ fontSize: 11 }} />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip
                   contentStyle={{
