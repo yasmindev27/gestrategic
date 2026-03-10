@@ -220,9 +220,9 @@ export const AssistenciaSocialModule = () => {
       supabase.from("assistencia_social_pacientes").select("id, nome_completo, numero_prontuario, setor_atendimento, created_at").order("created_at", { ascending: false }),
       supabase.from("assistencia_social_atendimentos").select("*").order("data_atendimento", { ascending: false }),
       supabase.from("assistencia_social_encaminhamentos").select("*").order("data_encaminhamento", { ascending: false }),
-      supabase.from("bed_records").select("sector, bed_number, patient_name, hipotese_diagnostica, data_internacao, motivo_alta, data_alta, shift_date")
+      supabase.from("bed_records").select("sector, bed_number, patient_name, hipotese_diagnostica, data_internacao, motivo_alta, data_alta, shift_date, shift_type")
         .not("patient_name", "is", null).neq("patient_name", "")
-        .order("shift_date", { ascending: false }).limit(500),
+        .order("shift_date", { ascending: false }).order("shift_type", { ascending: false }).limit(500),
     ]);
 
     if (pacientesRes.data) setPacientes(pacientesRes.data as Paciente[]);
@@ -236,14 +236,24 @@ export const AssistenciaSocialModule = () => {
     if (encaminhamentosRes.data) setEncaminhamentos(encaminhamentosRes.data);
 
     if (bedRes.data) {
+      // For each bed, keep only the most recent record (by shift_date DESC, shift_type 'noturno' > 'diurno')
       const seen = new Map<string, typeof bedRes.data[0]>();
       for (const r of bedRes.data) {
         const key = `${r.sector}|${r.bed_number}`;
         if (!seen.has(key)) seen.set(key, r);
       }
+      
+      // Also check: if ANY record for a patient has discharge, consider them discharged
+      const dischargedPatients = new Set<string>();
+      for (const r of bedRes.data) {
+        if ((r.motivo_alta || r.data_alta) && r.patient_name) {
+          dischargedPatients.add(r.patient_name.trim().toLowerCase());
+        }
+      }
+      
       setBedPatients(
         Array.from(seen.values())
-          .filter(r => !r.motivo_alta && !r.data_alta)
+          .filter(r => !r.motivo_alta && !r.data_alta && !dischargedPatients.has((r.patient_name || '').trim().toLowerCase()))
           .map(r => ({
             sector: r.sector,
             bed_number: r.bed_number,
