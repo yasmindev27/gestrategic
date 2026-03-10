@@ -123,8 +123,6 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
 
   // Computed
   const pendentes = atendimentos.filter(a => a.status !== "finalizado");
-  const currentHour = new Date().getHours();
-  const currentTurno = currentHour >= 7 && currentHour < 19 ? "diurno" : "noturno";
 
   const recebidas = useMemo(() => solicitacoes.filter(s =>
     s.destinatario_id === currentUser.id || (!s.destinatario_id && s.solicitante_id !== currentUser.id)
@@ -166,7 +164,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
     setIsSubmitting(true);
     try {
       const { data: passagem, error } = await supabase.from("passagem_plantao_social")
-        .insert({ data_plantao: new Date().toISOString().split("T")[0], turno: currentTurno, profissional_id: currentUser.id, profissional_nome: currentUser.nome, texto_pendencias: textoPendencias.trim() || null })
+        .insert({ data_plantao: new Date().toISOString().split("T")[0], profissional_id: currentUser.id, profissional_nome: currentUser.nome, texto_pendencias: textoPendencias.trim() || null })
         .select("id").single();
       if (error) throw error;
       if (selectedAtendimentos.length > 0) {
@@ -228,7 +226,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
     <TooltipProvider>
       <div className="space-y-5">
         {/* ===== KPI SUMMARY ===== */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <Card className="border-l-4 border-l-primary/60 hover:shadow-md transition-shadow">
             <CardContent className="p-4 flex items-center gap-3">
               <div className="p-2 rounded-lg bg-primary/10">
@@ -259,17 +257,6 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
               <div>
                 <p className="text-2xl font-bold text-foreground">{pendentesSuporteCount}</p>
                 <p className="text-xs text-muted-foreground">Suporte pendente</p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="border-l-4 border-l-emerald-500/60 hover:shadow-md transition-shadow">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/10">
-                {currentTurno === "diurno" ? <Sun className="h-5 w-5 text-emerald-600" /> : <Moon className="h-5 w-5 text-emerald-600" />}
-              </div>
-              <div>
-                <p className="text-sm font-bold text-foreground">{currentTurno === "diurno" ? "Diurno" : "Noturno"}</p>
-                <p className="text-xs text-muted-foreground">{currentTurno === "diurno" ? "07h – 19h" : "19h – 07h"}</p>
               </div>
             </CardContent>
           </Card>
@@ -482,10 +469,6 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="text-xs gap-1">
-                        {p.turno === "diurno" ? <Sun className="h-3 w-3" /> : <Moon className="h-3 w-3" />}
-                        {p.turno === "diurno" ? "Diurno" : "Noturno"}
-                      </Badge>
                       {p.itens && p.itens.length > 0 && (
                         <Badge variant="secondary" className="text-xs">{p.itens.length} caso(s)</Badge>
                       )}
