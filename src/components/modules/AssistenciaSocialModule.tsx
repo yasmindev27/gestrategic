@@ -178,6 +178,7 @@ export const AssistenciaSocialModule = () => {
     descricao: "",
     status: "em_atendimento",
     observacoes: "",
+    evolucao_salus: "" as string,
   });
   
   const [encaminhamentoForm, setEncaminhamentoForm] = useState({
