@@ -192,7 +192,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
                       <span className="text-muted-foreground ml-2">
                         {tiposAtendimentoMap[a.tipo_atendimento] || a.tipo_atendimento}
                       </span>
-                      <StatusBadge status={a.status === "em_atendimento" ? "Em Atendimento" : "Em Acompanhamento"} type={a.status === "em_atendimento" ? "info" : "warning"} className="ml-2" />
+                      <StatusBadge status={a.status === "em_atendimento" ? "info" : "warning"} label={a.status === "em_atendimento" ? "Em Atendimento" : "Em Acompanhamento"} className="ml-2" />
                     </div>
                   </div>
                 ))}
