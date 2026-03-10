@@ -5,7 +5,7 @@ import {
   Stethoscope, Plus, Upload, Calendar, Clock, MapPin, 
   ChevronLeft, ChevronRight, Users, Download, FileSpreadsheet,
   MoreHorizontal, Pencil, Trash2, CheckCircle, AlertCircle, ExternalLink,
-  BarChart3, ClipboardCheck
+  BarChart3, ClipboardCheck, Activity
 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -37,7 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { Skeleton } from "@/components/ui/skeleton";
-import { IndicadoresNSP } from "@/components/indicadores";
+import { IndicadoresNSP, IndicadoresUPA } from "@/components/indicadores";
 import AvaliacaoProntuariosCC from "@/components/medicos/AvaliacaoProntuariosCC";
 import { useSetoresNomes } from "@/hooks/useSetores";
 import { format, addDays, subDays, parseISO, isToday } from "date-fns";
@@ -397,6 +397,10 @@ const MedicosModule = ({ onOpenExternal }: { onOpenExternal?: (url: string, titl
             <BarChart3 className="h-4 w-4" />
             Indicadores NSP
           </TabsTrigger>
+          <TabsTrigger value="perfil-epidemiologico" className="gap-2 text-sm px-4 py-2">
+            <Activity className="h-4 w-4" />
+            Perfil Epidemiológico
+          </TabsTrigger>
           <TabsTrigger value="avaliacao-prontuarios" className="gap-2 text-sm px-4 py-2">
             <ClipboardCheck className="h-4 w-4" />
             Avaliação de Prontuários
@@ -747,6 +751,10 @@ const MedicosModule = ({ onOpenExternal }: { onOpenExternal?: (url: string, titl
 
         <TabsContent value="indicadores-nsp" className="mt-6">
           <IndicadoresNSP />
+        </TabsContent>
+
+        <TabsContent value="perfil-epidemiologico" className="mt-6">
+          <IndicadoresUPA />
         </TabsContent>
 
         <TabsContent value="avaliacao-prontuarios" className="mt-6">
