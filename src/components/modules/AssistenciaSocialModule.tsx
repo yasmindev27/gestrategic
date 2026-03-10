@@ -120,6 +120,12 @@ const statusAtendimento = [
   { value: "finalizado", label: "Finalizado" },
 ];
 
+const statusEncaminhamento = [
+  { value: "pendente", label: "Pendente" },
+  { value: "realizado", label: "Realizado" },
+  { value: "cancelado", label: "Cancelado" },
+];
+
 const locaisAtendimento = [
   "Medicação", "Recepção Externa", "Recepção Interna", "Sala de Espera", 
   "Radiologia", "Corredor", "Sala Amarela", "Sala Vermelha", "Observação",
