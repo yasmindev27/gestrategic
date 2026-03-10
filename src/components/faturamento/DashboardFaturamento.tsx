@@ -631,9 +631,13 @@ export function DashboardFaturamento() {
                 margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
                 onClick={(e) => {
                   if (e && e.activeLabel) {
-                    setSelectedPeriod(prev =>
-                      prev === e.activeLabel ? null : e.activeLabel as string
-                    );
+                    // Find the periodo key from the label
+                    const clicked = chartData.find(d => d.label === e.activeLabel);
+                    if (clicked) {
+                      setSelectedPeriod(prev =>
+                        prev === clicked.periodo ? null : clicked.periodo
+                      );
+                    }
                   }
                 }}
                 style={{ cursor: "pointer" }}
