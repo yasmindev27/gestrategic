@@ -719,63 +719,74 @@ export const AssistenciaSocialModule = () => {
           </Card>
         </TabsContent>
 
-        {/* Relatórios Tab */}
+        {/* Relatórios Tab - ONA Nível 1 */}
         <TabsContent value="relatorios" className="space-y-4">
           {(() => {
-            const CHART_COLORS = ['hsl(var(--primary))', '#16a34a', '#eab308', '#ea580c', '#dc2626', '#8b5cf6', '#06b6d4'];
+            const CHART_COLORS = ['hsl(var(--primary))', '#16a34a', '#eab308', '#ea580c', '#dc2626', '#8b5cf6', '#06b6d4', '#f97316'];
 
-            // Atendimentos por tipo (pie)
+            // --- Dados base ---
+            const now = new Date();
+            const months = eachMonthOfInterval({ start: subMonths(startOfMonth(now), 5), end: startOfMonth(now) });
+
+            const totalAtend = atendimentos.length;
+            const totalEnc = encaminhamentos.length;
+            const finalizados = atendimentos.filter(a => a.status === 'finalizado').length;
+            const emAtendimento = atendimentos.filter(a => a.status === 'em_atendimento').length;
+            const encPendentes = encaminhamentos.filter(e => e.status === 'pendente').length;
+            const encRealizados = encaminhamentos.filter(e => e.status === 'realizado').length;
+
+            // Tempo médio de atendimento (criação -> finalização em horas)
+            const atendFinalizados = atendimentos.filter(a => a.status === 'finalizado');
+            let tempoMedioHoras = 0;
+            if (atendFinalizados.length > 0) {
+              const somaHoras = atendFinalizados.reduce((acc, a) => {
+                const created = new Date(a.created_at);
+                const updated = new Date(a.updated_at || a.created_at);
+                return acc + Math.max(0, (updated.getTime() - created.getTime()) / (1000 * 60 * 60));
+              }, 0);
+              tempoMedioHoras = somaHoras / atendFinalizados.length;
+            }
+
+            // Atendimentos por tipo
             const tipoData = tiposAtendimento.map((t, i) => ({
               name: t.label,
               value: atendimentos.filter(a => a.tipo_atendimento === t.value).length,
               fill: CHART_COLORS[i % CHART_COLORS.length],
             })).filter(d => d.value > 0);
 
-            // Encaminhamentos por tipo (pie)
+            // Encaminhamentos por tipo
             const encamData = tiposEncaminhamento.map((t, i) => ({
               name: t.label,
               value: encaminhamentos.filter(e => e.tipo_encaminhamento === t.value).length,
               fill: CHART_COLORS[i % CHART_COLORS.length],
             })).filter(d => d.value > 0);
 
-            // Status distribution (bar)
+            // Status distribution
             const statusData = statusAtendimento.map(s => ({
               name: s.label,
               value: atendimentos.filter(a => a.status === s.value).length,
             }));
 
-            // Evolução mensal (últimos 6 meses)
-            const now = new Date();
-            const months = eachMonthOfInterval({ start: subMonths(startOfMonth(now), 5), end: startOfMonth(now) });
+            // Evolução mensal
             const evolucaoData = months.map(m => {
               const mStart = startOfMonth(m);
               const mEnd = endOfMonth(m);
-              const countAtend = atendimentos.filter(a => {
-                const d = new Date(a.data_atendimento);
-                return d >= mStart && d <= mEnd;
-              }).length;
-              const countEnc = encaminhamentos.filter(e => {
-                const d = new Date(e.data_encaminhamento);
-                return d >= mStart && d <= mEnd;
-              }).length;
               return {
                 mes: format(m, "MMM/yy", { locale: ptBR }),
-                Atendimentos: countAtend,
-                Encaminhamentos: countEnc,
+                Atendimentos: atendimentos.filter(a => { const d = new Date(a.data_atendimento); return d >= mStart && d <= mEnd; }).length,
+                Encaminhamentos: encaminhamentos.filter(e => { const d = new Date(e.data_encaminhamento); return d >= mStart && d <= mEnd; }).length,
               };
             });
 
-            // Setor de atendimento (bar) - from pacientes linked to atendimentos
+            // Setor
             const setorCount: Record<string, number> = {};
             atendimentos.forEach(a => {
               const setor = a.paciente?.setor_atendimento || 'Não informado';
               setorCount[setor] = (setorCount[setor] || 0) + 1;
             });
-            const setorData = Object.entries(setorCount)
-              .map(([name, value]) => ({ name, value }))
-              .sort((a, b) => b.value - a.value);
+            const setorData = Object.entries(setorCount).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
 
-            // Motivos mais frequentes (top 8)
+            // Motivos mais frequentes
             const motivoCount: Record<string, number> = {};
             atendimentos.forEach(a => {
               const motivo = a.motivo?.trim() || 'Não informado';
@@ -783,15 +794,150 @@ export const AssistenciaSocialModule = () => {
             });
             const motivoData = Object.entries(motivoCount)
               .map(([name, value]) => ({ name: name.length > 30 ? name.slice(0, 30) + '...' : name, value }))
-              .sort((a, b) => b.value - a.value)
-              .slice(0, 8);
+              .sort((a, b) => b.value - a.value).slice(0, 8);
+
+            // Produtividade por profissional
+            const profCount: Record<string, number> = {};
+            atendimentos.forEach(a => {
+              profCount[a.profissional_nome] = (profCount[a.profissional_nome] || 0) + 1;
+            });
+            const profData = Object.entries(profCount).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+
+            // Encaminhamentos: taxa de retorno (realizados com data_retorno)
+            const comRetorno = encaminhamentos.filter(e => e.data_retorno).length;
+
+            // ONA indicators
+            const taxaResolutividade = totalAtend > 0 ? ((finalizados / totalAtend) * 100) : 0;
+            const taxaEncaminhamento = totalAtend > 0 ? ((totalEnc / totalAtend) * 100) : 0;
+            const taxaEfetividadeEnc = totalEnc > 0 ? ((encRealizados / totalEnc) * 100) : 0;
+            const taxaRetorno = totalEnc > 0 ? ((comRetorno / totalEnc) * 100) : 0;
 
             return (
               <>
+                {/* Header ONA */}
+                <Card className="border-primary/30 bg-primary/5">
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-3 mb-2">
+                      <Shield className="h-6 w-6 text-primary" />
+                      <div>
+                        <h3 className="text-lg font-bold text-primary">Relatório ONA — Nível 1 (Segurança)</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Serviço Social e Psicologia • Indicadores de segurança, processos e resultados assistenciais
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-2">
+                      Período: {format(subMonths(now, 5), "MMM/yyyy", { locale: ptBR })} a {format(now, "MMM/yyyy", { locale: ptBR })} • 
+                      Gerado em: {format(now, "dd/MM/yyyy HH:mm")}
+                    </p>
+                  </CardContent>
+                </Card>
+
+                {/* KPI Cards ONA */}
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+                  <Card>
+                    <CardContent className="pt-4 pb-3 text-center">
+                      <p className="text-2xl font-bold text-primary">{totalAtend}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Total de Atendimentos</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-4 pb-3 text-center">
+                      <p className="text-2xl font-bold text-primary">{emAtendimento}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Em Atendimento</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-4 pb-3 text-center">
+                      <p className="text-2xl font-bold text-primary">{finalizados}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Finalizados</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-4 pb-3 text-center">
+                      <p className="text-2xl font-bold text-primary">{totalEnc}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Encaminhamentos</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-4 pb-3 text-center">
+                      <p className="text-2xl font-bold text-primary">{tempoMedioHoras.toFixed(1)}h</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Tempo Médio Resolução</p>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardContent className="pt-4 pb-3 text-center">
+                      <p className="text-2xl font-bold text-primary">{bedPatients.length}</p>
+                      <p className="text-[11px] text-muted-foreground mt-1">Pacientes Internados</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Indicadores ONA Nível 1 */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Indicadores ONA — Nível 1
+                    </CardTitle>
+                    <CardDescription>Métricas de segurança e efetividade assistencial</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div className="p-4 rounded-lg border bg-card">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-muted-foreground">Taxa de Resolutividade</span>
+                          <Badge variant={taxaResolutividade >= 80 ? "default" : taxaResolutividade >= 60 ? "secondary" : "destructive"} className="text-[10px]">
+                            {taxaResolutividade >= 80 ? "Conforme" : taxaResolutividade >= 60 ? "Atenção" : "Não Conforme"}
+                          </Badge>
+                        </div>
+                        <p className="text-3xl font-bold">{taxaResolutividade.toFixed(1)}%</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">Meta ONA: ≥ 80%</p>
+                        <Progress value={Math.min(taxaResolutividade, 100)} className="mt-2 h-1.5" />
+                      </div>
+
+                      <div className="p-4 rounded-lg border bg-card">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-muted-foreground">Taxa de Encaminhamento</span>
+                          <Badge variant="outline" className="text-[10px]">Informativo</Badge>
+                        </div>
+                        <p className="text-3xl font-bold">{taxaEncaminhamento.toFixed(1)}%</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">Encaminhamentos / Atendimentos</p>
+                        <Progress value={Math.min(taxaEncaminhamento, 100)} className="mt-2 h-1.5" />
+                      </div>
+
+                      <div className="p-4 rounded-lg border bg-card">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-muted-foreground">Efetividade dos Encaminhamentos</span>
+                          <Badge variant={taxaEfetividadeEnc >= 70 ? "default" : "destructive"} className="text-[10px]">
+                            {taxaEfetividadeEnc >= 70 ? "Conforme" : "Não Conforme"}
+                          </Badge>
+                        </div>
+                        <p className="text-3xl font-bold">{taxaEfetividadeEnc.toFixed(1)}%</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">Meta ONA: ≥ 70%</p>
+                        <Progress value={Math.min(taxaEfetividadeEnc, 100)} className="mt-2 h-1.5" />
+                      </div>
+
+                      <div className="p-4 rounded-lg border bg-card">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-medium text-muted-foreground">Contra-referência (Retorno)</span>
+                          <Badge variant={taxaRetorno >= 50 ? "default" : "secondary"} className="text-[10px]">
+                            {taxaRetorno >= 50 ? "Conforme" : "Atenção"}
+                          </Badge>
+                        </div>
+                        <p className="text-3xl font-bold">{taxaRetorno.toFixed(1)}%</p>
+                        <p className="text-[10px] text-muted-foreground mt-1">Meta ONA: ≥ 50%</p>
+                        <Progress value={Math.min(taxaRetorno, 100)} className="mt-2 h-1.5" />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
                 {/* Evolução Mensal */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Evolução Mensal - Atendimentos e Encaminhamentos</CardTitle>
+                    <CardTitle>Evolução Mensal — Atendimentos e Encaminhamentos</CardTitle>
+                    <CardDescription>Acompanhamento da demanda assistencial nos últimos 6 meses</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {evolucaoData.some(d => d.Atendimentos > 0 || d.Encaminhamentos > 0) ? (
@@ -816,16 +962,15 @@ export const AssistenciaSocialModule = () => {
                   {/* Atendimentos por Tipo */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Atendimentos por Tipo</CardTitle>
+                      <CardTitle>Perfil de Atendimentos por Tipo</CardTitle>
+                      <CardDescription>Distribuição da demanda por modalidade de atendimento</CardDescription>
                     </CardHeader>
                     <CardContent>
                       {tipoData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={260}>
                           <PieChart>
                             <Pie data={tipoData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`} labelLine={false}>
-                              {tipoData.map((entry, i) => (
-                                <Cell key={i} fill={entry.fill} />
-                              ))}
+                              {tipoData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                             </Pie>
                             <Tooltip />
                           </PieChart>
@@ -836,19 +981,18 @@ export const AssistenciaSocialModule = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Encaminhamentos por Destino */}
+                  {/* Rede de Encaminhamentos */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Encaminhamentos por Destino</CardTitle>
+                      <CardTitle>Rede de Encaminhamentos (RAPS/SUAS)</CardTitle>
+                      <CardDescription>Distribuição por tipo de serviço da rede</CardDescription>
                     </CardHeader>
                     <CardContent>
                       {encamData.length > 0 ? (
                         <ResponsiveContainer width="100%" height={260}>
                           <PieChart>
                             <Pie data={encamData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`} labelLine={false}>
-                              {encamData.map((entry, i) => (
-                                <Cell key={i} fill={entry.fill} />
-                              ))}
+                              {encamData.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
                             </Pie>
                             <Tooltip />
                           </PieChart>
@@ -859,10 +1003,11 @@ export const AssistenciaSocialModule = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Status dos Atendimentos */}
+                  {/* Status */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Status dos Atendimentos</CardTitle>
+                      <CardTitle>Situação dos Atendimentos</CardTitle>
+                      <CardDescription>Distribuição por status de acompanhamento</CardDescription>
                     </CardHeader>
                     <CardContent>
                       {statusData.some(d => d.value > 0) ? (
@@ -884,7 +1029,8 @@ export const AssistenciaSocialModule = () => {
                   {/* Atendimentos por Setor */}
                   <Card>
                     <CardHeader>
-                      <CardTitle>Atendimentos por Setor</CardTitle>
+                      <CardTitle>Demanda por Local de Atendimento</CardTitle>
+                      <CardDescription>Volume de atendimentos por local/setor da unidade</CardDescription>
                     </CardHeader>
                     <CardContent>
                       {setorData.length > 0 ? (
@@ -908,6 +1054,7 @@ export const AssistenciaSocialModule = () => {
                 <Card>
                   <CardHeader>
                     <CardTitle>Motivos de Atendimento Mais Frequentes</CardTitle>
+                    <CardDescription>Principais demandas identificadas pelo Serviço Social e Psicologia</CardDescription>
                   </CardHeader>
                   <CardContent>
                     {motivoData.length > 0 ? (
@@ -926,32 +1073,80 @@ export const AssistenciaSocialModule = () => {
                   </CardContent>
                 </Card>
 
-                {/* Indicadores resumidos */}
+                {/* Produtividade por Profissional */}
                 <Card>
                   <CardHeader>
-                    <CardTitle>Indicadores do Período</CardTitle>
+                    <CardTitle>Produtividade por Profissional</CardTitle>
+                    <CardDescription>Volume de atendimentos realizados por cada profissional</CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="text-center p-4 rounded-lg bg-muted/50">
-                        <p className="text-2xl font-bold text-primary">{stats.total}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Total de Atendimentos</p>
-                      </div>
-                      <div className="text-center p-4 rounded-lg bg-muted/50">
-                        <p className="text-2xl font-bold text-primary">{stats.encaminhamentos}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Encaminhamentos</p>
-                      </div>
-                      <div className="text-center p-4 rounded-lg bg-muted/50">
-                        <p className="text-2xl font-bold text-primary">
-                          {stats.total > 0 ? ((stats.finalizados / stats.total) * 100).toFixed(0) : 0}%
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">Taxa de Resolução</p>
-                      </div>
-                      <div className="text-center p-4 rounded-lg bg-muted/50">
-                        <p className="text-2xl font-bold text-primary">
-                          {stats.total > 0 ? ((stats.encaminhamentos / stats.total) * 100).toFixed(0) : 0}%
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">Taxa de Encaminhamento</p>
+                    {profData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={Math.max(200, profData.length * 40)}>
+                        <BarChart data={profData} layout="vertical">
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis type="number" allowDecimals={false} />
+                          <YAxis type="category" dataKey="name" width={160} tick={{ fontSize: 11 }} />
+                          <Tooltip />
+                          <Bar dataKey="value" fill="#06b6d4" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <EmptyState icon={BarChart3} title="Sem dados" description="Nenhum atendimento registrado" />
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Checklist ONA Nível 1 */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <ClipboardList className="h-4 w-4" />
+                      Checklist ONA — Requisitos Nível 1
+                    </CardTitle>
+                    <CardDescription>Requisitos do Manual ONA para Serviço Social e Psicologia em Urgência/Emergência</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {[
+                        { req: "Registro sistemático dos atendimentos realizados", met: totalAtend > 0 },
+                        { req: "Identificação e classificação das demandas sociais/psicológicas", met: motivoData.length > 0 },
+                        { req: "Encaminhamentos para rede de atenção (CRAS, CREAS, CAPS, SAMU)", met: totalEnc > 0 },
+                        { req: "Acompanhamento dos encaminhamentos realizados (contra-referência)", met: taxaRetorno > 0 },
+                        { req: "Monitoramento de indicadores de produtividade", met: profData.length > 0 },
+                        { req: "Taxa de resolutividade dos atendimentos ≥ 80%", met: taxaResolutividade >= 80 },
+                        { req: "Efetividade dos encaminhamentos ≥ 70%", met: taxaEfetividadeEnc >= 70 },
+                        { req: "Acompanhamento longitudinal dos pacientes internados (corrida de leito)", met: bedPatients.length > 0 },
+                        { req: "Documentação e evidências dos atendimentos", met: totalAtend > 0 },
+                        { req: "Integração com equipe multiprofissional", met: profData.length > 1 },
+                      ].map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50">
+                          <div className={`h-5 w-5 rounded-full flex items-center justify-center text-xs font-bold ${item.met ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            {item.met ? '✓' : '✗'}
+                          </div>
+                          <span className="text-sm">{item.req}</span>
+                          <Badge variant={item.met ? "default" : "destructive"} className="ml-auto text-[10px]">
+                            {item.met ? "Conforme" : "Não Conforme"}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                    <Separator className="my-4" />
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">Conformidade Geral</span>
+                      <div className="flex items-center gap-2">
+                        <Progress 
+                          value={(() => {
+                            const items = [totalAtend > 0, motivoData.length > 0, totalEnc > 0, taxaRetorno > 0, profData.length > 0, taxaResolutividade >= 80, taxaEfetividadeEnc >= 70, bedPatients.length > 0, totalAtend > 0, profData.length > 1];
+                            return (items.filter(Boolean).length / items.length) * 100;
+                          })()}
+                          className="w-32 h-2"
+                        />
+                        <span className="text-sm font-bold text-primary">
+                          {(() => {
+                            const items = [totalAtend > 0, motivoData.length > 0, totalEnc > 0, taxaRetorno > 0, profData.length > 0, taxaResolutividade >= 80, taxaEfetividadeEnc >= 70, bedPatients.length > 0, totalAtend > 0, profData.length > 1];
+                            return `${items.filter(Boolean).length}/${items.length}`;
+                          })()}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
