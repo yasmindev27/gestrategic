@@ -291,6 +291,7 @@ export const AssistenciaSocialModule = () => {
       const obsLines = [
         atendimentoForm.area ? `Área: ${areasAtuacao.find(a => a.value === atendimentoForm.area)?.label || atendimentoForm.area}` : '',
         atendimentoForm.setor_internacao ? `Setor de Internação: ${atendimentoForm.setor_internacao}` : '',
+        `Evolução Salus: ${atendimentoForm.evolucao_salus === 'sim' ? 'Sim' : 'Não'}`,
         atendimentoForm.observacoes,
       ].filter(Boolean).join('\n') || null;
 
