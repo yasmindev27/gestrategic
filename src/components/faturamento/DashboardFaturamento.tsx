@@ -672,7 +672,7 @@ export function DashboardFaturamento() {
                 <Legend />
                 {selectedPeriod && (
                   <ReferenceLine
-                    x={selectedPeriod}
+                    x={chartData.find(d => d.periodo === selectedPeriod)?.label || selectedPeriod}
                     stroke="hsl(var(--primary))"
                     strokeWidth={2}
                     strokeDasharray="4 2"
