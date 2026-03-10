@@ -439,9 +439,6 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
                     onClick={() => setExpandedPassagem(expandedPassagem === p.id ? null : p.id)}
                   >
                     <div className="flex items-center gap-3">
-                      <div className="p-1.5 rounded-full bg-muted">
-                        <User className="h-3.5 w-3.5 text-muted-foreground" />
-                      </div>
                       <div>
                         <span className="font-medium text-sm">{p.profissional_nome}</span>
                         <span className="text-xs text-muted-foreground ml-2">
