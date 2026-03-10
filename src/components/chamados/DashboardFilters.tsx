@@ -167,6 +167,7 @@ export const DashboardFiltersComponent = ({
                       selected={filters.dataFim || undefined}
                       onSelect={(date) => onFiltersChange({ ...filters, dataFim: date || null })}
                       locale={ptBR}
+                      className={cn("p-3 pointer-events-auto")}
                     />
                   </PopoverContent>
                 </Popover>
