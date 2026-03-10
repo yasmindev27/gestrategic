@@ -29,6 +29,7 @@ export const ChamadosDashboard = () => {
   const [chamados, setChamados] = useState<Chamado[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [firstResponseMap, setFirstResponseMap] = useState<Map<string, string>>(new Map());
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [relatorioIA, setRelatorioIA] = useState("");
   const [showRelatorioDialog, setShowRelatorioDialog] = useState(false);
@@ -43,7 +44,7 @@ export const ChamadosDashboard = () => {
     status: "todos",
   });
 
-  // Fetch chamados
+  // Fetch chamados and first comments for response time
   useEffect(() => {
     const fetchChamados = async () => {
       setIsLoading(true);
@@ -63,7 +64,29 @@ export const ChamadosDashboard = () => {
         const { data, error } = await query;
         if (error) throw error;
         
-        setChamados((data || []) as Chamado[]);
+        const chamadosData = (data || []) as Chamado[];
+        
+        // Fetch first comment per chamado for accurate first-response time
+        if (chamadosData.length > 0) {
+          const chamadoIds = chamadosData.map(c => c.id);
+          const { data: comentarios } = await supabase
+            .from("chamados_comentarios")
+            .select("chamado_id, created_at")
+            .in("chamado_id", chamadoIds.slice(0, 200))
+            .order("created_at", { ascending: true });
+          
+          if (comentarios) {
+            const firstCommentMap = new Map<string, string>();
+            comentarios.forEach(c => {
+              if (!firstCommentMap.has(c.chamado_id)) {
+                firstCommentMap.set(c.chamado_id, c.created_at);
+              }
+            });
+            setFirstResponseMap(firstCommentMap);
+          }
+        }
+        
+        setChamados(chamadosData);
       } catch (error) {
         console.error("Error fetching chamados:", error);
         toast({
@@ -129,9 +152,13 @@ export const ChamadosDashboard = () => {
       ? (dentroDeSLA / resolvidos.length) * 100 
       : 0;
 
-    // Taxa de reabertura (simplificado - considerando chamados com status aberto que já foram resolvidos)
-    // Em um cenário real, precisaríamos de um histórico de status
-    const taxaReabertura = 0; // Placeholder
+    // Taxa de reabertura: chamados abertos que já tiveram uma resolução anterior
+    const reabertos = filteredChamados.filter(
+      (c) => c.status === "aberto" && c.data_resolucao !== null
+    ).length;
+    const taxaReabertura = filteredChamados.length > 0
+      ? (reabertos / filteredChamados.length) * 100
+      : 0;
 
     // Média por atendente
     const atendentes = new Set(filteredChamados.map((c) => c.atribuido_para).filter(Boolean));
@@ -139,14 +166,14 @@ export const ChamadosDashboard = () => {
       ? filteredChamados.length / atendentes.size 
       : 0;
 
-    // Tempo médio de primeiro atendimento
-    const emAndamentoOuResolvidos = filteredChamados.filter(
-      (c) => c.status !== "aberto" && c.status !== "cancelado"
+    // Tempo médio de primeiro atendimento (based on first comment, not updated_at)
+    const chamadosComResposta = filteredChamados.filter(
+      (c) => firstResponseMap.has(c.id)
     );
     let tempoMedioPrimeiroAtendimento = 0;
-    if (emAndamentoOuResolvidos.length > 0) {
-      const tempos = emAndamentoOuResolvidos.map((c) =>
-        Math.max(0, differenceInMinutes(parseISO(c.updated_at), parseISO(c.data_abertura)) / 60)
+    if (chamadosComResposta.length > 0) {
+      const tempos = chamadosComResposta.map((c) =>
+        Math.max(0, differenceInMinutes(parseISO(firstResponseMap.get(c.id)!), parseISO(c.data_abertura)) / 60)
       );
       tempoMedioPrimeiroAtendimento = tempos.reduce((a, b) => a + b, 0) / tempos.length;
     }
@@ -172,8 +199,10 @@ export const ChamadosDashboard = () => {
     }>();
 
     filteredChamados.forEach((c) => {
-      const id = c.atribuido_para || c.solicitante_id;
-      const nome = c.atribuido_para ? "Atendente" : c.solicitante_nome;
+      // Only count chamados that have an assigned attendant for productivity metrics
+      if (!c.atribuido_para) return;
+      const id = c.atribuido_para;
+      const nome = "Atendente";
       
       if (!atendenteMap.has(id)) {
         atendenteMap.set(id, { id, nome, chamados: [] });

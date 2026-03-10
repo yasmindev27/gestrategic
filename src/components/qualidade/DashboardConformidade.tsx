@@ -95,7 +95,7 @@ const IndicadorCard = ({ indicador }: { indicador: IndicadorONA }) => {
             <span className="text-sm text-muted-foreground">Meta: {indicador.meta}{indicador.unidade}</span>
           </div>
           <Progress 
-            value={Math.min((indicador.valor_atual / indicador.meta) * 100, 100)} 
+            value={indicador.meta !== 0 ? Math.min((indicador.valor_atual / indicador.meta) * 100, 100) : (indicador.valor_atual === 0 ? 100 : 0)} 
             className="h-2"
           />
           <p className="text-xs text-muted-foreground">{indicador.descricao}</p>
