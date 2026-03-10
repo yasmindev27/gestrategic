@@ -178,6 +178,7 @@ export const AssistenciaSocialModule = () => {
     descricao: "",
     status: "em_atendimento",
     observacoes: "",
+    evolucao_salus: "" as string,
   });
   
   const [encaminhamentoForm, setEncaminhamentoForm] = useState({
@@ -257,8 +258,8 @@ export const AssistenciaSocialModule = () => {
 
   // --- Handlers ---
   const handleCreateAtendimento = async () => {
-    if (!atendimentoForm.paciente_nome || !atendimentoForm.setor_atendimento || !atendimentoForm.tipo_atendimento || !atendimentoForm.motivo || !atendimentoForm.descricao) {
-      toast({ title: "Erro", description: "Preencha todos os campos obrigatórios", variant: "destructive" });
+    if (!atendimentoForm.paciente_nome || !atendimentoForm.setor_atendimento || !atendimentoForm.tipo_atendimento || !atendimentoForm.motivo || !atendimentoForm.descricao || !atendimentoForm.evolucao_salus) {
+      toast({ title: "Erro", description: "Preencha todos os campos obrigatórios, incluindo a evolução no Salus", variant: "destructive" });
       return;
     }
     
@@ -290,6 +291,7 @@ export const AssistenciaSocialModule = () => {
       const obsLines = [
         atendimentoForm.area ? `Área: ${areasAtuacao.find(a => a.value === atendimentoForm.area)?.label || atendimentoForm.area}` : '',
         atendimentoForm.setor_internacao ? `Setor de Internação: ${atendimentoForm.setor_internacao}` : '',
+        `Evolução Salus: ${atendimentoForm.evolucao_salus === 'sim' ? 'Sim' : 'Não'}`,
         atendimentoForm.observacoes,
       ].filter(Boolean).join('\n') || null;
 
@@ -359,7 +361,7 @@ export const AssistenciaSocialModule = () => {
   };
 
   const resetAtendimentoForm = () => setAtendimentoForm({
-    paciente_nome: "", setor_atendimento: "", setor_internacao: "", area: "", tipo_atendimento: "", motivo: "", descricao: "", status: "em_atendimento", observacoes: "",
+    paciente_nome: "", setor_atendimento: "", setor_internacao: "", area: "", tipo_atendimento: "", motivo: "", descricao: "", status: "em_atendimento", observacoes: "", evolucao_salus: "",
   });
 
   const resetEncaminhamentoForm = () => setEncaminhamentoForm({
@@ -758,6 +760,16 @@ export const AssistenciaSocialModule = () => {
               <div>
                 <Label>Descrição / Evolução *</Label>
                 <Textarea rows={5} value={atendimentoForm.descricao} onChange={e => setAtendimentoForm({...atendimentoForm, descricao: e.target.value})} placeholder="Descreva detalhadamente o atendimento realizado, condutas e orientações..." />
+              </div>
+              <div>
+                <Label>Evolução de Prontuário realizada no Sistema Salus? *</Label>
+                <Select value={atendimentoForm.evolucao_salus} onValueChange={v => setAtendimentoForm({...atendimentoForm, evolucao_salus: v})}>
+                  <SelectTrigger className={!atendimentoForm.evolucao_salus ? "border-destructive" : ""}><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sim">Sim</SelectItem>
+                    <SelectItem value="nao">Não</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <Label>Observações Adicionais</Label>
