@@ -472,10 +472,12 @@ export const AssistenciaSocialModule = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="atendimentos">Atendimentos</TabsTrigger>
           <TabsTrigger value="corrida-leito">Corrida de Leito</TabsTrigger>
           <TabsTrigger value="encaminhamentos">Encaminhamentos</TabsTrigger>
+          <TabsTrigger value="passagem">Passagem de Plantão</TabsTrigger>
+          <TabsTrigger value="suporte">Solicitações de Suporte</TabsTrigger>
           <TabsTrigger value="relatorios">Relatórios ONA</TabsTrigger>
         </TabsList>
 
