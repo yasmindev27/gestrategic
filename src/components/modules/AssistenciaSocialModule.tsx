@@ -20,7 +20,7 @@ import { ptBR } from "date-fns/locale";
 import { Users, ClipboardList, BarChart3, Plus, Eye, Send, BedDouble, Shield, Heart, Brain, HandHeart, ArrowRightLeft } from "lucide-react";
 import { ShieldX } from "lucide-react";
 import { PassagemPlantaoSocial } from "@/components/assistencia-social/PassagemPlantaoSocial";
-import { SolicitacoesSuporte } from "@/components/assistencia-social/SolicitacoesSuporte";
+
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
 import { StatCard } from "@/components/ui/stat-card";
 import { SearchInput } from "@/components/ui/search-input";
