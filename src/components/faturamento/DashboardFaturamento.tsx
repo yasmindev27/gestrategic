@@ -178,6 +178,7 @@ export function DashboardFaturamento() {
 
   useEffect(() => {
     fetchData();
+    setSelectedPeriod(null); // Clear graph selection on range change
   }, [dateRange]);
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
