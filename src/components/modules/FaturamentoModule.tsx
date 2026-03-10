@@ -181,7 +181,7 @@ export const FaturamentoModule = () => {
   const [prontuariosFaltantes, setProntuariosFaltantes] = useState<SaidaProntuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<"lista" | "faltantes" | "avaliados" | "dashboard">("faltantes");
+  const [activeTab, setActiveTab] = useState<"faltantes" | "avaliados" | "dashboard">("faltantes");
   const [datePreset, setDatePreset] = useState<DateFilterPreset>(null);
   const [customDateStart, setCustomDateStart] = useState("");
   const [customDateEnd, setCustomDateEnd] = useState("");
@@ -382,43 +382,8 @@ export const FaturamentoModule = () => {
           setProntuariosFaltantes([]);
         }
         setSaidas([]);
-        setAvaliacoes([]);
-      } else {
-        // Lista Geral - server-side paginated
-        let query = supabase
-          .from("saida_prontuarios")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .range(from, from + PAGE_SIZE - 1);
-
-        query = applyFiltersToQuery(query);
-
-        const { data, error } = await query;
-        if (error) throw error;
-
-        const rows = (data || []) as SaidaProntuario[];
-        setSaidas(rows);
-
-        // Fetch avaliacoes only for visible saidas (batch lookup)
-        if (rows.length > 0) {
-          const ids = rows.map(r => r.id);
-          const { data: avData } = await supabase
-            .from("avaliacoes_prontuarios")
-            .select("*")
-            .eq("is_finalizada", true)
-            .in("saida_prontuario_id", ids);
-
-          const map = new Map<string, Avaliacao>();
-          (avData || []).forEach((a: any) => {
-            if (a.saida_prontuario_id) map.set(a.saida_prontuario_id, a as Avaliacao);
-          });
-          setAvaliacoesMap(map);
-        } else {
-          setAvaliacoesMap(new Map());
-        }
-        setProntuariosFaltantes([]);
-        setAvaliacoes([]);
-      }
+         setAvaliacoes([]);
+       }
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -631,10 +596,9 @@ export const FaturamentoModule = () => {
     return avaliacoesMap.has(saidaId);
   };
 
-  // Data is now server-side filtered; just return current data
-  const displayData = activeTab === "lista" ? saidas 
-    : activeTab === "faltantes" ? prontuariosFaltantes 
-    : [];
+  // Data is now server-side filtered; return current data per active tab
+  const displayData = activeTab === "faltantes" ? prontuariosFaltantes : [];
+  const displayCount = activeTab === "avaliados" ? avaliacoes.length : displayData.length;
 
   const handleViewAvaliacao = (saidaId: string) => {
     const avaliacao = avaliacoesMap.get(saidaId);
@@ -854,7 +818,7 @@ export const FaturamentoModule = () => {
 
           {(datePreset || statusFilter !== "todos") && (
             <p className="text-xs text-muted-foreground">
-              Exibindo <span className="font-medium text-foreground">{displayData.length}</span> registro(s) filtrado(s)
+              Exibindo <span className="font-medium text-foreground">{displayCount}</span> registro(s) filtrado(s)
             </p>
           )}
         </CardContent>
@@ -864,14 +828,10 @@ export const FaturamentoModule = () => {
       <Card>
         <CardHeader>
           <CardTitle>
-            {activeTab === "lista" && "Lista de Prontuários"}
-            {activeTab === "faltantes" && "Prontuários Faltantes"}
-            {activeTab === "avaliados" && "Prontuários Avaliados"}
+            {activeTab === "faltantes" ? "Prontuários Faltantes" : "Prontuários Avaliados"}
           </CardTitle>
           <CardDescription>
-            {activeTab === "lista" && "Todos os prontuários registrados no sistema"}
-            {activeTab === "faltantes" && "Prontuários que ainda não foram avaliados"}
-            {activeTab === "avaliados" && "Prontuários com avaliação finalizada"}
+            {activeTab === "faltantes" ? "Prontuários que ainda não foram avaliados" : "Prontuários com avaliação finalizada"}
           </CardDescription>
         </CardHeader>
         <CardContent>

@@ -76,9 +76,15 @@ const rangeToDays: Record<DateRange, number> = { "1d": 1, "7d": 7, "30d": 30, "9
 
 function groupByKey(date: string, gran: Granularity): string {
   const d = parseISO(date);
-  if (gran === "day") return format(d, "dd/MM");
-  if (gran === "week") return `Sem ${format(startOfWeek(d, { locale: ptBR }), "dd/MM")}`;
-  return format(startOfMonth(d), "MMM/yy", { locale: ptBR });
+  if (gran === "day") return format(d, "yyyy-MM-dd"); // sortable key
+  if (gran === "week") return format(startOfWeek(d, { locale: ptBR }), "yyyy-MM-dd");
+  return format(startOfMonth(d), "yyyy-MM");
+}
+
+function formatGroupLabel(key: string, gran: Granularity): string {
+  if (gran === "day") return format(parseISO(key), "dd/MM");
+  if (gran === "week") return `Sem ${format(parseISO(key), "dd/MM")}`;
+  return format(parseISO(key + "-01"), "MMM/yy", { locale: ptBR });
 }
 
 export function DashboardFaturamento() {
@@ -178,6 +184,7 @@ export function DashboardFaturamento() {
 
   useEffect(() => {
     fetchData();
+    setSelectedPeriod(null); // Clear graph selection on range change
   }, [dateRange]);
 
   // ── KPIs ──────────────────────────────────────────────────────────────────
@@ -198,6 +205,8 @@ export function DashboardFaturamento() {
 
   const kpis = useMemo(() => {
     const total = saidas.length;
+    // Total global de saídas para cálculo preciso da taxa de pendência
+    const totalSaidasGeral = Math.max(total, totalPendentesGeral);
     const avaliados = avaliacoes.filter((a) => a.is_finalizada).length;
     const avaliadoIds = new Set(
       avaliacoes.filter((a) => a.is_finalizada && a.saida_prontuario_id).map((a) => a.saida_prontuario_id!)
@@ -237,7 +246,8 @@ export function DashboardFaturamento() {
       total,
       avaliados,
       pendentes: totalPendentesGeral,
-      taxaPendencia: total > 0 ? ((totalPendentesGeral / total) * 100).toFixed(1) : "0.0",
+      // Use totalPendentesGeral consistently with global total for accurate percentage
+      taxaPendencia: (totalSaidasGeral > 0) ? ((totalPendentesGeral / totalSaidasGeral) * 100).toFixed(1) : "0.0",
       tempoMedio,
       mediaLancamentosDia: mediaLancamentosDia.toFixed(0),
       mediaAvaliacoesDia: mediaAvaliacoesDia.toFixed(0),
@@ -245,6 +255,7 @@ export function DashboardFaturamento() {
       metaDiariaAtingida,
       metaDiariaTotal: META_DIARIA_TOTAL,
       numProfissionais,
+      totalSaidasGeral,
     };
   }, [saidas, avaliacoes, dateRange, totalPendentesGeral]);
 
@@ -277,7 +288,7 @@ export function DashboardFaturamento() {
       });
 
     return Object.entries(buckets)
-      .map(([key, val]) => ({ periodo: key, ...val }))
+      .map(([key, val]) => ({ periodo: key, label: formatGroupLabel(key, granularity), ...val }))
       .sort((a, b) => a.periodo.localeCompare(b.periodo));
   }, [saidas, avaliacoes, granularity]);
 
@@ -602,7 +613,7 @@ export function DashboardFaturamento() {
               {selectedPeriod && (
                 <div className="flex items-center gap-2 mb-3">
                   <Badge variant="secondary" className="text-xs">
-                    Filtrando: {selectedPeriod}
+                    Filtrando: {chartData.find(d => d.periodo === selectedPeriod)?.label || selectedPeriod}
                   </Badge>
                   <Button
                     variant="ghost"
@@ -620,9 +631,13 @@ export function DashboardFaturamento() {
                 margin={{ top: 10, right: 10, left: -10, bottom: 0 }}
                 onClick={(e) => {
                   if (e && e.activeLabel) {
-                    setSelectedPeriod(prev =>
-                      prev === e.activeLabel ? null : e.activeLabel as string
-                    );
+                    // Find the periodo key from the label
+                    const clicked = chartData.find(d => d.label === e.activeLabel);
+                    if (clicked) {
+                      setSelectedPeriod(prev =>
+                        prev === clicked.periodo ? null : clicked.periodo
+                      );
+                    }
                   }
                 }}
                 style={{ cursor: "pointer" }}
@@ -642,7 +657,7 @@ export function DashboardFaturamento() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis dataKey="periodo" tick={{ fontSize: 11 }} />
+                <XAxis dataKey="label" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip
                   contentStyle={{
@@ -657,7 +672,7 @@ export function DashboardFaturamento() {
                 <Legend />
                 {selectedPeriod && (
                   <ReferenceLine
-                    x={selectedPeriod}
+                    x={chartData.find(d => d.periodo === selectedPeriod)?.label || selectedPeriod}
                     stroke="hsl(var(--primary))"
                     strokeWidth={2}
                     strokeDasharray="4 2"
