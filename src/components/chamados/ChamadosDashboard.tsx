@@ -166,14 +166,14 @@ export const ChamadosDashboard = () => {
       ? filteredChamados.length / atendentes.size 
       : 0;
 
-    // Tempo médio de primeiro atendimento
-    const emAndamentoOuResolvidos = filteredChamados.filter(
-      (c) => c.status !== "aberto" && c.status !== "cancelado"
+    // Tempo médio de primeiro atendimento (based on first comment, not updated_at)
+    const chamadosComResposta = filteredChamados.filter(
+      (c) => firstResponseMap.has(c.id)
     );
     let tempoMedioPrimeiroAtendimento = 0;
-    if (emAndamentoOuResolvidos.length > 0) {
-      const tempos = emAndamentoOuResolvidos.map((c) =>
-        Math.max(0, differenceInMinutes(parseISO(c.updated_at), parseISO(c.data_abertura)) / 60)
+    if (chamadosComResposta.length > 0) {
+      const tempos = chamadosComResposta.map((c) =>
+        Math.max(0, differenceInMinutes(parseISO(firstResponseMap.get(c.id)!), parseISO(c.data_abertura)) / 60)
       );
       tempoMedioPrimeiroAtendimento = tempos.reduce((a, b) => a + b, 0) / tempos.length;
     }
