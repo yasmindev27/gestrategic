@@ -38,13 +38,7 @@ interface Paciente {
   id: string;
   nome_completo: string;
   numero_prontuario: string | null;
-  cpf: string | null;
-  cns: string | null;
-  data_nascimento: string | null;
-  telefone: string | null;
-  endereco: string | null;
   setor_atendimento: string;
-  observacoes: string | null;
   created_at: string;
 }
 
@@ -60,6 +54,7 @@ interface Atendimento {
   status: string;
   observacoes: string | null;
   created_at: string;
+  updated_at: string;
   paciente?: Paciente;
 }
 
@@ -123,6 +118,12 @@ const statusAtendimento = [
   { value: "em_atendimento", label: "Em Atendimento" },
   { value: "em_acompanhamento", label: "Em Acompanhamento" },
   { value: "finalizado", label: "Finalizado" },
+];
+
+const statusEncaminhamento = [
+  { value: "pendente", label: "Pendente" },
+  { value: "realizado", label: "Realizado" },
+  { value: "cancelado", label: "Cancelado" },
 ];
 
 const locaisAtendimento = [
@@ -349,6 +350,10 @@ export const AssistenciaSocialModule = () => {
     
     if (!error) {
       toast({ title: "Sucesso", description: "Status atualizado" });
+      // Atualizar selectedAtendimento localmente para refletir no dialog
+      if (selectedAtendimento?.id === atendimentoId) {
+        setSelectedAtendimento(prev => prev ? { ...prev, status: novoStatus } : null);
+      }
       loadData();
     }
   };
@@ -652,7 +657,7 @@ export const AssistenciaSocialModule = () => {
                         <TableCell>{e.destino || "-"}</TableCell>
                         <TableCell className="max-w-[200px] truncate">{e.motivo}</TableCell>
                         <TableCell>
-                          <StatusBadge status={mapStatusToType(e.status)} label={e.status} />
+                          <StatusBadge status={mapStatusToType(e.status)} label={statusEncaminhamento.find(s => s.value === e.status)?.label || e.status} />
                         </TableCell>
                         <TableCell>{e.registrado_por_nome}</TableCell>
                       </TableRow>
@@ -873,7 +878,7 @@ export const AssistenciaSocialModule = () => {
                       <div key={e.id} className="border rounded p-3 text-sm">
                         <div className="flex justify-between items-center">
                           <Badge variant="outline">{tiposEncaminhamento.find(t => t.value === e.tipo_encaminhamento)?.label || e.tipo_encaminhamento}</Badge>
-                          <StatusBadge status={mapStatusToType(e.status)} label={e.status} showIcon={false} />
+                          <StatusBadge status={mapStatusToType(e.status)} label={statusEncaminhamento.find(s => s.value === e.status)?.label || e.status} showIcon={false} />
                         </div>
                         {e.destino && <p className="text-muted-foreground mt-1">{e.destino}</p>}
                       </div>
@@ -918,11 +923,15 @@ const ReportSection = ({ atendimentos, encaminhamentos, bedPatients }: {
   const taxaEfetividade = totalEnc > 0 ? (encRealizados / totalEnc) * 100 : 0;
   const taxaRetorno = totalEnc > 0 ? (comRetorno / totalEnc) * 100 : 0;
 
-  // Tempo médio
-  const atendFin = atendimentos.filter(a => a.status === 'finalizado');
+  // Tempo médio de resolução: diferença entre updated_at (finalização) e data_atendimento (início)
+  const atendFin = atendimentos.filter(a => a.status === 'finalizado' && a.updated_at);
   let tempoMedio = 0;
   if (atendFin.length > 0) {
-    tempoMedio = atendFin.reduce((acc, a) => acc + Math.max(0, (new Date(a.data_atendimento).getTime() - new Date(a.created_at).getTime()) / 3600000), 0) / atendFin.length;
+    tempoMedio = atendFin.reduce((acc, a) => {
+      const inicio = new Date(a.data_atendimento).getTime();
+      const fim = new Date(a.updated_at).getTime();
+      return acc + Math.max(0, (fim - inicio) / 3600000);
+    }, 0) / atendFin.length;
   }
 
   const tipoData = tiposAtendimento.map((t, i) => ({
