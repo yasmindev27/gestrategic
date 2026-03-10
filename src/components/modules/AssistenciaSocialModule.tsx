@@ -144,7 +144,9 @@ export const AssistenciaSocialModule = () => {
   });
   
   const [atendimentoForm, setAtendimentoForm] = useState({
-    paciente_id: "",
+    paciente_nome: "",
+    setor_atendimento: "",
+    numero_prontuario: "",
     tipo_atendimento: "",
     motivo: "",
     descricao: "",
@@ -240,26 +242,58 @@ export const AssistenciaSocialModule = () => {
   };
 
   const handleCreateAtendimento = async () => {
-    if (!atendimentoForm.paciente_id || !atendimentoForm.tipo_atendimento || !atendimentoForm.motivo || !atendimentoForm.descricao) {
+    if (!atendimentoForm.paciente_nome || !atendimentoForm.setor_atendimento || !atendimentoForm.tipo_atendimento || !atendimentoForm.motivo || !atendimentoForm.descricao) {
       toast({ title: "Erro", description: "Preencha todos os campos obrigatórios", variant: "destructive" });
       return;
     }
     
     setIsSubmitting(true);
-    const { error } = await supabase.from("assistencia_social_atendimentos").insert({
-      ...atendimentoForm,
-      profissional_id: currentUser.id,
-      profissional_nome: currentUser.nome,
-    });
-    
-    if (error) {
-      toast({ title: "Erro", description: "Falha ao registrar atendimento", variant: "destructive" });
-    } else {
+    try {
+      // Create or find patient by name + setor
+      let pacienteId: string;
+      const { data: existingPaciente } = await supabase
+        .from("assistencia_social_pacientes")
+        .select("id")
+        .ilike("nome_completo", atendimentoForm.paciente_nome.trim())
+        .eq("setor_atendimento", atendimentoForm.setor_atendimento)
+        .maybeSingle();
+
+      if (existingPaciente) {
+        pacienteId = existingPaciente.id;
+      } else {
+        const { data: newPaciente, error: pacienteError } = await supabase
+          .from("assistencia_social_pacientes")
+          .insert({
+            nome_completo: atendimentoForm.paciente_nome.trim(),
+            setor_atendimento: atendimentoForm.setor_atendimento,
+            numero_prontuario: atendimentoForm.numero_prontuario || null,
+            created_by: currentUser.id,
+          })
+          .select("id")
+          .single();
+        if (pacienteError || !newPaciente) throw pacienteError;
+        pacienteId = newPaciente.id;
+      }
+
+      const { error } = await supabase.from("assistencia_social_atendimentos").insert({
+        paciente_id: pacienteId,
+        tipo_atendimento: atendimentoForm.tipo_atendimento,
+        motivo: atendimentoForm.motivo,
+        descricao: atendimentoForm.descricao,
+        status: atendimentoForm.status,
+        observacoes: atendimentoForm.observacoes || null,
+        profissional_id: currentUser.id,
+        profissional_nome: currentUser.nome,
+      });
+      
+      if (error) throw error;
       toast({ title: "Sucesso", description: "Atendimento registrado" });
       setAtendimentoDialog(false);
       resetAtendimentoForm();
       loadData();
       logAction("Assistência Social", "registro_atendimento", { tipo: atendimentoForm.tipo_atendimento });
+    } catch (error) {
+      toast({ title: "Erro", description: "Falha ao registrar atendimento", variant: "destructive" });
     }
     setIsSubmitting(false);
   };
@@ -310,7 +344,7 @@ export const AssistenciaSocialModule = () => {
   });
 
   const resetAtendimentoForm = () => setAtendimentoForm({
-    paciente_id: "", tipo_atendimento: "", motivo: "", descricao: "", status: "em_atendimento", observacoes: "",
+    paciente_nome: "", setor_atendimento: "", numero_prontuario: "", tipo_atendimento: "", motivo: "", descricao: "", status: "em_atendimento", observacoes: "",
   });
 
   const resetEncaminhamentoForm = () => setEncaminhamentoForm({
@@ -402,8 +436,7 @@ export const AssistenciaSocialModule = () => {
         title="Assistência Social" 
         description="Gestão de atendimentos e acompanhamentos sociais"
       >
-        <ActionButton type="add" label="Novo Paciente" onClick={() => setPacienteDialog(true)} />
-        <ActionButton type="add" label="Novo Atendimento" onClick={() => setAtendimentoDialog(true)} variant="outline" />
+        <ActionButton type="add" label="Novo Atendimento" onClick={() => setAtendimentoDialog(true)} />
       </SectionHeader>
 
       {/* Stats Cards */}
@@ -732,19 +765,35 @@ export const AssistenciaSocialModule = () => {
           </DialogHeader>
           <div className="grid gap-4">
             <div>
-              <Label>Paciente *</Label>
-              <Select value={atendimentoForm.paciente_id} onValueChange={v => setAtendimentoForm({...atendimentoForm, paciente_id: v})}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione o paciente..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {pacientes.map(p => (
-                    <SelectItem key={p.id} value={p.id}>
-                      {p.nome_completo} {p.numero_prontuario ? `(${p.numero_prontuario})` : ""}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Nome do Paciente *</Label>
+              <Input 
+                value={atendimentoForm.paciente_nome} 
+                onChange={e => setAtendimentoForm({...atendimentoForm, paciente_nome: e.target.value})} 
+                placeholder="Digite o nome do paciente..."
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <Label>Setor de Atendimento *</Label>
+                <Select value={atendimentoForm.setor_atendimento} onValueChange={v => setAtendimentoForm({...atendimentoForm, setor_atendimento: v})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {setoresAtendimento.map(s => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label>Nº Prontuário</Label>
+                <Input 
+                  value={atendimentoForm.numero_prontuario} 
+                  onChange={e => setAtendimentoForm({...atendimentoForm, numero_prontuario: e.target.value})} 
+                  placeholder="Opcional"
+                />
+              </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
