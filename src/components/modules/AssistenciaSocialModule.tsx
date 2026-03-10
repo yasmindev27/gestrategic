@@ -17,8 +17,10 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Users, ClipboardList, BarChart3, Plus, Eye, Send, BedDouble, Shield, Heart, Brain } from "lucide-react";
+import { Users, ClipboardList, BarChart3, Plus, Eye, Send, BedDouble, Shield, Heart, Brain, HandHeart, ArrowRightLeft } from "lucide-react";
 import { ShieldX } from "lucide-react";
+import { PassagemPlantaoSocial } from "@/components/assistencia-social/PassagemPlantaoSocial";
+import { SolicitacoesSuporte } from "@/components/assistencia-social/SolicitacoesSuporte";
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
 import { StatCard } from "@/components/ui/stat-card";
 import { SearchInput } from "@/components/ui/search-input";
@@ -470,10 +472,12 @@ export const AssistenciaSocialModule = () => {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
+        <TabsList className="flex-wrap">
           <TabsTrigger value="atendimentos">Atendimentos</TabsTrigger>
           <TabsTrigger value="corrida-leito">Corrida de Leito</TabsTrigger>
           <TabsTrigger value="encaminhamentos">Encaminhamentos</TabsTrigger>
+          <TabsTrigger value="passagem">Passagem de Plantão</TabsTrigger>
+          <TabsTrigger value="suporte">Solicitações de Suporte</TabsTrigger>
           <TabsTrigger value="relatorios">Relatórios ONA</TabsTrigger>
         </TabsList>
 
@@ -671,6 +675,16 @@ export const AssistenciaSocialModule = () => {
               )}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* ======= PASSAGEM DE PLANTÃO TAB ======= */}
+        <TabsContent value="passagem" className="space-y-4">
+          <PassagemPlantaoSocial currentUser={currentUser} atendimentos={atendimentos} onRefresh={loadData} />
+        </TabsContent>
+
+        {/* ======= SOLICITAÇÕES DE SUPORTE TAB ======= */}
+        <TabsContent value="suporte" className="space-y-4">
+          <SolicitacoesSuporte currentUser={currentUser} />
         </TabsContent>
 
         {/* ======= RELATÓRIOS ONA TAB ======= */}

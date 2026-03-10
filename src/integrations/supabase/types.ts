@@ -4301,6 +4301,78 @@ export type Database = {
           },
         ]
       }
+      passagem_plantao_social: {
+        Row: {
+          created_at: string
+          data_plantao: string
+          id: string
+          profissional_id: string
+          profissional_nome: string
+          texto_pendencias: string | null
+          turno: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_plantao?: string
+          id?: string
+          profissional_id: string
+          profissional_nome: string
+          texto_pendencias?: string | null
+          turno?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_plantao?: string
+          id?: string
+          profissional_id?: string
+          profissional_nome?: string
+          texto_pendencias?: string | null
+          turno?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      passagem_plantao_social_itens: {
+        Row: {
+          atendimento_id: string
+          created_at: string
+          id: string
+          observacao: string | null
+          passagem_id: string
+        }
+        Insert: {
+          atendimento_id: string
+          created_at?: string
+          id?: string
+          observacao?: string | null
+          passagem_id: string
+        }
+        Update: {
+          atendimento_id?: string
+          created_at?: string
+          id?: string
+          observacao?: string | null
+          passagem_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passagem_plantao_social_itens_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "assistencia_social_atendimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passagem_plantao_social_itens_passagem_id_fkey"
+            columns: ["passagem_id"]
+            isOneToOne: false
+            referencedRelation: "passagem_plantao_social"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pedidos_compra: {
         Row: {
           aprovado_em: string | null
@@ -6678,6 +6750,65 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      solicitacoes_suporte_social: {
+        Row: {
+          atendimento_id: string | null
+          created_at: string
+          descricao: string
+          destinatario_id: string | null
+          destinatario_nome: string | null
+          id: string
+          paciente_nome: string
+          respondido_em: string | null
+          resposta: string | null
+          solicitante_id: string
+          solicitante_nome: string
+          status: string
+          tipo_suporte: string
+          updated_at: string
+        }
+        Insert: {
+          atendimento_id?: string | null
+          created_at?: string
+          descricao: string
+          destinatario_id?: string | null
+          destinatario_nome?: string | null
+          id?: string
+          paciente_nome: string
+          respondido_em?: string | null
+          resposta?: string | null
+          solicitante_id: string
+          solicitante_nome: string
+          status?: string
+          tipo_suporte?: string
+          updated_at?: string
+        }
+        Update: {
+          atendimento_id?: string | null
+          created_at?: string
+          descricao?: string
+          destinatario_id?: string | null
+          destinatario_nome?: string | null
+          id?: string
+          paciente_nome?: string
+          respondido_em?: string | null
+          resposta?: string | null
+          solicitante_id?: string
+          solicitante_nome?: string
+          status?: string
+          tipo_suporte?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacoes_suporte_social_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "assistencia_social_atendimentos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tentativas_duplicidade_refeicoes: {
         Row: {
