@@ -719,49 +719,244 @@ export const AssistenciaSocialModule = () => {
 
         {/* Relatórios Tab */}
         <TabsContent value="relatorios" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle>Atendimentos por Tipo</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {tiposAtendimento.map(tipo => {
-                    const count = atendimentos.filter(a => a.tipo_atendimento === tipo.value).length;
-                    const percent = stats.total > 0 ? ((count / stats.total) * 100).toFixed(1) : 0;
-                    return (
-                      <div key={tipo.value} className="flex justify-between items-center">
-                        <span className="text-sm">{tipo.label}</span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium">{count}</span>
-                          <span className="text-xs text-muted-foreground">({percent}%)</span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </CardContent>
-            </Card>
+          {(() => {
+            const CHART_COLORS = ['hsl(var(--primary))', '#16a34a', '#eab308', '#ea580c', '#dc2626', '#8b5cf6', '#06b6d4'];
 
-            <Card>
-              <CardHeader>
-                <CardTitle>Encaminhamentos por Tipo</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2">
-                  {tiposEncaminhamento.map(tipo => {
-                    const count = encaminhamentos.filter(e => e.tipo_encaminhamento === tipo.value).length;
-                    return (
-                      <div key={tipo.value} className="flex justify-between items-center">
-                        <span className="text-sm">{tipo.label}</span>
-                        <span className="text-sm font-medium">{count}</span>
-                      </div>
-                    );
-                  })}
+            // Atendimentos por tipo (pie)
+            const tipoData = tiposAtendimento.map((t, i) => ({
+              name: t.label,
+              value: atendimentos.filter(a => a.tipo_atendimento === t.value).length,
+              fill: CHART_COLORS[i % CHART_COLORS.length],
+            })).filter(d => d.value > 0);
+
+            // Encaminhamentos por tipo (pie)
+            const encamData = tiposEncaminhamento.map((t, i) => ({
+              name: t.label,
+              value: encaminhamentos.filter(e => e.tipo_encaminhamento === t.value).length,
+              fill: CHART_COLORS[i % CHART_COLORS.length],
+            })).filter(d => d.value > 0);
+
+            // Status distribution (bar)
+            const statusData = statusAtendimento.map(s => ({
+              name: s.label,
+              value: atendimentos.filter(a => a.status === s.value).length,
+            }));
+
+            // Evolução mensal (últimos 6 meses)
+            const now = new Date();
+            const months = eachMonthOfInterval({ start: subMonths(startOfMonth(now), 5), end: startOfMonth(now) });
+            const evolucaoData = months.map(m => {
+              const mStart = startOfMonth(m);
+              const mEnd = endOfMonth(m);
+              const countAtend = atendimentos.filter(a => {
+                const d = new Date(a.data_atendimento);
+                return d >= mStart && d <= mEnd;
+              }).length;
+              const countEnc = encaminhamentos.filter(e => {
+                const d = new Date(e.data_encaminhamento);
+                return d >= mStart && d <= mEnd;
+              }).length;
+              return {
+                mes: format(m, "MMM/yy", { locale: ptBR }),
+                Atendimentos: countAtend,
+                Encaminhamentos: countEnc,
+              };
+            });
+
+            // Setor de atendimento (bar) - from pacientes linked to atendimentos
+            const setorCount: Record<string, number> = {};
+            atendimentos.forEach(a => {
+              const setor = a.paciente?.setor_atendimento || 'Não informado';
+              setorCount[setor] = (setorCount[setor] || 0) + 1;
+            });
+            const setorData = Object.entries(setorCount)
+              .map(([name, value]) => ({ name, value }))
+              .sort((a, b) => b.value - a.value);
+
+            // Motivos mais frequentes (top 8)
+            const motivoCount: Record<string, number> = {};
+            atendimentos.forEach(a => {
+              const motivo = a.motivo?.trim() || 'Não informado';
+              motivoCount[motivo] = (motivoCount[motivo] || 0) + 1;
+            });
+            const motivoData = Object.entries(motivoCount)
+              .map(([name, value]) => ({ name: name.length > 30 ? name.slice(0, 30) + '...' : name, value }))
+              .sort((a, b) => b.value - a.value)
+              .slice(0, 8);
+
+            return (
+              <>
+                {/* Evolução Mensal */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Evolução Mensal - Atendimentos e Encaminhamentos</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {evolucaoData.some(d => d.Atendimentos > 0 || d.Encaminhamentos > 0) ? (
+                      <ResponsiveContainer width="100%" height={280}>
+                        <BarChart data={evolucaoData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="mes" tick={{ fontSize: 12 }} />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip />
+                          <Legend />
+                          <Bar dataKey="Atendimentos" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="Encaminhamentos" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <EmptyState icon={BarChart3} title="Sem dados" description="Registre atendimentos para gerar o gráfico" />
+                    )}
+                  </CardContent>
+                </Card>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Atendimentos por Tipo */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Atendimentos por Tipo</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {tipoData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={260}>
+                          <PieChart>
+                            <Pie data={tipoData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`} labelLine={false}>
+                              {tipoData.map((entry, i) => (
+                                <Cell key={i} fill={entry.fill} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <EmptyState icon={BarChart3} title="Sem dados" description="Nenhum atendimento registrado" />
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Encaminhamentos por Destino */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Encaminhamentos por Destino</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {encamData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={260}>
+                          <PieChart>
+                            <Pie data={encamData} cx="50%" cy="50%" outerRadius={90} dataKey="value" label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`} labelLine={false}>
+                              {encamData.map((entry, i) => (
+                                <Cell key={i} fill={entry.fill} />
+                              ))}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <EmptyState icon={BarChart3} title="Sem dados" description="Nenhum encaminhamento registrado" />
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Status dos Atendimentos */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Status dos Atendimentos</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {statusData.some(d => d.value > 0) ? (
+                        <ResponsiveContainer width="100%" height={260}>
+                          <BarChart data={statusData} layout="vertical">
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis type="number" allowDecimals={false} />
+                            <YAxis type="category" dataKey="name" width={120} tick={{ fontSize: 12 }} />
+                            <Tooltip />
+                            <Bar dataKey="value" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <EmptyState icon={BarChart3} title="Sem dados" description="Nenhum atendimento registrado" />
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Atendimentos por Setor */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Atendimentos por Setor</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {setorData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={260}>
+                          <BarChart data={setorData} layout="vertical">
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis type="number" allowDecimals={false} />
+                            <YAxis type="category" dataKey="name" width={140} tick={{ fontSize: 11 }} />
+                            <Tooltip />
+                            <Bar dataKey="value" fill="#16a34a" radius={[0, 4, 4, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      ) : (
+                        <EmptyState icon={BarChart3} title="Sem dados" description="Nenhum atendimento registrado" />
+                      )}
+                    </CardContent>
+                  </Card>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
+
+                {/* Motivos mais frequentes */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Motivos de Atendimento Mais Frequentes</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {motivoData.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={300}>
+                        <BarChart data={motivoData}>
+                          <CartesianGrid strokeDasharray="3 3" />
+                          <XAxis dataKey="name" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" height={60} />
+                          <YAxis allowDecimals={false} />
+                          <Tooltip />
+                          <Bar dataKey="value" fill="#ea580c" radius={[4, 4, 0, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <EmptyState icon={BarChart3} title="Sem dados" description="Nenhum atendimento registrado" />
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Indicadores resumidos */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Indicadores do Período</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="text-center p-4 rounded-lg bg-muted/50">
+                        <p className="text-2xl font-bold text-primary">{stats.total}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Total de Atendimentos</p>
+                      </div>
+                      <div className="text-center p-4 rounded-lg bg-muted/50">
+                        <p className="text-2xl font-bold text-primary">{stats.encaminhamentos}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Encaminhamentos</p>
+                      </div>
+                      <div className="text-center p-4 rounded-lg bg-muted/50">
+                        <p className="text-2xl font-bold text-primary">
+                          {stats.total > 0 ? ((stats.finalizados / stats.total) * 100).toFixed(0) : 0}%
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Taxa de Resolução</p>
+                      </div>
+                      <div className="text-center p-4 rounded-lg bg-muted/50">
+                        <p className="text-2xl font-bold text-primary">
+                          {stats.total > 0 ? ((stats.encaminhamentos / stats.total) * 100).toFixed(0) : 0}%
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Taxa de Encaminhamento</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            );
+          })()}
         </TabsContent>
       </Tabs>
 
