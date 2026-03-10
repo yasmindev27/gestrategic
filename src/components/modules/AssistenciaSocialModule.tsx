@@ -743,8 +743,8 @@ export const AssistenciaSocialModule = () => {
             if (atendFinalizados.length > 0) {
               const somaHoras = atendFinalizados.reduce((acc, a) => {
                 const created = new Date(a.created_at);
-                const updated = new Date(a.updated_at || a.created_at);
-                return acc + Math.max(0, (updated.getTime() - created.getTime()) / (1000 * 60 * 60));
+                const dataAtend = new Date(a.data_atendimento);
+                return acc + Math.max(0, (dataAtend.getTime() - created.getTime()) / (1000 * 60 * 60));
               }, 0);
               tempoMedioHoras = somaHoras / atendFinalizados.length;
             }
