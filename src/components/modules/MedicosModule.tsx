@@ -37,7 +37,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { Skeleton } from "@/components/ui/skeleton";
-import { IndicadoresNSP } from "@/components/indicadores";
+import { IndicadoresNSP, IndicadoresUPA } from "@/components/indicadores";
 import AvaliacaoProntuariosCC from "@/components/medicos/AvaliacaoProntuariosCC";
 import { useSetoresNomes } from "@/hooks/useSetores";
 import { format, addDays, subDays, parseISO, isToday } from "date-fns";
