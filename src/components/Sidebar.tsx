@@ -68,7 +68,7 @@ const Sidebar = ({
         { icon: Ambulance, label: "NIR", id: "nir", category: "assistencial" },
         { icon: Stethoscope, label: "Médicos", id: "medicos", category: "assistencial" },
         { icon: Syringe, label: "Enfermagem", id: "enfermagem", category: "assistencial" },
-        { icon: Heart, label: "Assist. Social", id: "assistencia-social", category: "assistencial" },
+        { icon: Heart, label: "Assist. Social/Psicologia", id: "assistencia-social", category: "assistencial" },
         { icon: FlaskConical, label: "Laboratório", id: "laboratorio", category: "apoio" },
         { icon: AlertTriangle, label: "Qualidade/NSP", id: "qualidade", category: "apoio" },
         { icon: HardHat, label: "Seg. Trabalho", id: "seguranca-trabalho", category: "apoio" },
