@@ -923,11 +923,15 @@ const ReportSection = ({ atendimentos, encaminhamentos, bedPatients }: {
   const taxaEfetividade = totalEnc > 0 ? (encRealizados / totalEnc) * 100 : 0;
   const taxaRetorno = totalEnc > 0 ? (comRetorno / totalEnc) * 100 : 0;
 
-  // Tempo médio
-  const atendFin = atendimentos.filter(a => a.status === 'finalizado');
+  // Tempo médio de resolução: diferença entre updated_at (finalização) e data_atendimento (início)
+  const atendFin = atendimentos.filter(a => a.status === 'finalizado' && a.updated_at);
   let tempoMedio = 0;
   if (atendFin.length > 0) {
-    tempoMedio = atendFin.reduce((acc, a) => acc + Math.max(0, (new Date(a.data_atendimento).getTime() - new Date(a.created_at).getTime()) / 3600000), 0) / atendFin.length;
+    tempoMedio = atendFin.reduce((acc, a) => {
+      const inicio = new Date(a.data_atendimento).getTime();
+      const fim = new Date(a.updated_at).getTime();
+      return acc + Math.max(0, (fim - inicio) / 3600000);
+    }, 0) / atendFin.length;
   }
 
   const tipoData = tiposAtendimento.map((t, i) => ({
