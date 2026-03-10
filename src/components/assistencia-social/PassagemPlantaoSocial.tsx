@@ -261,9 +261,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
         {showPassagemForm && (
           <Card className="border-primary/30 shadow-sm animate-in slide-in-from-top-2 duration-200">
             <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Send className="h-4 w-4 text-primary" /> Registrar Passagem de Plantão
-              </CardTitle>
+              <CardTitle className="text-base">Registrar Passagem de Plantão</CardTitle>
               <CardDescription>
                 Registre as pendências e casos que ficam para o próximo turno
               </CardDescription>
