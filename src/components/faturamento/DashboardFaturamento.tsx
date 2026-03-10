@@ -288,7 +288,7 @@ export function DashboardFaturamento() {
       });
 
     return Object.entries(buckets)
-      .map(([key, val]) => ({ periodo: key, ...val }))
+      .map(([key, val]) => ({ periodo: key, label: formatGroupLabel(key, granularity), ...val }))
       .sort((a, b) => a.periodo.localeCompare(b.periodo));
   }, [saidas, avaliacoes, granularity]);
 
