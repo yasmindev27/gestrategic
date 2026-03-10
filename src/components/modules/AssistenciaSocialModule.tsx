@@ -826,32 +826,27 @@ export const AssistenciaSocialModule = () => {
 
       {/* Dialog: Novo Atendimento */}
       <Dialog open={atendimentoDialog} onOpenChange={setAtendimentoDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Registrar Atendimento</DialogTitle>
+            <DialogTitle className="text-lg">Registrar Atendimento</DialogTitle>
+            <CardDescription>Preencha os dados do atendimento social</CardDescription>
           </DialogHeader>
-          <div className="grid gap-4">
-            <div>
-              <Label>Nome do Paciente *</Label>
-              <Input 
-                value={atendimentoForm.paciente_nome} 
-                onChange={e => setAtendimentoForm({...atendimentoForm, paciente_nome: e.target.value})} 
-                placeholder="Digite o nome do paciente..."
-              />
+
+          <div className="space-y-5">
+            {/* Seção: Identificação do Paciente */}
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-primary">Identificação do Paciente</p>
+              <div className="h-px bg-border" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label>Setor de Atendimento *</Label>
-                <Select value={atendimentoForm.setor_atendimento} onValueChange={v => setAtendimentoForm({...atendimentoForm, setor_atendimento: v})}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {setoresAtendimento.map(s => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <Label>Nome do Paciente *</Label>
+                <Input 
+                  value={atendimentoForm.paciente_nome} 
+                  onChange={e => setAtendimentoForm({...atendimentoForm, paciente_nome: e.target.value.toUpperCase()})} 
+                  placeholder="NOME COMPLETO DO PACIENTE"
+                  className="uppercase"
+                />
               </div>
               <div>
                 <Label>Nº Prontuário</Label>
@@ -861,21 +856,40 @@ export const AssistenciaSocialModule = () => {
                   placeholder="Opcional"
                 />
               </div>
+              <div>
+                <Label>Setor de Internação *</Label>
+                <Select value={atendimentoForm.setor_atendimento} onValueChange={v => setAtendimentoForm({...atendimentoForm, setor_atendimento: v})}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o setor..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {setoresAtendimento.map(s => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-            <div>
-              <Label>Local do Atendimento *</Label>
-              <Input 
-                value={atendimentoForm.local_atendimento} 
-                onChange={e => setAtendimentoForm({...atendimentoForm, local_atendimento: e.target.value})} 
-                placeholder="Ex: Sala de Observação, Consultório 2, Recepção..."
-              />
+
+            {/* Seção: Local e Classificação */}
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-primary">Local e Classificação</p>
+              <div className="h-px bg-border" />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="md:col-span-2">
+                <Label>Local do Atendimento *</Label>
+                <Input 
+                  value={atendimentoForm.local_atendimento} 
+                  onChange={e => setAtendimentoForm({...atendimentoForm, local_atendimento: e.target.value})} 
+                  placeholder="Ex: Leito 5 - Enfermaria Masculina, Consultório 2..."
+                />
+              </div>
               <div>
                 <Label>Tipo de Atendimento *</Label>
                 <Select value={atendimentoForm.tipo_atendimento} onValueChange={v => setAtendimentoForm({...atendimentoForm, tipo_atendimento: v})}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione..." />
+                    <SelectValue placeholder="Selecione o tipo..." />
                   </SelectTrigger>
                   <SelectContent>
                     {tiposAtendimento.map(t => (
@@ -898,23 +912,46 @@ export const AssistenciaSocialModule = () => {
                 </Select>
               </div>
             </div>
-            <div>
-              <Label>Motivo do Atendimento *</Label>
-              <Input value={atendimentoForm.motivo} onChange={e => setAtendimentoForm({...atendimentoForm, motivo: e.target.value})} />
+
+            {/* Seção: Detalhes do Atendimento */}
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-primary">Detalhes do Atendimento</p>
+              <div className="h-px bg-border" />
             </div>
-            <div>
-              <Label>Descrição do Atendimento *</Label>
-              <Textarea rows={4} value={atendimentoForm.descricao} onChange={e => setAtendimentoForm({...atendimentoForm, descricao: e.target.value})} />
-            </div>
-            <div>
-              <Label>Observações</Label>
-              <Textarea value={atendimentoForm.observacoes} onChange={e => setAtendimentoForm({...atendimentoForm, observacoes: e.target.value})} />
+            <div className="space-y-4">
+              <div>
+                <Label>Motivo do Atendimento *</Label>
+                <Input 
+                  value={atendimentoForm.motivo} 
+                  onChange={e => setAtendimentoForm({...atendimentoForm, motivo: e.target.value})} 
+                  placeholder="Descreva o motivo principal..."
+                />
+              </div>
+              <div>
+                <Label>Descrição / Evolução *</Label>
+                <Textarea 
+                  rows={5} 
+                  value={atendimentoForm.descricao} 
+                  onChange={e => setAtendimentoForm({...atendimentoForm, descricao: e.target.value})} 
+                  placeholder="Descreva detalhadamente o atendimento realizado, condutas e orientações..."
+                />
+              </div>
+              <div>
+                <Label>Observações Adicionais</Label>
+                <Textarea 
+                  rows={2}
+                  value={atendimentoForm.observacoes} 
+                  onChange={e => setAtendimentoForm({...atendimentoForm, observacoes: e.target.value})} 
+                  placeholder="Informações complementares (opcional)"
+                />
+              </div>
             </div>
           </div>
-          <DialogFooter>
+
+          <DialogFooter className="mt-2">
             <Button variant="outline" onClick={() => setAtendimentoDialog(false)}>Cancelar</Button>
             <Button onClick={handleCreateAtendimento} disabled={isSubmitting}>
-              {isSubmitting ? "Salvando..." : "Registrar"}
+              {isSubmitting ? "Salvando..." : "Registrar Atendimento"}
             </Button>
           </DialogFooter>
         </DialogContent>
