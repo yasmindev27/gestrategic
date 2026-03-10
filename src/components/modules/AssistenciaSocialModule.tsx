@@ -293,7 +293,6 @@ export const AssistenciaSocialModule = () => {
           .insert({
             nome_completo: atendimentoForm.paciente_nome.trim(),
             setor_atendimento: atendimentoForm.setor_atendimento,
-            numero_prontuario: atendimentoForm.numero_prontuario || null,
             created_by: currentUser.id,
           })
           .select("id")
