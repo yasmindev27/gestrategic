@@ -216,13 +216,20 @@ export const AssistenciaSocialModule = () => {
   };
 
   const loadData = useCallback(async () => {
+    // Determine current shift to match Mapa de Leitos exactly
+    const now = new Date();
+    const todayStr = now.toISOString().split('T')[0];
+    const currentHour = now.getHours();
+    const currentShift = currentHour >= 7 && currentHour < 19 ? 'diurno' : 'noturno';
+
     const [pacientesRes, atendimentosRes, encaminhamentosRes, bedRes] = await Promise.all([
       supabase.from("assistencia_social_pacientes").select("id, nome_completo, numero_prontuario, setor_atendimento, created_at").order("created_at", { ascending: false }),
       supabase.from("assistencia_social_atendimentos").select("*").order("data_atendimento", { ascending: false }),
       supabase.from("assistencia_social_encaminhamentos").select("*").order("data_encaminhamento", { ascending: false }),
-      supabase.from("bed_records").select("sector, bed_number, patient_name, hipotese_diagnostica, data_internacao, motivo_alta, data_alta, shift_date, shift_type")
-        .not("patient_name", "is", null).neq("patient_name", "")
-        .order("shift_date", { ascending: false }).order("shift_type", { ascending: false }).limit(500),
+      supabase.from("bed_records").select("sector, bed_number, patient_name, hipotese_diagnostica, data_internacao, motivo_alta, data_alta")
+        .eq("shift_date", todayStr)
+        .eq("shift_type", currentShift)
+        .not("patient_name", "is", null).neq("patient_name", ""),
     ]);
 
     if (pacientesRes.data) setPacientes(pacientesRes.data as Paciente[]);
@@ -236,26 +243,9 @@ export const AssistenciaSocialModule = () => {
     if (encaminhamentosRes.data) setEncaminhamentos(encaminhamentosRes.data);
 
     if (bedRes.data) {
-      // Collect all patients who have ANY discharge record
-      const dischargedPatients = new Set<string>();
-      for (const r of bedRes.data) {
-        if ((r.motivo_alta || r.data_alta) && r.patient_name) {
-          dischargedPatients.add(r.patient_name.trim().toLowerCase());
-        }
-      }
-      
-      // Dedup by PATIENT NAME (not bed) — keep most recent record per patient
-      const seenByPatient = new Map<string, typeof bedRes.data[0]>();
-      for (const r of bedRes.data) {
-        if (!r.patient_name) continue;
-        const patientKey = r.patient_name.trim().toLowerCase();
-        if (dischargedPatients.has(patientKey)) continue; // skip discharged
-        if (r.motivo_alta || r.data_alta) continue;
-        if (!seenByPatient.has(patientKey)) seenByPatient.set(patientKey, r);
-      }
-      
       setBedPatients(
-        Array.from(seenByPatient.values())
+        bedRes.data
+          .filter(r => r.patient_name && !r.motivo_alta && !r.data_alta)
           .map(r => ({
             sector: r.sector,
             bed_number: r.bed_number,
