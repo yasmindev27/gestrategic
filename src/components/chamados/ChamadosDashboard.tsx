@@ -29,6 +29,7 @@ export const ChamadosDashboard = () => {
   const [chamados, setChamados] = useState<Chamado[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [firstResponseMap, setFirstResponseMap] = useState<Map<string, string>>(new Map());
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
   const [relatorioIA, setRelatorioIA] = useState("");
   const [showRelatorioDialog, setShowRelatorioDialog] = useState(false);
