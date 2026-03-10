@@ -164,7 +164,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
     setIsSubmitting(true);
     try {
       const { data: passagem, error } = await supabase.from("passagem_plantao_social")
-        .insert({ data_plantao: new Date().toISOString().split("T")[0], turno: currentTurno, profissional_id: currentUser.id, profissional_nome: currentUser.nome, texto_pendencias: textoPendencias.trim() || null })
+        .insert({ data_plantao: new Date().toISOString().split("T")[0], profissional_id: currentUser.id, profissional_nome: currentUser.nome, texto_pendencias: textoPendencias.trim() || null })
         .select("id").single();
       if (error) throw error;
       if (selectedAtendimentos.length > 0) {
