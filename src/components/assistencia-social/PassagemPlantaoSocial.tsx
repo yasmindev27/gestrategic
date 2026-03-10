@@ -260,17 +260,6 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
               </div>
             </CardContent>
           </Card>
-          <Card className="border-l-4 border-l-emerald-500/60 hover:shadow-md transition-shadow">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-emerald-500/10">
-                {currentTurno === "diurno" ? <Sun className="h-5 w-5 text-emerald-600" /> : <Moon className="h-5 w-5 text-emerald-600" />}
-              </div>
-              <div>
-                <p className="text-sm font-bold text-foreground">{currentTurno === "diurno" ? "Diurno" : "Noturno"}</p>
-                <p className="text-xs text-muted-foreground">{currentTurno === "diurno" ? "07h – 19h" : "19h – 07h"}</p>
-              </div>
-            </CardContent>
-          </Card>
         </div>
 
         {/* ===== AÇÕES RÁPIDAS ===== */}
