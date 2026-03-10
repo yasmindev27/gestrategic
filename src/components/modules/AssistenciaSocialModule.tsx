@@ -370,7 +370,7 @@ export const AssistenciaSocialModule = () => {
   });
 
   const resetAtendimentoForm = () => setAtendimentoForm({
-    paciente_nome: "", setor_atendimento: "", numero_prontuario: "", local_atendimento: "", tipo_atendimento: "", motivo: "", descricao: "", status: "em_atendimento", observacoes: "",
+    paciente_nome: "", setor_atendimento: "", setor_internacao: "", tipo_atendimento: "", motivo: "", descricao: "", status: "em_atendimento", observacoes: "",
   });
 
   const resetEncaminhamentoForm = () => setEncaminhamentoForm({
