@@ -657,7 +657,7 @@ export const AssistenciaSocialModule = () => {
                                   ...prev,
                                   paciente_nome: b.patient_name,
                                   setor_atendimento: sectorLabel,
-                                  local_atendimento: `Leito ${b.bed_number} - ${sectorLabel}`,
+                                  setor_internacao: `Leito ${b.bed_number} - ${sectorLabel}`,
                                 }));
                                 setAtendimentoDialog(true);
                               }}>
