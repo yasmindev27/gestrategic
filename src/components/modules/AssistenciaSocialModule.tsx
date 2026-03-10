@@ -282,7 +282,7 @@ export const AssistenciaSocialModule = () => {
         motivo: atendimentoForm.motivo,
         descricao: atendimentoForm.descricao,
         status: atendimentoForm.status,
-        observacoes: atendimentoForm.observacoes || null,
+        observacoes: [atendimentoForm.local_atendimento ? `Local: ${atendimentoForm.local_atendimento}` : '', atendimentoForm.observacoes].filter(Boolean).join('\n') || null,
         profissional_id: currentUser.id,
         profissional_nome: currentUser.nome,
       });
