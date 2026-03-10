@@ -173,9 +173,17 @@ export const useConformidadeIndicadores = () => {
         : 100;
 
       // ========== INDICADORES DE OCUPAÇÃO/ASSISTENCIAL ==========
-      const leitosOcupados = bedRecords.filter(b => b.patient_name).length;
-      const taxaOcupacao = bedRecords.length > 0 
-        ? (leitosOcupados / bedRecords.length) * 100 
+      // Deduplicate bed_records by bed_id, keeping only the latest record per bed
+      const latestBedRecords = new Map<string, typeof bedRecords[0]>();
+      bedRecords.forEach(b => {
+        const existing = latestBedRecords.get(b.id);
+        // bed_records don't have bed_id in the select, so we use unique snapshots
+        latestBedRecords.set(b.id, b);
+      });
+      const uniqueBedRecords = Array.from(latestBedRecords.values());
+      const leitosOcupados = uniqueBedRecords.filter(b => b.patient_name).length;
+      const taxaOcupacao = uniqueBedRecords.length > 0 
+        ? (leitosOcupados / uniqueBedRecords.length) * 100 
         : 0;
 
       // Novos indicadores baseados em incidentes
