@@ -16,9 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
-  ClipboardList, Send, Clock, User, ChevronDown, ChevronUp, HandHeart,
-  MessageSquare, CheckCircle2, Plus, AlertCircle, ArrowRightLeft, FileText,
-  Sun, Moon, Inbox, ArrowUpRight,
+  ChevronDown, ChevronUp, ArrowUpRight, MessageSquare,
 } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -359,7 +357,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
 
         {/* ===== SOLICITAÇÕES ACEITAS (em andamento) ===== */}
         {recebidas.filter(s => s.status === "aceito").length > 0 && (
-          <Card className="border-blue-500/30">
+          <Card className="border-primary/30">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm text-muted-foreground">
                 Acompanhamentos em andamento
