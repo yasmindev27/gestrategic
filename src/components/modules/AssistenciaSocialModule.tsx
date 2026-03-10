@@ -350,6 +350,10 @@ export const AssistenciaSocialModule = () => {
     
     if (!error) {
       toast({ title: "Sucesso", description: "Status atualizado" });
+      // Atualizar selectedAtendimento localmente para refletir no dialog
+      if (selectedAtendimento?.id === atendimentoId) {
+        setSelectedAtendimento(prev => prev ? { ...prev, status: novoStatus } : null);
+      }
       loadData();
     }
   };
