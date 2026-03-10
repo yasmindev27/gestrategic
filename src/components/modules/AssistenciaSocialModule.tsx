@@ -1045,14 +1045,6 @@ export const AssistenciaSocialModule = () => {
                 />
               </div>
               <div>
-                <Label>Nº Prontuário</Label>
-                <Input 
-                  value={atendimentoForm.numero_prontuario} 
-                  onChange={e => setAtendimentoForm({...atendimentoForm, numero_prontuario: e.target.value})} 
-                  placeholder="Opcional"
-                />
-              </div>
-              <div>
                 <Label>Setor de Internação *</Label>
                 <Select value={atendimentoForm.setor_atendimento} onValueChange={v => setAtendimentoForm({...atendimentoForm, setor_atendimento: v})}>
                   <SelectTrigger>
@@ -1067,20 +1059,12 @@ export const AssistenciaSocialModule = () => {
               </div>
             </div>
 
-            {/* Seção: Local e Classificação */}
+            {/* Seção: Classificação */}
             <div className="space-y-1">
-              <p className="text-sm font-semibold text-primary">Local e Classificação</p>
+              <p className="text-sm font-semibold text-primary">Classificação</p>
               <div className="h-px bg-border" />
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <Label>Local do Atendimento *</Label>
-                <Input 
-                  value={atendimentoForm.local_atendimento} 
-                  onChange={e => setAtendimentoForm({...atendimentoForm, local_atendimento: e.target.value})} 
-                  placeholder="Ex: Leito 5 - Enfermaria Masculina, Consultório 2..."
-                />
-              </div>
               <div>
                 <Label>Tipo de Atendimento *</Label>
                 <Select value={atendimentoForm.tipo_atendimento} onValueChange={v => setAtendimentoForm({...atendimentoForm, tipo_atendimento: v})}>
