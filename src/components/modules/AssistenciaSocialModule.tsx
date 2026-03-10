@@ -476,8 +476,7 @@ export const AssistenciaSocialModule = () => {
           <TabsTrigger value="atendimentos">Atendimentos</TabsTrigger>
           <TabsTrigger value="corrida-leito">Corrida de Leito</TabsTrigger>
           <TabsTrigger value="encaminhamentos">Encaminhamentos</TabsTrigger>
-          <TabsTrigger value="passagem">Passagem de Plantão</TabsTrigger>
-          <TabsTrigger value="suporte">Solicitações de Suporte</TabsTrigger>
+          <TabsTrigger value="passagem">Passagem / Suporte</TabsTrigger>
           <TabsTrigger value="relatorios">Relatórios ONA</TabsTrigger>
         </TabsList>
 
@@ -677,13 +676,10 @@ export const AssistenciaSocialModule = () => {
           </Card>
         </TabsContent>
 
-        {/* ======= PASSAGEM DE PLANTÃO TAB ======= */}
-        <TabsContent value="passagem" className="space-y-4">
+        {/* ======= PASSAGEM DE PLANTÃO + SUPORTE TAB ======= */}
+        <TabsContent value="passagem" className="space-y-8">
           <PassagemPlantaoSocial currentUser={currentUser} atendimentos={atendimentos} onRefresh={loadData} />
-        </TabsContent>
-
-        {/* ======= SOLICITAÇÕES DE SUPORTE TAB ======= */}
-        <TabsContent value="suporte" className="space-y-4">
+          <Separator />
           <SolicitacoesSuporte currentUser={currentUser} />
         </TabsContent>
 
