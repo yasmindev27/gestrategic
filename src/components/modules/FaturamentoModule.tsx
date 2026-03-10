@@ -181,7 +181,7 @@ export const FaturamentoModule = () => {
   const [prontuariosFaltantes, setProntuariosFaltantes] = useState<SaidaProntuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<"lista" | "faltantes" | "avaliados" | "dashboard">("faltantes");
+  const [activeTab, setActiveTab] = useState<"faltantes" | "avaliados" | "dashboard">("faltantes");
   const [datePreset, setDatePreset] = useState<DateFilterPreset>(null);
   const [customDateStart, setCustomDateStart] = useState("");
   const [customDateEnd, setCustomDateEnd] = useState("");
