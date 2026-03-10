@@ -147,6 +147,7 @@ export const AssistenciaSocialModule = () => {
     paciente_nome: "",
     setor_atendimento: "",
     numero_prontuario: "",
+    local_atendimento: "",
     tipo_atendimento: "",
     motivo: "",
     descricao: "",
@@ -242,7 +243,7 @@ export const AssistenciaSocialModule = () => {
   };
 
   const handleCreateAtendimento = async () => {
-    if (!atendimentoForm.paciente_nome || !atendimentoForm.setor_atendimento || !atendimentoForm.tipo_atendimento || !atendimentoForm.motivo || !atendimentoForm.descricao) {
+    if (!atendimentoForm.paciente_nome || !atendimentoForm.setor_atendimento || !atendimentoForm.local_atendimento || !atendimentoForm.tipo_atendimento || !atendimentoForm.motivo || !atendimentoForm.descricao) {
       toast({ title: "Erro", description: "Preencha todos os campos obrigatórios", variant: "destructive" });
       return;
     }
@@ -281,7 +282,7 @@ export const AssistenciaSocialModule = () => {
         motivo: atendimentoForm.motivo,
         descricao: atendimentoForm.descricao,
         status: atendimentoForm.status,
-        observacoes: atendimentoForm.observacoes || null,
+        observacoes: [atendimentoForm.local_atendimento ? `Local: ${atendimentoForm.local_atendimento}` : '', atendimentoForm.observacoes].filter(Boolean).join('\n') || null,
         profissional_id: currentUser.id,
         profissional_nome: currentUser.nome,
       });
@@ -344,7 +345,7 @@ export const AssistenciaSocialModule = () => {
   });
 
   const resetAtendimentoForm = () => setAtendimentoForm({
-    paciente_nome: "", setor_atendimento: "", numero_prontuario: "", tipo_atendimento: "", motivo: "", descricao: "", status: "em_atendimento", observacoes: "",
+    paciente_nome: "", setor_atendimento: "", numero_prontuario: "", local_atendimento: "", tipo_atendimento: "", motivo: "", descricao: "", status: "em_atendimento", observacoes: "",
   });
 
   const resetEncaminhamentoForm = () => setEncaminhamentoForm({
@@ -794,6 +795,14 @@ export const AssistenciaSocialModule = () => {
                   placeholder="Opcional"
                 />
               </div>
+            </div>
+            <div>
+              <Label>Local do Atendimento *</Label>
+              <Input 
+                value={atendimentoForm.local_atendimento} 
+                onChange={e => setAtendimentoForm({...atendimentoForm, local_atendimento: e.target.value})} 
+                placeholder="Ex: Sala de Observação, Consultório 2, Recepção..."
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
