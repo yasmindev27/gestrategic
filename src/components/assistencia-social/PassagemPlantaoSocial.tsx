@@ -386,7 +386,7 @@ export const PassagemPlantaoSocial = ({ currentUser, atendimentos, onRefresh }: 
           <Collapsible>
             <CollapsibleTrigger asChild>
               <Button variant="ghost" className="w-full justify-between text-sm text-muted-foreground hover:text-foreground">
-                <span className="flex items-center gap-2"><HandHeart className="h-4 w-4" /> Minhas solicitações enviadas ({enviadas.length})</span>
+                <span>Minhas solicitações enviadas ({enviadas.length})</span>
                 <ChevronDown className="h-4 w-4" />
               </Button>
             </CollapsibleTrigger>
