@@ -569,7 +569,7 @@ export const SaidaProntuariosModule = () => {
           existe_fisicamente: existeFisicamente,
           observacao_classificacao: observacao || null,
           checklist_validacao: JSON.parse(JSON.stringify({ ...checklistValidacao, observacao: observacaoChecklist || null })),
-          status: Object.values(checklistValidacao).some(v => v === "pendente") ? "aguardando_pendencia" : "aguardando_nir",
+          status: Object.values(checklistValidacao).some(v => v === "pendente") ? "pendente" : "aguardando_nir",
         })
         .eq("id", selectedSaida.id);
 
@@ -741,11 +741,11 @@ export const SaidaProntuariosModule = () => {
     const statusConfig: Record<string, { label: string; className: string }> = {
       aguardando_classificacao: { label: "Aguardando Classificação", className: "bg-warning text-warning-foreground" },
       aguardando_nir: { label: "Aguardando NIR", className: "bg-info text-info-foreground" },
-      aguardando_pendencia: { label: "Aguardando Resolução de Pendência", className: "bg-orange-500 text-white" },
+      pendente: { label: "Aguardando Resolução de Pendência", className: "bg-warning text-warning-foreground" },
+      aguardando_pendencia: { label: "Aguardando Resolução de Pendência", className: "bg-warning text-warning-foreground" },
       aguardando_faturamento: { label: "Aguardando Faturamento", className: "bg-primary text-primary-foreground" },
       em_avaliacao: { label: "Em Avaliação", className: "bg-secondary text-secondary-foreground" },
       concluido: { label: "Concluído", className: "bg-success text-success-foreground" },
-      pendente: { label: "Pendente", className: "bg-destructive text-destructive-foreground" },
     };
     
     const config = statusConfig[status] || { label: status, className: "bg-secondary" };
@@ -1375,7 +1375,7 @@ export const SaidaProntuariosModule = () => {
                       <SelectItem value="todos">Todos</SelectItem>
                       <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
                       <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
-                      <SelectItem value="aguardando_pendencia">Aguardando Resolução de Pendência</SelectItem>
+                      <SelectItem value="pendente">Aguardando Resolução de Pendência</SelectItem>
                       <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
                       <SelectItem value="em_avaliacao">Em Avaliação</SelectItem>
                       <SelectItem value="concluido">Concluído</SelectItem>
