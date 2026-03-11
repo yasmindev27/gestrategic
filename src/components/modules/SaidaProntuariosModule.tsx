@@ -1174,7 +1174,7 @@ export const SaidaProntuariosModule = () => {
                         </div>
                       </div>
                       {(!cadastroConferido || !possuiCarimboMedico) && (
-                        <p className="text-xs text-amber-600 mt-2">Atenção: itens desmarcados serão registrados como pendência.</p>
+                        <p className="text-xs text-warning mt-2">Atenção: itens desmarcados serão registrados como pendência.</p>
                       )}
                     </div>
                     <div>
