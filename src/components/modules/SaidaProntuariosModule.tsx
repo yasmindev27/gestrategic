@@ -594,11 +594,17 @@ export const SaidaProntuariosModule = () => {
       setObservacaoChecklist("");
       setExisteFisicamente(true);
       fetchSaidas();
-    } catch (error) {
-      console.error("Error:", error);
+    } catch (error: any) {
+      console.error("Erro ao validar classificação:", error);
+      console.error("Dados enviados:", {
+        validado_classificacao_por: userId,
+        existe_fisicamente: existeFisicamente,
+        checklist: checklistValidacao,
+        selectedSaidaId: selectedSaida?.id,
+      });
       toast({
         title: "Erro",
-        description: "Erro ao validar.",
+        description: `Erro ao validar: ${error?.message || error?.details || "Erro desconhecido"}`,
         variant: "destructive",
       });
     } finally {
