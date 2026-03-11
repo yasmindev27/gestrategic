@@ -1150,14 +1150,13 @@ export const SaidaProntuariosModule = () => {
                       />
                     </div>
                     <div className="border rounded-lg p-4 bg-muted/30">
-                      <p className="text-sm font-medium mb-3">Checklist de Verificação <span className="text-destructive">*</span></p>
+                      <p className="text-sm font-medium mb-3">Checklist de Verificação</p>
                       <div className="space-y-3">
                         <div className="flex items-center space-x-3">
                           <Checkbox
                             id="cadastro-conferido"
                             checked={cadastroConferido}
                             onCheckedChange={(checked) => setCadastroConferido(checked === true)}
-                            required
                           />
                           <label htmlFor="cadastro-conferido" className="text-sm cursor-pointer">
                             Cadastro conferido e identificação do paciente correta?
@@ -1168,7 +1167,6 @@ export const SaidaProntuariosModule = () => {
                             id="carimbo-medico"
                             checked={possuiCarimboMedico}
                             onCheckedChange={(checked) => setPossuiCarimboMedico(checked === true)}
-                            required
                           />
                           <label htmlFor="carimbo-medico" className="text-sm cursor-pointer">
                             O prontuário possui carimbo médico?
@@ -1176,7 +1174,7 @@ export const SaidaProntuariosModule = () => {
                         </div>
                       </div>
                       {(!cadastroConferido || !possuiCarimboMedico) && (
-                        <p className="text-xs text-destructive mt-2">É obrigatório confirmar todos os itens para registrar.</p>
+                        <p className="text-xs text-amber-600 mt-2">Atenção: itens desmarcados serão registrados como pendência.</p>
                       )}
                     </div>
                     <div>
