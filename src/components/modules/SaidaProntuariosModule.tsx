@@ -1375,7 +1375,7 @@ export const SaidaProntuariosModule = () => {
                       <SelectItem value="todos">Todos</SelectItem>
                       <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
                       <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
-                      <SelectItem value="aguardando_pendencia">Aguardando Resolução de Pendência</SelectItem>
+                      <SelectItem value="pendente">Aguardando Resolução de Pendência</SelectItem>
                       <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
                       <SelectItem value="em_avaliacao">Em Avaliação</SelectItem>
                       <SelectItem value="concluido">Concluído</SelectItem>
