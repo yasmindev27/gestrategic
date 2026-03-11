@@ -1190,7 +1190,7 @@ export const SaidaProntuariosModule = () => {
                   <DialogFooter>
                     <Button 
                       onClick={handleAddSaida} 
-                      disabled={!pacienteNome.trim() || !dataAtendimento || !cadastroConferido || !possuiCarimboMedico || isSubmitting}
+                      disabled={!pacienteNome.trim() || !dataAtendimento || isSubmitting}
                     >
                       {isSubmitting ? (
                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
