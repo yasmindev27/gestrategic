@@ -569,7 +569,7 @@ export const SaidaProntuariosModule = () => {
           existe_fisicamente: existeFisicamente,
           observacao_classificacao: observacao || null,
           checklist_validacao: JSON.parse(JSON.stringify({ ...checklistValidacao, observacao: observacaoChecklist || null })),
-          status: Object.values(checklistValidacao).some(v => v === "pendente") ? "aguardando_pendencia" : "aguardando_nir",
+          status: Object.values(checklistValidacao).some(v => v === "pendente") ? "pendente" : "aguardando_nir",
         })
         .eq("id", selectedSaida.id);
 
