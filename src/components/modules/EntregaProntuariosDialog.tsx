@@ -77,6 +77,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
       setSelectedIds(new Set());
       setResponsavel(null);
       setSearchColab("");
+      setSearchPaciente("");
       setColabResults([]);
     }
   }, [open]);
