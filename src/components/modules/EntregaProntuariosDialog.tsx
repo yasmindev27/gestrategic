@@ -50,6 +50,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
   // Search colaboradores
   const [searchColab, setSearchColab] = useState("");
   const [colabResults, setColabResults] = useState<ColabResult[]>([]);
+  const [searchPaciente, setSearchPaciente] = useState("");
   const [showColabResults, setShowColabResults] = useState(false);
 
   const getSetorInfo = () => {
@@ -76,6 +77,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
       setSelectedIds(new Set());
       setResponsavel(null);
       setSearchColab("");
+      setSearchPaciente("");
       setColabResults([]);
     }
   }, [open]);
@@ -318,26 +320,61 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
             )}
           </div>
 
-          {/* Prontuários do dia */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs font-medium text-muted-foreground">
-                Prontuários do dia ({prontuariosDia.length})
-              </label>
-              {prontuariosDia.length > 0 && (
-                <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={toggleAll}>
-                  {selectedIds.size === prontuariosDia.length ? "Desmarcar todos" : "Selecionar todos"}
-                </Button>
+          {/* Filtro por nome do paciente */}
+          <div className="relative">
+            <label className="text-xs font-medium text-muted-foreground">
+              Buscar por nome do paciente
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Digite o nome do paciente..."
+                value={searchPaciente}
+                onChange={e => setSearchPaciente(e.target.value)}
+                className="pl-10"
+              />
+              {searchPaciente && (
+                <button
+                  onClick={() => setSearchPaciente("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
               )}
             </div>
+          </div>
 
-            {isLoading ? (
-              <div className="flex items-center justify-center py-6">
-                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-              </div>
-            ) : prontuariosDia.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-4">Nenhum prontuário registrado hoje.</p>
-            ) : (
+          {/* Prontuários do dia */}
+          <div>
+            {(() => {
+              const filtrados = searchPaciente.trim()
+                ? prontuariosDia.filter(p =>
+                    (p.paciente_nome || "").toLowerCase().includes(searchPaciente.toLowerCase())
+                  )
+                : prontuariosDia;
+
+              return (
+                <>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Prontuários do dia ({filtrados.length})
+                    </label>
+                    {filtrados.length > 0 && (
+                      <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={toggleAll}>
+                        {selectedIds.size === prontuariosDia.length ? "Desmarcar todos" : "Selecionar todos"}
+                      </Button>
+                    )}
+                  </div>
+
+                  {isLoading ? (
+                    <div className="flex items-center justify-center py-6">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : filtrados.length === 0 ? (
+                    <p className="text-sm text-muted-foreground text-center py-4">
+                      {searchPaciente.trim() ? "Nenhum prontuário encontrado com esse nome." : "Nenhum prontuário registrado hoje."}
+                    </p>
+                  ) : (
               <ScrollArea className="h-[200px] border rounded-md">
                 <div className="p-2 space-y-1">
                   {prontuariosDia.map(p => (
@@ -360,6 +397,9 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
                 </div>
               </ScrollArea>
             )}
+                </>
+              );
+            })()}
           </div>
 
           {selectedIds.size > 0 && (
