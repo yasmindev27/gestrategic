@@ -50,6 +50,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
   // Search colaboradores
   const [searchColab, setSearchColab] = useState("");
   const [colabResults, setColabResults] = useState<ColabResult[]>([]);
+  const [searchPaciente, setSearchPaciente] = useState("");
   const [showColabResults, setShowColabResults] = useState(false);
 
   const getSetorInfo = () => {
