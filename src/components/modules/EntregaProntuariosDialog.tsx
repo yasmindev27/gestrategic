@@ -396,6 +396,9 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
                 </div>
               </ScrollArea>
             )}
+                </>
+              );
+            })()}
           </div>
 
           {selectedIds.size > 0 && (
