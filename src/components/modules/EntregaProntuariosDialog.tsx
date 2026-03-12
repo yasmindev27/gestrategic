@@ -377,7 +377,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
                   ) : (
               <ScrollArea className="h-[200px] border rounded-md">
                 <div className="p-2 space-y-1">
-                  {prontuariosDia.map(p => (
+                  {filtrados.map(p => (
                     <label
                       key={p.id}
                       className="flex items-center gap-3 p-2 rounded-md hover:bg-muted/50 cursor-pointer"
