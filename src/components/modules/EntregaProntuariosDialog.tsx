@@ -318,6 +318,30 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
             )}
           </div>
 
+          {/* Filtro por nome do paciente */}
+          <div className="relative">
+            <label className="text-xs font-medium text-muted-foreground">
+              Buscar por nome do paciente
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Digite o nome do paciente..."
+                value={searchPaciente}
+                onChange={e => setSearchPaciente(e.target.value)}
+                className="pl-10"
+              />
+              {searchPaciente && (
+                <button
+                  onClick={() => setSearchPaciente("")}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </div>
+
           {/* Prontuários do dia */}
           <div>
             <div className="flex items-center justify-between mb-2">
