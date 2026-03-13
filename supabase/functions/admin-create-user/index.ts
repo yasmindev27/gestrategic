@@ -77,28 +77,8 @@ serve(async (req) => {
     // Gerar email fictício se apenas matrícula foi fornecida
     const userEmail = email || `${matricula}@interno.local`;
 
-    // Gerar senha segura aleatória se não fornecida
-    function generateSecurePassword(): string {
-      const upper = "ABCDEFGHJKLMNPQRSTUVWXYZ";
-      const lower = "abcdefghijkmnpqrstuvwxyz";
-      const digits = "23456789";
-      const special = "!@#$%&*";
-      const all = upper + lower + digits + special;
-      // Garantir ao menos 1 de cada categoria
-      let password =
-        upper[Math.floor(Math.random() * upper.length)] +
-        lower[Math.floor(Math.random() * lower.length)] +
-        digits[Math.floor(Math.random() * digits.length)] +
-        special[Math.floor(Math.random() * special.length)];
-      for (let i = 4; i < 16; i++) {
-        password += all[Math.floor(Math.random() * all.length)];
-      }
-      // Embaralhar para não ter padrão fixo no início
-      return password.split("").sort(() => Math.random() - 0.5).join("");
-    }
-
-    const generatedPassword = !password ? generateSecurePassword() : null;
-    const userPassword = password || generatedPassword!;
+    // Senha padrão: 123456 (quando não informada)
+    const userPassword = password || "123456";
 
     // Create user using admin client
     const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
