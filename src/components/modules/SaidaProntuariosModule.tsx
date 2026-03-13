@@ -402,21 +402,22 @@ export const SaidaProntuariosModule = () => {
       const folhas = data as SaidaProntuario[];
       setFolhasAvulsas(folhas);
       
-      // Check which folhas avulsas have a corresponding main record
+      // Check which folhas avulsas have a corresponding main record (batched)
       const vinculados = new Set<string>();
-      for (const folha of folhas) {
-        if (folha.paciente_nome && folha.data_atendimento) {
+      const checks = folhas
+        .filter(f => f.paciente_nome && f.data_atendimento)
+        .map(async (folha) => {
           const { data: match } = await supabase
             .from("saida_prontuarios")
             .select("id")
             .eq("is_folha_avulsa", false)
-            .eq("paciente_nome", folha.paciente_nome)
-            .eq("data_atendimento", folha.data_atendimento)
+            .eq("paciente_nome", folha.paciente_nome!)
+            .eq("data_atendimento", folha.data_atendimento!)
             .limit(1)
             .maybeSingle();
           if (match) vinculados.add(folha.id);
-        }
-      }
+        });
+      await Promise.all(checks);
       setFolhasVinculadasSet(vinculados);
     }
     setFolhasPage(page);
