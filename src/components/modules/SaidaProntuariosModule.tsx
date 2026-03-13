@@ -1640,7 +1640,7 @@ export const SaidaProntuariosModule = () => {
                               .map(([k]) => {
                                 const labels: Record<string, string> = {
                                   carimbo_enfermagem: "Carimbo Enfermagem",
-                                  evolucao: "Evolução",
+                                  evolucao: "Evolução da medicação",
                                   ficha_medicacao: "Ficha de medicação",
                                   pedidos_exames: "Pedidos de exames",
                                   alta_medica: "Alta médica",
