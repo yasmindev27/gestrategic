@@ -1200,6 +1200,10 @@ export const SaidaProntuariosModule = () => {
           )}
           {canInsert && (
             <>
+              <Button variant="outline" onClick={() => setImportarOpen(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Importar Planilha
+              </Button>
               <Dialog open={newProntuarioOpen} onOpenChange={setNewProntuarioOpen}>
                 <TooltipProvider>
                   <Tooltip>
