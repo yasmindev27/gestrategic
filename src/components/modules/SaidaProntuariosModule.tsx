@@ -309,27 +309,29 @@ export const SaidaProntuariosModule = () => {
       // Recepção: vê somente hoje e status aguardando_classificacao ou registros sem validação
       query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
     } else if (isClassificacao && !isAdmin && !isNir && !isFaturamento) {
-      // Classificação: vê todos os prontuários aguardando classificação ou pendentes (sem limite de data)
-      if (statusFilter === "todos" || statusFilter === "em_fluxo") {
-        query = query.in("status", ["aguardando_classificacao", "pendente"]);
+      // Classificação: vê SOMENTE aguardando_classificacao ou pendente (sempre)
+      const allowedStatuses = ["aguardando_classificacao", "pendente"];
+      if (statusFilter !== "todos" && statusFilter !== "em_fluxo" && allowedStatuses.includes(statusFilter)) {
+        query = query.eq("status", statusFilter);
+      } else {
+        query = query.in("status", allowedStatuses);
       }
     } else if (isNir && !isAdmin && !isFaturamento) {
-      // NIR: vê apenas prontuários aguardando NIR
-      if (statusFilter === "todos" || statusFilter === "em_fluxo") {
-        query = query.in("status", ["aguardando_nir"]);
+      // NIR: vê SOMENTE aguardando_nir (sempre)
+      query = query.in("status", ["aguardando_nir"]);
+    }
+    // Faturamento e Admin veem todos — aplicar filtro de status livremente
+    else {
+      if (statusFilter === "em_fluxo") {
+        query = query.neq("status", "concluido");
+      } else if (statusFilter !== "todos") {
+        query = query.eq("status", statusFilter);
       }
     }
-    // Faturamento e Admin veem todos
 
     if (debouncedSearchTerm) query = query.ilike("paciente_nome", `%${debouncedSearchTerm}%`);
     if (dataInicio) query = query.gte("data_atendimento", dataInicio);
     if (dataFim) query = query.lte("data_atendimento", dataFim);
-    
-    if (statusFilter === "em_fluxo") {
-      query = query.neq("status", "concluido");
-    } else if (statusFilter !== "todos") {
-      query = query.eq("status", statusFilter);
-    }
 
     const { data, error } = await query;
     if (!error && data) {
