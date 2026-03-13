@@ -1979,15 +1979,23 @@ export const SaidaProntuariosModule = () => {
                                 <div className="text-xs text-muted-foreground">
                                   <span className="block">Registrado: {safeFormatDate(folhasVinculadasMap[item.id].data_registro, "dd/MM/yyyy HH:mm")}</span>
                                   <span className="block">Etapa: {
-                                    ({
-                                      aguardando_classificacao: "Classificação",
-                                      aguardando_nir: "NIR",
-                                      pendente: "Pendência",
-                                      aguardando_pendencia: "Pendência",
-                                      aguardando_faturamento: "Faturamento",
-                                      em_avaliacao: "Em Avaliação",
-                                      concluido: "Concluído",
-                                    } as Record<string, string>)[folhasVinculadasMap[item.id].status] || folhasVinculadasMap[item.id].status
+                                    (() => {
+                                      const info = folhasVinculadasMap[item.id];
+                                      const statusLabels: Record<string, string> = {
+                                        aguardando_classificacao: "Classificação",
+                                        aguardando_nir: "NIR",
+                                        pendente: "Pendência",
+                                        aguardando_pendencia: "Pendência",
+                                        aguardando_faturamento: "Faturamento",
+                                        em_avaliacao: "Em Avaliação",
+                                        concluido: "Concluído",
+                                      };
+                                      const label = statusLabels[info.status] || info.status;
+                                      if (info.origem_pendencia) {
+                                        return `${label} (${info.origem_pendencia})`;
+                                      }
+                                      return label;
+                                    })()
                                   }</span>
                                 </div>
                               </div>
