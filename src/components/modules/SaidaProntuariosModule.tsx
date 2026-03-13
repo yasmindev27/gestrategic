@@ -301,14 +301,23 @@ export const SaidaProntuariosModule = () => {
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
-    // Recepção vê somente hoje; Classificação vê ontem + hoje (D1: 24h para tratar)
-    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
-    const restrictToYesterdayToday = isClassificacao && !isAdmin && !isNir && !isFaturamento;
-    if (restrictToToday) {
+    // Filtrar por status baseado no setor do usuário
+    if (isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao) {
+      // Recepção: vê somente hoje e status aguardando_classificacao ou registros sem validação
       query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-    } else if (restrictToYesterdayToday) {
+    } else if (isClassificacao && !isAdmin && !isNir && !isFaturamento) {
+      // Classificação: vê apenas prontuários aguardando classificação (ontem + hoje)
       query = query.gte("created_at", inicioOntem).lte("created_at", fimHoje);
+      if (statusFilter === "todos" || statusFilter === "em_fluxo") {
+        query = query.in("status", ["aguardando_classificacao", "pendente"]);
+      }
+    } else if (isNir && !isAdmin && !isFaturamento) {
+      // NIR: vê apenas prontuários aguardando NIR
+      if (statusFilter === "todos" || statusFilter === "em_fluxo") {
+        query = query.in("status", ["aguardando_nir"]);
+      }
     }
+    // Faturamento e Admin veem todos
 
     if (debouncedSearchTerm) query = query.ilike("paciente_nome", `%${debouncedSearchTerm}%`);
     if (dataInicio) query = query.gte("data_atendimento", dataInicio);
