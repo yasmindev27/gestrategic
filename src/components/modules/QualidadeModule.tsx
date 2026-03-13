@@ -745,14 +745,16 @@ export const QualidadeModule = () => {
     return matchSearch && matchStatus && matchTipo && matchDataInicio && matchDataFim;
   });
 
-  // Stats
+  // Stats — refletem dados filtrados quando filtros estão ativos
+  const hasQualidadeFilters = searchTerm || statusFilter !== "todos" || tipoFilter !== "todos" || dataInicio || dataFim;
+  const statsSource = hasQualidadeFilters ? filteredIncidentes : incidentes;
   const stats = {
-    total: incidentes.length,
-    notificados: incidentes.filter(i => i.status === "notificado").length,
-    emAnalise: incidentes.filter(i => i.status === "em_analise").length,
-    encerrados: incidentes.filter(i => i.status === "encerrado").length,
-    eventosAdversos: incidentes.filter(i => i.tipo_incidente === "evento_adverso").length,
-    quaseErros: incidentes.filter(i => i.tipo_incidente === "quase_erro").length,
+    total: statsSource.length,
+    notificados: statsSource.filter(i => i.status === "notificado").length,
+    emAnalise: statsSource.filter(i => i.status === "em_analise").length,
+    encerrados: statsSource.filter(i => i.status === "encerrado").length,
+    eventosAdversos: statsSource.filter(i => i.tipo_incidente === "evento_adverso").length,
+    quaseErros: statsSource.filter(i => i.tipo_incidente === "quase_erro").length,
     acoesPendentes: acoes.filter(a => a.status === "pendente").length,
   };
 
