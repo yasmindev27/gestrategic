@@ -263,8 +263,6 @@ export const SaidaProntuariosModule = () => {
 
       if (restrictedToToday) {
         folhasCountQueryBase = folhasCountQueryBase.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-      } else if (restrictedToYesterdayToday) {
-        folhasCountQueryBase = folhasCountQueryBase.gte("created_at", inicioOntem).lte("created_at", fimHoje);
       }
 
       let faltantesCountQueryBase = supabase
