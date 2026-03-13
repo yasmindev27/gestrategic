@@ -557,11 +557,13 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
     });
   }, [chamados, searchTerm, statusFilter, filterDay, filterMonth, filterYear]);
 
+  const hasFilters = searchTerm || statusFilter !== "todos" || filterDay !== "todos" || filterMonth !== "todos" || filterYear !== "todos";
+  const statsSource = hasFilters ? filteredChamados : chamados;
   const stats = {
-    total: chamados.length,
-    abertos: chamados.filter(c => c.status === 'aberto').length,
-    emAndamento: chamados.filter(c => c.status === 'em_andamento').length,
-    resolvidos: chamados.filter(c => c.status === 'resolvido').length,
+    total: statsSource.length,
+    abertos: statsSource.filter(c => c.status === 'aberto').length,
+    emAndamento: statsSource.filter(c => c.status === 'em_andamento').length,
+    resolvidos: statsSource.filter(c => c.status === 'resolvido').length,
   };
 
   // Importar chamados de Excel
