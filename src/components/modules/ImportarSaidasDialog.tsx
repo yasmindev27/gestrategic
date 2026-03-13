@@ -59,6 +59,7 @@ export const ImportarSaidasDialog = ({
   const resetState = () => {
     setPreview([]);
     setFileName("");
+    setDataAtendimento("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
