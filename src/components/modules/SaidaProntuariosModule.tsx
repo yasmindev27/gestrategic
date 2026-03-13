@@ -552,6 +552,15 @@ export const SaidaProntuariosModule = () => {
           return;
         }
       } else {
+        const hasPendencia = !cadastroConferido || !possuiCarimboMedico;
+        const pendenciaItems: string[] = [];
+        if (!cadastroConferido) pendenciaItems.push("Cadastro não conferido");
+        if (!possuiCarimboMedico) pendenciaItems.push("Sem carimbo médico");
+        
+        const observacaoFinal = hasPendencia
+          ? [observacaoSaida.trim(), `Pendência (Recepção): ${pendenciaItems.join(", ")}`].filter(Boolean).join(" | ")
+          : observacaoSaida.trim() || null;
+
         const { error } = await supabase
           .from("saida_prontuarios")
           .insert({
@@ -560,10 +569,10 @@ export const SaidaProntuariosModule = () => {
             data_atendimento: dataAtendimento,
             cadastro_conferido: cadastroConferido,
             possui_carimbo_medico: possuiCarimboMedico,
-            observacao_classificacao: observacaoSaida.trim() || null,
+            observacao_classificacao: observacaoFinal,
             registrado_recepcao_por: userId,
             registrado_recepcao_em: new Date().toISOString(),
-            status: "aguardando_classificacao",
+            status: hasPendencia ? "pendente" : "aguardando_classificacao",
           });
 
         if (error) throw error;
