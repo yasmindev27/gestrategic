@@ -139,6 +139,9 @@ export const SaidaProntuariosModule = () => {
   const [totalSaidasHojeCount, setTotalSaidasHojeCount] = useState(0);
   const [totalFolhasCount, setTotalFolhasCount] = useState(0);
   const [totalFaltantesCount, setTotalFaltantesCount] = useState(0);
+  const [filteredSaidasCount, setFilteredSaidasCount] = useState<number | null>(null);
+  const [filteredFolhasCount, setFilteredFolhasCount] = useState<number | null>(null);
+  const [filteredFaltantesCount, setFilteredFaltantesCount] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [newProntuarioOpen, setNewProntuarioOpen] = useState(false);
   const [newFolhaAvulsaOpen, setNewFolhaAvulsaOpen] = useState(false);
@@ -294,22 +297,13 @@ export const SaidaProntuariosModule = () => {
     fetchFaltantesPage(0);
   };
 
-  const fetchSaidasPage = async (page: number) => {
-    const from = page * PAGE_SIZE;
-    let query = supabase
-      .from("saida_prontuarios")
-      .select("*")
-      .eq("is_folha_avulsa", false)
-      .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%")
-      .order("data_atendimento", { ascending: false })
-      .range(from, from + PAGE_SIZE - 1);
 
+
+  const applySaidasFilters = (query: any) => {
     // Filtrar por status baseado no setor do usuário
     if (isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao) {
-      // Recepção: vê somente hoje e status aguardando_classificacao ou registros sem validação
       query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
     } else if (isClassificacao && !isAdmin && !isNir && !isFaturamento) {
-      // Classificação: vê SOMENTE aguardando_classificacao ou pendente (sempre)
       const allowedStatuses = ["aguardando_classificacao", "pendente"];
       if (statusFilter !== "todos" && statusFilter !== "em_fluxo" && allowedStatuses.includes(statusFilter)) {
         query = query.eq("status", statusFilter);
@@ -317,11 +311,8 @@ export const SaidaProntuariosModule = () => {
         query = query.in("status", allowedStatuses);
       }
     } else if (isNir && !isAdmin && !isFaturamento) {
-      // NIR: vê SOMENTE aguardando_nir (sempre)
       query = query.in("status", ["aguardando_nir"]);
-    }
-    // Faturamento e Admin veem todos — aplicar filtro de status livremente
-    else {
+    } else {
       if (statusFilter === "em_fluxo") {
         query = query.neq("status", "concluido");
       } else if (statusFilter !== "todos") {
@@ -332,13 +323,35 @@ export const SaidaProntuariosModule = () => {
     if (debouncedSearchTerm) query = query.ilike("paciente_nome", `%${debouncedSearchTerm}%`);
     if (dataInicio) query = query.gte("data_atendimento", dataInicio);
     if (dataFim) query = query.lte("data_atendimento", dataFim);
+    return query;
+  };
 
-    const { data, error } = await query;
+  const fetchSaidasPage = async (page: number) => {
+    const from = page * PAGE_SIZE;
+    let query = supabase
+      .from("saida_prontuarios")
+      .select("*")
+      .eq("is_folha_avulsa", false)
+      .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%")
+      .order("data_atendimento", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+
+    query = applySaidasFilters(query);
+
+    // Count query with same filters (no range/order)
+    let countQuery = supabase
+      .from("saida_prontuarios")
+      .select("*", { count: "exact", head: true })
+      .eq("is_folha_avulsa", false)
+      .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%");
+    countQuery = applySaidasFilters(countQuery);
+
+    const [{ data, error }, { count: filteredCount }] = await Promise.all([query, countQuery]);
     if (!error && data) {
       setSaidas(data as SaidaProntuario[]);
-      // Fetch entregas for these saidas
       fetchEntregas(data.map((d: any) => d.id));
     }
+    setFilteredSaidasCount(filteredCount ?? 0);
     setSaidasPage(page);
   };
 
@@ -375,6 +388,17 @@ export const SaidaProntuariosModule = () => {
     setEntregasMap(map);
   };
 
+  const applyFolhasFilters = (query: any) => {
+    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
+    if (restrictToToday) {
+      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
+    }
+    if (debouncedFolhasSearch) query = query.ilike("paciente_nome", `%${debouncedFolhasSearch}%`);
+    if (folhasDataInicio) query = query.gte("data_atendimento", folhasDataInicio);
+    if (folhasDataFim) query = query.lte("data_atendimento", folhasDataFim);
+    return query;
+  };
+
   const fetchFolhasPage = async (page: number) => {
     let query = supabase
       .from("saida_prontuarios")
@@ -382,19 +406,17 @@ export const SaidaProntuariosModule = () => {
       .eq("is_folha_avulsa", true)
       .order("data_atendimento", { ascending: false })
       .limit(2000);
+    query = applyFolhasFilters(query);
 
-    // Recepção vê somente hoje; Classificação vê ontem + hoje (D1: 24h)
-    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
-    const restrictToYesterdayToday = isClassificacao && !isAdmin && !isNir && !isFaturamento;
-    if (restrictToToday) {
-      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-    }
+    let countQuery = supabase
+      .from("saida_prontuarios")
+      .select("*", { count: "exact", head: true })
+      .eq("is_folha_avulsa", true);
+    countQuery = applyFolhasFilters(countQuery);
 
-    if (debouncedFolhasSearch) query = query.ilike("paciente_nome", `%${debouncedFolhasSearch}%`);
-    if (folhasDataInicio) query = query.gte("data_atendimento", folhasDataInicio);
-    if (folhasDataFim) query = query.lte("data_atendimento", folhasDataFim);
+    const hasFolhasFilters = debouncedFolhasSearch || folhasDataInicio || folhasDataFim;
 
-    const { data, error } = await query;
+    const [{ data, error }, { count: fCount }] = await Promise.all([query, countQuery]);
     if (!error && data) {
       const folhas = data as SaidaProntuario[];
       setFolhasAvulsas(folhas);
@@ -429,7 +451,20 @@ export const SaidaProntuariosModule = () => {
       await Promise.all(checks);
       setFolhasVinculadasMap(vinculadosMap);
     }
+    if (hasFolhasFilters) setFilteredFolhasCount(fCount ?? 0);
+    else setFilteredFolhasCount(null);
     setFolhasPage(page);
+  };
+
+  const applyFaltantesFilters = (query: any) => {
+    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
+    if (restrictToToday) {
+      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
+    }
+    if (debouncedFaltantesSearch) query = query.ilike("paciente_nome", `%${debouncedFaltantesSearch}%`);
+    if (faltantesDataInicio) query = query.gte("data_atendimento", faltantesDataInicio);
+    if (faltantesDataFim) query = query.lte("data_atendimento", faltantesDataFim);
+    return query;
   };
 
   const fetchFaltantesPage = async (page: number) => {
@@ -441,20 +476,21 @@ export const SaidaProntuariosModule = () => {
       .eq("status", "pendente")
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
+    query = applyFaltantesFilters(query);
 
-    // Recepção vê somente hoje; Classificação vê ontem + hoje (D1: 24h)
-    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
-    const restrictToYesterdayToday = isClassificacao && !isAdmin && !isNir && !isFaturamento;
-    if (restrictToToday) {
-      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-    }
+    let countQuery = supabase
+      .from("saida_prontuarios")
+      .select("*", { count: "exact", head: true })
+      .ilike("observacao_classificacao", "%importado via salus%")
+      .eq("status", "pendente");
+    countQuery = applyFaltantesFilters(countQuery);
 
-    if (debouncedFaltantesSearch) query = query.ilike("paciente_nome", `%${debouncedFaltantesSearch}%`);
-    if (faltantesDataInicio) query = query.gte("data_atendimento", faltantesDataInicio);
-    if (faltantesDataFim) query = query.lte("data_atendimento", faltantesDataFim);
+    const hasFaltantesFilters = debouncedFaltantesSearch || faltantesDataInicio || faltantesDataFim;
 
-    const { data, error } = await query;
+    const [{ data, error }, { count: fCount }] = await Promise.all([query, countQuery]);
     if (!error && data) setFaltantesSalus(data as SaidaProntuario[]);
+    if (hasFaltantesFilters) setFilteredFaltantesCount(fCount ?? 0);
+    else setFilteredFaltantesCount(null);
     setFaltantesPage(page);
   };
 
@@ -931,6 +967,7 @@ export const SaidaProntuariosModule = () => {
     setDataInicio("");
     setDataFim("");
     setStatusFilter("em_fluxo");
+    setFilteredSaidasCount(null);
   };
 
   const hasActiveFilters = searchTerm || dataInicio || dataFim || (statusFilter !== "em_fluxo");
@@ -1535,11 +1572,11 @@ export const SaidaProntuariosModule = () => {
                 </p>
                 <p className="text-2xl font-bold text-primary">
                   {isFullAccessRole
-                    ? (hasActiveFilters ? filteredSaidas.length : totalSaidasCount)
+                    ? (hasActiveFilters && filteredSaidasCount !== null ? filteredSaidasCount : totalSaidasCount)
                     : totalSaidasHojeCount
                   }
                 </p>
-                {isFullAccessRole && hasActiveFilters && (
+                {isFullAccessRole && hasActiveFilters && filteredSaidasCount !== null && (
                   <p className="text-xs text-muted-foreground">de {totalSaidasCount} totais</p>
                 )}
               </div>
@@ -1559,7 +1596,10 @@ export const SaidaProntuariosModule = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Folhas Avulsas</p>
-                <p className="text-2xl font-bold text-warning">{totalFolhasCount}</p>
+                <p className="text-2xl font-bold text-warning">{filteredFolhasCount !== null ? filteredFolhasCount : totalFolhasCount}</p>
+                {filteredFolhasCount !== null && (
+                  <p className="text-xs text-muted-foreground">de {totalFolhasCount} totais</p>
+                )}
               </div>
             </div>
           </CardContent>
@@ -1577,7 +1617,10 @@ export const SaidaProntuariosModule = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Prontuários Faltantes</p>
-                <p className="text-2xl font-bold text-destructive">{totalFaltantesCount}</p>
+                <p className="text-2xl font-bold text-destructive">{filteredFaltantesCount !== null ? filteredFaltantesCount : totalFaltantesCount}</p>
+                {filteredFaltantesCount !== null && (
+                  <p className="text-xs text-muted-foreground">de {totalFaltantesCount} totais</p>
+                )}
               </div>
             </div>
           </CardContent>
