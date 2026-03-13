@@ -1486,11 +1486,11 @@ export const SaidaProntuariosModule = () => {
               Nenhum prontuário encontrado.
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto relative">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Paciente</TableHead>
+                    <TableHead className="sticky left-0 z-20 bg-background min-w-[180px]">Paciente</TableHead>
                     <TableHead>Data Nasc.</TableHead>
                     <TableHead>Data Atendimento</TableHead>
                     <TableHead>Pendências</TableHead>
@@ -1502,7 +1502,7 @@ export const SaidaProntuariosModule = () => {
                     <TableHead>Entrega Class.</TableHead>
                     <TableHead>NIR</TableHead>
                     <TableHead>Entrega Fat.</TableHead>
-                    <TableHead>Ações</TableHead>
+                    <TableHead className="sticky right-0 z-20 bg-background">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1513,7 +1513,7 @@ export const SaidaProntuariosModule = () => {
                         key={saida.id}
                         className={missingFromSalus ? "bg-destructive/10 border-l-4 border-l-destructive" : ""}
                       >
-                        <TableCell className="font-medium uppercase">
+                        <TableCell className="font-medium uppercase sticky left-0 z-10 bg-background">
                           <div className="flex items-center gap-2">
                             {saida.paciente_nome || "-"}
                             {missingFromSalus && (
@@ -1734,7 +1734,7 @@ export const SaidaProntuariosModule = () => {
                             );
                           })()}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="sticky right-0 z-10 bg-background">
                           {getActionButton(saida)}
                         </TableCell>
                       </TableRow>
