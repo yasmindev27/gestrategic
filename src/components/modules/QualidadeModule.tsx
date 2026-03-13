@@ -330,18 +330,22 @@ export const QualidadeModule = () => {
     };
 
     const [incidentesData, analisesData, acoesData, auditoriasData, usuariosRes] = await Promise.all([
-      fetchAllPaginated((from, to) =>
-        supabase.from("incidentes_nsp").select("*").order("data_ocorrencia", { ascending: false }).range(from, to)
-      ),
-      fetchAllPaginated((from, to) =>
-        supabase.from("analises_incidentes").select("*").order("data_analise", { ascending: false }).range(from, to)
-      ),
-      fetchAllPaginated((from, to) =>
-        supabase.from("acoes_incidentes").select("*").order("created_at", { ascending: false }).range(from, to)
-      ),
-      fetchAllPaginated((from, to) =>
-        supabase.from("auditorias_qualidade").select("*").order("data_auditoria", { ascending: false }).range(from, to)
-      ),
+      fetchAllPaginated(async (from, to) => {
+        const res = await supabase.from("incidentes_nsp").select("*").order("data_ocorrencia", { ascending: false }).range(from, to);
+        return { data: res.data };
+      }),
+      fetchAllPaginated(async (from, to) => {
+        const res = await supabase.from("analises_incidentes").select("*").order("data_analise", { ascending: false }).range(from, to);
+        return { data: res.data };
+      }),
+      fetchAllPaginated(async (from, to) => {
+        const res = await supabase.from("acoes_incidentes").select("*").order("created_at", { ascending: false }).range(from, to);
+        return { data: res.data };
+      }),
+      fetchAllPaginated(async (from, to) => {
+        const res = await supabase.from("auditorias_qualidade").select("*").order("data_auditoria", { ascending: false }).range(from, to);
+        return { data: res.data };
+      }),
       supabase.from("profiles").select("id, user_id, full_name").order("full_name"),
     ]);
 
