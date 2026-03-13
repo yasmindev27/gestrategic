@@ -297,8 +297,8 @@ export const SaidaProntuariosModule = () => {
     fetchFaltantesPage(0);
   };
 
-  const fetchSaidasPage = async (page: number) => {
-    const from = page * PAGE_SIZE;
+
+
   const applySaidasFilters = (query: any) => {
     // Filtrar por status baseado no setor do usuário
     if (isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao) {
