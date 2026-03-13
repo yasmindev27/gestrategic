@@ -267,7 +267,8 @@ export const SaidaProntuariosModule = () => {
       let faltantesCountQueryBase = supabase
         .from("saida_prontuarios")
         .select("*", { count: "exact", head: true })
-        .ilike("observacao_classificacao", "%importado via salus%");
+        .ilike("observacao_classificacao", "%importado via salus%")
+        .eq("status", "pendente");
 
       const [regularCount, regularHojeCount, folhasCount, salusCount] = await Promise.all([
         regularCountQuery,
