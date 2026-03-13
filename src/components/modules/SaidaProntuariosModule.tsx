@@ -383,8 +383,6 @@ export const SaidaProntuariosModule = () => {
     const restrictToYesterdayToday = isClassificacao && !isAdmin && !isNir && !isFaturamento;
     if (restrictToToday) {
       query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-    } else if (restrictToYesterdayToday) {
-      query = query.gte("created_at", inicioOntem).lte("created_at", fimHoje);
     }
 
     if (debouncedFolhasSearch) query = query.ilike("paciente_nome", `%${debouncedFolhasSearch}%`);
