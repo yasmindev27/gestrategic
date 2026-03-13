@@ -961,13 +961,14 @@ export const SaidaProntuariosModule = () => {
   const hasFolhasActiveFilters = folhasSearchTerm || folhasDataInicio || folhasDataFim;
 
   const getFolhasExportData = () => {
-    const headers = ['Paciente', 'Data Nascimento', 'Data Atendimento', 'Status', 'Observação'];
+    const headers = ['Paciente', 'Data Nascimento', 'Data Atendimento', 'Status', 'Observação', 'Vínculo'];
     const rows = filteredFolhasAvulsas.map(s => [
       s.paciente_nome || '-',
       safeFormatDate(s.nascimento_mae, "dd/MM/yyyy"),
       safeFormatDate(s.data_atendimento, "dd/MM/yyyy"),
       'Folha Avulsa',
       s.observacao_classificacao || '-',
+      folhasVinculadasSet.has(s.id) ? 'Vinculado' : 'Sem prontuário',
     ]);
     return { headers, rows };
   };
