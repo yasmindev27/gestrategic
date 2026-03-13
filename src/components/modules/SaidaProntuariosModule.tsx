@@ -388,6 +388,17 @@ export const SaidaProntuariosModule = () => {
     setEntregasMap(map);
   };
 
+  const applyFolhasFilters = (query: any) => {
+    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
+    if (restrictToToday) {
+      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
+    }
+    if (debouncedFolhasSearch) query = query.ilike("paciente_nome", `%${debouncedFolhasSearch}%`);
+    if (folhasDataInicio) query = query.gte("data_atendimento", folhasDataInicio);
+    if (folhasDataFim) query = query.lte("data_atendimento", folhasDataFim);
+    return query;
+  };
+
   const fetchFolhasPage = async (page: number) => {
     let query = supabase
       .from("saida_prontuarios")
@@ -395,19 +406,17 @@ export const SaidaProntuariosModule = () => {
       .eq("is_folha_avulsa", true)
       .order("data_atendimento", { ascending: false })
       .limit(2000);
+    query = applyFolhasFilters(query);
 
-    // Recepção vê somente hoje; Classificação vê ontem + hoje (D1: 24h)
-    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
-    const restrictToYesterdayToday = isClassificacao && !isAdmin && !isNir && !isFaturamento;
-    if (restrictToToday) {
-      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-    }
+    let countQuery = supabase
+      .from("saida_prontuarios")
+      .select("*", { count: "exact", head: true })
+      .eq("is_folha_avulsa", true);
+    countQuery = applyFolhasFilters(countQuery);
 
-    if (debouncedFolhasSearch) query = query.ilike("paciente_nome", `%${debouncedFolhasSearch}%`);
-    if (folhasDataInicio) query = query.gte("data_atendimento", folhasDataInicio);
-    if (folhasDataFim) query = query.lte("data_atendimento", folhasDataFim);
+    const hasFolhasFilters = debouncedFolhasSearch || folhasDataInicio || folhasDataFim;
 
-    const { data, error } = await query;
+    const [{ data, error }, { count: fCount }] = await Promise.all([query, countQuery]);
     if (!error && data) {
       const folhas = data as SaidaProntuario[];
       setFolhasAvulsas(folhas);
@@ -442,6 +451,8 @@ export const SaidaProntuariosModule = () => {
       await Promise.all(checks);
       setFolhasVinculadasMap(vinculadosMap);
     }
+    if (hasFolhasFilters) setFilteredFolhasCount(fCount ?? 0);
+    else setFilteredFolhasCount(null);
     setFolhasPage(page);
   };
 
