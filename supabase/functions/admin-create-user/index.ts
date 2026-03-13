@@ -142,10 +142,7 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        user: { id: newUser.user.id, email: userEmail, matricula },
-        // Retornar senha gerada para que admin possa comunicar ao usuário de forma segura
-        // A senha será exibida apenas uma vez na interface do admin
-        ...(generatedPassword ? { senhaTemporaria: generatedPassword } : {})
+        user: { id: newUser.user.id, email: userEmail, matricula }
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
