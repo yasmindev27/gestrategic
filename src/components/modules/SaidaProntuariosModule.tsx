@@ -160,8 +160,8 @@ export const SaidaProntuariosModule = () => {
   const [folhasDataInicio, setFolhasDataInicio] = useState("");
   const [folhasDataFim, setFolhasDataFim] = useState("");
   
-  // Track which folhas avulsas have a corresponding main prontuário
-  const [folhasVinculadasSet, setFolhasVinculadasSet] = useState<Set<string>>(new Set());
+  // Track which folhas avulsas have a corresponding main prontuário (with details)
+  const [folhasVinculadasMap, setFolhasVinculadasMap] = useState<Record<string, { data_registro: string; status: string }>>({}); 
   
   // Form states
   const [pacienteNome, setPacienteNome] = useState("");
@@ -403,22 +403,27 @@ export const SaidaProntuariosModule = () => {
       setFolhasAvulsas(folhas);
       
       // Check which folhas avulsas have a corresponding main record (batched)
-      const vinculados = new Set<string>();
+      const vinculadosMap: Record<string, { data_registro: string; status: string }> = {};
       const checks = folhas
         .filter(f => f.paciente_nome && f.data_atendimento)
         .map(async (folha) => {
           const { data: match } = await supabase
             .from("saida_prontuarios")
-            .select("id")
+            .select("id, created_at, status")
             .eq("is_folha_avulsa", false)
             .eq("paciente_nome", folha.paciente_nome!)
             .eq("data_atendimento", folha.data_atendimento!)
             .limit(1)
             .maybeSingle();
-          if (match) vinculados.add(folha.id);
+          if (match) {
+            vinculadosMap[folha.id] = {
+              data_registro: match.created_at,
+              status: match.status,
+            };
+          }
         });
       await Promise.all(checks);
-      setFolhasVinculadasSet(vinculados);
+      setFolhasVinculadasMap(vinculadosMap);
     }
     setFolhasPage(page);
   };
@@ -969,7 +974,7 @@ export const SaidaProntuariosModule = () => {
       safeFormatDate(s.data_atendimento, "dd/MM/yyyy"),
       'Folha Avulsa',
       s.observacao_classificacao || '-',
-      folhasVinculadasSet.has(s.id) ? 'Vinculado' : 'Sem prontuário',
+      folhasVinculadasMap[s.id] ? `Vinculado - ${safeFormatDate(folhasVinculadasMap[s.id].data_registro, "dd/MM/yyyy")} - ${folhasVinculadasMap[s.id].status}` : 'Sem prontuário',
     ]);
     return { headers, rows };
   };
@@ -1959,11 +1964,27 @@ export const SaidaProntuariosModule = () => {
                             {item.observacao_classificacao || '-'}
                           </TableCell>
                           <TableCell>
-                            {folhasVinculadasSet.has(item.id) ? (
-                              <Badge variant="outline" className="bg-success/10 text-success border-success/30">
-                                <Check className="h-3 w-3 mr-1" />
-                                Vinculado
-                              </Badge>
+                            {folhasVinculadasMap[item.id] ? (
+                              <div className="space-y-1">
+                                <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                                  <Check className="h-3 w-3 mr-1" />
+                                  Vinculado
+                                </Badge>
+                                <div className="text-xs text-muted-foreground">
+                                  <span className="block">Registrado: {safeFormatDate(folhasVinculadasMap[item.id].data_registro, "dd/MM/yyyy HH:mm")}</span>
+                                  <span className="block">Etapa: {
+                                    ({
+                                      aguardando_classificacao: "Classificação",
+                                      aguardando_nir: "NIR",
+                                      pendente: "Pendência",
+                                      aguardando_pendencia: "Pendência",
+                                      aguardando_faturamento: "Faturamento",
+                                      em_avaliacao: "Em Avaliação",
+                                      concluido: "Concluído",
+                                    } as Record<string, string>)[folhasVinculadasMap[item.id].status] || folhasVinculadasMap[item.id].status
+                                  }</span>
+                                </div>
+                              </div>
                             ) : (
                               <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
                                 <AlertCircle className="h-3 w-3 mr-1" />
