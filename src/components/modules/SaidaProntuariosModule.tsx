@@ -160,6 +160,9 @@ export const SaidaProntuariosModule = () => {
   const [folhasDataInicio, setFolhasDataInicio] = useState("");
   const [folhasDataFim, setFolhasDataFim] = useState("");
   
+  // Track which folhas avulsas have a corresponding main prontuário
+  const [folhasVinculadasSet, setFolhasVinculadasSet] = useState<Set<string>>(new Set());
+  
   // Form states
   const [pacienteNome, setPacienteNome] = useState("");
   const [nascimentoMae, setNascimentoMae] = useState("");
@@ -395,7 +398,28 @@ export const SaidaProntuariosModule = () => {
     if (folhasDataFim) query = query.lte("data_atendimento", folhasDataFim);
 
     const { data, error } = await query;
-    if (!error && data) setFolhasAvulsas(data as SaidaProntuario[]);
+    if (!error && data) {
+      const folhas = data as SaidaProntuario[];
+      setFolhasAvulsas(folhas);
+      
+      // Check which folhas avulsas have a corresponding main record (batched)
+      const vinculados = new Set<string>();
+      const checks = folhas
+        .filter(f => f.paciente_nome && f.data_atendimento)
+        .map(async (folha) => {
+          const { data: match } = await supabase
+            .from("saida_prontuarios")
+            .select("id")
+            .eq("is_folha_avulsa", false)
+            .eq("paciente_nome", folha.paciente_nome!)
+            .eq("data_atendimento", folha.data_atendimento!)
+            .limit(1)
+            .maybeSingle();
+          if (match) vinculados.add(folha.id);
+        });
+      await Promise.all(checks);
+      setFolhasVinculadasSet(vinculados);
+    }
     setFolhasPage(page);
   };
 
@@ -938,13 +962,14 @@ export const SaidaProntuariosModule = () => {
   const hasFolhasActiveFilters = folhasSearchTerm || folhasDataInicio || folhasDataFim;
 
   const getFolhasExportData = () => {
-    const headers = ['Paciente', 'Data Nascimento', 'Data Atendimento', 'Status', 'Observação'];
+    const headers = ['Paciente', 'Data Nascimento', 'Data Atendimento', 'Status', 'Observação', 'Vínculo'];
     const rows = filteredFolhasAvulsas.map(s => [
       s.paciente_nome || '-',
       safeFormatDate(s.nascimento_mae, "dd/MM/yyyy"),
       safeFormatDate(s.data_atendimento, "dd/MM/yyyy"),
       'Folha Avulsa',
       s.observacao_classificacao || '-',
+      folhasVinculadasSet.has(s.id) ? 'Vinculado' : 'Sem prontuário',
     ]);
     return { headers, rows };
   };
@@ -1907,6 +1932,7 @@ export const SaidaProntuariosModule = () => {
                       <TableHead>Data Nasc.</TableHead>
                       <TableHead>Data Atendimento</TableHead>
                       <TableHead>Observação</TableHead>
+                      <TableHead>Vínculo</TableHead>
                       <TableHead>Status</TableHead>
                       {isAdmin && <TableHead>Ações</TableHead>}
                     </TableRow>
@@ -1914,7 +1940,7 @@ export const SaidaProntuariosModule = () => {
                   <TableBody>
                     {filteredFolhasAvulsas.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={isAdmin ? 7 : 6} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground py-8">
                           Nenhum registro encontrado com os filtros aplicados
                         </TableCell>
                       </TableRow>
@@ -1931,6 +1957,19 @@ export const SaidaProntuariosModule = () => {
                           </TableCell>
                           <TableCell className="max-w-[200px] truncate" title={item.observacao_classificacao || ''}>
                             {item.observacao_classificacao || '-'}
+                          </TableCell>
+                          <TableCell>
+                            {folhasVinculadasSet.has(item.id) ? (
+                              <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                                <Check className="h-3 w-3 mr-1" />
+                                Vinculado
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Sem prontuário
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Badge className="flex items-center gap-1 w-fit bg-warning text-warning-foreground">
