@@ -54,6 +54,7 @@ export const ImportarSaidasDialog = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [dataAtendimento, setDataAtendimento] = useState("");
 
   const resetState = () => {
     setPreview([]);
