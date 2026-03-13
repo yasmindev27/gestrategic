@@ -139,6 +139,9 @@ export const SaidaProntuariosModule = () => {
   const [totalSaidasHojeCount, setTotalSaidasHojeCount] = useState(0);
   const [totalFolhasCount, setTotalFolhasCount] = useState(0);
   const [totalFaltantesCount, setTotalFaltantesCount] = useState(0);
+  const [filteredSaidasCount, setFilteredSaidasCount] = useState<number | null>(null);
+  const [filteredFolhasCount, setFilteredFolhasCount] = useState<number | null>(null);
+  const [filteredFaltantesCount, setFilteredFaltantesCount] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [newProntuarioOpen, setNewProntuarioOpen] = useState(false);
   const [newFolhaAvulsaOpen, setNewFolhaAvulsaOpen] = useState(false);
