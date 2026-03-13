@@ -1490,7 +1490,7 @@ export const SaidaProntuariosModule = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="sticky left-0 z-20 bg-background min-w-[180px]">Paciente</TableHead>
+                    <TableHead className="sticky left-0 z-20 bg-card min-w-[180px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Paciente</TableHead>
                     <TableHead>Data Nasc.</TableHead>
                     <TableHead>Data Atendimento</TableHead>
                     <TableHead>Pendências</TableHead>
@@ -1502,7 +1502,7 @@ export const SaidaProntuariosModule = () => {
                     <TableHead>Entrega Class.</TableHead>
                     <TableHead>NIR</TableHead>
                     <TableHead>Entrega Fat.</TableHead>
-                    <TableHead className="sticky right-0 z-20 bg-background">Ações</TableHead>
+                    <TableHead className="sticky right-0 z-20 bg-card shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
