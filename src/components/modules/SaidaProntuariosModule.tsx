@@ -2391,6 +2391,13 @@ export const SaidaProntuariosModule = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImportarSaidasDialog
+        open={importarOpen}
+        onOpenChange={setImportarOpen}
+        userId={userId || ""}
+        onImportComplete={() => fetchCounts()}
+      />
     </div>
   );
 };
