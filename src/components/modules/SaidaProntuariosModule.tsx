@@ -160,8 +160,8 @@ export const SaidaProntuariosModule = () => {
   const [folhasDataInicio, setFolhasDataInicio] = useState("");
   const [folhasDataFim, setFolhasDataFim] = useState("");
   
-  // Track which folhas avulsas have a corresponding main prontuário
-  const [folhasVinculadasSet, setFolhasVinculadasSet] = useState<Set<string>>(new Set());
+  // Track which folhas avulsas have a corresponding main prontuário (with details)
+  const [folhasVinculadasMap, setFolhasVinculadasMap] = useState<Record<string, { data_registro: string; status: string }>>({}); 
   
   // Form states
   const [pacienteNome, setPacienteNome] = useState("");
