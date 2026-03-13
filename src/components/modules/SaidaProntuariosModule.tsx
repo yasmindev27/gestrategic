@@ -534,7 +534,6 @@ export const SaidaProntuariosModule = () => {
         if (error) throw error;
       }
 
-      if (error) throw error;
 
       await logAction("registrar_saida", "saida_prontuarios", { 
         paciente: pacienteNome,
