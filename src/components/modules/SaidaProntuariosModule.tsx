@@ -277,9 +277,7 @@ export const SaidaProntuariosModule = () => {
         folhasCountQueryBase,
         restrictedToToday
           ? faltantesCountQueryBase.gte("created_at", inicioHoje).lte("created_at", fimHoje)
-          : restrictedToYesterdayToday
-            ? faltantesCountQueryBase.gte("created_at", inicioOntem).lte("created_at", fimHoje)
-            : faltantesCountQueryBase,
+          : faltantesCountQueryBase,
       ]);
       setTotalSaidasCount(regularCount.count ?? 0);
       setTotalSaidasHojeCount(regularHojeCount.count ?? 0);
