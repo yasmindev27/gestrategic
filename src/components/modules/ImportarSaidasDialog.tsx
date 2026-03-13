@@ -4,7 +4,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,9 +15,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Upload, Loader2, AlertCircle, Check, FileSpreadsheet, Download } from "lucide-react";
+import { Upload, Loader2, AlertCircle, Check, FileSpreadsheet, Download, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getBrasiliaDateString } from "@/lib/brasilia-time";
 import * as XLSX from "xlsx";
 
 interface ImportarSaidasDialogProps {
@@ -67,19 +67,164 @@ export const ImportarSaidasDialog = ({
   const parseDate = (val: unknown): string | null => {
     if (!val) return null;
     if (typeof val === "number") {
-      // Excel serial date
       const d = XLSX.SSF.parse_date_code(val);
       if (d) return `${d.y}-${String(d.m).padStart(2, "0")}-${String(d.d).padStart(2, "0")}`;
     }
     const s = String(val).trim();
-    // dd/mm/yyyy
     const m = s.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
     if (m) return `${m[3]}-${m[2]}-${m[1]}`;
-    // yyyy-mm-dd
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
     return null;
   };
 
+  const isPdf = (file: File) =>
+    file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
+
+  // ── PDF handling via edge function ──
+  const handlePdf = async (file: File) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({ title: "Sessão expirada", variant: "destructive" });
+      return;
+    }
+
+    const res = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/processar-pdf-salus`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: formData,
+      }
+    );
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: "Erro ao processar PDF" }));
+      throw new Error(err.error || "Erro ao processar PDF");
+    }
+
+    const result = await res.json();
+    if (!result.success || !result.pacientes?.length) {
+      toast({ title: "Nenhum paciente encontrado no PDF", variant: "destructive" });
+      return;
+    }
+
+    const today = getBrasiliaDateString();
+
+    // Build rows from PDF extraction
+    const rows: ImportRow[] = result.pacientes.map((p: { nome: string; prontuario?: string }) => ({
+      paciente_nome: p.nome.toUpperCase().trim(),
+      data_atendimento: today,
+      observacao: p.prontuario ? `Prontuário: ${p.prontuario}` : undefined,
+    }));
+
+    await checkDuplicatesAndPreview(rows);
+  };
+
+  // ── XLSX/CSV handling ──
+  const handleSpreadsheet = async (file: File) => {
+    const buffer = await file.arrayBuffer();
+    const wb = XLSX.read(buffer, { type: "array" });
+    const ws = wb.Sheets[wb.SheetNames[0]];
+    const raw: Record<string, unknown>[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+    if (raw.length === 0) {
+      toast({ title: "Planilha vazia", variant: "destructive" });
+      return;
+    }
+
+    const rows: ImportRow[] = raw.map((r) => {
+      const keys = Object.keys(r);
+      const find = (terms: string[]) =>
+        keys.find((k) => terms.some((t) => k.toLowerCase().includes(t))) || "";
+
+      const nomeKey = find(["paciente", "nome"]);
+      const dataKey = find(["atendimento", "data"]);
+      const maeKey = find(["mae", "mãe", "nascimento"]);
+      const obsKey = find(["obs", "observa"]);
+
+      return {
+        paciente_nome: String(r[nomeKey] || "").trim(),
+        data_atendimento: parseDate(r[dataKey]) || "",
+        nascimento_mae: String(r[maeKey] || "").trim() || undefined,
+        observacao: String(r[obsKey] || "").trim() || undefined,
+      };
+    }).filter((r) => r.paciente_nome);
+
+    if (rows.length === 0) {
+      toast({ title: "Nenhum registro válido encontrado", description: "Verifique se a planilha tem coluna 'Paciente' ou 'Nome'.", variant: "destructive" });
+      return;
+    }
+
+    await checkDuplicatesAndPreview(rows);
+  };
+
+  // ── Duplicate check shared logic ──
+  const checkDuplicatesAndPreview = async (rows: ImportRow[]) => {
+    const nomes = rows.map((r) => r.paciente_nome.toUpperCase());
+
+    // Paginated fetch to handle >1000 existing records
+    let allExistentes: { paciente_nome: string | null; data_atendimento: string | null }[] = [];
+    const PAGE_SIZE = 1000;
+    let page = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const from = page * PAGE_SIZE;
+      const { data: batch } = await supabase
+        .from("saida_prontuarios")
+        .select("paciente_nome, data_atendimento")
+        .eq("is_folha_avulsa", false)
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (batch && batch.length > 0) {
+        allExistentes = allExistentes.concat(batch);
+        hasMore = batch.length === PAGE_SIZE;
+        page++;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    const existSet = new Set(
+      allExistentes.map((e) =>
+        `${(e.paciente_nome || "").toUpperCase()}|${e.data_atendimento || ""}`
+      )
+    );
+
+    // Also check by name only (for PDF imports where date is today)
+    const existNamesOnly = new Set(
+      allExistentes.map((e) => (e.paciente_nome || "").toUpperCase())
+    );
+
+    const seenInFile = new Set<string>();
+
+    const previewRows: PreviewRow[] = rows.map((r) => {
+      if (!r.data_atendimento) {
+        return { ...r, status: "erro" as const, motivo: "Data de atendimento inválida" };
+      }
+      const key = `${r.paciente_nome.toUpperCase()}|${r.data_atendimento}`;
+      const nameKey = r.paciente_nome.toUpperCase();
+
+      if (existSet.has(key)) {
+        return { ...r, status: "duplicado" as const, motivo: "Já existe no sistema (nome + data)" };
+      }
+      if (existNamesOnly.has(nameKey)) {
+        return { ...r, status: "duplicado" as const, motivo: "Paciente já existe no sistema" };
+      }
+      if (seenInFile.has(key)) {
+        return { ...r, status: "duplicado" as const, motivo: "Duplicado na planilha" };
+      }
+      seenInFile.add(key);
+      return { ...r, status: "novo" as const };
+    });
+
+    setPreview(previewRows);
+  };
+
+  // ── Unified file handler ──
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -87,78 +232,15 @@ export const ImportarSaidasDialog = ({
     setIsAnalyzing(true);
 
     try {
-      const buffer = await file.arrayBuffer();
-      const wb = XLSX.read(buffer, { type: "array" });
-      const ws = wb.Sheets[wb.SheetNames[0]];
-      const raw: Record<string, unknown>[] = XLSX.utils.sheet_to_json(ws, { defval: "" });
-
-      if (raw.length === 0) {
-        toast({ title: "Planilha vazia", variant: "destructive" });
-        setIsAnalyzing(false);
-        return;
+      if (isPdf(file)) {
+        await handlePdf(file);
+      } else {
+        await handleSpreadsheet(file);
       }
-
-      // Map columns (flexible header matching)
-      const rows: ImportRow[] = raw.map((r) => {
-        const keys = Object.keys(r);
-        const find = (terms: string[]) =>
-          keys.find((k) => terms.some((t) => k.toLowerCase().includes(t))) || "";
-
-        const nomeKey = find(["paciente", "nome"]);
-        const dataKey = find(["atendimento", "data"]);
-        const maeKey = find(["mae", "mãe", "nascimento"]);
-        const obsKey = find(["obs", "observa"]);
-
-        return {
-          paciente_nome: String(r[nomeKey] || "").trim(),
-          data_atendimento: parseDate(r[dataKey]) || "",
-          nascimento_mae: String(r[maeKey] || "").trim() || undefined,
-          observacao: String(r[obsKey] || "").trim() || undefined,
-        };
-      }).filter((r) => r.paciente_nome);
-
-      if (rows.length === 0) {
-        toast({ title: "Nenhum registro válido encontrado", description: "Verifique se a planilha tem coluna 'Paciente' ou 'Nome'.", variant: "destructive" });
-        setIsAnalyzing(false);
-        return;
-      }
-
-      // Check duplicates against DB in batch
-      const nomes = rows.map((r) => r.paciente_nome.toUpperCase());
-      const { data: existentes } = await supabase
-        .from("saida_prontuarios")
-        .select("paciente_nome, data_atendimento")
-        .in("paciente_nome", nomes)
-        .eq("is_folha_avulsa", false);
-
-      const existSet = new Set(
-        (existentes || []).map((e: { paciente_nome: string | null; data_atendimento: string | null }) =>
-          `${(e.paciente_nome || "").toUpperCase()}|${e.data_atendimento || ""}`
-        )
-      );
-
-      // Also detect duplicates within the file itself
-      const seenInFile = new Set<string>();
-
-      const previewRows: PreviewRow[] = rows.map((r) => {
-        if (!r.data_atendimento) {
-          return { ...r, status: "erro" as const, motivo: "Data de atendimento inválida" };
-        }
-        const key = `${r.paciente_nome.toUpperCase()}|${r.data_atendimento}`;
-        if (existSet.has(key)) {
-          return { ...r, status: "duplicado" as const, motivo: "Já existe no sistema" };
-        }
-        if (seenInFile.has(key)) {
-          return { ...r, status: "duplicado" as const, motivo: "Duplicado na planilha" };
-        }
-        seenInFile.add(key);
-        return { ...r, status: "novo" as const };
-      });
-
-      setPreview(previewRows);
-    } catch (err) {
+    } catch (err: unknown) {
       console.error(err);
-      toast({ title: "Erro ao ler planilha", variant: "destructive" });
+      const msg = err instanceof Error ? err.message : "Erro ao processar arquivo";
+      toast({ title: msg, variant: "destructive" });
     } finally {
       setIsAnalyzing(false);
     }
@@ -195,7 +277,7 @@ export const ImportarSaidasDialog = ({
 
       toast({
         title: "Importação concluída",
-        description: `${inserted} registros importados com sucesso. ${duplicados.length} duplicados ignorados.`,
+        description: `${inserted} registros importados. ${duplicados.length} duplicados ignorados.`,
       });
 
       onImportComplete();
@@ -231,18 +313,18 @@ export const ImportarSaidasDialog = ({
         {preview.length === 0 ? (
           <div className="space-y-4 py-4">
             <p className="text-sm text-muted-foreground">
-              Envie uma planilha (.xlsx ou .csv) com as colunas: <strong>Paciente</strong>, <strong>Data Atendimento</strong>, Nascimento Mãe (opcional), Observação (opcional).
+              Envie uma <strong>planilha</strong> (.xlsx, .csv) ou um <strong>PDF</strong> do Salus. O sistema detecta duplicidades automaticamente.
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
               <Button variant="outline" size="sm" onClick={handleDownloadModelo}>
                 <Download className="h-4 w-4 mr-2" />
-                Baixar Modelo
+                Baixar Modelo XLSX
               </Button>
             </div>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".xlsx,.xls,.csv"
+              accept=".xlsx,.xls,.csv,.pdf"
               className="hidden"
               onChange={handleFile}
             />
@@ -257,8 +339,12 @@ export const ImportarSaidasDialog = ({
               ) : (
                 <Upload className="h-6 w-6 mr-2" />
               )}
-              {isAnalyzing ? "Analisando planilha..." : "Selecionar Planilha"}
+              {isAnalyzing ? "Analisando arquivo..." : "Selecionar Arquivo (XLSX, CSV ou PDF)"}
             </Button>
+            <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-3">
+              <FileText className="h-4 w-4 mt-0.5 shrink-0" />
+              <span>PDFs do Salus são processados via IA para extrair a lista de pacientes. A data de atendimento será definida como hoje.</span>
+            </div>
           </div>
         ) : (
           <div className="space-y-4">
@@ -311,7 +397,7 @@ export const ImportarSaidasDialog = ({
 
             <div className="flex gap-2 justify-end">
               <Button variant="outline" onClick={resetState}>
-                Nova planilha
+                Novo arquivo
               </Button>
               <Button onClick={handleImport} disabled={novos.length === 0 || isImporting}>
                 {isImporting ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Upload className="h-4 w-4 mr-2" />}
