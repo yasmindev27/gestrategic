@@ -198,6 +198,7 @@ export const SaidaProntuariosModule = () => {
   const [entregaDialogOpen, setEntregaDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deletingSaida, setDeletingSaida] = useState<SaidaProntuario | null>(null);
+  const [importarOpen, setImportarOpen] = useState(false);
 
   const canAccess = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
   const canInsert = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
