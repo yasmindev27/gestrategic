@@ -402,22 +402,29 @@ export const SaidaProntuariosModule = () => {
       setFolhasAvulsas(folhas);
       
       // Check which folhas avulsas have a corresponding main record (batched)
-      const vinculadosMap: Record<string, { data_registro: string; status: string }> = {};
+      const vinculadosMap: Record<string, { data_registro: string; status: string; origem_pendencia?: string }> = {};
       const checks = folhas
         .filter(f => f.paciente_nome && f.data_atendimento)
         .map(async (folha) => {
           const { data: match } = await supabase
             .from("saida_prontuarios")
-            .select("id, created_at, status")
+            .select("id, created_at, status, validado_classificacao_em, conferido_nir_em")
             .eq("is_folha_avulsa", false)
             .eq("paciente_nome", folha.paciente_nome!)
             .eq("data_atendimento", folha.data_atendimento!)
             .limit(1)
             .maybeSingle();
           if (match) {
+            let origem_pendencia: string | undefined;
+            if (match.status === "pendente" || match.status === "aguardando_pendencia") {
+              if (match.conferido_nir_em) origem_pendencia = "NIR";
+              else if (match.validado_classificacao_em) origem_pendencia = "Classificação";
+              else origem_pendencia = "Recepção";
+            }
             vinculadosMap[folha.id] = {
               data_registro: match.created_at,
               status: match.status,
+              origem_pendencia,
             };
           }
         });
