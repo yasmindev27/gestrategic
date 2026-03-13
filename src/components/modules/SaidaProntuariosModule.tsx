@@ -52,7 +52,8 @@ import {
   Pencil,
   Save,
   FileStack,
-  Trash2
+  Trash2,
+  Upload
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -72,6 +73,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EntregaProntuariosDialog } from "./EntregaProntuariosDialog";
+import { ImportarSaidasDialog } from "./ImportarSaidasDialog";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 import { safeFormatDate, getBrasiliaDateString } from "@/lib/brasilia-time";
@@ -197,6 +199,7 @@ export const SaidaProntuariosModule = () => {
   const [entregaDialogOpen, setEntregaDialogOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deletingSaida, setDeletingSaida] = useState<SaidaProntuario | null>(null);
+  const [importarOpen, setImportarOpen] = useState(false);
 
   const canAccess = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
   const canInsert = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
@@ -1197,6 +1200,10 @@ export const SaidaProntuariosModule = () => {
           )}
           {canInsert && (
             <>
+              <Button variant="outline" onClick={() => setImportarOpen(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Importar Planilha
+              </Button>
               <Dialog open={newProntuarioOpen} onOpenChange={setNewProntuarioOpen}>
                 <TooltipProvider>
                   <Tooltip>
@@ -2384,6 +2391,13 @@ export const SaidaProntuariosModule = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImportarSaidasDialog
+        open={importarOpen}
+        onOpenChange={setImportarOpen}
+        userId={userId || ""}
+        onImportComplete={() => fetchCounts()}
+      />
     </div>
   );
 };
