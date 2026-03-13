@@ -1938,7 +1938,7 @@ export const SaidaProntuariosModule = () => {
                   <TableBody>
                     {filteredFolhasAvulsas.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={isAdmin ? 7 : 6} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground py-8">
                           Nenhum registro encontrado com os filtros aplicados
                         </TableCell>
                       </TableRow>
