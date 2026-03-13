@@ -52,7 +52,8 @@ import {
   Pencil,
   Save,
   FileStack,
-  Trash2
+  Trash2,
+  Upload
 } from "lucide-react";
 import {
   DropdownMenu,
