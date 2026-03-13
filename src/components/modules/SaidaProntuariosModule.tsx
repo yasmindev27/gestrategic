@@ -398,7 +398,27 @@ export const SaidaProntuariosModule = () => {
     if (folhasDataFim) query = query.lte("data_atendimento", folhasDataFim);
 
     const { data, error } = await query;
-    if (!error && data) setFolhasAvulsas(data as SaidaProntuario[]);
+    if (!error && data) {
+      const folhas = data as SaidaProntuario[];
+      setFolhasAvulsas(folhas);
+      
+      // Check which folhas avulsas have a corresponding main record
+      const vinculados = new Set<string>();
+      for (const folha of folhas) {
+        if (folha.paciente_nome && folha.data_atendimento) {
+          const { data: match } = await supabase
+            .from("saida_prontuarios")
+            .select("id")
+            .eq("is_folha_avulsa", false)
+            .eq("paciente_nome", folha.paciente_nome)
+            .eq("data_atendimento", folha.data_atendimento)
+            .limit(1)
+            .maybeSingle();
+          if (match) vinculados.add(folha.id);
+        }
+      }
+      setFolhasVinculadasSet(vinculados);
+    }
     setFolhasPage(page);
   };
 
