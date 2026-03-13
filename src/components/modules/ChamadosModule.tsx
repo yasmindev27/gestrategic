@@ -260,14 +260,27 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
   const fetchChamados = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("chamados")
-        .select("*")
-        .eq("categoria", setor)
-        .order("created_at", { ascending: false });
+      // Paginated fetch to handle >1000 records
+      const pageSize = 1000;
+      let allChamados: Chamado[] = [];
+      let from = 0;
+      let hasMore = true;
 
-      if (error) throw error;
-      setChamados(data || []);
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("chamados")
+          .select("*")
+          .eq("categoria", setor)
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+        allChamados = allChamados.concat((data || []) as Chamado[]);
+        hasMore = (data || []).length === pageSize;
+        from += pageSize;
+      }
+
+      setChamados(allChamados);
     } catch (error) {
       console.error("Error fetching chamados:", error);
       toast({
