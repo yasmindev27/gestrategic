@@ -456,6 +456,17 @@ export const SaidaProntuariosModule = () => {
     setFolhasPage(page);
   };
 
+  const applyFaltantesFilters = (query: any) => {
+    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
+    if (restrictToToday) {
+      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
+    }
+    if (debouncedFaltantesSearch) query = query.ilike("paciente_nome", `%${debouncedFaltantesSearch}%`);
+    if (faltantesDataInicio) query = query.gte("data_atendimento", faltantesDataInicio);
+    if (faltantesDataFim) query = query.lte("data_atendimento", faltantesDataFim);
+    return query;
+  };
+
   const fetchFaltantesPage = async (page: number) => {
     const from = page * PAGE_SIZE;
     let query = supabase
@@ -465,20 +476,21 @@ export const SaidaProntuariosModule = () => {
       .eq("status", "pendente")
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
+    query = applyFaltantesFilters(query);
 
-    // Recepção vê somente hoje; Classificação vê ontem + hoje (D1: 24h)
-    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
-    const restrictToYesterdayToday = isClassificacao && !isAdmin && !isNir && !isFaturamento;
-    if (restrictToToday) {
-      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-    }
+    let countQuery = supabase
+      .from("saida_prontuarios")
+      .select("*", { count: "exact", head: true })
+      .ilike("observacao_classificacao", "%importado via salus%")
+      .eq("status", "pendente");
+    countQuery = applyFaltantesFilters(countQuery);
 
-    if (debouncedFaltantesSearch) query = query.ilike("paciente_nome", `%${debouncedFaltantesSearch}%`);
-    if (faltantesDataInicio) query = query.gte("data_atendimento", faltantesDataInicio);
-    if (faltantesDataFim) query = query.lte("data_atendimento", faltantesDataFim);
+    const hasFaltantesFilters = debouncedFaltantesSearch || faltantesDataInicio || faltantesDataFim;
 
-    const { data, error } = await query;
+    const [{ data, error }, { count: fCount }] = await Promise.all([query, countQuery]);
     if (!error && data) setFaltantesSalus(data as SaidaProntuario[]);
+    if (hasFaltantesFilters) setFilteredFaltantesCount(fCount ?? 0);
+    else setFilteredFaltantesCount(null);
     setFaltantesPage(page);
   };
 
