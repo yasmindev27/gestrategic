@@ -404,6 +404,7 @@ export const SaidaProntuariosModule = () => {
       .from("saida_prontuarios")
       .select("*")
       .ilike("observacao_classificacao", "%importado via salus%")
+      .eq("status", "pendente")
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
