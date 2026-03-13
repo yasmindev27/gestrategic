@@ -69,13 +69,29 @@ export function IncidentesList({ refreshTrigger }: IncidentesListProps) {
 
   const loadIncidentes = async () => {
     setIsLoading(true);
-    const { data } = await supabase
-      .from("incidentes_nsp")
-      .select("*")
-      .order("data_ocorrencia", { ascending: false })
-      .limit(100);
-    
-    if (data) setIncidentes(data);
+    // Paginated fetch to handle >1000 records
+    const pageSize = 1000;
+    let allIncidentes: Incidente[] = [];
+    let from = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data } = await supabase
+        .from("incidentes_nsp")
+        .select("*")
+        .order("data_ocorrencia", { ascending: false })
+        .range(from, from + pageSize - 1);
+
+      if (data && data.length > 0) {
+        allIncidentes = allIncidentes.concat(data as Incidente[]);
+        hasMore = data.length === pageSize;
+        from += pageSize;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    setIncidentes(allIncidentes);
     setIsLoading(false);
   };
 

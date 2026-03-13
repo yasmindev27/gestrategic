@@ -206,14 +206,35 @@ export const CentralAtestadosSection = () => {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [atestadosRes, profilesRes] = await Promise.all([
-        supabase.from("atestados").select("*").order("created_at", { ascending: false }),
-        supabase.from("profiles").select("user_id, full_name, cargo, setor").order("full_name"),
-      ]);
-      if (atestadosRes.error) throw atestadosRes.error;
-      if (profilesRes.error) throw profilesRes.error;
-      setAtestados(atestadosRes.data || []);
-      setProfiles(profilesRes.data || []);
+      // Paginated fetch for atestados to avoid 1000-row limit
+      const pageSize = 1000;
+      let allAtestados: any[] = [];
+      let from = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("atestados")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+        if (error) throw error;
+        if (data && data.length > 0) {
+          allAtestados = allAtestados.concat(data);
+          hasMore = data.length === pageSize;
+          from += pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("user_id, full_name, cargo, setor")
+        .order("full_name");
+      if (profilesError) throw profilesError;
+
+      setAtestados(allAtestados);
+      setProfiles(profilesData || []);
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
       toast({ title: "Erro", description: "Não foi possível carregar os dados.", variant: "destructive" });

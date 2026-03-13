@@ -309,18 +309,50 @@ export const QualidadeModule = () => {
   };
 
   const loadData = async () => {
-    const [incidentesRes, analisesRes, acoesRes, auditoriasRes, usuariosRes] = await Promise.all([
-      supabase.from("incidentes_nsp").select("*").order("data_ocorrencia", { ascending: false }),
-      supabase.from("analises_incidentes").select("*").order("data_analise", { ascending: false }),
-      supabase.from("acoes_incidentes").select("*").order("created_at", { ascending: false }),
-      supabase.from("auditorias_qualidade").select("*").order("data_auditoria", { ascending: false }),
+    const pageSize = 1000;
+
+    // Helper para busca paginada
+    const fetchAllPaginated = async (queryFn: (from: number, to: number) => Promise<{ data: any[] | null }>) => {
+      let all: any[] = [];
+      let from = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data } = await queryFn(from, from + pageSize - 1);
+        if (data && data.length > 0) {
+          all = all.concat(data);
+          hasMore = data.length === pageSize;
+          from += pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+      return all;
+    };
+
+    const [incidentesData, analisesData, acoesData, auditoriasData, usuariosRes] = await Promise.all([
+      fetchAllPaginated(async (from, to) => {
+        const res = await supabase.from("incidentes_nsp").select("*").order("data_ocorrencia", { ascending: false }).range(from, to);
+        return { data: res.data };
+      }),
+      fetchAllPaginated(async (from, to) => {
+        const res = await supabase.from("analises_incidentes").select("*").order("data_analise", { ascending: false }).range(from, to);
+        return { data: res.data };
+      }),
+      fetchAllPaginated(async (from, to) => {
+        const res = await supabase.from("acoes_incidentes").select("*").order("created_at", { ascending: false }).range(from, to);
+        return { data: res.data };
+      }),
+      fetchAllPaginated(async (from, to) => {
+        const res = await supabase.from("auditorias_qualidade").select("*").order("data_auditoria", { ascending: false }).range(from, to);
+        return { data: res.data };
+      }),
       supabase.from("profiles").select("id, user_id, full_name").order("full_name"),
     ]);
 
-    if (incidentesRes.data) setIncidentes(incidentesRes.data);
-    if (analisesRes.data) setAnalises(analisesRes.data);
-    if (acoesRes.data) setAcoes(acoesRes.data);
-    if (auditoriasRes.data) setAuditorias(auditoriasRes.data);
+    setIncidentes(incidentesData);
+    setAnalises(analisesData);
+    setAcoes(acoesData);
+    setAuditorias(auditoriasData);
     if (usuariosRes.data) setUsuarios(usuariosRes.data);
   };
 
@@ -745,14 +777,16 @@ export const QualidadeModule = () => {
     return matchSearch && matchStatus && matchTipo && matchDataInicio && matchDataFim;
   });
 
-  // Stats
+  // Stats — refletem dados filtrados quando filtros estão ativos
+  const hasQualidadeFilters = searchTerm || statusFilter !== "todos" || tipoFilter !== "todos" || dataInicio || dataFim;
+  const statsSource = hasQualidadeFilters ? filteredIncidentes : incidentes;
   const stats = {
-    total: incidentes.length,
-    notificados: incidentes.filter(i => i.status === "notificado").length,
-    emAnalise: incidentes.filter(i => i.status === "em_analise").length,
-    encerrados: incidentes.filter(i => i.status === "encerrado").length,
-    eventosAdversos: incidentes.filter(i => i.tipo_incidente === "evento_adverso").length,
-    quaseErros: incidentes.filter(i => i.tipo_incidente === "quase_erro").length,
+    total: statsSource.length,
+    notificados: statsSource.filter(i => i.status === "notificado").length,
+    emAnalise: statsSource.filter(i => i.status === "em_analise").length,
+    encerrados: statsSource.filter(i => i.status === "encerrado").length,
+    eventosAdversos: statsSource.filter(i => i.tipo_incidente === "evento_adverso").length,
+    quaseErros: statsSource.filter(i => i.tipo_incidente === "quase_erro").length,
     acoesPendentes: acoes.filter(a => a.status === "pendente").length,
   };
 
