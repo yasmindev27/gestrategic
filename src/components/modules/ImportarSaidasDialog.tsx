@@ -330,6 +330,17 @@ export const ImportarSaidasDialog = ({
                 Baixar Modelo XLSX
               </Button>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="data-atendimento-import">Data do Atendimento (para PDF)</Label>
+              <Input
+                id="data-atendimento-import"
+                type="date"
+                value={dataAtendimento}
+                onChange={(e) => setDataAtendimento(e.target.value)}
+                className="max-w-xs"
+              />
+              <p className="text-xs text-muted-foreground">Obrigatório para importação de PDF. Planilhas usam a coluna de data.</p>
+            </div>
             <input
               ref={fileInputRef}
               type="file"
@@ -352,7 +363,7 @@ export const ImportarSaidasDialog = ({
             </Button>
             <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-3">
               <FileText className="h-4 w-4 mt-0.5 shrink-0" />
-              <span>PDFs do Salus são processados via IA para extrair a lista de pacientes. A data de atendimento será definida como hoje.</span>
+              <span>PDFs do Salus são processados via IA. Informe a data do atendimento acima antes de importar.</span>
             </div>
           </div>
         ) : (
