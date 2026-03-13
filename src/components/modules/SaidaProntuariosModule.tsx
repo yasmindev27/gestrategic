@@ -471,6 +471,25 @@ export const SaidaProntuariosModule = () => {
     
     setIsSubmitting(true);
     try {
+      // Verificar duplicidade: mesmo paciente + mesma data de atendimento
+      const { data: existente } = await supabase
+        .from("saida_prontuarios")
+        .select("id")
+        .eq("paciente_nome", pacienteNome.trim().toUpperCase())
+        .eq("data_atendimento", dataAtendimento)
+        .eq("is_folha_avulsa", false)
+        .maybeSingle();
+
+      if (existente) {
+        toast({
+          title: "Registro duplicado",
+          description: "Já existe um prontuário registrado para este paciente nesta data de atendimento.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
       const { error } = await supabase
         .from("saida_prontuarios")
         .insert({
