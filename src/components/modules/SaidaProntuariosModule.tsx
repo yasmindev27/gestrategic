@@ -1468,19 +1468,38 @@ export const SaidaProntuariosModule = () => {
                 </div>
                 <div className="flex-1">
                   <label className="text-sm font-medium mb-1 block">Status</label>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger>
                       <SelectValue placeholder="Em Fluxo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="em_fluxo">Em Fluxo (não concluídos)</SelectItem>
-                      <SelectItem value="todos">Todos</SelectItem>
-                      <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
-                      <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
-                      <SelectItem value="pendente">Aguardando Resolução de Pendência</SelectItem>
-                      <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
-                      <SelectItem value="em_avaliacao">Em Avaliação</SelectItem>
-                      <SelectItem value="concluido">Concluído</SelectItem>
+                      {/* Classificação: só vê opções relevantes ao seu escopo */}
+                      {isClassificacao && !isAdmin && !isNir && !isFaturamento ? (
+                        <>
+                          <SelectItem value="em_fluxo">Todos do meu escopo</SelectItem>
+                          <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
+                          <SelectItem value="pendente">Aguardando Resolução de Pendência</SelectItem>
+                        </>
+                      ) : isNir && !isAdmin && !isFaturamento ? (
+                        <>
+                          <SelectItem value="em_fluxo">Aguardando NIR</SelectItem>
+                        </>
+                      ) : isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao ? (
+                        <>
+                          <SelectItem value="em_fluxo">Em Fluxo (não concluídos)</SelectItem>
+                        </>
+                      ) : (
+                        <>
+                          <SelectItem value="em_fluxo">Em Fluxo (não concluídos)</SelectItem>
+                          <SelectItem value="todos">Todos</SelectItem>
+                          <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
+                          <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
+                          <SelectItem value="pendente">Aguardando Resolução de Pendência</SelectItem>
+                          <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
+                          <SelectItem value="em_avaliacao">Em Avaliação</SelectItem>
+                          <SelectItem value="concluido">Concluído</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
