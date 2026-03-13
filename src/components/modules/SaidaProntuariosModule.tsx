@@ -1513,7 +1513,7 @@ export const SaidaProntuariosModule = () => {
                         key={saida.id}
                         className={missingFromSalus ? "bg-destructive/10 border-l-4 border-l-destructive" : ""}
                       >
-                        <TableCell className="font-medium uppercase sticky left-0 z-10 bg-background">
+                        <TableCell className="font-medium uppercase sticky left-0 z-10 bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
                           <div className="flex items-center gap-2">
                             {saida.paciente_nome || "-"}
                             {missingFromSalus && (
