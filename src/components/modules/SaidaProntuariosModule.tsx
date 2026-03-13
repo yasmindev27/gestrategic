@@ -1957,6 +1957,19 @@ export const SaidaProntuariosModule = () => {
                             {item.observacao_classificacao || '-'}
                           </TableCell>
                           <TableCell>
+                            {folhasVinculadasSet.has(item.id) ? (
+                              <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                                <Check className="h-3 w-3 mr-1" />
+                                Vinculado
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Sem prontuário
+                              </Badge>
+                            )}
+                          </TableCell>
+                          <TableCell>
                             <Badge className="flex items-center gap-1 w-fit bg-warning text-warning-foreground">
                               <FileStack className="h-3 w-3" />
                               Folha Avulsa
