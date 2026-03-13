@@ -309,18 +309,41 @@ export const QualidadeModule = () => {
   };
 
   const loadData = async () => {
-    const [incidentesRes, analisesRes, acoesRes, auditoriasRes, usuariosRes] = await Promise.all([
-      supabase.from("incidentes_nsp").select("*").order("data_ocorrencia", { ascending: false }),
-      supabase.from("analises_incidentes").select("*").order("data_analise", { ascending: false }),
-      supabase.from("acoes_incidentes").select("*").order("created_at", { ascending: false }),
-      supabase.from("auditorias_qualidade").select("*").order("data_auditoria", { ascending: false }),
+    // Helper para busca paginada (evita limite de 1000 do Supabase)
+    const fetchAll = async (table: string, orderCol: string, ascending = false) => {
+      const pageSize = 1000;
+      let all: any[] = [];
+      let from = 0;
+      let hasMore = true;
+      while (hasMore) {
+        const { data } = await supabase
+          .from(table)
+          .select("*")
+          .order(orderCol, { ascending })
+          .range(from, from + pageSize - 1);
+        if (data && data.length > 0) {
+          all = all.concat(data);
+          hasMore = data.length === pageSize;
+          from += pageSize;
+        } else {
+          hasMore = false;
+        }
+      }
+      return all;
+    };
+
+    const [incidentesData, analisesData, acoesData, auditoriasData, usuariosRes] = await Promise.all([
+      fetchAll("incidentes_nsp", "data_ocorrencia"),
+      fetchAll("analises_incidentes", "data_analise"),
+      fetchAll("acoes_incidentes", "created_at"),
+      fetchAll("auditorias_qualidade", "data_auditoria"),
       supabase.from("profiles").select("id, user_id, full_name").order("full_name"),
     ]);
 
-    if (incidentesRes.data) setIncidentes(incidentesRes.data);
-    if (analisesRes.data) setAnalises(analisesRes.data);
-    if (acoesRes.data) setAcoes(acoesRes.data);
-    if (auditoriasRes.data) setAuditorias(auditoriasRes.data);
+    setIncidentes(incidentesData);
+    setAnalises(analisesData);
+    setAcoes(acoesData);
+    setAuditorias(auditoriasData);
     if (usuariosRes.data) setUsuarios(usuariosRes.data);
   };
 
