@@ -974,7 +974,7 @@ export const SaidaProntuariosModule = () => {
       safeFormatDate(s.data_atendimento, "dd/MM/yyyy"),
       'Folha Avulsa',
       s.observacao_classificacao || '-',
-      folhasVinculadasSet.has(s.id) ? 'Vinculado' : 'Sem prontuário',
+      folhasVinculadasMap[s.id] ? `Vinculado - ${safeFormatDate(folhasVinculadasMap[s.id].data_registro, "dd/MM/yyyy")} - ${folhasVinculadasMap[s.id].status}` : 'Sem prontuário',
     ]);
     return { headers, rows };
   };
