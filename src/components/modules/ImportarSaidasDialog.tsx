@@ -230,6 +230,13 @@ export const ImportarSaidasDialog = ({
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (isPdf(file) && !dataAtendimento) {
+      toast({ title: "Informe a data do atendimento antes de importar o PDF", variant: "destructive" });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     setFileName(file.name);
     setIsAnalyzing(true);
 
