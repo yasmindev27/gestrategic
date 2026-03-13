@@ -161,7 +161,7 @@ export const SaidaProntuariosModule = () => {
   const [folhasDataFim, setFolhasDataFim] = useState("");
   
   // Track which folhas avulsas have a corresponding main prontuário (with details)
-  const [folhasVinculadasMap, setFolhasVinculadasMap] = useState<Record<string, { data_registro: string; status: string }>>({}); 
+  const [folhasVinculadasMap, setFolhasVinculadasMap] = useState<Record<string, { data_registro: string; status: string; origem_pendencia?: string }>>({}); 
   
   // Form states
   const [pacienteNome, setPacienteNome] = useState("");
@@ -402,22 +402,29 @@ export const SaidaProntuariosModule = () => {
       setFolhasAvulsas(folhas);
       
       // Check which folhas avulsas have a corresponding main record (batched)
-      const vinculadosMap: Record<string, { data_registro: string; status: string }> = {};
+      const vinculadosMap: Record<string, { data_registro: string; status: string; origem_pendencia?: string }> = {};
       const checks = folhas
         .filter(f => f.paciente_nome && f.data_atendimento)
         .map(async (folha) => {
           const { data: match } = await supabase
             .from("saida_prontuarios")
-            .select("id, created_at, status")
+            .select("id, created_at, status, validado_classificacao_em, conferido_nir_em")
             .eq("is_folha_avulsa", false)
             .eq("paciente_nome", folha.paciente_nome!)
             .eq("data_atendimento", folha.data_atendimento!)
             .limit(1)
             .maybeSingle();
           if (match) {
+            let origem_pendencia: string | undefined;
+            if (match.status === "pendente" || match.status === "aguardando_pendencia") {
+              if (match.conferido_nir_em) origem_pendencia = "NIR";
+              else if (match.validado_classificacao_em) origem_pendencia = "Classificação";
+              else origem_pendencia = "Recepção";
+            }
             vinculadosMap[folha.id] = {
               data_registro: match.created_at,
               status: match.status,
+              origem_pendencia,
             };
           }
         });
@@ -1972,15 +1979,23 @@ export const SaidaProntuariosModule = () => {
                                 <div className="text-xs text-muted-foreground">
                                   <span className="block">Registrado: {safeFormatDate(folhasVinculadasMap[item.id].data_registro, "dd/MM/yyyy HH:mm")}</span>
                                   <span className="block">Etapa: {
-                                    ({
-                                      aguardando_classificacao: "Classificação",
-                                      aguardando_nir: "NIR",
-                                      pendente: "Pendência",
-                                      aguardando_pendencia: "Pendência",
-                                      aguardando_faturamento: "Faturamento",
-                                      em_avaliacao: "Em Avaliação",
-                                      concluido: "Concluído",
-                                    } as Record<string, string>)[folhasVinculadasMap[item.id].status] || folhasVinculadasMap[item.id].status
+                                    (() => {
+                                      const info = folhasVinculadasMap[item.id];
+                                      const statusLabels: Record<string, string> = {
+                                        aguardando_classificacao: "Classificação",
+                                        aguardando_nir: "NIR",
+                                        pendente: "Pendência",
+                                        aguardando_pendencia: "Pendência",
+                                        aguardando_faturamento: "Faturamento",
+                                        em_avaliacao: "Em Avaliação",
+                                        concluido: "Concluído",
+                                      };
+                                      const label = statusLabels[info.status] || info.status;
+                                      if (info.origem_pendencia) {
+                                        return `${label} (${info.origem_pendencia})`;
+                                      }
+                                      return label;
+                                    })()
                                   }</span>
                                 </div>
                               </div>
