@@ -2238,7 +2238,7 @@ export const SaidaProntuariosModule = () => {
                   <div className="space-y-2">
                     {[
                       { key: "carimbo_enfermagem", label: "Carimbo e assinatura Enfermagem" },
-                      { key: "evolucao", label: "Evolução" },
+                      { key: "evolucao", label: "Evolução da medicação" },
                       { key: "ficha_medicacao", label: "Ficha de medicação" },
                       { key: "pedidos_exames", label: "Pedidos de exames" },
                       { key: "alta_medica", label: "Alta médica" },
