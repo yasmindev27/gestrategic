@@ -115,12 +115,10 @@ export const ImportarSaidasDialog = ({
       return;
     }
 
-    const today = getBrasiliaDateString();
-
-    // Build rows from PDF extraction
+    // Build rows from PDF extraction — use user-informed date
     const rows: ImportRow[] = result.pacientes.map((p: { nome: string; prontuario?: string }) => ({
       paciente_nome: p.nome.toUpperCase().trim(),
-      data_atendimento: today,
+      data_atendimento: dataAtendimento,
       observacao: p.prontuario ? `Prontuário: ${p.prontuario}` : undefined,
     }));
 
