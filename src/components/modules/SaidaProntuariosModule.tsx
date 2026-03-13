@@ -1930,6 +1930,7 @@ export const SaidaProntuariosModule = () => {
                       <TableHead>Data Nasc.</TableHead>
                       <TableHead>Data Atendimento</TableHead>
                       <TableHead>Observação</TableHead>
+                      <TableHead>Vínculo</TableHead>
                       <TableHead>Status</TableHead>
                       {isAdmin && <TableHead>Ações</TableHead>}
                     </TableRow>
