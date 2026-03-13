@@ -144,12 +144,14 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
     }
     const timer = setTimeout(async () => {
       try {
+        console.log("[EntregaProntuarios] Buscando colaborador:", searchColab);
         const { data, error } = await supabase
           .from("profiles")
           .select("user_id, full_name, cargo, setor")
           .ilike("full_name", `%${searchColab}%`)
           .order("full_name")
           .limit(10);
+        console.log("[EntregaProntuarios] Resultado busca:", { data, error });
         if (error) {
           console.error("Erro ao buscar funcionários:", error);
           setColabResults([]);
