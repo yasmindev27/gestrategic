@@ -376,13 +376,12 @@ export const SaidaProntuariosModule = () => {
   };
 
   const fetchFolhasPage = async (page: number) => {
-    const from = page * PAGE_SIZE;
     let query = supabase
       .from("saida_prontuarios")
       .select("*")
       .eq("is_folha_avulsa", true)
       .order("data_atendimento", { ascending: false })
-      .range(from, from + PAGE_SIZE - 1);
+      .limit(2000);
 
     // Recepção vê somente hoje; Classificação vê ontem + hoje (D1: 24h)
     const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
