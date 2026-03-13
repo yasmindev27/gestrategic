@@ -309,18 +309,15 @@ export const QualidadeModule = () => {
   };
 
   const loadData = async () => {
-    // Helper para busca paginada (evita limite de 1000 do Supabase)
-    const fetchAll = async (table: string, orderCol: string, ascending = false) => {
-      const pageSize = 1000;
+    const pageSize = 1000;
+
+    // Helper para busca paginada
+    const fetchAllPaginated = async (queryFn: (from: number, to: number) => Promise<{ data: any[] | null }>) => {
       let all: any[] = [];
       let from = 0;
       let hasMore = true;
       while (hasMore) {
-        const { data } = await supabase
-          .from(table)
-          .select("*")
-          .order(orderCol, { ascending })
-          .range(from, from + pageSize - 1);
+        const { data } = await queryFn(from, from + pageSize - 1);
         if (data && data.length > 0) {
           all = all.concat(data);
           hasMore = data.length === pageSize;
@@ -333,10 +330,18 @@ export const QualidadeModule = () => {
     };
 
     const [incidentesData, analisesData, acoesData, auditoriasData, usuariosRes] = await Promise.all([
-      fetchAll("incidentes_nsp", "data_ocorrencia"),
-      fetchAll("analises_incidentes", "data_analise"),
-      fetchAll("acoes_incidentes", "created_at"),
-      fetchAll("auditorias_qualidade", "data_auditoria"),
+      fetchAllPaginated((from, to) =>
+        supabase.from("incidentes_nsp").select("*").order("data_ocorrencia", { ascending: false }).range(from, to)
+      ),
+      fetchAllPaginated((from, to) =>
+        supabase.from("analises_incidentes").select("*").order("data_analise", { ascending: false }).range(from, to)
+      ),
+      fetchAllPaginated((from, to) =>
+        supabase.from("acoes_incidentes").select("*").order("created_at", { ascending: false }).range(from, to)
+      ),
+      fetchAllPaginated((from, to) =>
+        supabase.from("auditorias_qualidade").select("*").order("data_auditoria", { ascending: false }).range(from, to)
+      ),
       supabase.from("profiles").select("id, user_id, full_name").order("full_name"),
     ]);
 
