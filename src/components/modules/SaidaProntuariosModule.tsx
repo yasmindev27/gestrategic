@@ -299,20 +299,11 @@ export const SaidaProntuariosModule = () => {
 
   const fetchSaidasPage = async (page: number) => {
     const from = page * PAGE_SIZE;
-    let query = supabase
-      .from("saida_prontuarios")
-      .select("*")
-      .eq("is_folha_avulsa", false)
-      .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%")
-      .order("data_atendimento", { ascending: false })
-      .range(from, from + PAGE_SIZE - 1);
-
+  const applySaidasFilters = (query: any) => {
     // Filtrar por status baseado no setor do usuário
     if (isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao) {
-      // Recepção: vê somente hoje e status aguardando_classificacao ou registros sem validação
       query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
     } else if (isClassificacao && !isAdmin && !isNir && !isFaturamento) {
-      // Classificação: vê SOMENTE aguardando_classificacao ou pendente (sempre)
       const allowedStatuses = ["aguardando_classificacao", "pendente"];
       if (statusFilter !== "todos" && statusFilter !== "em_fluxo" && allowedStatuses.includes(statusFilter)) {
         query = query.eq("status", statusFilter);
@@ -320,11 +311,8 @@ export const SaidaProntuariosModule = () => {
         query = query.in("status", allowedStatuses);
       }
     } else if (isNir && !isAdmin && !isFaturamento) {
-      // NIR: vê SOMENTE aguardando_nir (sempre)
       query = query.in("status", ["aguardando_nir"]);
-    }
-    // Faturamento e Admin veem todos — aplicar filtro de status livremente
-    else {
+    } else {
       if (statusFilter === "em_fluxo") {
         query = query.neq("status", "concluido");
       } else if (statusFilter !== "todos") {
@@ -335,13 +323,35 @@ export const SaidaProntuariosModule = () => {
     if (debouncedSearchTerm) query = query.ilike("paciente_nome", `%${debouncedSearchTerm}%`);
     if (dataInicio) query = query.gte("data_atendimento", dataInicio);
     if (dataFim) query = query.lte("data_atendimento", dataFim);
+    return query;
+  };
 
-    const { data, error } = await query;
+  const fetchSaidasPage = async (page: number) => {
+    const from = page * PAGE_SIZE;
+    let query = supabase
+      .from("saida_prontuarios")
+      .select("*")
+      .eq("is_folha_avulsa", false)
+      .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%")
+      .order("data_atendimento", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+
+    query = applySaidasFilters(query);
+
+    // Count query with same filters (no range/order)
+    let countQuery = supabase
+      .from("saida_prontuarios")
+      .select("*", { count: "exact", head: true })
+      .eq("is_folha_avulsa", false)
+      .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%");
+    countQuery = applySaidasFilters(countQuery);
+
+    const [{ data, error }, { count: filteredCount }] = await Promise.all([query, countQuery]);
     if (!error && data) {
       setSaidas(data as SaidaProntuario[]);
-      // Fetch entregas for these saidas
       fetchEntregas(data.map((d: any) => d.id));
     }
+    setFilteredSaidasCount(filteredCount ?? 0);
     setSaidasPage(page);
   };
 
