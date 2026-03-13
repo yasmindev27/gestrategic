@@ -967,6 +967,7 @@ export const SaidaProntuariosModule = () => {
     setDataInicio("");
     setDataFim("");
     setStatusFilter("em_fluxo");
+    setFilteredSaidasCount(null);
   };
 
   const hasActiveFilters = searchTerm || dataInicio || dataFim || (statusFilter !== "em_fluxo");
