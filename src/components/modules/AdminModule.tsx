@@ -628,6 +628,36 @@ export const AdminModule = () => {
                   <UserPlus className="h-4 w-4 mr-2" />
                   Novo Usuário
                 </Button>
+                <Button 
+                  variant="outline"
+                  className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                  onClick={async () => {
+                    if (!confirm("Deseja resetar a senha de TODOS os usuários pendentes para 123456?")) return;
+                    try {
+                      const { data: sessionData } = await supabase.auth.getSession();
+                      const res = await fetch(
+                        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-reset-senhas-massa`,
+                        {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${sessionData.session?.access_token}`,
+                          },
+                        }
+                      );
+                      const result = await res.json();
+                      if (!res.ok) throw new Error(result.error);
+                      toast({
+                        title: "Senhas resetadas",
+                        description: `${result.count} de ${result.total} usuários tiveram a senha alterada para 123456.`,
+                      });
+                    } catch (err: any) {
+                      toast({ title: "Erro", description: err.message, variant: "destructive" });
+                    }
+                  }}
+                >
+                  🔑 Resetar Senhas (123456)
+                </Button>
               </div>
             </CardContent>
           </Card>
