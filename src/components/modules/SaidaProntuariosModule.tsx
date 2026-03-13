@@ -1548,11 +1548,11 @@ export const SaidaProntuariosModule = () => {
                 </p>
                 <p className="text-2xl font-bold text-primary">
                   {isFullAccessRole
-                    ? (hasActiveFilters ? filteredSaidas.length : totalSaidasCount)
+                    ? (hasActiveFilters && filteredSaidasCount !== null ? filteredSaidasCount : totalSaidasCount)
                     : totalSaidasHojeCount
                   }
                 </p>
-                {isFullAccessRole && hasActiveFilters && (
+                {isFullAccessRole && hasActiveFilters && filteredSaidasCount !== null && (
                   <p className="text-xs text-muted-foreground">de {totalSaidasCount} totais</p>
                 )}
               </div>
