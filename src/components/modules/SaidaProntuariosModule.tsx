@@ -476,35 +476,63 @@ export const SaidaProntuariosModule = () => {
       // Verificar duplicidade: mesmo paciente + mesma data de atendimento
       const { data: existente } = await supabase
         .from("saida_prontuarios")
-        .select("id")
+        .select("id, status, observacao_classificacao")
         .eq("paciente_nome", pacienteNome.trim().toUpperCase())
         .eq("data_atendimento", dataAtendimento)
         .eq("is_folha_avulsa", false)
         .maybeSingle();
 
       if (existente) {
-        toast({
-          title: "Registro duplicado",
-          description: "Já existe um prontuário registrado para este paciente nesta data de atendimento.",
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
-      }
+        // Se for um faltante do Salus, atualizar em vez de bloquear
+        const isFaltanteSalus = existente.status === "pendente" && 
+          (existente.observacao_classificacao || "").toLowerCase().includes("importado via salus");
+        
+        if (isFaltanteSalus) {
+          const { error: updateError } = await supabase
+            .from("saida_prontuarios")
+            .update({
+              nascimento_mae: nascimentoMae || null,
+              cadastro_conferido: cadastroConferido,
+              possui_carimbo_medico: possuiCarimboMedico,
+              observacao_classificacao: observacaoSaida.trim() || null,
+              registrado_recepcao_por: userId,
+              registrado_recepcao_em: new Date().toISOString(),
+              status: "aguardando_classificacao",
+            })
+            .eq("id", existente.id);
 
-      const { error } = await supabase
-        .from("saida_prontuarios")
-        .insert({
-          paciente_nome: pacienteNome.trim(),
-          nascimento_mae: nascimentoMae || null,
-          data_atendimento: dataAtendimento,
-          cadastro_conferido: cadastroConferido,
-          possui_carimbo_medico: possuiCarimboMedico,
-          observacao_classificacao: observacaoSaida.trim() || null,
-          registrado_recepcao_por: userId,
-          registrado_recepcao_em: new Date().toISOString(),
-          status: "aguardando_classificacao",
-        });
+          if (updateError) throw updateError;
+
+          toast({
+            title: "Prontuário faltante resolvido",
+            description: "O prontuário foi localizado e removido da lista de faltantes.",
+          });
+        } else {
+          toast({
+            title: "Registro duplicado",
+            description: "Já existe um prontuário registrado para este paciente nesta data de atendimento.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      } else {
+        const { error } = await supabase
+          .from("saida_prontuarios")
+          .insert({
+            paciente_nome: pacienteNome.trim(),
+            nascimento_mae: nascimentoMae || null,
+            data_atendimento: dataAtendimento,
+            cadastro_conferido: cadastroConferido,
+            possui_carimbo_medico: possuiCarimboMedico,
+            observacao_classificacao: observacaoSaida.trim() || null,
+            registrado_recepcao_por: userId,
+            registrado_recepcao_em: new Date().toISOString(),
+            status: "aguardando_classificacao",
+          });
+
+        if (error) throw error;
+      }
 
       if (error) throw error;
 
