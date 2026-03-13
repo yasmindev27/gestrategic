@@ -99,14 +99,21 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
       const inicioHoje = `${hoje}T00:00:00-03:00`;
       const fimHoje = `${hoje}T23:59:59-03:00`;
 
-      const { data, error } = await supabase
+      let query = supabase
         .from("saida_prontuarios")
         .select("id, paciente_nome, numero_prontuario, data_atendimento")
         .eq("is_folha_avulsa", false)
         .gte("created_at", inicioHoje)
         .lte("created_at", fimHoje)
         .neq("status", "concluido")
-        .order("created_at", { ascending: false });
+        .neq("status", "pendente");
+
+      // Classificação: mostra apenas os prontuários que ela própria validou
+      if (isClassificacao && !isAdmin) {
+        query = query.eq("validado_classificacao_por", userId!);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false });
 
       if (error) throw error;
 
