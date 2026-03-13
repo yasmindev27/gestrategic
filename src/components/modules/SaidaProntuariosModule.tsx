@@ -72,6 +72,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { EntregaProntuariosDialog } from "./EntregaProntuariosDialog";
+import { ImportarSaidasDialog } from "./ImportarSaidasDialog";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCSV, exportToPDF } from "@/lib/export-utils";
 import { safeFormatDate, getBrasiliaDateString } from "@/lib/brasilia-time";
