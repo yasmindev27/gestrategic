@@ -1,4 +1,6 @@
 import { useState, useRef } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
@@ -52,10 +54,12 @@ export const ImportarSaidasDialog = ({
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [fileName, setFileName] = useState("");
+  const [dataAtendimento, setDataAtendimento] = useState("");
 
   const resetState = () => {
     setPreview([]);
     setFileName("");
+    setDataAtendimento("");
     if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
@@ -111,12 +115,10 @@ export const ImportarSaidasDialog = ({
       return;
     }
 
-    const today = getBrasiliaDateString();
-
-    // Build rows from PDF extraction
+    // Build rows from PDF extraction — use user-informed date
     const rows: ImportRow[] = result.pacientes.map((p: { nome: string; prontuario?: string }) => ({
       paciente_nome: p.nome.toUpperCase().trim(),
-      data_atendimento: today,
+      data_atendimento: dataAtendimento,
       observacao: p.prontuario ? `Prontuário: ${p.prontuario}` : undefined,
     }));
 
@@ -228,6 +230,13 @@ export const ImportarSaidasDialog = ({
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (isPdf(file) && !dataAtendimento) {
+      toast({ title: "Informe a data do atendimento antes de importar o PDF", variant: "destructive" });
+      if (fileInputRef.current) fileInputRef.current.value = "";
+      return;
+    }
+
     setFileName(file.name);
     setIsAnalyzing(true);
 
@@ -321,6 +330,17 @@ export const ImportarSaidasDialog = ({
                 Baixar Modelo XLSX
               </Button>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="data-atendimento-import">Data do Atendimento (para PDF)</Label>
+              <Input
+                id="data-atendimento-import"
+                type="date"
+                value={dataAtendimento}
+                onChange={(e) => setDataAtendimento(e.target.value)}
+                className="max-w-xs"
+              />
+              <p className="text-xs text-muted-foreground">Obrigatório para importação de PDF. Planilhas usam a coluna de data.</p>
+            </div>
             <input
               ref={fileInputRef}
               type="file"
@@ -343,7 +363,7 @@ export const ImportarSaidasDialog = ({
             </Button>
             <div className="flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-md p-3">
               <FileText className="h-4 w-4 mt-0.5 shrink-0" />
-              <span>PDFs do Salus são processados via IA para extrair a lista de pacientes. A data de atendimento será definida como hoje.</span>
+              <span>PDFs do Salus são processados via IA. Informe a data do atendimento acima antes de importar.</span>
             </div>
           </div>
         ) : (
