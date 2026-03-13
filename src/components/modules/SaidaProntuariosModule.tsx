@@ -1734,7 +1734,7 @@ export const SaidaProntuariosModule = () => {
                             );
                           })()}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="sticky right-0 z-10 bg-background">
                           {getActionButton(saida)}
                         </TableCell>
                       </TableRow>
