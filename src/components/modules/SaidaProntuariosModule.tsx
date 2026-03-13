@@ -1595,7 +1595,10 @@ export const SaidaProntuariosModule = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Folhas Avulsas</p>
-                <p className="text-2xl font-bold text-warning">{totalFolhasCount}</p>
+                <p className="text-2xl font-bold text-warning">{filteredFolhasCount !== null ? filteredFolhasCount : totalFolhasCount}</p>
+                {filteredFolhasCount !== null && (
+                  <p className="text-xs text-muted-foreground">de {totalFolhasCount} totais</p>
+                )}
               </div>
             </div>
           </CardContent>
