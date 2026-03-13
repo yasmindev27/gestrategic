@@ -310,8 +310,7 @@ export const SaidaProntuariosModule = () => {
       // Recepção: vê somente hoje e status aguardando_classificacao ou registros sem validação
       query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
     } else if (isClassificacao && !isAdmin && !isNir && !isFaturamento) {
-      // Classificação: vê apenas prontuários aguardando classificação (ontem + hoje)
-      query = query.gte("created_at", inicioOntem).lte("created_at", fimHoje);
+      // Classificação: vê todos os prontuários aguardando classificação ou pendentes (sem limite de data)
       if (statusFilter === "todos" || statusFilter === "em_fluxo") {
         query = query.in("status", ["aguardando_classificacao", "pendente"]);
       }
