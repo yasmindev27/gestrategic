@@ -71,7 +71,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
   const setorInfo = getSetorInfo();
 
   useEffect(() => {
-    if (open) {
+    if (open && userId) {
       fetchProntuariosDia();
       fetchUserName();
       setSelectedIds(new Set());
@@ -80,7 +80,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
       setSearchPaciente("");
       setColabResults([]);
     }
-  }, [open]);
+  }, [open, userId, isClassificacao, isNir, isRecepcao, isAdmin]);
 
   const fetchUserName = async () => {
     if (!userId) return;
