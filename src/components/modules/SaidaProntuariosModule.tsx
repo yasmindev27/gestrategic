@@ -538,10 +538,11 @@ export const SaidaProntuariosModule = () => {
     setIsSubmitting(true);
     try {
       // Verificar duplicidade: mesmo paciente + mesma data de atendimento
+      // Verificar duplicidade: mesmo paciente + mesma data de atendimento (case-insensitive)
       const { data: existente } = await supabase
         .from("saida_prontuarios")
         .select("id, status, observacao_classificacao")
-        .eq("paciente_nome", pacienteNome.trim().toUpperCase())
+        .ilike("paciente_nome", pacienteNome.trim())
         .eq("data_atendimento", dataAtendimento)
         .eq("is_folha_avulsa", false)
         .maybeSingle();
