@@ -232,6 +232,19 @@ export const SaidaProntuariosModule = () => {
   const [visibleSection, setVisibleSection] = useState<VisibleSection>("fluxo");
 
   useEffect(() => {
+    if (
+      !isLoadingRole &&
+      isClassificacao &&
+      !isAdmin &&
+      !isNir &&
+      !isFaturamento &&
+      statusFilter === "em_fluxo"
+    ) {
+      setStatusFilter("todos");
+    }
+  }, [isLoadingRole, isClassificacao, isAdmin, isNir, isFaturamento, statusFilter]);
+
+  useEffect(() => {
     if (!isLoadingRole && canAccess) {
       fetchCounts();
       logAction("acesso", "saida_prontuarios", { role: role || "unknown" });
