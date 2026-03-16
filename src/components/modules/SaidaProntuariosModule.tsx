@@ -208,7 +208,7 @@ export const SaidaProntuariosModule = () => {
   const canInsert = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
   const canValidateClassificacao = isClassificacao || isAdmin;
   const canValidateNir = isNir || isAdmin;
-  const isFullAccessRole = isFaturamento || isAdmin || isNir;
+  const isFullAccessRole = isFaturamento || isAdmin || isNir || isClassificacao;
 
   // Data de referência no fuso de Brasília (UTC-3) com offset explícito para filtros de created_at
   const hoje = getBrasiliaDateString();
