@@ -254,8 +254,7 @@ export const SaidaProntuariosModule = () => {
       const regularCountQuery = supabase
         .from("saida_prontuarios")
         .select("*", { count: "exact", head: true })
-        .eq("is_folha_avulsa", false)
-        .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%");
+        .eq("is_folha_avulsa", false);
 
       // Contagem "Registros do Dia" para Recepção: hoje + em fluxo (não concluído)
       const regularHojeQueryBuilder = supabase
