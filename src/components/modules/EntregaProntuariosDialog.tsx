@@ -95,25 +95,27 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
   const fetchProntuariosDia = async () => {
     setIsLoading(true);
     try {
-      const hoje = getBrasiliaDateString();
-      const inicioHoje = `${hoje}T00:00:00-03:00`;
-      const fimHoje = `${hoje}T23:59:59-03:00`;
-
       let query = supabase
         .from("saida_prontuarios")
         .select("id, paciente_nome, numero_prontuario, data_atendimento")
         .eq("is_folha_avulsa", false)
-        .gte("created_at", inicioHoje)
-        .lte("created_at", fimHoje)
         .neq("status", "concluido")
         .neq("status", "pendente");
 
-      // Classificação: mostra apenas os prontuários que ela própria validou
+      // Recepção vê apenas os de hoje; Classificação e NIR veem todos os retroativos
+      if (isRecepcao && !isAdmin && !isClassificacao && !isNir) {
+        const hoje = getBrasiliaDateString();
+        query = query
+          .gte("created_at", `${hoje}T00:00:00-03:00`)
+          .lte("created_at", `${hoje}T23:59:59-03:00`);
+      }
+
+      // Classificação (não admin): mostra apenas os que ela validou
       if (isClassificacao && !isAdmin) {
         query = query.eq("validado_classificacao_por", userId!);
       }
 
-      const { data, error } = await query.order("created_at", { ascending: false });
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(500);
 
       if (error) throw error;
 
@@ -381,7 +383,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
                     </div>
                   ) : filtrados.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      {searchPaciente.trim() ? "Nenhum prontuário encontrado com esse nome." : "Nenhum prontuário registrado hoje."}
+                      {searchPaciente.trim() ? "Nenhum prontuário encontrado com esse nome." : "Nenhum prontuário disponível para entrega."}
                     </p>
                   ) : (
               <ScrollArea className="h-[200px] border rounded-md">
