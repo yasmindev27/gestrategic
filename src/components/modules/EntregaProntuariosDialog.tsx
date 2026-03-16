@@ -98,21 +98,22 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
       let query = supabase
         .from("saida_prontuarios")
         .select("id, paciente_nome, numero_prontuario, data_atendimento")
-        .eq("is_folha_avulsa", false)
-        .neq("status", "concluido")
-        .neq("status", "pendente");
+        .eq("is_folha_avulsa", false);
 
-      // Recepção vê apenas os de hoje; Classificação e NIR veem todos os retroativos
+      // Cada perfil vê apenas os prontuários no status correto para entrega
       if (isRecepcao && !isAdmin && !isClassificacao && !isNir) {
         const hoje = getBrasiliaDateString();
         query = query
+          .eq("status", "aguardando_classificacao")
           .gte("created_at", `${hoje}T00:00:00-03:00`)
           .lte("created_at", `${hoje}T23:59:59-03:00`);
-      }
-
-      // Classificação (não admin): mostra apenas os que ela validou
-      if (isClassificacao && !isAdmin) {
-        query = query.eq("validado_classificacao_por", userId!);
+      } else if (isClassificacao && !isAdmin) {
+        query = query.eq("status", "aguardando_nir");
+      } else if (isNir && !isAdmin) {
+        query = query.eq("status", "aguardando_faturamento");
+      } else {
+        // Admin / Faturamento: vê tudo exceto concluído
+        query = query.neq("status", "concluido");
       }
 
       const { data, error } = await query.order("created_at", { ascending: false }).limit(500);
