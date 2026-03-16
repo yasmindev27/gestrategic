@@ -138,7 +138,9 @@ const Sidebar = ({
     }
     if (isNir) {
       items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Ambulance, label: "NIR", id: "nir" },
+        { icon: BedDouble, label: "Mapa de Leitos", id: "mapa-leitos" },
         { icon: Receipt, label: "Faturamento", id: "faturamento" },
         { icon: Calendar, label: "Agenda", id: "agenda" }
       );
