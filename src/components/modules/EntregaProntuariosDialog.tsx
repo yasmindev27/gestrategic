@@ -368,7 +368,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
                 <>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-xs font-medium text-muted-foreground">
-                      Prontuários do dia ({filtrados.length})
+                      Prontuários disponíveis ({filtrados.length})
                     </label>
                     {filtrados.length > 0 && (
                       <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={toggleAll}>
