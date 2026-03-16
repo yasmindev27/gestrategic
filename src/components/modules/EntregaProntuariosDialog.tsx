@@ -105,7 +105,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
     if (data) setFullName(data.full_name || "Usuário");
   };
 
-  const fetchProntuariosDia = async () => {
+  const fetchProntuariosDia = async (searchTerm = "") => {
     setIsLoading(true);
     try {
       let query = supabase
@@ -121,15 +121,20 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
           .gte("created_at", `${hoje}T00:00:00-03:00`)
           .lte("created_at", `${hoje}T23:59:59-03:00`);
       } else if (isClassificacao && !isAdmin) {
-        query = query.eq("status", "aguardando_nir");
+        query = query.in("status", ["aguardando_classificacao", "aguardando_nir"]);
       } else if (isNir && !isAdmin) {
-        query = query.eq("status", "aguardando_faturamento");
+        query = query.in("status", ["aguardando_nir", "aguardando_faturamento"]);
       } else {
         // Admin / Faturamento: vê tudo exceto concluído
         query = query.neq("status", "concluido");
       }
 
-      const { data, error } = await query.order("created_at", { ascending: false }).limit(500);
+      const trimmedSearch = searchTerm.trim();
+      if (trimmedSearch.length >= 2) {
+        query = query.ilike("paciente_nome", `%${trimmedSearch}%`);
+      }
+
+      const { data, error } = await query.order("created_at", { ascending: false }).limit(trimmedSearch.length >= 2 ? 300 : 2000);
 
       if (error) throw error;
 
