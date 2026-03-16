@@ -273,7 +273,7 @@ export function IndicadoresNSP() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Internações</p><p className="text-2xl font-bold">{stats.totalInternacoes}</p></div><Users className="h-6 w-6 text-primary opacity-80" /></div></CardContent></Card>
         <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Taxa de Ocupação</p><p className="text-2xl font-bold">{stats.taxaOcupacao}%</p></div><BarChart3 className="h-6 w-6 text-primary opacity-80" /></div></CardContent></Card>
-        <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Taxa de Mortalidade</p><p className="text-2xl font-bold">{stats.taxaMortalidade}</p></div><AlertTriangle className="h-6 w-6 text-destructive opacity-80" /></div></CardContent></Card>
+        <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Taxa de Mortalidade</p><p className="text-2xl font-bold">{stats.taxaMortalidade}%</p></div><AlertTriangle className="h-6 w-6 text-destructive opacity-80" /></div></CardContent></Card>
         <Card><CardContent className="p-4"><div className="flex items-center justify-between"><div><p className="text-sm text-muted-foreground">Protocolos Sepse</p><p className="text-2xl font-bold">{stats.protocolosSepse}</p></div><Activity className="h-6 w-6 text-primary opacity-80" /></div></CardContent></Card>
       </div>
 
