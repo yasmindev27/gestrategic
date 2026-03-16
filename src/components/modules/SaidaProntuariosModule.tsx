@@ -968,15 +968,18 @@ export const SaidaProntuariosModule = () => {
   const filteredFolhasAvulsas = folhasAvulsas;
   const filteredFaltantesSalus = faltantesSalus;
 
+  const defaultStatusFilter =
+    isClassificacao && !isAdmin && !isNir && !isFaturamento ? "todos" : "em_fluxo";
+
   const clearFilters = () => {
     setSearchTerm("");
     setDataInicio("");
     setDataFim("");
-    setStatusFilter("em_fluxo");
+    setStatusFilter(defaultStatusFilter);
     setFilteredSaidasCount(null);
   };
 
-  const hasActiveFilters = searchTerm || dataInicio || dataFim || (statusFilter !== "em_fluxo");
+  const hasActiveFilters = searchTerm || dataInicio || dataFim || (statusFilter !== defaultStatusFilter);
 
   // Check if a record is missing from Salus analysis
   const isMissingFromSalus = (saida: SaidaProntuario): boolean => {
