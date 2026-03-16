@@ -261,7 +261,6 @@ export const SaidaProntuariosModule = () => {
         .from("saida_prontuarios")
         .select("*", { count: "exact", head: true })
         .eq("is_folha_avulsa", false)
-        .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%")
         .gte("created_at", inicioHoje)
         .lte("created_at", fimHoje)
         .neq("status", "concluido");
