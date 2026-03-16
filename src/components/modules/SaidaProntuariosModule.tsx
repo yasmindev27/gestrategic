@@ -208,21 +208,15 @@ export const SaidaProntuariosModule = () => {
   const canInsert = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
   const canValidateClassificacao = isClassificacao || isAdmin;
   const canValidateNir = isNir || isAdmin;
-  const isFullAccessRole = isFaturamento || isAdmin || isNir;
+  const isFullAccessRole = isFaturamento || isAdmin || isNir || isClassificacao;
 
   // Data de referência no fuso de Brasília (UTC-3) com offset explícito para filtros de created_at
   const hoje = getBrasiliaDateString();
   const inicioHoje = `${hoje}T00:00:00-03:00`;
   const fimHoje = `${hoje}T23:59:59-03:00`;
 
-  // D1: Classificação vê ontem + hoje (24h para tratar prontuários)
-  const ontemDate = new Date();
-  ontemDate.setDate(ontemDate.getDate() - 1);
-  const ontem = ontemDate.toISOString().slice(0, 10);
-  const inicioOntem = `${ontem}T00:00:00-03:00`;
-
-  // Pagination
-  const PAGE_SIZE = 100;
+  // Pagination técnica (sem navegação visual): manter limite alto para evitar corte de registros recentes
+  const PAGE_SIZE = 1000;
   const [saidasPage, setSaidasPage] = useState(0);
   const [folhasPage, setFolhasPage] = useState(0);
   const [faltantesPage, setFaltantesPage] = useState(0);
@@ -230,6 +224,19 @@ export const SaidaProntuariosModule = () => {
   // Section visibility: only one section visible at a time
   type VisibleSection = "fluxo" | "folhas" | "faltantes" | null;
   const [visibleSection, setVisibleSection] = useState<VisibleSection>("fluxo");
+
+  useEffect(() => {
+    if (
+      !isLoadingRole &&
+      isClassificacao &&
+      !isAdmin &&
+      !isNir &&
+      !isFaturamento &&
+      statusFilter === "em_fluxo"
+    ) {
+      setStatusFilter("todos");
+    }
+  }, [isLoadingRole, isClassificacao, isAdmin, isNir, isFaturamento, statusFilter]);
 
   useEffect(() => {
     if (!isLoadingRole && canAccess) {
@@ -243,7 +250,6 @@ export const SaidaProntuariosModule = () => {
     setIsLoading(true);
     try {
       const restrictedToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
-      const restrictedToYesterdayToday = isClassificacao && !isAdmin && !isNir && !isFaturamento;
 
       const regularCountQuery = supabase
         .from("saida_prontuarios")
@@ -303,13 +309,6 @@ export const SaidaProntuariosModule = () => {
     // Filtrar por status baseado no setor do usuário
     if (isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao) {
       query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-    } else if (isClassificacao && !isAdmin && !isNir && !isFaturamento) {
-      const allowedStatuses = ["aguardando_classificacao", "pendente"];
-      if (statusFilter !== "todos" && statusFilter !== "em_fluxo" && allowedStatuses.includes(statusFilter)) {
-        query = query.eq("status", statusFilter);
-      } else {
-        query = query.in("status", allowedStatuses);
-      }
     } else if (isNir && !isAdmin && !isFaturamento) {
       query = query.in("status", ["aguardando_nir"]);
     } else {
@@ -962,15 +961,18 @@ export const SaidaProntuariosModule = () => {
   const filteredFolhasAvulsas = folhasAvulsas;
   const filteredFaltantesSalus = faltantesSalus;
 
+  const defaultStatusFilter =
+    isClassificacao && !isAdmin && !isNir && !isFaturamento ? "todos" : "em_fluxo";
+
   const clearFilters = () => {
     setSearchTerm("");
     setDataInicio("");
     setDataFim("");
-    setStatusFilter("em_fluxo");
+    setStatusFilter(defaultStatusFilter);
     setFilteredSaidasCount(null);
   };
 
-  const hasActiveFilters = searchTerm || dataInicio || dataFim || (statusFilter !== "em_fluxo");
+  const hasActiveFilters = searchTerm || dataInicio || dataFim || (statusFilter !== defaultStatusFilter);
 
   // Check if a record is missing from Salus analysis
   const isMissingFromSalus = (saida: SaidaProntuario): boolean => {
@@ -1471,7 +1473,7 @@ export const SaidaProntuariosModule = () => {
                 Filtros
                 {hasActiveFilters && (
                   <Badge className="ml-2 bg-primary text-primary-foreground" variant="secondary">
-                    {[searchTerm, dataInicio, dataFim, statusFilter !== "todos"].filter(Boolean).length}
+                    {[searchTerm, dataInicio, dataFim, statusFilter !== defaultStatusFilter].filter(Boolean).length}
                   </Badge>
                 )}
               </Button>
@@ -1510,14 +1512,7 @@ export const SaidaProntuariosModule = () => {
                       <SelectValue placeholder="Em Fluxo" />
                     </SelectTrigger>
                     <SelectContent>
-                      {/* Classificação: só vê opções relevantes ao seu escopo */}
-                      {isClassificacao && !isAdmin && !isNir && !isFaturamento ? (
-                        <>
-                          <SelectItem value="em_fluxo">Todos do meu escopo</SelectItem>
-                          <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
-                          <SelectItem value="pendente">Aguardando Resolução de Pendência</SelectItem>
-                        </>
-                      ) : isNir && !isAdmin && !isFaturamento ? (
+                      {isNir && !isAdmin && !isFaturamento ? (
                         <>
                           <SelectItem value="em_fluxo">Aguardando NIR</SelectItem>
                         </>
