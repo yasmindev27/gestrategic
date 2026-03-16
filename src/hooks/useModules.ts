@@ -42,7 +42,7 @@ export const useModules = () => {
     dashboard: true, // Everyone can access dashboard
     nir: isAdmin || isNir,
     faturamento: isAdmin || isFaturamento,
-    mapaLeitos: isAdmin || isNir,
+    mapaLeitos: isAdmin || isNir || isEnfermagem || isAssistenciaSocial,
     enfermagem: isAdmin || isGestor || isEnfermagem,
     laboratorio: isAdmin || isLaboratorio || isMedicos || isGestor,
     restaurante: isAdmin || isRestaurante,

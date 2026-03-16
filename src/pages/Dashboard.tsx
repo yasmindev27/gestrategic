@@ -128,7 +128,7 @@ const Dashboard = () => {
         case "controle-fichas":
           return <ControleFichasModule />;
         case "equipe":
-          return <RHDPModule />;
+          return <EquipeModule />;
         case "agenda":
           return <AgendaModule />;
         case "admin":
