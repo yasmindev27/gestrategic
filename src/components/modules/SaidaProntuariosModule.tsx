@@ -250,7 +250,6 @@ export const SaidaProntuariosModule = () => {
     setIsLoading(true);
     try {
       const restrictedToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
-      const restrictedToYesterdayToday = isClassificacao && !isAdmin && !isNir && !isFaturamento;
 
       const regularCountQuery = supabase
         .from("saida_prontuarios")
