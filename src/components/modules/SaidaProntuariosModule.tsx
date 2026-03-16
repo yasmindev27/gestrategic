@@ -254,15 +254,13 @@ export const SaidaProntuariosModule = () => {
       const regularCountQuery = supabase
         .from("saida_prontuarios")
         .select("*", { count: "exact", head: true })
-        .eq("is_folha_avulsa", false)
-        .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%");
+        .eq("is_folha_avulsa", false);
 
       // Contagem "Registros do Dia" para Recepção: hoje + em fluxo (não concluído)
       const regularHojeQueryBuilder = supabase
         .from("saida_prontuarios")
         .select("*", { count: "exact", head: true })
         .eq("is_folha_avulsa", false)
-        .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%")
         .gte("created_at", inicioHoje)
         .lte("created_at", fimHoje)
         .neq("status", "concluido");
@@ -331,7 +329,6 @@ export const SaidaProntuariosModule = () => {
       .from("saida_prontuarios")
       .select("*")
       .eq("is_folha_avulsa", false)
-      .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%")
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
@@ -341,8 +338,7 @@ export const SaidaProntuariosModule = () => {
     let countQuery = supabase
       .from("saida_prontuarios")
       .select("*", { count: "exact", head: true })
-      .eq("is_folha_avulsa", false)
-      .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%");
+      .eq("is_folha_avulsa", false);
     countQuery = applySaidasFilters(countQuery);
 
     const [{ data, error }, { count: filteredCount }] = await Promise.all([query, countQuery]);
@@ -540,10 +536,11 @@ export const SaidaProntuariosModule = () => {
     setIsSubmitting(true);
     try {
       // Verificar duplicidade: mesmo paciente + mesma data de atendimento
+      // Verificar duplicidade: mesmo paciente + mesma data de atendimento (case-insensitive)
       const { data: existente } = await supabase
         .from("saida_prontuarios")
         .select("id, status, observacao_classificacao")
-        .eq("paciente_nome", pacienteNome.trim().toUpperCase())
+        .ilike("paciente_nome", pacienteNome.trim())
         .eq("data_atendimento", dataAtendimento)
         .eq("is_folha_avulsa", false)
         .maybeSingle();
