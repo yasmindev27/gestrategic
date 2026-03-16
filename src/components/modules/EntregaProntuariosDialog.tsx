@@ -72,7 +72,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
 
   useEffect(() => {
     if (open && userId) {
-      fetchProntuariosDia();
+      fetchProntuariosDia("");
       fetchUserName();
       setSelectedIds(new Set());
       setResponsavel(null);
@@ -81,6 +81,19 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
       setColabResults([]);
     }
   }, [open, userId, isClassificacao, isNir, isRecepcao, isAdmin]);
+
+  useEffect(() => {
+    if (!open || !userId) return;
+
+    const term = searchPaciente.trim();
+    const timer = setTimeout(() => {
+      if (term.length === 0 || term.length >= 2) {
+        fetchProntuariosDia(term);
+      }
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchPaciente, open, userId, isClassificacao, isNir, isRecepcao, isAdmin]);
 
   const fetchUserName = async () => {
     if (!userId) return;
