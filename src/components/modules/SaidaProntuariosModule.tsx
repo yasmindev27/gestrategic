@@ -1503,14 +1503,7 @@ export const SaidaProntuariosModule = () => {
                       <SelectValue placeholder="Em Fluxo" />
                     </SelectTrigger>
                     <SelectContent>
-                      {/* Classificação: só vê opções relevantes ao seu escopo */}
-                      {isClassificacao && !isAdmin && !isNir && !isFaturamento ? (
-                        <>
-                          <SelectItem value="em_fluxo">Todos do meu escopo</SelectItem>
-                          <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
-                          <SelectItem value="pendente">Aguardando Resolução de Pendência</SelectItem>
-                        </>
-                      ) : isNir && !isAdmin && !isFaturamento ? (
+                      {isNir && !isAdmin && !isFaturamento ? (
                         <>
                           <SelectItem value="em_fluxo">Aguardando NIR</SelectItem>
                         </>
