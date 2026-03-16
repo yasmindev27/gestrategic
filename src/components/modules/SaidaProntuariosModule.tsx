@@ -331,7 +331,6 @@ export const SaidaProntuariosModule = () => {
       .from("saida_prontuarios")
       .select("*")
       .eq("is_folha_avulsa", false)
-      .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%")
       .order("data_atendimento", { ascending: false })
       .range(from, from + PAGE_SIZE - 1);
 
