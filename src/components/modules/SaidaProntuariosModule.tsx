@@ -215,12 +215,6 @@ export const SaidaProntuariosModule = () => {
   const inicioHoje = `${hoje}T00:00:00-03:00`;
   const fimHoje = `${hoje}T23:59:59-03:00`;
 
-  // D1: Classificação vê ontem + hoje (24h para tratar prontuários)
-  const ontemDate = new Date();
-  ontemDate.setDate(ontemDate.getDate() - 1);
-  const ontem = ontemDate.toISOString().slice(0, 10);
-  const inicioOntem = `${ontem}T00:00:00-03:00`;
-
   // Pagination
   const PAGE_SIZE = 100;
   const [saidasPage, setSaidasPage] = useState(0);
