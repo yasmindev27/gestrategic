@@ -383,7 +383,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
                     </div>
                   ) : filtrados.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      {searchPaciente.trim() ? "Nenhum prontuário encontrado com esse nome." : "Nenhum prontuário registrado hoje."}
+                      {searchPaciente.trim() ? "Nenhum prontuário encontrado com esse nome." : "Nenhum prontuário disponível para entrega."}
                     </p>
                   ) : (
               <ScrollArea className="h-[200px] border rounded-md">
