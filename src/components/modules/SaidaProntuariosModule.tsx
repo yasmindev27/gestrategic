@@ -215,8 +215,8 @@ export const SaidaProntuariosModule = () => {
   const inicioHoje = `${hoje}T00:00:00-03:00`;
   const fimHoje = `${hoje}T23:59:59-03:00`;
 
-  // Pagination
-  const PAGE_SIZE = 100;
+  // Pagination técnica (sem navegação visual): manter limite alto para evitar corte de registros recentes
+  const PAGE_SIZE = 1000;
   const [saidasPage, setSaidasPage] = useState(0);
   const [folhasPage, setFolhasPage] = useState(0);
   const [faltantesPage, setFaltantesPage] = useState(0);
