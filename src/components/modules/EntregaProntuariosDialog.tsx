@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
-import { getBrasiliaDateString } from "@/lib/brasilia-time";
 import {
   Dialog,
   DialogContent,
