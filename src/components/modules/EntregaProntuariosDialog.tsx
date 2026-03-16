@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useToast } from "@/hooks/use-toast";
-import { getBrasiliaDateString } from "@/lib/brasilia-time";
 import {
   Dialog,
   DialogContent,
@@ -111,51 +110,21 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
       let query = supabase
         .from("saida_prontuarios")
         .select("id, paciente_nome, numero_prontuario, data_atendimento")
-        .eq("is_folha_avulsa", false);
-
-      // Cada perfil vê apenas os prontuários no status correto para entrega
-      if (isRecepcao && !isAdmin && !isClassificacao && !isNir) {
-        const hoje = getBrasiliaDateString();
-        query = query
-          .eq("status", "aguardando_classificacao")
-          .gte("created_at", `${hoje}T00:00:00-03:00`)
-          .lte("created_at", `${hoje}T23:59:59-03:00`);
-      } else if (isClassificacao && !isAdmin) {
-        query = query.in("status", ["aguardando_classificacao", "aguardando_nir"]);
-      } else if (isNir && !isAdmin) {
-        query = query.in("status", ["aguardando_nir", "aguardando_faturamento"]);
-      } else {
-        // Admin / Faturamento: vê tudo exceto concluído
-        query = query.neq("status", "concluido");
-      }
+        .eq("is_folha_avulsa", false)
+        .neq("status", "concluido");
 
       const trimmedSearch = searchTerm.trim();
       if (trimmedSearch.length >= 2) {
         query = query.ilike("paciente_nome", `%${trimmedSearch}%`);
       }
 
-      const { data, error } = await query.order("created_at", { ascending: false }).limit(trimmedSearch.length >= 2 ? 300 : 2000);
+      const { data, error } = await query
+        .order("created_at", { ascending: false })
+        .limit(trimmedSearch.length >= 2 ? 300 : 2000);
 
       if (error) throw error;
 
-      // Filtrar prontuários que já foram entregues por este setor
-      if (data && data.length > 0 && setorInfo) {
-        const ids = data.map(d => d.id);
-        const { data: jaEntregues } = await supabase
-          .from("entregas_prontuarios_itens")
-          .select("saida_prontuario_id, entrega:entregas_prontuarios!inner(setor_origem)")
-          .in("saida_prontuario_id", ids);
-
-        const entreguesDoSetor = new Set(
-          (jaEntregues || [])
-            .filter((e: any) => e.entrega?.setor_origem === setorInfo.origem)
-            .map((e: any) => e.saida_prontuario_id)
-        );
-
-        setProntuariosDia(data.filter(d => !entreguesDoSetor.has(d.id)));
-      } else {
-        setProntuariosDia(data || []);
-      }
+      setProntuariosDia(data || []);
     } catch {
       toast({ title: "Erro", description: "Falha ao carregar prontuários do dia.", variant: "destructive" });
     } finally {
