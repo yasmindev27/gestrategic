@@ -1480,7 +1480,7 @@ export const SaidaProntuariosModule = () => {
                 Filtros
                 {hasActiveFilters && (
                   <Badge className="ml-2 bg-primary text-primary-foreground" variant="secondary">
-                    {[searchTerm, dataInicio, dataFim, statusFilter !== "todos"].filter(Boolean).length}
+                    {[searchTerm, dataInicio, dataFim, statusFilter !== defaultStatusFilter].filter(Boolean).length}
                   </Badge>
                 )}
               </Button>
