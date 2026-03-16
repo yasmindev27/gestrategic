@@ -340,8 +340,7 @@ export const SaidaProntuariosModule = () => {
     let countQuery = supabase
       .from("saida_prontuarios")
       .select("*", { count: "exact", head: true })
-      .eq("is_folha_avulsa", false)
-      .or("observacao_classificacao.is.null,observacao_classificacao.not.ilike.%importado via salus%");
+      .eq("is_folha_avulsa", false);
     countQuery = applySaidasFilters(countQuery);
 
     const [{ data, error }, { count: filteredCount }] = await Promise.all([query, countQuery]);
