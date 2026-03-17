@@ -638,6 +638,32 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="desinfeccao" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Data</TableHead><TableHead>Método</TableHead><TableHead>Quantidade</TableHead>
+                <TableHead>Validade</TableHead><TableHead>Responsável</TableHead><TableHead>COREN</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {desinfeccoesFiltradas.length === 0 ? (
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhuma desinfecção registrada</TableCell></TableRow>
+                ) : desinfeccoesFiltradas.map(d => (
+                  <TableRow key={d.id}>
+                    <TableCell>{d.data}</TableCell>
+                    <TableCell className="font-medium">{d.metodo}</TableCell>
+                    <TableCell>{d.quantidade}</TableCell>
+                    <TableCell>{d.validade || '—'}</TableCell>
+                    <TableCell>{d.responsavel}</TableCell>
+                    <TableCell className="font-mono text-sm">{d.coren || '—'}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheDesinfeccao(d)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog detalhe pinças */}
