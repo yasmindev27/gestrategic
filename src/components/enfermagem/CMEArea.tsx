@@ -1165,6 +1165,33 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="solicitacao" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Data</TableHead><TableHead>Setor</TableHead><TableHead>Centro Custo</TableHead>
+                <TableHead>Material</TableHead><TableHead>Qtd</TableHead><TableHead>Solicitante</TableHead><TableHead>Obs</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {solicitacoesFiltradas.length === 0 ? (
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhuma solicitação registrada</TableCell></TableRow>
+                ) : solicitacoesFiltradas.map(s => (
+                  <TableRow key={s.id}>
+                    <TableCell>{s.data}</TableCell>
+                    <TableCell className="font-medium">{s.setor}</TableCell>
+                    <TableCell><Badge variant="outline">{s.centroCusto}</Badge></TableCell>
+                    <TableCell>{s.material}</TableCell>
+                    <TableCell>{s.quantidade || '—'}</TableCell>
+                    <TableCell>{s.solicitante}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate">{s.observacao || '—'}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheSolicitacao(s)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog detalhe pinças */}
