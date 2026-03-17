@@ -443,8 +443,13 @@ export const ControleFichasModule = () => {
                       return <Badge className={`text-[10px] border ${cfg.color}`}>{cfg.label}</Badge>;
                     })()}
                   </TableCell>
+                  <TableCell className="text-xs py-2">
+                    {item.status === "resolvido" 
+                      ? (item.resolvido_por_nome || "—") 
+                      : (item.registrado_por_nome_display || "—")
+                    }
+                  </TableCell>
                   <TableCell className="text-[11px] text-muted-foreground py-2">
-                    {format(new Date(item.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}
                   </TableCell>
                   <TableCell className="py-2 text-center">
                     <div className="flex items-center justify-center gap-1">
