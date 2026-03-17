@@ -68,18 +68,18 @@
     --info-foreground: 0 0% 100%;
 
     /* Header */
-    --header: 192 60% 12%;
+    --header: 220 50% 12%;
     --header-foreground: 0 0% 100%;
 
-    /* Sidebar — Petróleo escuro com profundidade */
-    --sidebar-background: 192 58% 10%;
-    --sidebar-foreground: 180 15% 72%;
-    --sidebar-primary: 174 56% 55%;
+    /* Sidebar — Azul Marinho profundo */
+    --sidebar-background: 220 48% 10%;
+    --sidebar-foreground: 215 20% 72%;
+    --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 192 40% 16%;
-    --sidebar-accent-foreground: 180 12% 88%;
-    --sidebar-border: 192 30% 18%;
-    --sidebar-ring: 174 56% 55%;
+    --sidebar-accent: 220 35% 16%;
+    --sidebar-accent-foreground: 215 15% 88%;
+    --sidebar-border: 220 25% 18%;
+    --sidebar-ring: 217 91% 60%;
 
     /* Hospital Status */
     --hospital-green: 174 56% 40%;
