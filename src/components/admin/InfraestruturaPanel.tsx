@@ -229,6 +229,35 @@ export function InfraestruturaPanel() {
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [alertas, setAlertas] = useState<HashAlerta[]>([]);
   const repairTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ tables: number; rows: number; errors: number } | null>(null);
+
+  const handleSyncExternalDB = async () => {
+    setIsSyncing(true);
+    setSyncResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Não autenticado");
+
+      const res = await supabase.functions.invoke("sync-external-db", {
+        body: { mode: "full" },
+      });
+
+      if (res.error) throw res.error;
+
+      const result = res.data;
+      setSyncResult({
+        tables: result.summary?.tables_processed || 0,
+        rows: result.summary?.total_rows_synced || 0,
+        errors: result.summary?.tables_with_errors || 0,
+      });
+    } catch (err: any) {
+      console.error("Sync error:", err);
+      setSyncResult({ tables: 0, rows: 0, errors: -1 });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // ── Detecta erros de hash e gera alertas ao montar ──────────────────────
   useEffect(() => {
