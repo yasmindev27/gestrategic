@@ -329,12 +329,16 @@ export function CMEArea() {
   const desinfeccoesFiltradas = desinfeccoes.filter(d =>
     d.metodo.toLowerCase().includes(buscaDesinfeccao.toLowerCase()) || d.responsavel.toLowerCase().includes(buscaDesinfeccao.toLowerCase())
   );
+  const diluicoesFiltradas = diluicoes.filter(d =>
+    d.responsavel.toLowerCase().includes(buscaDiluicao.toLowerCase()) || d.itens.some(i => i.solucao.toLowerCase().includes(buscaDiluicao.toLowerCase()))
+  );
 
   const getBusca = () => {
     if (tab === 'devolucao') return buscaDev;
     if (tab === 'pincas') return buscaPincas;
     if (tab === 'almotolias') return buscaAlmotolia;
     if (tab === 'desinfeccao') return buscaDesinfeccao;
+    if (tab === 'diluicao') return buscaDiluicao;
     return busca;
   };
   const setBuscaAtual = (v: string) => {
@@ -342,6 +346,7 @@ export function CMEArea() {
     else if (tab === 'pincas') setBuscaPincas(v);
     else if (tab === 'almotolias') setBuscaAlmotolia(v);
     else if (tab === 'desinfeccao') setBuscaDesinfeccao(v);
+    else if (tab === 'diluicao') setBuscaDiluicao(v);
     else setBusca(v);
   };
 
