@@ -10,10 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Pill, Plus, Search, Clock, CheckCircle2, AlertTriangle, FileText,
-  Syringe, Droplets, ShieldAlert, CalendarClock, User
+import { Pill, Plus, Search, Clock, CheckCircle2, AlertTriangle, FileText,
+  Syringe, Droplets, ShieldAlert, CalendarClock, User, Thermometer
 } from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { toast } from 'sonner';
+import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
