@@ -259,28 +259,28 @@ const Sidebar = ({
 
   const addCommonMenuItems = (items: MenuItem[]): MenuItem[] => {
     if (!isAdmin && !items.some(item => item.id === "colaborador")) {
-      items.push({ icon: UserRound, label: "Colaborador", id: "colaborador" });
+      items.push({ icon: UserRound, label: "Colaborador", id: "colaborador", category: "administrativo" });
     }
     if (!isAdmin && !items.some(item => item.id === "reportar-incidente")) {
-      items.push({ icon: AlertTriangle, label: "Abrir Notificação", id: "reportar-incidente" });
+      items.push({ icon: AlertTriangle, label: "Abrir Notificação", id: "reportar-incidente", category: "governanca" });
     }
     if (!isAdmin && !items.some(item => item.id === "abrir-chamado")) {
-      items.push({ icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" });
+      items.push({ icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado", category: "comunicacao" });
     }
     if (!items.some(item => item.id === "chat")) {
-      items.push({ icon: MessageSquare, label: "Chat", id: "chat" });
+      items.push({ icon: MessageSquare, label: "Chat", id: "chat", category: "comunicacao" });
     }
     if (!items.some(item => item.id === "restaurante")) {
-      items.push({ icon: UtensilsCrossed, label: "Restaurante", id: "restaurante" });
+      items.push({ icon: UtensilsCrossed, label: "Restaurante", id: "restaurante", category: "apoio_logistica" });
     }
     if (!items.some(item => item.id === "lms")) {
-      items.push({ icon: GraduationCap, label: "Treinamentos", id: "lms" });
+      items.push({ icon: GraduationCap, label: "Treinamentos", id: "lms", category: "administrativo" });
     }
     if (!items.some(item => item.id === "documentos-interact")) {
-      items.push({ icon: FileText, label: "Docs Interact", id: "documentos-interact", category: "integracao" });
+      items.push({ icon: FileText, label: "Docs Interact", id: "documentos-interact", category: "governanca" });
     }
     if (!items.some(item => item.id === "salus")) {
-      items.push({ icon: Stethoscope, label: "Sistema Salus", id: "salus", category: "integracao" });
+      items.push({ icon: Stethoscope, label: "Sistema Salus", id: "salus", category: "comunicacao" });
     }
     return items;
   };
