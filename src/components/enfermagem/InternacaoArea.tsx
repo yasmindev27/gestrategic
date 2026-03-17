@@ -12,9 +12,10 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   BedDouble, ClipboardList, UserCheck, AlertTriangle, Plus, Search,
-  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2
+  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { ChecklistCarrinhoInternacao } from './ChecklistCarrinhoInternacao';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
@@ -172,6 +173,7 @@ export function InternacaoArea() {
           <TabsTrigger value="pacientes" className="gap-1"><BedDouble className="h-4 w-4" />Pacientes</TabsTrigger>
           <TabsTrigger value="passagem" className="gap-1"><ClipboardList className="h-4 w-4" />Passagem de Plantão</TabsTrigger>
           <TabsTrigger value="checklist" className="gap-1"><CheckCircle2 className="h-4 w-4" />Checklist</TabsTrigger>
+          <TabsTrigger value="carrinho" className="gap-1"><ShieldAlert className="h-4 w-4" />Carrinho de Internação</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pacientes" className="mt-4 space-y-4">
@@ -333,6 +335,10 @@ export function InternacaoArea() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="carrinho" className="mt-4">
+          <ChecklistCarrinhoInternacao />
         </TabsContent>
       </Tabs>
     </div>
