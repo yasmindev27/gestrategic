@@ -1120,6 +1120,7 @@ export function CMEArea() {
           <TabsTrigger value="danificados" className="gap-1"><Ban className="h-4 w-4" />Danificados</TabsTrigger>
           <TabsTrigger value="solicitacao" className="gap-1"><ShoppingCart className="h-4 w-4" />Solicitação</TabsTrigger>
           <TabsTrigger value="controle-material" className="gap-1"><BoxSelect className="h-4 w-4" />Controle Material</TabsTrigger>
+          <TabsTrigger value="temp-umidade" className="gap-1"><Thermometer className="h-4 w-4" />Temp./Umidade</TabsTrigger>
         </TabsList>
 
         <TabsContent value="area-suja" className="mt-4">{renderTabela(itensSuja, 'Área Suja')}</TabsContent>
