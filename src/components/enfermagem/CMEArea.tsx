@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan, FlaskConical
+  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan, FlaskConical, CircleDot
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -105,6 +105,18 @@ interface RegistroDiluicao {
   dataRegistro: string;
 }
 
+interface RegistroOlivas {
+  id: string;
+  dataDesinfeccao: string;
+  tipoMaterial: string;
+  validade: string;
+  metodo: string;
+  quantidade: string;
+  responsavel: string;
+  coren: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
@@ -159,23 +171,27 @@ export function CMEArea() {
   const [almotolias, setAlmotolias] = useLocalStorage<RegistroAlmotolia[]>('enf-cme-almotolias', []);
   const [desinfeccoes, setDesinfeccoes] = useLocalStorage<RegistroDesinfeccao[]>('enf-cme-desinfeccao', []);
   const [diluicoes, setDiluicoes] = useLocalStorage<RegistroDiluicao[]>('enf-cme-diluicao', []);
+  const [olivas, setOlivas] = useLocalStorage<RegistroOlivas[]>('enf-cme-olivas', []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDevOpen, setDialogDevOpen] = useState(false);
   const [dialogPincasOpen, setDialogPincasOpen] = useState(false);
   const [dialogAlmotoliaOpen, setDialogAlmotoliaOpen] = useState(false);
   const [dialogDesinfeccaoOpen, setDialogDesinfeccaoOpen] = useState(false);
   const [dialogDiluicaoOpen, setDialogDiluicaoOpen] = useState(false);
+  const [dialogOlivasOpen, setDialogOlivasOpen] = useState(false);
   const [detalhePinca, setDetalhePinca] = useState<RegistroPincas | null>(null);
   const [detalhe, setDetalhe] = useState<DevolucaoMaterial | null>(null);
   const [detalheAlmotolia, setDetalheAlmotolia] = useState<RegistroAlmotolia | null>(null);
   const [detalheDesinfeccao, setDetalheDesinfeccao] = useState<RegistroDesinfeccao | null>(null);
   const [detalheDiluicao, setDetalheDiluicao] = useState<RegistroDiluicao | null>(null);
+  const [detalheOliva, setDetalheOliva] = useState<RegistroOlivas | null>(null);
   const [busca, setBusca] = useState('');
   const [buscaDev, setBuscaDev] = useState('');
   const [buscaPincas, setBuscaPincas] = useState('');
   const [buscaAlmotolia, setBuscaAlmotolia] = useState('');
   const [buscaDesinfeccao, setBuscaDesinfeccao] = useState('');
   const [buscaDiluicao, setBuscaDiluicao] = useState('');
+  const [buscaOlivas, setBuscaOlivas] = useState('');
 
   const [form, setForm] = useState({
     descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '',
@@ -209,6 +225,11 @@ export function CMEArea() {
     data: new Date().toISOString().split('T')[0],
     horario: '',
     responsavel: '',
+  });
+  const [formOlivas, setFormOlivas] = useState({
+    dataDesinfeccao: new Date().toISOString().split('T')[0],
+    tipoMaterial: '', validade: '', metodo: 'S/ Condição de uso',
+    quantidade: '', responsavel: '', coren: '',
   });
 
   const itensSuja = itens.filter(i => (ETAPAS_SUJA as readonly string[]).includes(i.etapa));
@@ -288,6 +309,15 @@ export function CMEArea() {
     toast.success('Diluição registrada com sucesso');
   };
 
+  const handleAddOlivas = () => {
+    if (!formOlivas.responsavel || !formOlivas.tipoMaterial) { toast.error('Tipo de material e responsável são obrigatórios'); return; }
+    const novo: RegistroOlivas = { id: crypto.randomUUID(), ...formOlivas, dataRegistro: new Date().toLocaleString('pt-BR') };
+    setOlivas([novo, ...olivas]);
+    setFormOlivas({ dataDesinfeccao: new Date().toISOString().split('T')[0], tipoMaterial: '', validade: '', metodo: 'S/ Condição de uso', quantidade: '', responsavel: '', coren: '' });
+    setDialogOlivasOpen(false);
+    toast.success('Desinfecção de olivas registrada');
+  };
+
   const avancarEtapa = (id: string) => {
     const ordem: ItemCME['etapa'][] = ['recebimento', 'lavagem', 'secagem', 'preparo', 'esterilizacao', 'armazenamento', 'distribuicao'];
     setItens(prev => prev.map(i => {
@@ -355,6 +385,9 @@ export function CMEArea() {
   const diluicoesFiltradas = diluicoes.filter(d =>
     d.responsavel.toLowerCase().includes(buscaDiluicao.toLowerCase()) || d.itens.some(i => i.solucao.toLowerCase().includes(buscaDiluicao.toLowerCase()))
   );
+  const olivasFiltradas = olivas.filter(o =>
+    o.tipoMaterial.toLowerCase().includes(buscaOlivas.toLowerCase()) || o.responsavel.toLowerCase().includes(buscaOlivas.toLowerCase())
+  );
 
   const getBusca = () => {
     if (tab === 'devolucao') return buscaDev;
@@ -362,6 +395,7 @@ export function CMEArea() {
     if (tab === 'almotolias') return buscaAlmotolia;
     if (tab === 'desinfeccao') return buscaDesinfeccao;
     if (tab === 'diluicao') return buscaDiluicao;
+    if (tab === 'olivas') return buscaOlivas;
     return busca;
   };
   const setBuscaAtual = (v: string) => {
@@ -370,11 +404,36 @@ export function CMEArea() {
     else if (tab === 'almotolias') setBuscaAlmotolia(v);
     else if (tab === 'desinfeccao') setBuscaDesinfeccao(v);
     else if (tab === 'diluicao') setBuscaDiluicao(v);
+    else if (tab === 'olivas') setBuscaOlivas(v);
     else setBusca(v);
   };
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'olivas') return (
+      <Dialog open={dialogOlivasOpen} onOpenChange={setDialogOlivasOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Olivas</Button></DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Controle de Desinfecção de Olivas</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Data da Desinfecção</Label><Input type="date" value={formOlivas.dataDesinfeccao} onChange={e => setFormOlivas(p => ({ ...p, dataDesinfeccao: e.target.value }))} /></div>
+              <div><Label>Tipo de Material</Label><Input value={formOlivas.tipoMaterial} onChange={e => setFormOlivas(p => ({ ...p, tipoMaterial: e.target.value }))} placeholder="Ex: Bravo / Soprano" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Validade</Label><Input type="date" value={formOlivas.validade} onChange={e => setFormOlivas(p => ({ ...p, validade: e.target.value }))} /></div>
+              <div><Label>Método</Label><Input value={formOlivas.metodo} onChange={e => setFormOlivas(p => ({ ...p, metodo: e.target.value }))} placeholder="Ex: S/ Condição de uso" /></div>
+            </div>
+            <div><Label>Quantidade</Label><Input value={formOlivas.quantidade} onChange={e => setFormOlivas(p => ({ ...p, quantidade: e.target.value }))} placeholder="Ex: 02" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Responsável (Enfermagem)</Label><Input value={formOlivas.responsavel} onChange={e => setFormOlivas(p => ({ ...p, responsavel: e.target.value }))} /></div>
+              <div><Label>COREN</Label><Input value={formOlivas.coren} onChange={e => setFormOlivas(p => ({ ...p, coren: e.target.value }))} placeholder="Ex: MG 000.000 - TE" /></div>
+            </div>
+            <Button onClick={handleAddOlivas} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar Desinfecção</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'diluicao') return (
       <Dialog open={dialogDiluicaoOpen} onOpenChange={setDialogDiluicaoOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Diluição</Button></DialogTrigger>
@@ -655,6 +714,7 @@ export function CMEArea() {
           <TabsTrigger value="almotolias" className="gap-1"><Beaker className="h-4 w-4" />Almotolias</TabsTrigger>
           <TabsTrigger value="desinfeccao" className="gap-1"><SprayCan className="h-4 w-4" />Desinfecção</TabsTrigger>
           <TabsTrigger value="diluicao" className="gap-1"><FlaskConical className="h-4 w-4" />Diluição</TabsTrigger>
+          <TabsTrigger value="olivas" className="gap-1"><CircleDot className="h-4 w-4" />Olivas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="area-suja" className="mt-4">{renderTabela(itensSuja, 'Área Suja')}</TabsContent>
@@ -790,6 +850,33 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="olivas" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Data Desinf.</TableHead><TableHead>Tipo Material</TableHead><TableHead>Validade</TableHead>
+                <TableHead>Método</TableHead><TableHead>Qtd</TableHead><TableHead>Responsável</TableHead><TableHead>COREN</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {olivasFiltradas.length === 0 ? (
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhuma desinfecção de olivas registrada</TableCell></TableRow>
+                ) : olivasFiltradas.map(o => (
+                  <TableRow key={o.id}>
+                    <TableCell>{o.dataDesinfeccao}</TableCell>
+                    <TableCell className="font-medium">{o.tipoMaterial}</TableCell>
+                    <TableCell>{o.validade || '—'}</TableCell>
+                    <TableCell>{o.metodo}</TableCell>
+                    <TableCell>{o.quantidade}</TableCell>
+                    <TableCell>{o.responsavel}</TableCell>
+                    <TableCell className="font-mono text-sm">{o.coren || '—'}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheOliva(o)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog detalhe pinças */}
@@ -916,6 +1003,31 @@ export function CMEArea() {
               </div>
               <div><span className="text-muted-foreground">Responsável:</span> {detalheDiluicao.responsavel}</div>
               <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheDiluicao.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog detalhe olivas */}
+      <Dialog open={!!detalheOliva} onOpenChange={() => setDetalheOliva(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Desinfecção de Olivas</DialogTitle></DialogHeader>
+          {detalheOliva && (
+            <div className="space-y-2 text-sm">
+              <div><span className="text-muted-foreground">Data Desinfecção:</span> <strong>{detalheOliva.dataDesinfeccao}</strong></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Tipo Material:</span> {detalheOliva.tipoMaterial}</div>
+                <div><span className="text-muted-foreground">Validade:</span> {detalheOliva.validade || '—'}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Método:</span> {detalheOliva.metodo}</div>
+                <div><span className="text-muted-foreground">Quantidade:</span> {detalheOliva.quantidade}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Responsável:</span> {detalheOliva.responsavel}</div>
+                <div><span className="text-muted-foreground">COREN:</span> {detalheOliva.coren || '—'}</div>
+              </div>
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheOliva.dataRegistro}</p>
             </div>
           )}
         </DialogContent>
