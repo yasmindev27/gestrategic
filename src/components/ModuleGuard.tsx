@@ -7,7 +7,7 @@
 import { ReactNode } from "react";
 import { useModules } from "@/hooks/useModules";
 import { useUserRole } from "@/hooks/useUserRole";
-import { AccessDenied } from "@/components/AccessDenied";
+import AccessDenied from "@/components/AccessDenied";
 import { Loader2 } from "lucide-react";
 
 interface ModuleGuardProps {

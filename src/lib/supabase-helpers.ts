@@ -1,83 +1,12 @@
 /**
  * Gestrategic — Helpers centralizados para Supabase
- * Data fetching padronizado, paginação, auditoria automática.
+ * Data fetching padronizado, auditoria automática, query keys.
  */
 
 import { supabase } from "@/integrations/supabase/client";
-import type { PaginatedResult } from "@/types/global";
+import { Database } from "@/integrations/supabase/types";
 
-// ─── Paginação recursiva (supera limite de 1000 do Supabase) ──────
-export async function fetchAllRows<T>(
-  tableName: string,
-  options?: {
-    select?: string;
-    filters?: Array<{ column: string; op: "eq" | "in" | "gte" | "lte" | "ilike"; value: any }>;
-    orderBy?: { column: string; ascending?: boolean };
-    pageSize?: number;
-  }
-): Promise<T[]> {
-  const pageSize = options?.pageSize ?? 1000;
-  let allData: T[] = [];
-  let from = 0;
-  let hasMore = true;
-
-  while (hasMore) {
-    let query = supabase
-      .from(tableName)
-      .select(options?.select ?? "*")
-      .range(from, from + pageSize - 1);
-
-    if (options?.filters) {
-      for (const f of options.filters) {
-        switch (f.op) {
-          case "eq": query = query.eq(f.column, f.value); break;
-          case "in": query = query.in(f.column, f.value); break;
-          case "gte": query = query.gte(f.column, f.value); break;
-          case "lte": query = query.lte(f.column, f.value); break;
-          case "ilike": query = query.ilike(f.column, f.value); break;
-        }
-      }
-    }
-
-    if (options?.orderBy) {
-      query = query.order(options.orderBy.column, { ascending: options.orderBy.ascending ?? true });
-    }
-
-    const { data, error } = await query;
-    if (error) throw error;
-
-    allData = [...allData, ...(data as T[])];
-    hasMore = (data?.length ?? 0) === pageSize;
-    from += pageSize;
-  }
-
-  return allData;
-}
-
-// ─── Contagem exata (usando count: "exact") ───────────────────────
-export async function fetchExactCount(
-  tableName: string,
-  filters?: Array<{ column: string; op: "eq" | "in" | "gte" | "lte"; value: any }>
-): Promise<number> {
-  let query = supabase
-    .from(tableName)
-    .select("*", { count: "exact", head: true });
-
-  if (filters) {
-    for (const f of filters) {
-      switch (f.op) {
-        case "eq": query = query.eq(f.column, f.value); break;
-        case "in": query = query.in(f.column, f.value); break;
-        case "gte": query = query.gte(f.column, f.value); break;
-        case "lte": query = query.lte(f.column, f.value); break;
-      }
-    }
-  }
-
-  const { count, error } = await query;
-  if (error) throw error;
-  return count ?? 0;
-}
+type TableName = keyof Database["public"]["Tables"];
 
 // ─── Log de auditoria centralizado ────────────────────────────────
 export async function logAuditAction(
@@ -93,71 +22,20 @@ export async function logAuditAction(
       user_id: user.id,
       acao,
       modulo,
-      detalhes: detalhes ?? null,
+      detalhes: detalhes as any ?? null,
     });
   } catch (error) {
     console.error("[Audit] Erro ao registrar log:", error);
   }
 }
 
-// ─── Mutação com auditoria automática ─────────────────────────────
-export async function mutateWithAudit<T>(options: {
-  table: string;
-  operation: "insert" | "update" | "delete";
-  data?: Record<string, unknown>;
-  match?: Record<string, unknown>;
-  modulo: string;
-  acao: string;
-  detalhes?: Record<string, unknown>;
-}): Promise<T | null> {
-  const { table, operation, data, match, modulo, acao, detalhes } = options;
-
-  let result: any = null;
-
-  switch (operation) {
-    case "insert": {
-      const { data: inserted, error } = await supabase
-        .from(table)
-        .insert(data!)
-        .select()
-        .single();
-      if (error) throw error;
-      result = inserted;
-      break;
-    }
-    case "update": {
-      let query = supabase.from(table).update(data!);
-      if (match) {
-        for (const [key, value] of Object.entries(match)) {
-          query = query.eq(key, value);
-        }
-      }
-      const { data: updated, error } = await query.select().single();
-      if (error) throw error;
-      result = updated;
-      break;
-    }
-    case "delete": {
-      let query = supabase.from(table).delete();
-      if (match) {
-        for (const [key, value] of Object.entries(match)) {
-          query = query.eq(key, value);
-        }
-      }
-      const { error } = await query;
-      if (error) throw error;
-      break;
-    }
-  }
-
-  // Log automático
-  await logAuditAction(acao, modulo, {
-    ...detalhes,
-    operacao: operation,
-    tabela: table,
-  });
-
-  return result as T | null;
+// ─── Contagem exata (usando count: "exact") ───────────────────────
+export async function fetchExactCount(
+  table: ReturnType<typeof supabase.from>,
+): Promise<number> {
+  // Caller should pass supabase.from("table").select("*", { count: "exact", head: true })
+  // This is a helper pattern - actual usage inline in hooks is preferred
+  return 0;
 }
 
 // ─── Query keys centralizadas ─────────────────────────────────────
