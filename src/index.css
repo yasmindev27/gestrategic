@@ -477,6 +477,6 @@
 
   /* Input focus glow */
   .input-glow:focus-within {
-    box-shadow: 0 0 0 3px hsl(210 80% 50% / 0.12);
+    box-shadow: 0 0 0 3px hsl(215 72% 42% / 0.1);
   }
 }
