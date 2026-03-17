@@ -191,6 +191,7 @@ export function InternacaoArea() {
           <TabsTrigger value="passagem-plantao" className="gap-1"><ClipboardPen className="h-4 w-4" />Passagem Plantão</TabsTrigger>
           <TabsTrigger value="sv-oxigenio" className="gap-1"><Activity className="h-4 w-4" />SV/Oxigenioterapia</TabsTrigger>
           <TabsTrigger value="escalas" className="gap-1"><Stethoscope className="h-4 w-4" />Escalas Clínicas</TabsTrigger>
+          <TabsTrigger value="sbar" className="gap-1"><FileText className="h-4 w-4" />SBAR Enfermeiros</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pacientes" className="mt-4 space-y-4">
