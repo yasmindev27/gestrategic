@@ -80,8 +80,8 @@ export function ControleSinaisVitaisOxigenio({ storageKey, setor }: Props) {
   const [detalhe, setDetalhe] = useState<RegistroSVOxigenio | null>(null);
   const [busca, setBusca] = useState('');
 
-  const emptyRegistros = (): Record<string, Record<string, string>> => {
-    const r: Record<string, Record<string, string>> = {};
+  const emptyRegistros = (): RegistroSVOxigenio['registros'] => {
+    const r: RegistroSVOxigenio['registros'] = {};
     HORAS.forEach(h => {
       r[h] = { fc: '', tc: '', fr: '', pa: '', dor: '', gc: '', satO2: '', fluxoO2: '', tipoO2: '', mews: '', via: '', vol: '', agua: '' };
     });
