@@ -28,6 +28,7 @@ import { PassagemPlantaoSBAR } from './PassagemPlantaoSBAR';
 import { DiagnosticoPrescricaoEnfermagem } from './DiagnosticoPrescricaoEnfermagem';
 import { TermoConsentimentoRiscos } from './TermoConsentimentoRiscos';
 import { SAEAdulto } from './SAEAdulto';
+import { SAEPediatrico } from './SAEPediatrico';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
@@ -198,6 +199,7 @@ export function InternacaoArea() {
           <TabsTrigger value="prescricao" className="gap-1"><ClipboardList className="h-4 w-4" />Prescrição Enf.</TabsTrigger>
           <TabsTrigger value="termo" className="gap-1"><ShieldCheck className="h-4 w-4" />Termo Riscos</TabsTrigger>
           <TabsTrigger value="sae" className="gap-1"><HeartPulse className="h-4 w-4" />SAE Adulto</TabsTrigger>
+          <TabsTrigger value="sae-ped" className="gap-1"><HeartPulse className="h-4 w-4" />SAE Pediátrico</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pacientes" className="mt-4 space-y-4">
@@ -411,6 +413,10 @@ export function InternacaoArea() {
 
         <TabsContent value="sae" className="mt-4">
           <SAEAdulto storageKey="enf-sae-adulto-internacao" setor="Internação" />
+        </TabsContent>
+
+        <TabsContent value="sae-ped" className="mt-4">
+          <SAEPediatrico storageKey="enf-sae-ped-internacao" setor="Internação" />
         </TabsContent>
       </Tabs>
     </div>
