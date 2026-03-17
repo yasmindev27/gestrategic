@@ -375,6 +375,57 @@ export function CMEArea() {
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'diluicao') return (
+      <Dialog open={dialogDiluicaoOpen} onOpenChange={setDialogDiluicaoOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Diluição</Button></DialogTrigger>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Controle e Preparo da Diluição</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Categoria</Label>
+              <Select value={formDiluicao.categoria} onValueChange={v => setFormDiluicao(p => ({ ...p, categoria: v as 'respiratorio' | 'cirurgico' }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="respiratorio">Materiais Respiratórios</SelectItem>
+                  <SelectItem value="cirurgico">Materiais Cirúrgicos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold">Soluções</Label>
+              {formDiluicao.itens.map((item, idx) => (
+                <div key={idx} className="grid grid-cols-4 gap-2 p-2 border rounded">
+                  <Input placeholder="Solução" value={item.solucao} onChange={e => {
+                    const updated = [...formDiluicao.itens]; updated[idx] = { ...updated[idx], solucao: e.target.value };
+                    setFormDiluicao(p => ({ ...p, itens: updated }));
+                  }} />
+                  <Input placeholder="Volume" value={item.volume} onChange={e => {
+                    const updated = [...formDiluicao.itens]; updated[idx] = { ...updated[idx], volume: e.target.value };
+                    setFormDiluicao(p => ({ ...p, itens: updated }));
+                  }} />
+                  <Input placeholder="Lote" value={item.lote} onChange={e => {
+                    const updated = [...formDiluicao.itens]; updated[idx] = { ...updated[idx], lote: e.target.value };
+                    setFormDiluicao(p => ({ ...p, itens: updated }));
+                  }} />
+                  <Input type="date" placeholder="Validade" value={item.validade} onChange={e => {
+                    const updated = [...formDiluicao.itens]; updated[idx] = { ...updated[idx], validade: e.target.value };
+                    setFormDiluicao(p => ({ ...p, itens: updated }));
+                  }} />
+                </div>
+              ))}
+              <Button type="button" variant="outline" size="sm" onClick={() => setFormDiluicao(p => ({ ...p, itens: [...p.itens, emptyDiluicaoItem()] }))}>
+                <Plus className="h-3 w-3 mr-1" />Adicionar linha
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Data</Label><Input type="date" value={formDiluicao.data} onChange={e => setFormDiluicao(p => ({ ...p, data: e.target.value }))} /></div>
+              <div><Label>Horário</Label><Input type="time" value={formDiluicao.horario} onChange={e => setFormDiluicao(p => ({ ...p, horario: e.target.value }))} /></div>
+            </div>
+            <div><Label>Responsável</Label><Input value={formDiluicao.responsavel} onChange={e => setFormDiluicao(p => ({ ...p, responsavel: e.target.value }))} placeholder="Nome do responsável" /></div>
+            <Button onClick={handleAddDiluicao} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar Diluição</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'desinfeccao') return (
       <Dialog open={dialogDesinfeccaoOpen} onOpenChange={setDialogDesinfeccaoOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Desinfecção</Button></DialogTrigger>
