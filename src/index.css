@@ -1,174 +1,181 @@
-/* Optimized font loading with font-display: swap for better performance */
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap");
+/* Enterprise SaaS Typography — distinctive, not generic */
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap");
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-
-Design System para Sistema Hospitalar - GESTRATEGIC:
-- Primary: Azul profissional (confiança, saúde)
-- Secondary: Cinza neutro
-- Accent: Azul mais vibrante
-- Status: Verde (sucesso), Amarelo (atenção), Vermelho (erro), Azul claro (info)
+/*
+  Design System — GESTRATEGIC Enterprise
+  Paleta institucional hospitalar com hierarquia visual forte.
+  Primary: Azul profundo institucional (não padrão Tailwind)
+  Accent: Azul-cobalto vibrante
+  Surfaces: Off-white com toques de azul-gelo
+  Status: Semântico (verde/âmbar/vermelho)
 */
 
 @layer base {
   :root {
-    /* Background & Foreground - Ice blue base matching landing page */
-    --background: 210 33% 96%;
-    --foreground: 210 40% 15%;
+    /* Surfaces — warm off-white with subtle blue undertone */
+    --background: 216 25% 97%;
+    --foreground: 220 35% 12%;
 
-    /* Cards - Pure white */
+    /* Cards — crisp white with slight warmth */
     --card: 0 0% 100%;
-    --card-foreground: 210 40% 15%;
+    --card-foreground: 220 35% 12%;
 
     /* Popovers */
     --popover: 0 0% 100%;
-    --popover-foreground: 210 40% 15%;
+    --popover-foreground: 220 35% 12%;
 
-    /* Primary: Hospital Blue - professional trust */
-    --primary: 210 80% 50%;
+    /* Primary: Deep institutional blue — authoritative, not generic */
+    --primary: 215 72% 42%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Light blue-gray for subtle backgrounds */
-    --secondary: 210 25% 93%;
-    --secondary-foreground: 210 40% 15%;
+    /* Secondary: Cool slate — subtle, professional */
+    --secondary: 216 18% 94%;
+    --secondary-foreground: 220 25% 20%;
 
-    /* Muted */
-    --muted: 210 15% 92%;
-    --muted-foreground: 210 15% 45%;
+    /* Muted: Warm gray with blue undertone */
+    --muted: 216 14% 93%;
+    --muted-foreground: 218 12% 48%;
 
-    /* Accent */
-    --accent: 210 25% 95%;
-    --accent-foreground: 210 40% 15%;
+    /* Accent: Cobalt highlight — distinctive, energetic */
+    --accent: 216 20% 95%;
+    --accent-foreground: 220 35% 12%;
 
-    /* Destructive: Red for errors */
-    --destructive: 0 72% 50%;
+    /* Destructive */
+    --destructive: 4 76% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders & Inputs */
-    --border: 210 20% 90%;
-    --input: 210 20% 90%;
-    --ring: 210 80% 50%;
+    /* Borders & Inputs — refined, not harsh */
+    --border: 216 16% 90%;
+    --input: 216 16% 90%;
+    --ring: 215 72% 42%;
 
-    /* Radius */
-    --radius: 0.5rem;
+    /* Radius — slightly more rounded for modern SaaS feel */
+    --radius: 0.625rem;
 
-    /* Status Colors */
-    --warning: 38 92% 50%;
+    /* Status Colors — carefully calibrated */
+    --warning: 40 96% 48%;
     --warning-foreground: 0 0% 100%;
 
-    --success: 152 55% 42%;
+    --success: 158 60% 38%;
     --success-foreground: 0 0% 100%;
 
-    --info: 210 80% 55%;
+    --info: 205 85% 52%;
     --info-foreground: 0 0% 100%;
 
-    /* Header: Deep navy */
-    --header: 210 55% 15%;
+    /* Header */
+    --header: 218 50% 13%;
     --header-foreground: 0 0% 100%;
 
-    /* Sidebar - Navy matching landing page header #0d2137 */
-    --sidebar-background: 210 55% 13%;
-    --sidebar-foreground: 210 30% 85%;
-    --sidebar-primary: 210 80% 55%;
+    /* Sidebar — deep navy with professional depth */
+    --sidebar-background: 218 52% 12%;
+    --sidebar-foreground: 214 25% 78%;
+    --sidebar-primary: 210 78% 56%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 40% 20%;
-    --sidebar-accent-foreground: 210 20% 92%;
-    --sidebar-border: 210 35% 20%;
-    --sidebar-ring: 210 80% 55%;
+    --sidebar-accent: 218 40% 18%;
+    --sidebar-accent-foreground: 214 18% 90%;
+    --sidebar-border: 218 30% 20%;
+    --sidebar-ring: 210 78% 56%;
 
-    /* Hospital Status Colors */
-    --hospital-green: 152 55% 42%;
-    --hospital-green-light: 152 40% 95%;
-    --hospital-amber: 38 90% 50%;
-    --hospital-amber-light: 38 70% 95%;
-    --chart-1: 210 80% 55%;
-    --chart-2: 200 75% 60%;
-    --chart-3: 210 15% 60%;
-    --chart-4: 210 15% 45%;
-    --chart-5: 210 20% 30%;
-    --sidebar: 210 55% 13%;
-    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
-    --font-serif: 'Lora', ui-serif, Georgia, Cambria, 'Times New Roman', Times, serif;
-    --font-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
-    --shadow-2xs: 0 1px 2px 0 hsl(210 20% 50% / 0.04);
-    --shadow-xs: 0 1px 3px 0 hsl(210 20% 50% / 0.06);
-    --shadow-sm: 0 1px 3px 0 hsl(210 20% 50% / 0.08), 0 1px 2px -1px hsl(210 20% 50% / 0.06);
-    --shadow: 0 2px 6px 0 hsl(210 20% 50% / 0.08), 0 1px 3px -1px hsl(210 20% 50% / 0.06);
-    --shadow-md: 0 4px 8px 0 hsl(210 20% 50% / 0.08), 0 2px 4px -1px hsl(210 20% 50% / 0.06);
-    --shadow-lg: 0 8px 16px 0 hsl(210 20% 50% / 0.1), 0 4px 8px -2px hsl(210 20% 50% / 0.06);
-    --shadow-xl: 0 16px 32px 0 hsl(210 20% 50% / 0.1), 0 8px 16px -4px hsl(210 20% 50% / 0.06);
-    --shadow-2xl: 0 24px 48px 0 hsl(210 20% 50% / 0.15);
+    /* Hospital Status */
+    --hospital-green: 158 60% 38%;
+    --hospital-green-light: 158 35% 95%;
+    --hospital-amber: 40 92% 48%;
+    --hospital-amber-light: 40 65% 95%;
+
+    /* Charts — professional progression */
+    --chart-1: 215 72% 42%;
+    --chart-2: 205 85% 52%;
+    --chart-3: 158 60% 38%;
+    --chart-4: 40 96% 48%;
+    --chart-5: 4 76% 50%;
+
+    --sidebar: 218 52% 12%;
+
+    /* Typography */
+    --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-display: 'Plus Jakarta Sans', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+
+    /* Enterprise shadows — refined depth */
+    --shadow-2xs: 0 1px 2px 0 hsl(218 25% 40% / 0.03);
+    --shadow-xs: 0 1px 3px 0 hsl(218 25% 40% / 0.05);
+    --shadow-sm: 0 1px 3px 0 hsl(218 25% 40% / 0.06), 0 1px 2px -1px hsl(218 25% 40% / 0.04);
+    --shadow: 0 2px 8px 0 hsl(218 25% 40% / 0.06), 0 1px 3px -1px hsl(218 25% 40% / 0.04);
+    --shadow-md: 0 4px 12px 0 hsl(218 25% 40% / 0.07), 0 2px 4px -1px hsl(218 25% 40% / 0.04);
+    --shadow-lg: 0 8px 24px 0 hsl(218 25% 40% / 0.08), 0 4px 8px -2px hsl(218 25% 40% / 0.04);
+    --shadow-xl: 0 16px 40px 0 hsl(218 25% 40% / 0.1), 0 8px 16px -4px hsl(218 25% 40% / 0.04);
+    --shadow-2xl: 0 24px 56px 0 hsl(218 25% 40% / 0.12);
     --tracking-normal: 0em;
     --spacing: 0.25rem;
   }
 
   .dark {
-    --background: 210 35% 9%;
-    --foreground: 210 20% 95%;
+    --background: 220 30% 7%;
+    --foreground: 216 18% 95%;
 
-    --card: 210 30% 12%;
-    --card-foreground: 210 20% 95%;
+    --card: 220 28% 10%;
+    --card-foreground: 216 18% 95%;
 
-    --popover: 210 30% 12%;
-    --popover-foreground: 210 20% 95%;
+    --popover: 220 28% 10%;
+    --popover-foreground: 216 18% 95%;
 
-    --primary: 210 75% 55%;
+    --primary: 212 72% 55%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 20% 18%;
-    --secondary-foreground: 210 20% 90%;
+    --secondary: 220 18% 16%;
+    --secondary-foreground: 216 15% 88%;
 
-    --muted: 210 15% 20%;
-    --muted-foreground: 210 10% 60%;
+    --muted: 220 14% 18%;
+    --muted-foreground: 218 10% 55%;
 
-    --accent: 210 20% 15%;
-    --accent-foreground: 210 20% 90%;
+    --accent: 220 18% 14%;
+    --accent-foreground: 216 15% 88%;
 
-    --destructive: 0 75% 55%;
+    --destructive: 4 78% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 210 15% 20%;
-    --input: 210 15% 20%;
-    --ring: 210 75% 55%;
+    --border: 220 12% 18%;
+    --input: 220 12% 18%;
+    --ring: 212 72% 55%;
 
-    --warning: 38 90% 55%;
+    --warning: 40 92% 52%;
     --warning-foreground: 0 0% 100%;
 
-    --success: 152 50% 48%;
+    --success: 158 55% 44%;
     --success-foreground: 0 0% 100%;
 
-    --info: 210 75% 58%;
+    --info: 205 80% 58%;
     --info-foreground: 0 0% 100%;
 
-    --header: 210 40% 8%;
-    --header-foreground: 210 15% 92%;
+    --header: 220 35% 6%;
+    --header-foreground: 216 12% 92%;
 
-    --sidebar-background: 210 30% 10%;
-    --sidebar-foreground: 210 20% 92%;
-    --sidebar-primary: 210 75% 55%;
+    --sidebar-background: 220 28% 8%;
+    --sidebar-foreground: 216 18% 90%;
+    --sidebar-primary: 212 72% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 210 20% 18%;
-    --sidebar-accent-foreground: 210 20% 90%;
-    --sidebar-border: 210 15% 20%;
-    --sidebar-ring: 210 75% 55%;
+    --sidebar-accent: 220 18% 16%;
+    --sidebar-accent-foreground: 216 15% 88%;
+    --sidebar-border: 220 12% 18%;
+    --sidebar-ring: 212 72% 55%;
 
-    --hospital-green: 152 50% 45%;
-    --hospital-green-light: 152 30% 15%;
-    --hospital-amber: 38 85% 55%;
-    --hospital-amber-light: 38 40% 15%;
-    --chart-1: 210 80% 65%;
-    --chart-2: 200 75% 70%;
-    --chart-3: 210 15% 55%;
-    --chart-4: 210 12% 42%;
-    --chart-5: 210 18% 30%;
-    --sidebar: 210 30% 12%;
+    --hospital-green: 158 50% 42%;
+    --hospital-green-light: 158 25% 14%;
+    --hospital-amber: 40 88% 52%;
+    --hospital-amber-light: 40 35% 14%;
+
+    --chart-1: 212 72% 60%;
+    --chart-2: 205 80% 65%;
+    --chart-3: 158 55% 48%;
+    --chart-4: 40 88% 55%;
+    --chart-5: 4 70% 55%;
+    --sidebar: 220 28% 10%;
     --shadow-2xs: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
     --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.2);
     --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.3), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
@@ -203,11 +210,33 @@ Design System para Sistema Hospitalar - GESTRATEGIC:
   }
 }
 
-/* Typography */
+/* Typography — Enterprise hierarchy */
 @layer base {
-  h1, h2, h3, h4, h5, h6 {
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    @apply font-bold tracking-tight;
+    text-rendering: optimizeLegibility;
+  }
+
+  h4, h5, h6 {
+    font-family: var(--font-display);
     @apply font-semibold tracking-tight;
     text-rendering: optimizeLegibility;
+  }
+
+  h1 {
+    @apply text-3xl leading-tight;
+    letter-spacing: -0.025em;
+  }
+
+  h2 {
+    @apply text-2xl leading-snug;
+    letter-spacing: -0.02em;
+  }
+
+  h3 {
+    @apply text-xl leading-snug;
+    letter-spacing: -0.015em;
   }
 }
 
@@ -426,7 +455,7 @@ Design System para Sistema Hospitalar - GESTRATEGIC:
   }
 
   .shimmer-text {
-    background: linear-gradient(90deg, hsl(210 80% 55%) 0%, hsl(200 90% 70%) 50%, hsl(210 80% 55%) 100%);
+    background: linear-gradient(90deg, hsl(215 72% 42%) 0%, hsl(205 85% 58%) 50%, hsl(215 72% 42%) 100%);
     background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -442,12 +471,12 @@ Design System para Sistema Hospitalar - GESTRATEGIC:
   /* Premium glass card */
   .glass-card {
     @apply bg-card/80 backdrop-blur-lg border border-border/50;
-    box-shadow: 0 8px 32px hsl(210 20% 50% / 0.08), 
-                0 1px 0 hsl(0 0% 100% / 0.05) inset;
+    box-shadow: 0 8px 32px hsl(218 25% 40% / 0.06), 
+                0 1px 0 hsl(0 0% 100% / 0.04) inset;
   }
 
   /* Input focus glow */
   .input-glow:focus-within {
-    box-shadow: 0 0 0 3px hsl(210 80% 50% / 0.12);
+    box-shadow: 0 0 0 3px hsl(215 72% 42% / 0.1);
   }
 }
