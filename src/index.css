@@ -263,16 +263,20 @@
     @apply p-1.5 rounded;
   }
   .icon-container-primary {
-    @apply bg-primary/8 text-primary;
+    background-color: hsl(var(--primary) / 0.08);
+    @apply text-primary;
   }
   .icon-container-success {
-    @apply bg-success/8 text-success;
+    background-color: hsl(var(--success) / 0.08);
+    @apply text-success;
   }
   .icon-container-warning {
-    @apply bg-warning/8 text-warning;
+    background-color: hsl(var(--warning) / 0.08);
+    @apply text-warning;
   }
   .icon-container-info {
-    @apply bg-info/8 text-info;
+    background-color: hsl(var(--info) / 0.08);
+    @apply text-info;
   }
 
   /* Module headers — compact */
