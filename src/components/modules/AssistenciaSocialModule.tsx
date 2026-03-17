@@ -269,6 +269,15 @@ export const AssistenciaSocialModule = () => {
     
     setIsSubmitting(true);
     try {
+      // Re-check session to avoid stale auth
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({ title: "Sessão expirada", description: "Faça login novamente para continuar", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
+      const userId = user.id;
+      const userName = currentUser.nome || user.email || "";
       let pacienteId: string;
       const { data: existing } = await supabase
         .from("assistencia_social_pacientes")
@@ -282,13 +291,13 @@ export const AssistenciaSocialModule = () => {
       } else {
         const { data: newP, error: pErr } = await supabase
           .from("assistencia_social_pacientes")
-          .insert({
+           .insert({
             nome_completo: atendimentoForm.paciente_nome.trim(),
             setor_atendimento: atendimentoForm.setor_atendimento,
-            created_by: currentUser.id,
+            created_by: userId,
           })
           .select("id").single();
-        if (pErr || !newP) throw pErr;
+        if (pErr || !newP) throw new Error(pErr?.message || "Falha ao cadastrar paciente");
         pacienteId = newP.id;
       }
 
@@ -306,8 +315,8 @@ export const AssistenciaSocialModule = () => {
         descricao: atendimentoForm.descricao,
         status: atendimentoForm.status,
         observacoes: obsLines,
-        profissional_id: currentUser.id,
-        profissional_nome: currentUser.nome,
+        profissional_id: userId,
+        profissional_nome: userName,
       });
       
       if (error) throw error;
@@ -316,8 +325,9 @@ export const AssistenciaSocialModule = () => {
       resetAtendimentoForm();
       loadData();
       logAction("Assistência Social", "registro_atendimento", { tipo: atendimentoForm.tipo_atendimento });
-    } catch {
-      toast({ title: "Erro", description: "Falha ao registrar atendimento", variant: "destructive" });
+    } catch (err: any) {
+      console.error("Erro ao registrar atendimento:", err);
+      toast({ title: "Erro", description: err?.message || "Falha ao registrar atendimento", variant: "destructive" });
     }
     setIsSubmitting(false);
   };
