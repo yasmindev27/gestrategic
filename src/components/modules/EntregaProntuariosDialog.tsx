@@ -64,6 +64,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
     if (isRecepcao) return { origem: "Recepção", destino: "Classificação" };
     if (isClassificacao) return { origem: "Classificação", destino: "NIR" };
     if (isNir) return { origem: "NIR", destino: "Faturamento" };
+    if (isFaturamento) return { origem: "Faturamento", destino: "Arquivo" };
     return null;
   };
 

@@ -965,6 +965,38 @@ export const SaidaProntuariosModule = () => {
       );
     }
 
+    // Faturamento: marcar como concluído quando aguardando_faturamento
+    if ((isFaturamento || isAdmin) && saida.status === "aguardando_faturamento") {
+      buttons.push(
+        <Button 
+          key="concluir"
+          size="sm" 
+          variant="outline"
+          className="text-success border-success hover:bg-success/10"
+          onClick={async () => {
+            try {
+              const { error } = await supabase
+                .from("saida_prontuarios")
+                .update({ status: "concluido" } as any)
+                .eq("id", saida.id);
+              if (error) throw error;
+              await logAction("concluir_prontuario", "saida_prontuarios", {
+                id: saida.id,
+                paciente: saida.paciente_nome,
+              });
+              toast({ title: "Sucesso", description: "Prontuário concluído!" });
+              fetchSaidas();
+            } catch (err: any) {
+              toast({ title: "Erro", description: err.message || "Erro ao concluir.", variant: "destructive" });
+            }
+          }}
+        >
+          <Check className="h-4 w-4 mr-1" />
+          Concluir
+        </Button>
+      );
+    }
+
     if (buttons.length === 0) return null;
     
     return <div className="flex gap-1">{buttons}</div>;
