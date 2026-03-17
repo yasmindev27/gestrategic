@@ -58,6 +58,7 @@ export const useModules = () => {
     medicos: isAdmin || isMedicos,
     rouparia: isAdmin || isRouparia,
     admin: isAdmin,
+    gerencia: isAdmin || isGestor,
     logs: isAdmin,
     agenda: true,
     equipe: isAdmin || isGestor,

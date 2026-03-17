@@ -162,7 +162,7 @@ const Dashboard = () => {
     lms: "lms",
     reuniao: "dashboard",
     salus: "dashboard",
-    gerencia: "admin",
+    gerencia: "gerencia",
     "painel-seguranca": "segurancaPatrimonial",
     "seguranca-patrimonial": "segurancaPatrimonial",
     colaborador: "colaborador",
