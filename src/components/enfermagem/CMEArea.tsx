@@ -289,6 +289,10 @@ export function CMEArea() {
     material: '', setor: '', data: new Date().toISOString().split('T')[0],
     motivo: '', conduta: '', reposicao: '', responsavel: '',
   });
+  const [formSolicitacao, setFormSolicitacao] = useState({
+    data: new Date().toISOString().split('T')[0], setor: '', centroCusto: 'Enfermagem',
+    material: '', quantidade: '', solicitante: '', observacao: '',
+  });
 
   const itensSuja = itens.filter(i => (ETAPAS_SUJA as readonly string[]).includes(i.etapa));
   const itensLimpa = itens.filter(i => (ETAPAS_LIMPA as readonly string[]).includes(i.etapa));
