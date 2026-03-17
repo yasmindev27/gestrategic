@@ -841,6 +841,33 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="olivas" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Data Desinf.</TableHead><TableHead>Tipo Material</TableHead><TableHead>Validade</TableHead>
+                <TableHead>Método</TableHead><TableHead>Qtd</TableHead><TableHead>Responsável</TableHead><TableHead>COREN</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {olivasFiltradas.length === 0 ? (
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhuma desinfecção de olivas registrada</TableCell></TableRow>
+                ) : olivasFiltradas.map(o => (
+                  <TableRow key={o.id}>
+                    <TableCell>{o.dataDesinfeccao}</TableCell>
+                    <TableCell className="font-medium">{o.tipoMaterial}</TableCell>
+                    <TableCell>{o.validade || '—'}</TableCell>
+                    <TableCell>{o.metodo}</TableCell>
+                    <TableCell>{o.quantidade}</TableCell>
+                    <TableCell>{o.responsavel}</TableCell>
+                    <TableCell className="font-mono text-sm">{o.coren || '—'}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheOliva(o)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog detalhe pinças */}
