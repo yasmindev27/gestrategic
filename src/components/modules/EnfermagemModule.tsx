@@ -34,6 +34,10 @@ import { useTrocasDisponiveis, useTrocasPendentes, useMinhasEscalas } from '@/ho
 import type { Escala } from '@/components/enfermagem/types';
 import ImportEquipeDialog from '@/components/modules/equipe/ImportEquipeDialog';
 import { AprovacaoPontoJustificativa } from '@/components/enfermagem/AprovacaoPontoJustificativa';
+import { InternacaoArea } from '@/components/enfermagem/InternacaoArea';
+import { UrgenciaArea } from '@/components/enfermagem/UrgenciaArea';
+import { CMEArea } from '@/components/enfermagem/CMEArea';
+import { ClassificacaoArea } from '@/components/enfermagem/ClassificacaoArea';
 
 export default function EnfermagemModule() {
   const navigate = useNavigate();
