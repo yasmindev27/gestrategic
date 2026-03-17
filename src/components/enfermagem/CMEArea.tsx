@@ -130,6 +130,18 @@ interface RegistroConferencia {
   dataRegistro: string;
 }
 
+interface RegistroDanificado {
+  id: string;
+  material: string;
+  setor: string;
+  data: string;
+  motivo: string;
+  conduta: string;
+  reposicao: string;
+  responsavel: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
