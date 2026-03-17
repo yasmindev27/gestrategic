@@ -128,130 +128,131 @@ const Sidebar = ({
     }
     if (isRecepcao) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: ClipboardX, label: "Recepção", id: "recepcao" },
-        { icon: Receipt, label: "Faturamento", id: "faturamento" },
-        { icon: Calendar, label: "Agenda", id: "agenda" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: ClipboardX, label: "Recepção", id: "recepcao", category: "assistencial" },
+        { icon: Receipt, label: "Faturamento", id: "faturamento", category: "assistencial" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
       );
       return items;
     }
     if (isClassificacao) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Receipt, label: "Faturamento", id: "faturamento" },
-        { icon: Calendar, label: "Agenda", id: "agenda" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Receipt, label: "Faturamento", id: "faturamento", category: "assistencial" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
       );
       return items;
     }
     if (isNir) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Ambulance, label: "NIR", id: "nir" },
-        { icon: BedDouble, label: "Mapa de Leitos", id: "mapa-leitos" },
-        { icon: Receipt, label: "Faturamento", id: "faturamento" },
-        { icon: Calendar, label: "Agenda", id: "agenda" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Ambulance, label: "NIR", id: "nir", category: "assistencial" },
+        { icon: BedDouble, label: "Mapa de Leitos", id: "mapa-leitos", category: "assistencial" },
+        { icon: Receipt, label: "Faturamento", id: "faturamento", category: "assistencial" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
       );
       return items;
     }
     if (isFaturamento) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Receipt, label: "Faturamento", id: "faturamento" },
-        { icon: Calendar, label: "Agenda", id: "agenda" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Receipt, label: "Faturamento", id: "faturamento", category: "assistencial" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
       );
       return items;
     }
     if (isTI) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Monitor, label: "TI", id: "tecnico-ti" },
-        { icon: Calendar, label: "Agenda", id: "agenda" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Monitor, label: "TI", id: "tecnico-ti", category: "administrativo" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
       );
       return items;
     }
     if (isManutencao) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao" },
-        { icon: Calendar, label: "Agenda", id: "agenda" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao", category: "apoio_logistica" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
       );
       return items;
     }
     if (isEngenhariaCinica) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" },
-        { icon: Calendar, label: "Agenda", id: "agenda" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia", category: "apoio_logistica" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
       );
       return items;
     }
     if (isMedicos) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Stethoscope, label: "Médicos", id: "medicos" },
-        { icon: FlaskConical, label: "Resultados Exames", id: "laboratorio" },
-        { icon: Calendar, label: "Agenda", id: "agenda" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Stethoscope, label: "Médicos", id: "medicos", category: "assistencial" },
+        { icon: FlaskConical, label: "Resultados Exames", id: "laboratorio", category: "assistencial" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
       );
       return items;
     }
     if (isLaboratorio) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: FlaskConical, label: "Laboratório", id: "laboratorio" },
-        { icon: Calendar, label: "Agenda", id: "agenda" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: FlaskConical, label: "Laboratório", id: "laboratorio", category: "assistencial" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
       );
       return items;
     }
     if (isRestaurante) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante" },
-        { icon: Calendar, label: "Agenda", id: "agenda" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante", category: "apoio_logistica" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
       );
       return items;
     }
     if (isRHDP) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: UserCog, label: "RH/DP", id: "rhdp" },
-        { icon: Calendar, label: "Agenda", id: "agenda" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: UserCog, label: "RH/DP", id: "rhdp", category: "administrativo" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
       );
       return items;
     }
     if (isQualidade || isNSP) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: AlertTriangle, label: "Qualidade/NSP", id: "qualidade" },
-        { icon: Calendar, label: "Agenda", id: "agenda" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: AlertTriangle, label: "Qualidade/NSP", id: "qualidade", category: "governanca" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
       );
       return items;
     }
     if (isAssistenciaSocial) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Heart, label: "Assist. Social/Psicologia", id: "assistencia-social" },
-        { icon: Calendar, label: "Agenda", id: "agenda" },
-        { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
-        { icon: GraduationCap, label: "Treinamentos", id: "lms" },
-        { icon: MessageSquare, label: "Chat", id: "chat" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Heart, label: "Assist. Social/Psicologia", id: "assistencia-social", category: "assistencial" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" },
+        { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado", category: "comunicacao" },
+        { icon: GraduationCap, label: "Treinamentos", id: "lms", category: "administrativo" },
+        { icon: MessageSquare, label: "Chat", id: "chat", category: "comunicacao" }
       );
       return items;
     }
     if (isSeguranca) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Shield, label: "Seg. Patrimonial", id: "seguranca-patrimonial" },
-        { icon: HardHat, label: "Seg. Trabalho", id: "seguranca-trabalho" },
-        { icon: Calendar, label: "Agenda", id: "agenda" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Shield, label: "Seg. Patrimonial", id: "seguranca-patrimonial", category: "apoio_logistica" },
+        { icon: HardHat, label: "Seg. Trabalho", id: "seguranca-trabalho", category: "governanca" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
       );
       return items;
     }
 
+    // Funcionário padrão
     items.push(
-      { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-      { icon: UserRound, label: "Colaborador", id: "colaborador" },
-      { icon: Calendar, label: "Agenda", id: "agenda" },
-      { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante" }
+      { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+      { icon: UserRound, label: "Colaborador", id: "colaborador", category: "administrativo" },
+      { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" },
+      { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante", category: "apoio_logistica" }
     );
     return items;
   };
