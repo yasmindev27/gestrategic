@@ -414,6 +414,10 @@ export function InternacaoArea() {
         <TabsContent value="sae" className="mt-4">
           <SAEAdulto storageKey="enf-sae-adulto-internacao" setor="Internação" />
         </TabsContent>
+
+        <TabsContent value="sae-ped" className="mt-4">
+          <SAEPediatrico storageKey="enf-sae-ped-internacao" setor="Internação" />
+        </TabsContent>
       </Tabs>
     </div>
   );

@@ -326,6 +326,10 @@ export function UrgenciaArea() {
         <TabsContent value="sae" className="mt-4">
           <SAEAdulto storageKey="enf-sae-adulto-urgencia" setor="Urgência" />
         </TabsContent>
+
+        <TabsContent value="sae-ped" className="mt-4">
+          <SAEPediatrico storageKey="enf-sae-ped-urgencia" setor="Urgência" />
+        </TabsContent>
       </Tabs>
     </div>
   );
