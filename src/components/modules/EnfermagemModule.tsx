@@ -385,6 +385,26 @@ export default function EnfermagemModule() {
           </Tabs>
         </TabsContent>
 
+        {/* ── Internação ── */}
+        <TabsContent value="internacao" className="mt-6">
+          <InternacaoArea />
+        </TabsContent>
+
+        {/* ── Urgência ── */}
+        <TabsContent value="urgencia" className="mt-6">
+          <UrgenciaArea />
+        </TabsContent>
+
+        {/* ── CME ── */}
+        <TabsContent value="cme" className="mt-6">
+          <CMEArea />
+        </TabsContent>
+
+        {/* ── Classificação ── */}
+        <TabsContent value="classificacao" className="mt-6">
+          <ClassificacaoArea />
+        </TabsContent>
+
         {/* ── Escala Técnicos ── */}
         <TabsContent value="escala-tecnicos" className="mt-6">
           <EscalaTecEnfermagem tipo="tecnicos" />
