@@ -280,12 +280,32 @@ export default function EnfermagemModule() {
                 <TabsTrigger value="historico" className="gap-2 text-xs">
                   <History className="h-3.5 w-3.5" /> Histórico
                 </TabsTrigger>
+                {isGestor && (
+                  <>
+                    <TabsTrigger value="escala-tecnicos" className="gap-2 text-xs">
+                      <ClipboardList className="h-3.5 w-3.5" /> Escala Técnicos
+                    </TabsTrigger>
+                    <TabsTrigger value="escala-enfermeiros" className="gap-2 text-xs">
+                      <Stethoscope className="h-3.5 w-3.5" /> Escala Enfermeiros
+                    </TabsTrigger>
+                    <TabsTrigger value="escala-radiologia" className="gap-2 text-xs">
+                      <Radio className="h-3.5 w-3.5" /> Escala Radiologia
+                    </TabsTrigger>
+                  </>
+                )}
               </TabsList>
               <TabsContent value="meus-plantoes" className="mt-4"><MinhasEscalas userId={userId || ''} userName={userName || ''} /></TabsContent>
               <TabsContent value="pega-plantao" className="mt-4"><TrocasDisponiveis userId={userId || ''} userName={userName || ''} /></TabsContent>
               <TabsContent value="calendario" className="mt-4"><CalendarioEscalas onDayClick={handleDayClick} onAddClick={isGestor ? handleAddClick : undefined} selectedSetor={selectedSetor} /></TabsContent>
               {isGestor && <TabsContent value="aprovacoes" className="mt-4"><AprovacaoTrocas userId={userId || ''} userName={userName || ''} /></TabsContent>}
               <TabsContent value="historico" className="mt-4"><HistoricoTrocas /></TabsContent>
+              {isGestor && (
+                <>
+                  <TabsContent value="escala-tecnicos" className="mt-4"><EscalaTecEnfermagem tipo="tecnicos" /></TabsContent>
+                  <TabsContent value="escala-enfermeiros" className="mt-4"><EscalaTecEnfermagem tipo="enfermeiros" /></TabsContent>
+                  <TabsContent value="escala-radiologia" className="mt-4"><EscalaTecEnfermagem tipo="radiologia" /></TabsContent>
+                </>
+              )}
             </Tabs>
           </div>
         );
