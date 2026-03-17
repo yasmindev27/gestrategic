@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker
+  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -77,6 +77,17 @@ interface RegistroAlmotolia {
   dataRegistro: string;
 }
 
+interface RegistroDesinfeccao {
+  id: string;
+  data: string;
+  metodo: string;
+  quantidade: string;
+  validade: string;
+  responsavel: string;
+  coren: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
@@ -113,6 +124,14 @@ const PRODUTOS_ALMOTOLIA = [
   'PVPI Degermante', 'Álcool Gel', 'Outro',
 ];
 
+const METODOS_DESINFECCAO = [
+  'Água / Sabão / Fricção Mecânica',
+  'Hipoclorito de Sódio 1%',
+  'Álcool 70%',
+  'Quaternário de Amônio',
+  'Outro',
+];
+
 // === Component ===
 
 export function CMEArea() {
@@ -121,17 +140,21 @@ export function CMEArea() {
   const [devolucoes, setDevolucoes] = useLocalStorage<DevolucaoMaterial[]>('enf-cme-devolucoes', []);
   const [pincasRegistros, setPincasRegistros] = useLocalStorage<RegistroPincas[]>('enf-cme-pincas', []);
   const [almotolias, setAlmotolias] = useLocalStorage<RegistroAlmotolia[]>('enf-cme-almotolias', []);
+  const [desinfeccoes, setDesinfeccoes] = useLocalStorage<RegistroDesinfeccao[]>('enf-cme-desinfeccao', []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDevOpen, setDialogDevOpen] = useState(false);
   const [dialogPincasOpen, setDialogPincasOpen] = useState(false);
   const [dialogAlmotoliaOpen, setDialogAlmotoliaOpen] = useState(false);
+  const [dialogDesinfeccaoOpen, setDialogDesinfeccaoOpen] = useState(false);
   const [detalhePinca, setDetalhePinca] = useState<RegistroPincas | null>(null);
   const [detalhe, setDetalhe] = useState<DevolucaoMaterial | null>(null);
   const [detalheAlmotolia, setDetalheAlmotolia] = useState<RegistroAlmotolia | null>(null);
+  const [detalheDesinfeccao, setDetalheDesinfeccao] = useState<RegistroDesinfeccao | null>(null);
   const [busca, setBusca] = useState('');
   const [buscaDev, setBuscaDev] = useState('');
   const [buscaPincas, setBuscaPincas] = useState('');
   const [buscaAlmotolia, setBuscaAlmotolia] = useState('');
+  const [buscaDesinfeccao, setBuscaDesinfeccao] = useState('');
 
   const [form, setForm] = useState({
     descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '',
@@ -145,6 +168,14 @@ export function CMEArea() {
     data: new Date().toISOString().split('T')[0],
     pincas: TIPOS_PINCA.map(t => ({ tipo: t, quantidade: 0, checked: false })) as PincaItem[],
     outra: '', outraQuantidade: 0, enfermagem: '',
+  });
+  const [formDesinfeccao, setFormDesinfeccao] = useState({
+    data: new Date().toISOString().split('T')[0],
+    metodo: 'Água / Sabão / Fricção Mecânica',
+    quantidade: 'UT',
+    validade: '',
+    responsavel: '',
+    coren: '',
   });
   const [formAlmotolia, setFormAlmotolia] = useState({
     produto: 'Álcool 70%', dataFracionar: new Date().toISOString().split('T')[0],
@@ -202,6 +233,15 @@ export function CMEArea() {
     setFormAlmotolia({ produto: 'Álcool 70%', dataFracionar: new Date().toISOString().split('T')[0], quantidade: 1, setor: '', lote: '', validade: '', observacao: '', responsavel: '' });
     setDialogAlmotoliaOpen(false);
     toast.success('Fracionamento registrado com sucesso');
+  };
+
+  const handleAddDesinfeccao = () => {
+    if (!formDesinfeccao.responsavel || !formDesinfeccao.metodo) { toast.error('Responsável e método são obrigatórios'); return; }
+    const novo: RegistroDesinfeccao = { id: crypto.randomUUID(), ...formDesinfeccao, dataRegistro: new Date().toLocaleString('pt-BR') };
+    setDesinfeccoes([novo, ...desinfeccoes]);
+    setFormDesinfeccao({ data: new Date().toISOString().split('T')[0], metodo: 'Água / Sabão / Fricção Mecânica', quantidade: 'UT', validade: '', responsavel: '', coren: '' });
+    setDialogDesinfeccaoOpen(false);
+    toast.success('Desinfecção registrada com sucesso');
   };
 
   const avancarEtapa = (id: string) => {
@@ -265,22 +305,53 @@ export function CMEArea() {
   const almotoliasFiltradas = almotolias.filter(a =>
     a.produto.toLowerCase().includes(buscaAlmotolia.toLowerCase()) || a.setor.toLowerCase().includes(buscaAlmotolia.toLowerCase()) || a.responsavel.toLowerCase().includes(buscaAlmotolia.toLowerCase())
   );
+  const desinfeccoesFiltradas = desinfeccoes.filter(d =>
+    d.metodo.toLowerCase().includes(buscaDesinfeccao.toLowerCase()) || d.responsavel.toLowerCase().includes(buscaDesinfeccao.toLowerCase())
+  );
 
   const getBusca = () => {
     if (tab === 'devolucao') return buscaDev;
     if (tab === 'pincas') return buscaPincas;
     if (tab === 'almotolias') return buscaAlmotolia;
+    if (tab === 'desinfeccao') return buscaDesinfeccao;
     return busca;
   };
   const setBuscaAtual = (v: string) => {
     if (tab === 'devolucao') setBuscaDev(v);
     else if (tab === 'pincas') setBuscaPincas(v);
     else if (tab === 'almotolias') setBuscaAlmotolia(v);
+    else if (tab === 'desinfeccao') setBuscaDesinfeccao(v);
     else setBusca(v);
   };
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'desinfeccao') return (
+      <Dialog open={dialogDesinfeccaoOpen} onOpenChange={setDialogDesinfeccaoOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Desinfecção</Button></DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Desinfecção e Envasamento de Almotolias</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Data</Label><Input type="date" value={formDesinfeccao.data} onChange={e => setFormDesinfeccao(p => ({ ...p, data: e.target.value }))} /></div>
+            <div><Label>Método</Label>
+              <Select value={formDesinfeccao.metodo} onValueChange={v => setFormDesinfeccao(p => ({ ...p, metodo: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{METODOS_DESINFECCAO.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Quantidade</Label><Input value={formDesinfeccao.quantidade} onChange={e => setFormDesinfeccao(p => ({ ...p, quantidade: e.target.value }))} placeholder="Ex: UT, 06" /></div>
+              <div><Label>Validade</Label><Input type="date" value={formDesinfeccao.validade} onChange={e => setFormDesinfeccao(p => ({ ...p, validade: e.target.value }))} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Responsável</Label><Input value={formDesinfeccao.responsavel} onChange={e => setFormDesinfeccao(p => ({ ...p, responsavel: e.target.value }))} /></div>
+              <div><Label>COREN</Label><Input value={formDesinfeccao.coren} onChange={e => setFormDesinfeccao(p => ({ ...p, coren: e.target.value }))} placeholder="Ex: MG 000.000.000 - TE" /></div>
+            </div>
+            <Button onClick={handleAddDesinfeccao} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar Desinfecção</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'almotolias') return (
       <Dialog open={dialogAlmotoliaOpen} onOpenChange={setDialogAlmotoliaOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Fracionamento</Button></DialogTrigger>
@@ -482,6 +553,7 @@ export function CMEArea() {
           <TabsTrigger value="devolucao" className="gap-1"><RotateCcw className="h-4 w-4" />Devolução</TabsTrigger>
           <TabsTrigger value="pincas" className="gap-1"><Scissors className="h-4 w-4" />Pinças</TabsTrigger>
           <TabsTrigger value="almotolias" className="gap-1"><Beaker className="h-4 w-4" />Almotolias</TabsTrigger>
+          <TabsTrigger value="desinfeccao" className="gap-1"><SprayCan className="h-4 w-4" />Desinfecção</TabsTrigger>
         </TabsList>
 
         <TabsContent value="area-suja" className="mt-4">{renderTabela(itensSuja, 'Área Suja')}</TabsContent>
@@ -566,6 +638,32 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="desinfeccao" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Data</TableHead><TableHead>Método</TableHead><TableHead>Quantidade</TableHead>
+                <TableHead>Validade</TableHead><TableHead>Responsável</TableHead><TableHead>COREN</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {desinfeccoesFiltradas.length === 0 ? (
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhuma desinfecção registrada</TableCell></TableRow>
+                ) : desinfeccoesFiltradas.map(d => (
+                  <TableRow key={d.id}>
+                    <TableCell>{d.data}</TableCell>
+                    <TableCell className="font-medium">{d.metodo}</TableCell>
+                    <TableCell>{d.quantidade}</TableCell>
+                    <TableCell>{d.validade || '—'}</TableCell>
+                    <TableCell>{d.responsavel}</TableCell>
+                    <TableCell className="font-mono text-sm">{d.coren || '—'}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheDesinfeccao(d)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog detalhe pinças */}
@@ -641,6 +739,28 @@ export function CMEArea() {
               <div><span className="text-muted-foreground">Responsável:</span> {detalheAlmotolia.responsavel}</div>
               {detalheAlmotolia.observacao && <div><span className="text-muted-foreground">Observação:</span> {detalheAlmotolia.observacao}</div>}
               <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheAlmotolia.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog detalhe desinfecção */}
+      <Dialog open={!!detalheDesinfeccao} onOpenChange={() => setDetalheDesinfeccao(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Desinfecção de Almotolia</DialogTitle></DialogHeader>
+          {detalheDesinfeccao && (
+            <div className="space-y-2 text-sm">
+              <div><span className="text-muted-foreground">Data:</span> <strong>{detalheDesinfeccao.data}</strong></div>
+              <div><span className="text-muted-foreground">Método:</span> {detalheDesinfeccao.metodo}</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Quantidade:</span> {detalheDesinfeccao.quantidade}</div>
+                <div><span className="text-muted-foreground">Validade:</span> {detalheDesinfeccao.validade || '—'}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Responsável:</span> {detalheDesinfeccao.responsavel}</div>
+                <div><span className="text-muted-foreground">COREN:</span> {detalheDesinfeccao.coren || '—'}</div>
+              </div>
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheDesinfeccao.dataRegistro}</p>
             </div>
           )}
         </DialogContent>
