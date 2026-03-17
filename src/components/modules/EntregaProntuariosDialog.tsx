@@ -366,11 +366,8 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
           {/* Prontuários do dia */}
           <div>
             {(() => {
-              const filtrados = searchPaciente.trim()
-                ? prontuariosDia.filter(p =>
-                    (p.paciente_nome || "").toLowerCase().includes(searchPaciente.toLowerCase())
-                  )
-                : prontuariosDia;
+              const filtrados = getFilteredProntuarios();
+              const allFilteredSelected = filtrados.length > 0 && filtrados.every(p => selectedIds.has(p.id));
 
               return (
                 <>
@@ -380,7 +377,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
                     </label>
                     {filtrados.length > 0 && (
                       <Button variant="ghost" size="sm" className="h-6 text-xs" onClick={toggleAll}>
-                        {selectedIds.size === prontuariosDia.length ? "Desmarcar todos" : "Selecionar todos"}
+                        {allFilteredSelected ? "Desmarcar todos" : "Selecionar todos"}
                       </Button>
                     )}
                   </div>
