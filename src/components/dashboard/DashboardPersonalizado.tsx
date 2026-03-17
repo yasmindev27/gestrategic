@@ -429,16 +429,14 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
       {/* Management Dashboard */}
       <h3 className="text-lg font-bold text-foreground">Painel de Gestão</h3>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Risk Chart */}
-        <RiskChart />
-
-        {/* Status Matrix */}
-        <div className="space-y-4">
-          <StatusMatrix />
-          <AuditActivityLog logs={auditLogs} loading={loading} />
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <RiskChart />
         </div>
+        <StatusMatrix />
       </div>
+
+      <AuditActivityLog logs={auditLogs} loading={loading} />
 
       {/* Role-specific extra cards */}
       <TooltipProvider delayDuration={300}>
