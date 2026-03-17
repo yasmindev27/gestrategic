@@ -578,6 +578,7 @@ export function CMEArea() {
     if (tab === 'danificados') return buscaDanificado;
     if (tab === 'solicitacao') return buscaSolicitacao;
     if (tab === 'controle-material') return buscaControleMat;
+    if (tab === 'temp-umidade') return buscaTempUmidade;
     return busca;
   };
   const setBuscaAtual = (v: string) => {
