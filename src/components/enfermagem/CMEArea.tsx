@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan, FlaskConical, CircleDot, ClipboardCheck
+  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan, FlaskConical, CircleDot, ClipboardCheck, Ban
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -130,6 +130,18 @@ interface RegistroConferencia {
   dataRegistro: string;
 }
 
+interface RegistroDanificado {
+  id: string;
+  material: string;
+  setor: string;
+  data: string;
+  motivo: string;
+  conduta: string;
+  reposicao: string;
+  responsavel: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
@@ -186,6 +198,7 @@ export function CMEArea() {
   const [diluicoes, setDiluicoes] = useLocalStorage<RegistroDiluicao[]>('enf-cme-diluicao', []);
   const [olivas, setOlivas] = useLocalStorage<RegistroOlivas[]>('enf-cme-olivas', []);
   const [conferencias, setConferencias] = useLocalStorage<RegistroConferencia[]>('enf-cme-conferencia', []);
+  const [danificados, setDanificados] = useLocalStorage<RegistroDanificado[]>('enf-cme-danificados', []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDevOpen, setDialogDevOpen] = useState(false);
   const [dialogPincasOpen, setDialogPincasOpen] = useState(false);
@@ -194,6 +207,7 @@ export function CMEArea() {
   const [dialogDiluicaoOpen, setDialogDiluicaoOpen] = useState(false);
   const [dialogOlivasOpen, setDialogOlivasOpen] = useState(false);
   const [dialogConferenciaOpen, setDialogConferenciaOpen] = useState(false);
+  const [dialogDanificadoOpen, setDialogDanificadoOpen] = useState(false);
   const [detalhePinca, setDetalhePinca] = useState<RegistroPincas | null>(null);
   const [detalhe, setDetalhe] = useState<DevolucaoMaterial | null>(null);
   const [detalheAlmotolia, setDetalheAlmotolia] = useState<RegistroAlmotolia | null>(null);
@@ -201,6 +215,7 @@ export function CMEArea() {
   const [detalheDiluicao, setDetalheDiluicao] = useState<RegistroDiluicao | null>(null);
   const [detalheOliva, setDetalheOliva] = useState<RegistroOlivas | null>(null);
   const [detalheConferencia, setDetalheConferencia] = useState<RegistroConferencia | null>(null);
+  const [detalheDanificado, setDetalheDanificado] = useState<RegistroDanificado | null>(null);
   const [busca, setBusca] = useState('');
   const [buscaDev, setBuscaDev] = useState('');
   const [buscaPincas, setBuscaPincas] = useState('');
@@ -209,6 +224,7 @@ export function CMEArea() {
   const [buscaDiluicao, setBuscaDiluicao] = useState('');
   const [buscaOlivas, setBuscaOlivas] = useState('');
   const [buscaConferencia, setBuscaConferencia] = useState('');
+  const [buscaDanificado, setBuscaDanificado] = useState('');
 
   const [form, setForm] = useState({
     descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '',
@@ -252,6 +268,10 @@ export function CMEArea() {
     data: new Date().toISOString().split('T')[0], setor: '',
     materiaisRespiratorios: false, materiaisCirurgicos: false,
     inconformidade: false, inconformidadeDescricao: '', responsavel: '', coren: '',
+  });
+  const [formDanificado, setFormDanificado] = useState({
+    material: '', setor: '', data: new Date().toISOString().split('T')[0],
+    motivo: '', conduta: '', reposicao: '', responsavel: '',
   });
 
   const itensSuja = itens.filter(i => (ETAPAS_SUJA as readonly string[]).includes(i.etapa));
@@ -350,6 +370,15 @@ export function CMEArea() {
     toast.success('Conferência registrada com sucesso');
   };
 
+  const handleAddDanificado = () => {
+    if (!formDanificado.material || !formDanificado.setor || !formDanificado.responsavel) { toast.error('Material, setor e responsável são obrigatórios'); return; }
+    const novo: RegistroDanificado = { id: crypto.randomUUID(), ...formDanificado, dataRegistro: new Date().toLocaleString('pt-BR') };
+    setDanificados([novo, ...danificados]);
+    setFormDanificado({ material: '', setor: '', data: new Date().toISOString().split('T')[0], motivo: '', conduta: '', reposicao: '', responsavel: '' });
+    setDialogDanificadoOpen(false);
+    toast.success('Material danificado registrado');
+  };
+
   const avancarEtapa = (id: string) => {
     const ordem: ItemCME['etapa'][] = ['recebimento', 'lavagem', 'secagem', 'preparo', 'esterilizacao', 'armazenamento', 'distribuicao'];
     setItens(prev => prev.map(i => {
@@ -420,6 +449,9 @@ export function CMEArea() {
   const olivasFiltradas = olivas.filter(o =>
     o.tipoMaterial.toLowerCase().includes(buscaOlivas.toLowerCase()) || o.responsavel.toLowerCase().includes(buscaOlivas.toLowerCase())
   );
+  const danificadosFiltrados = danificados.filter(d =>
+    d.material.toLowerCase().includes(buscaDanificado.toLowerCase()) || d.responsavel.toLowerCase().includes(buscaDanificado.toLowerCase()) || d.setor.toLowerCase().includes(buscaDanificado.toLowerCase())
+  );
   const conferenciasFiltradas = conferencias.filter(c =>
     c.setor.toLowerCase().includes(buscaConferencia.toLowerCase()) || c.responsavel.toLowerCase().includes(buscaConferencia.toLowerCase())
   );
@@ -432,6 +464,7 @@ export function CMEArea() {
     if (tab === 'diluicao') return buscaDiluicao;
     if (tab === 'olivas') return buscaOlivas;
     if (tab === 'conferencia') return buscaConferencia;
+    if (tab === 'danificados') return buscaDanificado;
     return busca;
   };
   const setBuscaAtual = (v: string) => {
@@ -442,11 +475,61 @@ export function CMEArea() {
     else if (tab === 'diluicao') setBuscaDiluicao(v);
     else if (tab === 'olivas') setBuscaOlivas(v);
     else if (tab === 'conferencia') setBuscaConferencia(v);
+    else if (tab === 'danificados') setBuscaDanificado(v);
     else setBusca(v);
   };
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'danificados') return (
+      <Dialog open={dialogDanificadoOpen} onOpenChange={setDialogDanificadoOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Material Danificado</Button></DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Controle de Materiais Danificados</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Material</Label><Input value={formDanificado.material} onChange={e => setFormDanificado(p => ({ ...p, material: e.target.value }))} placeholder="Ex: Traqueia, Ambu, Máscara" /></div>
+              <div><Label>Setor</Label>
+                <Select value={formDanificado.setor} onValueChange={v => setFormDanificado(p => ({ ...p, setor: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{SETORES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Data</Label><Input type="date" value={formDanificado.data} onChange={e => setFormDanificado(p => ({ ...p, data: e.target.value }))} /></div>
+              <div><Label>Motivo</Label>
+                <Select value={formDanificado.motivo} onValueChange={v => setFormDanificado(p => ({ ...p, motivo: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Estragado">Estragado</SelectItem>
+                    <SelectItem value="Quebrado">Quebrado</SelectItem>
+                    <SelectItem value="Desgastado">Desgastado</SelectItem>
+                    <SelectItem value="Contaminado">Contaminado</SelectItem>
+                    <SelectItem value="Outro">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Conduta</Label><Input value={formDanificado.conduta} onChange={e => setFormDanificado(p => ({ ...p, conduta: e.target.value }))} placeholder="Ex: Comunicado RT" /></div>
+              <div><Label>Reposição</Label>
+                <Select value={formDanificado.reposicao} onValueChange={v => setFormDanificado(p => ({ ...p, reposicao: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Sim">Sim</SelectItem>
+                    <SelectItem value="Não">Não</SelectItem>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div><Label>Responsável</Label><Input value={formDanificado.responsavel} onChange={e => setFormDanificado(p => ({ ...p, responsavel: e.target.value }))} /></div>
+            <Button onClick={handleAddDanificado} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'conferencia') return (
       <Dialog open={dialogConferenciaOpen} onOpenChange={setDialogConferenciaOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Conferência</Button></DialogTrigger>
@@ -806,6 +889,7 @@ export function CMEArea() {
           <TabsTrigger value="diluicao" className="gap-1"><FlaskConical className="h-4 w-4" />Diluição</TabsTrigger>
           <TabsTrigger value="olivas" className="gap-1"><CircleDot className="h-4 w-4" />Olivas</TabsTrigger>
           <TabsTrigger value="conferencia" className="gap-1"><ClipboardCheck className="h-4 w-4" />Conferência</TabsTrigger>
+          <TabsTrigger value="danificados" className="gap-1"><Ban className="h-4 w-4" />Danificados</TabsTrigger>
         </TabsList>
 
         <TabsContent value="area-suja" className="mt-4">{renderTabela(itensSuja, 'Área Suja')}</TabsContent>
@@ -997,6 +1081,33 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="danificados" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Material</TableHead><TableHead>Setor</TableHead><TableHead>Data</TableHead>
+                <TableHead>Motivo</TableHead><TableHead>Conduta</TableHead><TableHead>Reposição</TableHead><TableHead>Responsável</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {danificadosFiltrados.length === 0 ? (
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum material danificado registrado</TableCell></TableRow>
+                ) : danificadosFiltrados.map(d => (
+                  <TableRow key={d.id}>
+                    <TableCell className="font-medium">{d.material}</TableCell>
+                    <TableCell>{d.setor}</TableCell>
+                    <TableCell>{d.data}</TableCell>
+                    <TableCell><Badge variant="outline">{d.motivo || '—'}</Badge></TableCell>
+                    <TableCell>{d.conduta || '—'}</TableCell>
+                    <TableCell><Badge variant={d.reposicao === 'Sim' ? 'default' : d.reposicao === 'Pendente' ? 'secondary' : 'destructive'}>{d.reposicao || '—'}</Badge></TableCell>
+                    <TableCell>{d.responsavel}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheDanificado(d)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog detalhe pinças */}
@@ -1176,6 +1287,31 @@ export function CMEArea() {
                 <div><span className="text-muted-foreground">COREN:</span> {detalheConferencia.coren || '—'}</div>
               </div>
               <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheConferencia.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog detalhe danificado */}
+      <Dialog open={!!detalheDanificado} onOpenChange={() => setDetalheDanificado(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Material Danificado</DialogTitle></DialogHeader>
+          {detalheDanificado && (
+            <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Material:</span> <strong>{detalheDanificado.material}</strong></div>
+                <div><span className="text-muted-foreground">Setor:</span> {detalheDanificado.setor}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Data:</span> {detalheDanificado.data}</div>
+                <div><span className="text-muted-foreground">Motivo:</span> <Badge variant="outline">{detalheDanificado.motivo || '—'}</Badge></div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Conduta:</span> {detalheDanificado.conduta || '—'}</div>
+                <div><span className="text-muted-foreground">Reposição:</span> <Badge variant={detalheDanificado.reposicao === 'Sim' ? 'default' : 'destructive'}>{detalheDanificado.reposicao || '—'}</Badge></div>
+              </div>
+              <div><span className="text-muted-foreground">Responsável:</span> {detalheDanificado.responsavel}</div>
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheDanificado.dataRegistro}</p>
             </div>
           )}
         </DialogContent>
