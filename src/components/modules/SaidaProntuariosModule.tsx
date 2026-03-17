@@ -1950,6 +1950,7 @@ export const SaidaProntuariosModule = () => {
                   })}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
         </CardContent>
