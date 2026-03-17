@@ -397,7 +397,51 @@ export function InfraestruturaPanel() {
             <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
             Atualizar
           </Button>
+          <Button 
+            size="sm" 
+            onClick={handleSyncExternalDB} 
+            disabled={isSyncing}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            {isSyncing ? (
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Cloud className="h-4 w-4 mr-2" />
+            )}
+            {isSyncing ? "Sincronizando..." : "Sync Banco Externo"}
+          </Button>
         </div>
+      </div>
+
+      {/* Sync Result Banner */}
+      {syncResult && (
+        <Card className={`border-l-4 ${syncResult.errors === -1 ? "border-l-destructive bg-destructive/5" : syncResult.errors > 0 ? "border-l-amber-500 bg-amber-500/5" : "border-l-emerald-500 bg-emerald-500/5"}`}>
+          <CardContent className="py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {syncResult.errors === -1 ? (
+                <XCircle className="h-5 w-5 text-destructive" />
+              ) : syncResult.errors > 0 ? (
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+              ) : (
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              )}
+              <div>
+                {syncResult.errors === -1 ? (
+                  <p className="text-sm font-medium text-destructive">Erro na sincronização — verifique as credenciais do banco externo</p>
+                ) : (
+                  <p className="text-sm font-medium text-foreground">
+                    Sincronização concluída: <strong>{syncResult.tables}</strong> tabelas, <strong>{syncResult.rows.toLocaleString()}</strong> registros
+                    {syncResult.errors > 0 && <span className="text-amber-600"> ({syncResult.errors} tabelas com erros)</span>}
+                  </p>
+                )}
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSyncResult(null)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      )
       </div>
 
       {/* ── Mapa de Armazenamento ── */}
