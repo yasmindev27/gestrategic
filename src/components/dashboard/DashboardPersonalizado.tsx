@@ -212,7 +212,7 @@ const AuditActivityLog = ({ logs, loading }: { logs: AuditLogEntry[]; loading: b
                   {new Date(log.created_at).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}
                 </span>
                 <span className="truncate">
-                  {log.user_nome} — {log.acao} ({log.modulo})
+                  {log.user_id.substring(0, 8)} — {log.acao} ({log.modulo})
                 </span>
               </div>
             ))}
