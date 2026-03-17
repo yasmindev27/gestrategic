@@ -50,6 +50,14 @@ interface RegistroTermo {
   coren: string;
   farmaceuticoResponsavel: string;
   observacoes: string;
+  // Devolução — Alta Médica
+  devolucao: {
+    realizada: boolean;
+    dataAlta: string;
+    medicamentoQuantidadeDevolvida: string;
+    farmaceuticoClinicoDevolucao: string;
+    enfermeiroDevolucao: string;
+  };
   dataRegistro: string;
 }
 
@@ -74,6 +82,7 @@ const emptyForm = (): Omit<RegistroTermo, 'id' | 'dataRegistro'> => ({
   acompanhanteNome: '', acompanhanteParentesco: '',
   enfermeiroResponsavel: '', coren: '', farmaceuticoResponsavel: '',
   observacoes: '',
+  devolucao: { realizada: false, dataAlta: '', medicamentoQuantidadeDevolvida: '', farmaceuticoClinicoDevolucao: '', enfermeiroDevolucao: '' },
 });
 
 export function TermoGuardaMedicamento({ storageKey, setor }: Props) {
@@ -307,6 +316,30 @@ export function TermoGuardaMedicamento({ storageKey, setor }: Props) {
               </div>
               <div><Label>Observações</Label><Textarea value={form.observacoes} onChange={e => f('observacoes', e.target.value)} rows={2} /></div>
 
+              {/* Devolução ao paciente — ALTA MÉDICA */}
+              <Card className="border-orange-300">
+                <CardContent className="p-4 space-y-3">
+                  <Badge className="bg-orange-600">Devolução ao Paciente ou Responsável — ALTA MÉDICA</Badge>
+                  <p className="text-xs text-muted-foreground">Declaro haver recebido o saldo remanescente do medicamento na alta hospitalar.</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Checkbox checked={form.devolucao.realizada} onCheckedChange={v => f('devolucao', { ...form.devolucao, realizada: !!v })} id="dev-realizada" />
+                    <Label htmlFor="dev-realizada" className="text-sm cursor-pointer font-semibold">Devolução realizada</Label>
+                  </div>
+                  {form.devolucao.realizada && (
+                    <div className="space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div><Label>Data da Alta</Label><Input type="date" value={form.devolucao.dataAlta} onChange={e => f('devolucao', { ...form.devolucao, dataAlta: e.target.value })} /></div>
+                        <div><Label>Medicamento / Quantidade Devolvida</Label><Input value={form.devolucao.medicamentoQuantidadeDevolvida} onChange={e => f('devolucao', { ...form.devolucao, medicamentoQuantidadeDevolvida: e.target.value })} placeholder="Ex: Losartana 50mg — 10 comprimidos" /></div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div><Label>Farmacêutico Clínico(a)</Label><Input value={form.devolucao.farmaceuticoClinicoDevolucao} onChange={e => f('devolucao', { ...form.devolucao, farmaceuticoClinicoDevolucao: e.target.value })} /></div>
+                        <div><Label>Enfermeiro(a)</Label><Input value={form.devolucao.enfermeiroDevolucao} onChange={e => f('devolucao', { ...form.devolucao, enfermeiroDevolucao: e.target.value })} /></div>
+                      </div>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+
               <Button onClick={handleSalvar} className="w-full" size="lg">
                 <CheckCircle2 className="h-4 w-4 mr-2" />Registrar Termo de Guarda
               </Button>
@@ -377,6 +410,19 @@ export function TermoGuardaMedicamento({ storageKey, setor }: Props) {
                 {detalhe.observacoes && <div className="p-2 bg-muted rounded">{detalhe.observacoes}</div>}
                 <div><span className="text-muted-foreground">Enfermeiro(a):</span> {detalhe.enfermeiroResponsavel} — COREN: {detalhe.coren}</div>
                 {detalhe.farmaceuticoResponsavel && <div><span className="text-muted-foreground">Farmacêutico(a):</span> {detalhe.farmaceuticoResponsavel}</div>}
+                
+                {detalhe.devolucao?.realizada && (
+                  <div className="border rounded p-2 space-y-1">
+                    <p className="font-semibold">Devolução — Alta Médica</p>
+                    <div className="grid grid-cols-2 gap-1">
+                      <div><span className="text-muted-foreground">Data da Alta:</span> {detalhe.devolucao.dataAlta}</div>
+                      <div><span className="text-muted-foreground">Qtd. Devolvida:</span> {detalhe.devolucao.medicamentoQuantidadeDevolvida}</div>
+                      {detalhe.devolucao.farmaceuticoClinicoDevolucao && <div><span className="text-muted-foreground">Farmacêutico:</span> {detalhe.devolucao.farmaceuticoClinicoDevolucao}</div>}
+                      {detalhe.devolucao.enfermeiroDevolucao && <div><span className="text-muted-foreground">Enfermeiro:</span> {detalhe.devolucao.enfermeiroDevolucao}</div>}
+                    </div>
+                  </div>
+                )}
+                
                 <p className="text-xs text-muted-foreground">Registrado em: {detalhe.dataRegistro}</p>
               </div>
             </>
