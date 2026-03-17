@@ -229,6 +229,35 @@ export function InfraestruturaPanel() {
   const [lastRefresh, setLastRefresh] = useState(new Date());
   const [alertas, setAlertas] = useState<HashAlerta[]>([]);
   const repairTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncResult, setSyncResult] = useState<{ tables: number; rows: number; errors: number } | null>(null);
+
+  const handleSyncExternalDB = async () => {
+    setIsSyncing(true);
+    setSyncResult(null);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Não autenticado");
+
+      const res = await supabase.functions.invoke("sync-external-db", {
+        body: { mode: "full" },
+      });
+
+      if (res.error) throw res.error;
+
+      const result = res.data;
+      setSyncResult({
+        tables: result.summary?.tables_processed || 0,
+        rows: result.summary?.total_rows_synced || 0,
+        errors: result.summary?.tables_with_errors || 0,
+      });
+    } catch (err: any) {
+      console.error("Sync error:", err);
+      setSyncResult({ tables: 0, rows: 0, errors: -1 });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   // ── Detecta erros de hash e gera alertas ao montar ──────────────────────
   useEffect(() => {
@@ -368,8 +397,52 @@ export function InfraestruturaPanel() {
             <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
             Atualizar
           </Button>
+          <Button 
+            size="sm" 
+            onClick={handleSyncExternalDB} 
+            disabled={isSyncing}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+          >
+            {isSyncing ? (
+              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+            ) : (
+              <Cloud className="h-4 w-4 mr-2" />
+            )}
+            {isSyncing ? "Sincronizando..." : "Sync Banco Externo"}
+          </Button>
         </div>
       </div>
+
+      {/* Sync Result Banner */}
+      {syncResult && (
+        <Card className={`border-l-4 ${syncResult.errors === -1 ? "border-l-destructive bg-destructive/5" : syncResult.errors > 0 ? "border-l-amber-500 bg-amber-500/5" : "border-l-emerald-500 bg-emerald-500/5"}`}>
+          <CardContent className="py-3 flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              {syncResult.errors === -1 ? (
+                <XCircle className="h-5 w-5 text-destructive" />
+              ) : syncResult.errors > 0 ? (
+                <AlertTriangle className="h-5 w-5 text-amber-500" />
+              ) : (
+                <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+              )}
+              <div>
+                {syncResult.errors === -1 ? (
+                  <p className="text-sm font-medium text-destructive">Erro na sincronização — verifique as credenciais do banco externo</p>
+                ) : (
+                  <p className="text-sm font-medium text-foreground">
+                    Sincronização concluída: <strong>{syncResult.tables}</strong> tabelas, <strong>{syncResult.rows.toLocaleString()}</strong> registros
+                    {syncResult.errors > 0 && <span className="text-amber-600"> ({syncResult.errors} tabelas com erros)</span>}
+                  </p>
+                )}
+              </div>
+            </div>
+            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSyncResult(null)}>
+              <X className="h-4 w-4" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
 
       {/* ── Mapa de Armazenamento ── */}
       <div>
