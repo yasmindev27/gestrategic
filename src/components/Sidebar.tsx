@@ -554,7 +554,7 @@ const Sidebar = ({
                   {isCollapsed ? (
                     <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>{btn}</TooltipTrigger>
-                      <TooltipContent side="right" className="bg-[#1a3a5c] text-white border-[#2d7dd2]/30 text-xs font-medium shadow-lg">
+                      <TooltipContent side="right" className="bg-sidebar-accent text-white border-sidebar-primary/30 text-xs font-medium shadow-lg">
                         {item.label}
                       </TooltipContent>
                     </Tooltip>
