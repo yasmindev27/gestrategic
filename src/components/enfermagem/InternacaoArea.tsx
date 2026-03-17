@@ -420,6 +420,10 @@ export function InternacaoArea() {
         <TabsContent value="sae-ped" className="mt-4">
           <SAEPediatrico storageKey="enf-sae-ped-internacao" setor="Internação" />
         </TabsContent>
+
+        <TabsContent value="guarda-med" className="mt-4">
+          <TermoGuardaMedicamento storageKey="enf-guarda-med-internacao" setor="Internação" />
+        </TabsContent>
       </Tabs>
     </div>
   );
