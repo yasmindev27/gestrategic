@@ -440,6 +440,15 @@ export function CMEArea() {
     toast.success('Solicitação registrada');
   };
 
+  const handleAddControleMat = () => {
+    if (!formControleMat.kit || !formControleMat.responsavel) { toast.error('Kit e responsável são obrigatórios'); return; }
+    const novo: ControleMaterialKit = { id: crypto.randomUUID(), ...formControleMat, dataRegistro: new Date().toLocaleString('pt-BR') };
+    setControleMateriais([novo, ...controleMateriais]);
+    setFormControleMat({ data: new Date().toISOString().split('T')[0], kit: '', descricaoItens: '', qtdSaidaEsterilizacao: '', qtdRetornoEsterilizacao: '', totalEstoqueCME: '', responsavel: '', observacoes: '' });
+    setDialogControleMatOpen(false);
+    toast.success('Controle de material registrado');
+  };
+
   const avancarEtapa = (id: string) => {
     const ordem: ItemCME['etapa'][] = ['recebimento', 'lavagem', 'secagem', 'preparo', 'esterilizacao', 'armazenamento', 'distribuicao'];
     setItens(prev => prev.map(i => {
