@@ -528,6 +528,9 @@ export function CMEArea() {
   const controleMatFiltrados = controleMateriais.filter(c =>
     c.kit.toLowerCase().includes(buscaControleMat.toLowerCase()) || c.responsavel.toLowerCase().includes(buscaControleMat.toLowerCase())
   );
+  const conferenciasFiltradas = conferencias.filter(c =>
+    c.setor.toLowerCase().includes(buscaConferencia.toLowerCase()) || c.responsavel.toLowerCase().includes(buscaConferencia.toLowerCase())
+  );
 
   const getBusca = () => {
     if (tab === 'devolucao') return buscaDev;
