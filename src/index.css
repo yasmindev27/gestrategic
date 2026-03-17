@@ -471,8 +471,8 @@
   /* Premium glass card */
   .glass-card {
     @apply bg-card/80 backdrop-blur-lg border border-border/50;
-    box-shadow: 0 8px 32px hsl(210 20% 50% / 0.08), 
-                0 1px 0 hsl(0 0% 100% / 0.05) inset;
+    box-shadow: 0 8px 32px hsl(218 25% 40% / 0.06), 
+                0 1px 0 hsl(0 0% 100% / 0.04) inset;
   }
 
   /* Input focus glow */
