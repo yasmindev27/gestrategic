@@ -316,8 +316,9 @@ export const AssistenciaSocialModule = () => {
       resetAtendimentoForm();
       loadData();
       logAction("Assistência Social", "registro_atendimento", { tipo: atendimentoForm.tipo_atendimento });
-    } catch {
-      toast({ title: "Erro", description: "Falha ao registrar atendimento", variant: "destructive" });
+    } catch (err: any) {
+      console.error("Erro ao registrar atendimento:", err);
+      toast({ title: "Erro", description: err?.message || "Falha ao registrar atendimento", variant: "destructive" });
     }
     setIsSubmitting(false);
   };
