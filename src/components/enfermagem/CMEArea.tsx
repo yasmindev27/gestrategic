@@ -44,6 +44,28 @@ interface DevolucaoMaterial {
   dataRegistro: string;
 }
 
+const TIPOS_PINCA = [
+  'Porta Agulha', 'Tesoura', 'Dente de Rato', 'Hemostática Curva',
+  'Dissecção', 'Hemostática Reta',
+] as const;
+
+interface PincaItem {
+  tipo: string;
+  quantidade: number;
+  checked: boolean;
+}
+
+interface RegistroPincas {
+  id: string;
+  data: string;
+  pincas: PincaItem[];
+  outra: string;
+  outraQuantidade: number;
+  total: number;
+  enfermagem: string;
+  dataRegistro: string;
+}
+
 const ETAPAS_SUJA = ['recebimento', 'lavagem', 'secagem'] as const;
 const ETAPAS_LIMPA = ['preparo', 'esterilizacao', 'armazenamento', 'distribuicao'] as const;
 
