@@ -57,6 +57,7 @@ interface CadastroInconsistente {
   resolvido_por_nome: string | null;
   resolvido_em: string | null;
   created_at: string;
+  registrado_por_nome_display?: string;
 }
 
 const tiposInconsistencia = [
@@ -110,7 +111,24 @@ export const ControleFichasModule = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setInconsistencias(data || []);
+
+      // Fetch registrado_por names
+      const userIds = [...new Set((data || []).map(d => d.registrado_por).filter(Boolean))];
+      let namesMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", userIds);
+        if (profiles) {
+          profiles.forEach(p => { namesMap[p.user_id] = p.full_name || "Usuário"; });
+        }
+      }
+
+      setInconsistencias((data || []).map(d => ({
+        ...d,
+        registrado_por_nome_display: d.registrado_por ? (namesMap[d.registrado_por] || "Usuário") : "—",
+      })));
     } catch (error) {
       console.error("Error fetching inconsistencias:", error);
       toast({ title: "Erro", description: "Erro ao carregar cadastros inconsistentes.", variant: "destructive" });
@@ -302,7 +320,7 @@ export const ControleFichasModule = () => {
       </div>
 
       {/* KPI Cards - clickable filters */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <button onClick={() => setStatusFilter("todos")} className="text-left">
           <Card className={`transition-shadow hover:shadow-sm ${statusFilter === "todos" ? "ring-2 ring-primary" : ""}`}>
             <CardContent className="p-3">
@@ -320,19 +338,6 @@ export const ControleFichasModule = () => {
                   <p className="text-xl font-bold text-amber-600">{counts.pendente}</p>
                 </div>
                 <AlertCircle className="h-5 w-5 text-amber-400" />
-              </div>
-            </CardContent>
-          </Card>
-        </button>
-        <button onClick={() => setStatusFilter("em_analise")} className="text-left">
-          <Card className={`transition-shadow hover:shadow-sm ${statusFilter === "em_analise" ? "ring-2 ring-sky-400" : ""}`}>
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] text-muted-foreground font-medium">Em Análise</p>
-                  <p className="text-xl font-bold text-sky-600">{counts.em_analise}</p>
-                </div>
-                <ClipboardX className="h-5 w-5 text-sky-400" />
               </div>
             </CardContent>
           </Card>
@@ -401,6 +406,7 @@ export const ControleFichasModule = () => {
                 <TableHead className="text-[11px] font-semibold text-white uppercase tracking-wider w-[150px]">Tipo</TableHead>
                 <TableHead className="text-[11px] font-semibold text-white uppercase tracking-wider">Descrição</TableHead>
                 <TableHead className="text-[11px] font-semibold text-white uppercase tracking-wider w-[90px]">Status</TableHead>
+                <TableHead className="text-[11px] font-semibold text-white uppercase tracking-wider w-[140px]">Responsável</TableHead>
                 <TableHead className="text-[11px] font-semibold text-white uppercase tracking-wider w-[110px]">Data</TableHead>
                 <TableHead className="text-[11px] font-semibold text-white uppercase tracking-wider w-[90px] text-center">Ações</TableHead>
               </TableRow>
@@ -437,8 +443,13 @@ export const ControleFichasModule = () => {
                       return <Badge className={`text-[10px] border ${cfg.color}`}>{cfg.label}</Badge>;
                     })()}
                   </TableCell>
+                  <TableCell className="text-xs py-2">
+                    {item.status === "resolvido" 
+                      ? (item.resolvido_por_nome || "—") 
+                      : (item.registrado_por_nome_display || "—")
+                    }
+                  </TableCell>
                   <TableCell className="text-[11px] text-muted-foreground py-2">
-                    {format(new Date(item.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}
                   </TableCell>
                   <TableCell className="py-2 text-center">
                     <div className="flex items-center justify-center gap-1">
