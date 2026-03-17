@@ -439,6 +439,9 @@ export function CMEArea() {
   const danificadosFiltrados = danificados.filter(d =>
     d.material.toLowerCase().includes(buscaDanificado.toLowerCase()) || d.responsavel.toLowerCase().includes(buscaDanificado.toLowerCase()) || d.setor.toLowerCase().includes(buscaDanificado.toLowerCase())
   );
+  const conferenciasFiltradas = conferencias.filter(c =>
+    c.setor.toLowerCase().includes(buscaConferencia.toLowerCase()) || c.responsavel.toLowerCase().includes(buscaConferencia.toLowerCase())
+  );
 
   const getBusca = () => {
     if (tab === 'devolucao') return buscaDev;
