@@ -406,6 +406,7 @@ export const ControleFichasModule = () => {
                 <TableHead className="text-[11px] font-semibold text-white uppercase tracking-wider w-[150px]">Tipo</TableHead>
                 <TableHead className="text-[11px] font-semibold text-white uppercase tracking-wider">Descrição</TableHead>
                 <TableHead className="text-[11px] font-semibold text-white uppercase tracking-wider w-[90px]">Status</TableHead>
+                <TableHead className="text-[11px] font-semibold text-white uppercase tracking-wider w-[140px]">Responsável</TableHead>
                 <TableHead className="text-[11px] font-semibold text-white uppercase tracking-wider w-[110px]">Data</TableHead>
                 <TableHead className="text-[11px] font-semibold text-white uppercase tracking-wider w-[90px] text-center">Ações</TableHead>
               </TableRow>
