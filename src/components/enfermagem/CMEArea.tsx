@@ -89,6 +89,13 @@ export function CMEArea() {
     material: '', setor: '', centroCusto: '', data: new Date().toISOString().split('T')[0],
     quantidade: 1, tempoEmersaoInicio: '', tempoEmersaoFim: '', assinatura: '', observacao: '',
   });
+  const [formPincas, setFormPincas] = useState({
+    data: new Date().toISOString().split('T')[0],
+    pincas: TIPOS_PINCA.map(t => ({ tipo: t, quantidade: 0, checked: false })) as PincaItem[],
+    outra: '',
+    outraQuantidade: 0,
+    enfermagem: '',
+  });
 
   const itensSuja = itens.filter(i => (ETAPAS_SUJA as readonly string[]).includes(i.etapa));
   const itensLimpa = itens.filter(i => (ETAPAS_LIMPA as readonly string[]).includes(i.etapa));
