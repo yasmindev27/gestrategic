@@ -210,11 +210,33 @@
   }
 }
 
-/* Typography */
+/* Typography — Enterprise hierarchy */
 @layer base {
-  h1, h2, h3, h4, h5, h6 {
+  h1, h2, h3 {
+    font-family: var(--font-display);
+    @apply font-bold tracking-tight;
+    text-rendering: optimizeLegibility;
+  }
+
+  h4, h5, h6 {
+    font-family: var(--font-display);
     @apply font-semibold tracking-tight;
     text-rendering: optimizeLegibility;
+  }
+
+  h1 {
+    @apply text-3xl leading-tight;
+    letter-spacing: -0.025em;
+  }
+
+  h2 {
+    @apply text-2xl leading-snug;
+    letter-spacing: -0.02em;
+  }
+
+  h3 {
+    @apply text-xl leading-snug;
+    letter-spacing: -0.015em;
   }
 }
 
