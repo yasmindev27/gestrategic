@@ -79,9 +79,16 @@ Deno.serve(async (req) => {
       tablesToSync = tables;
     } else {
       // Get all public tables
-      const { data: tableList, error: tableErr } = await internalAdmin.rpc(
-        "get_public_tables" as any
-      ).catch(() => ({ data: null, error: { message: "RPC not found" } }));
+      let tableList: any[] | null = null;
+      let tableErr: unknown = null;
+
+      try {
+        const rpcResult = await internalAdmin.rpc("get_public_tables" as any);
+        tableList = (rpcResult.data as any[]) ?? null;
+        tableErr = rpcResult.error;
+      } catch (err) {
+        tableErr = err;
+      }
 
       if (tableErr || !tableList) {
         // Fallback: hardcoded main tables
