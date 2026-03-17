@@ -88,6 +88,23 @@ interface RegistroDesinfeccao {
   dataRegistro: string;
 }
 
+interface ItemDiluicao {
+  solucao: string;
+  volume: string;
+  lote: string;
+  validade: string;
+}
+
+interface RegistroDiluicao {
+  id: string;
+  categoria: 'respiratorio' | 'cirurgico';
+  itens: ItemDiluicao[];
+  data: string;
+  horario: string;
+  responsavel: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
