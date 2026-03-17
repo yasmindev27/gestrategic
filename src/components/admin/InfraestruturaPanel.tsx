@@ -17,13 +17,14 @@ import {
   FolderOpen,
   Lock,
   Cloud,
-  Wrench,
-  Clock,
-  BellRing,
   X,
+  Activity,
+  Users,
+  FileText,
+  ClipboardList,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { format, subDays } from "date-fns";
+import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import {
   AreaChart,
@@ -37,222 +38,145 @@ import {
 } from "recharts";
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
-interface BackupEntry {
-  id: string;
-  data: string;
-  status: "ok" | "aviso" | "erro";
-  tamanho_mb: number;
-  tipo: string;
-  duracao_min: number;
-  hash: string;
-  hashInvalido?: boolean;
-  reparando?: boolean;
-  reparado?: boolean;
-  proximaTentativaEm?: number; // timestamp ms
+interface TableStat {
+  name: string;
+  label: string;
+  count: number;
+  icon: React.ElementType;
 }
 
-interface HealthPoint {
-  hora: string;
-  cpu: number;
-  memoria: number;
-  disco: number;
+interface StorageBucketStat {
+  name: string;
+  label: string;
+  fileCount: number;
 }
 
-interface HashAlerta {
-  id: string;
-  backupId: string;
-  tipo: string;
-  data: string;
-  hash: string;
-  visto: boolean;
+interface DbHealthMetrics {
+  totalRegistros: number;
+  totalTabelas: number;
+  buckets: StorageBucketStat[];
+  tabelasPrincipais: TableStat[];
+  replicacaoFila: { pendentes: number; falhas: number; concluidos: number };
 }
-
-// ── Dados simulados ─────────────────────────────────────────────────────────
-const gerarBackups = (): BackupEntry[] => {
-  const tipos = ["Completo", "Incremental", "Diferencial"];
-  const statuses: ("ok" | "aviso" | "erro")[] = ["ok", "ok", "ok", "ok", "aviso", "ok", "ok", "erro", "ok", "ok"];
-
-  return Array.from({ length: 10 }, (_, i) => {
-    const data = subDays(new Date(), i);
-    const s = statuses[i];
-    // Erros simulam hash inválido (hash corrompido com checksum errado)
-    const hashInvalido = s === "erro";
-    return {
-      id: crypto.randomUUID(),
-      data: data.toISOString(),
-      status: s,
-      tamanho_mb: Math.floor(Math.random() * 3000 + 800),
-      tipo: tipos[i % tipos.length],
-      duracao_min: Math.floor(Math.random() * 30 + 5),
-      hash: hashInvalido
-        ? "sha256:INVALID_" + Math.random().toString(36).substring(2, 8).toUpperCase()
-        : "sha256:" + Math.random().toString(36).substring(2, 10).toUpperCase(),
-      hashInvalido,
-      reparando: false,
-      reparado: false,
-    };
-  });
-};
-
-const CHART_COLORS = {
-  cpu: "#6366f1",
-  memoria: "#f59e0b",
-  disco: "#10b981",
-} as const;
-
-const gerarHealthTimeline = (): HealthPoint[] => {
-  return Array.from({ length: 24 }, (_, i) => {
-    const h = String(i).padStart(2, "0");
-    return {
-      hora: `${h}:00`,
-      cpu: Math.floor(Math.random() * 40 + 15),
-      memoria: Math.floor(Math.random() * 30 + 50),
-      disco: Math.floor(Math.random() * 5 + 60),
-    };
-  });
-};
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-const StatusIcon = ({ status }: { status: BackupEntry["status"] }) => {
-  if (status === "ok") return <CheckCircle2 className="h-4 w-4 text-emerald-500" />;
-  if (status === "aviso") return <AlertTriangle className="h-4 w-4 text-amber-500" />;
-  return <XCircle className="h-4 w-4 text-destructive" />;
-};
-
-const StatusBadge = ({ status, reparado }: { status: BackupEntry["status"]; reparado?: boolean }) => {
-  if (reparado) {
-    return <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 border-emerald-200">Reparado</Badge>;
-  }
-  const map = {
-    ok: { label: "Íntegro", className: "bg-emerald-500/10 text-emerald-600 border-emerald-200" },
-    aviso: { label: "Aviso", className: "bg-amber-500/10 text-amber-600 border-amber-200" },
-    erro: { label: "Erro de Hash", className: "bg-destructive/10 text-destructive border-destructive/20" },
-  };
-  const { label, className } = map[status];
-  return <Badge variant="outline" className={className}>{label}</Badge>;
-};
-
-const formatMB = (mb: number) => {
-  if (mb >= 1024) return `${(mb / 1024).toFixed(1)} GB`;
-  return `${mb} MB`;
-};
-
-const REPAIR_DELAY_MS = 5 * 60 * 1000; // 5 minutos
-
-// ── Componente: Painel de Alertas de Hash ────────────────────────────────────
-const HashAlertBanner = ({
-  alertas,
-  onFechar,
-}: {
-  alertas: HashAlerta[];
-  onFechar: (id: string) => void;
-}) => {
-  const naoVistos = alertas.filter(a => !a.visto);
-  if (naoVistos.length === 0) return null;
-
-  return (
-    <div className="space-y-2 mb-4">
-      {naoVistos.map(alerta => (
-        <div
-          key={alerta.id}
-          className="flex items-start gap-3 bg-destructive/10 border border-destructive/30 rounded-lg p-4 animate-in slide-in-from-top-2"
-        >
-          <div className="flex-shrink-0 mt-0.5">
-            <div className="relative">
-              <BellRing className="h-5 w-5 text-destructive animate-bounce" />
-            </div>
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-destructive">
-              Erro de Hash Detectado — Integridade Comprometida
-            </p>
-            <p className="text-xs text-destructive/80 mt-0.5">
-              Backup <span className="font-medium">{alerta.tipo}</span> de{" "}
-              <span className="font-medium">
-                {format(new Date(alerta.data), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
-              </span>{" "}
-              falhou na validação SHA-256.
-            </p>
-            <p className="text-xs text-muted-foreground mt-1 font-mono">
-              Hash: {alerta.hash}
-            </p>
-            <p className="text-xs text-destructive/70 mt-1 flex items-center gap-1">
-              <Clock className="h-3 w-3" />
-              Reparo automático agendado em 5 minutos.
-            </p>
-          </div>
-          <button
-            onClick={() => onFechar(alerta.id)}
-            className="flex-shrink-0 text-destructive/50 hover:text-destructive transition-colors"
-            aria-label="Fechar alerta"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-      ))}
-    </div>
-  );
-};
-
-// ── Componente: Contador regressivo ─────────────────────────────────────────
-const CountdownTimer = ({ targetMs }: { targetMs: number }) => {
-  const [remaining, setRemaining] = useState(Math.max(0, targetMs - Date.now()));
-
-  useEffect(() => {
-    const iv = setInterval(() => {
-      const r = Math.max(0, targetMs - Date.now());
-      setRemaining(r);
-      if (r === 0) clearInterval(iv);
-    }, 1000);
-    return () => clearInterval(iv);
-  }, [targetMs]);
-
-  const min = Math.floor(remaining / 60000);
-  const sec = Math.floor((remaining % 60000) / 1000);
-
-  if (remaining === 0) return <span className="text-emerald-600 font-medium text-xs">Executando...</span>;
-
-  return (
-    <span className="text-xs text-muted-foreground flex items-center gap-1">
-      <Clock className="h-3 w-3" />
-      Reparo em {min}:{String(sec).padStart(2, "0")}
-    </span>
-  );
-};
 
 // ── Componente principal ─────────────────────────────────────────────────────
 export function InfraestruturaPanel() {
-  const [backups, setBackups] = useState<BackupEntry[]>(gerarBackups);
-  const [healthData] = useState<HealthPoint[]>(gerarHealthTimeline);
-  const [storageStats, setStorageStats] = useState({ totalFiles: 0, totalSizeMB: 0 });
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [metrics, setMetrics] = useState<DbHealthMetrics | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [lastRefresh, setLastRefresh] = useState(new Date());
-  const [alertas, setAlertas] = useState<HashAlerta[]>([]);
-  const repairTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncElapsed, setSyncElapsed] = useState(0);
   const syncTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [syncResult, setSyncResult] = useState<{ tables: number; rows: number; errors: number; duration?: number } | null>(null);
+  const [syncResult, setSyncResult] = useState<{
+    tables: number;
+    rows: number;
+    errors: number;
+    duration?: number;
+  } | null>(null);
 
+  // ── Busca métricas reais do banco ────────────────────────────────────────
+  const fetchMetrics = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // Consultas paralelas para contar registros das tabelas principais
+      const tableQueries = [
+        { name: "profiles", label: "Colaboradores", icon: Users },
+        { name: "prontuarios", label: "Prontuários", icon: FileText },
+        { name: "chamados", label: "Chamados", icon: ClipboardList },
+        { name: "incidentes_nsp", label: "Incidentes NSP", icon: AlertTriangle },
+        { name: "logs_acesso", label: "Logs de Acesso", icon: Activity },
+        { name: "bed_records", label: "Registros de Leitos", icon: HardDrive },
+        { name: "refeicoes_registros", label: "Refeições", icon: Database },
+        { name: "alertas_seguranca", label: "Alertas Segurança", icon: Shield },
+      ];
+
+      const countPromises = tableQueries.map(async (tq) => {
+        try {
+          const { count } = await supabase
+            .from(tq.name as any)
+            .select("*", { count: "exact", head: true });
+          return { ...tq, count: count || 0 };
+        } catch {
+          return { ...tq, count: 0 };
+        }
+      });
+
+      // Fila de replicação
+      const replicacaoPromise = Promise.all([
+        supabase.from("replicacao_fila" as any).select("*", { count: "exact", head: true }).eq("status", "pendente"),
+        supabase.from("replicacao_fila" as any).select("*", { count: "exact", head: true }).eq("status", "falha_permanente"),
+        supabase.from("replicacao_fila" as any).select("*", { count: "exact", head: true }).eq("status", "concluido"),
+      ]);
+
+      const [tableCounts, replicacaoResults] = await Promise.all([
+        Promise.all(countPromises),
+        replicacaoPromise,
+      ]);
+
+      const totalRegistros = tableCounts.reduce((acc, t) => acc + t.count, 0);
+
+      const buckets: StorageBucketStat[] = [
+        { name: "atestados", label: "Atestados Médicos", fileCount: 0 },
+        { name: "chat-anexos", label: "Anexos do Chat", fileCount: 0 },
+        { name: "lms-materiais", label: "Materiais LMS", fileCount: 0 },
+        { name: "profissionais-docs", label: "Docs de RH", fileCount: 0 },
+        { name: "incidentes-evidencias", label: "Evidências NSP", fileCount: 0 },
+        { name: "reunioes", label: "Reuniões", fileCount: 0 },
+        { name: "assistencia-social-docs", label: "Assistência Social", fileCount: 0 },
+        { name: "pedidos-compra-anexos", label: "Pedidos de Compra", fileCount: 0 },
+      ];
+
+      // Tentar listar arquivos dos buckets
+      for (const bucket of buckets) {
+        try {
+          const { data } = await supabase.storage.from(bucket.name).list("", { limit: 1000 });
+          bucket.fileCount = data?.length || 0;
+        } catch {
+          bucket.fileCount = 0;
+        }
+      }
+
+      setMetrics({
+        totalRegistros,
+        totalTabelas: tableQueries.length,
+        buckets,
+        tabelasPrincipais: tableCounts,
+        replicacaoFila: {
+          pendentes: replicacaoResults[0].count || 0,
+          falhas: replicacaoResults[1].count || 0,
+          concluidos: replicacaoResults[2].count || 0,
+        },
+      });
+    } catch (err) {
+      console.error("Erro ao buscar métricas:", err);
+    } finally {
+      setIsLoading(false);
+      setLastRefresh(new Date());
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMetrics();
+  }, [fetchMetrics]);
+
+  // ── Sync externo ────────────────────────────────────────────────────────
   const handleSyncExternalDB = async () => {
     setIsSyncing(true);
     setSyncResult(null);
     setSyncElapsed(0);
 
-    // Start elapsed timer
     const start = Date.now();
     syncTimerRef.current = setInterval(() => {
       setSyncElapsed(Math.floor((Date.now() - start) / 1000));
     }, 1000);
 
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session) throw new Error("Não autenticado");
 
-      const res = await supabase.functions.invoke("sync-external-db", {
-        body: {},
-      });
-
+      const res = await supabase.functions.invoke("sync-external-db", { body: {} });
       if (res.error) throw res.error;
 
       const result = res.data;
@@ -262,6 +186,8 @@ export function InfraestruturaPanel() {
         errors: result.summary?.tables_with_errors || 0,
         duration: result.summary?.duration_seconds || 0,
       });
+      // Recarregar métricas após sync
+      fetchMetrics();
     } catch (err: any) {
       console.error("Sync error:", err);
       setSyncResult({ tables: 0, rows: 0, errors: -1 });
@@ -272,147 +198,46 @@ export function InfraestruturaPanel() {
     }
   };
 
-  // ── Detecta erros de hash e gera alertas ao montar ──────────────────────
-  useEffect(() => {
-    const erros = backups.filter(b => b.hashInvalido && !b.reparado);
-    if (erros.length > 0) {
-      const novosAlertas: HashAlerta[] = erros.map(b => ({
-        id: crypto.randomUUID(),
-        backupId: b.id,
-        tipo: b.tipo,
-        data: b.data,
-        hash: b.hash,
-        visto: false,
-      }));
-      setAlertas(novosAlertas);
-
-      // Agenda reparo automático para cada erro
-      erros.forEach(b => agendarReparo(b.id, REPAIR_DELAY_MS));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // Limpa timers ao desmontar
-  useEffect(() => {
-    const timers = repairTimers.current;
-    return () => { timers.forEach(t => clearTimeout(t)); };
-  }, []);
-
-  // ── Agenda reparo automático ─────────────────────────────────────────────
-  const agendarReparo = useCallback((backupId: string, delayMs: number) => {
-    // Cancela timer anterior se existir
-    const prev = repairTimers.current.get(backupId);
-    if (prev) clearTimeout(prev);
-
-    const targetMs = Date.now() + delayMs;
-
-    // Marca a entrada com o tempo da próxima tentativa
-    setBackups(prev => prev.map(b =>
-      b.id === backupId ? { ...b, proximaTentativaEm: targetMs } : b
-    ));
-
-    const timer = setTimeout(() => {
-      executarReparo(backupId);
-    }, delayMs);
-
-    repairTimers.current.set(backupId, timer);
-  }, []);
-
-  // ── Executa o reparo (simulado) ───────────────────────────────────────────
-  const executarReparo = useCallback((backupId: string) => {
-    setBackups(prev => prev.map(b =>
-      b.id === backupId ? { ...b, reparando: true, proximaTentativaEm: undefined } : b
-    ));
-
-    // Simula latência de reparo (2s)
-    setTimeout(() => {
-      const novoHash = "sha256:" + Math.random().toString(36).substring(2, 10).toUpperCase();
-      setBackups(prev => prev.map(b =>
-        b.id === backupId
-          ? { ...b, reparando: false, reparado: true, hashInvalido: false, status: "ok", hash: novoHash }
-          : b
-      ));
-      // Marca o alerta correspondente como visto
-      setAlertas(prev => prev.map(a =>
-        a.backupId === backupId ? { ...a, visto: true } : a
-      ));
-      repairTimers.current.delete(backupId);
-    }, 2000);
-  }, []);
-
-  // ── Disparo manual de reparo ─────────────────────────────────────────────
-  const handleRepararManual = useCallback((backupId: string) => {
-    // Cancela qualquer timer pendente e executa imediatamente
-    const prev = repairTimers.current.get(backupId);
-    if (prev) clearTimeout(prev);
-    repairTimers.current.delete(backupId);
-    setBackups(prev => prev.map(b =>
-      b.id === backupId ? { ...b, proximaTentativaEm: undefined } : b
-    ));
-    executarReparo(backupId);
-  }, [executarReparo]);
-
-  // ── Fecha alerta ─────────────────────────────────────────────────────────
-  const fecharAlerta = useCallback((alertaId: string) => {
-    setAlertas(prev => prev.map(a => a.id === alertaId ? { ...a, visto: true } : a));
-  }, []);
-
-  // ── Busca estatísticas reais dos buckets ─────────────────────────────────
-  const fetchStorageStats = async () => {
-    setIsRefreshing(true);
-    try {
-      const [atestadosRes, chatRes, lmsRes] = await Promise.all([
-        supabase.from("atestados").select("id", { count: "exact", head: true }),
-        supabase.from("chat_mensagens").select("id", { count: "exact", head: true }),
-        supabase.from("lms_treinamentos" as never).select("id", { count: "exact", head: true }),
-      ]);
-
-      const total = (atestadosRes.count || 0) + (chatRes.count || 0) + (lmsRes.count || 0);
-      setStorageStats({ totalFiles: total, totalSizeMB: Math.floor(total * 0.5 + 120) });
-    } catch {
-      setStorageStats({ totalFiles: 0, totalSizeMB: 128 });
-    } finally {
-      setIsRefreshing(false);
-      setLastRefresh(new Date());
-    }
+  const getBarColor = (count: number) => {
+    if (count > 10000) return "bg-primary";
+    if (count > 1000) return "bg-amber-500";
+    return "bg-emerald-500";
   };
 
-  useEffect(() => { fetchStorageStats(); }, []);
+  const maxCount = metrics
+    ? Math.max(...metrics.tabelasPrincipais.map((t) => t.count), 1)
+    : 1;
 
-  const current = healthData[healthData.length - 1];
-
-  const getProgressColor = (val: number) =>
-    val > 85 ? "bg-destructive" : val > 70 ? "bg-amber-500" : "bg-emerald-500";
-
-  const errosAtivos = backups.filter(b => b.hashInvalido && !b.reparado && !b.reparando);
+  const totalBucketFiles = metrics?.buckets.reduce((a, b) => a + b.fileCount, 0) || 0;
 
   return (
     <div className="space-y-6">
-      {/* ── Banner de alertas de hash ── */}
-      <HashAlertBanner alertas={alertas} onFechar={fecharAlerta} />
-
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-semibold text-foreground">Infraestrutura & Banco de Dados</h3>
+          <h3 className="text-lg font-semibold text-foreground">
+            Infraestrutura & Banco de Dados
+          </h3>
           <p className="text-sm text-muted-foreground">
-            Última atualização: {format(lastRefresh, "HH:mm:ss", { locale: ptBR })}
+            Dados reais do sistema · Atualizado:{" "}
+            {format(lastRefresh, "HH:mm:ss", { locale: ptBR })}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {errosAtivos.length > 0 && (
-            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30 gap-1">
-              <BellRing className="h-3 w-3" />
-              {errosAtivos.length} erro{errosAtivos.length > 1 ? "s" : ""} de hash
-            </Badge>
-          )}
-          <Button variant="outline" size="sm" onClick={fetchStorageStats} disabled={isRefreshing}>
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? "animate-spin" : ""}`} />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={fetchMetrics}
+            disabled={isLoading}
+          >
+            <RefreshCw
+              className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
+            />
             Atualizar
           </Button>
-          <Button 
-            size="sm" 
-            onClick={handleSyncExternalDB} 
+          <Button
+            size="sm"
+            onClick={handleSyncExternalDB}
             disabled={isSyncing}
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
           >
@@ -433,7 +258,15 @@ export function InfraestruturaPanel() {
 
       {/* Sync Result Banner */}
       {syncResult && (
-        <Card className={`border-l-4 ${syncResult.errors === -1 ? "border-l-destructive bg-destructive/5" : syncResult.errors > 0 ? "border-l-amber-500 bg-amber-500/5" : "border-l-emerald-500 bg-emerald-500/5"}`}>
+        <Card
+          className={`border-l-4 ${
+            syncResult.errors === -1
+              ? "border-l-destructive bg-destructive/5"
+              : syncResult.errors > 0
+              ? "border-l-amber-500 bg-amber-500/5"
+              : "border-l-emerald-500 bg-emerald-500/5"
+          }`}
+        >
           <CardContent className="py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
               {syncResult.errors === -1 ? (
@@ -445,22 +278,140 @@ export function InfraestruturaPanel() {
               )}
               <div>
                 {syncResult.errors === -1 ? (
-                  <p className="text-sm font-medium text-destructive">Erro na sincronização — verifique as credenciais do banco externo</p>
+                  <p className="text-sm font-medium text-destructive">
+                    Erro na sincronização — verifique as credenciais do banco externo
+                  </p>
                 ) : (
                   <p className="text-sm font-medium text-foreground">
-                    Sincronização concluída em <strong>{syncResult.duration?.toFixed(1) || '?'}s</strong>: <strong>{syncResult.tables}</strong> tabelas, <strong>{syncResult.rows.toLocaleString()}</strong> registros
-                    {syncResult.errors > 0 && <span className="text-amber-600"> ({syncResult.errors} tabelas com erros)</span>}
+                    Sincronização concluída em{" "}
+                    <strong>{syncResult.duration?.toFixed(1) || "?"}s</strong>:{" "}
+                    <strong>{syncResult.tables}</strong> tabelas,{" "}
+                    <strong>{syncResult.rows.toLocaleString()}</strong> registros
+                    {syncResult.errors > 0 && (
+                      <span className="text-amber-600">
+                        {" "}
+                        ({syncResult.errors} tabelas com erros)
+                      </span>
+                    )}
                   </p>
                 )}
               </div>
             </div>
-            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setSyncResult(null)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6"
+              onClick={() => setSyncResult(null)}
+            >
               <X className="h-4 w-4" />
             </Button>
           </CardContent>
         </Card>
       )}
 
+      {/* ── Cards de Resumo ── */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Database className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {metrics?.totalRegistros.toLocaleString() || "—"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Registros Totais
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-emerald-500/10">
+                <FolderOpen className="h-5 w-5 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{totalBucketFiles}</p>
+                <p className="text-xs text-muted-foreground">
+                  Arquivos no Storage
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-500/10">
+                <Activity className="h-5 w-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {metrics?.replicacaoFila.pendentes || 0}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Replicações Pendentes
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-4 pb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-destructive/10">
+                <XCircle className="h-5 w-5 text-destructive" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">
+                  {metrics?.replicacaoFila.falhas || 0}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  Replicações com Falha
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* ── Volumetria por Tabela ── */}
+      <div>
+        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+          Volumetria das Tabelas Principais
+        </h4>
+        <Card>
+          <CardContent className="pt-5">
+            <div className="space-y-3">
+              {metrics?.tabelasPrincipais.map((t) => {
+                const Icon = t.icon;
+                const pct = maxCount > 0 ? (t.count / maxCount) * 100 : 0;
+                return (
+                  <div key={t.name} className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 w-44 flex-shrink-0">
+                      <Icon className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+                      <span className="text-sm truncate">{t.label}</span>
+                    </div>
+                    <div className="flex-1 relative h-6 rounded bg-muted overflow-hidden">
+                      <div
+                        className={`absolute left-0 top-0 h-full rounded transition-all ${getBarColor(t.count)}`}
+                        style={{ width: `${Math.max(pct, 2)}%` }}
+                      />
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs font-medium text-foreground">
+                        {t.count.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* ── Mapa de Armazenamento ── */}
       <div>
@@ -476,8 +427,13 @@ export function InfraestruturaPanel() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-foreground">Dados Sensíveis</span>
-                    <Badge variant="outline" className="text-xs border-primary/30 text-primary">
+                    <span className="font-semibold text-foreground">
+                      Dados Sensíveis
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="text-xs border-primary/30 text-primary"
+                    >
                       <Lock className="h-3 w-3 mr-1" />
                       Criptografado
                     </Badge>
@@ -486,7 +442,12 @@ export function InfraestruturaPanel() {
                     Banco SQL Relacional — AES-256 em repouso
                   </p>
                   <div className="space-y-1 text-xs text-muted-foreground">
-                    {["Prontuários e pacientes", "Dados de colaboradores", "Atestados e ocorrências", "Logs de auditoria"].map((item) => (
+                    {[
+                      "Prontuários e pacientes",
+                      "Dados de colaboradores",
+                      "Atestados e ocorrências",
+                      "Logs de auditoria",
+                    ].map((item) => (
                       <div key={item} className="flex items-center gap-2">
                         <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />
                         <span>{item}</span>
@@ -495,7 +456,9 @@ export function InfraestruturaPanel() {
                   </div>
                   <div className="mt-3 pt-3 border-t border-primary/10 flex items-center gap-2">
                     <Shield className="h-3 w-3 text-emerald-500" />
-                    <span className="text-xs text-emerald-600 font-medium">Backup automático ativo — Lovable Cloud</span>
+                    <span className="text-xs text-emerald-600 font-medium">
+                      Backup automático ativo — Lovable Cloud
+                    </span>
                   </div>
                 </div>
               </div>
@@ -510,35 +473,41 @@ export function InfraestruturaPanel() {
                 </div>
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-semibold text-foreground">Arquivos & Anexos</span>
-                    <Badge variant="outline" className="text-xs border-amber-300 text-amber-600">
+                    <span className="font-semibold text-foreground">
+                      Arquivos & Anexos
+                    </span>
+                    <Badge
+                      variant="outline"
+                      className="text-xs border-amber-300 text-amber-600"
+                    >
                       <Cloud className="h-3 w-3 mr-1" />
                       Object Storage
                     </Badge>
                   </div>
                   <p className="text-sm text-muted-foreground mb-3">
-                    Bucket S3 / Servidor Local — Acesso controlado por RLS
+                    Buckets com acesso controlado por RLS
                   </p>
                   <div className="space-y-1 text-xs text-muted-foreground">
-                    {[
-                      "atestados — Atestados médicos",
-                      "chat-anexos — Arquivos do chat",
-                      "lms-materiais — Materiais de treinamento",
-                      "profissionais-docs — Documentos de RH",
-                    ].map((item) => (
-                      <div key={item} className="flex items-center gap-2">
-                        <HardDrive className="h-3 w-3 text-amber-500 flex-shrink-0" />
-                        <span>{item}</span>
+                    {metrics?.buckets.map((b) => (
+                      <div
+                        key={b.name}
+                        className="flex items-center justify-between gap-2"
+                      >
+                        <div className="flex items-center gap-2">
+                          <HardDrive className="h-3 w-3 text-amber-500 flex-shrink-0" />
+                          <span>{b.label}</span>
+                        </div>
+                        <span className="font-mono text-xs">
+                          {b.fileCount} arquivo{b.fileCount !== 1 ? "s" : ""}
+                        </span>
                       </div>
                     ))}
                   </div>
-                  <div className="mt-3 pt-3 border-t border-amber-500/10 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Shield className="h-3 w-3 text-amber-500" />
-                      <span className="text-xs text-amber-600 font-medium">
-                        ~{storageStats.totalFiles} registros · {formatMB(storageStats.totalSizeMB)} estimados
-                      </span>
-                    </div>
+                  <div className="mt-3 pt-3 border-t border-amber-500/10 flex items-center gap-2">
+                    <Shield className="h-3 w-3 text-amber-500" />
+                    <span className="text-xs text-amber-600 font-medium">
+                      {totalBucketFiles} arquivos totais no storage
+                    </span>
                   </div>
                 </div>
               </div>
@@ -547,216 +516,137 @@ export function InfraestruturaPanel() {
         </div>
       </div>
 
-      {/* ── Monitor de Saúde ── */}
+      {/* ── Status da Replicação em Tempo Real ── */}
       <div>
         <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Monitor de Saúde (últimas 24h)
+          Replicação em Tempo Real
         </h4>
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          {[
-            { label: "CPU", value: current.cpu, icon: Cpu, unit: "%" },
-            { label: "Memória", value: current.memoria, icon: MemoryStick, unit: "%" },
-            { label: "Disco", value: current.disco, icon: HardDrive, unit: "%" },
-          ].map(({ label, value, icon: Icon, unit }) => (
-            <Card key={label}>
-              <CardContent className="pt-4 pb-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Icon className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">{label}</span>
-                  </div>
-                  <span className="text-lg font-bold">{value}{unit}</span>
-                </div>
-                <div className="relative h-2 rounded-full bg-muted overflow-hidden">
-                  <div
-                    className={`absolute left-0 top-0 h-full rounded-full transition-all ${getProgressColor(value)}`}
-                    style={{ width: `${value}%` }}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {value > 85 ? "Uso elevado" : value > 70 ? "Atenção" : "Normal"}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
+          <Card className="border-l-4 border-l-emerald-500">
+            <CardContent className="pt-4 pb-3 flex items-center gap-3">
+              <CheckCircle2 className="h-6 w-6 text-emerald-500" />
+              <div>
+                <p className="text-2xl font-bold">
+                  {metrics?.replicacaoFila.concluidos || 0}
                 </p>
-              </CardContent>
-            </Card>
-          ))}
+                <p className="text-xs text-muted-foreground">Replicados com Sucesso</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-amber-500">
+            <CardContent className="pt-4 pb-3 flex items-center gap-3">
+              <RefreshCw className="h-6 w-6 text-amber-500" />
+              <div>
+                <p className="text-2xl font-bold">
+                  {metrics?.replicacaoFila.pendentes || 0}
+                </p>
+                <p className="text-xs text-muted-foreground">Aguardando Retry</p>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="border-l-4 border-l-destructive">
+            <CardContent className="pt-4 pb-3 flex items-center gap-3">
+              <XCircle className="h-6 w-6 text-destructive" />
+              <div>
+                <p className="text-2xl font-bold">
+                  {metrics?.replicacaoFila.falhas || 0}
+                </p>
+                <p className="text-xs text-muted-foreground">Falhas Permanentes</p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Histórico de Recursos (Simulado)</CardTitle>
-            <CardDescription className="text-xs">
-              CPU · Memória · Disco — dados ilustrativos baseados em padrões típicos
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <AreaChart data={healthData} margin={{ top: 4, right: 8, left: -16, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="gradCpu" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gradMem" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="gradDisco" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="hora" tick={{ fontSize: 10 }} tickLine={false} />
-                <YAxis tick={{ fontSize: 10 }} tickLine={false} domain={[0, 100]} unit="%" />
-                <Tooltip
-                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                  formatter={(v: number, name: string) => [`${v}%`, name]}
-                />
-                <Legend wrapperStyle={{ fontSize: 12 }} />
-                <Area type="monotone" dataKey="cpu" name="CPU" stroke="hsl(var(--primary))" fill="url(#gradCpu)" strokeWidth={2} dot={false} />
-                <Area type="monotone" dataKey="memoria" name="Memória" stroke="#f59e0b" fill="url(#gradMem)" strokeWidth={2} dot={false} />
-                <Area type="monotone" dataKey="disco" name="Disco" stroke="#10b981" fill="url(#gradDisco)" strokeWidth={2} dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
+          <CardContent className="pt-4 pb-3">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <div className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-sm font-medium text-foreground">
+                  Tabelas com replicação ativa:
+                </span>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {[
+                  "assistencia_social_atendimentos",
+                  "assistencia_social_pacientes",
+                  "prontuarios",
+                  "avaliacoes_prontuarios",
+                  "logs_acesso",
+                  "logs_permissoes",
+                  "incidentes_nsp",
+                  "chamados",
+                ].map((t) => (
+                  <Badge key={t} variant="outline" className="text-xs font-mono">
+                    {t}
+                  </Badge>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                <Activity className="h-3 w-3" />
+                Cada INSERT/UPDATE/DELETE dispara replicação imediata via pg_net → Edge Function.
+                Retry automático a cada 5 minutos via cron job.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* ── Validação de Backups ── */}
+      {/* ── Segurança ── */}
       <div>
         <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-3">
-          Validação de Backups (últimos 10)
+          Segurança & Conformidade
         </h4>
-
-        {/* Resumo */}
-        <div className="grid grid-cols-3 gap-3 mb-4">
-          {[
-            { label: "Íntegros", value: backups.filter(b => b.status === "ok").length, icon: CheckCircle2, color: "text-emerald-500" },
-            { label: "Avisos", value: backups.filter(b => b.status === "aviso").length, icon: AlertTriangle, color: "text-amber-500" },
-            { label: "Erros", value: backups.filter(b => b.status === "erro").length, icon: XCircle, color: "text-destructive" },
-          ].map(({ label, value, icon: Icon, color }) => (
-            <Card key={label}>
-              <CardContent className="pt-4 pb-3 flex items-center gap-3">
-                <Icon className={`h-6 w-6 ${color}`} />
-                <div>
-                  <p className="text-2xl font-bold">{value}</p>
-                  <p className="text-xs text-muted-foreground">{label}</p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
         <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Data</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Tamanho</TableHead>
-                  <TableHead>Duração</TableHead>
-                  <TableHead>Integridade</TableHead>
-                  <TableHead>Hash (SHA-256)</TableHead>
-                  <TableHead className="text-right">Ação</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {backups.map((b) => (
-                  <TableRow
-                    key={b.id}
-                    className={
-                      b.reparado
-                        ? "bg-emerald-500/5"
-                        : b.status === "erro"
-                        ? "bg-destructive/5"
-                        : b.status === "aviso"
-                        ? "bg-amber-500/5"
-                        : ""
-                    }
-                  >
-                    <TableCell className="font-medium text-sm">
-                      <div className="flex items-center gap-2">
-                        {b.reparado
-                          ? <CheckCircle2 className="h-4 w-4 text-emerald-500" />
-                          : <StatusIcon status={b.status} />
-                        }
-                        {format(new Date(b.data), "dd/MM/yyyy HH:mm", { locale: ptBR })}
+          <CardContent className="pt-5">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {[
+                {
+                  title: "Criptografia",
+                  items: [
+                    "AES-256 em repouso (banco de dados)",
+                    "TLS 1.3 em trânsito",
+                    "Chaves gerenciadas pelo Lovable Cloud",
+                  ],
+                  icon: Lock,
+                  color: "text-primary",
+                },
+                {
+                  title: "Controle de Acesso",
+                  items: [
+                    "Row Level Security (RLS) em todas as tabelas",
+                    "RBAC com perfis granulares",
+                    "Logs imutáveis (LGPD Art. 37)",
+                  ],
+                  icon: Shield,
+                  color: "text-emerald-500",
+                },
+              ].map(({ title, items, icon: Icon, color }) => (
+                <div key={title}>
+                  <div className="flex items-center gap-2 mb-2">
+                    <Icon className={`h-4 w-4 ${color}`} />
+                    <span className="font-semibold text-sm">{title}</span>
+                  </div>
+                  <div className="space-y-1">
+                    {items.map((item) => (
+                      <div
+                        key={item}
+                        className="flex items-center gap-2 text-xs text-muted-foreground"
+                      >
+                        <CheckCircle2 className="h-3 w-3 text-emerald-500 flex-shrink-0" />
+                        <span>{item}</span>
                       </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="text-xs">{b.tipo}</Badge>
-                    </TableCell>
-                    <TableCell>{formatMB(b.tamanho_mb)}</TableCell>
-                    <TableCell>{b.duracao_min} min</TableCell>
-                    <TableCell>
-                      <StatusBadge status={b.status} reparado={b.reparado} />
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex flex-col gap-0.5">
-                        <span
-                          className={`font-mono text-xs ${
-                            b.hashInvalido && !b.reparado
-                              ? "text-destructive font-semibold"
-                              : "text-muted-foreground"
-                          }`}
-                        >
-                          {b.hash}
-                        </span>
-                        {b.hashInvalido && !b.reparado && (
-                          <span className="text-[10px] text-destructive/70 flex items-center gap-0.5">
-                            <XCircle className="h-2.5 w-2.5" />
-                            Checksum inválido
-                          </span>
-                        )}
-                        {b.reparado && (
-                          <span className="text-[10px] text-emerald-600 flex items-center gap-0.5">
-                            <CheckCircle2 className="h-2.5 w-2.5" />
-                            Hash regenerado
-                          </span>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {b.reparando && (
-                        <div className="flex items-center justify-end gap-1.5 text-xs text-muted-foreground">
-                          <RefreshCw className="h-3 w-3 animate-spin" />
-                          Reparando...
-                        </div>
-                      )}
-                      {b.hashInvalido && !b.reparado && !b.reparando && (
-                        <div className="flex flex-col items-end gap-1">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="h-7 text-xs border-destructive/40 text-destructive hover:bg-destructive hover:text-destructive-foreground gap-1"
-                            onClick={() => handleRepararManual(b.id)}
-                          >
-                            <Wrench className="h-3 w-3" />
-                            Reparar Backup
-                          </Button>
-                          {b.proximaTentativaEm && (
-                            <CountdownTimer targetMs={b.proximaTentativaEm} />
-                          )}
-                        </div>
-                      )}
-                      {b.reparado && (
-                        <span className="text-xs text-emerald-600 flex items-center justify-end gap-1">
-                          <CheckCircle2 className="h-3 w-3" />
-                          Concluído
-                        </span>
-                      )}
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
           </CardContent>
         </Card>
 
         <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
           <Server className="h-3 w-3" />
-          Backups gerenciados automaticamente pelo Lovable Cloud. Retenção padrão: 30 dias. Erros de hash disparam reparo automático em 5 minutos.
+          Infraestrutura gerenciada pelo Lovable Cloud. Backups automáticos com retenção de 30 dias.
         </p>
       </div>
     </div>
