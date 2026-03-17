@@ -1152,6 +1152,34 @@ export function CMEArea() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog detalhe conferência */}
+      <Dialog open={!!detalheConferencia} onOpenChange={() => setDetalheConferencia(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Conferência de Materiais Setoriais</DialogTitle></DialogHeader>
+          {detalheConferencia && (
+            <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Data:</span> <strong>{detalheConferencia.data}</strong></div>
+                <div><span className="text-muted-foreground">Setor:</span> {detalheConferencia.setor}</div>
+              </div>
+              <div><span className="text-muted-foreground">Material:</span> {[detalheConferencia.materiaisRespiratorios && 'Materiais Respiratórios', detalheConferencia.materiaisCirurgicos && 'Materiais Cirúrgicos'].filter(Boolean).join(', ')}</div>
+              <div>
+                <span className="text-muted-foreground">Inconformidade:</span>{' '}
+                <Badge variant={detalheConferencia.inconformidade ? 'destructive' : 'default'}>{detalheConferencia.inconformidade ? 'Sim' : 'Não'}</Badge>
+                {detalheConferencia.inconformidade && detalheConferencia.inconformidadeDescricao && (
+                  <p className="mt-1 text-sm">{detalheConferencia.inconformidadeDescricao}</p>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Responsável:</span> {detalheConferencia.responsavel}</div>
+                <div><span className="text-muted-foreground">COREN:</span> {detalheConferencia.coren || '—'}</div>
+              </div>
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheConferencia.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
