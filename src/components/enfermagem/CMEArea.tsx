@@ -154,6 +154,19 @@ interface SolicitacaoMaterial {
   dataRegistro: string;
 }
 
+interface ControleMaterialKit {
+  id: string;
+  data: string;
+  kit: string;
+  descricaoItens: string;
+  qtdSaidaEsterilizacao: string;
+  qtdRetornoEsterilizacao: string;
+  totalEstoqueCME: string;
+  responsavel: string;
+  observacoes: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
