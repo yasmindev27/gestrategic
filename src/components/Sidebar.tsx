@@ -522,9 +522,9 @@ const Sidebar = ({
         {/* Collapse Toggle */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-3 top-16 bg-[#0d2137] border border-[#2d7dd2]/30 rounded-full p-1 shadow-md hover:bg-[#1a3a5c] transition-colors z-10"
+          className="absolute -right-3 top-16 bg-sidebar border border-sidebar-primary/30 rounded-full p-1 shadow-md hover:bg-sidebar-accent transition-colors z-10"
         >
-          {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-[#7eb8e0]" /> : <ChevronLeft className="h-3.5 w-3.5 text-[#7eb8e0]" />}
+          {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-sidebar-foreground" /> : <ChevronLeft className="h-3.5 w-3.5 text-sidebar-foreground" />}
         </button>
 
         {/* Navigation */}
