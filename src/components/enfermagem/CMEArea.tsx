@@ -1067,6 +1067,34 @@ export function CMEArea() {
         </TabsContent>
       </Tabs>
 
+        <TabsContent value="danificados" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Material</TableHead><TableHead>Setor</TableHead><TableHead>Data</TableHead>
+                <TableHead>Motivo</TableHead><TableHead>Conduta</TableHead><TableHead>Reposição</TableHead><TableHead>Responsável</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {danificadosFiltrados.length === 0 ? (
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum material danificado registrado</TableCell></TableRow>
+                ) : danificadosFiltrados.map(d => (
+                  <TableRow key={d.id}>
+                    <TableCell className="font-medium">{d.material}</TableCell>
+                    <TableCell>{d.setor}</TableCell>
+                    <TableCell>{d.data}</TableCell>
+                    <TableCell><Badge variant="outline">{d.motivo || '—'}</Badge></TableCell>
+                    <TableCell>{d.conduta || '—'}</TableCell>
+                    <TableCell><Badge variant={d.reposicao === 'Sim' ? 'default' : d.reposicao === 'Pendente' ? 'secondary' : 'destructive'}>{d.reposicao || '—'}</Badge></TableCell>
+                    <TableCell>{d.responsavel}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheDanificado(d)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
+      </Tabs>
+
       {/* Dialog detalhe pinças */}
       <Dialog open={!!detalhePinca} onOpenChange={() => setDetalhePinca(null)}>
         <DialogContent>
