@@ -1717,7 +1717,7 @@ export const SaidaProntuariosModule = () => {
                     return (
                       <TableRow 
                         key={saida.id}
-                        className={`group ${missingFromSalus ? "bg-destructive/5 border-l-4 border-l-destructive" : "hover:bg-muted/50"}`}
+                        className={`group ${missingFromSalus ? "bg-destructive/5 border-l-4 border-l-destructive" : "even:bg-muted/30 hover:bg-muted/50"}`}
                       >
                         <TableCell className="font-medium uppercase sticky left-0 z-20 bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] py-1.5 text-xs max-w-[220px] px-3">
                           <div className="flex items-center gap-1 truncate">
