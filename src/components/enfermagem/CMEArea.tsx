@@ -171,23 +171,27 @@ export function CMEArea() {
   const [almotolias, setAlmotolias] = useLocalStorage<RegistroAlmotolia[]>('enf-cme-almotolias', []);
   const [desinfeccoes, setDesinfeccoes] = useLocalStorage<RegistroDesinfeccao[]>('enf-cme-desinfeccao', []);
   const [diluicoes, setDiluicoes] = useLocalStorage<RegistroDiluicao[]>('enf-cme-diluicao', []);
+  const [olivas, setOlivas] = useLocalStorage<RegistroOlivas[]>('enf-cme-olivas', []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDevOpen, setDialogDevOpen] = useState(false);
   const [dialogPincasOpen, setDialogPincasOpen] = useState(false);
   const [dialogAlmotoliaOpen, setDialogAlmotoliaOpen] = useState(false);
   const [dialogDesinfeccaoOpen, setDialogDesinfeccaoOpen] = useState(false);
   const [dialogDiluicaoOpen, setDialogDiluicaoOpen] = useState(false);
+  const [dialogOlivasOpen, setDialogOlivasOpen] = useState(false);
   const [detalhePinca, setDetalhePinca] = useState<RegistroPincas | null>(null);
   const [detalhe, setDetalhe] = useState<DevolucaoMaterial | null>(null);
   const [detalheAlmotolia, setDetalheAlmotolia] = useState<RegistroAlmotolia | null>(null);
   const [detalheDesinfeccao, setDetalheDesinfeccao] = useState<RegistroDesinfeccao | null>(null);
   const [detalheDiluicao, setDetalheDiluicao] = useState<RegistroDiluicao | null>(null);
+  const [detalheOliva, setDetalheOliva] = useState<RegistroOlivas | null>(null);
   const [busca, setBusca] = useState('');
   const [buscaDev, setBuscaDev] = useState('');
   const [buscaPincas, setBuscaPincas] = useState('');
   const [buscaAlmotolia, setBuscaAlmotolia] = useState('');
   const [buscaDesinfeccao, setBuscaDesinfeccao] = useState('');
   const [buscaDiluicao, setBuscaDiluicao] = useState('');
+  const [buscaOlivas, setBuscaOlivas] = useState('');
 
   const [form, setForm] = useState({
     descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '',
