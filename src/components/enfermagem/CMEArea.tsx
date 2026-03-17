@@ -240,6 +240,7 @@ export function CMEArea() {
   const [danificados, setDanificados] = useLocalStorage<RegistroDanificado[]>('enf-cme-danificados', []);
   const [solicitacoes, setSolicitacoes] = useLocalStorage<SolicitacaoMaterial[]>('enf-cme-solicitacoes', []);
   const [controleMateriais, setControleMateriais] = useLocalStorage<ControleMaterialKit[]>('enf-cme-controle-material', []);
+  const [tempUmidade, setTempUmidade] = useLocalStorage<RegistroTempUmidade[]>('enf-cme-temp-umidade', []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDevOpen, setDialogDevOpen] = useState(false);
   const [dialogPincasOpen, setDialogPincasOpen] = useState(false);
