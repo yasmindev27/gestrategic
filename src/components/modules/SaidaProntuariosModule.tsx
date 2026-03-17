@@ -1692,22 +1692,22 @@ export const SaidaProntuariosModule = () => {
             </div>
           ) : (
             <div className="overflow-x-auto relative">
-              <Table>
+              <Table className="text-xs">
                 <TableHeader>
-                  <TableRow>
-                    <TableHead className="sticky left-0 z-20 bg-card min-w-[180px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">Paciente</TableHead>
-                    <TableHead>Data Nasc.</TableHead>
-                    <TableHead>Data Atendimento</TableHead>
-                    <TableHead>Pendências</TableHead>
-                    <TableHead>Resolução</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Recepção</TableHead>
-                    <TableHead>Entrega Rec.</TableHead>
-                    <TableHead>Classificação</TableHead>
-                    <TableHead>Entrega Class.</TableHead>
-                    <TableHead>NIR</TableHead>
-                    <TableHead>Entrega Fat.</TableHead>
-                    <TableHead className="sticky right-0 z-20 bg-card shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">Ações</TableHead>
+                  <TableRow className="bg-[hsl(var(--sidebar-background))] hover:bg-[hsl(var(--sidebar-background))]">
+                    <TableHead className="sticky left-0 z-20 bg-[hsl(var(--sidebar-background))] min-w-[160px] max-w-[200px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-[10px] font-semibold text-white uppercase tracking-wider py-2">Paciente</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 whitespace-nowrap">Dt. Nasc.</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 whitespace-nowrap">Dt. Atend.</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 w-[80px]">Pendências</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 w-[90px]">Resolução</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 w-[100px]">Status</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 whitespace-nowrap">Recepção</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 whitespace-nowrap">Entr. Rec.</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 whitespace-nowrap">Classif.</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 whitespace-nowrap">Entr. Cl.</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2">NIR</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 whitespace-nowrap">Entr. Fat.</TableHead>
+                    <TableHead className="sticky right-0 z-20 bg-[hsl(var(--sidebar-background))] shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] text-[10px] font-semibold text-white uppercase tracking-wider py-2 text-center">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
