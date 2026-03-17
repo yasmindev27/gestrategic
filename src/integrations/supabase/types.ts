@@ -5562,6 +5562,42 @@ export type Database = {
         }
         Relationships: []
       }
+      replicacao_fila: {
+        Row: {
+          created_at: string | null
+          erro: string | null
+          id: string
+          operacao: string
+          payload: Json | null
+          processado_em: string | null
+          status: string | null
+          tabela: string
+          tentativas: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          erro?: string | null
+          id?: string
+          operacao: string
+          payload?: Json | null
+          processado_em?: string | null
+          status?: string | null
+          tabela: string
+          tentativas?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          erro?: string | null
+          id?: string
+          operacao?: string
+          payload?: Json | null
+          processado_em?: string | null
+          status?: string | null
+          tabela?: string
+          tentativas?: number | null
+        }
+        Relationships: []
+      }
       reunioes: {
         Row: {
           ata_gerada: Json | null
