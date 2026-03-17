@@ -124,6 +124,14 @@ const PRODUTOS_ALMOTOLIA = [
   'PVPI Degermante', 'Álcool Gel', 'Outro',
 ];
 
+const METODOS_DESINFECCAO = [
+  'Água / Sabão / Fricção Mecânica',
+  'Hipoclorito de Sódio 1%',
+  'Álcool 70%',
+  'Quaternário de Amônio',
+  'Outro',
+];
+
 // === Component ===
 
 export function CMEArea() {
