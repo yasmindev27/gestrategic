@@ -405,6 +405,11 @@ export default function EnfermagemModule() {
           <CMEArea />
         </TabsContent>
 
+        {/* ── Medicação ── */}
+        <TabsContent value="medicacao" className="mt-6">
+          <MedicacaoArea />
+        </TabsContent>
+
         {/* ── Classificação ── */}
         <TabsContent value="classificacao" className="mt-6">
           <ClassificacaoArea />
