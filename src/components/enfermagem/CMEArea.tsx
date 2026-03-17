@@ -765,6 +765,31 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="diluicao" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Data</TableHead><TableHead>Horário</TableHead><TableHead>Categoria</TableHead>
+                <TableHead>Soluções</TableHead><TableHead>Responsável</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {diluicoesFiltradas.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhuma diluição registrada</TableCell></TableRow>
+                ) : diluicoesFiltradas.map(d => (
+                  <TableRow key={d.id}>
+                    <TableCell>{d.data}</TableCell>
+                    <TableCell>{d.horario || '—'}</TableCell>
+                    <TableCell><Badge variant={d.categoria === 'respiratorio' ? 'default' : 'secondary'}>{d.categoria === 'respiratorio' ? 'Respiratório' : 'Cirúrgico'}</Badge></TableCell>
+                    <TableCell className="text-sm">{d.itens.map(i => i.solucao).join(', ')}</TableCell>
+                    <TableCell>{d.responsavel}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheDiluicao(d)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog detalhe pinças */}
