@@ -1534,6 +1534,32 @@ export function CMEArea() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog detalhe controle material */}
+      <Dialog open={!!detalheControleMat} onOpenChange={() => setDetalheControleMat(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Controle de Material</DialogTitle></DialogHeader>
+          {detalheControleMat && (
+            <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Data:</span> <strong>{detalheControleMat.data}</strong></div>
+                <div><span className="text-muted-foreground">Kit:</span> <Badge>{detalheControleMat.kit}</Badge></div>
+              </div>
+              {detalheControleMat.descricaoItens && (
+                <div className="p-2 bg-muted rounded text-xs"><strong>Descrição dos Itens:</strong> {detalheControleMat.descricaoItens}</div>
+              )}
+              <div className="grid grid-cols-3 gap-2">
+                <div><span className="text-muted-foreground">Saída p/ Esterilização:</span> <strong>{detalheControleMat.qtdSaidaEsterilizacao || '—'}</strong></div>
+                <div><span className="text-muted-foreground">Retorno Esterilização:</span> <strong>{detalheControleMat.qtdRetornoEsterilizacao || '—'}</strong></div>
+                <div><span className="text-muted-foreground">Total Estoque CME:</span> <strong>{detalheControleMat.totalEstoqueCME || '—'}</strong></div>
+              </div>
+              <div><span className="text-muted-foreground">Responsável:</span> {detalheControleMat.responsavel}</div>
+              {detalheControleMat.observacoes && <div><span className="text-muted-foreground">Observações:</span> {detalheControleMat.observacoes}</div>}
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheControleMat.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
