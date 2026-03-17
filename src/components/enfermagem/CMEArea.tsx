@@ -77,6 +77,17 @@ interface RegistroAlmotolia {
   dataRegistro: string;
 }
 
+interface RegistroDesinfeccao {
+  id: string;
+  data: string;
+  metodo: string;
+  quantidade: string;
+  validade: string;
+  responsavel: string;
+  coren: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
