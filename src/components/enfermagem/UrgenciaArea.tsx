@@ -284,6 +284,10 @@ export function UrgenciaArea() {
         <TabsContent value="passagem-plantao" className="mt-4">
           <PassagemPlantaoTecEnfermagem storageKey="enf-passagem-plantao-tec-urgencia" setor="Urgência" />
         </TabsContent>
+
+        <TabsContent value="uti-movel" className="mt-4">
+          <ChecklistUTIMovel storageKey="enf-uti-movel-urgencia" setor="Urgência" />
+        </TabsContent>
       </Tabs>
     </div>
   );
