@@ -114,15 +114,15 @@ const Sidebar = ({
     }
     if (isEnfermagem) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Syringe, label: "Enfermagem", id: "enfermagem" },
-        { icon: BedDouble, label: "Mapa de Leitos", id: "mapa-leitos" },
-        { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante" },
-        { icon: Calendar, label: "Agenda", id: "agenda" },
-        { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado" },
-        { icon: GraduationCap, label: "Treinamentos", id: "lms" },
-        { icon: AlertTriangle, label: "Abrir Notificação", id: "reportar-incidente" },
-        { icon: MessageSquare, label: "Chat", id: "chat" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Syringe, label: "Enfermagem", id: "enfermagem", category: "assistencial" },
+        { icon: BedDouble, label: "Mapa de Leitos", id: "mapa-leitos", category: "assistencial" },
+        { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante", category: "apoio_logistica" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" },
+        { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado", category: "comunicacao" },
+        { icon: GraduationCap, label: "Treinamentos", id: "lms", category: "administrativo" },
+        { icon: AlertTriangle, label: "Abrir Notificação", id: "reportar-incidente", category: "governanca" },
+        { icon: MessageSquare, label: "Chat", id: "chat", category: "comunicacao" }
       );
       return items;
     }
