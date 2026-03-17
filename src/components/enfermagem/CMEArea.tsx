@@ -1400,6 +1400,29 @@ export function CMEArea() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog detalhe solicitação */}
+      <Dialog open={!!detalheSolicitacao} onOpenChange={() => setDetalheSolicitacao(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Solicitação de Material</DialogTitle></DialogHeader>
+          {detalheSolicitacao && (
+            <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Data:</span> <strong>{detalheSolicitacao.data}</strong></div>
+                <div><span className="text-muted-foreground">Setor:</span> {detalheSolicitacao.setor}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Centro de Custo:</span> <Badge variant="outline">{detalheSolicitacao.centroCusto}</Badge></div>
+                <div><span className="text-muted-foreground">Quantidade:</span> {detalheSolicitacao.quantidade || '—'}</div>
+              </div>
+              <div><span className="text-muted-foreground">Material:</span> {detalheSolicitacao.material}</div>
+              <div><span className="text-muted-foreground">Solicitante:</span> {detalheSolicitacao.solicitante}</div>
+              {detalheSolicitacao.observacao && <div><span className="text-muted-foreground">Observação:</span> {detalheSolicitacao.observacao}</div>}
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheSolicitacao.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
