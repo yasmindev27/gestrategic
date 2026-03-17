@@ -47,7 +47,7 @@ export const useModules = () => {
     mapaLeitos: isAdmin || isNir || isEnfermagem || isAssistenciaSocial,
     enfermagem: isAdmin || isGestor || isEnfermagem,
     laboratorio: isAdmin || isLaboratorio || isMedicos || isGestor,
-    restaurante: isAdmin || isRestaurante,
+    restaurante: isAdmin || isRestaurante || isEnfermagem,
     rhdp: isAdmin || isRHDP,
     assistenciaSocial: isAdmin || isAssistenciaSocial,
     qualidade: isAdmin || isQualidade,
