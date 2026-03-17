@@ -92,6 +92,13 @@ export function ClassificacaoArea() {
         </div>
       </div>
 
+      <Tabs defaultValue="classificacao">
+        <TabsList>
+          <TabsTrigger value="classificacao" className="gap-1"><ClipboardCheck className="h-4 w-4" />Classificação</TabsTrigger>
+          <TabsTrigger value="sinais-vitais" className="gap-1"><Thermometer className="h-4 w-4" />Sinais Vitais</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="classificacao" className="mt-4 space-y-4">
       {/* Painel de cores */}
       <div className="grid grid-cols-5 gap-2">
         {Object.entries(COR_CONFIG).map(([cor, cfg]) => (
