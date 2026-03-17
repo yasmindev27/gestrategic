@@ -16,8 +16,8 @@ const AccessDenied = ({ onTryAgain }: AccessDeniedProps) => {
         <div className="space-y-2">
           <h1 className="text-2xl font-bold text-foreground">Acesso Negado</h1>
           <p className="text-muted-foreground">
-            Para utilizar o UPA Sistema, é necessário aceitar os termos de uso e a 
-            política de privacidade conforme a Lei Geral de Proteção de Dados (LGPD).
+            Você não possui permissão para acessar este módulo.
+            Entre em contato com o administrador caso necessite de acesso.
           </p>
         </div>
 

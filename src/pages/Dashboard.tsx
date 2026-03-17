@@ -176,7 +176,7 @@ const Dashboard = () => {
     // Module access guard
     const moduleKey = sectionToModule[activeSection];
     if (moduleKey && !canAccessModule(moduleKey)) {
-      return <AccessDenied />;
+      return <AccessDenied onTryAgain={() => setActiveSection("dashboard")} />;
     }
 
     const content = (() => {
