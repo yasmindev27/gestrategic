@@ -410,6 +410,19 @@ export function TermoGuardaMedicamento({ storageKey, setor }: Props) {
                 {detalhe.observacoes && <div className="p-2 bg-muted rounded">{detalhe.observacoes}</div>}
                 <div><span className="text-muted-foreground">Enfermeiro(a):</span> {detalhe.enfermeiroResponsavel} — COREN: {detalhe.coren}</div>
                 {detalhe.farmaceuticoResponsavel && <div><span className="text-muted-foreground">Farmacêutico(a):</span> {detalhe.farmaceuticoResponsavel}</div>}
+                
+                {detalhe.devolucao?.realizada && (
+                  <div className="border rounded p-2 space-y-1">
+                    <p className="font-semibold">Devolução — Alta Médica</p>
+                    <div className="grid grid-cols-2 gap-1">
+                      <div><span className="text-muted-foreground">Data da Alta:</span> {detalhe.devolucao.dataAlta}</div>
+                      <div><span className="text-muted-foreground">Qtd. Devolvida:</span> {detalhe.devolucao.medicamentoQuantidadeDevolvida}</div>
+                      {detalhe.devolucao.farmaceuticoClinicoDevolucao && <div><span className="text-muted-foreground">Farmacêutico:</span> {detalhe.devolucao.farmaceuticoClinicoDevolucao}</div>}
+                      {detalhe.devolucao.enfermeiroDevolucao && <div><span className="text-muted-foreground">Enfermeiro:</span> {detalhe.devolucao.enfermeiroDevolucao}</div>}
+                    </div>
+                  </div>
+                )}
+                
                 <p className="text-xs text-muted-foreground">Registrado em: {detalhe.dataRegistro}</p>
               </div>
             </>
