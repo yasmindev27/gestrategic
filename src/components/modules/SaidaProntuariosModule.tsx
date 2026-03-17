@@ -1734,7 +1734,7 @@ export const SaidaProntuariosModule = () => {
                         <TableCell className="py-1.5 whitespace-nowrap">
                           {safeFormatDate(saida.data_atendimento, "dd/MM/yy")}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-1.5">
                           {(() => {
                             const cl = saida.checklist_validacao as Record<string, string> | null;
                             if (!cl) return <span className="text-xs text-muted-foreground">-</span>;
