@@ -101,14 +101,14 @@ const Sidebar = ({
 
     if (isGestor) {
       items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
-        { icon: Stethoscope, label: "Médicos", id: "medicos" },
-        { icon: Syringe, label: "Enfermagem", id: "enfermagem" },
-        { icon: FlaskConical, label: "Resultados Exames", id: "laboratorio" },
-        { icon: Calendar, label: "Agenda", id: "agenda" },
-        { icon: UserCog, label: "Equipe", id: "equipe" },
-        { icon: FileText, label: "Docs Interact", id: "documentos-interact", category: "integracao" },
-        { icon: Stethoscope, label: "Sistema Salus", id: "salus", category: "integracao" }
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Stethoscope, label: "Médicos", id: "medicos", category: "assistencial" },
+        { icon: Syringe, label: "Enfermagem", id: "enfermagem", category: "assistencial" },
+        { icon: FlaskConical, label: "Resultados Exames", id: "laboratorio", category: "assistencial" },
+        { icon: UserCog, label: "Equipe", id: "equipe", category: "administrativo" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" },
+        { icon: FileText, label: "Docs Interact", id: "documentos-interact", category: "governanca" },
+        { icon: Stethoscope, label: "Sistema Salus", id: "salus", category: "comunicacao" }
       );
       return items;
     }
