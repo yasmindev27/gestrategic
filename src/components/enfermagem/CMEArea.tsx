@@ -1142,7 +1142,7 @@ export function CMEArea() {
         </nav>
         <div className="flex-1 min-w-0">
 
-        <TabsContent value="area-suja" className="mt-4">{renderTabela(itensSuja, 'Área Suja')}</TabsContent>
+        {tab === 'area-suja' && renderTabela(itensSuja, 'Área Suja')}
         <TabsContent value="area-limpa" className="mt-4">{renderTabela(itensLimpa, 'Área Limpa')}</TabsContent>
 
         <TabsContent value="devolucao" className="mt-4">
