@@ -516,8 +516,8 @@ export function CMEArea() {
   const solicitacoesFiltradas = solicitacoes.filter(s =>
     s.material.toLowerCase().includes(buscaSolicitacao.toLowerCase()) || s.setor.toLowerCase().includes(buscaSolicitacao.toLowerCase()) || s.solicitante.toLowerCase().includes(buscaSolicitacao.toLowerCase())
   );
-  const conferenciasFiltradas = conferencias.filter(c =>
-    c.setor.toLowerCase().includes(buscaConferencia.toLowerCase()) || c.responsavel.toLowerCase().includes(buscaConferencia.toLowerCase())
+  const controleMatFiltrados = controleMateriais.filter(c =>
+    c.kit.toLowerCase().includes(buscaControleMat.toLowerCase()) || c.responsavel.toLowerCase().includes(buscaControleMat.toLowerCase())
   );
 
   const getBusca = () => {
@@ -530,6 +530,7 @@ export function CMEArea() {
     if (tab === 'conferencia') return buscaConferencia;
     if (tab === 'danificados') return buscaDanificado;
     if (tab === 'solicitacao') return buscaSolicitacao;
+    if (tab === 'controle-material') return buscaControleMat;
     return busca;
   };
   const setBuscaAtual = (v: string) => {
@@ -542,6 +543,7 @@ export function CMEArea() {
     else if (tab === 'conferencia') setBuscaConferencia(v);
     else if (tab === 'danificados') setBuscaDanificado(v);
     else if (tab === 'solicitacao') setBuscaSolicitacao(v);
+    else if (tab === 'controle-material') setBuscaControleMat(v);
     else setBusca(v);
   };
 
