@@ -13,6 +13,7 @@ import {
   Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert
 } from 'lucide-react';
 import { ChecklistCarrinhoUrgencia } from './ChecklistCarrinhoUrgencia';
+import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
@@ -107,6 +108,7 @@ export function UrgenciaArea() {
         <TabsList>
           <TabsTrigger value="atendimentos" className="gap-1"><Siren className="h-4 w-4" />Atendimentos</TabsTrigger>
           <TabsTrigger value="carrinho" className="gap-1"><ShieldAlert className="h-4 w-4" />Carrinho de Urgência</TabsTrigger>
+          <TabsTrigger value="sinais-vitais" className="gap-1"><Thermometer className="h-4 w-4" />Sinais Vitais</TabsTrigger>
         </TabsList>
 
         <TabsContent value="atendimentos" className="mt-4 space-y-4">
@@ -239,6 +241,10 @@ export function UrgenciaArea() {
 
         <TabsContent value="carrinho" className="mt-4">
           <ChecklistCarrinhoUrgencia />
+        </TabsContent>
+
+        <TabsContent value="sinais-vitais" className="mt-4">
+          <ChecklistSinaisVitais storageKey="enf-sinais-vitais-urgencia" setor="Urgência" />
         </TabsContent>
       </Tabs>
     </div>

@@ -10,12 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  Pill, Plus, Search, Clock, CheckCircle2, AlertTriangle, FileText,
-  Syringe, Droplets, ShieldAlert, CalendarClock, User
+import { Pill, Plus, Search, Clock, CheckCircle2, AlertTriangle, FileText,
+  Syringe, Droplets, ShieldAlert, CalendarClock, User, Thermometer
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
 
 // ── Tipos ──
 interface PrescricaoMedicamento {
@@ -218,6 +218,7 @@ export function MedicacaoArea() {
           <TabsTrigger value="prescricoes" className="gap-1"><FileText className="h-4 w-4" />Prescrições</TabsTrigger>
           <TabsTrigger value="estoque" className="gap-1"><Droplets className="h-4 w-4" />Estoque</TabsTrigger>
           <TabsTrigger value="eventos" className="gap-1"><ShieldAlert className="h-4 w-4" />Eventos Adversos</TabsTrigger>
+          <TabsTrigger value="sinais-vitais" className="gap-1"><Thermometer className="h-4 w-4" />Sinais Vitais</TabsTrigger>
         </TabsList>
 
         {/* ── Prescrições ── */}
@@ -464,6 +465,10 @@ export function MedicacaoArea() {
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="sinais-vitais" className="mt-4">
+          <ChecklistSinaisVitais storageKey="enf-sinais-vitais-medicacao" setor="Medicação" />
         </TabsContent>
       </Tabs>
     </div>

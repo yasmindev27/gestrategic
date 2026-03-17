@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -9,10 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  ClipboardCheck, Plus, Search, Clock, Users, TrendingUp, Timer
+  ClipboardCheck, Plus, Search, Clock, Users, TrendingUp, Timer, Thermometer
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
 
 interface Classificacao {
   id: string;
@@ -88,6 +90,13 @@ export function ClassificacaoArea() {
         </div>
       </div>
 
+      <Tabs defaultValue="classificacao">
+        <TabsList>
+          <TabsTrigger value="classificacao" className="gap-1"><ClipboardCheck className="h-4 w-4" />Classificação</TabsTrigger>
+          <TabsTrigger value="sinais-vitais" className="gap-1"><Thermometer className="h-4 w-4" />Sinais Vitais</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="classificacao" className="mt-4 space-y-4">
       {/* Painel de cores */}
       <div className="grid grid-cols-5 gap-2">
         {Object.entries(COR_CONFIG).map(([cor, cfg]) => (
@@ -205,6 +214,12 @@ export function ClassificacaoArea() {
           </TableBody>
         </Table>
       </div>
+        </TabsContent>
+
+        <TabsContent value="sinais-vitais" className="mt-4">
+          <ChecklistSinaisVitais storageKey="enf-sinais-vitais-classificacao" setor="Classificação" />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
