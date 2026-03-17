@@ -42,7 +42,7 @@ const Sidebar = ({
     role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
     isLaboratorio, isTecnico, isRecepcao, isClassificacao, isNir,
     isFaturamento, isRHDP, isQualidade, isNSP, isMedicos, isEnfermagem,
-    isSeguranca, isAssistenciaSocial
+    isSeguranca, isAssistenciaSocial, isRestaurante
   } = useUserRole();
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
@@ -156,6 +156,7 @@ const Sidebar = ({
     }
     if (isTI) {
       items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Monitor, label: "TI", id: "tecnico-ti" },
         { icon: Calendar, label: "Agenda", id: "agenda" }
       );
@@ -163,6 +164,7 @@ const Sidebar = ({
     }
     if (isManutencao) {
       items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao" },
         { icon: Calendar, label: "Agenda", id: "agenda" }
       );
@@ -170,6 +172,7 @@ const Sidebar = ({
     }
     if (isEngenhariaCinica) {
       items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" },
         { icon: Calendar, label: "Agenda", id: "agenda" }
       );
@@ -186,7 +189,16 @@ const Sidebar = ({
     }
     if (isLaboratorio) {
       items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: FlaskConical, label: "Laboratório", id: "laboratorio" },
+        { icon: Calendar, label: "Agenda", id: "agenda" }
+      );
+      return items;
+    }
+    if (isRestaurante) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante" },
         { icon: Calendar, label: "Agenda", id: "agenda" }
       );
       return items;
