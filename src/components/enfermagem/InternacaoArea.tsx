@@ -12,9 +12,10 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   BedDouble, ClipboardList, UserCheck, AlertTriangle, Plus, Search,
-  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2
+  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { ChecklistCarrinhoInternacao } from './ChecklistCarrinhoInternacao';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
