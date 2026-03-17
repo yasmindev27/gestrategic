@@ -29,6 +29,7 @@ import { DiagnosticoPrescricaoEnfermagem } from './DiagnosticoPrescricaoEnfermag
 import { TermoConsentimentoRiscos } from './TermoConsentimentoRiscos';
 import { SAEAdulto } from './SAEAdulto';
 import { SAEPediatrico } from './SAEPediatrico';
+import { TermoGuardaMedicamento } from './TermoGuardaMedicamento';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
@@ -200,6 +201,7 @@ export function InternacaoArea() {
           <TabsTrigger value="termo" className="gap-1"><ShieldCheck className="h-4 w-4" />Termo Riscos</TabsTrigger>
           <TabsTrigger value="sae" className="gap-1"><HeartPulse className="h-4 w-4" />SAE Adulto</TabsTrigger>
           <TabsTrigger value="sae-ped" className="gap-1"><HeartPulse className="h-4 w-4" />SAE Pediátrico</TabsTrigger>
+          <TabsTrigger value="guarda-med" className="gap-1"><Pill className="h-4 w-4" />Guarda Medicamento</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pacientes" className="mt-4 space-y-4">
@@ -417,6 +419,10 @@ export function InternacaoArea() {
 
         <TabsContent value="sae-ped" className="mt-4">
           <SAEPediatrico storageKey="enf-sae-ped-internacao" setor="Internação" />
+        </TabsContent>
+
+        <TabsContent value="guarda-med" className="mt-4">
+          <TermoGuardaMedicamento storageKey="enf-guarda-med-internacao" setor="Internação" />
         </TabsContent>
       </Tabs>
     </div>

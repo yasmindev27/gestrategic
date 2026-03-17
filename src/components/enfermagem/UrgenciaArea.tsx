@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Ambulance, Activity, Stethoscope, FileText, ShieldCheck
+  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Ambulance, Activity, Stethoscope, FileText, ShieldCheck, Pill
 } from 'lucide-react';
 import { ChecklistCarrinhoUrgencia } from './ChecklistCarrinhoUrgencia';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
@@ -28,6 +28,7 @@ import { DiagnosticoPrescricaoEnfermagem } from './DiagnosticoPrescricaoEnfermag
 import { TermoConsentimentoRiscos } from './TermoConsentimentoRiscos';
 import { SAEAdulto } from './SAEAdulto';
 import { SAEPediatrico } from './SAEPediatrico';
+import { TermoGuardaMedicamento } from './TermoGuardaMedicamento';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
@@ -137,6 +138,7 @@ export function UrgenciaArea() {
           <TabsTrigger value="termo" className="gap-1"><ShieldCheck className="h-4 w-4" />Termo Riscos</TabsTrigger>
           <TabsTrigger value="sae" className="gap-1"><HeartPulse className="h-4 w-4" />SAE Adulto</TabsTrigger>
           <TabsTrigger value="sae-ped" className="gap-1"><HeartPulse className="h-4 w-4" />SAE Pediátrico</TabsTrigger>
+          <TabsTrigger value="guarda-med" className="gap-1"><Pill className="h-4 w-4" />Guarda Medicamento</TabsTrigger>
         </TabsList>
 
         <TabsContent value="atendimentos" className="mt-4 space-y-4">
@@ -329,6 +331,10 @@ export function UrgenciaArea() {
 
         <TabsContent value="sae-ped" className="mt-4">
           <SAEPediatrico storageKey="enf-sae-ped-urgencia" setor="Urgência" />
+        </TabsContent>
+
+        <TabsContent value="guarda-med" className="mt-4">
+          <TermoGuardaMedicamento storageKey="enf-guarda-med-urgencia" setor="Urgência" />
         </TabsContent>
       </Tabs>
     </div>
