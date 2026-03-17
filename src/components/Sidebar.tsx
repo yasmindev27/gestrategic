@@ -541,7 +541,7 @@ const Sidebar = ({
                 <button
                   onClick={() => onSectionChange(item.id)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[#8baec8] hover:bg-white/5 hover:text-white transition-colors text-sm",
+                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-white/5 hover:text-white transition-colors text-sm",
                     isCollapsed && "justify-center px-2"
                   )}
                 >
