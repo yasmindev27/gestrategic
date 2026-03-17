@@ -10,8 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye
+  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors
 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
@@ -44,6 +45,28 @@ interface DevolucaoMaterial {
   dataRegistro: string;
 }
 
+const TIPOS_PINCA = [
+  'Porta Agulha', 'Tesoura', 'Dente de Rato', 'Hemostática Curva',
+  'Dissecção', 'Hemostática Reta',
+] as const;
+
+interface PincaItem {
+  tipo: string;
+  quantidade: number;
+  checked: boolean;
+}
+
+interface RegistroPincas {
+  id: string;
+  data: string;
+  pincas: PincaItem[];
+  outra: string;
+  outraQuantidade: number;
+  total: number;
+  enfermagem: string;
+  dataRegistro: string;
+}
+
 const ETAPAS_SUJA = ['recebimento', 'lavagem', 'secagem'] as const;
 const ETAPAS_LIMPA = ['preparo', 'esterilizacao', 'armazenamento', 'distribuicao'] as const;
 
@@ -72,11 +95,15 @@ export function CMEArea() {
   const [tab, setTab] = useState('area-suja');
   const [itens, setItens] = useLocalStorage<ItemCME[]>('enf-cme-itens', []);
   const [devolucoes, setDevolucoes] = useLocalStorage<DevolucaoMaterial[]>('enf-cme-devolucoes', []);
+  const [pincasRegistros, setPincasRegistros] = useLocalStorage<RegistroPincas[]>('enf-cme-pincas', []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDevOpen, setDialogDevOpen] = useState(false);
+  const [dialogPincasOpen, setDialogPincasOpen] = useState(false);
+  const [detalhePinca, setDetalhePinca] = useState<RegistroPincas | null>(null);
   const [detalhe, setDetalhe] = useState<DevolucaoMaterial | null>(null);
   const [busca, setBusca] = useState('');
   const [buscaDev, setBuscaDev] = useState('');
+  const [buscaPincas, setBuscaPincas] = useState('');
   const [form, setForm] = useState({
     descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '',
     etapa: 'recebimento' as ItemCME['etapa'], responsavel: '', lote: '', observacoes: ''
@@ -84,6 +111,13 @@ export function CMEArea() {
   const [formDev, setFormDev] = useState({
     material: '', setor: '', centroCusto: '', data: new Date().toISOString().split('T')[0],
     quantidade: 1, tempoEmersaoInicio: '', tempoEmersaoFim: '', assinatura: '', observacao: '',
+  });
+  const [formPincas, setFormPincas] = useState({
+    data: new Date().toISOString().split('T')[0],
+    pincas: TIPOS_PINCA.map(t => ({ tipo: t, quantidade: 0, checked: false })) as PincaItem[],
+    outra: '',
+    outraQuantidade: 0,
+    enfermagem: '',
   });
 
   const itensSuja = itens.filter(i => (ETAPAS_SUJA as readonly string[]).includes(i.etapa));
@@ -105,6 +139,38 @@ export function CMEArea() {
     setForm({ descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '', etapa: 'recebimento', responsavel: '', lote: '', observacoes: '' });
     setDialogOpen(false);
     toast.success('Item registrado na CME');
+  };
+
+  const handleAddPincas = () => {
+    if (!formPincas.enfermagem) {
+      toast.error('Enfermagem (assinatura) é obrigatória');
+      return;
+    }
+    const checkedPincas = formPincas.pincas.filter(p => p.checked && p.quantidade > 0);
+    const totalPincas = checkedPincas.reduce((s, p) => s + p.quantidade, 0) + (formPincas.outra ? formPincas.outraQuantidade : 0);
+    if (totalPincas === 0) {
+      toast.error('Selecione ao menos uma pinça com quantidade');
+      return;
+    }
+    const novo: RegistroPincas = {
+      id: crypto.randomUUID(),
+      data: formPincas.data,
+      pincas: checkedPincas,
+      outra: formPincas.outra,
+      outraQuantidade: formPincas.outra ? formPincas.outraQuantidade : 0,
+      total: totalPincas,
+      enfermagem: formPincas.enfermagem,
+      dataRegistro: new Date().toLocaleString('pt-BR'),
+    };
+    setPincasRegistros([novo, ...pincasRegistros]);
+    setFormPincas({
+      data: new Date().toISOString().split('T')[0],
+      pincas: TIPOS_PINCA.map(t => ({ tipo: t, quantidade: 0, checked: false })),
+      outra: '', outraQuantidade: 0, enfermagem: '',
+    });
+    setDialogPincasOpen(false);
+    toast.success('Registro de pinças salvo');
+  };
   };
 
   const handleAddDevolucao = () => {
@@ -242,9 +308,50 @@ export function CMEArea() {
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar material..." value={tab === 'devolucao' ? buscaDev : busca} onChange={e => tab === 'devolucao' ? setBuscaDev(e.target.value) : setBusca(e.target.value)} className="pl-9" />
+          <Input placeholder="Buscar..." value={tab === 'devolucao' ? buscaDev : tab === 'pincas' ? buscaPincas : busca} onChange={e => tab === 'devolucao' ? setBuscaDev(e.target.value) : tab === 'pincas' ? setBuscaPincas(e.target.value) : setBusca(e.target.value)} className="pl-9" />
         </div>
-        {tab === 'devolucao' ? (
+        {tab === 'pincas' ? (
+          <Dialog open={dialogPincasOpen} onOpenChange={setDialogPincasOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4 mr-1" />Registrar Pinças</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>Controle de Pinças — CME</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div><Label>Data</Label><Input type="date" value={formPincas.data} onChange={e => setFormPincas(p => ({ ...p, data: e.target.value }))} /></div>
+                <div className="space-y-2">
+                  <Label className="font-semibold">Tipos de Pinça</Label>
+                  {formPincas.pincas.map((pinca, idx) => (
+                    <div key={pinca.tipo} className="flex items-center gap-3 p-2 border rounded">
+                      <Checkbox checked={pinca.checked} onCheckedChange={v => {
+                        const updated = [...formPincas.pincas];
+                        updated[idx] = { ...updated[idx], checked: !!v };
+                        setFormPincas(p => ({ ...p, pincas: updated }));
+                      }} id={`pinca-${idx}`} />
+                      <Label htmlFor={`pinca-${idx}`} className="flex-1 cursor-pointer text-sm">{pinca.tipo}</Label>
+                      <Input type="number" min={0} className="w-20" placeholder="Qtd" value={pinca.quantidade || ''} onChange={e => {
+                        const updated = [...formPincas.pincas];
+                        updated[idx] = { ...updated[idx], quantidade: parseInt(e.target.value) || 0, checked: true };
+                        setFormPincas(p => ({ ...p, pincas: updated }));
+                      }} />
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-3 p-2 border rounded border-dashed">
+                    <Label className="text-sm text-muted-foreground whitespace-nowrap">Outra:</Label>
+                    <Input value={formPincas.outra} onChange={e => setFormPincas(p => ({ ...p, outra: e.target.value }))} placeholder="Qual?" className="flex-1" />
+                    <Input type="number" min={0} className="w-20" placeholder="Qtd" value={formPincas.outraQuantidade || ''} onChange={e => setFormPincas(p => ({ ...p, outraQuantidade: parseInt(e.target.value) || 0 }))} />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-2 bg-muted rounded">
+                  <span className="text-sm font-semibold">Total:</span>
+                  <span className="text-lg font-bold">{formPincas.pincas.filter(p => p.checked).reduce((s, p) => s + p.quantidade, 0) + (formPincas.outra ? formPincas.outraQuantidade : 0)}</span>
+                </div>
+                <div><Label>Enfermagem (Assinatura)</Label><Input value={formPincas.enfermagem} onChange={e => setFormPincas(p => ({ ...p, enfermagem: e.target.value }))} placeholder="Nome do(a) enfermeiro(a)" /></div>
+                <Button onClick={handleAddPincas} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar Pinças</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        ) : tab === 'devolucao' ? (
           <Dialog open={dialogDevOpen} onOpenChange={setDialogDevOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-1" />Registrar Devolução</Button>
@@ -320,6 +427,7 @@ export function CMEArea() {
           <TabsTrigger value="area-suja" className="gap-1"><Droplets className="h-4 w-4" />Área Suja</TabsTrigger>
           <TabsTrigger value="area-limpa" className="gap-1"><Sparkles className="h-4 w-4" />Área Limpa</TabsTrigger>
           <TabsTrigger value="devolucao" className="gap-1"><RotateCcw className="h-4 w-4" />Devolução</TabsTrigger>
+          <TabsTrigger value="pincas" className="gap-1"><Scissors className="h-4 w-4" />Pinças</TabsTrigger>
         </TabsList>
         <TabsContent value="area-suja" className="mt-4">
           {renderTabela(itensSuja, 'Área Suja')}
@@ -363,7 +471,62 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+        <TabsContent value="pincas" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Pinças</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Enfermagem</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pincasRegistros.filter(p => p.enfermagem.toLowerCase().includes(buscaPincas.toLowerCase()) || p.pincas.some(pi => pi.tipo.toLowerCase().includes(buscaPincas.toLowerCase()))).length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Nenhum registro de pinças</TableCell></TableRow>
+                ) : pincasRegistros.filter(p => p.enfermagem.toLowerCase().includes(buscaPincas.toLowerCase()) || p.pincas.some(pi => pi.tipo.toLowerCase().includes(buscaPincas.toLowerCase()))).map(p => (
+                  <TableRow key={p.id}>
+                    <TableCell>{p.data}</TableCell>
+                    <TableCell className="text-sm">{p.pincas.map(pi => `${pi.tipo} (${pi.quantidade})`).join(', ')}{p.outra ? `, ${p.outra} (${p.outraQuantidade})` : ''}</TableCell>
+                    <TableCell><Badge variant="secondary" className="font-bold">{p.total}</Badge></TableCell>
+                    <TableCell>{p.enfermagem}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalhePinca(p)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
+
+      {/* Dialog detalhe pinças */}
+      <Dialog open={!!detalhePinca} onOpenChange={() => setDetalhePinca(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Registro de Pinças</DialogTitle></DialogHeader>
+          {detalhePinca && (
+            <div className="space-y-2 text-sm">
+              <div><span className="text-muted-foreground">Data:</span> <strong>{detalhePinca.data}</strong></div>
+              <div className="space-y-1">
+                {detalhePinca.pincas.map((p, i) => (
+                  <div key={i} className="flex justify-between border-b pb-1">
+                    <span>{p.tipo}</span><Badge variant="outline">{p.quantidade}</Badge>
+                  </div>
+                ))}
+                {detalhePinca.outra && (
+                  <div className="flex justify-between border-b pb-1">
+                    <span>Outra: {detalhePinca.outra}</span><Badge variant="outline">{detalhePinca.outraQuantidade}</Badge>
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-between font-semibold pt-1"><span>Total</span><span>{detalhePinca.total}</span></div>
+              <div><span className="text-muted-foreground">Enfermagem:</span> {detalhePinca.enfermagem}</div>
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalhePinca.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog detalhe devolução */}
       <Dialog open={!!detalhe} onOpenChange={() => setDetalhe(null)}>
