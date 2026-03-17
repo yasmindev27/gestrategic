@@ -156,6 +156,7 @@ const Sidebar = ({
     }
     if (isTI) {
       items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Monitor, label: "TI", id: "tecnico-ti" },
         { icon: Calendar, label: "Agenda", id: "agenda" }
       );
@@ -163,6 +164,7 @@ const Sidebar = ({
     }
     if (isManutencao) {
       items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao" },
         { icon: Calendar, label: "Agenda", id: "agenda" }
       );
@@ -170,6 +172,7 @@ const Sidebar = ({
     }
     if (isEngenhariaCinica) {
       items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia" },
         { icon: Calendar, label: "Agenda", id: "agenda" }
       );
