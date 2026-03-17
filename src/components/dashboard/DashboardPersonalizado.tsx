@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { SECTORS } from "@/types/bed";
 import {
   BedDouble, AlertTriangle, Wrench, ClipboardCheck,
   TrendingUp, RefreshCw, Calendar, GraduationCap,
@@ -301,7 +302,7 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
           .eq("status", "aberto").gte("created_at", `${hojeStr}T00:00:00`),
         supabase.from("chamados").select("id", { count: "exact", head: true })
           .eq("categoria", "manutencao").neq("status", "resolvido"),
-        supabase.from("bed_records").select("id, patient_name", { count: "exact" })
+        supabase.from("bed_records").select("id, patient_name, motivo_alta, data_alta", { count: "exact" })
           .not("patient_name", "is", null),
       ]);
 
@@ -330,8 +331,11 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
         .eq("usuario_id", userId).neq("status", "capacitado");
       capacitacoesPendentes = capCount || 0;
 
-      // Leitos ocupados
-      const leitosOcupados = leitosData.data?.filter(r => r.patient_name && r.patient_name.trim() !== "").length || 0;
+      // Leitos ocupados — filtrar pacientes sem alta
+      const TOTAL_BEDS_CAPACITY = SECTORS.reduce((sum, s) => sum + s.beds.length + (s.extraBeds?.length || 0), 0);
+      const leitosOcupados = leitosData.data?.filter(r =>
+        r.patient_name && r.patient_name.trim() !== "" && !r.motivo_alta && !r.data_alta
+      ).length || 0;
 
       setStats({
         chamadosAbertos, chamadosPendentes, chamadosHoje, chamadosResolvidos,
@@ -345,7 +349,7 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
         logsHoje,
         capacitacoesPendentes,
         leitosOcupados,
-        totalLeitos: 50,
+        totalLeitos: TOTAL_BEDS_CAPACITY,
         incidentesCriticos: incidentesData.count || 0,
         chamadosManutencao: chamadosManutData.count || 0,
         conformidadeDietas: 98,
