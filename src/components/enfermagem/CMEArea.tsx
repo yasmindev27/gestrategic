@@ -326,6 +326,32 @@ export function CMEArea() {
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'desinfeccao') return (
+      <Dialog open={dialogDesinfeccaoOpen} onOpenChange={setDialogDesinfeccaoOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Desinfecção</Button></DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Desinfecção e Envasamento de Almotolias</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Data</Label><Input type="date" value={formDesinfeccao.data} onChange={e => setFormDesinfeccao(p => ({ ...p, data: e.target.value }))} /></div>
+            <div><Label>Método</Label>
+              <Select value={formDesinfeccao.metodo} onValueChange={v => setFormDesinfeccao(p => ({ ...p, metodo: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{METODOS_DESINFECCAO.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Quantidade</Label><Input value={formDesinfeccao.quantidade} onChange={e => setFormDesinfeccao(p => ({ ...p, quantidade: e.target.value }))} placeholder="Ex: UT, 06" /></div>
+              <div><Label>Validade</Label><Input type="date" value={formDesinfeccao.validade} onChange={e => setFormDesinfeccao(p => ({ ...p, validade: e.target.value }))} /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Responsável</Label><Input value={formDesinfeccao.responsavel} onChange={e => setFormDesinfeccao(p => ({ ...p, responsavel: e.target.value }))} /></div>
+              <div><Label>COREN</Label><Input value={formDesinfeccao.coren} onChange={e => setFormDesinfeccao(p => ({ ...p, coren: e.target.value }))} placeholder="Ex: MG 000.000.000 - TE" /></div>
+            </div>
+            <Button onClick={handleAddDesinfeccao} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar Desinfecção</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'almotolias') return (
       <Dialog open={dialogAlmotoliaOpen} onOpenChange={setDialogAlmotoliaOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Fracionamento</Button></DialogTrigger>
