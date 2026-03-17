@@ -12,11 +12,12 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   BedDouble, ClipboardList, UserCheck, AlertTriangle, Plus, Search,
-  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer
+  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer, Shirt
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ChecklistCarrinhoInternacao } from './ChecklistCarrinhoInternacao';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
+import { ProtocoloEvasaoRouparia } from './ProtocoloEvasaoRouparia';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
@@ -176,6 +177,7 @@ export function InternacaoArea() {
           <TabsTrigger value="checklist" className="gap-1"><CheckCircle2 className="h-4 w-4" />Checklist</TabsTrigger>
           <TabsTrigger value="carrinho" className="gap-1"><ShieldAlert className="h-4 w-4" />Carrinho de Internação</TabsTrigger>
           <TabsTrigger value="sinais-vitais" className="gap-1"><Thermometer className="h-4 w-4" />Sinais Vitais</TabsTrigger>
+          <TabsTrigger value="evasao-rouparia" className="gap-1"><Shirt className="h-4 w-4" />Evasão Rouparia</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pacientes" className="mt-4 space-y-4">
@@ -345,6 +347,10 @@ export function InternacaoArea() {
 
         <TabsContent value="sinais-vitais" className="mt-4">
           <ChecklistSinaisVitais storageKey="enf-sinais-vitais-internacao" setor="Internação" />
+        </TabsContent>
+
+        <TabsContent value="evasao-rouparia" className="mt-4">
+          <ProtocoloEvasaoRouparia storageKey="enf-evasao-rouparia-internacao" setor="Internação" />
         </TabsContent>
       </Tabs>
     </div>

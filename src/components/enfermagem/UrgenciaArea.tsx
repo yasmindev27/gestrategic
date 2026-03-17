@@ -10,11 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList
+  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList, Shirt
 } from 'lucide-react';
 import { ChecklistCarrinhoUrgencia } from './ChecklistCarrinhoUrgencia';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
 import { ChecklistSetorUrgencia } from './ChecklistSetorUrgencia';
+import { ProtocoloEvasaoRouparia } from './ProtocoloEvasaoRouparia';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
@@ -111,6 +112,7 @@ export function UrgenciaArea() {
           <TabsTrigger value="checklist-setor" className="gap-1"><ClipboardList className="h-4 w-4" />Checklist Setor</TabsTrigger>
           <TabsTrigger value="carrinho" className="gap-1"><ShieldAlert className="h-4 w-4" />Carrinho de Urgência</TabsTrigger>
           <TabsTrigger value="sinais-vitais" className="gap-1"><Thermometer className="h-4 w-4" />Sinais Vitais</TabsTrigger>
+          <TabsTrigger value="evasao-rouparia" className="gap-1"><Shirt className="h-4 w-4" />Evasão Rouparia</TabsTrigger>
         </TabsList>
 
         <TabsContent value="atendimentos" className="mt-4 space-y-4">
@@ -251,6 +253,10 @@ export function UrgenciaArea() {
 
         <TabsContent value="sinais-vitais" className="mt-4">
           <ChecklistSinaisVitais storageKey="enf-sinais-vitais-urgencia" setor="Urgência" />
+        </TabsContent>
+
+        <TabsContent value="evasao-rouparia" className="mt-4">
+          <ProtocoloEvasaoRouparia storageKey="enf-evasao-rouparia-urgencia" setor="Urgência" />
         </TabsContent>
       </Tabs>
     </div>
