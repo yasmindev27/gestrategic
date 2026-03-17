@@ -998,6 +998,31 @@ export function CMEArea() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog detalhe olivas */}
+      <Dialog open={!!detalheOliva} onOpenChange={() => setDetalheOliva(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Desinfecção de Olivas</DialogTitle></DialogHeader>
+          {detalheOliva && (
+            <div className="space-y-2 text-sm">
+              <div><span className="text-muted-foreground">Data Desinfecção:</span> <strong>{detalheOliva.dataDesinfeccao}</strong></div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Tipo Material:</span> {detalheOliva.tipoMaterial}</div>
+                <div><span className="text-muted-foreground">Validade:</span> {detalheOliva.validade || '—'}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Método:</span> {detalheOliva.metodo}</div>
+                <div><span className="text-muted-foreground">Quantidade:</span> {detalheOliva.quantidade}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Responsável:</span> {detalheOliva.responsavel}</div>
+                <div><span className="text-muted-foreground">COREN:</span> {detalheOliva.coren || '—'}</div>
+              </div>
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheOliva.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
