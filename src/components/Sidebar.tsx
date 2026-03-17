@@ -55,7 +55,7 @@ const Sidebar = ({
     icon: typeof LayoutDashboard;
     label: string;
     id: string;
-    category?: "dashboard" | "assistencial" | "apoio" | "logistica" | "administrativo" | "integracao";
+    category?: "dashboard" | "assistencial" | "apoio_logistica" | "governanca" | "administrativo" | "comunicacao";
   };
 
   const getMenuItems = (): MenuItem[] => {
