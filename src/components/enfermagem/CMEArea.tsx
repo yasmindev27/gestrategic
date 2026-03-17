@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan, FlaskConical, CircleDot
+  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan, FlaskConical, CircleDot, ClipboardCheck
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
