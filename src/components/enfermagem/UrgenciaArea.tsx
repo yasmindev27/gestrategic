@@ -278,6 +278,10 @@ export function UrgenciaArea() {
         <TabsContent value="fluxometros" className="mt-4">
           <ChecklistFluxometrosBombas storageKey="enf-fluxometros-bombas-urgencia" setor="Urgência" />
         </TabsContent>
+
+        <TabsContent value="passagem-plantao" className="mt-4">
+          <PassagemPlantaoTecEnfermagem storageKey="enf-passagem-plantao-tec-urgencia" setor="Urgência" />
+        </TabsContent>
       </Tabs>
     </div>
   );

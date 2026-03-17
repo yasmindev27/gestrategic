@@ -372,6 +372,10 @@ export function InternacaoArea() {
         <TabsContent value="fluxometros" className="mt-4">
           <ChecklistFluxometrosBombas storageKey="enf-fluxometros-bombas-internacao" setor="Internação" />
         </TabsContent>
+
+        <TabsContent value="passagem-plantao" className="mt-4">
+          <PassagemPlantaoTecEnfermagem storageKey="enf-passagem-plantao-tec-internacao" setor="Internação" />
+        </TabsContent>
       </Tabs>
     </div>
   );
