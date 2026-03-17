@@ -266,6 +266,10 @@ export function UrgenciaArea() {
         <TabsContent value="nsp" className="mt-4">
           <ChecklistGeralNSP storageKey="enf-nsp-urgencia" setor="Urgência" />
         </TabsContent>
+
+        <TabsContent value="limpeza" className="mt-4">
+          <ChecklistLimpezaConcorrente storageKey="enf-limpeza-concorrente-urgencia" setor="Urgência" />
+        </TabsContent>
       </Tabs>
     </div>
   );

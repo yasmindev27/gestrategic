@@ -360,6 +360,10 @@ export function InternacaoArea() {
         <TabsContent value="nsp" className="mt-4">
           <ChecklistGeralNSP storageKey="enf-nsp-internacao" setor="Internação" />
         </TabsContent>
+
+        <TabsContent value="limpeza" className="mt-4">
+          <ChecklistLimpezaConcorrente storageKey="enf-limpeza-concorrente-internacao" setor="Internação" />
+        </TabsContent>
       </Tabs>
     </div>
   );
