@@ -1393,6 +1393,36 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="temp-umidade" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Dia</TableHead><TableHead>Período</TableHead><TableHead>Hora</TableHead><TableHead>Setor</TableHead>
+                <TableHead>Atual °C</TableHead><TableHead>Mín °C</TableHead><TableHead>Máx °C</TableHead><TableHead>Umidade %</TableHead>
+                <TableHead>Responsável</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {tempUmidadeFiltrados.length === 0 ? (
+                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Nenhum registro de temperatura/umidade</TableCell></TableRow>
+                ) : tempUmidadeFiltrados.map(t => (
+                  <TableRow key={t.id}>
+                    <TableCell>{t.dia}</TableCell>
+                    <TableCell><Badge variant="outline">{t.periodo}</Badge></TableCell>
+                    <TableCell>{t.hora}</TableCell>
+                    <TableCell>{t.setor}</TableCell>
+                    <TableCell className="font-medium">{t.tempAtual || '—'}</TableCell>
+                    <TableCell>{t.tempMinima || '—'}</TableCell>
+                    <TableCell>{t.tempMaxima || '—'}</TableCell>
+                    <TableCell>{t.umidade || '—'}</TableCell>
+                    <TableCell>{t.responsavel}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheTempUmidade(t)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog detalhe pinças */}
