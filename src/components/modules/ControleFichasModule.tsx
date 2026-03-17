@@ -110,7 +110,24 @@ export const ControleFichasModule = () => {
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setInconsistencias(data || []);
+
+      // Fetch registrado_por names
+      const userIds = [...new Set((data || []).map(d => d.registrado_por).filter(Boolean))];
+      let namesMap: Record<string, string> = {};
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", userIds);
+        if (profiles) {
+          profiles.forEach(p => { namesMap[p.user_id] = p.full_name || "Usuário"; });
+        }
+      }
+
+      setInconsistencias((data || []).map(d => ({
+        ...d,
+        registrado_por_nome_display: d.registrado_por ? (namesMap[d.registrado_por] || "Usuário") : "—",
+      })));
     } catch (error) {
       console.error("Error fetching inconsistencias:", error);
       toast({ title: "Erro", description: "Erro ao carregar cadastros inconsistentes.", variant: "destructive" });
