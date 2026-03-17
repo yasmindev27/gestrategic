@@ -25,6 +25,7 @@ import { PassagemPlantaoTecEnfermagem } from './PassagemPlantaoTecEnfermagem';
 import { ControleSinaisVitaisOxigenio } from './ControleSinaisVitaisOxigenio';
 import { EscalasClinicas } from './EscalasClinicas';
 import { PassagemPlantaoSBAR } from './PassagemPlantaoSBAR';
+import { DiagnosticoPrescricaoEnfermagem } from './DiagnosticoPrescricaoEnfermagem';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
