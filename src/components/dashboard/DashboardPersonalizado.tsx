@@ -331,8 +331,11 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
         .eq("usuario_id", userId).neq("status", "capacitado");
       capacitacoesPendentes = capCount || 0;
 
-      // Leitos ocupados
-      const leitosOcupados = leitosData.data?.filter(r => r.patient_name && r.patient_name.trim() !== "").length || 0;
+      // Leitos ocupados — filtrar pacientes sem alta
+      const TOTAL_BEDS_CAPACITY = SECTORS.reduce((sum, s) => sum + s.beds.length + (s.extraBeds?.length || 0), 0);
+      const leitosOcupados = leitosData.data?.filter(r =>
+        r.patient_name && r.patient_name.trim() !== "" && !r.motivo_alta && !r.data_alta
+      ).length || 0;
 
       setStats({
         chamadosAbertos, chamadosPendentes, chamadosHoje, chamadosResolvidos,
@@ -346,7 +349,7 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
         logsHoje,
         capacitacoesPendentes,
         leitosOcupados,
-        totalLeitos: 50,
+        totalLeitos: TOTAL_BEDS_CAPACITY,
         incidentesCriticos: incidentesData.count || 0,
         chamadosManutencao: chamadosManutData.count || 0,
         conformidadeDietas: 98,
