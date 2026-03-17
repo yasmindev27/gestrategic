@@ -254,6 +254,10 @@ export function UrgenciaArea() {
         <TabsContent value="sinais-vitais" className="mt-4">
           <ChecklistSinaisVitais storageKey="enf-sinais-vitais-urgencia" setor="Urgência" />
         </TabsContent>
+
+        <TabsContent value="evasao-rouparia" className="mt-4">
+          <ProtocoloEvasaoRouparia storageKey="enf-evasao-rouparia-urgencia" setor="Urgência" />
+        </TabsContent>
       </Tabs>
     </div>
   );
