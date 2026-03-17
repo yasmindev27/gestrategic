@@ -230,7 +230,9 @@ export function InfraestruturaPanel() {
   const [alertas, setAlertas] = useState<HashAlerta[]>([]);
   const repairTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState<{ tables: number; rows: number; errors: number } | null>(null);
+  const [syncElapsed, setSyncElapsed] = useState(0);
+  const syncTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [syncResult, setSyncResult] = useState<{ tables: number; rows: number; errors: number; duration?: number } | null>(null);
 
   const handleSyncExternalDB = async () => {
     setIsSyncing(true);
