@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   BedDouble, ClipboardList, UserCheck, AlertTriangle, Plus, Search,
-  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Stethoscope
+  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Stethoscope, ShieldCheck
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ChecklistCarrinhoInternacao } from './ChecklistCarrinhoInternacao';
@@ -26,6 +26,7 @@ import { ControleSinaisVitaisOxigenio } from './ControleSinaisVitaisOxigenio';
 import { EscalasClinicas } from './EscalasClinicas';
 import { PassagemPlantaoSBAR } from './PassagemPlantaoSBAR';
 import { DiagnosticoPrescricaoEnfermagem } from './DiagnosticoPrescricaoEnfermagem';
+import { TermoConsentimentoRiscos } from './TermoConsentimentoRiscos';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
