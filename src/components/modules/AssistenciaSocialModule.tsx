@@ -291,13 +291,13 @@ export const AssistenciaSocialModule = () => {
       } else {
         const { data: newP, error: pErr } = await supabase
           .from("assistencia_social_pacientes")
-          .insert({
+           .insert({
             nome_completo: atendimentoForm.paciente_nome.trim(),
             setor_atendimento: atendimentoForm.setor_atendimento,
-            created_by: currentUser.id,
+            created_by: userId,
           })
           .select("id").single();
-        if (pErr || !newP) throw pErr;
+        if (pErr || !newP) throw new Error(pErr?.message || "Falha ao cadastrar paciente");
         pacienteId = newP.id;
       }
 
@@ -315,8 +315,8 @@ export const AssistenciaSocialModule = () => {
         descricao: atendimentoForm.descricao,
         status: atendimentoForm.status,
         observacoes: obsLines,
-        profissional_id: currentUser.id,
-        profissional_nome: currentUser.nome,
+        profissional_id: userId,
+        profissional_nome: userName,
       });
       
       if (error) throw error;
