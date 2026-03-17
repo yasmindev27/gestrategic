@@ -1145,7 +1145,7 @@ export function CMEArea() {
         {tab === 'area-suja' && renderTabela(itensSuja, 'Área Suja')}
         {tab === 'area-limpa' && renderTabela(itensLimpa, 'Área Limpa')}
 
-        <TabsContent value="devolucao" className="mt-4">
+        {tab === 'devolucao' && (
           <div className="rounded-md border overflow-auto">
             <Table>
               <TableHeader><TableRow>
@@ -1171,9 +1171,9 @@ export function CMEArea() {
               </TableBody>
             </Table>
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="pincas" className="mt-4">
+        {tab === 'pincas' && (
           <div className="rounded-md border overflow-auto">
             <Table>
               <TableHeader><TableRow>
@@ -1195,9 +1195,9 @@ export function CMEArea() {
               </TableBody>
             </Table>
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="almotolias" className="mt-4">
+        {tab === 'almotolias' && (
           <div className="rounded-md border overflow-auto">
             <Table>
               <TableHeader><TableRow>
@@ -1223,9 +1223,9 @@ export function CMEArea() {
               </TableBody>
             </Table>
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="desinfeccao" className="mt-4">
+        {tab === 'desinfeccao' && (
           <div className="rounded-md border overflow-auto">
             <Table>
               <TableHeader><TableRow>
@@ -1249,9 +1249,9 @@ export function CMEArea() {
               </TableBody>
             </Table>
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="diluicao" className="mt-4">
+        {tab === 'diluicao' && (
           <div className="rounded-md border overflow-auto">
             <Table>
               <TableHeader><TableRow>
@@ -1274,9 +1274,9 @@ export function CMEArea() {
               </TableBody>
             </Table>
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="olivas" className="mt-4">
+        {tab === 'olivas' && (
           <div className="rounded-md border overflow-auto">
             <Table>
               <TableHeader><TableRow>
@@ -1301,9 +1301,9 @@ export function CMEArea() {
               </TableBody>
             </Table>
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="conferencia" className="mt-4">
+        {tab === 'conferencia' && (
           <div className="rounded-md border overflow-auto">
             <Table>
               <TableHeader><TableRow>
@@ -1330,9 +1330,9 @@ export function CMEArea() {
               </TableBody>
             </Table>
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="danificados" className="mt-4">
+        {tab === 'danificados' && (
           <div className="rounded-md border overflow-auto">
             <Table>
               <TableHeader><TableRow>
@@ -1357,9 +1357,9 @@ export function CMEArea() {
               </TableBody>
             </Table>
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="solicitacao" className="mt-4">
+        {tab === 'solicitacao' && (
           <div className="rounded-md border overflow-auto">
             <Table>
               <TableHeader><TableRow>
@@ -1384,9 +1384,9 @@ export function CMEArea() {
               </TableBody>
             </Table>
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="controle-material" className="mt-4">
+        {tab === 'controle-material' && (
           <div className="rounded-md border overflow-auto">
             <Table>
               <TableHeader><TableRow>
@@ -1411,9 +1411,9 @@ export function CMEArea() {
               </TableBody>
             </Table>
           </div>
-        </TabsContent>
+        )}
 
-        <TabsContent value="temp-umidade" className="mt-4">
+        {tab === 'temp-umidade' && (
           <div className="rounded-md border overflow-auto">
             <Table>
               <TableHeader><TableRow>
@@ -1441,8 +1441,9 @@ export function CMEArea() {
               </TableBody>
             </Table>
           </div>
-        </TabsContent>
-      </Tabs>
+        )}
+        </div>
+      </div>
 
       {/* Dialog detalhe pinças */}
       <Dialog open={!!detalhePinca} onOpenChange={() => setDetalhePinca(null)}>
