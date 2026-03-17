@@ -417,11 +417,16 @@ export function InfraestruturaPanel() {
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
           >
             {isSyncing ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Sincronizando... {syncElapsed}s
+              </>
             ) : (
-              <Cloud className="h-4 w-4 mr-2" />
+              <>
+                <Cloud className="h-4 w-4 mr-2" />
+                Sync Banco Externo
+              </>
             )}
-            {isSyncing ? "Sincronizando..." : "Sync Banco Externo"}
           </Button>
         </div>
       </div>
