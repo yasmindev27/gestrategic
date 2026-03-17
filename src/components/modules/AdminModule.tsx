@@ -121,6 +121,7 @@ const roleLabels: Record<AppRole, string> = {
   seguranca: "Segurança do Trabalho",
   enfermagem: "Enfermagem",
   medicos: "Médicos",
+  rouparia: "Rouparia",
 };
 
 // Roles disponíveis para seleção (exclui "funcionario" que é o padrão)
