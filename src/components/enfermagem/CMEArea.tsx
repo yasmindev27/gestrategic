@@ -1106,22 +1106,41 @@ export function CMEArea() {
         {renderActionButton()}
       </div>
 
-      <Tabs value={tab} onValueChange={setTab}>
-        <TabsList className="flex-wrap">
-          <TabsTrigger value="area-suja" className="gap-1"><Droplets className="h-4 w-4" />Área Suja</TabsTrigger>
-          <TabsTrigger value="area-limpa" className="gap-1"><Sparkles className="h-4 w-4" />Área Limpa</TabsTrigger>
-          <TabsTrigger value="devolucao" className="gap-1"><RotateCcw className="h-4 w-4" />Devolução</TabsTrigger>
-          <TabsTrigger value="pincas" className="gap-1"><Scissors className="h-4 w-4" />Pinças</TabsTrigger>
-          <TabsTrigger value="almotolias" className="gap-1"><Beaker className="h-4 w-4" />Almotolias</TabsTrigger>
-          <TabsTrigger value="desinfeccao" className="gap-1"><SprayCan className="h-4 w-4" />Desinfecção</TabsTrigger>
-          <TabsTrigger value="diluicao" className="gap-1"><FlaskConical className="h-4 w-4" />Diluição</TabsTrigger>
-          <TabsTrigger value="olivas" className="gap-1"><CircleDot className="h-4 w-4" />Olivas</TabsTrigger>
-          <TabsTrigger value="conferencia" className="gap-1"><ClipboardCheck className="h-4 w-4" />Conferência</TabsTrigger>
-          <TabsTrigger value="danificados" className="gap-1"><Ban className="h-4 w-4" />Danificados</TabsTrigger>
-          <TabsTrigger value="solicitacao" className="gap-1"><ShoppingCart className="h-4 w-4" />Solicitação</TabsTrigger>
-          <TabsTrigger value="controle-material" className="gap-1"><BoxSelect className="h-4 w-4" />Controle Material</TabsTrigger>
-          <TabsTrigger value="temp-umidade" className="gap-1"><Thermometer className="h-4 w-4" />Temp./Umidade</TabsTrigger>
-        </TabsList>
+      <div className="flex gap-4">
+        <nav className="w-48 flex-shrink-0 space-y-0.5 border-r pr-3">
+          {[
+            { id: 'area-suja', label: 'Área Suja', icon: Droplets },
+            { id: 'area-limpa', label: 'Área Limpa', icon: Sparkles },
+            { id: 'devolucao', label: 'Devolução', icon: RotateCcw },
+            { id: 'pincas', label: 'Pinças', icon: Scissors },
+            { id: 'almotolias', label: 'Almotolias', icon: Beaker },
+            { id: 'desinfeccao', label: 'Desinfecção', icon: SprayCan },
+            { id: 'diluicao', label: 'Diluição', icon: FlaskConical },
+            { id: 'olivas', label: 'Olivas', icon: CircleDot },
+            { id: 'conferencia', label: 'Conferência', icon: ClipboardCheck },
+            { id: 'danificados', label: 'Danificados', icon: Ban },
+            { id: 'solicitacao', label: 'Solicitação', icon: ShoppingCart },
+            { id: 'controle-material', label: 'Controle Material', icon: BoxSelect },
+            { id: 'temp-umidade', label: 'Temp./Umidade', icon: Thermometer },
+          ].map(item => {
+            const Icon = item.icon;
+            const isActive = tab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setTab(item.id)}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors",
+                  isActive ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+        <div className="flex-1 min-w-0">
 
         <TabsContent value="area-suja" className="mt-4">{renderTabela(itensSuja, 'Área Suja')}</TabsContent>
         <TabsContent value="area-limpa" className="mt-4">{renderTabela(itensLimpa, 'Área Limpa')}</TabsContent>
