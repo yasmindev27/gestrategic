@@ -185,6 +185,7 @@ export function CMEArea() {
   const [desinfeccoes, setDesinfeccoes] = useLocalStorage<RegistroDesinfeccao[]>('enf-cme-desinfeccao', []);
   const [diluicoes, setDiluicoes] = useLocalStorage<RegistroDiluicao[]>('enf-cme-diluicao', []);
   const [olivas, setOlivas] = useLocalStorage<RegistroOlivas[]>('enf-cme-olivas', []);
+  const [conferencias, setConferencias] = useLocalStorage<RegistroConferencia[]>('enf-cme-conferencia', []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDevOpen, setDialogDevOpen] = useState(false);
   const [dialogPincasOpen, setDialogPincasOpen] = useState(false);
@@ -192,12 +193,14 @@ export function CMEArea() {
   const [dialogDesinfeccaoOpen, setDialogDesinfeccaoOpen] = useState(false);
   const [dialogDiluicaoOpen, setDialogDiluicaoOpen] = useState(false);
   const [dialogOlivasOpen, setDialogOlivasOpen] = useState(false);
+  const [dialogConferenciaOpen, setDialogConferenciaOpen] = useState(false);
   const [detalhePinca, setDetalhePinca] = useState<RegistroPincas | null>(null);
   const [detalhe, setDetalhe] = useState<DevolucaoMaterial | null>(null);
   const [detalheAlmotolia, setDetalheAlmotolia] = useState<RegistroAlmotolia | null>(null);
   const [detalheDesinfeccao, setDetalheDesinfeccao] = useState<RegistroDesinfeccao | null>(null);
   const [detalheDiluicao, setDetalheDiluicao] = useState<RegistroDiluicao | null>(null);
   const [detalheOliva, setDetalheOliva] = useState<RegistroOlivas | null>(null);
+  const [detalheConferencia, setDetalheConferencia] = useState<RegistroConferencia | null>(null);
   const [busca, setBusca] = useState('');
   const [buscaDev, setBuscaDev] = useState('');
   const [buscaPincas, setBuscaPincas] = useState('');
@@ -205,6 +208,7 @@ export function CMEArea() {
   const [buscaDesinfeccao, setBuscaDesinfeccao] = useState('');
   const [buscaDiluicao, setBuscaDiluicao] = useState('');
   const [buscaOlivas, setBuscaOlivas] = useState('');
+  const [buscaConferencia, setBuscaConferencia] = useState('');
 
   const [form, setForm] = useState({
     descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '',
