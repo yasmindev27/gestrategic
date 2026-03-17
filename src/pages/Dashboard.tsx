@@ -52,7 +52,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("");
   const [externalUrl, setExternalUrl] = useState<{ url: string; title: string } | null>(null);
-  const { isNir, isRecepcao, isLoading: isLoadingRole } = useUserRole();
+  const { isNir, isRecepcao, isFaturamento, isClassificacao, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isLoading: isLoadingRole } = useUserRole();
 
   // Segurança: logout automático por inatividade (15 min) — LGPD / UPA
   useSessionTimeout(15);
