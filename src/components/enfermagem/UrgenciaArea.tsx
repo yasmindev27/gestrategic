@@ -24,6 +24,7 @@ import { ChecklistUTIMovel } from './ChecklistUTIMovel';
 import { ControleSinaisVitaisOxigenio } from './ControleSinaisVitaisOxigenio';
 import { EscalasClinicas } from './EscalasClinicas';
 import { PassagemPlantaoSBAR } from './PassagemPlantaoSBAR';
+import { DiagnosticoPrescricaoEnfermagem } from './DiagnosticoPrescricaoEnfermagem';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
