@@ -50,6 +50,14 @@ interface RegistroTermo {
   coren: string;
   farmaceuticoResponsavel: string;
   observacoes: string;
+  // Devolução — Alta Médica
+  devolucao: {
+    realizada: boolean;
+    dataAlta: string;
+    medicamentoQuantidadeDevolvida: string;
+    farmaceuticoClinicoDevolucao: string;
+    enfermeiroDevolucao: string;
+  };
   dataRegistro: string;
 }
 
