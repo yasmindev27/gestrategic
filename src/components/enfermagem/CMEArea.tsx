@@ -169,6 +169,14 @@ export function CMEArea() {
     pincas: TIPOS_PINCA.map(t => ({ tipo: t, quantidade: 0, checked: false })) as PincaItem[],
     outra: '', outraQuantidade: 0, enfermagem: '',
   });
+  const [formDesinfeccao, setFormDesinfeccao] = useState({
+    data: new Date().toISOString().split('T')[0],
+    metodo: 'Água / Sabão / Fricção Mecânica',
+    quantidade: 'UT',
+    validade: '',
+    responsavel: '',
+    coren: '',
+  });
   const [formAlmotolia, setFormAlmotolia] = useState({
     produto: 'Álcool 70%', dataFracionar: new Date().toISOString().split('T')[0],
     quantidade: 1, setor: '', lote: '', validade: '', observacao: '', responsavel: '',
