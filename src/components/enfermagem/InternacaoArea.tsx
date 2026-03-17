@@ -354,6 +354,10 @@ export function InternacaoArea() {
         <TabsContent value="evasao-rouparia" className="mt-4">
           <ProtocoloEvasaoRouparia storageKey="enf-evasao-rouparia-internacao" setor="Internação" />
         </TabsContent>
+
+        <TabsContent value="nsp" className="mt-4">
+          <ChecklistGeralNSP storageKey="enf-nsp-internacao" setor="Internação" />
+        </TabsContent>
       </Tabs>
     </div>
   );

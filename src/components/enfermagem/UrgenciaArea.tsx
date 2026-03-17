@@ -260,6 +260,10 @@ export function UrgenciaArea() {
         <TabsContent value="evasao-rouparia" className="mt-4">
           <ProtocoloEvasaoRouparia storageKey="enf-evasao-rouparia-urgencia" setor="Urgência" />
         </TabsContent>
+
+        <TabsContent value="nsp" className="mt-4">
+          <ChecklistGeralNSP storageKey="enf-nsp-urgencia" setor="Urgência" />
+        </TabsContent>
       </Tabs>
     </div>
   );
