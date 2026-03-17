@@ -310,7 +310,48 @@ export function CMEArea() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder="Buscar..." value={tab === 'devolucao' ? buscaDev : tab === 'pincas' ? buscaPincas : busca} onChange={e => tab === 'devolucao' ? setBuscaDev(e.target.value) : tab === 'pincas' ? setBuscaPincas(e.target.value) : setBusca(e.target.value)} className="pl-9" />
         </div>
-        {tab === 'devolucao' ? (
+        {tab === 'pincas' ? (
+          <Dialog open={dialogPincasOpen} onOpenChange={setDialogPincasOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4 mr-1" />Registrar Pinças</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader><DialogTitle>Controle de Pinças — CME</DialogTitle></DialogHeader>
+              <div className="space-y-3">
+                <div><Label>Data</Label><Input type="date" value={formPincas.data} onChange={e => setFormPincas(p => ({ ...p, data: e.target.value }))} /></div>
+                <div className="space-y-2">
+                  <Label className="font-semibold">Tipos de Pinça</Label>
+                  {formPincas.pincas.map((pinca, idx) => (
+                    <div key={pinca.tipo} className="flex items-center gap-3 p-2 border rounded">
+                      <Checkbox checked={pinca.checked} onCheckedChange={v => {
+                        const updated = [...formPincas.pincas];
+                        updated[idx] = { ...updated[idx], checked: !!v };
+                        setFormPincas(p => ({ ...p, pincas: updated }));
+                      }} id={`pinca-${idx}`} />
+                      <Label htmlFor={`pinca-${idx}`} className="flex-1 cursor-pointer text-sm">{pinca.tipo}</Label>
+                      <Input type="number" min={0} className="w-20" placeholder="Qtd" value={pinca.quantidade || ''} onChange={e => {
+                        const updated = [...formPincas.pincas];
+                        updated[idx] = { ...updated[idx], quantidade: parseInt(e.target.value) || 0, checked: true };
+                        setFormPincas(p => ({ ...p, pincas: updated }));
+                      }} />
+                    </div>
+                  ))}
+                  <div className="flex items-center gap-3 p-2 border rounded border-dashed">
+                    <Label className="text-sm text-muted-foreground whitespace-nowrap">Outra:</Label>
+                    <Input value={formPincas.outra} onChange={e => setFormPincas(p => ({ ...p, outra: e.target.value }))} placeholder="Qual?" className="flex-1" />
+                    <Input type="number" min={0} className="w-20" placeholder="Qtd" value={formPincas.outraQuantidade || ''} onChange={e => setFormPincas(p => ({ ...p, outraQuantidade: parseInt(e.target.value) || 0 }))} />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 p-2 bg-muted rounded">
+                  <span className="text-sm font-semibold">Total:</span>
+                  <span className="text-lg font-bold">{formPincas.pincas.filter(p => p.checked).reduce((s, p) => s + p.quantidade, 0) + (formPincas.outra ? formPincas.outraQuantidade : 0)}</span>
+                </div>
+                <div><Label>Enfermagem (Assinatura)</Label><Input value={formPincas.enfermagem} onChange={e => setFormPincas(p => ({ ...p, enfermagem: e.target.value }))} placeholder="Nome do(a) enfermeiro(a)" /></div>
+                <Button onClick={handleAddPincas} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar Pinças</Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        ) : tab === 'devolucao' ? (
           <Dialog open={dialogDevOpen} onOpenChange={setDialogDevOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-1" />Registrar Devolução</Button>
