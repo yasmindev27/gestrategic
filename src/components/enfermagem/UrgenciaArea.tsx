@@ -10,10 +10,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert
+  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList
 } from 'lucide-react';
 import { ChecklistCarrinhoUrgencia } from './ChecklistCarrinhoUrgencia';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
+import { ChecklistSetorUrgencia } from './ChecklistSetorUrgencia';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
@@ -107,6 +108,7 @@ export function UrgenciaArea() {
       <Tabs defaultValue="atendimentos">
         <TabsList>
           <TabsTrigger value="atendimentos" className="gap-1"><Siren className="h-4 w-4" />Atendimentos</TabsTrigger>
+          <TabsTrigger value="checklist-setor" className="gap-1"><ClipboardList className="h-4 w-4" />Checklist Setor</TabsTrigger>
           <TabsTrigger value="carrinho" className="gap-1"><ShieldAlert className="h-4 w-4" />Carrinho de Urgência</TabsTrigger>
           <TabsTrigger value="sinais-vitais" className="gap-1"><Thermometer className="h-4 w-4" />Sinais Vitais</TabsTrigger>
         </TabsList>
@@ -237,6 +239,10 @@ export function UrgenciaArea() {
           </TableBody>
         </Table>
       </div>
+        </TabsContent>
+
+        <TabsContent value="checklist-setor" className="mt-4">
+          <ChecklistSetorUrgencia />
         </TabsContent>
 
         <TabsContent value="carrinho" className="mt-4">
