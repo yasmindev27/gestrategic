@@ -28,6 +28,7 @@ import { DiagnosticoPrescricaoEnfermagem } from './DiagnosticoPrescricaoEnfermag
 import { TermoConsentimentoRiscos } from './TermoConsentimentoRiscos';
 import { SAEAdulto } from './SAEAdulto';
 import { SAEPediatrico } from './SAEPediatrico';
+import { TermoGuardaMedicamento } from './TermoGuardaMedicamento';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
