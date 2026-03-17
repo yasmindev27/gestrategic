@@ -173,6 +173,7 @@ export function InternacaoArea() {
           <TabsTrigger value="pacientes" className="gap-1"><BedDouble className="h-4 w-4" />Pacientes</TabsTrigger>
           <TabsTrigger value="passagem" className="gap-1"><ClipboardList className="h-4 w-4" />Passagem de Plantão</TabsTrigger>
           <TabsTrigger value="checklist" className="gap-1"><CheckCircle2 className="h-4 w-4" />Checklist</TabsTrigger>
+          <TabsTrigger value="carrinho" className="gap-1"><ShieldAlert className="h-4 w-4" />Carrinho de Internação</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pacientes" className="mt-4 space-y-4">
