@@ -447,6 +447,59 @@ export function CMEArea() {
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'conferencia') return (
+      <Dialog open={dialogConferenciaOpen} onOpenChange={setDialogConferenciaOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Conferência</Button></DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Conferência e Controle de Qualidade de Materiais Setoriais</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Data</Label><Input type="date" value={formConferencia.data} onChange={e => setFormConferencia(p => ({ ...p, data: e.target.value }))} /></div>
+              <div><Label>Setor</Label>
+                <Select value={formConferencia.setor} onValueChange={v => setFormConferencia(p => ({ ...p, setor: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{SETORES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label className="font-semibold">Material</Label>
+              <div className="flex gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={formConferencia.materiaisRespiratorios} onCheckedChange={v => setFormConferencia(p => ({ ...p, materiaisRespiratorios: !!v }))} id="mat-resp" />
+                  <Label htmlFor="mat-resp" className="cursor-pointer text-sm">Materiais Respiratórios</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={formConferencia.materiaisCirurgicos} onCheckedChange={v => setFormConferencia(p => ({ ...p, materiaisCirurgicos: !!v }))} id="mat-cir" />
+                  <Label htmlFor="mat-cir" className="cursor-pointer text-sm">Materiais Cirúrgicos</Label>
+                </div>
+              </div>
+            </div>
+            <div>
+              <Label className="font-semibold">Inconformidade</Label>
+              <div className="flex gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={!formConferencia.inconformidade} onCheckedChange={() => setFormConferencia(p => ({ ...p, inconformidade: false, inconformidadeDescricao: '' }))} id="inc-nao" />
+                  <Label htmlFor="inc-nao" className="cursor-pointer text-sm">Não</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={formConferencia.inconformidade} onCheckedChange={() => setFormConferencia(p => ({ ...p, inconformidade: true }))} id="inc-sim" />
+                  <Label htmlFor="inc-sim" className="cursor-pointer text-sm">Sim</Label>
+                </div>
+              </div>
+              {formConferencia.inconformidade && (
+                <div className="mt-2"><Label>Qual?</Label><Input value={formConferencia.inconformidadeDescricao} onChange={e => setFormConferencia(p => ({ ...p, inconformidadeDescricao: e.target.value }))} placeholder="Descreva a inconformidade" /></div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Responsável</Label><Input value={formConferencia.responsavel} onChange={e => setFormConferencia(p => ({ ...p, responsavel: e.target.value }))} /></div>
+              <div><Label>COREN</Label><Input value={formConferencia.coren} onChange={e => setFormConferencia(p => ({ ...p, coren: e.target.value }))} placeholder="Ex: MG 000.000 - TE" /></div>
+            </div>
+            <Button onClick={handleAddConferencia} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar Conferência</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'olivas') return (
       <Dialog open={dialogOlivasOpen} onOpenChange={setDialogOlivasOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Olivas</Button></DialogTrigger>
