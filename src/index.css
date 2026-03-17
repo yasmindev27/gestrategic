@@ -1,6 +1,6 @@
-/* Enterprise SaaS Typography — distinctive, not generic */
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap");
+/* Enterprise SaaS Typography */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap");
 
 @tailwind base;
@@ -8,174 +8,173 @@
 @tailwind utilities;
 
 /*
-  Design System — GESTRATEGIC Enterprise
-  Paleta institucional hospitalar com hierarquia visual forte.
-  Primary: Azul profundo institucional (não padrão Tailwind)
-  Accent: Azul-cobalto vibrante
-  Surfaces: Off-white com toques de azul-gelo
-  Status: Semântico (verde/âmbar/vermelho)
+  Design System — GESTRATEGIC Enterprise Hospitalar
+  Primary: Azul Petróleo Profundo — sobriedade e saúde
+  Success/Accent: Verde Menta Suave — destaques positivos
+  Neutrals: Warm grays — sem preto puro
+  Surfaces: Off-white quente (#F7FAFC)
 */
 
 @layer base {
   :root {
-    /* Surfaces — warm off-white with subtle blue undertone */
-    --background: 216 25% 97%;
-    --foreground: 220 35% 12%;
+    /* Surfaces — warm off-white (≈ #F7FAFC) */
+    --background: 204 33% 97%;
+    --foreground: 215 28% 17%;
 
-    /* Cards — crisp white with slight warmth */
+    /* Cards — crisp white */
     --card: 0 0% 100%;
-    --card-foreground: 220 35% 12%;
+    --card-foreground: 215 28% 17%;
 
     /* Popovers */
     --popover: 0 0% 100%;
-    --popover-foreground: 220 35% 12%;
+    --popover-foreground: 215 28% 17%;
 
-    /* Primary: Deep institutional blue — authoritative, not generic */
-    --primary: 215 72% 42%;
+    /* Primary: Azul Petróleo Profundo (#1A535C) */
+    --primary: 186 54% 23%;
     --primary-foreground: 0 0% 100%;
 
-    /* Secondary: Cool slate — subtle, professional */
-    --secondary: 216 18% 94%;
-    --secondary-foreground: 220 25% 20%;
+    /* Secondary: Slate suave */
+    --secondary: 200 18% 94%;
+    --secondary-foreground: 215 25% 22%;
 
-    /* Muted: Warm gray with blue undertone */
-    --muted: 216 14% 93%;
-    --muted-foreground: 218 12% 48%;
+    /* Muted: Warm gray */
+    --muted: 200 14% 93%;
+    --muted-foreground: 210 10% 46%;
 
-    /* Accent: Cobalt highlight — distinctive, energetic */
-    --accent: 216 20% 95%;
-    --accent-foreground: 220 35% 12%;
+    /* Accent: Verde Menta Suave (#4ECDC4) */
+    --accent: 174 56% 55%;
+    --accent-foreground: 215 28% 17%;
 
     /* Destructive */
     --destructive: 4 76% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    /* Borders & Inputs — refined, not harsh */
-    --border: 216 16% 90%;
-    --input: 216 16% 90%;
-    --ring: 215 72% 42%;
+    /* Borders & Inputs */
+    --border: 210 16% 89%;
+    --input: 210 16% 89%;
+    --ring: 186 54% 23%;
 
-    /* Radius — slightly more rounded for modern SaaS feel */
-    --radius: 0.625rem;
+    /* Radius */
+    --radius: 0.5rem;
 
-    /* Status Colors — carefully calibrated */
+    /* Status Colors */
     --warning: 40 96% 48%;
     --warning-foreground: 0 0% 100%;
 
-    --success: 158 60% 38%;
+    --success: 174 56% 40%;
     --success-foreground: 0 0% 100%;
 
-    --info: 205 85% 52%;
+    --info: 199 78% 48%;
     --info-foreground: 0 0% 100%;
 
     /* Header */
-    --header: 218 50% 13%;
+    --header: 192 60% 12%;
     --header-foreground: 0 0% 100%;
 
-    /* Sidebar — deep navy with professional depth */
-    --sidebar-background: 218 52% 12%;
-    --sidebar-foreground: 214 25% 78%;
-    --sidebar-primary: 210 78% 56%;
+    /* Sidebar — Petróleo escuro com profundidade */
+    --sidebar-background: 192 58% 10%;
+    --sidebar-foreground: 180 15% 72%;
+    --sidebar-primary: 174 56% 55%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 218 40% 18%;
-    --sidebar-accent-foreground: 214 18% 90%;
-    --sidebar-border: 218 30% 20%;
-    --sidebar-ring: 210 78% 56%;
+    --sidebar-accent: 192 40% 16%;
+    --sidebar-accent-foreground: 180 12% 88%;
+    --sidebar-border: 192 30% 18%;
+    --sidebar-ring: 174 56% 55%;
 
     /* Hospital Status */
-    --hospital-green: 158 60% 38%;
-    --hospital-green-light: 158 35% 95%;
+    --hospital-green: 174 56% 40%;
+    --hospital-green-light: 174 35% 95%;
     --hospital-amber: 40 92% 48%;
     --hospital-amber-light: 40 65% 95%;
 
-    /* Charts — professional progression */
-    --chart-1: 215 72% 42%;
-    --chart-2: 205 85% 52%;
-    --chart-3: 158 60% 38%;
+    /* Charts */
+    --chart-1: 186 54% 23%;
+    --chart-2: 174 56% 55%;
+    --chart-3: 199 78% 48%;
     --chart-4: 40 96% 48%;
     --chart-5: 4 76% 50%;
 
-    --sidebar: 218 52% 12%;
+    --sidebar: 192 58% 10%;
 
     /* Typography */
-    --font-sans: 'DM Sans', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-    --font-display: 'Plus Jakarta Sans', 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-display: 'Plus Jakarta Sans', 'Inter', ui-sans-serif, system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 
-    /* Enterprise shadows — refined depth */
-    --shadow-2xs: 0 1px 2px 0 hsl(218 25% 40% / 0.03);
-    --shadow-xs: 0 1px 3px 0 hsl(218 25% 40% / 0.05);
-    --shadow-sm: 0 1px 3px 0 hsl(218 25% 40% / 0.06), 0 1px 2px -1px hsl(218 25% 40% / 0.04);
-    --shadow: 0 2px 8px 0 hsl(218 25% 40% / 0.06), 0 1px 3px -1px hsl(218 25% 40% / 0.04);
-    --shadow-md: 0 4px 12px 0 hsl(218 25% 40% / 0.07), 0 2px 4px -1px hsl(218 25% 40% / 0.04);
-    --shadow-lg: 0 8px 24px 0 hsl(218 25% 40% / 0.08), 0 4px 8px -2px hsl(218 25% 40% / 0.04);
-    --shadow-xl: 0 16px 40px 0 hsl(218 25% 40% / 0.1), 0 8px 16px -4px hsl(218 25% 40% / 0.04);
-    --shadow-2xl: 0 24px 56px 0 hsl(218 25% 40% / 0.12);
+    /* Enterprise shadows */
+    --shadow-2xs: 0 1px 2px 0 hsl(192 20% 30% / 0.03);
+    --shadow-xs: 0 1px 3px 0 hsl(192 20% 30% / 0.04);
+    --shadow-sm: 0 1px 3px 0 hsl(192 20% 30% / 0.05), 0 1px 2px -1px hsl(192 20% 30% / 0.03);
+    --shadow: 0 2px 8px 0 hsl(192 20% 30% / 0.05), 0 1px 3px -1px hsl(192 20% 30% / 0.03);
+    --shadow-md: 0 4px 12px 0 hsl(192 20% 30% / 0.06), 0 2px 4px -1px hsl(192 20% 30% / 0.03);
+    --shadow-lg: 0 8px 24px 0 hsl(192 20% 30% / 0.07), 0 4px 8px -2px hsl(192 20% 30% / 0.03);
+    --shadow-xl: 0 16px 40px 0 hsl(192 20% 30% / 0.09), 0 8px 16px -4px hsl(192 20% 30% / 0.03);
+    --shadow-2xl: 0 24px 56px 0 hsl(192 20% 30% / 0.11);
     --tracking-normal: 0em;
     --spacing: 0.25rem;
   }
 
   .dark {
-    --background: 220 30% 7%;
-    --foreground: 216 18% 95%;
+    --background: 195 30% 7%;
+    --foreground: 200 15% 94%;
 
-    --card: 220 28% 10%;
-    --card-foreground: 216 18% 95%;
+    --card: 195 28% 10%;
+    --card-foreground: 200 15% 94%;
 
-    --popover: 220 28% 10%;
-    --popover-foreground: 216 18% 95%;
+    --popover: 195 28% 10%;
+    --popover-foreground: 200 15% 94%;
 
-    --primary: 212 72% 55%;
+    --primary: 174 50% 48%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 18% 16%;
-    --secondary-foreground: 216 15% 88%;
+    --secondary: 195 18% 16%;
+    --secondary-foreground: 200 12% 86%;
 
-    --muted: 220 14% 18%;
-    --muted-foreground: 218 10% 55%;
+    --muted: 195 14% 18%;
+    --muted-foreground: 200 8% 52%;
 
-    --accent: 220 18% 14%;
-    --accent-foreground: 216 15% 88%;
+    --accent: 174 45% 42%;
+    --accent-foreground: 200 12% 86%;
 
     --destructive: 4 78% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 12% 18%;
-    --input: 220 12% 18%;
-    --ring: 212 72% 55%;
+    --border: 195 12% 18%;
+    --input: 195 12% 18%;
+    --ring: 174 50% 48%;
 
     --warning: 40 92% 52%;
     --warning-foreground: 0 0% 100%;
 
-    --success: 158 55% 44%;
+    --success: 174 48% 42%;
     --success-foreground: 0 0% 100%;
 
-    --info: 205 80% 58%;
+    --info: 199 72% 55%;
     --info-foreground: 0 0% 100%;
 
-    --header: 220 35% 6%;
-    --header-foreground: 216 12% 92%;
+    --header: 195 35% 6%;
+    --header-foreground: 200 10% 90%;
 
-    --sidebar-background: 220 28% 8%;
-    --sidebar-foreground: 216 18% 90%;
-    --sidebar-primary: 212 72% 55%;
+    --sidebar-background: 195 28% 8%;
+    --sidebar-foreground: 200 15% 88%;
+    --sidebar-primary: 174 50% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 18% 16%;
-    --sidebar-accent-foreground: 216 15% 88%;
-    --sidebar-border: 220 12% 18%;
-    --sidebar-ring: 212 72% 55%;
+    --sidebar-accent: 195 18% 16%;
+    --sidebar-accent-foreground: 200 12% 86%;
+    --sidebar-border: 195 12% 18%;
+    --sidebar-ring: 174 50% 48%;
 
-    --hospital-green: 158 50% 42%;
-    --hospital-green-light: 158 25% 14%;
+    --hospital-green: 174 45% 40%;
+    --hospital-green-light: 174 22% 14%;
     --hospital-amber: 40 88% 52%;
-    --hospital-amber-light: 40 35% 14%;
+    --hospital-amber-light: 40 30% 14%;
 
-    --chart-1: 212 72% 60%;
-    --chart-2: 205 80% 65%;
-    --chart-3: 158 55% 48%;
+    --chart-1: 174 50% 55%;
+    --chart-2: 199 72% 60%;
+    --chart-3: 174 45% 46%;
     --chart-4: 40 88% 55%;
     --chart-5: 4 70% 55%;
-    --sidebar: 220 28% 10%;
+    --sidebar: 195 28% 10%;
     --shadow-2xs: 0 1px 2px 0 hsl(0 0% 0% / 0.2);
     --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.2);
     --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.3), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
@@ -455,7 +454,7 @@
   }
 
   .shimmer-text {
-    background: linear-gradient(90deg, hsl(215 72% 42%) 0%, hsl(205 85% 58%) 50%, hsl(215 72% 42%) 100%);
+    background: linear-gradient(90deg, hsl(186 54% 23%) 0%, hsl(174 56% 55%) 50%, hsl(186 54% 23%) 100%);
     background-size: 200% auto;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -471,12 +470,12 @@
   /* Premium glass card */
   .glass-card {
     @apply bg-card/80 backdrop-blur-lg border border-border/50;
-    box-shadow: 0 8px 32px hsl(218 25% 40% / 0.06), 
+    box-shadow: 0 8px 32px hsl(192 20% 30% / 0.05), 
                 0 1px 0 hsl(0 0% 100% / 0.04) inset;
   }
 
   /* Input focus glow */
   .input-glow:focus-within {
-    box-shadow: 0 0 0 3px hsl(215 72% 42% / 0.1);
+    box-shadow: 0 0 0 3px hsl(186 54% 23% / 0.1);
   }
 }
