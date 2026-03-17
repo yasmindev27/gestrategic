@@ -15,8 +15,6 @@ import {
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { toast } from 'sonner';
 
 interface Classificacao {
   id: string;
