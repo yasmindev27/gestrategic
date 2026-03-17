@@ -230,17 +230,27 @@ export function InfraestruturaPanel() {
   const [alertas, setAlertas] = useState<HashAlerta[]>([]);
   const repairTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
   const [isSyncing, setIsSyncing] = useState(false);
-  const [syncResult, setSyncResult] = useState<{ tables: number; rows: number; errors: number } | null>(null);
+  const [syncElapsed, setSyncElapsed] = useState(0);
+  const syncTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [syncResult, setSyncResult] = useState<{ tables: number; rows: number; errors: number; duration?: number } | null>(null);
 
   const handleSyncExternalDB = async () => {
     setIsSyncing(true);
     setSyncResult(null);
+    setSyncElapsed(0);
+
+    // Start elapsed timer
+    const start = Date.now();
+    syncTimerRef.current = setInterval(() => {
+      setSyncElapsed(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Não autenticado");
 
       const res = await supabase.functions.invoke("sync-external-db", {
-        body: { mode: "full" },
+        body: {},
       });
 
       if (res.error) throw res.error;
@@ -250,11 +260,14 @@ export function InfraestruturaPanel() {
         tables: result.summary?.tables_processed || 0,
         rows: result.summary?.total_rows_synced || 0,
         errors: result.summary?.tables_with_errors || 0,
+        duration: result.summary?.duration_seconds || 0,
       });
     } catch (err: any) {
       console.error("Sync error:", err);
       setSyncResult({ tables: 0, rows: 0, errors: -1 });
     } finally {
+      if (syncTimerRef.current) clearInterval(syncTimerRef.current);
+      syncTimerRef.current = null;
       setIsSyncing(false);
     }
   };
@@ -404,11 +417,16 @@ export function InfraestruturaPanel() {
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
           >
             {isSyncing ? (
-              <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+              <>
+                <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                Sincronizando... {syncElapsed}s
+              </>
             ) : (
-              <Cloud className="h-4 w-4 mr-2" />
+              <>
+                <Cloud className="h-4 w-4 mr-2" />
+                Sync Banco Externo
+              </>
             )}
-            {isSyncing ? "Sincronizando..." : "Sync Banco Externo"}
           </Button>
         </div>
       </div>
@@ -430,7 +448,7 @@ export function InfraestruturaPanel() {
                   <p className="text-sm font-medium text-destructive">Erro na sincronização — verifique as credenciais do banco externo</p>
                 ) : (
                   <p className="text-sm font-medium text-foreground">
-                    Sincronização concluída: <strong>{syncResult.tables}</strong> tabelas, <strong>{syncResult.rows.toLocaleString()}</strong> registros
+                    Sincronização concluída em <strong>{syncResult.duration?.toFixed(1) || '?'}s</strong>: <strong>{syncResult.tables}</strong> tabelas, <strong>{syncResult.rows.toLocaleString()}</strong> registros
                     {syncResult.errors > 0 && <span className="text-amber-600"> ({syncResult.errors} tabelas com erros)</span>}
                   </p>
                 )}
