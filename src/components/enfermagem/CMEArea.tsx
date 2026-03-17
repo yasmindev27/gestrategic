@@ -436,8 +436,8 @@ export function CMEArea() {
   const olivasFiltradas = olivas.filter(o =>
     o.tipoMaterial.toLowerCase().includes(buscaOlivas.toLowerCase()) || o.responsavel.toLowerCase().includes(buscaOlivas.toLowerCase())
   );
-  const conferenciasFiltradas = conferencias.filter(c =>
-    c.setor.toLowerCase().includes(buscaConferencia.toLowerCase()) || c.responsavel.toLowerCase().includes(buscaConferencia.toLowerCase())
+  const danificadosFiltrados = danificados.filter(d =>
+    d.material.toLowerCase().includes(buscaDanificado.toLowerCase()) || d.responsavel.toLowerCase().includes(buscaDanificado.toLowerCase()) || d.setor.toLowerCase().includes(buscaDanificado.toLowerCase())
   );
 
   const getBusca = () => {
@@ -448,6 +448,7 @@ export function CMEArea() {
     if (tab === 'diluicao') return buscaDiluicao;
     if (tab === 'olivas') return buscaOlivas;
     if (tab === 'conferencia') return buscaConferencia;
+    if (tab === 'danificados') return buscaDanificado;
     return busca;
   };
   const setBuscaAtual = (v: string) => {
@@ -458,6 +459,7 @@ export function CMEArea() {
     else if (tab === 'diluicao') setBuscaDiluicao(v);
     else if (tab === 'olivas') setBuscaOlivas(v);
     else if (tab === 'conferencia') setBuscaConferencia(v);
+    else if (tab === 'danificados') setBuscaDanificado(v);
     else setBusca(v);
   };
 
