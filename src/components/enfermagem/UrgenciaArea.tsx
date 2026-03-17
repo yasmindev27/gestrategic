@@ -320,6 +320,10 @@ export function UrgenciaArea() {
         <TabsContent value="termo" className="mt-4">
           <TermoConsentimentoRiscos storageKey="enf-termo-riscos-urgencia" setor="Urgência" />
         </TabsContent>
+
+        <TabsContent value="sae" className="mt-4">
+          <SAEAdulto storageKey="enf-sae-adulto-urgencia" setor="Urgência" />
+        </TabsContent>
       </Tabs>
     </div>
   );

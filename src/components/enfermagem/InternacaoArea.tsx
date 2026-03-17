@@ -408,6 +408,10 @@ export function InternacaoArea() {
         <TabsContent value="termo" className="mt-4">
           <TermoConsentimentoRiscos storageKey="enf-termo-riscos-internacao" setor="Internação" />
         </TabsContent>
+
+        <TabsContent value="sae" className="mt-4">
+          <SAEAdulto storageKey="enf-sae-adulto-internacao" setor="Internação" />
+        </TabsContent>
       </Tabs>
     </div>
   );
