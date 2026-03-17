@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan, FlaskConical, CircleDot, ClipboardCheck, Ban, ShoppingCart
+  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan, FlaskConical, CircleDot, ClipboardCheck, Ban, ShoppingCart, BoxSelect
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -154,6 +154,19 @@ interface SolicitacaoMaterial {
   dataRegistro: string;
 }
 
+interface ControleMaterialKit {
+  id: string;
+  data: string;
+  kit: string;
+  descricaoItens: string;
+  qtdSaidaEsterilizacao: string;
+  qtdRetornoEsterilizacao: string;
+  totalEstoqueCME: string;
+  responsavel: string;
+  observacoes: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
@@ -212,6 +225,7 @@ export function CMEArea() {
   const [conferencias, setConferencias] = useLocalStorage<RegistroConferencia[]>('enf-cme-conferencia', []);
   const [danificados, setDanificados] = useLocalStorage<RegistroDanificado[]>('enf-cme-danificados', []);
   const [solicitacoes, setSolicitacoes] = useLocalStorage<SolicitacaoMaterial[]>('enf-cme-solicitacoes', []);
+  const [controleMateriais, setControleMateriais] = useLocalStorage<ControleMaterialKit[]>('enf-cme-controle-material', []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDevOpen, setDialogDevOpen] = useState(false);
   const [dialogPincasOpen, setDialogPincasOpen] = useState(false);
@@ -222,6 +236,7 @@ export function CMEArea() {
   const [dialogConferenciaOpen, setDialogConferenciaOpen] = useState(false);
   const [dialogDanificadoOpen, setDialogDanificadoOpen] = useState(false);
   const [dialogSolicitacaoOpen, setDialogSolicitacaoOpen] = useState(false);
+  const [dialogControleMatOpen, setDialogControleMatOpen] = useState(false);
   const [detalhePinca, setDetalhePinca] = useState<RegistroPincas | null>(null);
   const [detalhe, setDetalhe] = useState<DevolucaoMaterial | null>(null);
   const [detalheAlmotolia, setDetalheAlmotolia] = useState<RegistroAlmotolia | null>(null);
@@ -231,6 +246,7 @@ export function CMEArea() {
   const [detalheConferencia, setDetalheConferencia] = useState<RegistroConferencia | null>(null);
   const [detalheDanificado, setDetalheDanificado] = useState<RegistroDanificado | null>(null);
   const [detalheSolicitacao, setDetalheSolicitacao] = useState<SolicitacaoMaterial | null>(null);
+  const [detalheControleMat, setDetalheControleMat] = useState<ControleMaterialKit | null>(null);
   const [busca, setBusca] = useState('');
   const [buscaDev, setBuscaDev] = useState('');
   const [buscaPincas, setBuscaPincas] = useState('');
@@ -241,6 +257,22 @@ export function CMEArea() {
   const [buscaConferencia, setBuscaConferencia] = useState('');
   const [buscaDanificado, setBuscaDanificado] = useState('');
   const [buscaSolicitacao, setBuscaSolicitacao] = useState('');
+  const [buscaControleMat, setBuscaControleMat] = useState('');
+
+  const KITS_CME = [
+    { nome: 'Kit Sutura', descricao: 'Tesoura Mayo reta 16 cm / Pinça Hemostática reta 16 cm / Porta-agulha / Pinça dente de rato / Cuba rim' },
+    { nome: 'Kit Cateterismo Vesical', descricao: 'Tesoura Metzenbaum 16 cm curva / Tesoura Mayo reta 17 cm / 2 Pinças Hemostática reta 16 cm / Porta-agulha / Pinça dente de rato 16 cm' },
+    { nome: 'Kit Pequena Cirurgia', descricao: 'Bandeja / Pinça Pozzi / Pinça Cheron / Pinça Backhaus / Pinça Allis / Cabo de bisturi / 2 Afastadores Farabeuf / Pinça dente de rato / Tesoura' },
+    { nome: 'Kit Parto', descricao: 'Tesoura Mayo reta 16 cm / Pinça Hemostática reta 16 cm / Cuba rim / Porta-agulha / Pinça Pean ou Coração' },
+    { nome: 'Kit Traqueostomia', descricao: 'Circuito alto e infantil' },
+  ];
+
+  const [formControleMat, setFormControleMat] = useState({
+    data: new Date().toISOString().split('T')[0], kit: '', descricaoItens: '',
+    qtdSaidaEsterilizacao: '', qtdRetornoEsterilizacao: '', totalEstoqueCME: '',
+    responsavel: '', observacoes: '',
+  });
+
 
   const [form, setForm] = useState({
     descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '',
@@ -408,6 +440,15 @@ export function CMEArea() {
     toast.success('Solicitação registrada');
   };
 
+  const handleAddControleMat = () => {
+    if (!formControleMat.kit || !formControleMat.responsavel) { toast.error('Kit e responsável são obrigatórios'); return; }
+    const novo: ControleMaterialKit = { id: crypto.randomUUID(), ...formControleMat, dataRegistro: new Date().toLocaleString('pt-BR') };
+    setControleMateriais([novo, ...controleMateriais]);
+    setFormControleMat({ data: new Date().toISOString().split('T')[0], kit: '', descricaoItens: '', qtdSaidaEsterilizacao: '', qtdRetornoEsterilizacao: '', totalEstoqueCME: '', responsavel: '', observacoes: '' });
+    setDialogControleMatOpen(false);
+    toast.success('Controle de material registrado');
+  };
+
   const avancarEtapa = (id: string) => {
     const ordem: ItemCME['etapa'][] = ['recebimento', 'lavagem', 'secagem', 'preparo', 'esterilizacao', 'armazenamento', 'distribuicao'];
     setItens(prev => prev.map(i => {
@@ -484,6 +525,9 @@ export function CMEArea() {
   const solicitacoesFiltradas = solicitacoes.filter(s =>
     s.material.toLowerCase().includes(buscaSolicitacao.toLowerCase()) || s.setor.toLowerCase().includes(buscaSolicitacao.toLowerCase()) || s.solicitante.toLowerCase().includes(buscaSolicitacao.toLowerCase())
   );
+  const controleMatFiltrados = controleMateriais.filter(c =>
+    c.kit.toLowerCase().includes(buscaControleMat.toLowerCase()) || c.responsavel.toLowerCase().includes(buscaControleMat.toLowerCase())
+  );
   const conferenciasFiltradas = conferencias.filter(c =>
     c.setor.toLowerCase().includes(buscaConferencia.toLowerCase()) || c.responsavel.toLowerCase().includes(buscaConferencia.toLowerCase())
   );
@@ -498,6 +542,7 @@ export function CMEArea() {
     if (tab === 'conferencia') return buscaConferencia;
     if (tab === 'danificados') return buscaDanificado;
     if (tab === 'solicitacao') return buscaSolicitacao;
+    if (tab === 'controle-material') return buscaControleMat;
     return busca;
   };
   const setBuscaAtual = (v: string) => {
@@ -510,11 +555,45 @@ export function CMEArea() {
     else if (tab === 'conferencia') setBuscaConferencia(v);
     else if (tab === 'danificados') setBuscaDanificado(v);
     else if (tab === 'solicitacao') setBuscaSolicitacao(v);
+    else if (tab === 'controle-material') setBuscaControleMat(v);
     else setBusca(v);
   };
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'controle-material') return (
+      <Dialog open={dialogControleMatOpen} onOpenChange={setDialogControleMatOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Controle</Button></DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Controle de Material — Kits CME</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Data</Label><Input type="date" value={formControleMat.data} onChange={e => setFormControleMat(p => ({ ...p, data: e.target.value }))} /></div>
+              <div><Label>Kit</Label>
+                <Select value={formControleMat.kit} onValueChange={v => {
+                  const kit = KITS_CME.find(k => k.nome === v);
+                  setFormControleMat(p => ({ ...p, kit: v, descricaoItens: kit?.descricao || '' }));
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o Kit" /></SelectTrigger>
+                  <SelectContent>{KITS_CME.map(k => <SelectItem key={k.nome} value={k.nome}>{k.nome}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            {formControleMat.descricaoItens && (
+              <div className="p-2 bg-muted rounded text-xs text-muted-foreground"><strong>Itens:</strong> {formControleMat.descricaoItens}</div>
+            )}
+            <div className="grid grid-cols-3 gap-3">
+              <div><Label>Saída p/ Esterilização</Label><Input value={formControleMat.qtdSaidaEsterilizacao} onChange={e => setFormControleMat(p => ({ ...p, qtdSaidaEsterilizacao: e.target.value }))} placeholder="Qtd" /></div>
+              <div><Label>Retorno Esterilização</Label><Input value={formControleMat.qtdRetornoEsterilizacao} onChange={e => setFormControleMat(p => ({ ...p, qtdRetornoEsterilizacao: e.target.value }))} placeholder="Qtd" /></div>
+              <div><Label>Total Estoque (CME)</Label><Input value={formControleMat.totalEstoqueCME} onChange={e => setFormControleMat(p => ({ ...p, totalEstoqueCME: e.target.value }))} placeholder="Qtd" /></div>
+            </div>
+            <div><Label>Responsável</Label><Input value={formControleMat.responsavel} onChange={e => setFormControleMat(p => ({ ...p, responsavel: e.target.value }))} /></div>
+            <div><Label>Observações</Label><Textarea value={formControleMat.observacoes} onChange={e => setFormControleMat(p => ({ ...p, observacoes: e.target.value }))} rows={2} /></div>
+            <Button onClick={handleAddControleMat} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'solicitacao') return (
       <Dialog open={dialogSolicitacaoOpen} onOpenChange={setDialogSolicitacaoOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Nova Solicitação</Button></DialogTrigger>
@@ -963,6 +1042,7 @@ export function CMEArea() {
           <TabsTrigger value="conferencia" className="gap-1"><ClipboardCheck className="h-4 w-4" />Conferência</TabsTrigger>
           <TabsTrigger value="danificados" className="gap-1"><Ban className="h-4 w-4" />Danificados</TabsTrigger>
           <TabsTrigger value="solicitacao" className="gap-1"><ShoppingCart className="h-4 w-4" />Solicitação</TabsTrigger>
+          <TabsTrigger value="controle-material" className="gap-1"><BoxSelect className="h-4 w-4" />Controle Material</TabsTrigger>
         </TabsList>
 
         <TabsContent value="area-suja" className="mt-4">{renderTabela(itensSuja, 'Área Suja')}</TabsContent>
@@ -1208,6 +1288,33 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="controle-material" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Data</TableHead><TableHead>Kit</TableHead><TableHead>Saída Est.</TableHead>
+                <TableHead>Retorno Est.</TableHead><TableHead>Total CME</TableHead><TableHead>Responsável</TableHead><TableHead>Obs</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {controleMatFiltrados.length === 0 ? (
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum controle de material registrado</TableCell></TableRow>
+                ) : controleMatFiltrados.map(c => (
+                  <TableRow key={c.id}>
+                    <TableCell>{c.data}</TableCell>
+                    <TableCell className="font-medium">{c.kit}</TableCell>
+                    <TableCell>{c.qtdSaidaEsterilizacao || '—'}</TableCell>
+                    <TableCell>{c.qtdRetornoEsterilizacao || '—'}</TableCell>
+                    <TableCell className="font-bold">{c.totalEstoqueCME || '—'}</TableCell>
+                    <TableCell>{c.responsavel}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-[120px] truncate">{c.observacoes || '—'}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheControleMat(c)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog detalhe pinças */}
@@ -1435,6 +1542,32 @@ export function CMEArea() {
               <div><span className="text-muted-foreground">Solicitante:</span> {detalheSolicitacao.solicitante}</div>
               {detalheSolicitacao.observacao && <div><span className="text-muted-foreground">Observação:</span> {detalheSolicitacao.observacao}</div>}
               <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheSolicitacao.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog detalhe controle material */}
+      <Dialog open={!!detalheControleMat} onOpenChange={() => setDetalheControleMat(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Controle de Material</DialogTitle></DialogHeader>
+          {detalheControleMat && (
+            <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Data:</span> <strong>{detalheControleMat.data}</strong></div>
+                <div><span className="text-muted-foreground">Kit:</span> <Badge>{detalheControleMat.kit}</Badge></div>
+              </div>
+              {detalheControleMat.descricaoItens && (
+                <div className="p-2 bg-muted rounded text-xs"><strong>Descrição dos Itens:</strong> {detalheControleMat.descricaoItens}</div>
+              )}
+              <div className="grid grid-cols-3 gap-2">
+                <div><span className="text-muted-foreground">Saída p/ Esterilização:</span> <strong>{detalheControleMat.qtdSaidaEsterilizacao || '—'}</strong></div>
+                <div><span className="text-muted-foreground">Retorno Esterilização:</span> <strong>{detalheControleMat.qtdRetornoEsterilizacao || '—'}</strong></div>
+                <div><span className="text-muted-foreground">Total Estoque CME:</span> <strong>{detalheControleMat.totalEstoqueCME || '—'}</strong></div>
+              </div>
+              <div><span className="text-muted-foreground">Responsável:</span> {detalheControleMat.responsavel}</div>
+              {detalheControleMat.observacoes && <div><span className="text-muted-foreground">Observações:</span> {detalheControleMat.observacoes}</div>}
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheControleMat.dataRegistro}</p>
             </div>
           )}
         </DialogContent>
