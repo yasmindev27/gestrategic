@@ -117,6 +117,19 @@ interface RegistroOlivas {
   dataRegistro: string;
 }
 
+interface RegistroConferencia {
+  id: string;
+  data: string;
+  setor: string;
+  materiaisRespiratorios: boolean;
+  materiaisCirurgicos: boolean;
+  inconformidade: boolean;
+  inconformidadeDescricao: string;
+  responsavel: string;
+  coren: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
