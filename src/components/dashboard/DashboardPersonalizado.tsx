@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { SECTORS } from "@/types/bed";
 import {
   BedDouble, AlertTriangle, Wrench, ClipboardCheck,
   TrendingUp, RefreshCw, Calendar, GraduationCap,
