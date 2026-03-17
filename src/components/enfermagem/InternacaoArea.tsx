@@ -27,6 +27,7 @@ import { EscalasClinicas } from './EscalasClinicas';
 import { PassagemPlantaoSBAR } from './PassagemPlantaoSBAR';
 import { DiagnosticoPrescricaoEnfermagem } from './DiagnosticoPrescricaoEnfermagem';
 import { TermoConsentimentoRiscos } from './TermoConsentimentoRiscos';
+import { SAEAdulto } from './SAEAdulto';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
