@@ -342,6 +342,10 @@ export function InternacaoArea() {
         <TabsContent value="carrinho" className="mt-4">
           <ChecklistCarrinhoInternacao />
         </TabsContent>
+
+        <TabsContent value="sinais-vitais" className="mt-4">
+          <ChecklistSinaisVitais storageKey="enf-sinais-vitais-internacao" setor="Internação" />
+        </TabsContent>
       </Tabs>
     </div>
   );

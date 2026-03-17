@@ -468,6 +468,10 @@ export function MedicacaoArea() {
             </div>
           )}
         </TabsContent>
+
+        <TabsContent value="sinais-vitais" className="mt-4">
+          <ChecklistSinaisVitais storageKey="enf-sinais-vitais-medicacao" setor="Medicação" />
+        </TabsContent>
       </Tabs>
     </div>
   );
