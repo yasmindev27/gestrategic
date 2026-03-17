@@ -88,7 +88,7 @@ const Sidebar = ({
         { icon: UserRound, label: "Colaborador", id: "colaborador", category: "administrativo" },
         { icon: GraduationCap, label: "Capacitação", id: "lms", category: "administrativo" },
         { icon: Monitor, label: "TI", id: "tecnico-ti", category: "administrativo" },
-        { icon: ClipboardX, label: "Controle de Fichas", id: "controle-fichas", category: "administrativo" },
+        { icon: ClipboardX, label: "Recepção", id: "controle-fichas", category: "administrativo" },
         { icon: Shield, label: "Administração", id: "admin", category: "administrativo" },
         // Comunicação / Apoio
         { icon: MessageSquare, label: "Chat", id: "chat", category: "comunicacao" },
