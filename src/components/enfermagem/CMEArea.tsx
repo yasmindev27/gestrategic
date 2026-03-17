@@ -269,6 +269,10 @@ export function CMEArea() {
     materiaisRespiratorios: false, materiaisCirurgicos: false,
     inconformidade: false, inconformidadeDescricao: '', responsavel: '', coren: '',
   });
+  const [formDanificado, setFormDanificado] = useState({
+    material: '', setor: '', data: new Date().toISOString().split('T')[0],
+    motivo: '', conduta: '', reposicao: '', responsavel: '',
+  });
 
   const itensSuja = itens.filter(i => (ETAPAS_SUJA as readonly string[]).includes(i.etapa));
   const itensLimpa = itens.filter(i => (ETAPAS_LIMPA as readonly string[]).includes(i.etapa));
