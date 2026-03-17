@@ -1691,23 +1691,24 @@ export const SaidaProntuariosModule = () => {
               Nenhum prontuário encontrado.
             </div>
           ) : (
-            <div className="overflow-x-auto relative">
-              <Table className="text-xs">
-                <TableHeader>
+            <div className="border rounded-md overflow-hidden">
+              <div className="overflow-x-auto overflow-y-auto max-h-[65vh] relative scrollbar-thin">
+              <Table className="text-xs min-w-[1100px]">
+                <TableHeader className="sticky top-0 z-30">
                   <TableRow className="bg-[hsl(var(--sidebar-background))] hover:bg-[hsl(var(--sidebar-background))]">
-                    <TableHead className="sticky left-0 z-20 bg-[hsl(var(--sidebar-background))] min-w-[160px] max-w-[200px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] text-[10px] font-semibold text-white uppercase tracking-wider py-2">Paciente</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 whitespace-nowrap">Dt. Nasc.</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 whitespace-nowrap">Dt. Atend.</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 w-[80px]">Pendências</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 w-[90px]">Resolução</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 w-[100px]">Status</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 whitespace-nowrap">Recepção</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 whitespace-nowrap">Entr. Rec.</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 whitespace-nowrap">Classif.</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 whitespace-nowrap">Entr. Cl.</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2">NIR</TableHead>
-                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2 whitespace-nowrap">Entr. Fat.</TableHead>
-                    <TableHead className="sticky right-0 z-20 bg-[hsl(var(--sidebar-background))] shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] text-[10px] font-semibold text-white uppercase tracking-wider py-2 text-center">Ações</TableHead>
+                    <TableHead className="sticky left-0 z-40 bg-[hsl(var(--sidebar-background))] min-w-[180px] max-w-[220px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.15)] text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 px-3">Paciente</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 whitespace-nowrap min-w-[75px] px-2">Dt. Nasc.</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 whitespace-nowrap min-w-[75px] px-2">Dt. Atend.</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 min-w-[90px] px-2">Pendências</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 min-w-[90px] px-2">Resolução</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 min-w-[100px] px-2">Status</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 whitespace-nowrap min-w-[85px] px-2">Recepção</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 whitespace-nowrap min-w-[85px] px-2">Entr. Rec.</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 whitespace-nowrap min-w-[85px] px-2">Classif.</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 whitespace-nowrap min-w-[85px] px-2">Entr. Cl.</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 min-w-[80px] px-2">NIR</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 whitespace-nowrap min-w-[85px] px-2">Entr. Fat.</TableHead>
+                    <TableHead className="sticky right-0 z-40 bg-[hsl(var(--sidebar-background))] shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.15)] text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 text-center min-w-[70px] px-2">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
