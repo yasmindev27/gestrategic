@@ -2,7 +2,7 @@ import { ShieldX, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface AccessDeniedProps {
-  onTryAgain: () => void;
+  onTryAgain?: () => void;
 }
 
 const AccessDenied = ({ onTryAgain }: AccessDeniedProps) => {

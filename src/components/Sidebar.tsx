@@ -42,7 +42,7 @@ const Sidebar = ({
     role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
     isLaboratorio, isTecnico, isRecepcao, isClassificacao, isNir,
     isFaturamento, isRHDP, isQualidade, isNSP, isMedicos, isEnfermagem,
-    isSeguranca, isAssistenciaSocial, isRestaurante
+    isSeguranca, isAssistenciaSocial, isRestaurante, isRouparia
   } = useUserRole();
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
@@ -237,6 +237,14 @@ const Sidebar = ({
       );
       return items;
     }
+    if (isRouparia) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Shirt, label: "Rouparia", id: "rouparia", category: "apoio_logistica" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
+      );
+      return items;
+    }
     if (isSeguranca) {
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
@@ -298,7 +306,7 @@ const Sidebar = ({
         <div className="relative flex-shrink-0">
           <Icon className="h-[18px] w-[18px]" />
           {hasBadge && (
-            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 ring-2 ring-[#0d2137]">
+            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 ring-2 ring-sidebar">
               {badgeCount > 99 ? "99+" : badgeCount}
             </span>
           )}
@@ -317,8 +325,8 @@ const Sidebar = ({
     const buttonClasses = cn(
       "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm relative",
       isActive
-        ? "bg-[#2d7dd2]/15 text-white font-semibold before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[3px] before:rounded-full before:bg-[#2d7dd2] before:shadow-[0_0_8px_rgba(45,125,210,0.6)]"
-        : "text-[#8baec8] hover:bg-white/5 hover:text-white",
+        ? "bg-sidebar-primary/15 text-white font-semibold before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[3px] before:rounded-full before:bg-sidebar-primary before:shadow-[0_0_8px_rgba(78,205,196,0.5)]"
+        : "text-sidebar-foreground hover:bg-white/5 hover:text-white",
       isCollapsed && "justify-center px-2"
     );
 
@@ -330,7 +338,7 @@ const Sidebar = ({
     const withTooltip = (trigger: React.ReactNode) => (
       <Tooltip delayDuration={0}>
         <TooltipTrigger asChild>{trigger}</TooltipTrigger>
-        <TooltipContent side="right" className="bg-[#1a3a5c] text-white border-[#2d7dd2]/30 text-xs font-medium shadow-lg">
+        <TooltipContent side="right" className="bg-sidebar-accent text-white border-sidebar-primary/30 text-xs font-medium shadow-lg">
           {item.label}
           {isExternalLink && <ExternalLink className="inline ml-1 h-3 w-3 opacity-60" />}
         </TooltipContent>
@@ -364,7 +372,7 @@ const Sidebar = ({
           <a
             href={externalUrl}
             onClick={handleClick}
-            className={cn(buttonClasses, "text-[#8baec8] hover:bg-white/5 hover:text-white")}
+            className={cn(buttonClasses, "text-sidebar-foreground hover:bg-white/5 hover:text-white")}
           >
             {content}
             {!isCollapsed && <ExternalLink className="h-3 w-3 opacity-60 ml-auto flex-shrink-0" />}
@@ -372,7 +380,7 @@ const Sidebar = ({
         </li>
       );
       return isCollapsed ? <li>{withTooltip(
-        <a href={externalUrl} onClick={handleClick} className={cn(buttonClasses, "text-[#8baec8] hover:bg-white/5 hover:text-white")}>
+        <a href={externalUrl} onClick={handleClick} className={cn(buttonClasses, "text-sidebar-foreground hover:bg-white/5 hover:text-white")}>
           {content}
         </a>
       )}</li> : link;
@@ -478,7 +486,7 @@ const Sidebar = ({
           return (
             <div key={cat.key}>
               {cat.label && (
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#5a7a9a] px-3 mb-1.5">{cat.label}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/60 px-3 mb-1.5">{cat.label}</p>
               )}
               <ul className="space-y-0.5">
                 {items.map(item => (
@@ -495,7 +503,7 @@ const Sidebar = ({
   return (
     <TooltipProvider delayDuration={0}>
       <aside className={cn(
-        "bg-[#0d2137] h-screen flex flex-col sticky top-0 transition-all duration-300 shadow-lg",
+        "bg-sidebar h-screen flex flex-col sticky top-0 transition-all duration-300 shadow-lg",
         isCollapsed ? "w-20" : "w-64"
       )}>
         {/* Logo & Brand */}
@@ -505,7 +513,7 @@ const Sidebar = ({
             {!isCollapsed && (
               <div className="overflow-hidden">
                 <h1 className="font-bold text-base text-white truncate">Gestrategic</h1>
-                <p className="text-[11px] text-[#7eb8e0]">Tecnologia em Saúde</p>
+                <p className="text-[11px] text-sidebar-foreground/70">Tecnologia em Saúde</p>
               </div>
             )}
           </button>
@@ -514,9 +522,9 @@ const Sidebar = ({
         {/* Collapse Toggle */}
         <button
           onClick={() => setIsCollapsed(!isCollapsed)}
-          className="absolute -right-3 top-16 bg-[#0d2137] border border-[#2d7dd2]/30 rounded-full p-1 shadow-md hover:bg-[#1a3a5c] transition-colors z-10"
+          className="absolute -right-3 top-16 bg-sidebar border border-sidebar-primary/30 rounded-full p-1 shadow-md hover:bg-sidebar-accent transition-colors z-10"
         >
-          {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-[#7eb8e0]" /> : <ChevronLeft className="h-3.5 w-3.5 text-[#7eb8e0]" />}
+          {isCollapsed ? <ChevronRight className="h-3.5 w-3.5 text-sidebar-foreground" /> : <ChevronLeft className="h-3.5 w-3.5 text-sidebar-foreground" />}
         </button>
 
         {/* Navigation */}
@@ -533,7 +541,7 @@ const Sidebar = ({
                 <button
                   onClick={() => onSectionChange(item.id)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[#8baec8] hover:bg-white/5 hover:text-white transition-colors text-sm",
+                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sidebar-foreground hover:bg-white/5 hover:text-white transition-colors text-sm",
                     isCollapsed && "justify-center px-2"
                   )}
                 >
@@ -546,7 +554,7 @@ const Sidebar = ({
                   {isCollapsed ? (
                     <Tooltip delayDuration={0}>
                       <TooltipTrigger asChild>{btn}</TooltipTrigger>
-                      <TooltipContent side="right" className="bg-[#1a3a5c] text-white border-[#2d7dd2]/30 text-xs font-medium shadow-lg">
+                      <TooltipContent side="right" className="bg-sidebar-accent text-white border-sidebar-primary/30 text-xs font-medium shadow-lg">
                         {item.label}
                       </TooltipContent>
                     </Tooltip>
@@ -561,14 +569,14 @@ const Sidebar = ({
           {/* User Profile & Logout */}
           <div className={cn("flex items-center gap-3 p-2 rounded-lg bg-white/5", isCollapsed && "justify-center")}>
             <Avatar className="h-8 w-8 flex-shrink-0">
-              <AvatarFallback className="bg-[#2d7dd2]/20 text-[#5ba3d9] text-xs font-semibold">
+              <AvatarFallback className="bg-sidebar-primary/20 text-sidebar-primary text-xs font-semibold">
                 {getInitials(userName)}
               </AvatarFallback>
             </Avatar>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">{userName}</p>
-                <p className="text-[11px] text-[#5a7a9a] truncate">{userEmail}</p>
+                <p className="text-[11px] text-sidebar-foreground/60 truncate">{userEmail}</p>
               </div>
             )}
           </div>

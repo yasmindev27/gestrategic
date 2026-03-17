@@ -8,6 +8,8 @@ import CookieBanner from "@/components/CookieBanner";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
+import { useModules } from "@/hooks/useModules";
+import AccessDenied from "@/components/AccessDenied";
 
 // Lazy load ALL modules for optimal code splitting
 const DashboardPersonalizado = lazy(() => import("@/components/dashboard/DashboardPersonalizado"));
@@ -53,6 +55,7 @@ const Dashboard = () => {
   const [activeSection, setActiveSection] = useState("");
   const [externalUrl, setExternalUrl] = useState<{ url: string; title: string } | null>(null);
   const { isNir, isRecepcao, isFaturamento, isClassificacao, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isLoading: isLoadingRole } = useUserRole();
+  const { canAccessModule } = useModules();
 
   // Segurança: logout automático por inatividade (15 min) — LGPD / UPA
   useSessionTimeout(15);
@@ -129,8 +132,53 @@ const Dashboard = () => {
     return null;
   }
 
+  // Map section IDs to module access keys
+  const sectionToModule: Record<string, string> = {
+    dashboard: "dashboard",
+    faturamento: "faturamento",
+    "controle-fichas": "recepcao",
+    equipe: "equipe",
+    agenda: "agenda",
+    admin: "admin",
+    logs: "logs",
+    "tecnico-ti": "tecnicoTI",
+    "tecnico-manutencao": "tecnicoManutencao",
+    "tecnico-engenharia": "tecnicoEngenharia",
+    nir: "nir",
+    "dashboard-nir": "nir",
+    laboratorio: "laboratorio",
+    restaurante: "restaurante",
+    recepcao: "recepcao",
+    rhdp: "rhdp",
+    rouparia: "rouparia",
+    "seguranca-trabalho": "segurancaTrabalho",
+    "assistencia-social": "assistenciaSocial",
+    qualidade: "qualidade",
+    "reportar-incidente": "abrirChamado",
+    enfermagem: "enfermagem",
+    "mapa-leitos": "mapaLeitos",
+    chat: "chat",
+    medicos: "medicos",
+    lms: "lms",
+    reuniao: "dashboard",
+    salus: "dashboard",
+    gerencia: "admin",
+    "painel-seguranca": "segurancaPatrimonial",
+    "seguranca-patrimonial": "segurancaPatrimonial",
+    colaborador: "colaborador",
+    "abrir-chamado": "abrirChamado",
+    "documentos-interact": "dashboard",
+    "profissionais-saude": "rhdp",
+  };
+
   // Render active module content - all wrapped in Suspense for lazy loading
   const renderContent = () => {
+    // Module access guard
+    const moduleKey = sectionToModule[activeSection];
+    if (moduleKey && !canAccessModule(moduleKey)) {
+      return <AccessDenied />;
+    }
+
     const content = (() => {
       switch (activeSection) {
         case "dashboard":
