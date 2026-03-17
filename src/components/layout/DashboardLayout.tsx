@@ -1,7 +1,8 @@
 import { ReactNode, Suspense, memo } from "react";
 import { Loader2 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
-import GreetingHeader from "@/components/GreetingHeader";
+import TopHeader from "@/components/layout/TopHeader";
+import FooterBar from "@/components/layout/FooterBar";
 import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
 import { FloatingSegurancaButton } from "@/components/seguranca/FloatingSegurancaButton";
 import { GlobalSecurityAlarm } from "@/components/seguranca/GlobalSecurityAlarm";
@@ -47,30 +48,34 @@ const DashboardLayout = memo(({
       <PendenciasAlertSystem />
       <Sidebar activeSection={activeSection} onSectionChange={onSectionChange} onOpenExternal={onOpenExternal} />
       
-      {fullContent ? (
-        <main className="flex-1 overflow-hidden">
-          <Suspense fallback={<ModuleLoader />}>
-            {children}
-          </Suspense>
-        </main>
-      ) : (
-        <main className="flex-1 p-6 overflow-auto">
-          <div className="max-w-7xl mx-auto space-y-6">
-            <GreetingHeader />
-            
+      <div className="flex-1 flex flex-col min-h-screen">
+        <TopHeader />
+        
+        {fullContent ? (
+          <main className="flex-1 overflow-hidden">
             <Suspense fallback={<ModuleLoader />}>
               {children}
             </Suspense>
-          </div>
+          </main>
+        ) : (
+          <main className="flex-1 p-6 overflow-auto">
+            <div className="max-w-7xl mx-auto space-y-6">
+              <Suspense fallback={<ModuleLoader />}>
+                {children}
+              </Suspense>
+            </div>
 
-          {showFloatingChat && activeSection !== "chat" && (
-            <>
-              <FloatingSegurancaButton />
-              <FloatingChatButton currentModule={activeSection} />
-            </>
-          )}
-        </main>
-      )}
+            {showFloatingChat && activeSection !== "chat" && (
+              <>
+                <FloatingSegurancaButton />
+                <FloatingChatButton currentModule={activeSection} />
+              </>
+            )}
+          </main>
+        )}
+        
+        <FooterBar />
+      </div>
     </div>
   );
 });
