@@ -202,6 +202,14 @@ export function CMEArea() {
     produto: 'Álcool 70%', dataFracionar: new Date().toISOString().split('T')[0],
     quantidade: 1, setor: '', lote: '', validade: '', observacao: '', responsavel: '',
   });
+  const emptyDiluicaoItem = (): ItemDiluicao => ({ solucao: '', volume: '', lote: '', validade: '' });
+  const [formDiluicao, setFormDiluicao] = useState({
+    categoria: 'respiratorio' as 'respiratorio' | 'cirurgico',
+    itens: [emptyDiluicaoItem(), emptyDiluicaoItem(), emptyDiluicaoItem()],
+    data: new Date().toISOString().split('T')[0],
+    horario: '',
+    responsavel: '',
+  });
 
   const itensSuja = itens.filter(i => (ETAPAS_SUJA as readonly string[]).includes(i.etapa));
   const itensLimpa = itens.filter(i => (ETAPAS_LIMPA as readonly string[]).includes(i.etapa));
