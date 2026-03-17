@@ -95,6 +95,7 @@ export function ClassificacaoArea() {
         <TabsList>
           <TabsTrigger value="classificacao" className="gap-1"><ClipboardCheck className="h-4 w-4" />Classificação</TabsTrigger>
           <TabsTrigger value="sinais-vitais" className="gap-1"><Thermometer className="h-4 w-4" />Sinais Vitais</TabsTrigger>
+          <TabsTrigger value="escalas" className="gap-1"><Stethoscope className="h-4 w-4" />Escalas Clínicas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="classificacao" className="mt-4 space-y-4">
