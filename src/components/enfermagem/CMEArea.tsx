@@ -549,6 +549,39 @@ export function CMEArea() {
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'controle-material') return (
+      <Dialog open={dialogControleMatOpen} onOpenChange={setDialogControleMatOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Controle</Button></DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Controle de Material — Kits CME</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Data</Label><Input type="date" value={formControleMat.data} onChange={e => setFormControleMat(p => ({ ...p, data: e.target.value }))} /></div>
+              <div><Label>Kit</Label>
+                <Select value={formControleMat.kit} onValueChange={v => {
+                  const kit = KITS_CME.find(k => k.nome === v);
+                  setFormControleMat(p => ({ ...p, kit: v, descricaoItens: kit?.descricao || '' }));
+                }}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o Kit" /></SelectTrigger>
+                  <SelectContent>{KITS_CME.map(k => <SelectItem key={k.nome} value={k.nome}>{k.nome}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            {formControleMat.descricaoItens && (
+              <div className="p-2 bg-muted rounded text-xs text-muted-foreground"><strong>Itens:</strong> {formControleMat.descricaoItens}</div>
+            )}
+            <div className="grid grid-cols-3 gap-3">
+              <div><Label>Saída p/ Esterilização</Label><Input value={formControleMat.qtdSaidaEsterilizacao} onChange={e => setFormControleMat(p => ({ ...p, qtdSaidaEsterilizacao: e.target.value }))} placeholder="Qtd" /></div>
+              <div><Label>Retorno Esterilização</Label><Input value={formControleMat.qtdRetornoEsterilizacao} onChange={e => setFormControleMat(p => ({ ...p, qtdRetornoEsterilizacao: e.target.value }))} placeholder="Qtd" /></div>
+              <div><Label>Total Estoque (CME)</Label><Input value={formControleMat.totalEstoqueCME} onChange={e => setFormControleMat(p => ({ ...p, totalEstoqueCME: e.target.value }))} placeholder="Qtd" /></div>
+            </div>
+            <div><Label>Responsável</Label><Input value={formControleMat.responsavel} onChange={e => setFormControleMat(p => ({ ...p, responsavel: e.target.value }))} /></div>
+            <div><Label>Observações</Label><Textarea value={formControleMat.observacoes} onChange={e => setFormControleMat(p => ({ ...p, observacoes: e.target.value }))} rows={2} /></div>
+            <Button onClick={handleAddControleMat} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'solicitacao') return (
       <Dialog open={dialogSolicitacaoOpen} onOpenChange={setDialogSolicitacaoOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Nova Solicitação</Button></DialogTrigger>
