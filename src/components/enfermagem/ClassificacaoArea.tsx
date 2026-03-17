@@ -10,11 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  ClipboardCheck, Plus, Search, Clock, Users, TrendingUp, Timer, Thermometer
+  ClipboardCheck, Plus, Search, Clock, Users, TrendingUp, Timer, Thermometer, Stethoscope
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
+import { EscalasClinicas } from './EscalasClinicas';
 
 interface Classificacao {
   id: string;
