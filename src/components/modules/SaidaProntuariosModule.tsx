@@ -885,17 +885,17 @@ export const SaidaProntuariosModule = () => {
 
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
-      aguardando_classificacao: { label: "Aguardando Classificação", className: "bg-warning text-warning-foreground" },
-      aguardando_nir: { label: "Aguardando NIR", className: "bg-info text-info-foreground" },
-      pendente: { label: "Aguardando Resolução de Pendência", className: "bg-warning text-warning-foreground" },
-      aguardando_pendencia: { label: "Aguardando Resolução de Pendência", className: "bg-warning text-warning-foreground" },
-      aguardando_faturamento: { label: "Aguardando Faturamento", className: "bg-primary text-primary-foreground" },
-      em_avaliacao: { label: "Em Avaliação", className: "bg-secondary text-secondary-foreground" },
-      concluido: { label: "Concluído", className: "bg-success text-success-foreground" },
+      aguardando_classificacao: { label: "Aguardando Classificação", className: "bg-amber-50 text-amber-700 border border-amber-200" },
+      aguardando_nir: { label: "Aguardando NIR", className: "bg-sky-50 text-sky-700 border border-sky-200" },
+      pendente: { label: "Aguardando Resolução de Pendência", className: "bg-amber-50 text-amber-700 border border-amber-200" },
+      aguardando_pendencia: { label: "Aguardando Resolução de Pendência", className: "bg-amber-50 text-amber-700 border border-amber-200" },
+      aguardando_faturamento: { label: "Aguardando Faturamento", className: "bg-blue-50 text-blue-700 border border-blue-200" },
+      em_avaliacao: { label: "Em Avaliação", className: "bg-slate-50 text-slate-600 border border-slate-200" },
+      concluido: { label: "Concluído", className: "bg-emerald-50 text-emerald-700 border border-emerald-200" },
     };
     
-    const config = statusConfig[status] || { label: status, className: "bg-secondary" };
-    return <Badge className={config.className}>{config.label}</Badge>;
+    const config = statusConfig[status] || { label: status, className: "bg-slate-50 text-slate-600 border border-slate-200" };
+    return <Badge className={`${config.className} font-medium text-[11px] px-2 py-0.5`}>{config.label}</Badge>;
   };
 
   const getActionButton = (saida: SaidaProntuario) => {
