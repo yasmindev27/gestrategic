@@ -891,6 +891,35 @@ export function CMEArea() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog detalhe diluição */}
+      <Dialog open={!!detalheDiluicao} onOpenChange={() => setDetalheDiluicao(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Preparo da Diluição</DialogTitle></DialogHeader>
+          {detalheDiluicao && (
+            <div className="space-y-2 text-sm">
+              <div className="flex gap-4">
+                <div><span className="text-muted-foreground">Data:</span> <strong>{detalheDiluicao.data}</strong></div>
+                <div><span className="text-muted-foreground">Horário:</span> {detalheDiluicao.horario || '—'}</div>
+              </div>
+              <div><span className="text-muted-foreground">Categoria:</span> <Badge variant={detalheDiluicao.categoria === 'respiratorio' ? 'default' : 'secondary'}>{detalheDiluicao.categoria === 'respiratorio' ? 'Materiais Respiratórios' : 'Materiais Cirúrgicos'}</Badge></div>
+              <div className="space-y-1 pt-1">
+                <p className="font-semibold text-xs text-muted-foreground uppercase">Soluções</p>
+                {detalheDiluicao.itens.map((item, i) => (
+                  <div key={i} className="grid grid-cols-4 gap-2 border-b pb-1">
+                    <span><strong>{item.solucao}</strong></span>
+                    <span>Vol: {item.volume || '—'}</span>
+                    <span>Lote: {item.lote || '—'}</span>
+                    <span>Val: {item.validade || '—'}</span>
+                  </div>
+                ))}
+              </div>
+              <div><span className="text-muted-foreground">Responsável:</span> {detalheDiluicao.responsavel}</div>
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheDiluicao.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
