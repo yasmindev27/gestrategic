@@ -120,6 +120,7 @@ export function UrgenciaArea() {
           <TabsTrigger value="nsp" className="gap-1"><Shield className="h-4 w-4" />NSP</TabsTrigger>
           <TabsTrigger value="limpeza" className="gap-1"><SprayCanIcon className="h-4 w-4" />Limpeza Concorrente</TabsTrigger>
           <TabsTrigger value="fluxometros" className="gap-1"><Gauge className="h-4 w-4" />Fluxômetros/Bombas</TabsTrigger>
+          <TabsTrigger value="passagem-plantao" className="gap-1"><ClipboardPen className="h-4 w-4" />Passagem Plantão</TabsTrigger>
         </TabsList>
 
         <TabsContent value="atendimentos" className="mt-4 space-y-4">
