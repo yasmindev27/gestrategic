@@ -273,6 +273,21 @@ export function CMEArea() {
     toast.success('Desinfecção registrada com sucesso');
   };
 
+  const handleAddDiluicao = () => {
+    if (!formDiluicao.responsavel) { toast.error('Responsável é obrigatório'); return; }
+    const itensPreenchidos = formDiluicao.itens.filter(i => i.solucao.trim());
+    if (itensPreenchidos.length === 0) { toast.error('Preencha ao menos uma solução'); return; }
+    const novo: RegistroDiluicao = {
+      id: crypto.randomUUID(), categoria: formDiluicao.categoria, itens: itensPreenchidos,
+      data: formDiluicao.data, horario: formDiluicao.horario, responsavel: formDiluicao.responsavel,
+      dataRegistro: new Date().toLocaleString('pt-BR'),
+    };
+    setDiluicoes([novo, ...diluicoes]);
+    setFormDiluicao({ categoria: 'respiratorio', itens: [emptyDiluicaoItem(), emptyDiluicaoItem(), emptyDiluicaoItem()], data: new Date().toISOString().split('T')[0], horario: '', responsavel: '' });
+    setDialogDiluicaoOpen(false);
+    toast.success('Diluição registrada com sucesso');
+  };
+
   const avancarEtapa = (id: string) => {
     const ordem: ItemCME['etapa'][] = ['recebimento', 'lavagem', 'secagem', 'preparo', 'esterilizacao', 'armazenamento', 'distribuicao'];
     setItens(prev => prev.map(i => {
