@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan, FlaskConical, CircleDot, ClipboardCheck, Ban, ShoppingCart, BoxSelect
+  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan, FlaskConical, CircleDot, ClipboardCheck, Ban, ShoppingCart, BoxSelect, Thermometer
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -167,6 +167,20 @@ interface ControleMaterialKit {
   dataRegistro: string;
 }
 
+interface RegistroTempUmidade {
+  id: string;
+  dia: string;
+  periodo: string;
+  hora: string;
+  tempAtual: string;
+  tempMinima: string;
+  tempMaxima: string;
+  umidade: string;
+  responsavel: string;
+  setor: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
@@ -226,6 +240,7 @@ export function CMEArea() {
   const [danificados, setDanificados] = useLocalStorage<RegistroDanificado[]>('enf-cme-danificados', []);
   const [solicitacoes, setSolicitacoes] = useLocalStorage<SolicitacaoMaterial[]>('enf-cme-solicitacoes', []);
   const [controleMateriais, setControleMateriais] = useLocalStorage<ControleMaterialKit[]>('enf-cme-controle-material', []);
+  const [tempUmidade, setTempUmidade] = useLocalStorage<RegistroTempUmidade[]>('enf-cme-temp-umidade', []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDevOpen, setDialogDevOpen] = useState(false);
   const [dialogPincasOpen, setDialogPincasOpen] = useState(false);
@@ -247,6 +262,8 @@ export function CMEArea() {
   const [detalheDanificado, setDetalheDanificado] = useState<RegistroDanificado | null>(null);
   const [detalheSolicitacao, setDetalheSolicitacao] = useState<SolicitacaoMaterial | null>(null);
   const [detalheControleMat, setDetalheControleMat] = useState<ControleMaterialKit | null>(null);
+  const [dialogTempUmidadeOpen, setDialogTempUmidadeOpen] = useState(false);
+  const [detalheTempUmidade, setDetalheTempUmidade] = useState<RegistroTempUmidade | null>(null);
   const [busca, setBusca] = useState('');
   const [buscaDev, setBuscaDev] = useState('');
   const [buscaPincas, setBuscaPincas] = useState('');
@@ -258,6 +275,12 @@ export function CMEArea() {
   const [buscaDanificado, setBuscaDanificado] = useState('');
   const [buscaSolicitacao, setBuscaSolicitacao] = useState('');
   const [buscaControleMat, setBuscaControleMat] = useState('');
+  const [buscaTempUmidade, setBuscaTempUmidade] = useState('');
+
+  const [formTempUmidade, setFormTempUmidade] = useState({
+    dia: new Date().toISOString().split('T')[0], periodo: 'Manhã', hora: '',
+    tempAtual: '', tempMinima: '', tempMaxima: '', umidade: '', responsavel: '', setor: '',
+  });
 
   const KITS_CME = [
     { nome: 'Kit Sutura', descricao: 'Tesoura Mayo reta 16 cm / Pinça Hemostática reta 16 cm / Porta-agulha / Pinça dente de rato / Cuba rim' },
@@ -449,6 +472,15 @@ export function CMEArea() {
     toast.success('Controle de material registrado');
   };
 
+  const handleAddTempUmidade = () => {
+    if (!formTempUmidade.hora || !formTempUmidade.responsavel || !formTempUmidade.setor) { toast.error('Hora, setor e responsável são obrigatórios'); return; }
+    const novo: RegistroTempUmidade = { id: crypto.randomUUID(), ...formTempUmidade, dataRegistro: new Date().toLocaleString('pt-BR') };
+    setTempUmidade([novo, ...tempUmidade]);
+    setFormTempUmidade({ dia: new Date().toISOString().split('T')[0], periodo: 'Manhã', hora: '', tempAtual: '', tempMinima: '', tempMaxima: '', umidade: '', responsavel: '', setor: '' });
+    setDialogTempUmidadeOpen(false);
+    toast.success('Registro de temperatura/umidade salvo');
+  };
+
   const avancarEtapa = (id: string) => {
     const ordem: ItemCME['etapa'][] = ['recebimento', 'lavagem', 'secagem', 'preparo', 'esterilizacao', 'armazenamento', 'distribuicao'];
     setItens(prev => prev.map(i => {
@@ -531,6 +563,9 @@ export function CMEArea() {
   const conferenciasFiltradas = conferencias.filter(c =>
     c.setor.toLowerCase().includes(buscaConferencia.toLowerCase()) || c.responsavel.toLowerCase().includes(buscaConferencia.toLowerCase())
   );
+  const tempUmidadeFiltrados = tempUmidade.filter(t =>
+    t.setor.toLowerCase().includes(buscaTempUmidade.toLowerCase()) || t.responsavel.toLowerCase().includes(buscaTempUmidade.toLowerCase()) || t.periodo.toLowerCase().includes(buscaTempUmidade.toLowerCase())
+  );
 
   const getBusca = () => {
     if (tab === 'devolucao') return buscaDev;
@@ -543,6 +578,7 @@ export function CMEArea() {
     if (tab === 'danificados') return buscaDanificado;
     if (tab === 'solicitacao') return buscaSolicitacao;
     if (tab === 'controle-material') return buscaControleMat;
+    if (tab === 'temp-umidade') return buscaTempUmidade;
     return busca;
   };
   const setBuscaAtual = (v: string) => {
@@ -556,11 +592,52 @@ export function CMEArea() {
     else if (tab === 'danificados') setBuscaDanificado(v);
     else if (tab === 'solicitacao') setBuscaSolicitacao(v);
     else if (tab === 'controle-material') setBuscaControleMat(v);
+    else if (tab === 'temp-umidade') setBuscaTempUmidade(v);
     else setBusca(v);
   };
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'temp-umidade') return (
+      <Dialog open={dialogTempUmidadeOpen} onOpenChange={setDialogTempUmidadeOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar</Button></DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Controle de Temperatura e Umidade</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div><Label>Dia</Label><Input type="date" value={formTempUmidade.dia} onChange={e => setFormTempUmidade(p => ({ ...p, dia: e.target.value }))} /></div>
+              <div><Label>Período</Label>
+                <Select value={formTempUmidade.periodo} onValueChange={v => setFormTempUmidade(p => ({ ...p, periodo: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Manhã">Manhã</SelectItem>
+                    <SelectItem value="Tarde">Tarde</SelectItem>
+                    <SelectItem value="Noite">Noite</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Hora</Label><Input type="time" value={formTempUmidade.hora} onChange={e => setFormTempUmidade(p => ({ ...p, hora: e.target.value }))} /></div>
+            </div>
+            <div><Label>Setor</Label>
+              <Select value={formTempUmidade.setor} onValueChange={v => setFormTempUmidade(p => ({ ...p, setor: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecione o setor" /></SelectTrigger>
+                <SelectContent>{SETORES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div><Label>Temp. Atual (°C)</Label><Input value={formTempUmidade.tempAtual} onChange={e => setFormTempUmidade(p => ({ ...p, tempAtual: e.target.value }))} placeholder="Ex: 24.5" /></div>
+              <div><Label>Temp. Mínima (°C)</Label><Input value={formTempUmidade.tempMinima} onChange={e => setFormTempUmidade(p => ({ ...p, tempMinima: e.target.value }))} placeholder="Ex: 21.3" /></div>
+              <div><Label>Temp. Máxima (°C)</Label><Input value={formTempUmidade.tempMaxima} onChange={e => setFormTempUmidade(p => ({ ...p, tempMaxima: e.target.value }))} placeholder="Ex: 24.7" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Umidade (%)</Label><Input value={formTempUmidade.umidade} onChange={e => setFormTempUmidade(p => ({ ...p, umidade: e.target.value }))} placeholder="Ex: 65" /></div>
+              <div><Label>Responsável</Label><Input value={formTempUmidade.responsavel} onChange={e => setFormTempUmidade(p => ({ ...p, responsavel: e.target.value }))} /></div>
+            </div>
+            <Button onClick={handleAddTempUmidade} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'controle-material') return (
       <Dialog open={dialogControleMatOpen} onOpenChange={setDialogControleMatOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Controle</Button></DialogTrigger>
@@ -1043,6 +1120,7 @@ export function CMEArea() {
           <TabsTrigger value="danificados" className="gap-1"><Ban className="h-4 w-4" />Danificados</TabsTrigger>
           <TabsTrigger value="solicitacao" className="gap-1"><ShoppingCart className="h-4 w-4" />Solicitação</TabsTrigger>
           <TabsTrigger value="controle-material" className="gap-1"><BoxSelect className="h-4 w-4" />Controle Material</TabsTrigger>
+          <TabsTrigger value="temp-umidade" className="gap-1"><Thermometer className="h-4 w-4" />Temp./Umidade</TabsTrigger>
         </TabsList>
 
         <TabsContent value="area-suja" className="mt-4">{renderTabela(itensSuja, 'Área Suja')}</TabsContent>
@@ -1315,6 +1393,36 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="temp-umidade" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Dia</TableHead><TableHead>Período</TableHead><TableHead>Hora</TableHead><TableHead>Setor</TableHead>
+                <TableHead>Atual °C</TableHead><TableHead>Mín °C</TableHead><TableHead>Máx °C</TableHead><TableHead>Umidade %</TableHead>
+                <TableHead>Responsável</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {tempUmidadeFiltrados.length === 0 ? (
+                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Nenhum registro de temperatura/umidade</TableCell></TableRow>
+                ) : tempUmidadeFiltrados.map(t => (
+                  <TableRow key={t.id}>
+                    <TableCell>{t.dia}</TableCell>
+                    <TableCell><Badge variant="outline">{t.periodo}</Badge></TableCell>
+                    <TableCell>{t.hora}</TableCell>
+                    <TableCell>{t.setor}</TableCell>
+                    <TableCell className="font-medium">{t.tempAtual || '—'}</TableCell>
+                    <TableCell>{t.tempMinima || '—'}</TableCell>
+                    <TableCell>{t.tempMaxima || '—'}</TableCell>
+                    <TableCell>{t.umidade || '—'}</TableCell>
+                    <TableCell>{t.responsavel}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheTempUmidade(t)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog detalhe pinças */}
@@ -1568,6 +1676,31 @@ export function CMEArea() {
               <div><span className="text-muted-foreground">Responsável:</span> {detalheControleMat.responsavel}</div>
               {detalheControleMat.observacoes && <div><span className="text-muted-foreground">Observações:</span> {detalheControleMat.observacoes}</div>}
               <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheControleMat.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog detalhe temp/umidade */}
+      <Dialog open={!!detalheTempUmidade} onOpenChange={() => setDetalheTempUmidade(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Temperatura e Umidade</DialogTitle></DialogHeader>
+          {detalheTempUmidade && (
+            <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-3 gap-2">
+                <div><span className="text-muted-foreground">Dia:</span> <strong>{detalheTempUmidade.dia}</strong></div>
+                <div><span className="text-muted-foreground">Período:</span> <Badge variant="outline">{detalheTempUmidade.periodo}</Badge></div>
+                <div><span className="text-muted-foreground">Hora:</span> {detalheTempUmidade.hora}</div>
+              </div>
+              <div><span className="text-muted-foreground">Setor:</span> <strong>{detalheTempUmidade.setor}</strong></div>
+              <div className="grid grid-cols-3 gap-2">
+                <div><span className="text-muted-foreground">Temp. Atual:</span> <strong>{detalheTempUmidade.tempAtual || '—'} °C</strong></div>
+                <div><span className="text-muted-foreground">Temp. Mínima:</span> <strong>{detalheTempUmidade.tempMinima || '—'} °C</strong></div>
+                <div><span className="text-muted-foreground">Temp. Máxima:</span> <strong>{detalheTempUmidade.tempMaxima || '—'} °C</strong></div>
+              </div>
+              <div><span className="text-muted-foreground">Umidade:</span> <strong>{detalheTempUmidade.umidade || '—'}%</strong></div>
+              <div><span className="text-muted-foreground">Responsável:</span> {detalheTempUmidade.responsavel}</div>
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheTempUmidade.dataRegistro}</p>
             </div>
           )}
         </DialogContent>
