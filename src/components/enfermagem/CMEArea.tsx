@@ -598,6 +598,46 @@ export function CMEArea() {
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'temp-umidade') return (
+      <Dialog open={dialogTempUmidadeOpen} onOpenChange={setDialogTempUmidadeOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar</Button></DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Controle de Temperatura e Umidade</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-3 gap-3">
+              <div><Label>Dia</Label><Input type="date" value={formTempUmidade.dia} onChange={e => setFormTempUmidade(p => ({ ...p, dia: e.target.value }))} /></div>
+              <div><Label>Período</Label>
+                <Select value={formTempUmidade.periodo} onValueChange={v => setFormTempUmidade(p => ({ ...p, periodo: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Manhã">Manhã</SelectItem>
+                    <SelectItem value="Tarde">Tarde</SelectItem>
+                    <SelectItem value="Noite">Noite</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Hora</Label><Input type="time" value={formTempUmidade.hora} onChange={e => setFormTempUmidade(p => ({ ...p, hora: e.target.value }))} /></div>
+            </div>
+            <div><Label>Setor</Label>
+              <Select value={formTempUmidade.setor} onValueChange={v => setFormTempUmidade(p => ({ ...p, setor: v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecione o setor" /></SelectTrigger>
+                <SelectContent>{SETORES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div><Label>Temp. Atual (°C)</Label><Input value={formTempUmidade.tempAtual} onChange={e => setFormTempUmidade(p => ({ ...p, tempAtual: e.target.value }))} placeholder="Ex: 24.5" /></div>
+              <div><Label>Temp. Mínima (°C)</Label><Input value={formTempUmidade.tempMinima} onChange={e => setFormTempUmidade(p => ({ ...p, tempMinima: e.target.value }))} placeholder="Ex: 21.3" /></div>
+              <div><Label>Temp. Máxima (°C)</Label><Input value={formTempUmidade.tempMaxima} onChange={e => setFormTempUmidade(p => ({ ...p, tempMaxima: e.target.value }))} placeholder="Ex: 24.7" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Umidade (%)</Label><Input value={formTempUmidade.umidade} onChange={e => setFormTempUmidade(p => ({ ...p, umidade: e.target.value }))} placeholder="Ex: 65" /></div>
+              <div><Label>Responsável</Label><Input value={formTempUmidade.responsavel} onChange={e => setFormTempUmidade(p => ({ ...p, responsavel: e.target.value }))} /></div>
+            </div>
+            <Button onClick={handleAddTempUmidade} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'controle-material') return (
       <Dialog open={dialogControleMatOpen} onOpenChange={setDialogControleMatOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Controle</Button></DialogTrigger>
