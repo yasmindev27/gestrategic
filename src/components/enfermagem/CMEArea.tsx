@@ -142,6 +142,18 @@ interface RegistroDanificado {
   dataRegistro: string;
 }
 
+interface SolicitacaoMaterial {
+  id: string;
+  data: string;
+  setor: string;
+  centroCusto: string;
+  material: string;
+  quantidade: string;
+  solicitante: string;
+  observacao: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
