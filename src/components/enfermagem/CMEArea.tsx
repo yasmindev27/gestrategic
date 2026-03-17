@@ -472,6 +472,15 @@ export function CMEArea() {
     toast.success('Controle de material registrado');
   };
 
+  const handleAddTempUmidade = () => {
+    if (!formTempUmidade.hora || !formTempUmidade.responsavel || !formTempUmidade.setor) { toast.error('Hora, setor e responsável são obrigatórios'); return; }
+    const novo: RegistroTempUmidade = { id: crypto.randomUUID(), ...formTempUmidade, dataRegistro: new Date().toLocaleString('pt-BR') };
+    setTempUmidade([novo, ...tempUmidade]);
+    setFormTempUmidade({ dia: new Date().toISOString().split('T')[0], periodo: 'Manhã', hora: '', tempAtual: '', tempMinima: '', tempMaxima: '', umidade: '', responsavel: '', setor: '' });
+    setDialogTempUmidadeOpen(false);
+    toast.success('Registro de temperatura/umidade salvo');
+  };
+
   const avancarEtapa = (id: string) => {
     const ordem: ItemCME['etapa'][] = ['recebimento', 'lavagem', 'secagem', 'preparo', 'esterilizacao', 'armazenamento', 'distribuicao'];
     setItens(prev => prev.map(i => {
