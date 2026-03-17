@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan, FlaskConical, CircleDot
+  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan, FlaskConical, CircleDot, ClipboardCheck
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -117,6 +117,19 @@ interface RegistroOlivas {
   dataRegistro: string;
 }
 
+interface RegistroConferencia {
+  id: string;
+  data: string;
+  setor: string;
+  materiaisRespiratorios: boolean;
+  materiaisCirurgicos: boolean;
+  inconformidade: boolean;
+  inconformidadeDescricao: string;
+  responsavel: string;
+  coren: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
@@ -172,6 +185,7 @@ export function CMEArea() {
   const [desinfeccoes, setDesinfeccoes] = useLocalStorage<RegistroDesinfeccao[]>('enf-cme-desinfeccao', []);
   const [diluicoes, setDiluicoes] = useLocalStorage<RegistroDiluicao[]>('enf-cme-diluicao', []);
   const [olivas, setOlivas] = useLocalStorage<RegistroOlivas[]>('enf-cme-olivas', []);
+  const [conferencias, setConferencias] = useLocalStorage<RegistroConferencia[]>('enf-cme-conferencia', []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDevOpen, setDialogDevOpen] = useState(false);
   const [dialogPincasOpen, setDialogPincasOpen] = useState(false);
@@ -179,12 +193,14 @@ export function CMEArea() {
   const [dialogDesinfeccaoOpen, setDialogDesinfeccaoOpen] = useState(false);
   const [dialogDiluicaoOpen, setDialogDiluicaoOpen] = useState(false);
   const [dialogOlivasOpen, setDialogOlivasOpen] = useState(false);
+  const [dialogConferenciaOpen, setDialogConferenciaOpen] = useState(false);
   const [detalhePinca, setDetalhePinca] = useState<RegistroPincas | null>(null);
   const [detalhe, setDetalhe] = useState<DevolucaoMaterial | null>(null);
   const [detalheAlmotolia, setDetalheAlmotolia] = useState<RegistroAlmotolia | null>(null);
   const [detalheDesinfeccao, setDetalheDesinfeccao] = useState<RegistroDesinfeccao | null>(null);
   const [detalheDiluicao, setDetalheDiluicao] = useState<RegistroDiluicao | null>(null);
   const [detalheOliva, setDetalheOliva] = useState<RegistroOlivas | null>(null);
+  const [detalheConferencia, setDetalheConferencia] = useState<RegistroConferencia | null>(null);
   const [busca, setBusca] = useState('');
   const [buscaDev, setBuscaDev] = useState('');
   const [buscaPincas, setBuscaPincas] = useState('');
@@ -192,6 +208,7 @@ export function CMEArea() {
   const [buscaDesinfeccao, setBuscaDesinfeccao] = useState('');
   const [buscaDiluicao, setBuscaDiluicao] = useState('');
   const [buscaOlivas, setBuscaOlivas] = useState('');
+  const [buscaConferencia, setBuscaConferencia] = useState('');
 
   const [form, setForm] = useState({
     descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '',
@@ -230,6 +247,11 @@ export function CMEArea() {
     dataDesinfeccao: new Date().toISOString().split('T')[0],
     tipoMaterial: '', validade: '', metodo: 'S/ Condição de uso',
     quantidade: '', responsavel: '', coren: '',
+  });
+  const [formConferencia, setFormConferencia] = useState({
+    data: new Date().toISOString().split('T')[0], setor: '',
+    materiaisRespiratorios: false, materiaisCirurgicos: false,
+    inconformidade: false, inconformidadeDescricao: '', responsavel: '', coren: '',
   });
 
   const itensSuja = itens.filter(i => (ETAPAS_SUJA as readonly string[]).includes(i.etapa));
@@ -318,6 +340,16 @@ export function CMEArea() {
     toast.success('Desinfecção de olivas registrada');
   };
 
+  const handleAddConferencia = () => {
+    if (!formConferencia.setor || !formConferencia.responsavel) { toast.error('Setor e responsável são obrigatórios'); return; }
+    if (!formConferencia.materiaisRespiratorios && !formConferencia.materiaisCirurgicos) { toast.error('Selecione ao menos um tipo de material'); return; }
+    const novo: RegistroConferencia = { id: crypto.randomUUID(), ...formConferencia, dataRegistro: new Date().toLocaleString('pt-BR') };
+    setConferencias([novo, ...conferencias]);
+    setFormConferencia({ data: new Date().toISOString().split('T')[0], setor: '', materiaisRespiratorios: false, materiaisCirurgicos: false, inconformidade: false, inconformidadeDescricao: '', responsavel: '', coren: '' });
+    setDialogConferenciaOpen(false);
+    toast.success('Conferência registrada com sucesso');
+  };
+
   const avancarEtapa = (id: string) => {
     const ordem: ItemCME['etapa'][] = ['recebimento', 'lavagem', 'secagem', 'preparo', 'esterilizacao', 'armazenamento', 'distribuicao'];
     setItens(prev => prev.map(i => {
@@ -388,6 +420,9 @@ export function CMEArea() {
   const olivasFiltradas = olivas.filter(o =>
     o.tipoMaterial.toLowerCase().includes(buscaOlivas.toLowerCase()) || o.responsavel.toLowerCase().includes(buscaOlivas.toLowerCase())
   );
+  const conferenciasFiltradas = conferencias.filter(c =>
+    c.setor.toLowerCase().includes(buscaConferencia.toLowerCase()) || c.responsavel.toLowerCase().includes(buscaConferencia.toLowerCase())
+  );
 
   const getBusca = () => {
     if (tab === 'devolucao') return buscaDev;
@@ -396,6 +431,7 @@ export function CMEArea() {
     if (tab === 'desinfeccao') return buscaDesinfeccao;
     if (tab === 'diluicao') return buscaDiluicao;
     if (tab === 'olivas') return buscaOlivas;
+    if (tab === 'conferencia') return buscaConferencia;
     return busca;
   };
   const setBuscaAtual = (v: string) => {
@@ -405,11 +441,65 @@ export function CMEArea() {
     else if (tab === 'desinfeccao') setBuscaDesinfeccao(v);
     else if (tab === 'diluicao') setBuscaDiluicao(v);
     else if (tab === 'olivas') setBuscaOlivas(v);
+    else if (tab === 'conferencia') setBuscaConferencia(v);
     else setBusca(v);
   };
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'conferencia') return (
+      <Dialog open={dialogConferenciaOpen} onOpenChange={setDialogConferenciaOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Conferência</Button></DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Conferência e Controle de Qualidade de Materiais Setoriais</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Data</Label><Input type="date" value={formConferencia.data} onChange={e => setFormConferencia(p => ({ ...p, data: e.target.value }))} /></div>
+              <div><Label>Setor</Label>
+                <Select value={formConferencia.setor} onValueChange={v => setFormConferencia(p => ({ ...p, setor: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{SETORES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label className="font-semibold">Material</Label>
+              <div className="flex gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={formConferencia.materiaisRespiratorios} onCheckedChange={v => setFormConferencia(p => ({ ...p, materiaisRespiratorios: !!v }))} id="mat-resp" />
+                  <Label htmlFor="mat-resp" className="cursor-pointer text-sm">Materiais Respiratórios</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={formConferencia.materiaisCirurgicos} onCheckedChange={v => setFormConferencia(p => ({ ...p, materiaisCirurgicos: !!v }))} id="mat-cir" />
+                  <Label htmlFor="mat-cir" className="cursor-pointer text-sm">Materiais Cirúrgicos</Label>
+                </div>
+              </div>
+            </div>
+            <div>
+              <Label className="font-semibold">Inconformidade</Label>
+              <div className="flex gap-4 mt-2">
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={!formConferencia.inconformidade} onCheckedChange={() => setFormConferencia(p => ({ ...p, inconformidade: false, inconformidadeDescricao: '' }))} id="inc-nao" />
+                  <Label htmlFor="inc-nao" className="cursor-pointer text-sm">Não</Label>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Checkbox checked={formConferencia.inconformidade} onCheckedChange={() => setFormConferencia(p => ({ ...p, inconformidade: true }))} id="inc-sim" />
+                  <Label htmlFor="inc-sim" className="cursor-pointer text-sm">Sim</Label>
+                </div>
+              </div>
+              {formConferencia.inconformidade && (
+                <div className="mt-2"><Label>Qual?</Label><Input value={formConferencia.inconformidadeDescricao} onChange={e => setFormConferencia(p => ({ ...p, inconformidadeDescricao: e.target.value }))} placeholder="Descreva a inconformidade" /></div>
+              )}
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Responsável</Label><Input value={formConferencia.responsavel} onChange={e => setFormConferencia(p => ({ ...p, responsavel: e.target.value }))} /></div>
+              <div><Label>COREN</Label><Input value={formConferencia.coren} onChange={e => setFormConferencia(p => ({ ...p, coren: e.target.value }))} placeholder="Ex: MG 000.000 - TE" /></div>
+            </div>
+            <Button onClick={handleAddConferencia} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar Conferência</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'olivas') return (
       <Dialog open={dialogOlivasOpen} onOpenChange={setDialogOlivasOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Olivas</Button></DialogTrigger>
@@ -715,6 +805,7 @@ export function CMEArea() {
           <TabsTrigger value="desinfeccao" className="gap-1"><SprayCan className="h-4 w-4" />Desinfecção</TabsTrigger>
           <TabsTrigger value="diluicao" className="gap-1"><FlaskConical className="h-4 w-4" />Diluição</TabsTrigger>
           <TabsTrigger value="olivas" className="gap-1"><CircleDot className="h-4 w-4" />Olivas</TabsTrigger>
+          <TabsTrigger value="conferencia" className="gap-1"><ClipboardCheck className="h-4 w-4" />Conferência</TabsTrigger>
         </TabsList>
 
         <TabsContent value="area-suja" className="mt-4">{renderTabela(itensSuja, 'Área Suja')}</TabsContent>
@@ -877,6 +968,35 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="conferencia" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Data</TableHead><TableHead>Setor</TableHead><TableHead>Material</TableHead>
+                <TableHead>Inconformidade</TableHead><TableHead>Responsável</TableHead><TableHead>COREN</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {conferenciasFiltradas.length === 0 ? (
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhuma conferência registrada</TableCell></TableRow>
+                ) : conferenciasFiltradas.map(c => (
+                  <TableRow key={c.id}>
+                    <TableCell>{c.data}</TableCell>
+                    <TableCell className="font-medium">{c.setor}</TableCell>
+                    <TableCell className="text-sm">{[c.materiaisRespiratorios && 'Respiratórios', c.materiaisCirurgicos && 'Cirúrgicos'].filter(Boolean).join(', ')}</TableCell>
+                    <TableCell>
+                      <Badge variant={c.inconformidade ? 'destructive' : 'default'}>{c.inconformidade ? 'Sim' : 'Não'}</Badge>
+                      {c.inconformidade && c.inconformidadeDescricao && <span className="text-xs text-muted-foreground ml-1">({c.inconformidadeDescricao})</span>}
+                    </TableCell>
+                    <TableCell>{c.responsavel}</TableCell>
+                    <TableCell className="font-mono text-sm">{c.coren || '—'}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheConferencia(c)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog detalhe pinças */}
@@ -1028,6 +1148,34 @@ export function CMEArea() {
                 <div><span className="text-muted-foreground">COREN:</span> {detalheOliva.coren || '—'}</div>
               </div>
               <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheOliva.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog detalhe conferência */}
+      <Dialog open={!!detalheConferencia} onOpenChange={() => setDetalheConferencia(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Conferência de Materiais Setoriais</DialogTitle></DialogHeader>
+          {detalheConferencia && (
+            <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Data:</span> <strong>{detalheConferencia.data}</strong></div>
+                <div><span className="text-muted-foreground">Setor:</span> {detalheConferencia.setor}</div>
+              </div>
+              <div><span className="text-muted-foreground">Material:</span> {[detalheConferencia.materiaisRespiratorios && 'Materiais Respiratórios', detalheConferencia.materiaisCirurgicos && 'Materiais Cirúrgicos'].filter(Boolean).join(', ')}</div>
+              <div>
+                <span className="text-muted-foreground">Inconformidade:</span>{' '}
+                <Badge variant={detalheConferencia.inconformidade ? 'destructive' : 'default'}>{detalheConferencia.inconformidade ? 'Sim' : 'Não'}</Badge>
+                {detalheConferencia.inconformidade && detalheConferencia.inconformidadeDescricao && (
+                  <p className="mt-1 text-sm">{detalheConferencia.inconformidadeDescricao}</p>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Responsável:</span> {detalheConferencia.responsavel}</div>
+                <div><span className="text-muted-foreground">COREN:</span> {detalheConferencia.coren || '—'}</div>
+              </div>
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheConferencia.dataRegistro}</p>
             </div>
           )}
         </DialogContent>
