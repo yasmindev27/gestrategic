@@ -92,11 +92,23 @@ const Dashboard = () => {
         setActiveSection("nir");
       } else if (isRecepcao) {
         setActiveSection("recepcao");
+      } else if (isFaturamento) {
+        setActiveSection("faturamento");
+      } else if (isClassificacao) {
+        setActiveSection("faturamento");
+      } else if (isTI) {
+        setActiveSection("tecnico-ti");
+      } else if (isManutencao) {
+        setActiveSection("tecnico-manutencao");
+      } else if (isEngenhariaCinica) {
+        setActiveSection("tecnico-engenharia");
+      } else if (isLaboratorio) {
+        setActiveSection("laboratorio");
       } else {
         setActiveSection("dashboard");
       }
     }
-  }, [isLoadingRole, isNir, isRecepcao, activeSection]);
+  }, [isLoadingRole, isNir, isRecepcao, isFaturamento, isClassificacao, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, activeSection]);
 
   // Memoized section change handler
   const handleSectionChange = useCallback((section: string) => {
