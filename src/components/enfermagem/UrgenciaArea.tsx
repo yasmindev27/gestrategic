@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList, Shirt, Shield, SprayCanIcon
+  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList, Shirt, Shield, SprayCanIcon, Gauge
 } from 'lucide-react';
 import { ChecklistCarrinhoUrgencia } from './ChecklistCarrinhoUrgencia';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
@@ -18,6 +18,7 @@ import { ChecklistSetorUrgencia } from './ChecklistSetorUrgencia';
 import { ProtocoloEvasaoRouparia } from './ProtocoloEvasaoRouparia';
 import { ChecklistGeralNSP } from './ChecklistGeralNSP';
 import { ChecklistLimpezaConcorrente } from './ChecklistLimpezaConcorrente';
+import { ChecklistFluxometrosBombas } from './ChecklistFluxometrosBombas';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
