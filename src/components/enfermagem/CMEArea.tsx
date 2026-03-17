@@ -465,6 +465,55 @@ export function CMEArea() {
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'danificados') return (
+      <Dialog open={dialogDanificadoOpen} onOpenChange={setDialogDanificadoOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Material Danificado</Button></DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Controle de Materiais Danificados</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Material</Label><Input value={formDanificado.material} onChange={e => setFormDanificado(p => ({ ...p, material: e.target.value }))} placeholder="Ex: Traqueia, Ambu, Máscara" /></div>
+              <div><Label>Setor</Label>
+                <Select value={formDanificado.setor} onValueChange={v => setFormDanificado(p => ({ ...p, setor: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{SETORES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Data</Label><Input type="date" value={formDanificado.data} onChange={e => setFormDanificado(p => ({ ...p, data: e.target.value }))} /></div>
+              <div><Label>Motivo</Label>
+                <Select value={formDanificado.motivo} onValueChange={v => setFormDanificado(p => ({ ...p, motivo: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Estragado">Estragado</SelectItem>
+                    <SelectItem value="Quebrado">Quebrado</SelectItem>
+                    <SelectItem value="Desgastado">Desgastado</SelectItem>
+                    <SelectItem value="Contaminado">Contaminado</SelectItem>
+                    <SelectItem value="Outro">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Conduta</Label><Input value={formDanificado.conduta} onChange={e => setFormDanificado(p => ({ ...p, conduta: e.target.value }))} placeholder="Ex: Comunicado RT" /></div>
+              <div><Label>Reposição</Label>
+                <Select value={formDanificado.reposicao} onValueChange={v => setFormDanificado(p => ({ ...p, reposicao: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Sim">Sim</SelectItem>
+                    <SelectItem value="Não">Não</SelectItem>
+                    <SelectItem value="Pendente">Pendente</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div><Label>Responsável</Label><Input value={formDanificado.responsavel} onChange={e => setFormDanificado(p => ({ ...p, responsavel: e.target.value }))} /></div>
+            <Button onClick={handleAddDanificado} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'conferencia') return (
       <Dialog open={dialogConferenciaOpen} onOpenChange={setDialogConferenciaOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Conferência</Button></DialogTrigger>
