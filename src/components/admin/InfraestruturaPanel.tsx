@@ -441,8 +441,8 @@ export function InfraestruturaPanel() {
             </Button>
           </CardContent>
         </Card>
-      )
-      </div>
+      )}
+
 
       {/* ── Mapa de Armazenamento ── */}
       <div>
