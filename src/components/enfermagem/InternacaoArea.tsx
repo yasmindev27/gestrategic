@@ -336,6 +336,10 @@ export function InternacaoArea() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        <TabsContent value="carrinho" className="mt-4">
+          <ChecklistCarrinhoInternacao />
+        </TabsContent>
       </Tabs>
     </div>
   );
