@@ -325,8 +325,8 @@ const Sidebar = ({
     const buttonClasses = cn(
       "w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-all text-sm relative",
       isActive
-        ? "bg-[#2d7dd2]/15 text-white font-semibold before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[3px] before:rounded-full before:bg-[#2d7dd2] before:shadow-[0_0_8px_rgba(45,125,210,0.6)]"
-        : "text-[#8baec8] hover:bg-white/5 hover:text-white",
+        ? "bg-sidebar-primary/15 text-white font-semibold before:absolute before:left-0 before:top-1 before:bottom-1 before:w-[3px] before:rounded-full before:bg-sidebar-primary before:shadow-[0_0_8px_rgba(78,205,196,0.5)]"
+        : "text-sidebar-foreground hover:bg-white/5 hover:text-white",
       isCollapsed && "justify-center px-2"
     );
 
