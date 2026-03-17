@@ -448,7 +448,7 @@ export function InfraestruturaPanel() {
                   <p className="text-sm font-medium text-destructive">Erro na sincronização — verifique as credenciais do banco externo</p>
                 ) : (
                   <p className="text-sm font-medium text-foreground">
-                    Sincronização concluída: <strong>{syncResult.tables}</strong> tabelas, <strong>{syncResult.rows.toLocaleString()}</strong> registros
+                    Sincronização concluída em <strong>{syncResult.duration?.toFixed(1) || '?'}s</strong>: <strong>{syncResult.tables}</strong> tabelas, <strong>{syncResult.rows.toLocaleString()}</strong> registros
                     {syncResult.errors > 0 && <span className="text-amber-600"> ({syncResult.errors} tabelas com erros)</span>}
                   </p>
                 )}
