@@ -27,6 +27,7 @@ import { PassagemPlantaoSBAR } from './PassagemPlantaoSBAR';
 import { DiagnosticoPrescricaoEnfermagem } from './DiagnosticoPrescricaoEnfermagem';
 import { TermoConsentimentoRiscos } from './TermoConsentimentoRiscos';
 import { SAEAdulto } from './SAEAdulto';
+import { SAEPediatrico } from './SAEPediatrico';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
