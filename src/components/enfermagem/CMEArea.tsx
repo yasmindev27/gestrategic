@@ -471,7 +471,62 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+        <TabsContent value="pincas" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Data</TableHead>
+                  <TableHead>Pinças</TableHead>
+                  <TableHead>Total</TableHead>
+                  <TableHead>Enfermagem</TableHead>
+                  <TableHead>Ações</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {pincasRegistros.filter(p => p.enfermagem.toLowerCase().includes(buscaPincas.toLowerCase()) || p.pincas.some(pi => pi.tipo.toLowerCase().includes(buscaPincas.toLowerCase()))).length === 0 ? (
+                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Nenhum registro de pinças</TableCell></TableRow>
+                ) : pincasRegistros.filter(p => p.enfermagem.toLowerCase().includes(buscaPincas.toLowerCase()) || p.pincas.some(pi => pi.tipo.toLowerCase().includes(buscaPincas.toLowerCase()))).map(p => (
+                  <TableRow key={p.id}>
+                    <TableCell>{p.data}</TableCell>
+                    <TableCell className="text-sm">{p.pincas.map(pi => `${pi.tipo} (${pi.quantidade})`).join(', ')}{p.outra ? `, ${p.outra} (${p.outraQuantidade})` : ''}</TableCell>
+                    <TableCell><Badge variant="secondary" className="font-bold">{p.total}</Badge></TableCell>
+                    <TableCell>{p.enfermagem}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalhePinca(p)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
+
+      {/* Dialog detalhe pinças */}
+      <Dialog open={!!detalhePinca} onOpenChange={() => setDetalhePinca(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Registro de Pinças</DialogTitle></DialogHeader>
+          {detalhePinca && (
+            <div className="space-y-2 text-sm">
+              <div><span className="text-muted-foreground">Data:</span> <strong>{detalhePinca.data}</strong></div>
+              <div className="space-y-1">
+                {detalhePinca.pincas.map((p, i) => (
+                  <div key={i} className="flex justify-between border-b pb-1">
+                    <span>{p.tipo}</span><Badge variant="outline">{p.quantidade}</Badge>
+                  </div>
+                ))}
+                {detalhePinca.outra && (
+                  <div className="flex justify-between border-b pb-1">
+                    <span>Outra: {detalhePinca.outra}</span><Badge variant="outline">{detalhePinca.outraQuantidade}</Badge>
+                  </div>
+                )}
+              </div>
+              <div className="flex justify-between font-semibold pt-1"><span>Total</span><span>{detalhePinca.total}</span></div>
+              <div><span className="text-muted-foreground">Enfermagem:</span> {detalhePinca.enfermagem}</div>
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalhePinca.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog detalhe devolução */}
       <Dialog open={!!detalhe} onOpenChange={() => setDetalhe(null)}>
