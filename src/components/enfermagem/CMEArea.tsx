@@ -262,6 +262,8 @@ export function CMEArea() {
   const [detalheDanificado, setDetalheDanificado] = useState<RegistroDanificado | null>(null);
   const [detalheSolicitacao, setDetalheSolicitacao] = useState<SolicitacaoMaterial | null>(null);
   const [detalheControleMat, setDetalheControleMat] = useState<ControleMaterialKit | null>(null);
+  const [dialogTempUmidadeOpen, setDialogTempUmidadeOpen] = useState(false);
+  const [detalheTempUmidade, setDetalheTempUmidade] = useState<RegistroTempUmidade | null>(null);
   const [busca, setBusca] = useState('');
   const [buscaDev, setBuscaDev] = useState('');
   const [buscaPincas, setBuscaPincas] = useState('');
