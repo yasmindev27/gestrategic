@@ -226,6 +226,11 @@ export function CMEArea() {
     horario: '',
     responsavel: '',
   });
+  const [formOlivas, setFormOlivas] = useState({
+    dataDesinfeccao: new Date().toISOString().split('T')[0],
+    tipoMaterial: '', validade: '', metodo: 'S/ Condição de uso',
+    quantidade: '', responsavel: '', coren: '',
+  });
 
   const itensSuja = itens.filter(i => (ETAPAS_SUJA as readonly string[]).includes(i.etapa));
   const itensLimpa = itens.filter(i => (ETAPAS_LIMPA as readonly string[]).includes(i.etapa));
