@@ -13,23 +13,23 @@ import logoUpa from "@/assets/logo-upa-24h.png";
 import { useState, useCallback, useEffect, memo, useRef } from "react";
 import { SEOHead, OrganizationSchema, HealthcareServiceSchema } from "@/components/ui/seo-head";
 
-/* ── Color tokens (Azul Petróleo + Verde Menta) ── */
+/* ── Color tokens (Azul Marinho Institucional) ── */
 const C = {
-  bg: "#0e2a2d",        // fundo escuro petróleo
-  bgMid: "#133639",     // mid petróleo
-  bgDeep: "#0a2224",    // fundo mais profundo
-  primary: "#1A535C",   // azul petróleo
-  primaryHover: "#145a64",
-  mint: "#4ECDC4",      // verde menta
-  mintSoft: "rgba(78,205,196,0.15)",
-  mintBorder: "rgba(78,205,196,0.25)",
-  textLight: "#b8d8d4", // texto claro sobre escuro
-  textMid: "#7aaca5",   // texto médio
-  textDim: "#5a8a84",   // texto discreto
-  textBody: "#2D3748",  // corpo sobre fundo claro (warm gray)
-  textSub: "#5a7a7a",   // subtítulos
-  surfaceLight: "#F7FAFC", // fundo claro
-  cardBorder: "#e0eeec",
+  bg: "#001a33",        // fundo escuro azul marinho
+  bgMid: "#002244",     // mid azul marinho
+  bgDeep: "#001229",    // fundo mais profundo
+  primary: "#004080",   // azul marinho institucional
+  primaryHover: "#003366",
+  mint: "#3b82f6",      // azul institucional vibrante (accent)
+  mintSoft: "rgba(59,130,246,0.12)",
+  mintBorder: "rgba(59,130,246,0.25)",
+  textLight: "#bfdbfe", // texto claro sobre escuro
+  textMid: "#7cacde",   // texto médio
+  textDim: "#5a8ab5",   // texto discreto
+  textBody: "#1e293b",  // corpo sobre fundo claro
+  textSub: "#475569",   // subtítulos
+  surfaceLight: "#f1f5f9", // fundo claro
+  cardBorder: "#e2e8f0",
   white: "#ffffff",
 };
 
