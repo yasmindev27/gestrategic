@@ -968,6 +968,35 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="conferencia" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Data</TableHead><TableHead>Setor</TableHead><TableHead>Material</TableHead>
+                <TableHead>Inconformidade</TableHead><TableHead>Responsável</TableHead><TableHead>COREN</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {conferenciasFiltradas.length === 0 ? (
+                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhuma conferência registrada</TableCell></TableRow>
+                ) : conferenciasFiltradas.map(c => (
+                  <TableRow key={c.id}>
+                    <TableCell>{c.data}</TableCell>
+                    <TableCell className="font-medium">{c.setor}</TableCell>
+                    <TableCell className="text-sm">{[c.materiaisRespiratorios && 'Respiratórios', c.materiaisCirurgicos && 'Cirúrgicos'].filter(Boolean).join(', ')}</TableCell>
+                    <TableCell>
+                      <Badge variant={c.inconformidade ? 'destructive' : 'default'}>{c.inconformidade ? 'Sim' : 'Não'}</Badge>
+                      {c.inconformidade && c.inconformidadeDescricao && <span className="text-xs text-muted-foreground ml-1">({c.inconformidadeDescricao})</span>}
+                    </TableCell>
+                    <TableCell>{c.responsavel}</TableCell>
+                    <TableCell className="font-mono text-sm">{c.coren || '—'}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheConferencia(c)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog detalhe pinças */}
