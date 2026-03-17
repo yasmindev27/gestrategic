@@ -1276,6 +1276,33 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="controle-material" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Data</TableHead><TableHead>Kit</TableHead><TableHead>Saída Est.</TableHead>
+                <TableHead>Retorno Est.</TableHead><TableHead>Total CME</TableHead><TableHead>Responsável</TableHead><TableHead>Obs</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {controleMatFiltrados.length === 0 ? (
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum controle de material registrado</TableCell></TableRow>
+                ) : controleMatFiltrados.map(c => (
+                  <TableRow key={c.id}>
+                    <TableCell>{c.data}</TableCell>
+                    <TableCell className="font-medium">{c.kit}</TableCell>
+                    <TableCell>{c.qtdSaidaEsterilizacao || '—'}</TableCell>
+                    <TableCell>{c.qtdRetornoEsterilizacao || '—'}</TableCell>
+                    <TableCell className="font-bold">{c.totalEstoqueCME || '—'}</TableCell>
+                    <TableCell>{c.responsavel}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-[120px] truncate">{c.observacoes || '—'}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheControleMat(c)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog detalhe pinças */}
