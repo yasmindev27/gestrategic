@@ -352,23 +352,40 @@ export const SaidaProntuariosModule = () => {
 
   const fetchEntregas = async (saidaIds: string[]) => {
     if (saidaIds.length === 0) { setEntregasMap({}); return; }
-    const { data, error } = await supabase
-      .from("entregas_prontuarios_itens")
-      .select("saida_prontuario_id, entrega_id")
-      .in("saida_prontuario_id", saidaIds);
-    if (error || !data || data.length === 0) { setEntregasMap({}); return; }
+    
+    // Batch IDs em grupos de 200 para evitar exceder o limite de URL do PostgREST
+    const BATCH_SIZE = 200;
+    const allItens: { saida_prontuario_id: string; entrega_id: string }[] = [];
+    
+    for (let i = 0; i < saidaIds.length; i += BATCH_SIZE) {
+      const batch = saidaIds.slice(i, i + BATCH_SIZE);
+      const { data, error } = await supabase
+        .from("entregas_prontuarios_itens")
+        .select("saida_prontuario_id, entrega_id")
+        .in("saida_prontuario_id", batch);
+      if (!error && data) allItens.push(...data);
+    }
+    
+    if (allItens.length === 0) { setEntregasMap({}); return; }
 
-    const entregaIds = [...new Set(data.map(d => d.entrega_id))];
-    const { data: entregas } = await supabase
-      .from("entregas_prontuarios")
-      .select("id, data_hora, entregador_nome, responsavel_recebimento_nome, setor_origem, setor_destino")
-      .in("id", entregaIds);
+    const entregaIds = [...new Set(allItens.map(d => d.entrega_id))];
+    
+    // Também fazer batch nos entrega IDs
+    const allEntregas: any[] = [];
+    for (let i = 0; i < entregaIds.length; i += BATCH_SIZE) {
+      const batch = entregaIds.slice(i, i + BATCH_SIZE);
+      const { data } = await supabase
+        .from("entregas_prontuarios")
+        .select("id, data_hora, entregador_nome, responsavel_recebimento_nome, setor_origem, setor_destino")
+        .in("id", batch);
+      if (data) allEntregas.push(...data);
+    }
 
-    if (!entregas) { setEntregasMap({}); return; }
-    const entregaById = Object.fromEntries(entregas.map(e => [e.id, e]));
+    if (allEntregas.length === 0) { setEntregasMap({}); return; }
+    const entregaById = Object.fromEntries(allEntregas.map(e => [e.id, e]));
 
     const map: Record<string, EntregaInfo[]> = {};
-    for (const item of data) {
+    for (const item of allItens) {
       const e = entregaById[item.entrega_id];
       if (!e) continue;
       if (!map[item.saida_prontuario_id]) map[item.saida_prontuario_id] = [];
