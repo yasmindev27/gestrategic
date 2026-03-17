@@ -315,7 +315,6 @@ export default function EnfermagemModule() {
       case "classificacao": return <ClassificacaoArea />;
       case "medicacao": return <MedicacaoArea />;
       case "protocolos": return <ProtocolosModule />;
-      case "escala-radiologia": return <EscalaTecEnfermagem tipo="radiologia" />;
       case "aprovacao-ponto": return <AprovacaoPontoJustificativa />;
       case "indicadores-upa": return <IndicadoresUPA />;
       default: return null;
