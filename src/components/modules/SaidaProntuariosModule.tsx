@@ -1853,23 +1853,23 @@ export const SaidaProntuariosModule = () => {
                             );
                           })()}
                         </TableCell>
-                        <TableCell>{getStatusBadge(saida.status)}</TableCell>
-                        <TableCell>
-                          {safeFormatDate(saida.registrado_recepcao_em, "dd/MM/yy HH:mm")}
+                        <TableCell className="py-1.5">{getStatusBadge(saida.status)}</TableCell>
+                        <TableCell className="py-1.5 whitespace-nowrap">
+                          {safeFormatDate(saida.registrado_recepcao_em, "dd/MM HH:mm")}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-1.5 whitespace-nowrap">
                           {(() => {
                             const entrega = entregasMap[saida.id]?.find(e => e.setor_origem === "Recepção");
-                            if (!entrega) return <span className="text-xs text-muted-foreground">-</span>;
+                            if (!entrega) return <span className="text-muted-foreground">-</span>;
                             return (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <Button variant="outline" size="sm" className="text-xs h-7 gap-1">
+                                  <Button variant="outline" size="sm" className="text-[10px] h-6 gap-1 px-1.5">
                                     {safeFormatDate(entrega.data_hora, "dd/MM HH:mm")}
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-56 p-3">
-                                  <p className="text-sm font-medium mb-2">Entrega Recepção - Classificação</p>
+                                  <p className="text-sm font-medium mb-2">Entrega Rec. → Class.</p>
                                   <div className="space-y-1 text-sm">
                                     <p><strong>Entregador:</strong> {entrega.entregador_nome}</p>
                                     <p><strong>Recebido por:</strong> {entrega.responsavel_recebimento_nome}</p>
@@ -1880,29 +1880,29 @@ export const SaidaProntuariosModule = () => {
                             );
                           })()}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-1.5 whitespace-nowrap">
                           <div className="flex flex-col">
-                            {safeFormatDate(saida.validado_classificacao_em, "dd/MM/yy HH:mm")}
+                            {safeFormatDate(saida.validado_classificacao_em, "dd/MM HH:mm")}
                             {saida.existe_fisicamente !== null && (
-                              <span className={`text-xs ${saida.existe_fisicamente ? "text-success" : "text-destructive"}`}>
-                                {saida.existe_fisicamente ? "Existe" : "Não existe"}
+                              <span className={`text-[10px] ${saida.existe_fisicamente ? "text-success" : "text-destructive"}`}>
+                                {saida.existe_fisicamente ? "✓ Existe" : "✗ Não existe"}
                               </span>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-1.5 whitespace-nowrap">
                           {(() => {
                             const entrega = entregasMap[saida.id]?.find(e => e.setor_origem === "Classificação");
-                            if (!entrega) return <span className="text-xs text-muted-foreground">-</span>;
+                            if (!entrega) return <span className="text-muted-foreground">-</span>;
                             return (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <Button variant="outline" size="sm" className="text-xs h-7 gap-1">
+                                  <Button variant="outline" size="sm" className="text-[10px] h-6 gap-1 px-1.5">
                                     {safeFormatDate(entrega.data_hora, "dd/MM HH:mm")}
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-56 p-3">
-                                  <p className="text-sm font-medium mb-2">Entrega Classificação - NIR</p>
+                                  <p className="text-sm font-medium mb-2">Entrega Class. → NIR</p>
                                   <div className="space-y-1 text-sm">
                                     <p><strong>Entregador:</strong> {entrega.entregador_nome}</p>
                                     <p><strong>Recebido por:</strong> {entrega.responsavel_recebimento_nome}</p>
@@ -1913,22 +1913,22 @@ export const SaidaProntuariosModule = () => {
                             );
                           })()}
                         </TableCell>
-                        <TableCell>
-                          {safeFormatDate(saida.conferido_nir_em, "dd/MM/yy HH:mm")}
+                        <TableCell className="py-1.5 whitespace-nowrap">
+                          {safeFormatDate(saida.conferido_nir_em, "dd/MM HH:mm")}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-1.5 whitespace-nowrap">
                           {(() => {
                             const entrega = entregasMap[saida.id]?.find(e => e.setor_origem === "NIR");
-                            if (!entrega) return <span className="text-xs text-muted-foreground">-</span>;
+                            if (!entrega) return <span className="text-muted-foreground">-</span>;
                             return (
                               <Popover>
                                 <PopoverTrigger asChild>
-                                  <Button variant="outline" size="sm" className="text-xs h-7 gap-1">
+                                  <Button variant="outline" size="sm" className="text-[10px] h-6 gap-1 px-1.5">
                                     {safeFormatDate(entrega.data_hora, "dd/MM HH:mm")}
                                   </Button>
                                 </PopoverTrigger>
                                 <PopoverContent className="w-56 p-3">
-                                  <p className="text-sm font-medium mb-2">Entrega NIR - Faturamento</p>
+                                  <p className="text-sm font-medium mb-2">Entrega NIR → Fat.</p>
                                   <div className="space-y-1 text-sm">
                                     <p><strong>Entregador:</strong> {entrega.entregador_nome}</p>
                                     <p><strong>Recebido por:</strong> {entrega.responsavel_recebimento_nome}</p>
@@ -1939,7 +1939,7 @@ export const SaidaProntuariosModule = () => {
                             );
                           })()}
                         </TableCell>
-                        <TableCell className="sticky right-0 z-10 bg-card shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">
+                        <TableCell className="sticky right-0 z-10 bg-card shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)] py-1.5">
                           <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
                             {getActionButton(saida)}
                           </div>
