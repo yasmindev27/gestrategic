@@ -43,7 +43,7 @@ export const useModules = () => {
   const moduleAccess = useMemo(() => ({
     dashboard: true, // Everyone can access dashboard
     nir: isAdmin || isNir,
-    faturamento: isAdmin || isFaturamento,
+    faturamento: isAdmin || isFaturamento || isRecepcao,
     mapaLeitos: isAdmin || isNir || isEnfermagem || isAssistenciaSocial,
     enfermagem: isAdmin || isGestor || isEnfermagem,
     laboratorio: isAdmin || isLaboratorio || isMedicos || isGestor,
