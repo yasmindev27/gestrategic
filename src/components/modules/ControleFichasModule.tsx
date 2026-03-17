@@ -320,7 +320,7 @@ export const ControleFichasModule = () => {
       </div>
 
       {/* KPI Cards - clickable filters */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
         <button onClick={() => setStatusFilter("todos")} className="text-left">
           <Card className={`transition-shadow hover:shadow-sm ${statusFilter === "todos" ? "ring-2 ring-primary" : ""}`}>
             <CardContent className="p-3">
@@ -338,19 +338,6 @@ export const ControleFichasModule = () => {
                   <p className="text-xl font-bold text-amber-600">{counts.pendente}</p>
                 </div>
                 <AlertCircle className="h-5 w-5 text-amber-400" />
-              </div>
-            </CardContent>
-          </Card>
-        </button>
-        <button onClick={() => setStatusFilter("em_analise")} className="text-left">
-          <Card className={`transition-shadow hover:shadow-sm ${statusFilter === "em_analise" ? "ring-2 ring-sky-400" : ""}`}>
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] text-muted-foreground font-medium">Em Análise</p>
-                  <p className="text-xl font-bold text-sky-600">{counts.em_analise}</p>
-                </div>
-                <ClipboardX className="h-5 w-5 text-sky-400" />
               </div>
             </CardContent>
           </Card>
