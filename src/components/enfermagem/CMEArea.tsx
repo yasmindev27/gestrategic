@@ -167,6 +167,20 @@ interface ControleMaterialKit {
   dataRegistro: string;
 }
 
+interface RegistroTempUmidade {
+  id: string;
+  dia: string;
+  periodo: string;
+  hora: string;
+  tempAtual: string;
+  tempMinima: string;
+  tempMaxima: string;
+  umidade: string;
+  responsavel: string;
+  setor: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
