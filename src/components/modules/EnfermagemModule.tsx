@@ -172,6 +172,22 @@ export default function EnfermagemModule() {
             <Users className="h-4 w-4" />
             Gestão Operacional
           </TabsTrigger>
+          <TabsTrigger value="internacao" className="gap-2 text-sm px-4 py-2">
+            <BedDouble className="h-4 w-4" />
+            Internação
+          </TabsTrigger>
+          <TabsTrigger value="urgencia" className="gap-2 text-sm px-4 py-2">
+            <Siren className="h-4 w-4" />
+            Urgência
+          </TabsTrigger>
+          <TabsTrigger value="cme" className="gap-2 text-sm px-4 py-2">
+            <ShieldCheck className="h-4 w-4" />
+            CME
+          </TabsTrigger>
+          <TabsTrigger value="classificacao" className="gap-2 text-sm px-4 py-2">
+            <ClipboardCheck className="h-4 w-4" />
+            Classificação
+          </TabsTrigger>
           {canAccessProtocolos && (
             <TabsTrigger value="protocolos" className="gap-2 text-sm px-4 py-2">
               <FileCheck className="h-4 w-4" />
