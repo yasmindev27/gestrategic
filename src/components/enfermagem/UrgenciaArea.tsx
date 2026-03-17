@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { ChecklistCarrinhoUrgencia } from './ChecklistCarrinhoUrgencia';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
+import { ChecklistSetorUrgencia } from './ChecklistSetorUrgencia';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
