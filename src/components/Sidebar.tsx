@@ -419,19 +419,22 @@ const Sidebar = ({
     return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
   };
 
-  // Category groups for collapsed mode dividers
+  // Category groups
   const categories: Array<{ key: string; label: string }> = [
     { key: "dashboard", label: "" },
     { key: "assistencial", label: "Assistencial" },
-    { key: "apoio", label: "Apoio" },
-    { key: "logistica", label: "Logística" },
-    { key: "administrativo", label: "Administrativo" },
-    { key: "integracao", label: "Integrações" },
+    { key: "apoio_logistica", label: "Apoio e Logística" },
+    { key: "governanca", label: "Governança e Qualidade" },
+    { key: "administrativo", label: "Administrativo / RH" },
+    { key: "comunicacao", label: "Comunicação / Apoio" },
   ];
 
   const renderCategorizedMenu = () => {
-    if (!isAdmin) {
-      // Non-admin: simple list
+    // Check if there are multiple categories with items
+    const populatedCategories = categories.filter(cat => menuItems.some(i => i.category === cat.key));
+    const shouldGroup = populatedCategories.length > 2;
+
+    if (!shouldGroup) {
       return (
         <ul className="space-y-1">
           {menuItems.map(item => (
@@ -442,7 +445,6 @@ const Sidebar = ({
     }
 
     if (isCollapsed) {
-      // Admin collapsed: icons with thin dividers between groups
       return (
         <div className="space-y-1">
           {categories.map((cat, catIdx) => {
@@ -467,7 +469,7 @@ const Sidebar = ({
       );
     }
 
-    // Admin expanded: full category headers
+    // Expanded: full category headers
     return (
       <div className="space-y-4">
         {categories.map(cat => {
