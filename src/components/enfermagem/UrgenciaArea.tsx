@@ -308,6 +308,10 @@ export function UrgenciaArea() {
         <TabsContent value="sbar" className="mt-4">
           <PassagemPlantaoSBAR storageKey="enf-sbar-urgencia" setor="Urgência" />
         </TabsContent>
+
+        <TabsContent value="prescricao" className="mt-4">
+          <DiagnosticoPrescricaoEnfermagem storageKey="enf-prescricao-urgencia" setor="Urgência" />
+        </TabsContent>
       </Tabs>
     </div>
   );

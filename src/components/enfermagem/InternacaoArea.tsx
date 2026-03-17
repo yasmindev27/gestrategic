@@ -396,6 +396,10 @@ export function InternacaoArea() {
         <TabsContent value="sbar" className="mt-4">
           <PassagemPlantaoSBAR storageKey="enf-sbar-internacao" setor="Internação" />
         </TabsContent>
+
+        <TabsContent value="prescricao" className="mt-4">
+          <DiagnosticoPrescricaoEnfermagem storageKey="enf-prescricao-internacao" setor="Internação" />
+        </TabsContent>
       </Tabs>
     </div>
   );
