@@ -309,6 +309,15 @@ export function CMEArea() {
     toast.success('Diluição registrada com sucesso');
   };
 
+  const handleAddOlivas = () => {
+    if (!formOlivas.responsavel || !formOlivas.tipoMaterial) { toast.error('Tipo de material e responsável são obrigatórios'); return; }
+    const novo: RegistroOlivas = { id: crypto.randomUUID(), ...formOlivas, dataRegistro: new Date().toLocaleString('pt-BR') };
+    setOlivas([novo, ...olivas]);
+    setFormOlivas({ dataDesinfeccao: new Date().toISOString().split('T')[0], tipoMaterial: '', validade: '', metodo: 'S/ Condição de uso', quantidade: '', responsavel: '', coren: '' });
+    setDialogOlivasOpen(false);
+    toast.success('Desinfecção de olivas registrada');
+  };
+
   const avancarEtapa = (id: string) => {
     const ordem: ItemCME['etapa'][] = ['recebimento', 'lavagem', 'secagem', 'preparo', 'esterilizacao', 'armazenamento', 'distribuicao'];
     setItens(prev => prev.map(i => {
