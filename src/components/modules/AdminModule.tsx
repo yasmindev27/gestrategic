@@ -658,7 +658,7 @@ export const AdminModule = () => {
                     }
                   }}
                 >
-                  🔑 Resetar Senhas (123456)
+                  Resetar Senhas (123456)
                 </Button>
               </div>
             </CardContent>
