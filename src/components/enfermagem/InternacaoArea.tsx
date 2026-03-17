@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   BedDouble, ClipboardList, UserCheck, AlertTriangle, Plus, Search,
-  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge
+  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ChecklistCarrinhoInternacao } from './ChecklistCarrinhoInternacao';
@@ -21,6 +21,7 @@ import { ProtocoloEvasaoRouparia } from './ProtocoloEvasaoRouparia';
 import { ChecklistGeralNSP } from './ChecklistGeralNSP';
 import { ChecklistLimpezaConcorrente } from './ChecklistLimpezaConcorrente';
 import { ChecklistFluxometrosBombas } from './ChecklistFluxometrosBombas';
+import { PassagemPlantaoTecEnfermagem } from './PassagemPlantaoTecEnfermagem';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
@@ -184,6 +185,7 @@ export function InternacaoArea() {
           <TabsTrigger value="nsp" className="gap-1"><Shield className="h-4 w-4" />NSP</TabsTrigger>
           <TabsTrigger value="limpeza" className="gap-1"><SprayCanIcon className="h-4 w-4" />Limpeza Concorrente</TabsTrigger>
           <TabsTrigger value="fluxometros" className="gap-1"><Gauge className="h-4 w-4" />Fluxômetros/Bombas</TabsTrigger>
+          <TabsTrigger value="passagem-plantao" className="gap-1"><ClipboardPen className="h-4 w-4" />Passagem Plantão</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pacientes" className="mt-4 space-y-4">
@@ -369,6 +371,10 @@ export function InternacaoArea() {
 
         <TabsContent value="fluxometros" className="mt-4">
           <ChecklistFluxometrosBombas storageKey="enf-fluxometros-bombas-internacao" setor="Internação" />
+        </TabsContent>
+
+        <TabsContent value="passagem-plantao" className="mt-4">
+          <PassagemPlantaoTecEnfermagem storageKey="enf-passagem-plantao-tec-internacao" setor="Internação" />
         </TabsContent>
       </Tabs>
     </div>
