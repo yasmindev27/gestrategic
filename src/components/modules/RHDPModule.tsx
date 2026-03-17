@@ -13,6 +13,27 @@ import { ASOControl } from "@/components/seguranca-trabalho";
 import { AvaliacaoDesempenhoSection } from "@/components/rhdp/AvaliacaoDesempenhoSection";
 import { AvaliacaoExperienciaSection } from "@/components/rhdp/AvaliacaoExperienciaSection";
 import { EscalaTecEnfermagem } from "@/components/enfermagem";
+import { cn } from "@/lib/utils";
+
+const RHDP_NAV_ITEMS = [
+  { id: 'banco-horas', label: 'Banco de Horas', icon: Clock },
+  { id: 'atestados', label: 'Atestados', icon: FileText },
+  { id: 'aso', label: 'ASO', icon: Stethoscope },
+  { id: 'escalas', label: 'Escalas', icon: CalendarDays },
+  { id: 'formularios', label: 'Formulários', icon: ClipboardList },
+  { id: 'disciplinar', label: 'Disciplinar', icon: AlertTriangle },
+  { id: 'profissionais', label: 'Profissionais', icon: Users },
+  { id: 'avaliacao', label: 'Avaliação/PDI', icon: BarChart3 },
+  { id: 'experiencia', label: 'Av. Experiência', icon: UserCheck },
+];
+
+const ESCALAS_SUB_ITEMS = [
+  { id: 'tecnicos', label: 'Escala Técnicos', icon: ClipboardList },
+  { id: 'enfermeiros', label: 'Escala Enfermeiros', icon: Stethoscope },
+  { id: 'radiologia', label: 'Escala Radiologia', icon: Radio },
+  { id: 'administrativa', label: 'Escala Administrativa', icon: Building2 },
+  { id: 'farmacia', label: 'Escala Farmácia', icon: Pill },
+];
 
 export const RHDPModule = () => {
   const { isAdmin, hasRole, isLoading } = useUserRole();
@@ -51,6 +72,37 @@ export const RHDPModule = () => {
     );
   }
 
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'banco-horas': return <BancoHorasSection />;
+      case 'atestados': return <CentralAtestadosSection />;
+      case 'aso': return <ASOControl />;
+      case 'escalas': return (
+        <Tabs value={escalasSubTab} onValueChange={setEscalasSubTab}>
+          <TabsList className="flex flex-wrap h-auto gap-1">
+            {ESCALAS_SUB_ITEMS.map(item => (
+              <TabsTrigger key={item.id} value={item.id} className="gap-2">
+                <item.icon className="h-4 w-4" />
+                {item.label}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {ESCALAS_SUB_ITEMS.map(item => (
+            <TabsContent key={item.id} value={item.id} className="mt-4">
+              <EscalaTecEnfermagem tipo={item.id as any} />
+            </TabsContent>
+          ))}
+        </Tabs>
+      );
+      case 'formularios': return <FormulariosSection />;
+      case 'disciplinar': return <MovimentacoesDisciplinarSection />;
+      case 'profissionais': return <ProfissionaisSaude />;
+      case 'avaliacao': return <AvaliacaoDesempenhoSection />;
+      case 'experiencia': return <AvaliacaoExperienciaSection />;
+      default: return null;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <Card>
@@ -64,128 +116,30 @@ export const RHDPModule = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-            <TabsList className="flex flex-wrap h-auto gap-1">
-              <TabsTrigger value="banco-horas" className="flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                <span className="hidden sm:inline">Banco de Horas</span>
-                <span className="sm:hidden">Horas</span>
-              </TabsTrigger>
-              <TabsTrigger value="atestados" className="flex items-center gap-2">
-                <FileText className="h-4 w-4" />
-                <span className="hidden sm:inline">Atestados</span>
-                <span className="sm:hidden">Atest.</span>
-              </TabsTrigger>
-              <TabsTrigger value="aso" className="flex items-center gap-2">
-                <Stethoscope className="h-4 w-4" />
-                <span className="hidden sm:inline">ASO</span>
-              </TabsTrigger>
-              <TabsTrigger value="escalas" className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4" />
-                <span className="hidden sm:inline">Escalas</span>
-              </TabsTrigger>
-              <TabsTrigger value="formularios" className="flex items-center gap-2">
-                <ClipboardList className="h-4 w-4" />
-                <span className="hidden sm:inline">Formulários</span>
-                <span className="sm:hidden">Forms</span>
-              </TabsTrigger>
-              <TabsTrigger value="disciplinar" className="flex items-center gap-2">
-                <AlertTriangle className="h-4 w-4" />
-                <span className="hidden sm:inline">Disciplinar</span>
-                <span className="sm:hidden">Discip.</span>
-              </TabsTrigger>
-              <TabsTrigger value="profissionais" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                <span className="hidden sm:inline">Profissionais</span>
-                <span className="sm:hidden">Prof.</span>
-              </TabsTrigger>
-              <TabsTrigger value="avaliacao" className="flex items-center gap-2">
-                <BarChart3 className="h-4 w-4" />
-                <span className="hidden sm:inline">Avaliação/PDI</span>
-                <span className="sm:hidden">Aval.</span>
-              </TabsTrigger>
-              <TabsTrigger value="experiencia" className="flex items-center gap-2">
-                <UserCheck className="h-4 w-4" />
-                <span className="hidden sm:inline">Av. Experiência</span>
-                <span className="sm:hidden">Exp.</span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="banco-horas" className="mt-6">
-              <BancoHorasSection />
-            </TabsContent>
-
-            <TabsContent value="atestados" className="mt-6">
-              <CentralAtestadosSection />
-            </TabsContent>
-
-            <TabsContent value="aso" className="mt-6">
-              <ASOControl />
-            </TabsContent>
-
-            <TabsContent value="escalas" className="mt-6">
-              <Tabs value={escalasSubTab} onValueChange={setEscalasSubTab}>
-                <TabsList className="flex flex-wrap h-auto gap-1">
-                  <TabsTrigger value="tecnicos" className="gap-2">
-                    <ClipboardList className="h-4 w-4" />
-                    Escala Técnicos
-                  </TabsTrigger>
-                  <TabsTrigger value="enfermeiros" className="gap-2">
-                    <Stethoscope className="h-4 w-4" />
-                    Escala Enfermeiros
-                  </TabsTrigger>
-                  <TabsTrigger value="radiologia" className="gap-2">
-                    <Radio className="h-4 w-4" />
-                    Escala Radiologia
-                  </TabsTrigger>
-                  <TabsTrigger value="administrativa" className="gap-2">
-                    <Building2 className="h-4 w-4" />
-                    Escala Administrativa
-                  </TabsTrigger>
-                  <TabsTrigger value="farmacia" className="gap-2">
-                    <Pill className="h-4 w-4" />
-                    Escala Farmácia
-                  </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="tecnicos" className="mt-4">
-                  <EscalaTecEnfermagem tipo="tecnicos" />
-                </TabsContent>
-                <TabsContent value="enfermeiros" className="mt-4">
-                  <EscalaTecEnfermagem tipo="enfermeiros" />
-                </TabsContent>
-                <TabsContent value="radiologia" className="mt-4">
-                  <EscalaTecEnfermagem tipo="radiologia" />
-                </TabsContent>
-                <TabsContent value="administrativa" className="mt-4">
-                  <EscalaTecEnfermagem tipo="administrativa" />
-                </TabsContent>
-                <TabsContent value="farmacia" className="mt-4">
-                  <EscalaTecEnfermagem tipo="farmacia" />
-                </TabsContent>
-              </Tabs>
-            </TabsContent>
-
-            <TabsContent value="formularios" className="mt-6">
-              <FormulariosSection />
-            </TabsContent>
-
-            <TabsContent value="disciplinar" className="mt-6">
-              <MovimentacoesDisciplinarSection />
-            </TabsContent>
-
-            <TabsContent value="profissionais" className="mt-6">
-              <ProfissionaisSaude />
-            </TabsContent>
-
-            <TabsContent value="avaliacao" className="mt-6">
-              <AvaliacaoDesempenhoSection />
-            </TabsContent>
-
-            <TabsContent value="experiencia" className="mt-6">
-              <AvaliacaoExperienciaSection />
-            </TabsContent>
-          </Tabs>
+          <div className="flex gap-4">
+            <nav className="w-48 flex-shrink-0 space-y-0.5 border-r pr-3">
+              {RHDP_NAV_ITEMS.map(item => {
+                const Icon = item.icon;
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleTabChange(item.id)}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors",
+                      isActive ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                    )}
+                  >
+                    <Icon className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                );
+              })}
+            </nav>
+            <div className="flex-1 min-w-0">
+              {renderContent()}
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>
