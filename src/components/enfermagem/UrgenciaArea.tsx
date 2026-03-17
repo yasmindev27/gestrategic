@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Ambulance, Activity, Stethoscope, FileText
+  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Ambulance, Activity, Stethoscope, FileText, ShieldCheck
 } from 'lucide-react';
 import { ChecklistCarrinhoUrgencia } from './ChecklistCarrinhoUrgencia';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
@@ -25,6 +25,7 @@ import { ControleSinaisVitaisOxigenio } from './ControleSinaisVitaisOxigenio';
 import { EscalasClinicas } from './EscalasClinicas';
 import { PassagemPlantaoSBAR } from './PassagemPlantaoSBAR';
 import { DiagnosticoPrescricaoEnfermagem } from './DiagnosticoPrescricaoEnfermagem';
+import { TermoConsentimentoRiscos } from './TermoConsentimentoRiscos';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
@@ -131,6 +132,7 @@ export function UrgenciaArea() {
           <TabsTrigger value="escalas" className="gap-1"><Stethoscope className="h-4 w-4" />Escalas Clínicas</TabsTrigger>
           <TabsTrigger value="sbar" className="gap-1"><FileText className="h-4 w-4" />SBAR Enfermeiros</TabsTrigger>
           <TabsTrigger value="prescricao" className="gap-1"><ClipboardList className="h-4 w-4" />Prescrição Enf.</TabsTrigger>
+          <TabsTrigger value="termo" className="gap-1"><ShieldCheck className="h-4 w-4" />Termo Riscos</TabsTrigger>
         </TabsList>
 
         <TabsContent value="atendimentos" className="mt-4 space-y-4">
@@ -311,6 +313,10 @@ export function UrgenciaArea() {
 
         <TabsContent value="prescricao" className="mt-4">
           <DiagnosticoPrescricaoEnfermagem storageKey="enf-prescricao-urgencia" setor="Urgência" />
+        </TabsContent>
+
+        <TabsContent value="termo" className="mt-4">
+          <TermoConsentimentoRiscos storageKey="enf-termo-riscos-urgencia" setor="Urgência" />
         </TabsContent>
       </Tabs>
     </div>
