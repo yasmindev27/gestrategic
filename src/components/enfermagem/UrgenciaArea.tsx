@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Ambulance, Activity
+  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Ambulance, Activity, Stethoscope
 } from 'lucide-react';
 import { ChecklistCarrinhoUrgencia } from './ChecklistCarrinhoUrgencia';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
@@ -22,6 +22,7 @@ import { ChecklistFluxometrosBombas } from './ChecklistFluxometrosBombas';
 import { PassagemPlantaoTecEnfermagem } from './PassagemPlantaoTecEnfermagem';
 import { ChecklistUTIMovel } from './ChecklistUTIMovel';
 import { ControleSinaisVitaisOxigenio } from './ControleSinaisVitaisOxigenio';
+import { EscalasClinicas } from './EscalasClinicas';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
@@ -125,6 +126,7 @@ export function UrgenciaArea() {
           <TabsTrigger value="passagem-plantao" className="gap-1"><ClipboardPen className="h-4 w-4" />Passagem Plantão</TabsTrigger>
           <TabsTrigger value="uti-movel" className="gap-1"><Ambulance className="h-4 w-4" />UTI Móvel</TabsTrigger>
           <TabsTrigger value="sv-oxigenio" className="gap-1"><Activity className="h-4 w-4" />SV/Oxigenioterapia</TabsTrigger>
+          <TabsTrigger value="escalas" className="gap-1"><Stethoscope className="h-4 w-4" />Escalas Clínicas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="atendimentos" className="mt-4 space-y-4">
@@ -293,6 +295,10 @@ export function UrgenciaArea() {
 
         <TabsContent value="sv-oxigenio" className="mt-4">
           <ControleSinaisVitaisOxigenio storageKey="enf-sv-oxigenio-urgencia" setor="Urgência" />
+        </TabsContent>
+
+        <TabsContent value="escalas" className="mt-4">
+          <EscalasClinicas storageKey="enf-escalas-clinicas-urgencia" setor="Urgência" />
         </TabsContent>
       </Tabs>
     </div>

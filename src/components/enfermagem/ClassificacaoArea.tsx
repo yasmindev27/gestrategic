@@ -10,11 +10,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  ClipboardCheck, Plus, Search, Clock, Users, TrendingUp, Timer, Thermometer
+  ClipboardCheck, Plus, Search, Clock, Users, TrendingUp, Timer, Thermometer, Stethoscope
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
+import { EscalasClinicas } from './EscalasClinicas';
 
 interface Classificacao {
   id: string;
@@ -94,6 +95,7 @@ export function ClassificacaoArea() {
         <TabsList>
           <TabsTrigger value="classificacao" className="gap-1"><ClipboardCheck className="h-4 w-4" />Classificação</TabsTrigger>
           <TabsTrigger value="sinais-vitais" className="gap-1"><Thermometer className="h-4 w-4" />Sinais Vitais</TabsTrigger>
+          <TabsTrigger value="escalas" className="gap-1"><Stethoscope className="h-4 w-4" />Escalas Clínicas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="classificacao" className="mt-4 space-y-4">
@@ -218,6 +220,10 @@ export function ClassificacaoArea() {
 
         <TabsContent value="sinais-vitais" className="mt-4">
           <ChecklistSinaisVitais storageKey="enf-sinais-vitais-classificacao" setor="Classificação" />
+        </TabsContent>
+
+        <TabsContent value="escalas" className="mt-4">
+          <EscalasClinicas storageKey="enf-escalas-clinicas-classificacao" setor="Classificação" />
         </TabsContent>
       </Tabs>
     </div>

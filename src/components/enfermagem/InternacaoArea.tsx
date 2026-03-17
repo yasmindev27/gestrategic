@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   BedDouble, ClipboardList, UserCheck, AlertTriangle, Plus, Search,
-  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen
+  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Stethoscope
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ChecklistCarrinhoInternacao } from './ChecklistCarrinhoInternacao';
@@ -23,6 +23,7 @@ import { ChecklistLimpezaConcorrente } from './ChecklistLimpezaConcorrente';
 import { ChecklistFluxometrosBombas } from './ChecklistFluxometrosBombas';
 import { PassagemPlantaoTecEnfermagem } from './PassagemPlantaoTecEnfermagem';
 import { ControleSinaisVitaisOxigenio } from './ControleSinaisVitaisOxigenio';
+import { EscalasClinicas } from './EscalasClinicas';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
@@ -188,6 +189,7 @@ export function InternacaoArea() {
           <TabsTrigger value="fluxometros" className="gap-1"><Gauge className="h-4 w-4" />Fluxômetros/Bombas</TabsTrigger>
           <TabsTrigger value="passagem-plantao" className="gap-1"><ClipboardPen className="h-4 w-4" />Passagem Plantão</TabsTrigger>
           <TabsTrigger value="sv-oxigenio" className="gap-1"><Activity className="h-4 w-4" />SV/Oxigenioterapia</TabsTrigger>
+          <TabsTrigger value="escalas" className="gap-1"><Stethoscope className="h-4 w-4" />Escalas Clínicas</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pacientes" className="mt-4 space-y-4">
@@ -381,6 +383,10 @@ export function InternacaoArea() {
 
         <TabsContent value="sv-oxigenio" className="mt-4">
           <ControleSinaisVitaisOxigenio storageKey="enf-sv-oxigenio-internacao" setor="Internação" />
+        </TabsContent>
+
+        <TabsContent value="escalas" className="mt-4">
+          <EscalasClinicas storageKey="enf-escalas-clinicas-internacao" setor="Internação" />
         </TabsContent>
       </Tabs>
     </div>
