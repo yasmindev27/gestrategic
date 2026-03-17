@@ -105,6 +105,18 @@ interface RegistroDiluicao {
   dataRegistro: string;
 }
 
+interface RegistroOlivas {
+  id: string;
+  dataDesinfeccao: string;
+  tipoMaterial: string;
+  validade: string;
+  metodo: string;
+  quantidade: string;
+  responsavel: string;
+  coren: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
