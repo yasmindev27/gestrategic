@@ -10,13 +10,14 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList, Shirt, Shield
+  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList, Shirt, Shield, SprayCanIcon
 } from 'lucide-react';
 import { ChecklistCarrinhoUrgencia } from './ChecklistCarrinhoUrgencia';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
 import { ChecklistSetorUrgencia } from './ChecklistSetorUrgencia';
 import { ProtocoloEvasaoRouparia } from './ProtocoloEvasaoRouparia';
 import { ChecklistGeralNSP } from './ChecklistGeralNSP';
+import { ChecklistLimpezaConcorrente } from './ChecklistLimpezaConcorrente';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
@@ -115,6 +116,7 @@ export function UrgenciaArea() {
           <TabsTrigger value="sinais-vitais" className="gap-1"><Thermometer className="h-4 w-4" />Sinais Vitais</TabsTrigger>
           <TabsTrigger value="evasao-rouparia" className="gap-1"><Shirt className="h-4 w-4" />Evasão Rouparia</TabsTrigger>
           <TabsTrigger value="nsp" className="gap-1"><Shield className="h-4 w-4" />NSP</TabsTrigger>
+          <TabsTrigger value="limpeza" className="gap-1"><SprayCanIcon className="h-4 w-4" />Limpeza Concorrente</TabsTrigger>
         </TabsList>
 
         <TabsContent value="atendimentos" className="mt-4 space-y-4">
@@ -263,6 +265,10 @@ export function UrgenciaArea() {
 
         <TabsContent value="nsp" className="mt-4">
           <ChecklistGeralNSP storageKey="enf-nsp-urgencia" setor="Urgência" />
+        </TabsContent>
+
+        <TabsContent value="limpeza" className="mt-4">
+          <ChecklistLimpezaConcorrente storageKey="enf-limpeza-concorrente-urgencia" setor="Urgência" />
         </TabsContent>
       </Tabs>
     </div>

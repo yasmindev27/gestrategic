@@ -12,13 +12,14 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   BedDouble, ClipboardList, UserCheck, AlertTriangle, Plus, Search,
-  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield
+  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ChecklistCarrinhoInternacao } from './ChecklistCarrinhoInternacao';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
 import { ProtocoloEvasaoRouparia } from './ProtocoloEvasaoRouparia';
 import { ChecklistGeralNSP } from './ChecklistGeralNSP';
+import { ChecklistLimpezaConcorrente } from './ChecklistLimpezaConcorrente';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
@@ -180,6 +181,7 @@ export function InternacaoArea() {
           <TabsTrigger value="sinais-vitais" className="gap-1"><Thermometer className="h-4 w-4" />Sinais Vitais</TabsTrigger>
           <TabsTrigger value="evasao-rouparia" className="gap-1"><Shirt className="h-4 w-4" />Evasão Rouparia</TabsTrigger>
           <TabsTrigger value="nsp" className="gap-1"><Shield className="h-4 w-4" />NSP</TabsTrigger>
+          <TabsTrigger value="limpeza" className="gap-1"><SprayCanIcon className="h-4 w-4" />Limpeza Concorrente</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pacientes" className="mt-4 space-y-4">
@@ -357,6 +359,10 @@ export function InternacaoArea() {
 
         <TabsContent value="nsp" className="mt-4">
           <ChecklistGeralNSP storageKey="enf-nsp-internacao" setor="Internação" />
+        </TabsContent>
+
+        <TabsContent value="limpeza" className="mt-4">
+          <ChecklistLimpezaConcorrente storageKey="enf-limpeza-concorrente-internacao" setor="Internação" />
         </TabsContent>
       </Tabs>
     </div>
