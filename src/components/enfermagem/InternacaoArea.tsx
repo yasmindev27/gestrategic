@@ -402,6 +402,10 @@ export function InternacaoArea() {
         <TabsContent value="prescricao" className="mt-4">
           <DiagnosticoPrescricaoEnfermagem storageKey="enf-prescricao-internacao" setor="Internação" />
         </TabsContent>
+
+        <TabsContent value="termo" className="mt-4">
+          <TermoConsentimentoRiscos storageKey="enf-termo-riscos-internacao" setor="Internação" />
+        </TabsContent>
       </Tabs>
     </div>
   );
