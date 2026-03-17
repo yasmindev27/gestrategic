@@ -103,6 +103,14 @@ export function UrgenciaArea() {
         </div>
       </div>
 
+      <Tabs defaultValue="atendimentos">
+        <TabsList>
+          <TabsTrigger value="atendimentos" className="gap-1"><Siren className="h-4 w-4" />Atendimentos</TabsTrigger>
+          <TabsTrigger value="carrinho" className="gap-1"><ShieldAlert className="h-4 w-4" />Carrinho de Urgência</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="atendimentos" className="mt-4 space-y-4">
+
       {/* Painel de classificação */}
       <div className="grid grid-cols-5 gap-2">
         {Object.entries(CLASSIFICACAO_CORES).map(([cor, classe]) => (
