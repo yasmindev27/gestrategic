@@ -201,6 +201,7 @@ export function InternacaoArea() {
           <TabsTrigger value="termo" className="gap-1"><ShieldCheck className="h-4 w-4" />Termo Riscos</TabsTrigger>
           <TabsTrigger value="sae" className="gap-1"><HeartPulse className="h-4 w-4" />SAE Adulto</TabsTrigger>
           <TabsTrigger value="sae-ped" className="gap-1"><HeartPulse className="h-4 w-4" />SAE Pediátrico</TabsTrigger>
+          <TabsTrigger value="guarda-med" className="gap-1"><Pill className="h-4 w-4" />Guarda Medicamento</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pacientes" className="mt-4 space-y-4">
