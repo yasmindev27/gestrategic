@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Activity, Upload, FileCheck, ClipboardCheck, ClipboardList, Radio } from 'lucide-react';
+import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Activity, Upload, FileCheck, ClipboardCheck, ClipboardList, Radio, BedDouble, Siren, ShieldCheck } from 'lucide-react';
 import { ProtocolosModule } from '@/components/protocolos/ProtocolosModule';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -34,6 +34,10 @@ import { useTrocasDisponiveis, useTrocasPendentes, useMinhasEscalas } from '@/ho
 import type { Escala } from '@/components/enfermagem/types';
 import ImportEquipeDialog from '@/components/modules/equipe/ImportEquipeDialog';
 import { AprovacaoPontoJustificativa } from '@/components/enfermagem/AprovacaoPontoJustificativa';
+import { InternacaoArea } from '@/components/enfermagem/InternacaoArea';
+import { UrgenciaArea } from '@/components/enfermagem/UrgenciaArea';
+import { CMEArea } from '@/components/enfermagem/CMEArea';
+import { ClassificacaoArea } from '@/components/enfermagem/ClassificacaoArea';
 
 export default function EnfermagemModule() {
   const navigate = useNavigate();
@@ -167,6 +171,22 @@ export default function EnfermagemModule() {
           <TabsTrigger value="operacional" className="gap-2 text-sm px-4 py-2">
             <Users className="h-4 w-4" />
             Gestão Operacional
+          </TabsTrigger>
+          <TabsTrigger value="internacao" className="gap-2 text-sm px-4 py-2">
+            <BedDouble className="h-4 w-4" />
+            Internação
+          </TabsTrigger>
+          <TabsTrigger value="urgencia" className="gap-2 text-sm px-4 py-2">
+            <Siren className="h-4 w-4" />
+            Urgência
+          </TabsTrigger>
+          <TabsTrigger value="cme" className="gap-2 text-sm px-4 py-2">
+            <ShieldCheck className="h-4 w-4" />
+            CME
+          </TabsTrigger>
+          <TabsTrigger value="classificacao" className="gap-2 text-sm px-4 py-2">
+            <ClipboardCheck className="h-4 w-4" />
+            Classificação
           </TabsTrigger>
           {canAccessProtocolos && (
             <TabsTrigger value="protocolos" className="gap-2 text-sm px-4 py-2">
@@ -363,6 +383,26 @@ export default function EnfermagemModule() {
               <HistoricoTrocas />
             </TabsContent>
           </Tabs>
+        </TabsContent>
+
+        {/* ── Internação ── */}
+        <TabsContent value="internacao" className="mt-6">
+          <InternacaoArea />
+        </TabsContent>
+
+        {/* ── Urgência ── */}
+        <TabsContent value="urgencia" className="mt-6">
+          <UrgenciaArea />
+        </TabsContent>
+
+        {/* ── CME ── */}
+        <TabsContent value="cme" className="mt-6">
+          <CMEArea />
+        </TabsContent>
+
+        {/* ── Classificação ── */}
+        <TabsContent value="classificacao" className="mt-6">
+          <ClassificacaoArea />
         </TabsContent>
 
         {/* ── Escala Técnicos ── */}

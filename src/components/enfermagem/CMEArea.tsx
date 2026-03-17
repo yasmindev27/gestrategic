@@ -1,0 +1,250 @@
+import { useState } from 'react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import {
+  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight
+} from 'lucide-react';
+import { useLocalStorage } from '@/hooks/useLocalStorage';
+import { toast } from 'sonner';
+
+interface ItemCME {
+  id: string;
+  descricao: string;
+  tipo: string;
+  quantidade: number;
+  setor_destino: string;
+  etapa: 'recebimento' | 'lavagem' | 'secagem' | 'preparo' | 'esterilizacao' | 'armazenamento' | 'distribuicao';
+  dataRegistro: string;
+  horaRegistro: string;
+  responsavel: string;
+  lote?: string;
+  indicadorBiologico?: 'aprovado' | 'reprovado' | 'pendente';
+  observacoes?: string;
+}
+
+const ETAPAS_SUJA = ['recebimento', 'lavagem', 'secagem'] as const;
+const ETAPAS_LIMPA = ['preparo', 'esterilizacao', 'armazenamento', 'distribuicao'] as const;
+
+const ETAPA_LABELS: Record<string, { label: string; cor: string }> = {
+  recebimento: { label: 'Recebimento', cor: 'bg-red-100 text-red-800' },
+  lavagem: { label: 'Lavagem', cor: 'bg-orange-100 text-orange-800' },
+  secagem: { label: 'Secagem', cor: 'bg-yellow-100 text-yellow-800' },
+  preparo: { label: 'Preparo', cor: 'bg-blue-100 text-blue-800' },
+  esterilizacao: { label: 'Esterilização', cor: 'bg-purple-100 text-purple-800' },
+  armazenamento: { label: 'Armazenamento', cor: 'bg-green-100 text-green-800' },
+  distribuicao: { label: 'Distribuição', cor: 'bg-emerald-100 text-emerald-800' },
+};
+
+const TIPOS_MATERIAL = [
+  'Instrumental Cirúrgico', 'Pacotes de Curativo', 'Caixas Cirúrgicas',
+  'Material Termorresistente', 'Material Termossensível', 'Rouparia',
+  'Acessórios de Ventilação', 'Outros',
+];
+
+export function CMEArea() {
+  const [tab, setTab] = useState('area-suja');
+  const [itens, setItens] = useLocalStorage<ItemCME[]>('enf-cme-itens', []);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [busca, setBusca] = useState('');
+  const [form, setForm] = useState({
+    descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '',
+    etapa: 'recebimento' as ItemCME['etapa'], responsavel: '', lote: '', observacoes: ''
+  });
+
+  const itensSuja = itens.filter(i => (ETAPAS_SUJA as readonly string[]).includes(i.etapa));
+  const itensLimpa = itens.filter(i => (ETAPAS_LIMPA as readonly string[]).includes(i.etapa));
+
+  const handleAdd = () => {
+    if (!form.descricao || !form.responsavel) {
+      toast.error('Descrição e responsável são obrigatórios');
+      return;
+    }
+    const now = new Date();
+    const novo: ItemCME = {
+      id: crypto.randomUUID(),
+      ...form,
+      dataRegistro: now.toISOString().split('T')[0],
+      horaRegistro: now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+    };
+    setItens([novo, ...itens]);
+    setForm({ descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '', etapa: 'recebimento', responsavel: '', lote: '', observacoes: '' });
+    setDialogOpen(false);
+    toast.success('Item registrado na CME');
+  };
+
+  const avancarEtapa = (id: string) => {
+    const ordem: ItemCME['etapa'][] = ['recebimento', 'lavagem', 'secagem', 'preparo', 'esterilizacao', 'armazenamento', 'distribuicao'];
+    setItens(prev => prev.map(i => {
+      if (i.id !== id) return i;
+      const idx = ordem.indexOf(i.etapa);
+      if (idx < ordem.length - 1) {
+        return { ...i, etapa: ordem[idx + 1] };
+      }
+      return i;
+    }));
+    toast.success('Item avançado para próxima etapa');
+  };
+
+  const renderTabela = (items: ItemCME[], area: string) => {
+    const filtrados = items.filter(i =>
+      i.descricao.toLowerCase().includes(busca.toLowerCase()) ||
+      i.tipo.toLowerCase().includes(busca.toLowerCase())
+    );
+
+    return (
+      <div className="space-y-4">
+        <div className="rounded-md border overflow-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Material</TableHead>
+                <TableHead>Tipo</TableHead>
+                <TableHead>Qtd</TableHead>
+                <TableHead>Etapa</TableHead>
+                <TableHead>Lote</TableHead>
+                <TableHead>Data/Hora</TableHead>
+                <TableHead>Responsável</TableHead>
+                <TableHead>Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtrados.length === 0 ? (
+                <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum item na {area}</TableCell></TableRow>
+              ) : filtrados.map(i => (
+                <TableRow key={i.id}>
+                  <TableCell className="font-medium">{i.descricao}</TableCell>
+                  <TableCell>{i.tipo}</TableCell>
+                  <TableCell>{i.quantidade}</TableCell>
+                  <TableCell><Badge className={ETAPA_LABELS[i.etapa].cor}>{ETAPA_LABELS[i.etapa].label}</Badge></TableCell>
+                  <TableCell className="font-mono">{i.lote || '—'}</TableCell>
+                  <TableCell className="text-sm">{i.dataRegistro} {i.horaRegistro}</TableCell>
+                  <TableCell>{i.responsavel}</TableCell>
+                  <TableCell>
+                    {i.etapa !== 'distribuicao' && (
+                      <Button size="sm" variant="outline" onClick={() => avancarEtapa(i.id)} className="gap-1">
+                        <ArrowRight className="h-3 w-3" />Avançar
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+            CME — Central de Material Esterilizado
+          </h2>
+          <p className="text-sm text-muted-foreground">Controle de processamento de materiais: recebimento, limpeza, esterilização e distribuição</p>
+        </div>
+      </div>
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <Card><CardContent className="p-4 flex items-center gap-3">
+          <Droplets className="h-8 w-8 text-destructive opacity-70" />
+          <div><p className="text-sm text-muted-foreground">Área Suja</p><p className="text-2xl font-bold">{itensSuja.length}</p></div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3">
+          <Sparkles className="h-8 w-8 text-primary opacity-70" />
+          <div><p className="text-sm text-muted-foreground">Área Limpa</p><p className="text-2xl font-bold">{itensLimpa.length}</p></div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3">
+          <Package className="h-8 w-8 text-success opacity-70" />
+          <div><p className="text-sm text-muted-foreground">Distribuídos Hoje</p><p className="text-2xl font-bold">{itens.filter(i => i.etapa === 'distribuicao' && i.dataRegistro === new Date().toISOString().split('T')[0]).length}</p></div>
+        </CardContent></Card>
+        <Card><CardContent className="p-4 flex items-center gap-3">
+          <Clock className="h-8 w-8 text-warning opacity-70" />
+          <div><p className="text-sm text-muted-foreground">Em Processamento</p><p className="text-2xl font-bold">{itens.filter(i => !['distribuicao', 'armazenamento'].includes(i.etapa)).length}</p></div>
+        </CardContent></Card>
+      </div>
+
+      {/* Fluxo visual */}
+      <Card>
+        <CardContent className="p-4">
+          <p className="text-sm font-medium mb-3">Fluxo de Processamento</p>
+          <div className="flex flex-wrap items-center gap-1 text-xs">
+            {Object.entries(ETAPA_LABELS).map(([key, val], idx) => (
+              <div key={key} className="flex items-center gap-1">
+                <Badge className={val.cor}>{val.label} ({itens.filter(i => i.etapa === key).length})</Badge>
+                {idx < Object.keys(ETAPA_LABELS).length - 1 && <ArrowRight className="h-3 w-3 text-muted-foreground" />}
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Ações */}
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input placeholder="Buscar material..." value={busca} onChange={e => setBusca(e.target.value)} className="pl-9" />
+        </div>
+        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <DialogTrigger asChild>
+            <Button><Plus className="h-4 w-4 mr-1" />Registrar Material</Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-lg">
+            <DialogHeader><DialogTitle>Registrar Material na CME</DialogTitle></DialogHeader>
+            <div className="space-y-3">
+              <div><Label>Descrição do Material</Label><Input value={form.descricao} onChange={e => setForm(p => ({ ...p, descricao: e.target.value }))} /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Tipo</Label>
+                  <Select value={form.tipo} onValueChange={v => setForm(p => ({ ...p, tipo: v }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>{TIPOS_MATERIAL.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Quantidade</Label><Input type="number" min={1} value={form.quantidade} onChange={e => setForm(p => ({ ...p, quantidade: parseInt(e.target.value) || 1 }))} /></div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Etapa Inicial</Label>
+                  <Select value={form.etapa} onValueChange={v => setForm(p => ({ ...p, etapa: v as ItemCME['etapa'] }))}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(ETAPA_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div><Label>Lote</Label><Input value={form.lote} onChange={e => setForm(p => ({ ...p, lote: e.target.value }))} placeholder="Opcional" /></div>
+              </div>
+              <div><Label>Setor Destino</Label><Input value={form.setor_destino} onChange={e => setForm(p => ({ ...p, setor_destino: e.target.value }))} /></div>
+              <div><Label>Responsável</Label><Input value={form.responsavel} onChange={e => setForm(p => ({ ...p, responsavel: e.target.value }))} /></div>
+              <div><Label>Observações</Label><Textarea value={form.observacoes} onChange={e => setForm(p => ({ ...p, observacoes: e.target.value }))} /></div>
+              <Button onClick={handleAdd} className="w-full">Registrar</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      </div>
+
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="area-suja" className="gap-1"><Droplets className="h-4 w-4" />Área Suja</TabsTrigger>
+          <TabsTrigger value="area-limpa" className="gap-1"><Sparkles className="h-4 w-4" />Área Limpa</TabsTrigger>
+        </TabsList>
+        <TabsContent value="area-suja" className="mt-4">
+          {renderTabela(itensSuja, 'Área Suja')}
+        </TabsContent>
+        <TabsContent value="area-limpa" className="mt-4">
+          {renderTabela(itensLimpa, 'Área Limpa')}
+        </TabsContent>
+      </Tabs>
+    </div>
+  );
+}

@@ -31,7 +31,7 @@ async function importVapidKeys(publicKeyBase64: string, privateKeyBase64: string
 
   const publicKey = await crypto.subtle.importKey(
     "raw",
-    publicKeyRaw,
+    publicKeyRaw.buffer as ArrayBuffer,
     { name: "ECDSA", namedCurve: "P-256" },
     true,
     []
@@ -39,7 +39,7 @@ async function importVapidKeys(publicKeyBase64: string, privateKeyBase64: string
 
   const privateKey = await crypto.subtle.importKey(
     "pkcs8",
-    privateKeyRaw,
+    privateKeyRaw.buffer as ArrayBuffer,
     { name: "ECDSA", namedCurve: "P-256" },
     true,
     ["sign"]
@@ -232,7 +232,7 @@ Deno.serve(async (req) => {
   } catch (err) {
     console.error("Error:", err);
     return new Response(
-      JSON.stringify({ error: err.message }),
+      JSON.stringify({ error: (err as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
