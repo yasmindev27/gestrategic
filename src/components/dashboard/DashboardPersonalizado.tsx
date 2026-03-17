@@ -360,7 +360,7 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
   const fetchAuditLogs = async () => {
     const { data } = await supabase
       .from("logs_acesso")
-      .select("id, created_at, acao, modulo, user_nome")
+      .select("id, created_at, acao, modulo, user_id")
       .order("created_at", { ascending: false })
       .limit(10);
     if (data) setAuditLogs(data as AuditLogEntry[]);
