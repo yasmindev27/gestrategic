@@ -569,7 +569,7 @@ const Sidebar = ({
           {/* User Profile & Logout */}
           <div className={cn("flex items-center gap-3 p-2 rounded-lg bg-white/5", isCollapsed && "justify-center")}>
             <Avatar className="h-8 w-8 flex-shrink-0">
-              <AvatarFallback className="bg-[#2d7dd2]/20 text-[#5ba3d9] text-xs font-semibold">
+              <AvatarFallback className="bg-sidebar-primary/20 text-sidebar-primary text-xs font-semibold">
                 {getInitials(userName)}
               </AvatarFallback>
             </Avatar>
