@@ -230,6 +230,7 @@ export function CMEArea() {
   const [detalheOliva, setDetalheOliva] = useState<RegistroOlivas | null>(null);
   const [detalheConferencia, setDetalheConferencia] = useState<RegistroConferencia | null>(null);
   const [detalheDanificado, setDetalheDanificado] = useState<RegistroDanificado | null>(null);
+  const [detalheSolicitacao, setDetalheSolicitacao] = useState<SolicitacaoMaterial | null>(null);
   const [busca, setBusca] = useState('');
   const [buscaDev, setBuscaDev] = useState('');
   const [buscaPincas, setBuscaPincas] = useState('');
@@ -239,6 +240,7 @@ export function CMEArea() {
   const [buscaOlivas, setBuscaOlivas] = useState('');
   const [buscaConferencia, setBuscaConferencia] = useState('');
   const [buscaDanificado, setBuscaDanificado] = useState('');
+  const [buscaSolicitacao, setBuscaSolicitacao] = useState('');
 
   const [form, setForm] = useState({
     descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '',
