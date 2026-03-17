@@ -108,6 +108,7 @@ export function UrgenciaArea() {
       <Tabs defaultValue="atendimentos">
         <TabsList>
           <TabsTrigger value="atendimentos" className="gap-1"><Siren className="h-4 w-4" />Atendimentos</TabsTrigger>
+          <TabsTrigger value="checklist-setor" className="gap-1"><ClipboardList className="h-4 w-4" />Checklist Setor</TabsTrigger>
           <TabsTrigger value="carrinho" className="gap-1"><ShieldAlert className="h-4 w-4" />Carrinho de Urgência</TabsTrigger>
           <TabsTrigger value="sinais-vitais" className="gap-1"><Thermometer className="h-4 w-4" />Sinais Vitais</TabsTrigger>
         </TabsList>
