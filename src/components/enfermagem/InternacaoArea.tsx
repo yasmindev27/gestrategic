@@ -28,6 +28,7 @@ import { PassagemPlantaoSBAR } from './PassagemPlantaoSBAR';
 import { DiagnosticoPrescricaoEnfermagem } from './DiagnosticoPrescricaoEnfermagem';
 import { TermoConsentimentoRiscos } from './TermoConsentimentoRiscos';
 import { SAEAdulto } from './SAEAdulto';
+import { SAEPediatrico } from './SAEPediatrico';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
