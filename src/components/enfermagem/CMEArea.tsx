@@ -376,6 +376,9 @@ export function CMEArea() {
   const diluicoesFiltradas = diluicoes.filter(d =>
     d.responsavel.toLowerCase().includes(buscaDiluicao.toLowerCase()) || d.itens.some(i => i.solucao.toLowerCase().includes(buscaDiluicao.toLowerCase()))
   );
+  const olivasFiltradas = olivas.filter(o =>
+    o.tipoMaterial.toLowerCase().includes(buscaOlivas.toLowerCase()) || o.responsavel.toLowerCase().includes(buscaOlivas.toLowerCase())
+  );
 
   const getBusca = () => {
     if (tab === 'devolucao') return buscaDev;
@@ -383,6 +386,7 @@ export function CMEArea() {
     if (tab === 'almotolias') return buscaAlmotolia;
     if (tab === 'desinfeccao') return buscaDesinfeccao;
     if (tab === 'diluicao') return buscaDiluicao;
+    if (tab === 'olivas') return buscaOlivas;
     return busca;
   };
   const setBuscaAtual = (v: string) => {
@@ -391,11 +395,36 @@ export function CMEArea() {
     else if (tab === 'almotolias') setBuscaAlmotolia(v);
     else if (tab === 'desinfeccao') setBuscaDesinfeccao(v);
     else if (tab === 'diluicao') setBuscaDiluicao(v);
+    else if (tab === 'olivas') setBuscaOlivas(v);
     else setBusca(v);
   };
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'olivas') return (
+      <Dialog open={dialogOlivasOpen} onOpenChange={setDialogOlivasOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Olivas</Button></DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Controle de Desinfecção de Olivas</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Data da Desinfecção</Label><Input type="date" value={formOlivas.dataDesinfeccao} onChange={e => setFormOlivas(p => ({ ...p, dataDesinfeccao: e.target.value }))} /></div>
+              <div><Label>Tipo de Material</Label><Input value={formOlivas.tipoMaterial} onChange={e => setFormOlivas(p => ({ ...p, tipoMaterial: e.target.value }))} placeholder="Ex: Bravo / Soprano" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Validade</Label><Input type="date" value={formOlivas.validade} onChange={e => setFormOlivas(p => ({ ...p, validade: e.target.value }))} /></div>
+              <div><Label>Método</Label><Input value={formOlivas.metodo} onChange={e => setFormOlivas(p => ({ ...p, metodo: e.target.value }))} placeholder="Ex: S/ Condição de uso" /></div>
+            </div>
+            <div><Label>Quantidade</Label><Input value={formOlivas.quantidade} onChange={e => setFormOlivas(p => ({ ...p, quantidade: e.target.value }))} placeholder="Ex: 02" /></div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Responsável (Enfermagem)</Label><Input value={formOlivas.responsavel} onChange={e => setFormOlivas(p => ({ ...p, responsavel: e.target.value }))} /></div>
+              <div><Label>COREN</Label><Input value={formOlivas.coren} onChange={e => setFormOlivas(p => ({ ...p, coren: e.target.value }))} placeholder="Ex: MG 000.000 - TE" /></div>
+            </div>
+            <Button onClick={handleAddOlivas} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar Desinfecção</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'diluicao') return (
       <Dialog open={dialogDiluicaoOpen} onOpenChange={setDialogDiluicaoOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Diluição</Button></DialogTrigger>
