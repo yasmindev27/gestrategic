@@ -100,6 +100,7 @@ export const useUserRole = () => {
   const isMedicos = roles.includes("medicos");
   const isEnfermagem = roles.includes("enfermagem");
   const isSeguranca = roles.includes("seguranca");
+  const isRouparia = roles.includes("rouparia" as AppRole);
   const isTecnico = isTI || isManutencao || isEngenhariaCinica || isLaboratorio;
 
   const canAccessSaidaProntuarios = isAdmin || isRecepcao || isClassificacao || isNir || isFaturamento;
@@ -134,6 +135,7 @@ export const useUserRole = () => {
     isMedicos,
     isEnfermagem,
     isSeguranca,
+    isRouparia,
     isTecnico,
     canAccessSaidaProntuarios,
     canAccessControleFichas,
@@ -142,4 +144,5 @@ export const useUserRole = () => {
     canAtribuirTarefas,
     canViewAgendaColaboradores,
   };
+};
 };

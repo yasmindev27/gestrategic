@@ -149,6 +149,7 @@ const roleColors: Record<AppRole, string> = {
   seguranca: "bg-yellow-600 text-white",
   enfermagem: "bg-cyan-600 text-white",
   medicos: "bg-lime-600 text-white",
+  rouparia: "bg-violet-500 text-white",
 };
 
 export const AdminModule = () => {
