@@ -323,22 +323,17 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
     if (!userId) return;
     setLoading(true);
     try {
-      const hojeStr = new Date().toISOString().split("T")[0];
+      const hojeStr = getBrasiliaDateString();
 
-      // Detect current shift for occupancy calculation
-      const nowUtc = new Date();
-      const utcMs = nowUtc.getTime() + nowUtc.getTimezoneOffset() * 60000;
-      const brasiliaTime = new Date(utcMs - 3 * 3600000);
-      const hour = brasiliaTime.getHours();
+      // Detect current shift in Brasília timezone (system standard)
+      const brasiliaNow = getBrasiliaDate();
+      const hour = brasiliaNow.getHours();
       const isNoturno = hour >= 19 || hour < 7;
-      let shiftDate: Date;
+      const shiftDate = new Date(brasiliaNow);
       if (isNoturno && hour < 7) {
-        shiftDate = new Date(brasiliaTime);
         shiftDate.setDate(shiftDate.getDate() - 1);
-      } else {
-        shiftDate = brasiliaTime;
       }
-      const shiftDateStr = shiftDate.toISOString().split("T")[0];
+      const shiftDateStr = `${shiftDate.getFullYear()}-${String(shiftDate.getMonth() + 1).padStart(2, "0")}-${String(shiftDate.getDate()).padStart(2, "0")}`;
       const shiftType = isNoturno ? "noturno" : "diurno";
 
       const [chamadosData, tarefasData, saidasData, escalasData, incidentesData, chamadosManutData, leitosData] = await Promise.all([
@@ -351,10 +346,9 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
           .eq("status", "aberto").gte("created_at", `${hojeStr}T00:00:00`),
         supabase.from("chamados").select("id", { count: "exact", head: true })
           .eq("categoria", "manutencao").neq("status", "resolvido"),
-        supabase.from("bed_records").select("id, patient_name, motivo_alta, data_alta", { count: "exact" })
+        supabase.from("bed_records").select("id, bed_id, bed_number, sector, patient_name, motivo_alta, data_alta", { count: "exact" })
           .eq("shift_date", shiftDateStr)
-          .eq("shift_type", shiftType)
-          .not("patient_name", "is", null),
+          .eq("shift_type", shiftType),
       ]);
 
       const chamados = chamadosData.data || [];
@@ -382,11 +376,14 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
         .eq("usuario_id", userId).neq("status", "capacitado");
       capacitacoesPendentes = capCount || 0;
 
-      // Leitos ocupados — somente do plantão atual, sem alta
+      // Leitos ocupados — plantão atual + sem alta + deduplicado por leito
       const TOTAL_BEDS_CAPACITY = SECTORS.reduce((sum, s) => sum + s.beds.length + (s.extraBeds?.length || 0), 0);
-      const leitosOcupados = leitosData.data?.filter(r =>
-        r.patient_name && r.patient_name.trim() !== "" && !r.motivo_alta && !r.data_alta
-      ).length || 0;
+      const occupiedBedKeys = new Set(
+        (leitosData.data || [])
+          .filter(r => r.patient_name && r.patient_name.trim() !== "" && !r.motivo_alta && !r.data_alta)
+          .map(r => r.bed_id || `${r.sector ?? "setor"}:${r.bed_number ?? r.id}`)
+      );
+      const leitosOcupados = occupiedBedKeys.size;
 
       // Conformidade de dietas — calcular baseado em registros reais
       let conformidadeDietas = 0;
