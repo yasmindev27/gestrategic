@@ -281,7 +281,7 @@ export const FaturamentoModule = () => {
   const fetchCounts = async () => {
     try {
       const [totalRes, avaliadosDistinctRes] = await Promise.all([
-        supabase.from("saida_prontuarios").select("*", { count: "exact", head: true }),
+        supabase.from("saida_prontuarios").select("*", { count: "exact", head: true }).eq("is_folha_avulsa", false),
         // Count distinct saidas that have a finalized avaliacao (ignores orphans with NULL saida_prontuario_id)
         supabase.from("avaliacoes_prontuarios").select("saida_prontuario_id", { count: "exact", head: true })
           .eq("is_finalizada", true)
@@ -358,6 +358,7 @@ export const FaturamentoModule = () => {
         let query = supabase
           .from("saida_prontuarios")
           .select("*")
+          .eq("is_folha_avulsa", false)
           .order("created_at", { ascending: false });
 
         query = applyFiltersToQuery(query);
