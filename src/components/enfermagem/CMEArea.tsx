@@ -592,6 +592,7 @@ export function CMEArea() {
     else if (tab === 'danificados') setBuscaDanificado(v);
     else if (tab === 'solicitacao') setBuscaSolicitacao(v);
     else if (tab === 'controle-material') setBuscaControleMat(v);
+    else if (tab === 'temp-umidade') setBuscaTempUmidade(v);
     else setBusca(v);
   };
 
