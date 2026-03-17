@@ -305,17 +305,22 @@ export function CMEArea() {
   const almotoliasFiltradas = almotolias.filter(a =>
     a.produto.toLowerCase().includes(buscaAlmotolia.toLowerCase()) || a.setor.toLowerCase().includes(buscaAlmotolia.toLowerCase()) || a.responsavel.toLowerCase().includes(buscaAlmotolia.toLowerCase())
   );
+  const desinfeccoesFiltradas = desinfeccoes.filter(d =>
+    d.metodo.toLowerCase().includes(buscaDesinfeccao.toLowerCase()) || d.responsavel.toLowerCase().includes(buscaDesinfeccao.toLowerCase())
+  );
 
   const getBusca = () => {
     if (tab === 'devolucao') return buscaDev;
     if (tab === 'pincas') return buscaPincas;
     if (tab === 'almotolias') return buscaAlmotolia;
+    if (tab === 'desinfeccao') return buscaDesinfeccao;
     return busca;
   };
   const setBuscaAtual = (v: string) => {
     if (tab === 'devolucao') setBuscaDev(v);
     else if (tab === 'pincas') setBuscaPincas(v);
     else if (tab === 'almotolias') setBuscaAlmotolia(v);
+    else if (tab === 'desinfeccao') setBuscaDesinfeccao(v);
     else setBusca(v);
   };
 
