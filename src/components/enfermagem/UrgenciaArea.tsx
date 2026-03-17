@@ -242,6 +242,10 @@ export function UrgenciaArea() {
         <TabsContent value="carrinho" className="mt-4">
           <ChecklistCarrinhoUrgencia />
         </TabsContent>
+
+        <TabsContent value="sinais-vitais" className="mt-4">
+          <ChecklistSinaisVitais storageKey="enf-sinais-vitais-urgencia" setor="Urgência" />
+        </TabsContent>
       </Tabs>
     </div>
   );
