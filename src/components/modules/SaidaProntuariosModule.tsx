@@ -1718,21 +1718,21 @@ export const SaidaProntuariosModule = () => {
                         key={saida.id}
                         className={`group ${missingFromSalus ? "bg-destructive/5 border-l-4 border-l-destructive" : "hover:bg-muted/50"}`}
                       >
-                        <TableCell className="font-medium uppercase sticky left-0 z-10 bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                          <div className="flex items-center gap-2">
-                            {saida.paciente_nome || "-"}
+                        <TableCell className="font-medium uppercase sticky left-0 z-10 bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] py-1.5 text-xs max-w-[200px]">
+                          <div className="flex items-center gap-1 truncate">
+                            <span className="truncate">{saida.paciente_nome || "-"}</span>
                             {missingFromSalus && (
-                              <Badge variant="destructive" className="text-xs">
-                                Falta Salus
+                              <Badge variant="destructive" className="text-[9px] px-1 py-0 shrink-0">
+                                Salus
                               </Badge>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          {safeFormatDate(saida.nascimento_mae, "dd/MM/yyyy")}
+                        <TableCell className="py-1.5 whitespace-nowrap">
+                          {safeFormatDate(saida.nascimento_mae, "dd/MM/yy")}
                         </TableCell>
-                        <TableCell>
-                          {safeFormatDate(saida.data_atendimento, "dd/MM/yyyy")}
+                        <TableCell className="py-1.5 whitespace-nowrap">
+                          {safeFormatDate(saida.data_atendimento, "dd/MM/yy")}
                         </TableCell>
                         <TableCell>
                           {(() => {
