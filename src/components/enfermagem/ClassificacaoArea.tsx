@@ -221,6 +221,10 @@ export function ClassificacaoArea() {
         <TabsContent value="sinais-vitais" className="mt-4">
           <ChecklistSinaisVitais storageKey="enf-sinais-vitais-classificacao" setor="Classificação" />
         </TabsContent>
+
+        <TabsContent value="escalas" className="mt-4">
+          <EscalasClinicas storageKey="enf-escalas-clinicas-classificacao" setor="Classificação" />
+        </TabsContent>
       </Tabs>
     </div>
   );

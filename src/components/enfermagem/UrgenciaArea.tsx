@@ -296,6 +296,10 @@ export function UrgenciaArea() {
         <TabsContent value="sv-oxigenio" className="mt-4">
           <ControleSinaisVitaisOxigenio storageKey="enf-sv-oxigenio-urgencia" setor="Urgência" />
         </TabsContent>
+
+        <TabsContent value="escalas" className="mt-4">
+          <EscalasClinicas storageKey="enf-escalas-clinicas-urgencia" setor="Urgência" />
+        </TabsContent>
       </Tabs>
     </div>
   );

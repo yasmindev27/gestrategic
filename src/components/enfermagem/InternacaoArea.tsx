@@ -384,6 +384,10 @@ export function InternacaoArea() {
         <TabsContent value="sv-oxigenio" className="mt-4">
           <ControleSinaisVitaisOxigenio storageKey="enf-sv-oxigenio-internacao" setor="Internação" />
         </TabsContent>
+
+        <TabsContent value="escalas" className="mt-4">
+          <EscalasClinicas storageKey="enf-escalas-clinicas-internacao" setor="Internação" />
+        </TabsContent>
       </Tabs>
     </div>
   );
