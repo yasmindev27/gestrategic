@@ -372,7 +372,7 @@ const Sidebar = ({
           <a
             href={externalUrl}
             onClick={handleClick}
-            className={cn(buttonClasses, "text-[#8baec8] hover:bg-white/5 hover:text-white")}
+            className={cn(buttonClasses, "text-sidebar-foreground hover:bg-white/5 hover:text-white")}
           >
             {content}
             {!isCollapsed && <ExternalLink className="h-3 w-3 opacity-60 ml-auto flex-shrink-0" />}
