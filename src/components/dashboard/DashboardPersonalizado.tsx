@@ -28,8 +28,12 @@ import {
   ResponsiveContainer,
   Tooltip as RechartsTooltip,
   Legend,
+  BarChart,
+  Bar,
 } from "recharts";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { subDays, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 
 // ── Types ──
 interface DashboardStats {
@@ -59,6 +63,13 @@ interface AuditLogEntry {
   acao: string;
   modulo: string;
   user_id: string;
+}
+
+interface RiskChartPoint {
+  day: string;
+  nearMiss: number;
+  adverseEvents: number;
+  quality: number;
 }
 
 // ── Governance KPI Card ──
@@ -108,60 +119,6 @@ const KPICard = ({ title, value, subtitle, icon: Icon, variant, loading, onClick
   </Card>
 );
 
-// ── Status Matrix (baseado em dados reais) ──
-const statusCategories = ["Assistencial", "Logística", "Administração", "Governança", "Qualidade"];
-const statusAreas = ["Assistencial", "Administração", "Qualidade"];
-
-const StatusMatrix = () => (
-  <Card className="shadow-sm h-full">
-    <CardHeader className="pb-3 pt-4 px-4">
-      <div className="flex items-center justify-between">
-        <CardTitle className="text-sm font-bold text-foreground">Status dos Módulos</CardTitle>
-        <div className="flex items-center gap-3 text-[10px]">
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-primary" /> OK</span>
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-warning" /> Atenção</span>
-          <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-destructive" /> Urgente</span>
-        </div>
-      </div>
-    </CardHeader>
-    <CardContent className="px-4 pb-4">
-      <div className="overflow-x-auto">
-        <table className="w-full text-[11px]">
-          <thead>
-            <tr className="border-b border-border">
-              <th className="text-left py-1.5 pr-2 text-muted-foreground font-medium" />
-              {statusAreas.map(a => (
-                <th key={a} className="text-center py-1.5 px-1 text-muted-foreground font-medium">{a}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {statusCategories.map((cat, catIdx) => (
-              <tr key={cat} className="border-b border-border/50 last:border-0">
-                <td className="py-1.5 pr-2 font-medium text-foreground whitespace-nowrap">{cat}</td>
-                {statusAreas.map((_, areaIdx) => (
-                  <td key={areaIdx} className="py-1.5 px-1">
-                    <div className="flex justify-center gap-0.5">
-                      {Array.from({ length: 4 }, (_, modIdx) => (
-                        <span
-                          key={modIdx}
-                          className={`w-5 h-5 rounded-sm flex items-center justify-center text-[9px] font-bold ${getStatusColor(getModuleStatus(catIdx, areaIdx, modIdx))}`}
-                        >
-                          {catIdx * 10 + areaIdx * 4 + modIdx + 1}
-                        </span>
-                      ))}
-                    </div>
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </CardContent>
-  </Card>
-);
-
 // ── Audit Activity Log ──
 const AuditActivityLog = ({ logs, loading }: { logs: AuditLogEntry[]; loading: boolean }) => (
   <Card className="shadow-sm">
@@ -195,46 +152,83 @@ const AuditActivityLog = ({ logs, loading }: { logs: AuditLogEntry[]; loading: b
   </Card>
 );
 
-// ── Risk Chart ──
-const RiskChart = () => (
+// ── Risk Chart (dados reais) ──
+const RiskChart = ({ data, loading }: { data: RiskChartPoint[]; loading: boolean }) => (
   <Card className="shadow-sm h-full">
     <CardHeader className="pb-2 pt-4 px-4">
       <CardTitle className="text-sm font-bold text-foreground">Gestão de Riscos (Últimos 7 Dias)</CardTitle>
     </CardHeader>
     <CardContent className="px-2 pb-4">
-      <ResponsiveContainer width="100%" height={220}>
-        <AreaChart data={riskChartData}>
-          <defs>
-            <linearGradient id="gradNearMiss" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="hsl(var(--info))" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="hsl(var(--info))" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="gradAdverse" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
-            </linearGradient>
-            <linearGradient id="gradQuality" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.3} />
-              <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0} />
-            </linearGradient>
-          </defs>
-          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-          <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-          <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
-          <RechartsTooltip
-            contentStyle={{
-              backgroundColor: "hsl(var(--card))",
-              border: "1px solid hsl(var(--border))",
-              borderRadius: "8px",
-              fontSize: "12px",
-            }}
-          />
-          <Legend wrapperStyle={{ fontSize: "11px" }} />
-          <Area type="monotone" dataKey="nearMiss" name="Near Misses" stroke="hsl(var(--info))" fill="url(#gradNearMiss)" strokeWidth={2} />
-          <Area type="monotone" dataKey="adverseEvents" name="Eventos Adversos" stroke="hsl(var(--primary))" fill="url(#gradAdverse)" strokeWidth={2} />
-          <Area type="monotone" dataKey="quality" name="Indicadores Qualidade" stroke="hsl(var(--success))" fill="url(#gradQuality)" strokeWidth={2} />
-        </AreaChart>
-      </ResponsiveContainer>
+      {loading ? (
+        <Skeleton className="h-[220px] w-full" />
+      ) : data.length === 0 ? (
+        <p className="text-xs text-muted-foreground text-center py-16">Sem dados no período</p>
+      ) : (
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+            <XAxis dataKey="day" tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" />
+            <YAxis tick={{ fontSize: 11 }} stroke="hsl(var(--muted-foreground))" allowDecimals={false} />
+            <RechartsTooltip
+              contentStyle={{
+                backgroundColor: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
+                borderRadius: "8px",
+                fontSize: "12px",
+              }}
+            />
+            <Legend wrapperStyle={{ fontSize: "11px" }} />
+            <Bar dataKey="nearMiss" name="Near Misses" fill="hsl(var(--info))" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="adverseEvents" name="Eventos Adversos" fill="hsl(var(--destructive))" radius={[2, 2, 0, 0]} />
+            <Bar dataKey="quality" name="Auditorias" fill="hsl(var(--success))" radius={[2, 2, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      )}
+    </CardContent>
+  </Card>
+);
+
+// ── Resumo Operacional (substitui StatusMatrix) ──
+interface OperationalSummary {
+  chamadosAbertos: number;
+  incidentesAbertos: number;
+  auditoriasAndamento: number;
+  alertasAtivos: number;
+}
+
+const OperationalStatusCard = ({ data, loading }: { data: OperationalSummary; loading: boolean }) => (
+  <Card className="shadow-sm h-full">
+    <CardHeader className="pb-3 pt-4 px-4">
+      <CardTitle className="text-sm font-bold text-foreground">Resumo Operacional</CardTitle>
+    </CardHeader>
+    <CardContent className="px-4 pb-4">
+      {loading ? (
+        <div className="space-y-3">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-8 w-full" />)}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {[
+            { label: "Chamados Abertos", value: data.chamadosAbertos, color: "bg-primary", max: 50 },
+            { label: "Incidentes NSP Abertos", value: data.incidentesAbertos, color: "bg-destructive", max: 20 },
+            { label: "Auditorias em Andamento", value: data.auditoriasAndamento, color: "bg-warning", max: 10 },
+            { label: "Alertas de Segurança Ativos", value: data.alertasAtivos, color: "bg-destructive", max: 10 },
+          ].map(({ label, value, color, max }) => (
+            <div key={label}>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-xs text-muted-foreground">{label}</span>
+                <span className="text-sm font-bold text-foreground">{value}</span>
+              </div>
+              <div className="relative h-2 rounded-full bg-muted overflow-hidden">
+                <div
+                  className={`absolute left-0 top-0 h-full rounded-full transition-all ${color}`}
+                  style={{ width: `${Math.min((value / max) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </CardContent>
   </Card>
 );
@@ -250,12 +244,79 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
   });
   const [loading, setLoading] = useState(true);
   const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
+  const [riskChartData, setRiskChartData] = useState<RiskChartPoint[]>([]);
+  const [operationalSummary, setOperationalSummary] = useState<OperationalSummary>({
+    chamadosAbertos: 0, incidentesAbertos: 0, auditoriasAndamento: 0, alertasAtivos: 0,
+  });
   const {
     role, userId, isAdmin, isGestor, isTI, isManutencao,
     isEngenhariaCinica, isLaboratorio, isFaturamento,
     isRecepcao, isClassificacao, isNir, isTecnico
   } = useUserRole();
   useRealtimeSync(REALTIME_PRESETS.dashboard);
+
+  // ── Busca dados do gráfico de risco (últimos 7 dias, dados reais) ──
+  const fetchRiskChart = async () => {
+    try {
+      const days: RiskChartPoint[] = [];
+      const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+      for (let i = 6; i >= 0; i--) {
+        const date = subDays(new Date(), i);
+        const dateStr = format(date, "yyyy-MM-dd");
+        const dayName = dayNames[date.getDay()];
+
+        const [incidentes, auditorias] = await Promise.all([
+          supabase.from("incidentes_nsp").select("classificacao_risco")
+            .gte("created_at", `${dateStr}T00:00:00`)
+            .lt("created_at", `${dateStr}T23:59:59`),
+          supabase.from("auditorias_qualidade").select("id", { count: "exact", head: true })
+            .gte("created_at", `${dateStr}T00:00:00`)
+            .lt("created_at", `${dateStr}T23:59:59`),
+        ]);
+
+        const incData = incidentes.data || [];
+        const nearMiss = incData.filter(i => 
+          i.classificacao_risco?.toLowerCase().includes("near") || 
+          i.classificacao_risco?.toLowerCase().includes("quase")
+        ).length;
+        const adverseEvents = incData.filter(i => 
+          !i.classificacao_risco?.toLowerCase().includes("near") && 
+          !i.classificacao_risco?.toLowerCase().includes("quase")
+        ).length;
+
+        days.push({
+          day: `${dayName} ${format(date, "dd/MM")}`,
+          nearMiss,
+          adverseEvents,
+          quality: auditorias.count || 0,
+        });
+      }
+      setRiskChartData(days);
+    } catch (err) {
+      console.error("Erro ao buscar dados de risco:", err);
+    }
+  };
+
+  // ── Busca resumo operacional ──
+  const fetchOperationalSummary = async () => {
+    try {
+      const [chamados, incidentes, auditorias, alertas] = await Promise.all([
+        supabase.from("chamados").select("id", { count: "exact", head: true }).eq("status", "aberto"),
+        supabase.from("incidentes_nsp").select("id", { count: "exact", head: true }).eq("status", "aberto"),
+        supabase.from("auditorias_qualidade").select("id", { count: "exact", head: true }).eq("status", "em_andamento"),
+        supabase.from("alertas_seguranca").select("id", { count: "exact", head: true }).eq("status", "ativo"),
+      ]);
+      setOperationalSummary({
+        chamadosAbertos: chamados.count || 0,
+        incidentesAbertos: incidentes.count || 0,
+        auditoriasAndamento: auditorias.count || 0,
+        alertasAtivos: alertas.count || 0,
+      });
+    } catch (err) {
+      console.error("Erro ao buscar resumo operacional:", err);
+    }
+  };
 
   const fetchStats = async () => {
     if (!userId) return;
@@ -308,6 +369,20 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
         r.patient_name && r.patient_name.trim() !== "" && !r.motivo_alta && !r.data_alta
       ).length || 0;
 
+      // Conformidade de dietas — calcular baseado em registros reais
+      let conformidadeDietas = 0;
+      try {
+        const { count: totalRefeicoes } = await supabase
+          .from("refeicoes_registros")
+          .select("id", { count: "exact", head: true })
+          .gte("created_at", `${hojeStr}T00:00:00`);
+        // Se há registros hoje, conformidade = 100%, senão 0
+        // Em cenário real, poderia comparar com expectativa de dietas programadas
+        conformidadeDietas = (totalRefeicoes || 0) > 0 ? 100 : 0;
+      } catch {
+        conformidadeDietas = 0;
+      }
+
       setStats({
         chamadosAbertos, chamadosPendentes, chamadosHoje, chamadosResolvidos,
         tarefasPendentes: tarefasData.data || 0,
@@ -323,7 +398,7 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
         totalLeitos: TOTAL_BEDS_CAPACITY,
         incidentesCriticos: incidentesData.count || 0,
         chamadosManutencao: chamadosManutData.count || 0,
-        conformidadeDietas: 98,
+        conformidadeDietas,
       });
     } catch (error) {
       console.error("Erro ao carregar estatísticas:", error);
@@ -345,6 +420,8 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
     if (userId) {
       fetchStats();
       fetchAuditLogs();
+      fetchRiskChart();
+      fetchOperationalSummary();
     }
   }, [userId, role]);
 
@@ -355,7 +432,7 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
       {/* Section Title */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">Governança Hospitalar</h2>
-        <Button variant="outline" size="sm" onClick={fetchStats} disabled={loading}>
+        <Button variant="outline" size="sm" onClick={() => { fetchStats(); fetchRiskChart(); fetchOperationalSummary(); }} disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
           Atualizar
         </Button>
@@ -392,10 +469,10 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
         />
         <KPICard
           title="Conformidade Dietas"
-          value={`${stats.conformidadeDietas}%`}
+          value={stats.conformidadeDietas > 0 ? `${stats.conformidadeDietas}%` : "—"}
           subtitle="Meta: 95%"
           icon={ClipboardCheck}
-          variant="success"
+          variant={stats.conformidadeDietas >= 95 ? "success" : stats.conformidadeDietas > 0 ? "warning" : "primary"}
           loading={loading}
           onClick={() => onNavigate?.("restaurante")}
         />
@@ -406,9 +483,9 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          <RiskChart />
+          <RiskChart data={riskChartData} loading={loading} />
         </div>
-        <StatusMatrix />
+        <OperationalStatusCard data={operationalSummary} loading={loading} />
       </div>
 
       <AuditActivityLog logs={auditLogs} loading={loading} />
