@@ -563,6 +563,9 @@ export function CMEArea() {
   const conferenciasFiltradas = conferencias.filter(c =>
     c.setor.toLowerCase().includes(buscaConferencia.toLowerCase()) || c.responsavel.toLowerCase().includes(buscaConferencia.toLowerCase())
   );
+  const tempUmidadeFiltrados = tempUmidade.filter(t =>
+    t.setor.toLowerCase().includes(buscaTempUmidade.toLowerCase()) || t.responsavel.toLowerCase().includes(buscaTempUmidade.toLowerCase()) || t.periodo.toLowerCase().includes(buscaTempUmidade.toLowerCase())
+  );
 
   const getBusca = () => {
     if (tab === 'devolucao') return buscaDev;
