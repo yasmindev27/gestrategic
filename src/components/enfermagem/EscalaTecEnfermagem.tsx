@@ -208,6 +208,30 @@ const ESCALA_CONFIGS: Record<EscalaTipo, EscalaTipoConfig> = {
       { value: 'especial', label: 'Especial', horario: '' },
     ],
   },
+  recepcao: {
+    titulo: 'ESCALA DE SERVIÇO DA RECEPÇÃO',
+    tituloCard: 'Escala da Recepção',
+    registroLabel: 'Matrícula',
+    pdfFilename: 'Escala_Recepcao',
+    setorCodes: [
+      { code: '', label: 'Folga', color: 'bg-gray-50 text-gray-400' },
+      { code: 'RE', label: 'Recepção Externa', color: 'bg-blue-100 text-blue-800' },
+      { code: 'RI', label: 'Recepção Interna', color: 'bg-purple-100 text-purple-800' },
+      { code: 'D', label: 'Diurno 07:00-19:00', color: 'bg-yellow-100 text-yellow-800' },
+      { code: 'N', label: 'Noturno 19:00-07:00', color: 'bg-indigo-100 text-indigo-800' },
+      { code: 'HE', label: 'Hora Extra', color: 'bg-orange-100 text-orange-800' },
+      { code: 'FE', label: 'Férias', color: 'bg-green-100 text-green-800' },
+      { code: 'BH', label: 'Banco de Horas', color: 'bg-cyan-100 text-cyan-800' },
+      { code: 'AF', label: 'Afastamento', color: 'bg-gray-200 text-gray-700' },
+    ],
+    grupos: [
+      { value: 'noturno_impar', label: 'Noturno (Ímpares)', horario: '19:00 AS 07:00' },
+      { value: 'noturno_par', label: 'Noturno (Pares)', horario: '19:00 AS 07:00' },
+      { value: 'diurno_impar', label: 'Diurno (Ímpares)', horario: '07:00 AS 19:00' },
+      { value: 'diurno_par', label: 'Diurno (Pares)', horario: '07:00 AS 19:00' },
+      { value: 'especial', label: 'Especial', horario: '' },
+    ],
+  },
 };
 
 const MESES = [
