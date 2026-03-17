@@ -237,12 +237,20 @@ export function InfraestruturaPanel() {
   const handleSyncExternalDB = async () => {
     setIsSyncing(true);
     setSyncResult(null);
+    setSyncElapsed(0);
+
+    // Start elapsed timer
+    const start = Date.now();
+    syncTimerRef.current = setInterval(() => {
+      setSyncElapsed(Math.floor((Date.now() - start) / 1000));
+    }, 1000);
+
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) throw new Error("Não autenticado");
 
       const res = await supabase.functions.invoke("sync-external-db", {
-        body: { mode: "full" },
+        body: {},
       });
 
       if (res.error) throw res.error;
@@ -252,11 +260,14 @@ export function InfraestruturaPanel() {
         tables: result.summary?.tables_processed || 0,
         rows: result.summary?.total_rows_synced || 0,
         errors: result.summary?.tables_with_errors || 0,
+        duration: result.summary?.duration_seconds || 0,
       });
     } catch (err: any) {
       console.error("Sync error:", err);
       setSyncResult({ tables: 0, rows: 0, errors: -1 });
     } finally {
+      if (syncTimerRef.current) clearInterval(syncTimerRef.current);
+      syncTimerRef.current = null;
       setIsSyncing(false);
     }
   };
