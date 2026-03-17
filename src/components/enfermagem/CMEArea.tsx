@@ -1680,6 +1680,31 @@ export function CMEArea() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog detalhe temp/umidade */}
+      <Dialog open={!!detalheTempUmidade} onOpenChange={() => setDetalheTempUmidade(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Temperatura e Umidade</DialogTitle></DialogHeader>
+          {detalheTempUmidade && (
+            <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-3 gap-2">
+                <div><span className="text-muted-foreground">Dia:</span> <strong>{detalheTempUmidade.dia}</strong></div>
+                <div><span className="text-muted-foreground">Período:</span> <Badge variant="outline">{detalheTempUmidade.periodo}</Badge></div>
+                <div><span className="text-muted-foreground">Hora:</span> {detalheTempUmidade.hora}</div>
+              </div>
+              <div><span className="text-muted-foreground">Setor:</span> <strong>{detalheTempUmidade.setor}</strong></div>
+              <div className="grid grid-cols-3 gap-2">
+                <div><span className="text-muted-foreground">Temp. Atual:</span> <strong>{detalheTempUmidade.tempAtual || '—'} °C</strong></div>
+                <div><span className="text-muted-foreground">Temp. Mínima:</span> <strong>{detalheTempUmidade.tempMinima || '—'} °C</strong></div>
+                <div><span className="text-muted-foreground">Temp. Máxima:</span> <strong>{detalheTempUmidade.tempMaxima || '—'} °C</strong></div>
+              </div>
+              <div><span className="text-muted-foreground">Umidade:</span> <strong>{detalheTempUmidade.umidade || '—'}%</strong></div>
+              <div><span className="text-muted-foreground">Responsável:</span> {detalheTempUmidade.responsavel}</div>
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheTempUmidade.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
