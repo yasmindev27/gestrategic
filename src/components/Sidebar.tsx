@@ -513,7 +513,7 @@ const Sidebar = ({
             {!isCollapsed && (
               <div className="overflow-hidden">
                 <h1 className="font-bold text-base text-white truncate">Gestrategic</h1>
-                <p className="text-[11px] text-[#7eb8e0]">Tecnologia em Saúde</p>
+                <p className="text-[11px] text-sidebar-foreground/70">Tecnologia em Saúde</p>
               </div>
             )}
           </button>
