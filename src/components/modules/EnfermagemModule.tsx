@@ -38,6 +38,7 @@ import { InternacaoArea } from '@/components/enfermagem/InternacaoArea';
 import { UrgenciaArea } from '@/components/enfermagem/UrgenciaArea';
 import { CMEArea } from '@/components/enfermagem/CMEArea';
 import { ClassificacaoArea } from '@/components/enfermagem/ClassificacaoArea';
+import { MedicacaoArea } from '@/components/enfermagem/MedicacaoArea';
 
 export default function EnfermagemModule() {
   const navigate = useNavigate();
