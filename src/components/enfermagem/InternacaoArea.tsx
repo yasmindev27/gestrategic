@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   BedDouble, ClipboardList, UserCheck, AlertTriangle, Plus, Search,
-  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Stethoscope, ShieldCheck
+  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Stethoscope, ShieldCheck, HeartPulse
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ChecklistCarrinhoInternacao } from './ChecklistCarrinhoInternacao';
@@ -27,6 +27,7 @@ import { EscalasClinicas } from './EscalasClinicas';
 import { PassagemPlantaoSBAR } from './PassagemPlantaoSBAR';
 import { DiagnosticoPrescricaoEnfermagem } from './DiagnosticoPrescricaoEnfermagem';
 import { TermoConsentimentoRiscos } from './TermoConsentimentoRiscos';
+import { SAEAdulto } from './SAEAdulto';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
@@ -196,6 +197,7 @@ export function InternacaoArea() {
           <TabsTrigger value="sbar" className="gap-1"><FileText className="h-4 w-4" />SBAR Enfermeiros</TabsTrigger>
           <TabsTrigger value="prescricao" className="gap-1"><ClipboardList className="h-4 w-4" />Prescrição Enf.</TabsTrigger>
           <TabsTrigger value="termo" className="gap-1"><ShieldCheck className="h-4 w-4" />Termo Riscos</TabsTrigger>
+          <TabsTrigger value="sae" className="gap-1"><HeartPulse className="h-4 w-4" />SAE Adulto</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pacientes" className="mt-4 space-y-4">
@@ -405,6 +407,10 @@ export function InternacaoArea() {
 
         <TabsContent value="termo" className="mt-4">
           <TermoConsentimentoRiscos storageKey="enf-termo-riscos-internacao" setor="Internação" />
+        </TabsContent>
+
+        <TabsContent value="sae" className="mt-4">
+          <SAEAdulto storageKey="enf-sae-adulto-internacao" setor="Internação" />
         </TabsContent>
       </Tabs>
     </div>

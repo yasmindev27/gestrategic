@@ -26,6 +26,7 @@ import { EscalasClinicas } from './EscalasClinicas';
 import { PassagemPlantaoSBAR } from './PassagemPlantaoSBAR';
 import { DiagnosticoPrescricaoEnfermagem } from './DiagnosticoPrescricaoEnfermagem';
 import { TermoConsentimentoRiscos } from './TermoConsentimentoRiscos';
+import { SAEAdulto } from './SAEAdulto';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
@@ -133,6 +134,7 @@ export function UrgenciaArea() {
           <TabsTrigger value="sbar" className="gap-1"><FileText className="h-4 w-4" />SBAR Enfermeiros</TabsTrigger>
           <TabsTrigger value="prescricao" className="gap-1"><ClipboardList className="h-4 w-4" />Prescrição Enf.</TabsTrigger>
           <TabsTrigger value="termo" className="gap-1"><ShieldCheck className="h-4 w-4" />Termo Riscos</TabsTrigger>
+          <TabsTrigger value="sae" className="gap-1"><HeartPulse className="h-4 w-4" />SAE Adulto</TabsTrigger>
         </TabsList>
 
         <TabsContent value="atendimentos" className="mt-4 space-y-4">
@@ -317,6 +319,10 @@ export function UrgenciaArea() {
 
         <TabsContent value="termo" className="mt-4">
           <TermoConsentimentoRiscos storageKey="enf-termo-riscos-urgencia" setor="Urgência" />
+        </TabsContent>
+
+        <TabsContent value="sae" className="mt-4">
+          <SAEAdulto storageKey="enf-sae-adulto-urgencia" setor="Urgência" />
         </TabsContent>
       </Tabs>
     </div>
