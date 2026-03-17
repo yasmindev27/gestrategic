@@ -1940,7 +1940,9 @@ export const SaidaProntuariosModule = () => {
                           })()}
                         </TableCell>
                         <TableCell className="sticky right-0 z-10 bg-card shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.1)]">
-                          {getActionButton(saida)}
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                            {getActionButton(saida)}
+                          </div>
                         </TableCell>
                       </TableRow>
                     );
