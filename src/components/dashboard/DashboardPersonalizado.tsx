@@ -57,7 +57,7 @@ interface AuditLogEntry {
   created_at: string;
   acao: string;
   modulo: string;
-  user_nome: string;
+  user_id: string;
 }
 
 // ── Governance KPI Card ──
