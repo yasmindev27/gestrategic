@@ -34,6 +34,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { subDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { getBrasiliaDate, getBrasiliaDateString } from "@/lib/brasilia-time";
 
 // ── Types ──
 interface DashboardStats {
