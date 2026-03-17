@@ -275,6 +275,12 @@ export function CMEArea() {
   const [buscaDanificado, setBuscaDanificado] = useState('');
   const [buscaSolicitacao, setBuscaSolicitacao] = useState('');
   const [buscaControleMat, setBuscaControleMat] = useState('');
+  const [buscaTempUmidade, setBuscaTempUmidade] = useState('');
+
+  const [formTempUmidade, setFormTempUmidade] = useState({
+    dia: new Date().toISOString().split('T')[0], periodo: 'Manhã', hora: '',
+    tempAtual: '', tempMinima: '', tempMaxima: '', umidade: '', responsavel: '', setor: '',
+  });
 
   const KITS_CME = [
     { nome: 'Kit Sutura', descricao: 'Tesoura Mayo reta 16 cm / Pinça Hemostática reta 16 cm / Porta-agulha / Pinça dente de rato / Cuba rim' },
