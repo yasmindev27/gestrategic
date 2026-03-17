@@ -31,7 +31,7 @@ async function importVapidKeys(publicKeyBase64: string, privateKeyBase64: string
 
   const publicKey = await crypto.subtle.importKey(
     "raw",
-    publicKeyRaw,
+    publicKeyRaw.buffer as ArrayBuffer,
     { name: "ECDSA", namedCurve: "P-256" },
     true,
     []
