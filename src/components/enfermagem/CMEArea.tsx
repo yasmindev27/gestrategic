@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan
+  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan, FlaskConical
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -88,6 +88,23 @@ interface RegistroDesinfeccao {
   dataRegistro: string;
 }
 
+interface ItemDiluicao {
+  solucao: string;
+  volume: string;
+  lote: string;
+  validade: string;
+}
+
+interface RegistroDiluicao {
+  id: string;
+  categoria: 'respiratorio' | 'cirurgico';
+  itens: ItemDiluicao[];
+  data: string;
+  horario: string;
+  responsavel: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
@@ -141,20 +158,24 @@ export function CMEArea() {
   const [pincasRegistros, setPincasRegistros] = useLocalStorage<RegistroPincas[]>('enf-cme-pincas', []);
   const [almotolias, setAlmotolias] = useLocalStorage<RegistroAlmotolia[]>('enf-cme-almotolias', []);
   const [desinfeccoes, setDesinfeccoes] = useLocalStorage<RegistroDesinfeccao[]>('enf-cme-desinfeccao', []);
+  const [diluicoes, setDiluicoes] = useLocalStorage<RegistroDiluicao[]>('enf-cme-diluicao', []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDevOpen, setDialogDevOpen] = useState(false);
   const [dialogPincasOpen, setDialogPincasOpen] = useState(false);
   const [dialogAlmotoliaOpen, setDialogAlmotoliaOpen] = useState(false);
   const [dialogDesinfeccaoOpen, setDialogDesinfeccaoOpen] = useState(false);
+  const [dialogDiluicaoOpen, setDialogDiluicaoOpen] = useState(false);
   const [detalhePinca, setDetalhePinca] = useState<RegistroPincas | null>(null);
   const [detalhe, setDetalhe] = useState<DevolucaoMaterial | null>(null);
   const [detalheAlmotolia, setDetalheAlmotolia] = useState<RegistroAlmotolia | null>(null);
   const [detalheDesinfeccao, setDetalheDesinfeccao] = useState<RegistroDesinfeccao | null>(null);
+  const [detalheDiluicao, setDetalheDiluicao] = useState<RegistroDiluicao | null>(null);
   const [busca, setBusca] = useState('');
   const [buscaDev, setBuscaDev] = useState('');
   const [buscaPincas, setBuscaPincas] = useState('');
   const [buscaAlmotolia, setBuscaAlmotolia] = useState('');
   const [buscaDesinfeccao, setBuscaDesinfeccao] = useState('');
+  const [buscaDiluicao, setBuscaDiluicao] = useState('');
 
   const [form, setForm] = useState({
     descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '',
@@ -180,6 +201,14 @@ export function CMEArea() {
   const [formAlmotolia, setFormAlmotolia] = useState({
     produto: 'Álcool 70%', dataFracionar: new Date().toISOString().split('T')[0],
     quantidade: 1, setor: '', lote: '', validade: '', observacao: '', responsavel: '',
+  });
+  const emptyDiluicaoItem = (): ItemDiluicao => ({ solucao: '', volume: '', lote: '', validade: '' });
+  const [formDiluicao, setFormDiluicao] = useState({
+    categoria: 'respiratorio' as 'respiratorio' | 'cirurgico',
+    itens: [emptyDiluicaoItem(), emptyDiluicaoItem(), emptyDiluicaoItem()],
+    data: new Date().toISOString().split('T')[0],
+    horario: '',
+    responsavel: '',
   });
 
   const itensSuja = itens.filter(i => (ETAPAS_SUJA as readonly string[]).includes(i.etapa));
@@ -242,6 +271,21 @@ export function CMEArea() {
     setFormDesinfeccao({ data: new Date().toISOString().split('T')[0], metodo: 'Água / Sabão / Fricção Mecânica', quantidade: 'UT', validade: '', responsavel: '', coren: '' });
     setDialogDesinfeccaoOpen(false);
     toast.success('Desinfecção registrada com sucesso');
+  };
+
+  const handleAddDiluicao = () => {
+    if (!formDiluicao.responsavel) { toast.error('Responsável é obrigatório'); return; }
+    const itensPreenchidos = formDiluicao.itens.filter(i => i.solucao.trim());
+    if (itensPreenchidos.length === 0) { toast.error('Preencha ao menos uma solução'); return; }
+    const novo: RegistroDiluicao = {
+      id: crypto.randomUUID(), categoria: formDiluicao.categoria, itens: itensPreenchidos,
+      data: formDiluicao.data, horario: formDiluicao.horario, responsavel: formDiluicao.responsavel,
+      dataRegistro: new Date().toLocaleString('pt-BR'),
+    };
+    setDiluicoes([novo, ...diluicoes]);
+    setFormDiluicao({ categoria: 'respiratorio', itens: [emptyDiluicaoItem(), emptyDiluicaoItem(), emptyDiluicaoItem()], data: new Date().toISOString().split('T')[0], horario: '', responsavel: '' });
+    setDialogDiluicaoOpen(false);
+    toast.success('Diluição registrada com sucesso');
   };
 
   const avancarEtapa = (id: string) => {
@@ -308,12 +352,16 @@ export function CMEArea() {
   const desinfeccoesFiltradas = desinfeccoes.filter(d =>
     d.metodo.toLowerCase().includes(buscaDesinfeccao.toLowerCase()) || d.responsavel.toLowerCase().includes(buscaDesinfeccao.toLowerCase())
   );
+  const diluicoesFiltradas = diluicoes.filter(d =>
+    d.responsavel.toLowerCase().includes(buscaDiluicao.toLowerCase()) || d.itens.some(i => i.solucao.toLowerCase().includes(buscaDiluicao.toLowerCase()))
+  );
 
   const getBusca = () => {
     if (tab === 'devolucao') return buscaDev;
     if (tab === 'pincas') return buscaPincas;
     if (tab === 'almotolias') return buscaAlmotolia;
     if (tab === 'desinfeccao') return buscaDesinfeccao;
+    if (tab === 'diluicao') return buscaDiluicao;
     return busca;
   };
   const setBuscaAtual = (v: string) => {
@@ -321,11 +369,63 @@ export function CMEArea() {
     else if (tab === 'pincas') setBuscaPincas(v);
     else if (tab === 'almotolias') setBuscaAlmotolia(v);
     else if (tab === 'desinfeccao') setBuscaDesinfeccao(v);
+    else if (tab === 'diluicao') setBuscaDiluicao(v);
     else setBusca(v);
   };
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'diluicao') return (
+      <Dialog open={dialogDiluicaoOpen} onOpenChange={setDialogDiluicaoOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Diluição</Button></DialogTrigger>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Controle e Preparo da Diluição</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div><Label>Categoria</Label>
+              <Select value={formDiluicao.categoria} onValueChange={v => setFormDiluicao(p => ({ ...p, categoria: v as 'respiratorio' | 'cirurgico' }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="respiratorio">Materiais Respiratórios</SelectItem>
+                  <SelectItem value="cirurgico">Materiais Cirúrgicos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold">Soluções</Label>
+              {formDiluicao.itens.map((item, idx) => (
+                <div key={idx} className="grid grid-cols-4 gap-2 p-2 border rounded">
+                  <Input placeholder="Solução" value={item.solucao} onChange={e => {
+                    const updated = [...formDiluicao.itens]; updated[idx] = { ...updated[idx], solucao: e.target.value };
+                    setFormDiluicao(p => ({ ...p, itens: updated }));
+                  }} />
+                  <Input placeholder="Volume" value={item.volume} onChange={e => {
+                    const updated = [...formDiluicao.itens]; updated[idx] = { ...updated[idx], volume: e.target.value };
+                    setFormDiluicao(p => ({ ...p, itens: updated }));
+                  }} />
+                  <Input placeholder="Lote" value={item.lote} onChange={e => {
+                    const updated = [...formDiluicao.itens]; updated[idx] = { ...updated[idx], lote: e.target.value };
+                    setFormDiluicao(p => ({ ...p, itens: updated }));
+                  }} />
+                  <Input type="date" placeholder="Validade" value={item.validade} onChange={e => {
+                    const updated = [...formDiluicao.itens]; updated[idx] = { ...updated[idx], validade: e.target.value };
+                    setFormDiluicao(p => ({ ...p, itens: updated }));
+                  }} />
+                </div>
+              ))}
+              <Button type="button" variant="outline" size="sm" onClick={() => setFormDiluicao(p => ({ ...p, itens: [...p.itens, emptyDiluicaoItem()] }))}>
+                <Plus className="h-3 w-3 mr-1" />Adicionar linha
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Data</Label><Input type="date" value={formDiluicao.data} onChange={e => setFormDiluicao(p => ({ ...p, data: e.target.value }))} /></div>
+              <div><Label>Horário</Label><Input type="time" value={formDiluicao.horario} onChange={e => setFormDiluicao(p => ({ ...p, horario: e.target.value }))} /></div>
+            </div>
+            <div><Label>Responsável</Label><Input value={formDiluicao.responsavel} onChange={e => setFormDiluicao(p => ({ ...p, responsavel: e.target.value }))} placeholder="Nome do responsável" /></div>
+            <Button onClick={handleAddDiluicao} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar Diluição</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'desinfeccao') return (
       <Dialog open={dialogDesinfeccaoOpen} onOpenChange={setDialogDesinfeccaoOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Desinfecção</Button></DialogTrigger>
@@ -554,6 +654,7 @@ export function CMEArea() {
           <TabsTrigger value="pincas" className="gap-1"><Scissors className="h-4 w-4" />Pinças</TabsTrigger>
           <TabsTrigger value="almotolias" className="gap-1"><Beaker className="h-4 w-4" />Almotolias</TabsTrigger>
           <TabsTrigger value="desinfeccao" className="gap-1"><SprayCan className="h-4 w-4" />Desinfecção</TabsTrigger>
+          <TabsTrigger value="diluicao" className="gap-1"><FlaskConical className="h-4 w-4" />Diluição</TabsTrigger>
         </TabsList>
 
         <TabsContent value="area-suja" className="mt-4">{renderTabela(itensSuja, 'Área Suja')}</TabsContent>
@@ -664,6 +765,31 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="diluicao" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Data</TableHead><TableHead>Horário</TableHead><TableHead>Categoria</TableHead>
+                <TableHead>Soluções</TableHead><TableHead>Responsável</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {diluicoesFiltradas.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhuma diluição registrada</TableCell></TableRow>
+                ) : diluicoesFiltradas.map(d => (
+                  <TableRow key={d.id}>
+                    <TableCell>{d.data}</TableCell>
+                    <TableCell>{d.horario || '—'}</TableCell>
+                    <TableCell><Badge variant={d.categoria === 'respiratorio' ? 'default' : 'secondary'}>{d.categoria === 'respiratorio' ? 'Respiratório' : 'Cirúrgico'}</Badge></TableCell>
+                    <TableCell className="text-sm">{d.itens.map(i => i.solucao).join(', ')}</TableCell>
+                    <TableCell>{d.responsavel}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheDiluicao(d)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog detalhe pinças */}
@@ -761,6 +887,35 @@ export function CMEArea() {
                 <div><span className="text-muted-foreground">COREN:</span> {detalheDesinfeccao.coren || '—'}</div>
               </div>
               <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheDesinfeccao.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog detalhe diluição */}
+      <Dialog open={!!detalheDiluicao} onOpenChange={() => setDetalheDiluicao(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Preparo da Diluição</DialogTitle></DialogHeader>
+          {detalheDiluicao && (
+            <div className="space-y-2 text-sm">
+              <div className="flex gap-4">
+                <div><span className="text-muted-foreground">Data:</span> <strong>{detalheDiluicao.data}</strong></div>
+                <div><span className="text-muted-foreground">Horário:</span> {detalheDiluicao.horario || '—'}</div>
+              </div>
+              <div><span className="text-muted-foreground">Categoria:</span> <Badge variant={detalheDiluicao.categoria === 'respiratorio' ? 'default' : 'secondary'}>{detalheDiluicao.categoria === 'respiratorio' ? 'Materiais Respiratórios' : 'Materiais Cirúrgicos'}</Badge></div>
+              <div className="space-y-1 pt-1">
+                <p className="font-semibold text-xs text-muted-foreground uppercase">Soluções</p>
+                {detalheDiluicao.itens.map((item, i) => (
+                  <div key={i} className="grid grid-cols-4 gap-2 border-b pb-1">
+                    <span><strong>{item.solucao}</strong></span>
+                    <span>Vol: {item.volume || '—'}</span>
+                    <span>Lote: {item.lote || '—'}</span>
+                    <span>Val: {item.validade || '—'}</span>
+                  </div>
+                ))}
+              </div>
+              <div><span className="text-muted-foreground">Responsável:</span> {detalheDiluicao.responsavel}</div>
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheDiluicao.dataRegistro}</p>
             </div>
           )}
         </DialogContent>
