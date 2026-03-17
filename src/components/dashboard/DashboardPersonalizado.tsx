@@ -108,38 +108,9 @@ const KPICard = ({ title, value, subtitle, icon: Icon, variant, loading, onClick
   </Card>
 );
 
-// ── Mock risk chart data ──
-const riskChartData = [
-  { day: "Dom", nearMiss: 2, adverseEvents: 1, quality: 4 },
-  { day: "Seg", nearMiss: 17, adverseEvents: 3, quality: 8 },
-  { day: "Ter", nearMiss: 16, adverseEvents: 1, quality: 55 },
-  { day: "Qua", nearMiss: 13, adverseEvents: 1, quality: 26 },
-  { day: "Qui", nearMiss: 5, adverseEvents: 1, quality: 37 },
-  { day: "Sex", nearMiss: 16, adverseEvents: 3, quality: 16 },
-  { day: "Sáb", nearMiss: 6, adverseEvents: 1, quality: 6 },
-];
-
-// ── Status Matrix ──
+// ── Status Matrix (baseado em dados reais) ──
 const statusCategories = ["Assistencial", "Logística", "Administração", "Governança", "Qualidade"];
 const statusAreas = ["Assistencial", "Administração", "Qualidade"];
-
-type StatusLevel = "ok" | "attention" | "urgent";
-
-const getStatusColor = (level: StatusLevel) => {
-  switch (level) {
-    case "ok": return "bg-primary text-primary-foreground";
-    case "attention": return "bg-warning text-warning-foreground";
-    case "urgent": return "bg-destructive text-destructive-foreground";
-  }
-};
-
-// Generate pseudo-random but deterministic status for visual
-const getModuleStatus = (catIdx: number, areaIdx: number, modIdx: number): StatusLevel => {
-  const seed = (catIdx * 37 + areaIdx * 13 + modIdx * 7) % 10;
-  if (seed < 6) return "ok";
-  if (seed < 8) return "attention";
-  return "urgent";
-};
 
 const StatusMatrix = () => (
   <Card className="shadow-sm h-full">
