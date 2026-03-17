@@ -141,6 +141,38 @@ export function CMEArea() {
     toast.success('Item registrado na CME');
   };
 
+  const handleAddPincas = () => {
+    if (!formPincas.enfermagem) {
+      toast.error('Enfermagem (assinatura) é obrigatória');
+      return;
+    }
+    const checkedPincas = formPincas.pincas.filter(p => p.checked && p.quantidade > 0);
+    const totalPincas = checkedPincas.reduce((s, p) => s + p.quantidade, 0) + (formPincas.outra ? formPincas.outraQuantidade : 0);
+    if (totalPincas === 0) {
+      toast.error('Selecione ao menos uma pinça com quantidade');
+      return;
+    }
+    const novo: RegistroPincas = {
+      id: crypto.randomUUID(),
+      data: formPincas.data,
+      pincas: checkedPincas,
+      outra: formPincas.outra,
+      outraQuantidade: formPincas.outra ? formPincas.outraQuantidade : 0,
+      total: totalPincas,
+      enfermagem: formPincas.enfermagem,
+      dataRegistro: new Date().toLocaleString('pt-BR'),
+    };
+    setPincasRegistros([novo, ...pincasRegistros]);
+    setFormPincas({
+      data: new Date().toISOString().split('T')[0],
+      pincas: TIPOS_PINCA.map(t => ({ tipo: t, quantidade: 0, checked: false })),
+      outra: '', outraQuantidade: 0, enfermagem: '',
+    });
+    setDialogPincasOpen(false);
+    toast.success('Registro de pinças salvo');
+  };
+  };
+
   const handleAddDevolucao = () => {
     if (!formDev.material || !formDev.setor || !formDev.assinatura) {
       toast.error('Material, setor e assinatura são obrigatórios');
