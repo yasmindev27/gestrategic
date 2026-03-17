@@ -8,6 +8,8 @@ import CookieBanner from "@/components/CookieBanner";
 import { Loader2 } from "lucide-react";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useSessionTimeout } from "@/hooks/useSessionTimeout";
+import { useModules } from "@/hooks/useModules";
+import AccessDenied from "@/components/AccessDenied";
 
 // Lazy load ALL modules for optimal code splitting
 const DashboardPersonalizado = lazy(() => import("@/components/dashboard/DashboardPersonalizado"));
