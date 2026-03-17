@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   BedDouble, ClipboardList, UserCheck, AlertTriangle, Plus, Search,
-  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon
+  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ChecklistCarrinhoInternacao } from './ChecklistCarrinhoInternacao';
@@ -20,6 +20,7 @@ import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
 import { ProtocoloEvasaoRouparia } from './ProtocoloEvasaoRouparia';
 import { ChecklistGeralNSP } from './ChecklistGeralNSP';
 import { ChecklistLimpezaConcorrente } from './ChecklistLimpezaConcorrente';
+import { ChecklistFluxometrosBombas } from './ChecklistFluxometrosBombas';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
