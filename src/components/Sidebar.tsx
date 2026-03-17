@@ -576,7 +576,7 @@ const Sidebar = ({
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">{userName}</p>
-                <p className="text-[11px] text-[#5a7a9a] truncate">{userEmail}</p>
+                <p className="text-[11px] text-sidebar-foreground/60 truncate">{userEmail}</p>
               </div>
             )}
           </div>
