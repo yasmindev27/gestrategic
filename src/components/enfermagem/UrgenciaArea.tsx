@@ -241,6 +241,10 @@ export function UrgenciaArea() {
       </div>
         </TabsContent>
 
+        <TabsContent value="checklist-setor" className="mt-4">
+          <ChecklistSetorUrgencia />
+        </TabsContent>
+
         <TabsContent value="carrinho" className="mt-4">
           <ChecklistCarrinhoUrgencia />
         </TabsContent>
