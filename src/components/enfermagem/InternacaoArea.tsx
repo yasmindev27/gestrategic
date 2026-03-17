@@ -390,6 +390,10 @@ export function InternacaoArea() {
         <TabsContent value="escalas" className="mt-4">
           <EscalasClinicas storageKey="enf-escalas-clinicas-internacao" setor="Internação" />
         </TabsContent>
+
+        <TabsContent value="sbar" className="mt-4">
+          <PassagemPlantaoSBAR storageKey="enf-sbar-internacao" setor="Internação" />
+        </TabsContent>
       </Tabs>
     </div>
   );
