@@ -235,6 +235,15 @@ export function CMEArea() {
     toast.success('Fracionamento registrado com sucesso');
   };
 
+  const handleAddDesinfeccao = () => {
+    if (!formDesinfeccao.responsavel || !formDesinfeccao.metodo) { toast.error('Responsável e método são obrigatórios'); return; }
+    const novo: RegistroDesinfeccao = { id: crypto.randomUUID(), ...formDesinfeccao, dataRegistro: new Date().toLocaleString('pt-BR') };
+    setDesinfeccoes([novo, ...desinfeccoes]);
+    setFormDesinfeccao({ data: new Date().toISOString().split('T')[0], metodo: 'Água / Sabão / Fricção Mecânica', quantidade: 'UT', validade: '', responsavel: '', coren: '' });
+    setDialogDesinfeccaoOpen(false);
+    toast.success('Desinfecção registrada com sucesso');
+  };
+
   const avancarEtapa = (id: string) => {
     const ordem: ItemCME['etapa'][] = ['recebimento', 'lavagem', 'secagem', 'preparo', 'esterilizacao', 'armazenamento', 'distribuicao'];
     setItens(prev => prev.map(i => {
