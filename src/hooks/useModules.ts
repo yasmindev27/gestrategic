@@ -71,7 +71,7 @@ export const useModules = () => {
     segurancaTrabalho: isAdmin || isSeguranca,
   }), [
     isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
-    isLaboratorio, isNir, isRecepcao, isFaturamento, isRHDP,
+    isLaboratorio, isNir, isRecepcao, isClassificacao, isFaturamento, isRHDP,
     isRestaurante, isAssistenciaSocial, isQualidade, isMedicos, isEnfermagem,
     isSeguranca, isRouparia
   ]);
