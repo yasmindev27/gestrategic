@@ -25,6 +25,7 @@ import { PassagemPlantaoTecEnfermagem } from './PassagemPlantaoTecEnfermagem';
 import { ControleSinaisVitaisOxigenio } from './ControleSinaisVitaisOxigenio';
 import { EscalasClinicas } from './EscalasClinicas';
 import { PassagemPlantaoSBAR } from './PassagemPlantaoSBAR';
+import { DiagnosticoPrescricaoEnfermagem } from './DiagnosticoPrescricaoEnfermagem';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
@@ -192,6 +193,7 @@ export function InternacaoArea() {
           <TabsTrigger value="sv-oxigenio" className="gap-1"><Activity className="h-4 w-4" />SV/Oxigenioterapia</TabsTrigger>
           <TabsTrigger value="escalas" className="gap-1"><Stethoscope className="h-4 w-4" />Escalas Clínicas</TabsTrigger>
           <TabsTrigger value="sbar" className="gap-1"><FileText className="h-4 w-4" />SBAR Enfermeiros</TabsTrigger>
+          <TabsTrigger value="prescricao" className="gap-1"><ClipboardList className="h-4 w-4" />Prescrição Enf.</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pacientes" className="mt-4 space-y-4">
@@ -393,6 +395,10 @@ export function InternacaoArea() {
 
         <TabsContent value="sbar" className="mt-4">
           <PassagemPlantaoSBAR storageKey="enf-sbar-internacao" setor="Internação" />
+        </TabsContent>
+
+        <TabsContent value="prescricao" className="mt-4">
+          <DiagnosticoPrescricaoEnfermagem storageKey="enf-prescricao-internacao" setor="Internação" />
         </TabsContent>
       </Tabs>
     </div>
