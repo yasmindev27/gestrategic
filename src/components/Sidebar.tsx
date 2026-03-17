@@ -237,6 +237,14 @@ const Sidebar = ({
       );
       return items;
     }
+    if (isRouparia) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Shirt, label: "Rouparia", id: "rouparia", category: "apoio_logistica" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
+      );
+      return items;
+    }
     if (isSeguranca) {
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
