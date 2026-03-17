@@ -33,6 +33,7 @@ const ESCALAS_SUB_ITEMS = [
   { id: 'radiologia', label: 'Escala Radiologia', icon: Radio },
   { id: 'administrativa', label: 'Escala Administrativa', icon: Building2 },
   { id: 'farmacia', label: 'Escala Farmácia', icon: Pill },
+  { id: 'recepcao', label: 'Escala Recepção', icon: ClipboardList },
 ];
 
 export const RHDPModule = () => {
