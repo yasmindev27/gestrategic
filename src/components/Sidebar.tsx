@@ -189,7 +189,16 @@ const Sidebar = ({
     }
     if (isLaboratorio) {
       items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
         { icon: FlaskConical, label: "Laboratório", id: "laboratorio" },
+        { icon: Calendar, label: "Agenda", id: "agenda" }
+      );
+      return items;
+    }
+    if (isRestaurante) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard" },
+        { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante" },
         { icon: Calendar, label: "Agenda", id: "agenda" }
       );
       return items;
