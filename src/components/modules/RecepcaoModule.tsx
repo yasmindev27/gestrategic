@@ -17,7 +17,7 @@ export const RecepcaoModule = () => {
       case "controle-fichas":
         return <ControleFichasModule />;
       case "escala-recepcao":
-        return <EscalaTecEnfermagem tipo="administrativa" />;
+        return <EscalaTecEnfermagem tipo="recepcao" />;
       default:
         return null;
     }
