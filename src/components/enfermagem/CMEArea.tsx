@@ -308,7 +308,7 @@ export function CMEArea() {
       <div className="flex gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder="Buscar material..." value={tab === 'devolucao' ? buscaDev : busca} onChange={e => tab === 'devolucao' ? setBuscaDev(e.target.value) : setBusca(e.target.value)} className="pl-9" />
+          <Input placeholder="Buscar..." value={tab === 'devolucao' ? buscaDev : tab === 'pincas' ? buscaPincas : busca} onChange={e => tab === 'devolucao' ? setBuscaDev(e.target.value) : tab === 'pincas' ? setBuscaPincas(e.target.value) : setBusca(e.target.value)} className="pl-9" />
         </div>
         {tab === 'devolucao' ? (
           <Dialog open={dialogDevOpen} onOpenChange={setDialogDevOpen}>
