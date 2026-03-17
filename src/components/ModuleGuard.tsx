@@ -40,7 +40,7 @@ export const ModuleGuard = ({
 
   if (!hasAccess) {
     if (showDenied) {
-      return <AccessDenied />;
+      return <AccessDenied onTryAgain={() => window.location.reload()} />;
     }
     return null;
   }
