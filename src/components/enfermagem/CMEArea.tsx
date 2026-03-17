@@ -211,6 +211,7 @@ export function CMEArea() {
   const [olivas, setOlivas] = useLocalStorage<RegistroOlivas[]>('enf-cme-olivas', []);
   const [conferencias, setConferencias] = useLocalStorage<RegistroConferencia[]>('enf-cme-conferencia', []);
   const [danificados, setDanificados] = useLocalStorage<RegistroDanificado[]>('enf-cme-danificados', []);
+  const [solicitacoes, setSolicitacoes] = useLocalStorage<SolicitacaoMaterial[]>('enf-cme-solicitacoes', []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDevOpen, setDialogDevOpen] = useState(false);
   const [dialogPincasOpen, setDialogPincasOpen] = useState(false);
@@ -220,6 +221,7 @@ export function CMEArea() {
   const [dialogOlivasOpen, setDialogOlivasOpen] = useState(false);
   const [dialogConferenciaOpen, setDialogConferenciaOpen] = useState(false);
   const [dialogDanificadoOpen, setDialogDanificadoOpen] = useState(false);
+  const [dialogSolicitacaoOpen, setDialogSolicitacaoOpen] = useState(false);
   const [detalhePinca, setDetalhePinca] = useState<RegistroPincas | null>(null);
   const [detalhe, setDetalhe] = useState<DevolucaoMaterial | null>(null);
   const [detalheAlmotolia, setDetalheAlmotolia] = useState<RegistroAlmotolia | null>(null);
