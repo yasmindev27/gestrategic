@@ -873,6 +873,7 @@ export function CMEArea() {
           <TabsTrigger value="diluicao" className="gap-1"><FlaskConical className="h-4 w-4" />Diluição</TabsTrigger>
           <TabsTrigger value="olivas" className="gap-1"><CircleDot className="h-4 w-4" />Olivas</TabsTrigger>
           <TabsTrigger value="conferencia" className="gap-1"><ClipboardCheck className="h-4 w-4" />Conferência</TabsTrigger>
+          <TabsTrigger value="danificados" className="gap-1"><Ban className="h-4 w-4" />Danificados</TabsTrigger>
         </TabsList>
 
         <TabsContent value="area-suja" className="mt-4">{renderTabela(itensSuja, 'Área Suja')}</TabsContent>
