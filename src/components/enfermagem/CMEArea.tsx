@@ -72,11 +72,15 @@ export function CMEArea() {
   const [tab, setTab] = useState('area-suja');
   const [itens, setItens] = useLocalStorage<ItemCME[]>('enf-cme-itens', []);
   const [devolucoes, setDevolucoes] = useLocalStorage<DevolucaoMaterial[]>('enf-cme-devolucoes', []);
+  const [pincasRegistros, setPincasRegistros] = useLocalStorage<RegistroPincas[]>('enf-cme-pincas', []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDevOpen, setDialogDevOpen] = useState(false);
+  const [dialogPincasOpen, setDialogPincasOpen] = useState(false);
+  const [detalhePinca, setDetalhePinca] = useState<RegistroPincas | null>(null);
   const [detalhe, setDetalhe] = useState<DevolucaoMaterial | null>(null);
   const [busca, setBusca] = useState('');
   const [buscaDev, setBuscaDev] = useState('');
+  const [buscaPincas, setBuscaPincas] = useState('');
   const [form, setForm] = useState({
     descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '',
     etapa: 'recebimento' as ItemCME['etapa'], responsavel: '', lote: '', observacoes: ''
