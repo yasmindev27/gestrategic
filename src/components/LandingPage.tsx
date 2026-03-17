@@ -329,7 +329,7 @@ const LandingPage = () => {
           <div className="relative z-10 backdrop-blur-md border-t border-white/5" style={{ background: `${C.bgDeep}cc` }}>
             <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                <CounterCard value={99} suffix="%" label="Uptime garantido" icon={MonitorCheck} />
+                <CounterCard value={99} suffix=".9%" label="Uptime garantido" icon={MonitorCheck} />
                 <CounterCard value={500} suffix="+" label="Ativos monitorados" icon={Server} />
                 <CounterCard value={24} suffix="/7" label="Suporte contínuo" icon={Clock} />
                 <CounterCard value={100} suffix="%" label="Conformidade LGPD" icon={Shield} />
