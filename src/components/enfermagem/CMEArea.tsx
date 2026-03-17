@@ -1276,6 +1276,31 @@ export function CMEArea() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog detalhe danificado */}
+      <Dialog open={!!detalheDanificado} onOpenChange={() => setDetalheDanificado(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Material Danificado</DialogTitle></DialogHeader>
+          {detalheDanificado && (
+            <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Material:</span> <strong>{detalheDanificado.material}</strong></div>
+                <div><span className="text-muted-foreground">Setor:</span> {detalheDanificado.setor}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Data:</span> {detalheDanificado.data}</div>
+                <div><span className="text-muted-foreground">Motivo:</span> <Badge variant="outline">{detalheDanificado.motivo || '—'}</Badge></div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Conduta:</span> {detalheDanificado.conduta || '—'}</div>
+                <div><span className="text-muted-foreground">Reposição:</span> <Badge variant={detalheDanificado.reposicao === 'Sim' ? 'default' : 'destructive'}>{detalheDanificado.reposicao || '—'}</Badge></div>
+              </div>
+              <div><span className="text-muted-foreground">Responsável:</span> {detalheDanificado.responsavel}</div>
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheDanificado.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
