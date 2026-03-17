@@ -378,6 +378,10 @@ export function InternacaoArea() {
         <TabsContent value="passagem-plantao" className="mt-4">
           <PassagemPlantaoTecEnfermagem storageKey="enf-passagem-plantao-tec-internacao" setor="Internação" />
         </TabsContent>
+
+        <TabsContent value="sv-oxigenio" className="mt-4">
+          <ControleSinaisVitaisOxigenio storageKey="enf-sv-oxigenio-internacao" setor="Internação" />
+        </TabsContent>
       </Tabs>
     </div>
   );

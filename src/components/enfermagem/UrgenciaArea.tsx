@@ -290,6 +290,10 @@ export function UrgenciaArea() {
         <TabsContent value="uti-movel" className="mt-4">
           <ChecklistUTIMovel storageKey="enf-uti-movel-urgencia" setor="Urgência" />
         </TabsContent>
+
+        <TabsContent value="sv-oxigenio" className="mt-4">
+          <ControleSinaisVitaisOxigenio storageKey="enf-sv-oxigenio-urgencia" setor="Urgência" />
+        </TabsContent>
       </Tabs>
     </div>
   );
