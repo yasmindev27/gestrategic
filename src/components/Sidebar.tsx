@@ -65,29 +65,36 @@ const Sidebar = ({
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
         { icon: Building2, label: "Gerência", id: "gerencia", category: "dashboard" },
+        // Assistencial
         { icon: Ambulance, label: "NIR", id: "nir", category: "assistencial" },
         { icon: Stethoscope, label: "Médicos", id: "medicos", category: "assistencial" },
         { icon: Syringe, label: "Enfermagem", id: "enfermagem", category: "assistencial" },
         { icon: Heart, label: "Assist. Social/Psicologia", id: "assistencia-social", category: "assistencial" },
-        { icon: FlaskConical, label: "Laboratório", id: "laboratorio", category: "apoio" },
-        { icon: AlertTriangle, label: "Qualidade/NSP", id: "qualidade", category: "apoio" },
-        { icon: HardHat, label: "Seg. Trabalho", id: "seguranca-trabalho", category: "apoio" },
-        { icon: Shirt, label: "Rouparia", id: "rouparia", category: "logistica" },
-        { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante", category: "logistica" },
-        { icon: Receipt, label: "Faturamento", id: "faturamento", category: "administrativo" },
+        { icon: Receipt, label: "Faturamento", id: "faturamento", category: "assistencial" },
+        { icon: BedDouble, label: "Mapa de Leitos", id: "mapa-leitos", category: "assistencial" },
+        // Apoio e Logística
+        { icon: Shirt, label: "Rouparia", id: "rouparia", category: "apoio_logistica" },
+        { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante", category: "apoio_logistica" },
+        { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao", category: "apoio_logistica" },
+        { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia", category: "apoio_logistica" },
+        { icon: Shield, label: "Seg. Patrimonial", id: "seguranca-patrimonial", category: "apoio_logistica" },
+        // Governança e Qualidade
+        { icon: AlertTriangle, label: "Qualidade/NSP", id: "qualidade", category: "governanca" },
+        { icon: HardHat, label: "Seg. Trabalho", id: "seguranca-trabalho", category: "governanca" },
+        { icon: Video, label: "Reuniões", id: "reuniao", category: "governanca" },
+        { icon: FileText, label: "Docs Interact", id: "documentos-interact", category: "governanca" },
+        // Administrativo / RH
         { icon: UserCog, label: "RH/DP", id: "rhdp", category: "administrativo" },
-        { icon: ClipboardX, label: "Controle de Fichas", id: "controle-fichas", category: "administrativo" },
-        { icon: Monitor, label: "TI", id: "tecnico-ti", category: "administrativo" },
-        { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao", category: "administrativo" },
-        { icon: Stethoscope, label: "Eng. Clínica", id: "tecnico-engenharia", category: "administrativo" },
-        { icon: Calendar, label: "Agenda", id: "agenda", category: "administrativo" },
-        { icon: GraduationCap, label: "Capacitação", id: "lms", category: "administrativo" },
         { icon: UserRound, label: "Colaborador", id: "colaborador", category: "administrativo" },
+        { icon: GraduationCap, label: "Capacitação", id: "lms", category: "administrativo" },
+        { icon: Monitor, label: "TI", id: "tecnico-ti", category: "administrativo" },
+        { icon: ClipboardX, label: "Controle de Fichas", id: "controle-fichas", category: "administrativo" },
         { icon: Shield, label: "Administração", id: "admin", category: "administrativo" },
-        { icon: Shield, label: "Seg. Patrimonial", id: "seguranca-patrimonial", category: "apoio" },
-        { icon: Video, label: "Reuniões", id: "reuniao", category: "administrativo" },
-        { icon: FileText, label: "Docs Interact", id: "documentos-interact", category: "integracao" },
-        { icon: Stethoscope, label: "Sistema Salus", id: "salus", category: "integracao" }
+        // Comunicação / Apoio
+        { icon: MessageSquare, label: "Chat", id: "chat", category: "comunicacao" },
+        { icon: Ticket, label: "Abrir Chamado", id: "abrir-chamado", category: "comunicacao" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" },
+        { icon: Stethoscope, label: "Sistema Salus", id: "salus", category: "comunicacao" }
       );
       return items;
     }
