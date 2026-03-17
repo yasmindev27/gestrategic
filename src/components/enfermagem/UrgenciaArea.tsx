@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Ambulance, Activity, Stethoscope
+  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Ambulance, Activity, Stethoscope, FileText
 } from 'lucide-react';
 import { ChecklistCarrinhoUrgencia } from './ChecklistCarrinhoUrgencia';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
@@ -23,6 +23,7 @@ import { PassagemPlantaoTecEnfermagem } from './PassagemPlantaoTecEnfermagem';
 import { ChecklistUTIMovel } from './ChecklistUTIMovel';
 import { ControleSinaisVitaisOxigenio } from './ControleSinaisVitaisOxigenio';
 import { EscalasClinicas } from './EscalasClinicas';
+import { PassagemPlantaoSBAR } from './PassagemPlantaoSBAR';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
@@ -127,6 +128,7 @@ export function UrgenciaArea() {
           <TabsTrigger value="uti-movel" className="gap-1"><Ambulance className="h-4 w-4" />UTI Móvel</TabsTrigger>
           <TabsTrigger value="sv-oxigenio" className="gap-1"><Activity className="h-4 w-4" />SV/Oxigenioterapia</TabsTrigger>
           <TabsTrigger value="escalas" className="gap-1"><Stethoscope className="h-4 w-4" />Escalas Clínicas</TabsTrigger>
+          <TabsTrigger value="sbar" className="gap-1"><FileText className="h-4 w-4" />SBAR Enfermeiros</TabsTrigger>
         </TabsList>
 
         <TabsContent value="atendimentos" className="mt-4 space-y-4">
@@ -299,6 +301,10 @@ export function UrgenciaArea() {
 
         <TabsContent value="escalas" className="mt-4">
           <EscalasClinicas storageKey="enf-escalas-clinicas-urgencia" setor="Urgência" />
+        </TabsContent>
+
+        <TabsContent value="sbar" className="mt-4">
+          <PassagemPlantaoSBAR storageKey="enf-sbar-urgencia" setor="Urgência" />
         </TabsContent>
       </Tabs>
     </div>
