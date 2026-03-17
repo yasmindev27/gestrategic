@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan, FlaskConical, CircleDot, ClipboardCheck, Ban
+  ShieldCheck, Droplets, Sparkles, Plus, Package, Clock, AlertTriangle, CheckCircle2, Search, ArrowRight, RotateCcw, Eye, Scissors, Beaker, SprayCan, FlaskConical, CircleDot, ClipboardCheck, Ban, ShoppingCart
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
@@ -142,6 +142,18 @@ interface RegistroDanificado {
   dataRegistro: string;
 }
 
+interface SolicitacaoMaterial {
+  id: string;
+  data: string;
+  setor: string;
+  centroCusto: string;
+  material: string;
+  quantidade: string;
+  solicitante: string;
+  observacao: string;
+  dataRegistro: string;
+}
+
 // === Constants ===
 
 const TIPOS_PINCA = [
@@ -199,6 +211,7 @@ export function CMEArea() {
   const [olivas, setOlivas] = useLocalStorage<RegistroOlivas[]>('enf-cme-olivas', []);
   const [conferencias, setConferencias] = useLocalStorage<RegistroConferencia[]>('enf-cme-conferencia', []);
   const [danificados, setDanificados] = useLocalStorage<RegistroDanificado[]>('enf-cme-danificados', []);
+  const [solicitacoes, setSolicitacoes] = useLocalStorage<SolicitacaoMaterial[]>('enf-cme-solicitacoes', []);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogDevOpen, setDialogDevOpen] = useState(false);
   const [dialogPincasOpen, setDialogPincasOpen] = useState(false);
@@ -208,6 +221,7 @@ export function CMEArea() {
   const [dialogOlivasOpen, setDialogOlivasOpen] = useState(false);
   const [dialogConferenciaOpen, setDialogConferenciaOpen] = useState(false);
   const [dialogDanificadoOpen, setDialogDanificadoOpen] = useState(false);
+  const [dialogSolicitacaoOpen, setDialogSolicitacaoOpen] = useState(false);
   const [detalhePinca, setDetalhePinca] = useState<RegistroPincas | null>(null);
   const [detalhe, setDetalhe] = useState<DevolucaoMaterial | null>(null);
   const [detalheAlmotolia, setDetalheAlmotolia] = useState<RegistroAlmotolia | null>(null);
@@ -216,6 +230,7 @@ export function CMEArea() {
   const [detalheOliva, setDetalheOliva] = useState<RegistroOlivas | null>(null);
   const [detalheConferencia, setDetalheConferencia] = useState<RegistroConferencia | null>(null);
   const [detalheDanificado, setDetalheDanificado] = useState<RegistroDanificado | null>(null);
+  const [detalheSolicitacao, setDetalheSolicitacao] = useState<SolicitacaoMaterial | null>(null);
   const [busca, setBusca] = useState('');
   const [buscaDev, setBuscaDev] = useState('');
   const [buscaPincas, setBuscaPincas] = useState('');
@@ -225,6 +240,7 @@ export function CMEArea() {
   const [buscaOlivas, setBuscaOlivas] = useState('');
   const [buscaConferencia, setBuscaConferencia] = useState('');
   const [buscaDanificado, setBuscaDanificado] = useState('');
+  const [buscaSolicitacao, setBuscaSolicitacao] = useState('');
 
   const [form, setForm] = useState({
     descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '',
@@ -272,6 +288,10 @@ export function CMEArea() {
   const [formDanificado, setFormDanificado] = useState({
     material: '', setor: '', data: new Date().toISOString().split('T')[0],
     motivo: '', conduta: '', reposicao: '', responsavel: '',
+  });
+  const [formSolicitacao, setFormSolicitacao] = useState({
+    data: new Date().toISOString().split('T')[0], setor: '', centroCusto: 'Enfermagem',
+    material: '', quantidade: '', solicitante: '', observacao: '',
   });
 
   const itensSuja = itens.filter(i => (ETAPAS_SUJA as readonly string[]).includes(i.etapa));
@@ -379,6 +399,15 @@ export function CMEArea() {
     toast.success('Material danificado registrado');
   };
 
+  const handleAddSolicitacao = () => {
+    if (!formSolicitacao.material || !formSolicitacao.setor || !formSolicitacao.solicitante) { toast.error('Material, setor e solicitante são obrigatórios'); return; }
+    const novo: SolicitacaoMaterial = { id: crypto.randomUUID(), ...formSolicitacao, dataRegistro: new Date().toLocaleString('pt-BR') };
+    setSolicitacoes([novo, ...solicitacoes]);
+    setFormSolicitacao({ data: new Date().toISOString().split('T')[0], setor: '', centroCusto: 'Enfermagem', material: '', quantidade: '', solicitante: '', observacao: '' });
+    setDialogSolicitacaoOpen(false);
+    toast.success('Solicitação registrada');
+  };
+
   const avancarEtapa = (id: string) => {
     const ordem: ItemCME['etapa'][] = ['recebimento', 'lavagem', 'secagem', 'preparo', 'esterilizacao', 'armazenamento', 'distribuicao'];
     setItens(prev => prev.map(i => {
@@ -452,6 +481,9 @@ export function CMEArea() {
   const danificadosFiltrados = danificados.filter(d =>
     d.material.toLowerCase().includes(buscaDanificado.toLowerCase()) || d.responsavel.toLowerCase().includes(buscaDanificado.toLowerCase()) || d.setor.toLowerCase().includes(buscaDanificado.toLowerCase())
   );
+  const solicitacoesFiltradas = solicitacoes.filter(s =>
+    s.material.toLowerCase().includes(buscaSolicitacao.toLowerCase()) || s.setor.toLowerCase().includes(buscaSolicitacao.toLowerCase()) || s.solicitante.toLowerCase().includes(buscaSolicitacao.toLowerCase())
+  );
   const conferenciasFiltradas = conferencias.filter(c =>
     c.setor.toLowerCase().includes(buscaConferencia.toLowerCase()) || c.responsavel.toLowerCase().includes(buscaConferencia.toLowerCase())
   );
@@ -465,6 +497,7 @@ export function CMEArea() {
     if (tab === 'olivas') return buscaOlivas;
     if (tab === 'conferencia') return buscaConferencia;
     if (tab === 'danificados') return buscaDanificado;
+    if (tab === 'solicitacao') return buscaSolicitacao;
     return busca;
   };
   const setBuscaAtual = (v: string) => {
@@ -476,11 +509,50 @@ export function CMEArea() {
     else if (tab === 'olivas') setBuscaOlivas(v);
     else if (tab === 'conferencia') setBuscaConferencia(v);
     else if (tab === 'danificados') setBuscaDanificado(v);
+    else if (tab === 'solicitacao') setBuscaSolicitacao(v);
     else setBusca(v);
   };
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'solicitacao') return (
+      <Dialog open={dialogSolicitacaoOpen} onOpenChange={setDialogSolicitacaoOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Nova Solicitação</Button></DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Controle de Solicitação de Material</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Data</Label><Input type="date" value={formSolicitacao.data} onChange={e => setFormSolicitacao(p => ({ ...p, data: e.target.value }))} /></div>
+              <div><Label>Setor</Label>
+                <Select value={formSolicitacao.setor} onValueChange={v => setFormSolicitacao(p => ({ ...p, setor: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{SETORES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Centro de Custo</Label>
+                <Select value={formSolicitacao.centroCusto} onValueChange={v => setFormSolicitacao(p => ({ ...p, centroCusto: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Enfermagem">Enfermagem</SelectItem>
+                    <SelectItem value="Médico">Médico</SelectItem>
+                    <SelectItem value="Administrativo">Administrativo</SelectItem>
+                    <SelectItem value="Manutenção">Manutenção</SelectItem>
+                    <SelectItem value="Outro">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Quantidade</Label><Input value={formSolicitacao.quantidade} onChange={e => setFormSolicitacao(p => ({ ...p, quantidade: e.target.value }))} placeholder="Ex: 10" /></div>
+            </div>
+            <div><Label>Material</Label><Input value={formSolicitacao.material} onChange={e => setFormSolicitacao(p => ({ ...p, material: e.target.value }))} placeholder="Ex: Ambu, Máscara, Luva..." /></div>
+            <div><Label>Solicitante (Assinatura)</Label><Input value={formSolicitacao.solicitante} onChange={e => setFormSolicitacao(p => ({ ...p, solicitante: e.target.value }))} /></div>
+            <div><Label>Observação</Label><Textarea value={formSolicitacao.observacao} onChange={e => setFormSolicitacao(p => ({ ...p, observacao: e.target.value }))} rows={2} /></div>
+            <Button onClick={handleAddSolicitacao} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar Solicitação</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'danificados') return (
       <Dialog open={dialogDanificadoOpen} onOpenChange={setDialogDanificadoOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Material Danificado</Button></DialogTrigger>
@@ -890,6 +962,7 @@ export function CMEArea() {
           <TabsTrigger value="olivas" className="gap-1"><CircleDot className="h-4 w-4" />Olivas</TabsTrigger>
           <TabsTrigger value="conferencia" className="gap-1"><ClipboardCheck className="h-4 w-4" />Conferência</TabsTrigger>
           <TabsTrigger value="danificados" className="gap-1"><Ban className="h-4 w-4" />Danificados</TabsTrigger>
+          <TabsTrigger value="solicitacao" className="gap-1"><ShoppingCart className="h-4 w-4" />Solicitação</TabsTrigger>
         </TabsList>
 
         <TabsContent value="area-suja" className="mt-4">{renderTabela(itensSuja, 'Área Suja')}</TabsContent>
@@ -1108,6 +1181,33 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
+
+        <TabsContent value="solicitacao" className="mt-4">
+          <div className="rounded-md border overflow-auto">
+            <Table>
+              <TableHeader><TableRow>
+                <TableHead>Data</TableHead><TableHead>Setor</TableHead><TableHead>Centro Custo</TableHead>
+                <TableHead>Material</TableHead><TableHead>Qtd</TableHead><TableHead>Solicitante</TableHead><TableHead>Obs</TableHead><TableHead>Ações</TableHead>
+              </TableRow></TableHeader>
+              <TableBody>
+                {solicitacoesFiltradas.length === 0 ? (
+                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhuma solicitação registrada</TableCell></TableRow>
+                ) : solicitacoesFiltradas.map(s => (
+                  <TableRow key={s.id}>
+                    <TableCell>{s.data}</TableCell>
+                    <TableCell className="font-medium">{s.setor}</TableCell>
+                    <TableCell><Badge variant="outline">{s.centroCusto}</Badge></TableCell>
+                    <TableCell>{s.material}</TableCell>
+                    <TableCell>{s.quantidade || '—'}</TableCell>
+                    <TableCell>{s.solicitante}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate">{s.observacao || '—'}</TableCell>
+                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheSolicitacao(s)}><Eye className="h-4 w-4" /></Button></TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        </TabsContent>
       </Tabs>
 
       {/* Dialog detalhe pinças */}
@@ -1312,6 +1412,29 @@ export function CMEArea() {
               </div>
               <div><span className="text-muted-foreground">Responsável:</span> {detalheDanificado.responsavel}</div>
               <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheDanificado.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog detalhe solicitação */}
+      <Dialog open={!!detalheSolicitacao} onOpenChange={() => setDetalheSolicitacao(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Solicitação de Material</DialogTitle></DialogHeader>
+          {detalheSolicitacao && (
+            <div className="space-y-2 text-sm">
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Data:</span> <strong>{detalheSolicitacao.data}</strong></div>
+                <div><span className="text-muted-foreground">Setor:</span> {detalheSolicitacao.setor}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Centro de Custo:</span> <Badge variant="outline">{detalheSolicitacao.centroCusto}</Badge></div>
+                <div><span className="text-muted-foreground">Quantidade:</span> {detalheSolicitacao.quantidade || '—'}</div>
+              </div>
+              <div><span className="text-muted-foreground">Material:</span> {detalheSolicitacao.material}</div>
+              <div><span className="text-muted-foreground">Solicitante:</span> {detalheSolicitacao.solicitante}</div>
+              {detalheSolicitacao.observacao && <div><span className="text-muted-foreground">Observação:</span> {detalheSolicitacao.observacao}</div>}
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheSolicitacao.dataRegistro}</p>
             </div>
           )}
         </DialogContent>
