@@ -246,6 +246,7 @@ export function CMEArea() {
   const [detalheConferencia, setDetalheConferencia] = useState<RegistroConferencia | null>(null);
   const [detalheDanificado, setDetalheDanificado] = useState<RegistroDanificado | null>(null);
   const [detalheSolicitacao, setDetalheSolicitacao] = useState<SolicitacaoMaterial | null>(null);
+  const [detalheControleMat, setDetalheControleMat] = useState<ControleMaterialKit | null>(null);
   const [busca, setBusca] = useState('');
   const [buscaDev, setBuscaDev] = useState('');
   const [buscaPincas, setBuscaPincas] = useState('');
@@ -256,6 +257,22 @@ export function CMEArea() {
   const [buscaConferencia, setBuscaConferencia] = useState('');
   const [buscaDanificado, setBuscaDanificado] = useState('');
   const [buscaSolicitacao, setBuscaSolicitacao] = useState('');
+  const [buscaControleMat, setBuscaControleMat] = useState('');
+
+  const KITS_CME = [
+    { nome: 'Kit Sutura', descricao: 'Tesoura Mayo reta 16 cm / Pinça Hemostática reta 16 cm / Porta-agulha / Pinça dente de rato / Cuba rim' },
+    { nome: 'Kit Cateterismo Vesical', descricao: 'Tesoura Metzenbaum 16 cm curva / Tesoura Mayo reta 17 cm / 2 Pinças Hemostática reta 16 cm / Porta-agulha / Pinça dente de rato 16 cm' },
+    { nome: 'Kit Pequena Cirurgia', descricao: 'Bandeja / Pinça Pozzi / Pinça Cheron / Pinça Backhaus / Pinça Allis / Cabo de bisturi / 2 Afastadores Farabeuf / Pinça dente de rato / Tesoura' },
+    { nome: 'Kit Parto', descricao: 'Tesoura Mayo reta 16 cm / Pinça Hemostática reta 16 cm / Cuba rim / Porta-agulha / Pinça Pean ou Coração' },
+    { nome: 'Kit Traqueostomia', descricao: 'Circuito alto e infantil' },
+  ];
+
+  const [formControleMat, setFormControleMat] = useState({
+    data: new Date().toISOString().split('T')[0], kit: '', descricaoItens: '',
+    qtdSaidaEsterilizacao: '', qtdRetornoEsterilizacao: '', totalEstoqueCME: '',
+    responsavel: '', observacoes: '',
+  });
+
 
   const [form, setForm] = useState({
     descricao: '', tipo: 'Instrumental Cirúrgico', quantidade: 1, setor_destino: '',
