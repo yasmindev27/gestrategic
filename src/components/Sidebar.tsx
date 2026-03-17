@@ -306,7 +306,7 @@ const Sidebar = ({
         <div className="relative flex-shrink-0">
           <Icon className="h-[18px] w-[18px]" />
           {hasBadge && (
-            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 ring-2 ring-[#0d2137]">
+            <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-[9px] font-bold rounded-full min-w-[16px] h-4 flex items-center justify-center px-1 ring-2 ring-sidebar">
               {badgeCount > 99 ? "99+" : badgeCount}
             </span>
           )}
