@@ -57,6 +57,7 @@ interface CadastroInconsistente {
   resolvido_por_nome: string | null;
   resolvido_em: string | null;
   created_at: string;
+  registrado_por_nome_display?: string;
 }
 
 const tiposInconsistencia = [
