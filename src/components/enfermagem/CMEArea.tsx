@@ -1065,7 +1065,6 @@ export function CMEArea() {
             </Table>
           </div>
         </TabsContent>
-      </Tabs>
 
         <TabsContent value="danificados" className="mt-4">
           <div className="rounded-md border overflow-auto">
