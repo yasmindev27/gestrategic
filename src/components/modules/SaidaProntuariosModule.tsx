@@ -307,7 +307,7 @@ export const SaidaProntuariosModule = () => {
     // Filtrar por status baseado no setor do usuário
     if (isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao) {
       query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-    } else if (isNir && !isAdmin && !isFaturamento) {
+    } else if (isNir && !isAdmin && !isFaturamento && !isClassificacao) {
       query = query.in("status", ["aguardando_nir"]);
     } else {
       if (statusFilter === "em_fluxo") {
