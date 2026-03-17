@@ -307,17 +307,17 @@ const LandingPage = () => {
                 </div>
               </div>
 
-              <div className="hidden lg:flex justify-center items-center relative" aria-hidden="true">
+              <div className="hidden md:flex justify-center items-center relative" aria-hidden="true">
                 <div className="relative w-full max-w-[460px]">
-                  <div className="absolute -inset-10" style={{ background: "radial-gradient(circle at center, rgba(78,205,196,0.08) 0%, transparent 65%)" }} />
-                  <img src={heroImage} alt="Hospital inteligente com dashboards tecnológicos" className="w-full h-auto object-contain relative z-10" style={{ filter: "drop-shadow(0 0 60px rgba(78,205,196,0.12))" }} loading="eager" />
-                  <div className="absolute -top-3 -right-3 w-12 h-12 rounded-xl backdrop-blur flex items-center justify-center shadow-xl animate-[float_4s_ease-in-out_infinite] z-20" style={{ background: "rgba(14,42,45,0.8)", border: `1px solid ${C.mintBorder}` }}>
+                  <div className="absolute -inset-10" style={{ background: "radial-gradient(circle at center, rgba(59,130,246,0.1) 0%, transparent 65%)" }} />
+                  <img src={heroImage} alt="Hospital inteligente com dashboards tecnológicos" className="w-full h-auto object-contain relative z-10" style={{ filter: "drop-shadow(0 0 60px rgba(59,130,246,0.15))" }} loading="eager" />
+                  <div className="absolute -top-3 -right-3 w-12 h-12 rounded-xl backdrop-blur flex items-center justify-center shadow-xl animate-[float_4s_ease-in-out_infinite] z-20" style={{ background: "rgba(0,26,51,0.85)", border: `1px solid ${C.mintBorder}` }}>
                     <ShieldCheck className="w-6 h-6" style={{ color: C.mint }} />
                   </div>
-                  <div className="absolute bottom-8 -left-3 w-11 h-11 rounded-xl backdrop-blur flex items-center justify-center shadow-xl animate-[float_4s_ease-in-out_infinite_1.5s] z-20" style={{ background: "rgba(14,42,45,0.8)", border: `1px solid ${C.mintBorder}` }}>
+                  <div className="absolute bottom-8 -left-3 w-11 h-11 rounded-xl backdrop-blur flex items-center justify-center shadow-xl animate-[float_4s_ease-in-out_infinite_1.5s] z-20" style={{ background: "rgba(0,26,51,0.85)", border: `1px solid ${C.mintBorder}` }}>
                     <Activity className="w-5 h-5" style={{ color: C.mint }} />
                   </div>
-                  <div className="absolute top-1/3 -right-5 w-8 h-8 rounded-full flex items-center justify-center animate-[float_5s_ease-in-out_infinite_2.5s] z-20" style={{ background: "rgba(78,205,196,0.15)" }}>
+                  <div className="absolute top-1/3 -right-5 w-8 h-8 rounded-full flex items-center justify-center animate-[float_5s_ease-in-out_infinite_2.5s] z-20" style={{ background: "rgba(59,130,246,0.15)" }}>
                     <div className="w-2.5 h-2.5 rounded-full animate-ping" style={{ background: C.mint }} />
                   </div>
                 </div>
