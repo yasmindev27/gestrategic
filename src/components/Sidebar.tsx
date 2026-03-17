@@ -486,7 +486,7 @@ const Sidebar = ({
           return (
             <div key={cat.key}>
               {cat.label && (
-                <p className="text-[10px] font-bold uppercase tracking-wider text-[#5a7a9a] px-3 mb-1.5">{cat.label}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wider text-sidebar-foreground/60 px-3 mb-1.5">{cat.label}</p>
               )}
               <ul className="space-y-0.5">
                 {items.map(item => (
