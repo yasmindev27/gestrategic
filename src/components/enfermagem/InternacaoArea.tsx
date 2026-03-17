@@ -22,6 +22,7 @@ import { ChecklistGeralNSP } from './ChecklistGeralNSP';
 import { ChecklistLimpezaConcorrente } from './ChecklistLimpezaConcorrente';
 import { ChecklistFluxometrosBombas } from './ChecklistFluxometrosBombas';
 import { PassagemPlantaoTecEnfermagem } from './PassagemPlantaoTecEnfermagem';
+import { ControleSinaisVitaisOxigenio } from './ControleSinaisVitaisOxigenio';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
