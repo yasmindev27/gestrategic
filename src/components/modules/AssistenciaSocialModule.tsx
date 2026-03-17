@@ -269,6 +269,15 @@ export const AssistenciaSocialModule = () => {
     
     setIsSubmitting(true);
     try {
+      // Re-check session to avoid stale auth
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({ title: "Sessão expirada", description: "Faça login novamente para continuar", variant: "destructive" });
+        setIsSubmitting(false);
+        return;
+      }
+      const userId = user.id;
+      const userName = currentUser.nome || user.email || "";
       let pacienteId: string;
       const { data: existing } = await supabase
         .from("assistencia_social_pacientes")
