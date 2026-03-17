@@ -1941,7 +1941,7 @@ export const SaidaProntuariosModule = () => {
                           })()}
                         </TableCell>
                         <TableCell className="sticky right-0 z-20 bg-card shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.15)] py-1.5 px-2">
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
+                          <div className="flex items-center justify-center gap-1">
                             {getActionButton(saida)}
                           </div>
                         </TableCell>
