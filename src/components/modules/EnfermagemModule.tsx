@@ -189,6 +189,10 @@ export default function EnfermagemModule() {
             <ClipboardCheck className="h-4 w-4" />
             Classificação
           </TabsTrigger>
+          <TabsTrigger value="medicacao" className="gap-2 text-sm px-4 py-2">
+            <Pill className="h-4 w-4" />
+            Medicação
+          </TabsTrigger>
           {canAccessProtocolos && (
             <TabsTrigger value="protocolos" className="gap-2 text-sm px-4 py-2">
               <FileCheck className="h-4 w-4" />
