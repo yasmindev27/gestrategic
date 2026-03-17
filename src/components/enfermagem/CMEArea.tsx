@@ -236,6 +236,7 @@ export function CMEArea() {
   const [dialogConferenciaOpen, setDialogConferenciaOpen] = useState(false);
   const [dialogDanificadoOpen, setDialogDanificadoOpen] = useState(false);
   const [dialogSolicitacaoOpen, setDialogSolicitacaoOpen] = useState(false);
+  const [dialogControleMatOpen, setDialogControleMatOpen] = useState(false);
   const [detalhePinca, setDetalhePinca] = useState<RegistroPincas | null>(null);
   const [detalhe, setDetalhe] = useState<DevolucaoMaterial | null>(null);
   const [detalheAlmotolia, setDetalheAlmotolia] = useState<RegistroAlmotolia | null>(null);
