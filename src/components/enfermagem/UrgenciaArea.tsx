@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen
+  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert, ClipboardList, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Ambulance
 } from 'lucide-react';
 import { ChecklistCarrinhoUrgencia } from './ChecklistCarrinhoUrgencia';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
@@ -20,6 +20,7 @@ import { ChecklistGeralNSP } from './ChecklistGeralNSP';
 import { ChecklistLimpezaConcorrente } from './ChecklistLimpezaConcorrente';
 import { ChecklistFluxometrosBombas } from './ChecklistFluxometrosBombas';
 import { PassagemPlantaoTecEnfermagem } from './PassagemPlantaoTecEnfermagem';
+import { ChecklistUTIMovel } from './ChecklistUTIMovel';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
@@ -121,6 +122,7 @@ export function UrgenciaArea() {
           <TabsTrigger value="limpeza" className="gap-1"><SprayCanIcon className="h-4 w-4" />Limpeza Concorrente</TabsTrigger>
           <TabsTrigger value="fluxometros" className="gap-1"><Gauge className="h-4 w-4" />Fluxômetros/Bombas</TabsTrigger>
           <TabsTrigger value="passagem-plantao" className="gap-1"><ClipboardPen className="h-4 w-4" />Passagem Plantão</TabsTrigger>
+          <TabsTrigger value="uti-movel" className="gap-1"><Ambulance className="h-4 w-4" />UTI Móvel</TabsTrigger>
         </TabsList>
 
         <TabsContent value="atendimentos" className="mt-4 space-y-4">
@@ -281,6 +283,10 @@ export function UrgenciaArea() {
 
         <TabsContent value="passagem-plantao" className="mt-4">
           <PassagemPlantaoTecEnfermagem storageKey="enf-passagem-plantao-tec-urgencia" setor="Urgência" />
+        </TabsContent>
+
+        <TabsContent value="uti-movel" className="mt-4">
+          <ChecklistUTIMovel storageKey="enf-uti-movel-urgencia" setor="Urgência" />
         </TabsContent>
       </Tabs>
     </div>
