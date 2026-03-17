@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Shirt, HardHat, Syringe, ClipboardCheck, Bell } from "lucide-react";
 import {
   UniformesControl,
@@ -9,6 +8,15 @@ import {
   NotificacoesControl
 } from "@/components/seguranca-trabalho";
 import { useLogAccess } from "@/hooks/useLogAccess";
+import { cn } from "@/lib/utils";
+
+const NAV_ITEMS = [
+  { id: 'uniformes', label: 'Uniformes', icon: Shirt },
+  { id: 'epis', label: 'EPIs', icon: HardHat },
+  { id: 'vacinas', label: 'Vacinação', icon: Syringe },
+  { id: 'rondas', label: 'Rondas', icon: ClipboardCheck },
+  { id: 'notificacoes', label: 'Notificações', icon: Bell },
+];
 
 export function SegurancaTrabalhoModule() {
   const [activeTab, setActiveTab] = useState("uniformes");
@@ -23,6 +31,17 @@ export function SegurancaTrabalhoModule() {
     logAction("navegacao_aba", "seguranca_trabalho", { aba: value });
   };
 
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'uniformes': return <UniformesControl />;
+      case 'epis': return <EPIsControl />;
+      case 'vacinas': return <VacinasControl />;
+      case 'rondas': return <RondasControl />;
+      case 'notificacoes': return <NotificacoesControl />;
+      default: return null;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -32,50 +51,30 @@ export function SegurancaTrabalhoModule() {
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="uniformes" className="flex items-center gap-2">
-            <Shirt className="h-4 w-4" />
-            <span className="hidden sm:inline">Uniformes</span>
-          </TabsTrigger>
-          <TabsTrigger value="epis" className="flex items-center gap-2">
-            <HardHat className="h-4 w-4" />
-            <span className="hidden sm:inline">EPIs</span>
-          </TabsTrigger>
-          <TabsTrigger value="vacinas" className="flex items-center gap-2">
-            <Syringe className="h-4 w-4" />
-            <span className="hidden sm:inline">Vacinação</span>
-          </TabsTrigger>
-          <TabsTrigger value="rondas" className="flex items-center gap-2">
-            <ClipboardCheck className="h-4 w-4" />
-            <span className="hidden sm:inline">Rondas</span>
-          </TabsTrigger>
-          <TabsTrigger value="notificacoes" className="flex items-center gap-2">
-            <Bell className="h-4 w-4" />
-            <span className="hidden sm:inline">Notificações</span>
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="uniformes" className="mt-6">
-          <UniformesControl />
-        </TabsContent>
-
-        <TabsContent value="epis" className="mt-6">
-          <EPIsControl />
-        </TabsContent>
-
-        <TabsContent value="vacinas" className="mt-6">
-          <VacinasControl />
-        </TabsContent>
-
-        <TabsContent value="rondas" className="mt-6">
-          <RondasControl />
-        </TabsContent>
-
-        <TabsContent value="notificacoes" className="mt-6">
-          <NotificacoesControl />
-        </TabsContent>
-      </Tabs>
+      <div className="flex gap-4">
+        <nav className="w-48 flex-shrink-0 space-y-0.5 border-r pr-3">
+          {NAV_ITEMS.map(item => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => handleTabChange(item.id)}
+                className={cn(
+                  "w-full flex items-center gap-2 px-3 py-2 rounded-md text-left text-sm transition-colors",
+                  isActive ? "bg-primary text-primary-foreground font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4 flex-shrink-0" />
+                <span className="truncate">{item.label}</span>
+              </button>
+            );
+          })}
+        </nav>
+        <div className="flex-1 min-w-0">
+          {renderContent()}
+        </div>
+      </div>
     </div>
   );
 }
