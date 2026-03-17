@@ -370,6 +370,15 @@ export function CMEArea() {
     toast.success('Conferência registrada com sucesso');
   };
 
+  const handleAddDanificado = () => {
+    if (!formDanificado.material || !formDanificado.setor || !formDanificado.responsavel) { toast.error('Material, setor e responsável são obrigatórios'); return; }
+    const novo: RegistroDanificado = { id: crypto.randomUUID(), ...formDanificado, dataRegistro: new Date().toLocaleString('pt-BR') };
+    setDanificados([novo, ...danificados]);
+    setFormDanificado({ material: '', setor: '', data: new Date().toISOString().split('T')[0], motivo: '', conduta: '', reposicao: '', responsavel: '' });
+    setDialogDanificadoOpen(false);
+    toast.success('Material danificado registrado');
+  };
+
   const avancarEtapa = (id: string) => {
     const ordem: ItemCME['etapa'][] = ['recebimento', 'lavagem', 'secagem', 'preparo', 'esterilizacao', 'armazenamento', 'distribuicao'];
     setItens(prev => prev.map(i => {
