@@ -10,8 +10,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import {
-  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search
+  Siren, Clock, Users, Plus, TrendingUp, Timer, HeartPulse, Thermometer, Search, ShieldAlert
 } from 'lucide-react';
+import { ChecklistCarrinhoUrgencia } from './ChecklistCarrinhoUrgencia';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 
@@ -101,6 +102,14 @@ export function UrgenciaArea() {
           <p className="text-sm text-muted-foreground">Controle de fluxo de atendimentos de urgência e tempos assistenciais</p>
         </div>
       </div>
+
+      <Tabs defaultValue="atendimentos">
+        <TabsList>
+          <TabsTrigger value="atendimentos" className="gap-1"><Siren className="h-4 w-4" />Atendimentos</TabsTrigger>
+          <TabsTrigger value="carrinho" className="gap-1"><ShieldAlert className="h-4 w-4" />Carrinho de Urgência</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="atendimentos" className="mt-4 space-y-4">
 
       {/* Painel de classificação */}
       <div className="grid grid-cols-5 gap-2">
@@ -226,6 +235,12 @@ export function UrgenciaArea() {
           </TableBody>
         </Table>
       </div>
+        </TabsContent>
+
+        <TabsContent value="carrinho" className="mt-4">
+          <ChecklistCarrinhoUrgencia />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
