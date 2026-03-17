@@ -220,6 +220,7 @@ export function MedicacaoArea() {
           <TabsTrigger value="prescricoes" className="gap-1"><FileText className="h-4 w-4" />Prescrições</TabsTrigger>
           <TabsTrigger value="estoque" className="gap-1"><Droplets className="h-4 w-4" />Estoque</TabsTrigger>
           <TabsTrigger value="eventos" className="gap-1"><ShieldAlert className="h-4 w-4" />Eventos Adversos</TabsTrigger>
+          <TabsTrigger value="sinais-vitais" className="gap-1"><Thermometer className="h-4 w-4" />Sinais Vitais</TabsTrigger>
         </TabsList>
 
         {/* ── Prescrições ── */}
