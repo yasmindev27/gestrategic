@@ -358,6 +358,7 @@ export const FaturamentoModule = () => {
         let query = supabase
           .from("saida_prontuarios")
           .select("*")
+          .eq("is_folha_avulsa", false)
           .order("created_at", { ascending: false });
 
         query = applyFiltersToQuery(query);
