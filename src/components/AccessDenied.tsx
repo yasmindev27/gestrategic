@@ -22,17 +22,17 @@ const AccessDenied = ({ onTryAgain }: AccessDeniedProps) => {
         </div>
 
         <div className="bg-secondary/50 rounded-lg p-4 text-left">
-          <h3 className="font-medium text-foreground mb-2">Por que isso é necessário?</h3>
+          <h3 className="font-medium text-foreground mb-2">O que fazer?</h3>
           <ul className="text-sm text-muted-foreground space-y-1">
-            <li>• Garantir a proteção dos seus dados pessoais</li>
-            <li>• Cumprir as exigências legais da LGPD</li>
-            <li>• Assegurar a segurança das informações do sistema</li>
+            <li>• Verifique se seu perfil possui acesso a este módulo</li>
+            <li>• Solicite ao administrador a liberação de acesso</li>
+            <li>• Retorne ao painel principal</li>
           </ul>
         </div>
 
         <Button onClick={onTryAgain} className="gap-2">
           <ArrowLeft className="h-4 w-4" />
-          Voltar e Aceitar os Termos
+          Voltar ao Painel Principal
         </Button>
       </div>
     </div>
