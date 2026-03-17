@@ -29,6 +29,7 @@ import { DiagnosticoPrescricaoEnfermagem } from './DiagnosticoPrescricaoEnfermag
 import { TermoConsentimentoRiscos } from './TermoConsentimentoRiscos';
 import { SAEAdulto } from './SAEAdulto';
 import { SAEPediatrico } from './SAEPediatrico';
+import { TermoGuardaMedicamento } from './TermoGuardaMedicamento';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
