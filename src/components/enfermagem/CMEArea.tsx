@@ -743,6 +743,28 @@ export function CMEArea() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Dialog detalhe desinfecção */}
+      <Dialog open={!!detalheDesinfeccao} onOpenChange={() => setDetalheDesinfeccao(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Detalhes — Desinfecção de Almotolia</DialogTitle></DialogHeader>
+          {detalheDesinfeccao && (
+            <div className="space-y-2 text-sm">
+              <div><span className="text-muted-foreground">Data:</span> <strong>{detalheDesinfeccao.data}</strong></div>
+              <div><span className="text-muted-foreground">Método:</span> {detalheDesinfeccao.metodo}</div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Quantidade:</span> {detalheDesinfeccao.quantidade}</div>
+                <div><span className="text-muted-foreground">Validade:</span> {detalheDesinfeccao.validade || '—'}</div>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div><span className="text-muted-foreground">Responsável:</span> {detalheDesinfeccao.responsavel}</div>
+                <div><span className="text-muted-foreground">COREN:</span> {detalheDesinfeccao.coren || '—'}</div>
+              </div>
+              <p className="text-xs text-muted-foreground pt-2">Registrado em: {detalheDesinfeccao.dataRegistro}</p>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
