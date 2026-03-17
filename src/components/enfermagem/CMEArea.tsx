@@ -340,6 +340,16 @@ export function CMEArea() {
     toast.success('Desinfecção de olivas registrada');
   };
 
+  const handleAddConferencia = () => {
+    if (!formConferencia.setor || !formConferencia.responsavel) { toast.error('Setor e responsável são obrigatórios'); return; }
+    if (!formConferencia.materiaisRespiratorios && !formConferencia.materiaisCirurgicos) { toast.error('Selecione ao menos um tipo de material'); return; }
+    const novo: RegistroConferencia = { id: crypto.randomUUID(), ...formConferencia, dataRegistro: new Date().toLocaleString('pt-BR') };
+    setConferencias([novo, ...conferencias]);
+    setFormConferencia({ data: new Date().toISOString().split('T')[0], setor: '', materiaisRespiratorios: false, materiaisCirurgicos: false, inconformidade: false, inconformidadeDescricao: '', responsavel: '', coren: '' });
+    setDialogConferenciaOpen(false);
+    toast.success('Conferência registrada com sucesso');
+  };
+
   const avancarEtapa = (id: string) => {
     const ordem: ItemCME['etapa'][] = ['recebimento', 'lavagem', 'secagem', 'preparo', 'esterilizacao', 'armazenamento', 'distribuicao'];
     setItens(prev => prev.map(i => {
