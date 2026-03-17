@@ -484,6 +484,9 @@ export function CMEArea() {
   const solicitacoesFiltradas = solicitacoes.filter(s =>
     s.material.toLowerCase().includes(buscaSolicitacao.toLowerCase()) || s.setor.toLowerCase().includes(buscaSolicitacao.toLowerCase()) || s.solicitante.toLowerCase().includes(buscaSolicitacao.toLowerCase())
   );
+  const conferenciasFiltradas = conferencias.filter(c =>
+    c.setor.toLowerCase().includes(buscaConferencia.toLowerCase()) || c.responsavel.toLowerCase().includes(buscaConferencia.toLowerCase())
+  );
 
   const getBusca = () => {
     if (tab === 'devolucao') return buscaDev;
