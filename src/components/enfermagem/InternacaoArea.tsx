@@ -12,7 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   BedDouble, ClipboardList, UserCheck, AlertTriangle, Plus, Search,
-  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Stethoscope, ShieldCheck
+  Clock, ThermometerSun, Pill, Activity, FileText, CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Stethoscope, ShieldCheck, HeartPulse
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ChecklistCarrinhoInternacao } from './ChecklistCarrinhoInternacao';
