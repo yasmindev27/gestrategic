@@ -24,6 +24,7 @@ import { ChecklistFluxometrosBombas } from './ChecklistFluxometrosBombas';
 import { PassagemPlantaoTecEnfermagem } from './PassagemPlantaoTecEnfermagem';
 import { ControleSinaisVitaisOxigenio } from './ControleSinaisVitaisOxigenio';
 import { EscalasClinicas } from './EscalasClinicas';
+import { PassagemPlantaoSBAR } from './PassagemPlantaoSBAR';
 import { toast } from 'sonner';
 
 interface PacienteInternado {
