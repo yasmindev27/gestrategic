@@ -997,7 +997,7 @@ export const SaidaProntuariosModule = () => {
       );
     }
 
-    if (buttons.length === 0) return null;
+    if (buttons.length === 0) return <span className="text-muted-foreground text-[10px]">-</span>;
     
     return <div className="flex gap-1">{buttons}</div>;
   };
