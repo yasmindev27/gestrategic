@@ -499,6 +499,44 @@ export function CMEArea() {
 
   // === Render action button ===
   const renderActionButton = () => {
+    if (tab === 'solicitacao') return (
+      <Dialog open={dialogSolicitacaoOpen} onOpenChange={setDialogSolicitacaoOpen}>
+        <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Nova Solicitação</Button></DialogTrigger>
+        <DialogContent className="max-w-lg">
+          <DialogHeader><DialogTitle>Controle de Solicitação de Material</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Data</Label><Input type="date" value={formSolicitacao.data} onChange={e => setFormSolicitacao(p => ({ ...p, data: e.target.value }))} /></div>
+              <div><Label>Setor</Label>
+                <Select value={formSolicitacao.setor} onValueChange={v => setFormSolicitacao(p => ({ ...p, setor: v }))}>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>{SETORES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label>Centro de Custo</Label>
+                <Select value={formSolicitacao.centroCusto} onValueChange={v => setFormSolicitacao(p => ({ ...p, centroCusto: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Enfermagem">Enfermagem</SelectItem>
+                    <SelectItem value="Médico">Médico</SelectItem>
+                    <SelectItem value="Administrativo">Administrativo</SelectItem>
+                    <SelectItem value="Manutenção">Manutenção</SelectItem>
+                    <SelectItem value="Outro">Outro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div><Label>Quantidade</Label><Input value={formSolicitacao.quantidade} onChange={e => setFormSolicitacao(p => ({ ...p, quantidade: e.target.value }))} placeholder="Ex: 10" /></div>
+            </div>
+            <div><Label>Material</Label><Input value={formSolicitacao.material} onChange={e => setFormSolicitacao(p => ({ ...p, material: e.target.value }))} placeholder="Ex: Ambu, Máscara, Luva..." /></div>
+            <div><Label>Solicitante (Assinatura)</Label><Input value={formSolicitacao.solicitante} onChange={e => setFormSolicitacao(p => ({ ...p, solicitante: e.target.value }))} /></div>
+            <div><Label>Observação</Label><Textarea value={formSolicitacao.observacao} onChange={e => setFormSolicitacao(p => ({ ...p, observacao: e.target.value }))} rows={2} /></div>
+            <Button onClick={handleAddSolicitacao} className="w-full"><CheckCircle2 className="h-4 w-4 mr-2" />Registrar Solicitação</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
     if (tab === 'danificados') return (
       <Dialog open={dialogDanificadoOpen} onOpenChange={setDialogDanificadoOpen}>
         <DialogTrigger asChild><Button><Plus className="h-4 w-4 mr-1" />Registrar Material Danificado</Button></DialogTrigger>
