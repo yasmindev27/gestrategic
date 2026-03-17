@@ -16,8 +16,6 @@ import { Pill, Plus, Search, Clock, CheckCircle2, AlertTriangle, FileText,
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
-import { toast } from 'sonner';
 
 // ── Tipos ──
 interface PrescricaoMedicamento {
