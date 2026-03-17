@@ -235,6 +235,12 @@ export function UrgenciaArea() {
           </TableBody>
         </Table>
       </div>
+        </TabsContent>
+
+        <TabsContent value="carrinho" className="mt-4">
+          <ChecklistCarrinhoUrgencia />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
