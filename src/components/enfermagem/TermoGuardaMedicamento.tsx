@@ -82,6 +82,7 @@ const emptyForm = (): Omit<RegistroTermo, 'id' | 'dataRegistro'> => ({
   acompanhanteNome: '', acompanhanteParentesco: '',
   enfermeiroResponsavel: '', coren: '', farmaceuticoResponsavel: '',
   observacoes: '',
+  devolucao: { realizada: false, dataAlta: '', medicamentoQuantidadeDevolvida: '', farmaceuticoClinicoDevolucao: '', enfermeiroDevolucao: '' },
 });
 
 export function TermoGuardaMedicamento({ storageKey, setor }: Props) {
