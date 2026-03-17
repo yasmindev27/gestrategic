@@ -399,6 +399,15 @@ export function CMEArea() {
     toast.success('Material danificado registrado');
   };
 
+  const handleAddSolicitacao = () => {
+    if (!formSolicitacao.material || !formSolicitacao.setor || !formSolicitacao.solicitante) { toast.error('Material, setor e solicitante são obrigatórios'); return; }
+    const novo: SolicitacaoMaterial = { id: crypto.randomUUID(), ...formSolicitacao, dataRegistro: new Date().toLocaleString('pt-BR') };
+    setSolicitacoes([novo, ...solicitacoes]);
+    setFormSolicitacao({ data: new Date().toISOString().split('T')[0], setor: '', centroCusto: 'Enfermagem', material: '', quantidade: '', solicitante: '', observacao: '' });
+    setDialogSolicitacaoOpen(false);
+    toast.success('Solicitação registrada');
+  };
+
   const avancarEtapa = (id: string) => {
     const ordem: ItemCME['etapa'][] = ['recebimento', 'lavagem', 'secagem', 'preparo', 'esterilizacao', 'armazenamento', 'distribuicao'];
     setItens(prev => prev.map(i => {
