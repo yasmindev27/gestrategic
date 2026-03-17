@@ -503,7 +503,7 @@ const Sidebar = ({
   return (
     <TooltipProvider delayDuration={0}>
       <aside className={cn(
-        "bg-[#0d2137] h-screen flex flex-col sticky top-0 transition-all duration-300 shadow-lg",
+        "bg-sidebar h-screen flex flex-col sticky top-0 transition-all duration-300 shadow-lg",
         isCollapsed ? "w-20" : "w-64"
       )}>
         {/* Logo & Brand */}
