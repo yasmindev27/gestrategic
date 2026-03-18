@@ -2,10 +2,41 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { ShiftInfo } from '@/types/bed';
 
+function formatLocalDate(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function detectCurrentShift(): { tipo: 'diurno' | 'noturno'; data: string } {
+  // Brasília = UTC-3
+  const now = new Date();
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const brasiliaTime = new Date(utcMs - 3 * 3600000);
+  const hour = brasiliaTime.getHours();
+
+  // Diurno: 07:00–18:59  |  Noturno: 19:00–06:59
+  const isNoturno = hour >= 19 || hour < 7;
+
+  // For noturno between 00:00-06:59, the shift_date is the previous day (when the shift started at 19h)
+  let shiftDate: Date;
+  if (isNoturno && hour < 7) {
+    shiftDate = new Date(brasiliaTime);
+    shiftDate.setDate(shiftDate.getDate() - 1);
+  } else {
+    shiftDate = brasiliaTime;
+  }
+
+  const data = formatLocalDate(shiftDate);
+  return { tipo: isNoturno ? 'noturno' : 'diurno', data };
+}
+
 export function useShiftConfig(initialDate?: string) {
+  const detected = detectCurrentShift();
   const [shiftInfo, setShiftInfo] = useState<ShiftInfo>({
-    tipo: 'diurno',
-    data: initialDate || new Date().toISOString().split('T')[0],
+    tipo: detected.tipo,
+    data: initialDate || detected.data,
     medicos: '',
     enfermeiros: '',
     reguladorNIR: '',
@@ -47,6 +78,34 @@ export function useShiftConfig(initialDate?: string) {
       onConflict: 'shift_date,shift_type'
     });
 
+    // Check if there's a pending passagem (no assunção yet) and fill it
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && configToSave.reguladorNIR) {
+        const { data: pendingPassagem } = await supabase
+          .from('passagem_plantao')
+          .select('id, data_hora_conclusao')
+          .eq('shift_date', configToSave.data)
+          .eq('shift_type', configToSave.tipo)
+          .is('data_hora_assuncao', null)
+          .limit(1)
+          .maybeSingle();
+
+        if (pendingPassagem) {
+          const now = new Date();
+          const conclusao = new Date(pendingPassagem.data_hora_conclusao);
+          const tempoMinutos = (now.getTime() - conclusao.getTime()) / 60000;
+
+          await supabase.from('passagem_plantao').update({
+            colaborador_entrada_id: user.id,
+            colaborador_entrada_nome: configToSave.reguladorNIR,
+            data_hora_assuncao: now.toISOString(),
+            tempo_troca_minutos: Math.round(tempoMinutos * 100) / 100,
+          }).eq('id', pendingPassagem.id);
+        }
+      }
+    } catch { /* non-critical */ }
+
     isSavingRef.current = false;
 
     if (error) {
@@ -76,11 +135,19 @@ export function useShiftConfig(initialDate?: string) {
           reguladorNIR: config.regulador_nir || '',
         }));
       } else {
+        // Auto-fill regulador with logged-in user's name
+        let userName = '';
+        try {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            userName = user.user_metadata?.full_name || user.email?.split('@')[0] || '';
+          }
+        } catch {}
         setShiftInfo(prev => ({
           ...prev,
           medicos: '',
           enfermeiros: '',
-          reguladorNIR: '',
+          reguladorNIR: userName,
         }));
       }
       

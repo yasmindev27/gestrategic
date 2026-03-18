@@ -1,5 +1,6 @@
-import { forwardRef, memo } from 'react';
-import { User, AlertCircle } from 'lucide-react';
+import { forwardRef, memo, useMemo } from 'react';
+import { User, AlertCircle, Clock } from 'lucide-react';
+import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
 import { Bed } from '@/types/bed';
 
 interface BedCardProps {
@@ -11,6 +12,19 @@ export const BedCard = memo(forwardRef<HTMLDivElement, BedCardProps>(
   function BedCard({ bed, onClick }, ref) {
     const isOccupied = bed.patient !== null;
     const isExtra = typeof bed.number === 'string';
+
+    const tempoPermanencia = useMemo(() => {
+      const timestamp = bed.patient?.registradoEm;
+      if (!timestamp) return null;
+      try {
+        const dataReg = parseISO(timestamp);
+        const now = new Date();
+        const dias = differenceInDays(now, dataReg);
+        const horas = differenceInHours(now, dataReg) % 24;
+        if (dias > 0) return `${dias}d ${horas}h`;
+        return `${horas}h`;
+      } catch { return null; }
+    }, [bed.patient?.registradoEm]);
 
     const getCardClass = () => {
       if (isExtra && isOccupied) return 'border-2 border-hospital-amber bg-hospital-amber-light';
@@ -66,6 +80,13 @@ export const BedCard = memo(forwardRef<HTMLDivElement, BedCardProps>(
               <div>
                 <p className="text-xs text-muted-foreground uppercase tracking-wide">HD</p>
                 <p className="text-sm text-foreground line-clamp-2">{bed.patient.hipoteseDiagnostica}</p>
+              </div>
+            )}
+
+            {tempoPermanencia && (
+              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="w-3 h-3" />
+                <span>Permanência: <strong className="text-foreground">{tempoPermanencia}</strong></span>
               </div>
             )}
 

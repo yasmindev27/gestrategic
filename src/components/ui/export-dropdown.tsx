@@ -11,6 +11,7 @@ interface ExportDropdownProps {
   onExportCSV?: () => void;
   onExportPDF?: () => void;
   onExportExcel?: () => void;
+  onExportWord?: () => void;
   disabled?: boolean;
   size?: "default" | "sm" | "lg" | "icon";
   variant?: "default" | "outline" | "secondary" | "ghost";
@@ -21,12 +22,13 @@ export function ExportDropdown({
   onExportCSV,
   onExportPDF,
   onExportExcel,
+  onExportWord,
   disabled = false,
   size = "sm",
   variant = "outline",
   label = "Exportar",
 }: ExportDropdownProps) {
-  const hasOptions = onExportCSV || onExportPDF || onExportExcel;
+  const hasOptions = onExportCSV || onExportPDF || onExportExcel || onExportWord;
 
   if (!hasOptions) return null;
 
@@ -43,19 +45,25 @@ export function ExportDropdown({
         {onExportCSV && (
           <DropdownMenuItem onClick={onExportCSV}>
             <FileText className="h-4 w-4 mr-2" />
-            Exportar CSV
+            CSV
           </DropdownMenuItem>
         )}
         {onExportExcel && (
           <DropdownMenuItem onClick={onExportExcel}>
-            <FileSpreadsheet className="h-4 w-4 mr-2" />
-            Exportar Excel
+            <FileSpreadsheet className="h-4 w-4 mr-2 text-green-600" />
+            Excel
           </DropdownMenuItem>
         )}
         {onExportPDF && (
           <DropdownMenuItem onClick={onExportPDF}>
             <FileText className="h-4 w-4 mr-2 text-red-500" />
-            Exportar PDF
+            PDF
+          </DropdownMenuItem>
+        )}
+        {onExportWord && (
+          <DropdownMenuItem onClick={onExportWord}>
+            <FileText className="h-4 w-4 mr-2 text-blue-500" />
+            Word (.docx)
           </DropdownMenuItem>
         )}
       </DropdownMenuContent>

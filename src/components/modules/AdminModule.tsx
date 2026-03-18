@@ -63,6 +63,8 @@ import {
   RefreshCw,
   Briefcase,
   Building2,
+  GitBranch,
+  Server,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -72,6 +74,9 @@ import { CargosManager } from "@/components/admin/CargosManager";
 import { SetoresManager } from "@/components/admin/SetoresManager";
 import { GestoresVinculacao } from "@/components/admin/GestoresVinculacao";
 import { PermissoesManager } from "@/components/admin/PermissoesManager";
+import { InfraestruturaPanel } from "@/components/admin/InfraestruturaPanel";
+import { LogsAuditoriaModule } from "@/components/modules/LogsAuditoriaModule";
+import { FluxogramaSetores } from "@/components/admin/FluxogramaSetores";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -115,6 +120,8 @@ const roleLabels: Record<AppRole, string> = {
   nsp: "NSP",
   seguranca: "Segurança do Trabalho",
   enfermagem: "Enfermagem",
+  medicos: "Médicos",
+  rouparia: "Rouparia",
 };
 
 // Roles disponíveis para seleção (exclui "funcionario" que é o padrão)
@@ -141,6 +148,8 @@ const roleColors: Record<AppRole, string> = {
   nsp: "bg-sky-600 text-white",
   seguranca: "bg-yellow-600 text-white",
   enfermagem: "bg-cyan-600 text-white",
+  medicos: "bg-lime-600 text-white",
+  rouparia: "bg-violet-500 text-white",
 };
 
 export const AdminModule = () => {
@@ -585,9 +594,17 @@ export const AdminModule = () => {
             <History className="h-4 w-4 mr-2" />
             Logs
           </TabsTrigger>
+          <TabsTrigger value="infraestrutura">
+            <Server className="h-4 w-4 mr-2" />
+            Infraestrutura
+          </TabsTrigger>
           <TabsTrigger value="configuracoes">
             <Settings className="h-4 w-4 mr-2" />
             Configurações
+          </TabsTrigger>
+          <TabsTrigger value="fluxograma">
+            <GitBranch className="h-4 w-4 mr-2" />
+            Fluxograma
           </TabsTrigger>
         </TabsList>
 
@@ -612,6 +629,36 @@ export const AdminModule = () => {
                 <Button onClick={openCreateUserDialog}>
                   <UserPlus className="h-4 w-4 mr-2" />
                   Novo Usuário
+                </Button>
+                <Button 
+                  variant="outline"
+                  className="text-orange-600 border-orange-300 hover:bg-orange-50"
+                  onClick={async () => {
+                    if (!confirm("Deseja resetar a senha de TODOS os usuários pendentes para 123456?")) return;
+                    try {
+                      const { data: sessionData } = await supabase.auth.getSession();
+                      const res = await fetch(
+                        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-reset-senhas-massa`,
+                        {
+                          method: "POST",
+                          headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${sessionData.session?.access_token}`,
+                          },
+                        }
+                      );
+                      const result = await res.json();
+                      if (!res.ok) throw new Error(result.error);
+                      toast({
+                        title: "Senhas resetadas",
+                        description: `${result.count} de ${result.total} usuários tiveram a senha alterada para 123456.`,
+                      });
+                    } catch (err: any) {
+                      toast({ title: "Erro", description: err.message, variant: "destructive" });
+                    }
+                  }}
+                >
+                  Resetar Senhas (123456)
                 </Button>
               </div>
             </CardContent>
@@ -715,48 +762,11 @@ export const AdminModule = () => {
         </TabsContent>
 
         <TabsContent value="logs" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Histórico de Acesso</CardTitle>
-              <CardDescription>
-                Últimas 100 ações registradas no sistema
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {logs.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
-                  Nenhum log registrado.
-                </div>
-              ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Data/Hora</TableHead>
-                      <TableHead>Módulo</TableHead>
-                      <TableHead>Ação</TableHead>
-                      <TableHead>Detalhes</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {logs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell>
-                          {format(new Date(log.created_at), "dd/MM/yy HH:mm:ss", { locale: ptBR })}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline">{log.modulo}</Badge>
-                        </TableCell>
-                        <TableCell>{log.acao}</TableCell>
-                        <TableCell className="max-w-xs truncate text-muted-foreground text-sm">
-                          {log.detalhes ? JSON.stringify(log.detalhes) : "-"}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              )}
-            </CardContent>
-          </Card>
+          <LogsAuditoriaModule />
+        </TabsContent>
+
+        <TabsContent value="infraestrutura" className="space-y-4 mt-4">
+          <InfraestruturaPanel />
         </TabsContent>
 
         <TabsContent value="configuracoes" className="space-y-4 mt-4">
@@ -774,6 +784,10 @@ export const AdminModule = () => {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="fluxograma" className="mt-4">
+          <FluxogramaSetores />
         </TabsContent>
       </Tabs>
 

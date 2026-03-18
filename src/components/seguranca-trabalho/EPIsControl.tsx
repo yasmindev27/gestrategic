@@ -1,248 +1,71 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { HardHat, AlertTriangle } from "lucide-react";
-import { format, differenceInDays } from "date-fns";
-import { ActionButton, TableActions } from "@/components/ui/action-buttons";
+import { HardHat, Package, Warehouse } from "lucide-react";
 import { LoadingState } from "@/components/ui/loading-state";
-import { EmptyState } from "@/components/ui/empty-state";
-import { StatusBadge, mapStatusToType, getStatusLabel } from "@/components/ui/status-badge";
-
-interface EPI {
-  id: string;
-  usuario_id: string;
-  usuario_nome: string;
-  tipo_epi: string;
-  ca_numero: string | null;
-  quantidade: number;
-  data_entrega: string;
-  data_validade: string | null;
-  status: string;
-  observacao: string | null;
-  registrado_por_nome: string;
-  created_at: string;
-}
-
-interface Usuario {
-  user_id: string;
-  full_name: string;
-}
-
-const TIPOS_EPI = [
-  "Capacete",
-  "Óculos de Proteção",
-  "Protetor Auricular",
-  "Luvas",
-  "Máscara Respiratória",
-  "Avental",
-  "Bota de Segurança",
-  "Cinto de Segurança",
-  "Protetor Facial",
-  "Macacão",
-  "Colete Refletivo",
-  "Outro"
-];
+import { InventarioModule } from "@/components/modules/InventarioModule";
 
 export function EPIsControl() {
-  const [epis, setEpis] = useState<EPI[]>([]);
-  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [loading, setLoading] = useState(true);
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [currentUserName, setCurrentUserName] = useState<string>("");
+  const [movResumo, setMovResumo] = useState<{ usuario_nome: string; responsavel_entrega: string; produto: string; entradas: number; saidas: number }[]>([]);
   const { toast } = useToast();
 
-  const [formData, setFormData] = useState({
-    usuario_id: "",
-    tipo_epi: "",
-    ca_numero: "",
-    quantidade: 1,
-    data_entrega: format(new Date(), "yyyy-MM-dd"),
-    data_validade: "",
-    status: "em_uso",
-    observacao: ""
-  });
-
   useEffect(() => {
-    fetchData();
+    fetchResumo();
   }, []);
 
-  const fetchData = async () => {
+  const fetchResumo = async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setCurrentUserId(user.id);
-        const { data: profile } = await supabase
+      const { data: movData } = await supabase
+        .from("movimentacoes_estoque")
+        .select("*, produtos(nome)")
+        .eq("setor", "seguranca_epis");
+
+      if (movData && movData.length > 0) {
+        const userIds = [...new Set(movData.map(m => m.usuario_id))];
+        const { data: profiles } = await supabase
           .from("profiles")
-          .select("full_name")
-          .eq("user_id", user.id)
-          .single();
-        if (profile) {
-          setCurrentUserName(profile.full_name);
-        }
+          .select("user_id, full_name")
+          .in("user_id", userIds);
+        const nameMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+
+        const resumoMap = new Map<string, { usuario_nome: string; responsavel_entrega: string; produto: string; entradas: number; saidas: number }>();
+        movData.forEach(m => {
+          let colabName = "-";
+          const colabMatch = (m.observacao || "").match(/\[COLAB:(.+?)\]/);
+          if (colabMatch) {
+            colabName = colabMatch[1];
+          } else if (m.observacao && m.observacao.trim()) {
+            colabName = m.observacao.trim();
+          }
+
+          const responsavel = nameMap.get(m.usuario_id) || "-";
+          const produto = (m.produtos as any)?.nome || "-";
+          const key = `${colabName}_${m.produto_id}`;
+          const existing = resumoMap.get(key) || {
+            usuario_nome: colabName,
+            responsavel_entrega: responsavel,
+            produto,
+            entradas: 0,
+            saidas: 0,
+          };
+          if (m.tipo === 'entrada') existing.entradas += m.quantidade;
+          else existing.saidas += m.quantidade;
+          existing.responsavel_entrega = responsavel;
+          resumoMap.set(key, existing);
+        });
+        setMovResumo(Array.from(resumoMap.values()).sort((a, b) => a.usuario_nome.localeCompare(b.usuario_nome)));
       }
-
-      const { data: profilesData } = await supabase
-        .from("profiles")
-        .select("user_id, full_name")
-        .order("full_name");
-      
-      if (profilesData) {
-        setUsuarios(profilesData);
-      }
-
-      const { data: episData, error } = await supabase
-        .from("epis_seguranca")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      setEpis(episData || []);
     } catch (error) {
-      console.error("Erro ao carregar dados:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os EPIs.",
-        variant: "destructive"
-      });
+      console.error("Erro ao carregar resumo:", error);
+      toast({ title: "Erro", description: "Não foi possível carregar o resumo de EPIs.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    const selectedUser = usuarios.find(u => u.user_id === formData.usuario_id);
-    if (!selectedUser || !currentUserId) {
-      toast({
-        title: "Erro",
-        description: "Selecione um colaborador.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    try {
-      const payload = {
-        usuario_id: formData.usuario_id,
-        usuario_nome: selectedUser.full_name,
-        tipo_epi: formData.tipo_epi,
-        ca_numero: formData.ca_numero || null,
-        quantidade: formData.quantidade,
-        data_entrega: formData.data_entrega,
-        data_validade: formData.data_validade || null,
-        status: formData.status,
-        observacao: formData.observacao || null,
-        registrado_por: currentUserId,
-        registrado_por_nome: currentUserName
-      };
-
-      if (editingId) {
-        const { error } = await supabase
-          .from("epis_seguranca")
-          .update(payload)
-          .eq("id", editingId);
-        if (error) throw error;
-        toast({ title: "Sucesso", description: "EPI atualizado!" });
-      } else {
-        const { error } = await supabase
-          .from("epis_seguranca")
-          .insert(payload);
-        if (error) throw error;
-        toast({ title: "Sucesso", description: "EPI registrado!" });
-      }
-
-      setDialogOpen(false);
-      resetForm();
-      fetchData();
-    } catch (error) {
-      console.error("Erro ao salvar:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar o EPI.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const handleEdit = (epi: EPI) => {
-    setFormData({
-      usuario_id: epi.usuario_id,
-      tipo_epi: epi.tipo_epi,
-      ca_numero: epi.ca_numero || "",
-      quantidade: epi.quantidade,
-      data_entrega: epi.data_entrega,
-      data_validade: epi.data_validade || "",
-      status: epi.status,
-      observacao: epi.observacao || ""
-    });
-    setEditingId(epi.id);
-    setDialogOpen(true);
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Deseja excluir este registro?")) return;
-    
-    try {
-      const { error } = await supabase
-        .from("epis_seguranca")
-        .delete()
-        .eq("id", id);
-      if (error) throw error;
-      toast({ title: "Sucesso", description: "Registro excluído!" });
-      fetchData();
-    } catch (error) {
-      console.error("Erro ao excluir:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível excluir.",
-        variant: "destructive"
-      });
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      usuario_id: "",
-      tipo_epi: "",
-      ca_numero: "",
-      quantidade: 1,
-      data_entrega: format(new Date(), "yyyy-MM-dd"),
-      data_validade: "",
-      status: "em_uso",
-      observacao: ""
-    });
-    setEditingId(null);
-  };
-
-  const getStatusBadge = (status: string) => {
-    return <StatusBadge status={mapStatusToType(status)} label={getStatusLabel(status)} showIcon={false} />;
-  };
-
-  const getValidadeBadge = (dataValidade: string | null) => {
-    if (!dataValidade) return null;
-    const dias = differenceInDays(new Date(dataValidade), new Date());
-    if (dias < 0) {
-      return <StatusBadge status="error" label="Vencido" className="ml-2" />;
-    }
-    if (dias <= 30) {
-      return <Badge variant="outline" className="ml-2 border-warning text-warning">
-        <AlertTriangle className="h-3 w-3 mr-1" />
-        {dias}d
-      </Badge>;
-    }
-    return null;
   };
 
   if (loading) {
@@ -250,190 +73,73 @@ export function EPIsControl() {
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
-          <HardHat className="h-5 w-5" />
-          Controle de EPIs
-        </CardTitle>
-        <Dialog open={dialogOpen} onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <ActionButton type="add" label="Novo Registro" size="sm" />
-          </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>
-                {editingId ? "Editar EPI" : "Registrar EPI"}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Colaborador</Label>
-                <Select
-                  value={formData.usuario_id}
-                  onValueChange={(v) => setFormData({ ...formData, usuario_id: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o colaborador" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {usuarios.map((u) => (
-                      <SelectItem key={u.user_id} value={u.user_id}>
-                        {u.full_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+    <div className="space-y-6">
+      <Tabs defaultValue="inventario" onValueChange={(v) => { if (v === 'resumo') fetchResumo(); }}>
+        <TabsList>
+          <TabsTrigger value="inventario">
+            <Warehouse className="h-4 w-4 mr-2" />
+            Inventário
+          </TabsTrigger>
+          <TabsTrigger value="resumo">
+            <Package className="h-4 w-4 mr-2" />
+            Resumo por Colaborador
+          </TabsTrigger>
+        </TabsList>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Tipo de EPI</Label>
-                  <Select
-                    value={formData.tipo_epi}
-                    onValueChange={(v) => setFormData({ ...formData, tipo_epi: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TIPOS_EPI.map((tipo) => (
-                        <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+        <TabsContent value="inventario" className="mt-4">
+          <InventarioModule setor="seguranca_epis" />
+        </TabsContent>
+
+        <TabsContent value="resumo" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <HardHat className="h-5 w-5" />
+                Resumo por Colaborador
+              </CardTitle>
+              <CardDescription>Movimentações de EPIs por colaborador e tipo de produto</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {movResumo.length === 0 ? (
+                <p className="text-muted-foreground text-sm text-center py-4">Nenhuma movimentação registrada.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Colaborador</TableHead>
+                        <TableHead>Responsável pela Entrega</TableHead>
+                        <TableHead>Produto / EPI</TableHead>
+                        <TableHead className="text-center">Entradas</TableHead>
+                        <TableHead className="text-center">Saídas</TableHead>
+                        <TableHead className="text-center">Saldo</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {movResumo.map((r, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium">{r.usuario_nome}</TableCell>
+                          <TableCell>{r.responsavel_entrega}</TableCell>
+                          <TableCell>{r.produto}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="default">{r.entradas}</Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="destructive">{r.saidas}</Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="secondary">{r.entradas - r.saidas}</Badge>
+                          </TableCell>
+                        </TableRow>
                       ))}
-                    </SelectContent>
-                  </Select>
+                    </TableBody>
+                  </Table>
                 </div>
-                <div className="space-y-2">
-                  <Label>Número do CA</Label>
-                  <Input
-                    value={formData.ca_numero}
-                    onChange={(e) => setFormData({ ...formData, ca_numero: e.target.value })}
-                    placeholder="Certificado de Aprovação"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Quantidade</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={formData.quantidade}
-                    onChange={(e) => setFormData({ ...formData, quantidade: parseInt(e.target.value) || 1 })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(v) => setFormData({ ...formData, status: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="em_uso">Em Uso</SelectItem>
-                      <SelectItem value="devolvido">Devolvido</SelectItem>
-                      <SelectItem value="vencido">Vencido</SelectItem>
-                      <SelectItem value="danificado">Danificado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Data de Entrega</Label>
-                  <Input
-                    type="date"
-                    value={formData.data_entrega}
-                    onChange={(e) => setFormData({ ...formData, data_entrega: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Data de Validade</Label>
-                  <Input
-                    type="date"
-                    value={formData.data_validade}
-                    onChange={(e) => setFormData({ ...formData, data_validade: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label>Observação</Label>
-                <Textarea
-                  value={formData.observacao}
-                  onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
-                  placeholder="Observações adicionais..."
-                />
-              </div>
-
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit">
-                  {editingId ? "Atualizar" : "Registrar"}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-        {epis.length === 0 ? (
-          <EmptyState
-            icon={HardHat}
-            title="Nenhum EPI registrado"
-            description="Registre a entrega de EPIs aos colaboradores"
-          />
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Colaborador</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>CA</TableHead>
-                  <TableHead>Qtd</TableHead>
-                  <TableHead>Entrega</TableHead>
-                  <TableHead>Validade</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {epis.map((epi) => (
-                  <TableRow key={epi.id}>
-                    <TableCell className="font-medium">{epi.usuario_nome}</TableCell>
-                    <TableCell>{epi.tipo_epi}</TableCell>
-                    <TableCell>{epi.ca_numero || "-"}</TableCell>
-                    <TableCell>{epi.quantidade}</TableCell>
-                    <TableCell>{format(new Date(epi.data_entrega), "dd/MM/yyyy")}</TableCell>
-                    <TableCell>
-                      {epi.data_validade ? format(new Date(epi.data_validade), "dd/MM/yyyy") : "-"}
-                      {getValidadeBadge(epi.data_validade)}
-                    </TableCell>
-                    <TableCell>{getStatusBadge(epi.status)}</TableCell>
-                    <TableCell>
-                      <TableActions
-                        onEdit={() => handleEdit(epi)}
-                        onDelete={() => handleDelete(epi.id)}
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+    </div>
   );
 }

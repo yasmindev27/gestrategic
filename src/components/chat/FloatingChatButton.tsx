@@ -1,9 +1,10 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { MessageSquare, X } from "lucide-react";
 import { ChatCorporativo } from "./ChatCorporativo";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 import {
   Sheet,
   SheetContent,
@@ -22,6 +23,7 @@ export const FloatingChatButton = ({ showOnModules, currentModule }: FloatingCha
   const [hasNewMessage, setHasNewMessage] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
+  const [pendingConversaId, setPendingConversaId] = useState<string | null>(null);
 
   // Buscar usuário atual
   useEffect(() => {
@@ -34,11 +36,17 @@ export const FloatingChatButton = ({ showOnModules, currentModule }: FloatingCha
     getUser();
   }, []);
 
+  const openChatOnConversa = useCallback((conversaId: string) => {
+    setPendingConversaId(conversaId);
+    setIsOpen(true);
+    setHasNewMessage(false);
+    setUnreadCount(0);
+  }, []);
+
   // Escutar novas mensagens em tempo real
   useEffect(() => {
     if (!userId) return;
 
-    // Buscar as conversas do usuário para escutar
     const setupRealtimeListeners = async () => {
       const { data: participacoes } = await supabase
         .from("chat_participantes")
@@ -65,18 +73,13 @@ export const FloatingChatButton = ({ showOnModules, currentModule }: FloatingCha
               conteudo: string;
             };
             
-            // Verificar se a mensagem é de uma conversa que o usuário participa
             if (!conversaIds.includes(newMessage.conversa_id)) return;
-            
-            // Não notificar mensagens próprias
             if (newMessage.remetente_id === userId) return;
 
-            // Se o chat está fechado, mostrar notificação
             if (!isOpen) {
               setHasNewMessage(true);
               setUnreadCount(prev => prev + 1);
 
-              // Buscar nome do remetente
               const { data: profile } = await supabase
                 .from("profiles")
                 .select("full_name")
@@ -85,10 +88,16 @@ export const FloatingChatButton = ({ showOnModules, currentModule }: FloatingCha
 
               const remetenteName = profile?.full_name || "Alguém";
               
-              // Mostrar toast de notificação
+              const conversaId = newMessage.conversa_id;
+              
               toast({
-                title: `💬 Nova mensagem de ${remetenteName}`,
-                description: newMessage.conteudo.substring(0, 50) + (newMessage.conteudo.length > 50 ? "..." : ""),
+                title: `Nova mensagem de ${remetenteName}`,
+                description: "Clique para abrir a conversa",
+                action: (
+                  <ToastAction altText="Abrir conversa" onClick={() => openChatOnConversa(conversaId)}>
+                    Abrir
+                  </ToastAction>
+                ),
               });
             }
           }
@@ -104,20 +113,22 @@ export const FloatingChatButton = ({ showOnModules, currentModule }: FloatingCha
     return () => {
       cleanup.then(fn => fn?.());
     };
-  }, [userId, isOpen]);
+  }, [userId, isOpen, openChatOnConversa]);
 
   // Limpar notificações quando abrir o chat
   useEffect(() => {
     if (isOpen) {
       setHasNewMessage(false);
       setUnreadCount(0);
+    } else {
+      // Limpar pendingConversaId ao fechar para não reabrir na mesma conversa
+      setPendingConversaId(null);
     }
   }, [isOpen]);
 
   // Não mostrar no próprio módulo de chat
   if (currentModule === "chat") return null;
 
-  // Se showOnModules está definido, verificar se o módulo atual está na lista
   if (showOnModules && currentModule && !showOnModules.includes(currentModule)) {
     return null;
   }
@@ -154,7 +165,7 @@ export const FloatingChatButton = ({ showOnModules, currentModule }: FloatingCha
         </SheetHeader>
         <div className="h-[calc(100vh-80px)] overflow-hidden">
           <div className="h-full p-4">
-            <ChatCorporativo />
+            <ChatCorporativo initialConversaId={pendingConversaId} />
           </div>
         </div>
       </SheetContent>

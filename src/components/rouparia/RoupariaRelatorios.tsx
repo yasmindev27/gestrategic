@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,7 @@ import {
   Trash2, 
   RotateCcw,
   Loader2,
+  Search,
   Download,
   FileSpreadsheet
 } from "lucide-react";
@@ -69,44 +71,61 @@ export function RoupariaRelatorios() {
   const [resumoPorTipo, setResumoPorTipo] = useState<ResumoTipo[]>([]);
   const [resumoPorCategoria, setResumoPorCategoria] = useState<{ nome: string; quantidade: number }[]>([]);
   
-  // Filtros
-  const [dataInicio, setDataInicio] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
-  const [dataFim, setDataFim] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
+  // Filtros - padrão: desde 01/09/2025 para cobrir dados importados
+  const [dataInicio, setDataInicio] = useState("2025-09-01");
+  const [dataFim, setDataFim] = useState(format(new Date(), "yyyy-MM-dd"));
   const [filterTipo, setFilterTipo] = useState<string>("all");
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
 
-    let query = supabase
-      .from("rouparia_movimentacoes")
-      .select(`
-        *,
-        rouparia_itens (
-          codigo_barras,
-          rouparia_categorias (nome)
-        )
-      `)
-      .gte("created_at", `${dataInicio}T00:00:00`)
-      .lte("created_at", `${dataFim}T23:59:59`)
-      .order("created_at", { ascending: false });
+    const PAGE_SIZE = 1000;
+    let allData: any[] = [];
+    let from = 0;
+    let hasMore = true;
 
-    if (filterTipo !== "all") {
-      query = query.eq("tipo_movimentacao", filterTipo);
+    while (hasMore) {
+      let query = supabase
+        .from("rouparia_movimentacoes")
+        .select(`
+          *,
+          rouparia_itens (
+            codigo_barras,
+            rouparia_categorias (nome)
+          )
+        `)
+        .gte("created_at", `${dataInicio}T00:00:00`)
+        .lte("created_at", `${dataFim}T23:59:59`)
+        .order("created_at", { ascending: false })
+        .range(from, from + PAGE_SIZE - 1);
+
+      if (filterTipo !== "all") {
+        query = query.eq("tipo_movimentacao", filterTipo);
+      }
+
+      const { data, error } = await query;
+      if (error || !data || data.length === 0) {
+        hasMore = false;
+      } else {
+        allData = [...allData, ...data];
+        from += PAGE_SIZE;
+        if (data.length < PAGE_SIZE) hasMore = false;
+      }
     }
 
-    const { data, error } = await query;
+    if (allData.length > 0) {
+      const typedData = allData as unknown as Movimentacao[];
+      setMovimentacoes(typedData);
 
-    if (!error && data) {
-      setMovimentacoes(data as unknown as Movimentacao[]);
-
-      // Calcular resumo por tipo
       const tipoMap: Record<string, number> = {};
       const categoriaMap: Record<string, number> = {};
 
-      (data as unknown as Movimentacao[]).forEach((mov) => {
+      typedData.forEach((mov) => {
         tipoMap[mov.tipo_movimentacao] = (tipoMap[mov.tipo_movimentacao] || 0) + mov.quantidade;
-        const catNome = mov.rouparia_itens.rouparia_categorias.nome;
-        categoriaMap[catNome] = (categoriaMap[catNome] || 0) + mov.quantidade;
+        const catNome = mov.rouparia_itens?.rouparia_categorias?.nome;
+        if (catNome) {
+          categoriaMap[catNome] = (categoriaMap[catNome] || 0) + mov.quantidade;
+        }
       });
 
       setResumoPorTipo(
@@ -119,6 +138,10 @@ export function RoupariaRelatorios() {
           .sort((a, b) => b.quantidade - a.quantidade)
           .slice(0, 10)
       );
+    } else {
+      setMovimentacoes([]);
+      setResumoPorTipo([]);
+      setResumoPorCategoria([]);
     }
 
     setIsLoading(false);
@@ -208,10 +231,11 @@ export function RoupariaRelatorios() {
                 90 dias
               </Button>
             </div>
-            <Button onClick={handleExportExcel} disabled={movimentacoes.length === 0}>
-              <FileSpreadsheet className="h-4 w-4 mr-2" />
-              Exportar Excel
+            <Button size="sm" onClick={fetchData} disabled={isLoading}>
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4 mr-1" />}
+              Filtrar
             </Button>
+            <ExportDropdown onExportExcel={handleExportExcel} disabled={movimentacoes.length === 0} />
           </div>
         </CardContent>
       </Card>

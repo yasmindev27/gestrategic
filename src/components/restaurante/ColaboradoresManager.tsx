@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -270,12 +271,13 @@ export const ColaboradoresManager = () => {
   };
 
   // Exportar PDF
-  const exportPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Colaboradores do Restaurante", 14, 15);
+  const exportPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Colaboradores do Restaurante');
+    
     doc.setFontSize(10);
-    doc.text(`Total: ${colaboradoresFiltrados.length} colaboradores`, 14, 22);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Total: ${colaboradoresFiltrados.length} colaboradores`, 14, 32);
     
     autoTable(doc, {
       head: [["Nome", "Matrícula", "Setor", "Cargo", "Status"]],
@@ -286,11 +288,12 @@ export const ColaboradoresManager = () => {
         c.cargo || "-",
         c.ativo ? "Ativo" : "Inativo",
       ]),
-      startY: 28,
+      startY: 38,
       styles: { fontSize: 9 },
+      margin: { bottom: 28 },
     });
     
-    doc.save(`colaboradores_restaurante_${format(new Date(), "yyyyMMdd")}.pdf`);
+    savePdfWithFooter(doc, 'Colaboradores do Restaurante', `colaboradores_restaurante_${format(new Date(), "yyyyMMdd")}`, logoImg);
     toast({ title: "Sucesso", description: "Arquivo PDF exportado!" });
   };
 
@@ -411,14 +414,7 @@ export const ColaboradoresManager = () => {
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button variant="outline" size="sm" onClick={exportExcel}>
-                <FileSpreadsheet className="h-4 w-4 mr-1" />
-                Excel
-              </Button>
-              <Button variant="outline" size="sm" onClick={exportPDF}>
-                <FileDown className="h-4 w-4 mr-1" />
-                PDF
-              </Button>
+              <ExportDropdown onExportExcel={exportExcel} onExportPDF={exportPDF} />
               {isAdmin && (
                 <>
                   <Button 

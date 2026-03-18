@@ -1,18 +1,26 @@
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Ambulance, LayoutDashboard, BedDouble, ExternalLink } from "lucide-react";
+import { Ambulance, LayoutDashboard, BedDouble, ExternalLink, Truck, Navigation, BarChart3 } from "lucide-react";
 import { NirDashboardModule } from "./NirDashboardModule";
 import { MapaLeitosModule } from "./MapaLeitosModule";
-import { SalusImportModule, ListaFaltantesSalus } from "@/components/nir";
+
+import { TransferenciasModule } from "@/components/nir/TransferenciasModule";
+import { NucleoTrackerModule } from "@/components/nir/nucleo-tracker/NucleoTrackerModule";
 import { useLogAccess } from "@/hooks/useLogAccess";
+import { useRealtimeSync, REALTIME_PRESETS } from "@/hooks/useRealtimeSync";
 import logoSusFacil from "@/assets/logo-susfacil.png";
 
-type NirView = "menu" | "dashboard" | "mapa-leitos";
+type NirView = "menu" | "dashboard" | "mapa-leitos" | "transferencias" | "relatorio";
 
-export const NirModule = () => {
+interface NirModuleProps {
+  onOpenExternal?: (url: string, title: string) => void;
+}
+
+export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
   const [currentView, setCurrentView] = useState<NirView>("menu");
   const { logAction } = useLogAccess();
+  useRealtimeSync(REALTIME_PRESETS.nir);
 
   useEffect(() => {
     logAction("acesso_modulo", "nir");
@@ -45,6 +53,27 @@ export const NirModule = () => {
     );
   }
 
+  if (currentView === "transferencias") {
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" onClick={() => handleViewChange("menu")} className="mb-2">
+          ← Voltar ao NIR
+        </Button>
+        <TransferenciasModule />
+      </div>
+    );
+  }
+
+  if (currentView === "relatorio") {
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" onClick={() => handleViewChange("menu")} className="mb-2">
+          ← Voltar ao NIR
+        </Button>
+        <NucleoTrackerModule />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -56,10 +85,10 @@ export const NirModule = () => {
           </h2>
           <p className="text-muted-foreground">Gestão de leitos e regulação hospitalar</p>
         </div>
-        <SalusImportModule />
+        
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card 
           className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
           onClick={() => handleViewChange("dashboard")}
@@ -102,7 +131,51 @@ export const NirModule = () => {
 
         <Card 
           className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
-          onClick={() => window.open("https://www.susfacil.mg.gov.br/administrativo/seguranca/GEN/gen_acesso.php?ini=1", "_blank")}
+          onClick={() => handleViewChange("transferencias")}
+        >
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
+              <Truck className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle className="mt-4">Transferências</CardTitle>
+            <CardDescription>
+              Solicitação e acompanhamento de transferências
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Button variant="outline" className="w-full">
+              Acessar Transferências
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card
+          className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
+          onClick={() => window.open("/transporte", "_blank")}
+        >
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
+              <Navigation className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle className="mt-4">Área do Motorista</CardTitle>
+            <CardDescription>
+              Painel mobile para motoristas em rota
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Button variant="outline" className="w-full gap-2">
+              <ExternalLink className="h-4 w-4" />
+              Abrir Painel
+            </Button>
+          </CardContent>
+        </Card>
+
+        <Card
+          className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
+          onClick={() => {
+            const url = "https://www.susfacil.mg.gov.br/administrativo/seguranca/GEN/gen_acesso.php?ini=1";
+            window.open(url, "_blank", "noopener,noreferrer");
+          }}
         >
           <CardHeader className="text-center pb-2">
             <div className="mx-auto p-4 bg-white rounded-lg w-fit group-hover:shadow-md transition-all">
@@ -120,10 +193,28 @@ export const NirModule = () => {
             </Button>
           </CardContent>
         </Card>
+
+        <Card 
+          className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
+          onClick={() => handleViewChange("relatorio")}
+        >
+          <CardHeader className="text-center pb-2">
+            <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
+              <BarChart3 className="h-8 w-8 text-primary" />
+            </div>
+            <CardTitle className="mt-4">Relatório</CardTitle>
+            <CardDescription>
+              Produtividade e indicadores da equipe NIR
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Button variant="outline" className="w-full">
+              Acessar Relatório
+            </Button>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Lista de Prontuários Faltantes - Salus */}
-      <ListaFaltantesSalus />
     </div>
   );
 };

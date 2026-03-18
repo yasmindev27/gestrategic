@@ -3,15 +3,30 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Shirt, Trash2, Edit } from "lucide-react";
+import { Shirt, Plus, Trash2, Edit, AlertCircle, Package, CheckCircle2, Clock, Warehouse } from "lucide-react";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
+import { StatCard } from "@/components/ui/stat-card";
+import { SearchInput } from "@/components/ui/search-input";
+import { LoadingState, LoadingSpinner } from "@/components/ui/loading-state";
+import { EmptyState } from "@/components/ui/empty-state";
+import { InventarioModule } from "@/components/modules/InventarioModule";
 
 interface Uniforme {
   id: string;
@@ -31,6 +46,8 @@ interface Uniforme {
 interface Usuario {
   user_id: string;
   full_name: string;
+  cargo: string | null;
+  setor: string | null;
 }
 
 const TIPOS_UNIFORME = [
@@ -54,17 +71,25 @@ export function UniformesControl() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [currentUserName, setCurrentUserName] = useState<string>("");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [buscaColab, setBuscaColab] = useState("");
+  const [showColabList, setShowColabList] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [movResumo, setMovResumo] = useState<{ usuario_nome: string; responsavel_entrega: string; produto: string; entradas: number; saidas: number }[]>([]);
   const { toast } = useToast();
 
   const [formData, setFormData] = useState({
     usuario_id: "",
+    usuario_nome: "",
     tipo_uniforme: "",
     tamanho: "",
     quantidade: 1,
     data_entrega: format(new Date(), "yyyy-MM-dd"),
     data_devolucao: "",
     status: "entregue",
-    observacao: ""
+    observacao: "",
+    cargo: "",
+    setor: "",
   });
 
   useEffect(() => {
@@ -81,19 +106,14 @@ export function UniformesControl() {
           .select("full_name")
           .eq("user_id", user.id)
           .single();
-        if (profile) {
-          setCurrentUserName(profile.full_name);
-        }
+        if (profile) setCurrentUserName(profile.full_name);
       }
 
       const { data: profilesData } = await supabase
         .from("profiles")
-        .select("user_id, full_name")
+        .select("user_id, full_name, cargo, setor")
         .order("full_name");
-      
-      if (profilesData) {
-        setUsuarios(profilesData);
-      }
+      if (profilesData) setUsuarios(profilesData);
 
       const { data: uniformesData, error } = await supabase
         .from("uniformes_seguranca")
@@ -102,13 +122,53 @@ export function UniformesControl() {
 
       if (error) throw error;
       setUniformes(uniformesData || []);
+
+      // Build resumo from movimentacoes_estoque for seguranca_uniformes
+      const { data: movData } = await supabase
+        .from("movimentacoes_estoque")
+        .select("*, produtos(nome)")
+        .eq("setor", "seguranca_uniformes");
+
+      if (movData && movData.length > 0) {
+        // Resolve usuario_id -> profile name (responsável pela entrega)
+        const userIds = [...new Set(movData.map(m => m.usuario_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, full_name")
+          .in("user_id", userIds);
+        const nameMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+
+        const resumoMap = new Map<string, { usuario_nome: string; responsavel_entrega: string; produto: string; entradas: number; saidas: number }>();
+        movData.forEach(m => {
+          // Extract collaborator name from observacao: [COLAB:Name] or fallback to observacao text
+          let colabName = "-";
+          const colabMatch = (m.observacao || "").match(/\[COLAB:(.+?)\]/);
+          if (colabMatch) {
+            colabName = colabMatch[1];
+          } else if (m.observacao && m.observacao.trim()) {
+            colabName = m.observacao.trim();
+          }
+
+          const responsavel = nameMap.get(m.usuario_id) || "-";
+          const produto = (m.produtos as any)?.nome || "-";
+          const key = `${colabName}_${m.produto_id}`;
+          const existing = resumoMap.get(key) || {
+            usuario_nome: colabName,
+            responsavel_entrega: responsavel,
+            produto,
+            entradas: 0,
+            saidas: 0,
+          };
+          if (m.tipo === 'entrada') existing.entradas += m.quantidade;
+          else existing.saidas += m.quantidade;
+          existing.responsavel_entrega = responsavel;
+          resumoMap.set(key, existing);
+        });
+        setMovResumo(Array.from(resumoMap.values()).sort((a, b) => a.usuario_nome.localeCompare(b.usuario_nome)));
+      }
     } catch (error) {
       console.error("Erro ao carregar dados:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível carregar os uniformes.",
-        variant: "destructive"
-      });
+      toast({ title: "Erro", description: "Não foi possível carregar os uniformes.", variant: "destructive" });
     } finally {
       setLoading(false);
     }
@@ -116,21 +176,17 @@ export function UniformesControl() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const selectedUser = usuarios.find(u => u.user_id === formData.usuario_id);
-    if (!selectedUser || !currentUserId) {
-      toast({
-        title: "Erro",
-        description: "Selecione um colaborador.",
-        variant: "destructive"
-      });
+
+    if (!formData.usuario_id || !formData.tipo_uniforme || !formData.tamanho) {
+      toast({ title: "Erro", description: "Preencha todos os campos obrigatórios.", variant: "destructive" });
       return;
     }
 
+    setIsSubmitting(true);
     try {
       const payload = {
         usuario_id: formData.usuario_id,
-        usuario_nome: selectedUser.full_name,
+        usuario_nome: formData.usuario_nome,
         tipo_uniforme: formData.tipo_uniforme,
         tamanho: formData.tamanho,
         quantidade: formData.quantidade,
@@ -139,22 +195,17 @@ export function UniformesControl() {
         status: formData.status,
         observacao: formData.observacao || null,
         registrado_por: currentUserId,
-        registrado_por_nome: currentUserName
+        registrado_por_nome: currentUserName,
       };
 
       if (editingId) {
-        const { error } = await supabase
-          .from("uniformes_seguranca")
-          .update(payload)
-          .eq("id", editingId);
+        const { error } = await supabase.from("uniformes_seguranca").update(payload).eq("id", editingId);
         if (error) throw error;
-        toast({ title: "Sucesso", description: "Uniforme atualizado!" });
+        toast({ title: "Sucesso", description: "Uniforme atualizado com sucesso." });
       } else {
-        const { error } = await supabase
-          .from("uniformes_seguranca")
-          .insert(payload);
+        const { error } = await supabase.from("uniformes_seguranca").insert(payload);
         if (error) throw error;
-        toast({ title: "Sucesso", description: "Uniforme registrado!" });
+        toast({ title: "Sucesso", description: "Uniforme registrado com sucesso." });
       }
 
       setDialogOpen(false);
@@ -162,271 +213,329 @@ export function UniformesControl() {
       fetchData();
     } catch (error) {
       console.error("Erro ao salvar:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível salvar o uniforme.",
-        variant: "destructive"
-      });
+      toast({ title: "Erro", description: "Não foi possível salvar o uniforme.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleEdit = (uniforme: Uniforme) => {
+    const user = usuarios.find(u => u.user_id === uniforme.usuario_id);
     setFormData({
       usuario_id: uniforme.usuario_id,
+      usuario_nome: uniforme.usuario_nome,
       tipo_uniforme: uniforme.tipo_uniforme,
       tamanho: uniforme.tamanho,
       quantidade: uniforme.quantidade,
       data_entrega: uniforme.data_entrega,
       data_devolucao: uniforme.data_devolucao || "",
       status: uniforme.status,
-      observacao: uniforme.observacao || ""
+      observacao: uniforme.observacao || "",
+      cargo: user?.cargo || "",
+      setor: user?.setor || "",
     });
+    setBuscaColab(uniforme.usuario_nome);
     setEditingId(uniforme.id);
     setDialogOpen(true);
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Deseja excluir este registro?")) return;
-    
     try {
-      const { error } = await supabase
-        .from("uniformes_seguranca")
-        .delete()
-        .eq("id", id);
+      const { error } = await supabase.from("uniformes_seguranca").delete().eq("id", id);
       if (error) throw error;
       toast({ title: "Sucesso", description: "Registro excluído!" });
       fetchData();
     } catch (error) {
       console.error("Erro ao excluir:", error);
-      toast({
-        title: "Erro",
-        description: "Não foi possível excluir.",
-        variant: "destructive"
-      });
+      toast({ title: "Erro", description: "Não foi possível excluir.", variant: "destructive" });
     }
   };
 
   const resetForm = () => {
     setFormData({
       usuario_id: "",
+      usuario_nome: "",
       tipo_uniforme: "",
       tamanho: "",
       quantidade: 1,
       data_entrega: format(new Date(), "yyyy-MM-dd"),
       data_devolucao: "",
       status: "entregue",
-      observacao: ""
+      observacao: "",
+      cargo: "",
+      setor: "",
     });
+    setBuscaColab("");
     setEditingId(null);
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
-      entregue: "default",
-      devolvido: "secondary",
-      extraviado: "destructive",
-      desgastado: "outline"
-    };
-    return <Badge variant={variants[status] || "default"}>{status}</Badge>;
+  const handleSelectColab = (user: Usuario) => {
+    setFormData({
+      ...formData,
+      usuario_id: user.user_id,
+      usuario_nome: user.full_name,
+      cargo: user.cargo || "",
+      setor: user.setor || "",
+    });
+    setBuscaColab(user.full_name);
+    setShowColabList(false);
   };
 
+  const colabsFiltrados = usuarios.filter(u =>
+    u.full_name.toLowerCase().includes(buscaColab.toLowerCase())
+  );
+
+  const getStatusBadge = (status: string) => {
+    const config: Record<string, { variant: "default" | "secondary" | "destructive" | "outline"; label: string }> = {
+      entregue: { variant: "default", label: "Entregue" },
+      devolvido: { variant: "secondary", label: "Devolvido" },
+      extraviado: { variant: "destructive", label: "Extraviado" },
+      desgastado: { variant: "outline", label: "Desgastado" },
+    };
+    const s = config[status] || { variant: "default", label: status };
+    return <Badge variant={s.variant}>{s.label}</Badge>;
+  };
+
+  const filteredUniformes = uniformes.filter(u =>
+    u.usuario_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    u.tipo_uniforme.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Stats
+  const totalEntregues = uniformes.filter(u => u.status === "entregue").length;
+  const totalDevolvidos = uniformes.filter(u => u.status === "devolvido").length;
+  const totalExtraviados = uniformes.filter(u => u.status === "extraviado" || u.status === "desgastado").length;
+  const totalRegistros = uniformes.length;
+
   if (loading) {
-    return <div className="flex items-center justify-center p-8">Carregando...</div>;
+    return <LoadingState message="Carregando uniformes..." />;
   }
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="flex items-center gap-2">
-          <Shirt className="h-5 w-5" />
-          Controle de Uniformes
-        </CardTitle>
-        <Dialog open={dialogOpen} onOpenChange={(open) => {
-          setDialogOpen(open);
-          if (!open) resetForm();
-        }}>
-          <DialogTrigger asChild>
-            <Button size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Novo Registro
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>
-                {editingId ? "Editar Uniforme" : "Registrar Uniforme"}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+    <div className="space-y-6">
+
+      <Tabs defaultValue="inventario" onValueChange={(v) => { if (v === 'resumo') fetchData(); }}>
+        <TabsList>
+          <TabsTrigger value="inventario">
+            <Warehouse className="h-4 w-4 mr-2" />
+            Inventário
+          </TabsTrigger>
+          <TabsTrigger value="resumo">
+            <Package className="h-4 w-4 mr-2" />
+            Resumo por Colaborador
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="inventario" className="mt-4">
+          <InventarioModule setor="seguranca_uniformes" />
+        </TabsContent>
+
+
+        <TabsContent value="resumo" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Resumo por Colaborador</CardTitle>
+              <CardDescription>Movimentações de uniformes por colaborador e tipo de produto</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {movResumo.length === 0 ? (
+                <p className="text-muted-foreground text-sm text-center py-4">Nenhuma movimentação registrada.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Colaborador</TableHead>
+                        <TableHead>Responsável pela Entrega</TableHead>
+                        <TableHead>Produto / Uniforme</TableHead>
+                        <TableHead className="text-center">Entradas</TableHead>
+                        <TableHead className="text-center">Saídas</TableHead>
+                        <TableHead className="text-center">Saldo</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {movResumo.map((r, i) => (
+                        <TableRow key={i}>
+                          <TableCell className="font-medium">{r.usuario_nome}</TableCell>
+                          <TableCell>{r.responsavel_entrega}</TableCell>
+                          <TableCell>{r.produto}</TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="default">{r.entradas}</Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="destructive">{r.saidas}</Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Badge variant="secondary">{r.entradas - r.saidas}</Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* Dialog de Registro */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) resetForm(); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{editingId ? "Editar Registro" : "Novo Registro de Uniforme"}</DialogTitle>
+            <DialogDescription>
+              {editingId ? "Atualize as informações do registro." : "Registre a entrega de uniforme para um colaborador."}
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+            {/* Busca de colaborador */}
+            <div className="space-y-2 relative">
+              <Label>Colaborador *</Label>
+              <Input
+                value={buscaColab}
+                onChange={(e) => {
+                  setBuscaColab(e.target.value);
+                  setShowColabList(true);
+                  if (!e.target.value) {
+                    setFormData({ ...formData, usuario_id: "", usuario_nome: "", cargo: "", setor: "" });
+                  }
+                }}
+                onFocus={() => buscaColab && setShowColabList(true)}
+                placeholder="Digite o nome do colaborador..."
+              />
+              {showColabList && buscaColab.length >= 2 && (
+                <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                  {colabsFiltrados.slice(0, 10).map((u) => (
+                    <button
+                      key={u.user_id}
+                      type="button"
+                      className="w-full text-left px-3 py-2 hover:bg-accent text-sm flex justify-between"
+                      onClick={() => handleSelectColab(u)}
+                    >
+                      <span className="font-medium">{u.full_name}</span>
+                      <span className="text-muted-foreground text-xs">{u.cargo || ""}</span>
+                    </button>
+                  ))}
+                  {colabsFiltrados.length === 0 && (
+                    <div className="px-3 py-2 text-sm text-muted-foreground">Nenhum colaborador encontrado</div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Cargo e Setor readonly */}
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label>Colaborador</Label>
+                <Label>Cargo</Label>
+                <Input value={formData.cargo} readOnly className="bg-muted" />
+              </div>
+              <div className="space-y-2">
+                <Label>Setor</Label>
+                <Input value={formData.setor} readOnly className="bg-muted" />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Tipo de Uniforme *</Label>
                 <Select
-                  value={formData.usuario_id}
-                  onValueChange={(v) => setFormData({ ...formData, usuario_id: v })}
+                  value={formData.tipo_uniforme}
+                  onValueChange={(v) => setFormData({ ...formData, tipo_uniforme: v })}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Selecione o colaborador" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
                   <SelectContent>
-                    {usuarios.map((u) => (
-                      <SelectItem key={u.user_id} value={u.user_id}>
-                        {u.full_name}
-                      </SelectItem>
+                    {TIPOS_UNIFORME.map((tipo) => (
+                      <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Tipo de Uniforme</Label>
-                  <Select
-                    value={formData.tipo_uniforme}
-                    onValueChange={(v) => setFormData({ ...formData, tipo_uniforme: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TIPOS_UNIFORME.map((tipo) => (
-                        <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>Tamanho</Label>
-                  <Select
-                    value={formData.tamanho}
-                    onValueChange={(v) => setFormData({ ...formData, tamanho: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {TAMANHOS.map((tam) => (
-                        <SelectItem key={tam} value={tam}>{tam}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Quantidade</Label>
-                  <Input
-                    type="number"
-                    min={1}
-                    value={formData.quantidade}
-                    onChange={(e) => setFormData({ ...formData, quantidade: parseInt(e.target.value) || 1 })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(v) => setFormData({ ...formData, status: v })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="entregue">Entregue</SelectItem>
-                      <SelectItem value="devolvido">Devolvido</SelectItem>
-                      <SelectItem value="extraviado">Extraviado</SelectItem>
-                      <SelectItem value="desgastado">Desgastado</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Data de Entrega</Label>
-                  <Input
-                    type="date"
-                    value={formData.data_entrega}
-                    onChange={(e) => setFormData({ ...formData, data_entrega: e.target.value })}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Data de Devolução</Label>
-                  <Input
-                    type="date"
-                    value={formData.data_devolucao}
-                    onChange={(e) => setFormData({ ...formData, data_devolucao: e.target.value })}
-                  />
-                </div>
-              </div>
-
               <div className="space-y-2">
-                <Label>Observação</Label>
-                <Textarea
-                  value={formData.observacao}
-                  onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
-                  placeholder="Observações adicionais..."
+                <Label>Tamanho *</Label>
+                <Select
+                  value={formData.tamanho}
+                  onValueChange={(v) => setFormData({ ...formData, tamanho: v })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                  <SelectContent>
+                    {TAMANHOS.map((tam) => (
+                      <SelectItem key={tam} value={tam}>{tam}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label>Quantidade</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  value={formData.quantidade}
+                  onChange={(e) => setFormData({ ...formData, quantidade: parseInt(e.target.value) || 1 })}
                 />
               </div>
-
-              <div className="flex justify-end gap-2">
-                <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                  Cancelar
-                </Button>
-                <Button type="submit">
-                  {editingId ? "Atualizar" : "Registrar"}
-                </Button>
+              <div className="space-y-2">
+                <Label>Data Entrega *</Label>
+                <Input
+                  type="date"
+                  value={formData.data_entrega}
+                  onChange={(e) => setFormData({ ...formData, data_entrega: e.target.value })}
+                  required
+                />
               </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </CardHeader>
-      <CardContent>
-        {uniformes.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            Nenhum uniforme registrado.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Colaborador</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Tamanho</TableHead>
-                  <TableHead>Qtd</TableHead>
-                  <TableHead>Data Entrega</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Ações</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {uniformes.map((uniforme) => (
-                  <TableRow key={uniforme.id}>
-                    <TableCell className="font-medium">{uniforme.usuario_nome}</TableCell>
-                    <TableCell>{uniforme.tipo_uniforme}</TableCell>
-                    <TableCell>{uniforme.tamanho}</TableCell>
-                    <TableCell>{uniforme.quantidade}</TableCell>
-                    <TableCell>{format(new Date(uniforme.data_entrega), "dd/MM/yyyy")}</TableCell>
-                    <TableCell>{getStatusBadge(uniforme.status)}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => handleEdit(uniforme)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button size="icon" variant="ghost" onClick={() => handleDelete(uniforme.id)}>
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              <div className="space-y-2">
+                <Label>Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(v) => setFormData({ ...formData, status: v })}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="entregue">Entregue</SelectItem>
+                    <SelectItem value="devolvido">Devolvido</SelectItem>
+                    <SelectItem value="extraviado">Extraviado</SelectItem>
+                    <SelectItem value="desgastado">Desgastado</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {formData.status === "devolvido" && (
+              <div className="space-y-2">
+                <Label>Data de Devolução</Label>
+                <Input
+                  type="date"
+                  value={formData.data_devolucao}
+                  onChange={(e) => setFormData({ ...formData, data_devolucao: e.target.value })}
+                />
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <Label>Observação</Label>
+              <Textarea
+                value={formData.observacao}
+                onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
+                placeholder="Observações adicionais..."
+              />
+            </div>
+
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <LoadingSpinner className="mr-2" />}
+                {editingId ? "Atualizar" : "Registrar"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

@@ -3,14 +3,18 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Calendar, Package } from "lucide-react";
+import { AlertCircle, Calendar, Package, FlaskConical } from "lucide-react";
 import { InventarioModule } from "./InventarioModule";
-import { EscalaLaboratorioModule } from "./EscalaLaboratorioModule";
+import { EscalaTecEnfermagem } from "@/components/enfermagem";
+import ExternalViewer from "@/components/ExternalViewer";
+
+const RESULTADOS_URL = "https://portal.worklabweb.com.br/resultados-on-line/2079";
 
 export const LaboratorioModule = () => {
-  const { isAdmin, isLaboratorio, isLoading } = useUserRole();
+  const { isAdmin, isLaboratorio, isMedicos, isGestor, isLoading } = useUserRole();
   const { logAction } = useLogAccess();
-  const [activeTab, setActiveTab] = useState("escala");
+  const isMedicosOnly = (isMedicos || isGestor) && !isAdmin && !isLaboratorio;
+  const [activeTab, setActiveTab] = useState(isMedicosOnly ? "resultados" : "escala");
   
   useEffect(() => {
     logAction("acesso_modulo", "laboratorio");
@@ -21,7 +25,7 @@ export const LaboratorioModule = () => {
     logAction("navegacao_aba", "laboratorio", { aba: value });
   };
   
-  const hasAccess = isAdmin || isLaboratorio;
+  const hasAccess = isAdmin || isLaboratorio || isMedicos || isGestor;
 
   if (isLoading) {
     return (
@@ -52,29 +56,54 @@ export const LaboratorioModule = () => {
             Central do Laboratório
           </h2>
           <p className="text-muted-foreground">
-            Gerencie escalas mensais e inventário do laboratório
+            Gerencie escalas mensais, inventário e resultados de exames
           </p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <TabsList className="grid w-full grid-cols-2 max-w-md">
-          <TabsTrigger value="escala" className="flex items-center gap-2">
-            <Calendar className="h-4 w-4" />
-            Escala Mensal
-          </TabsTrigger>
-          <TabsTrigger value="inventario" className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            Inventário
-          </TabsTrigger>
-        </TabsList>
+        {!isMedicosOnly ? (
+          <TabsList className="grid w-full grid-cols-3 max-w-lg">
+            <TabsTrigger value="escala" className="flex items-center gap-2">
+              <Calendar className="h-4 w-4" />
+              Escala Mensal
+            </TabsTrigger>
+            <TabsTrigger value="inventario" className="flex items-center gap-2">
+              <Package className="h-4 w-4" />
+              Inventário
+            </TabsTrigger>
+            <TabsTrigger value="resultados" className="flex items-center gap-2">
+              <FlaskConical className="h-4 w-4" />
+              Resultados
+            </TabsTrigger>
+          </TabsList>
+        ) : (
+          <TabsList className="max-w-xs">
+            <TabsTrigger value="resultados" className="flex items-center gap-2">
+              <FlaskConical className="h-4 w-4" />
+              Resultados de Exames
+            </TabsTrigger>
+          </TabsList>
+        )}
 
-        <TabsContent value="escala" className="mt-6">
-          <EscalaLaboratorioModule />
-        </TabsContent>
+        {!isMedicosOnly && (
+          <>
+            <TabsContent value="escala" className="mt-6">
+              <EscalaTecEnfermagem tipo="laboratorio" />
+            </TabsContent>
 
-        <TabsContent value="inventario" className="mt-6">
-          <InventarioModule setor="laboratorio" />
+            <TabsContent value="inventario" className="mt-6">
+              <InventarioModule setor="laboratorio" />
+            </TabsContent>
+          </>
+        )}
+
+        <TabsContent value="resultados" className="mt-6">
+          <ExternalViewer
+            url={RESULTADOS_URL}
+            title="Resultados de Exames - Laboratório Villac"
+            onClose={() => setActiveTab(isMedicosOnly ? "resultados" : "escala")}
+          />
         </TabsContent>
       </Tabs>
     </div>

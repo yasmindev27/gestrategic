@@ -5,3 +5,4 @@ export * from './MinhasEscalas';
 export * from './AprovacaoTrocas';
 export * from './NovaEscalaDialog';
 export * from './HistoricoTrocas';
+export * from './EscalaTecEnfermagem';

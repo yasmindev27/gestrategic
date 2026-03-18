@@ -66,11 +66,11 @@ export function RoupariaModule() {
             </TabsContent>
 
             <TabsContent value="estoque" className="mt-6">
-              <RoupariaEstoque canManage={canManage} />
+              <RoupariaEstoque canManage={canManage} isAdmin={isAdmin} />
             </TabsContent>
 
             <TabsContent value="categorias" className="mt-6">
-              <RoupariaCategorias canManage={canManage} />
+              <RoupariaCategorias canManage={canManage} isAdmin={isAdmin} />
             </TabsContent>
 
             <TabsContent value="relatorios" className="mt-6">

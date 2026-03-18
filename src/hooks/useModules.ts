@@ -28,22 +28,27 @@ export const useModules = () => {
     isLaboratorio,
     isNir,
     isRecepcao,
+    isClassificacao,
     isFaturamento,
     isRHDP,
     isRestaurante,
     isAssistenciaSocial,
     isQualidade,
+    isMedicos,
+    isEnfermagem,
+    isSeguranca,
+    isRouparia,
   } = useUserRole();
 
   // Memoized module access checks
   const moduleAccess = useMemo(() => ({
     dashboard: true, // Everyone can access dashboard
     nir: isAdmin || isNir,
-    faturamento: isAdmin || isFaturamento,
-    mapaLeitos: isAdmin || isNir,
-    enfermagem: isAdmin || isGestor,
-    laboratorio: isAdmin || isLaboratorio,
-    restaurante: isAdmin || isRestaurante,
+    faturamento: isAdmin || isFaturamento || isRecepcao || isClassificacao,
+    mapaLeitos: isAdmin || isNir || isEnfermagem || isAssistenciaSocial,
+    enfermagem: isAdmin || isGestor || isEnfermagem,
+    laboratorio: isAdmin || isLaboratorio || isMedicos || isGestor,
+    restaurante: isAdmin || isRestaurante || isEnfermagem,
     rhdp: isAdmin || isRHDP,
     assistenciaSocial: isAdmin || isAssistenciaSocial,
     qualidade: isAdmin || isQualidade,
@@ -51,16 +56,24 @@ export const useModules = () => {
     tecnicoTI: isAdmin || isTI,
     tecnicoManutencao: isAdmin || isManutencao,
     tecnicoEngenharia: isAdmin || isEngenhariaCinica,
+    medicos: isAdmin || isMedicos,
+    rouparia: isAdmin || isRouparia,
     admin: isAdmin,
+    gerencia: isAdmin || isGestor,
     logs: isAdmin,
     agenda: true,
     equipe: isAdmin || isGestor,
     chat: true,
     abrirChamado: true,
+    colaborador: true,
+    lms: true,
+    segurancaPatrimonial: isAdmin || isSeguranca,
+    segurancaTrabalho: isAdmin || isSeguranca,
   }), [
     isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
-    isLaboratorio, isNir, isRecepcao, isFaturamento, isRHDP,
-    isRestaurante, isAssistenciaSocial, isQualidade
+    isLaboratorio, isNir, isRecepcao, isClassificacao, isFaturamento, isRHDP,
+    isRestaurante, isAssistenciaSocial, isQualidade, isMedicos, isEnfermagem,
+    isSeguranca, isRouparia
   ]);
 
   const canAccessModule = (moduleId: string): boolean => {

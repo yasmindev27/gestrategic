@@ -1,15 +1,21 @@
 import { ReactNode, Suspense, memo } from "react";
 import { Loader2 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
-import GreetingHeader from "@/components/GreetingHeader";
+import TopHeader from "@/components/layout/TopHeader";
+import FooterBar from "@/components/layout/FooterBar";
 import { FloatingChatButton } from "@/components/chat/FloatingChatButton";
+import { FloatingSegurancaButton } from "@/components/seguranca/FloatingSegurancaButton";
+import { GlobalSecurityAlarm } from "@/components/seguranca/GlobalSecurityAlarm";
+import { PendenciasAlertSystem } from "@/components/seguranca/PendenciasAlertSystem";
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
   activeSection: string;
   onSectionChange: (section: string) => void;
+  onOpenExternal?: (url: string, title: string) => void;
   children: ReactNode;
   showFloatingChat?: boolean;
+  fullContent?: boolean;
 }
 
 // Optimized loading fallback
@@ -31,27 +37,45 @@ PageLoader.displayName = "PageLoader";
 const DashboardLayout = memo(({
   activeSection,
   onSectionChange,
+  onOpenExternal,
   children,
   showFloatingChat = true,
+  fullContent = false,
 }: DashboardLayoutProps) => {
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar activeSection={activeSection} onSectionChange={onSectionChange} />
+      <GlobalSecurityAlarm />
+      <PendenciasAlertSystem />
+      <Sidebar activeSection={activeSection} onSectionChange={onSectionChange} onOpenExternal={onOpenExternal} />
       
-      <main className="flex-1 p-6 overflow-auto">
-        <div className="max-w-7xl mx-auto space-y-6">
-          <GreetingHeader />
-          
-          <Suspense fallback={<ModuleLoader />}>
-            {children}
-          </Suspense>
-        </div>
+      <div className="flex-1 flex flex-col min-h-screen">
+        <TopHeader />
+        
+        {fullContent ? (
+          <main className="flex-1 overflow-hidden">
+            <Suspense fallback={<ModuleLoader />}>
+              {children}
+            </Suspense>
+          </main>
+        ) : (
+          <main className="flex-1 p-6 overflow-auto">
+            <div className="max-w-7xl mx-auto space-y-6">
+              <Suspense fallback={<ModuleLoader />}>
+                {children}
+              </Suspense>
+            </div>
 
-        {/* Floating chat button */}
-        {showFloatingChat && activeSection !== "chat" && (
-          <FloatingChatButton currentModule={activeSection} />
+            {showFloatingChat && activeSection !== "chat" && (
+              <>
+                <FloatingSegurancaButton />
+                <FloatingChatButton currentModule={activeSection} />
+              </>
+            )}
+          </main>
         )}
-      </main>
+        
+        <FooterBar />
+      </div>
     </div>
   );
 });

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
@@ -48,7 +48,8 @@ import {
   History,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, subDays, parseISO } from "date-fns";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { ptBR } from "date-fns/locale";
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
 import { StatCard } from "@/components/ui/stat-card";
@@ -57,7 +58,7 @@ import { LoadingState, LoadingSpinner } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
 
 interface InventarioModuleProps {
-  setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'laboratorio' | 'nir';
+  setor: 'ti' | 'manutencao' | 'engenharia_clinica' | 'laboratorio' | 'nir' | 'seguranca_uniformes' | 'seguranca_epis';
 }
 
 interface Produto {
@@ -84,8 +85,10 @@ interface Movimentacao {
   motivo: string | null;
   observacao: string | null;
   setor: string;
+  usuario_id: string;
   created_at: string;
   produtos?: { nome: string };
+  usuario_nome?: string;
 }
 
 const setorLabels: Record<string, string> = {
@@ -94,7 +97,11 @@ const setorLabels: Record<string, string> = {
   engenharia_clinica: "Engenharia Clínica",
   laboratorio: "Laboratório",
   nir: "NIR",
+  seguranca_uniformes: "Uniformes",
+  seguranca_epis: "EPIs",
 };
+
+const isSegurancaSetor = (s: string) => s === 'seguranca_uniformes' || s === 'seguranca_epis';
 
 export const InventarioModule = ({ setor }: InventarioModuleProps) => {
   const { role, isLoading: isLoadingRole } = useUserRole();
@@ -111,6 +118,12 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
   const [selectedProduto, setSelectedProduto] = useState<Produto | null>(null);
   const [movimentacaoTipo, setMovimentacaoTipo] = useState<'entrada' | 'saida'>('entrada');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Colaborador selection for uniformes
+  const [colaboradores, setColaboradores] = useState<{ user_id: string; full_name: string }[]>([]);
+  const [buscaColab, setBuscaColab] = useState("");
+  const [showColabList, setShowColabList] = useState(false);
+  const [selectedColab, setSelectedColab] = useState<{ user_id: string; full_name: string } | null>(null);
   
   const [productForm, setProductForm] = useState({
     nome: "",
@@ -121,6 +134,8 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
     quantidade_minima: 0,
     quantidade_atual: 0,
     localizacao: "",
+    numero_ca: "",
+    data_validade: "",
   });
 
   const [movForm, setMovForm] = useState({
@@ -129,13 +144,22 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
     observacao: "",
   });
 
-  const hasAccess = role === 'admin' || role === setor;
+  const hasAccess = role === 'admin' || role === setor || (isSegurancaSetor(setor) && role === 'seguranca');
 
   useEffect(() => {
     fetchProdutos();
     fetchMovimentacoes();
+    if (isSegurancaSetor(setor)) fetchColaboradores();
     logAction("acesso", `inventario_${setor}`);
   }, [setor]);
+
+  const fetchColaboradores = async () => {
+    const { data } = await supabase
+      .from("profiles")
+      .select("user_id, full_name")
+      .order("full_name");
+    if (data) setColaboradores(data);
+  };
 
   const fetchProdutos = async () => {
     setIsLoading(true);
@@ -171,7 +195,18 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
         .limit(50);
 
       if (error) throw error;
-      setMovimentacoes(data || []);
+      
+      // Fetch user names for movimentações
+      const userIds = [...new Set((data || []).map(m => m.usuario_id))];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, full_name")
+        .in("user_id", userIds);
+      
+      const nameMap = new Map((profiles || []).map(p => [p.user_id, p.full_name]));
+      const enriched = (data || []).map(m => ({ ...m, usuario_nome: nameMap.get(m.usuario_id) || "-" }));
+      
+      setMovimentacoes(enriched);
     } catch (error) {
       console.error("Error fetching movimentacoes:", error);
     }
@@ -191,13 +226,34 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       
+      const baseData = {
+            ...productForm,
+            codigo: productForm.codigo?.trim() || null,
+            descricao: productForm.descricao?.trim() || null,
+            categoria: productForm.categoria?.trim() || null,
+            localizacao: productForm.localizacao?.trim() || null,
+          };
+
+      const insertData = isSegurancaSetor(setor) 
+        ? {
+            ...baseData,
+            unidade_medida: "UN",
+            localizacao: "Armário de Uniformes",
+            quantidade_minima: 0,
+            setor_responsavel: setor,
+            created_by: user?.id,
+            numero_ca: productForm.numero_ca?.trim() || null,
+            data_validade: productForm.data_validade || null,
+          }
+        : {
+            ...baseData,
+            setor_responsavel: setor,
+            created_by: user?.id,
+          };
+
       const { error } = await supabase
         .from("produtos")
-        .insert({
-          ...productForm,
-          setor_responsavel: setor,
-          created_by: user?.id,
-        });
+        .insert(insertData);
 
       if (error) throw error;
 
@@ -218,6 +274,8 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
         quantidade_minima: 0,
         quantidade_atual: 0,
         localizacao: "",
+        numero_ca: "",
+        data_validade: "",
       });
       fetchProdutos();
     } catch (error) {
@@ -261,6 +319,12 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
         ? quantidadeAtual + movForm.quantidade
         : quantidadeAtual - movForm.quantidade;
 
+      // Build observacao with collaborator name for seguranca setors
+      let obsText = movForm.observacao || "";
+      if (isSegurancaSetor(setor) && selectedColab) {
+        obsText = `[COLAB:${selectedColab.full_name}]${obsText ? ' ' + obsText : ''}`;
+      }
+
       // Insert movimentação
       const { error: movError } = await supabase
         .from("movimentacoes_estoque")
@@ -271,7 +335,7 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
           quantidade_anterior: quantidadeAtual,
           quantidade_nova: novaQuantidade,
           motivo: movForm.motivo,
-          observacao: movForm.observacao,
+          observacao: obsText,
           usuario_id: user?.id,
           setor: setor,
         });
@@ -298,6 +362,8 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
       
       setMovimentacaoDialog(false);
       setSelectedProduto(null);
+      setSelectedColab(null);
+      setBuscaColab("");
       setMovForm({ quantidade: 1, motivo: "", observacao: "" });
       fetchProdutos();
       fetchMovimentacoes();
@@ -350,18 +416,12 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
       </SectionHeader>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <StatCard
           title="Produtos cadastrados"
           value={totalProdutos}
           icon={Package}
           variant="primary"
-        />
-        <StatCard
-          title="Estoque baixo"
-          value={produtosBaixoEstoque}
-          icon={AlertCircle}
-          variant="warning"
         />
         <StatCard
           title="Movimentações recentes"
@@ -492,9 +552,11 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
               ) : (
                 <Table>
                   <TableHeader>
-                    <TableRow>
+                     <TableRow>
                       <TableHead>Data/Hora</TableHead>
                       <TableHead>Produto</TableHead>
+                      <TableHead>Colaborador</TableHead>
+                      <TableHead>Responsável</TableHead>
                       <TableHead>Tipo</TableHead>
                       <TableHead>Quantidade</TableHead>
                       <TableHead>Estoque Anterior</TableHead>
@@ -503,12 +565,17 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {movimentacoes.map((mov) => (
+                    {movimentacoes.map((mov) => {
+                      const colabMatch = (mov.observacao || "").match(/\[COLAB:(.+?)\]/);
+                      const colabName = colabMatch ? colabMatch[1] : "-";
+                      return (
                       <TableRow key={mov.id}>
                         <TableCell>
                           {format(new Date(mov.created_at), "dd/MM/yy HH:mm", { locale: ptBR })}
                         </TableCell>
                         <TableCell className="font-medium">{mov.produtos?.nome || "-"}</TableCell>
+                        <TableCell>{colabName}</TableCell>
+                        <TableCell>{mov.usuario_nome || "-"}</TableCell>
                         <TableCell>
                           <Badge variant={mov.tipo === 'entrada' ? 'default' : 'destructive'}>
                             {mov.tipo === 'entrada' ? 'Entrada' : 'Saída'}
@@ -519,7 +586,8 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
                         <TableCell>{mov.quantidade_nova}</TableCell>
                         <TableCell className="max-w-xs truncate">{mov.motivo || "-"}</TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                   </TableBody>
                 </Table>
               )}
@@ -530,45 +598,60 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
         <TabsContent value="dashboard" className="space-y-4 mt-4">
           <Card>
             <CardHeader>
-              <CardTitle>Dashboard do Inventário</CardTitle>
-              <CardDescription>Visão geral do estoque</CardDescription>
+              <CardTitle>Evolução de Entradas e Saídas</CardTitle>
+              <CardDescription>Movimentações dos últimos 30 dias</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <h4 className="font-semibold mb-4">Produtos com Estoque Baixo</h4>
-                  {produtos.filter(p => (p.quantidade_atual || 0) <= (p.quantidade_minima || 0)).length === 0 ? (
-                    <p className="text-muted-foreground text-sm">Nenhum produto com estoque baixo.</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {produtos
-                        .filter(p => (p.quantidade_atual || 0) <= (p.quantidade_minima || 0))
-                        .map(p => (
-                          <li key={p.id} className="flex justify-between items-center p-2 bg-destructive/10 rounded">
-                            <span>{p.nome}</span>
-                            <Badge variant="destructive">{p.quantidade_atual || 0} {p.unidade_medida}</Badge>
-                          </li>
-                        ))
-                      }
-                    </ul>
-                  )}
+              {(() => {
+                const last30 = Array.from({ length: 30 }, (_, i) => {
+                  const d = subDays(new Date(), 29 - i);
+                  const key = format(d, "yyyy-MM-dd");
+                  const label = format(d, "dd/MM");
+                  const entradas = movimentacoes
+                    .filter(m => m.tipo === 'entrada' && m.created_at.startsWith(key))
+                    .reduce((sum, m) => sum + m.quantidade, 0);
+                  const saidas = movimentacoes
+                    .filter(m => m.tipo === 'saida' && m.created_at.startsWith(key))
+                    .reduce((sum, m) => sum + m.quantidade, 0);
+                  return { data: label, Entradas: entradas, Saídas: saidas };
+                });
+
+                return (
+                  <ResponsiveContainer width="100%" height={320}>
+                    <LineChart data={last30}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                      <XAxis dataKey="data" fontSize={12} />
+                      <YAxis fontSize={12} allowDecimals={false} />
+                      <Tooltip />
+                      <Legend />
+                      <Line type="monotone" dataKey="Entradas" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                      <Line type="monotone" dataKey="Saídas" stroke="hsl(var(--destructive))" strokeWidth={2} dot={false} />
+                    </LineChart>
+                  </ResponsiveContainer>
+                );
+              })()}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Estoque por Produto</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {produtos.length === 0 ? (
+                <p className="text-muted-foreground text-sm text-center py-4">Nenhum produto cadastrado.</p>
+              ) : (
+                <div className="space-y-2">
+                  {produtos
+                    .sort((a, b) => (b.quantidade_atual || 0) - (a.quantidade_atual || 0))
+                    .map(p => (
+                      <div key={p.id} className="flex justify-between items-center p-3 rounded-lg border">
+                        <span className="font-medium">{p.nome}</span>
+                        <Badge variant="secondary">{p.quantidade_atual || 0} {p.unidade_medida || "UN"}</Badge>
+                      </div>
+                    ))}
                 </div>
-                <div>
-                  <h4 className="font-semibold mb-4">Por Categoria</h4>
-                  {Object.entries(
-                    produtos.reduce((acc, p) => {
-                      const cat = p.categoria || 'Sem categoria';
-                      acc[cat] = (acc[cat] || 0) + 1;
-                      return acc;
-                    }, {} as Record<string, number>)
-                  ).map(([cat, count]) => (
-                    <div key={cat} className="flex justify-between items-center p-2 border-b">
-                      <span>{cat}</span>
-                      <Badge variant="secondary">{count}</Badge>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -578,91 +661,134 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
       <Dialog open={addProductDialog} onOpenChange={setAddProductDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Novo Produto</DialogTitle>
-            <DialogDescription>Cadastre um novo produto no inventário.</DialogDescription>
+            <DialogTitle>{isSegurancaSetor(setor) ? (setor === 'seguranca_epis' ? 'Novo Item de EPI' : 'Novo Item de Uniforme') : 'Novo Produto'}</DialogTitle>
+            <DialogDescription>
+              {isSegurancaSetor(setor) 
+                ? 'Cadastre um novo item no inventário.' 
+                : 'Cadastre um novo produto no inventário.'}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Nome *</Label>
-                <Input
-                  value={productForm.nome}
-                  onChange={(e) => setProductForm({ ...productForm, nome: e.target.value })}
-                  placeholder="Nome do produto"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Código</Label>
-                <Input
-                  value={productForm.codigo}
-                  onChange={(e) => setProductForm({ ...productForm, codigo: e.target.value })}
-                  placeholder="Código"
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Descrição</Label>
-              <Textarea
-                value={productForm.descricao}
-                onChange={(e) => setProductForm({ ...productForm, descricao: e.target.value })}
-                placeholder="Descrição do produto"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Categoria</Label>
-                <Input
-                  value={productForm.categoria}
-                  onChange={(e) => setProductForm({ ...productForm, categoria: e.target.value })}
-                  placeholder="Categoria"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Unidade</Label>
-                <Select 
-                  value={productForm.unidade_medida}
-                  onValueChange={(v) => setProductForm({ ...productForm, unidade_medida: v })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="UN">Unidade</SelectItem>
-                    <SelectItem value="CX">Caixa</SelectItem>
-                    <SelectItem value="PC">Peça</SelectItem>
-                    <SelectItem value="KG">Quilograma</SelectItem>
-                    <SelectItem value="L">Litro</SelectItem>
-                    <SelectItem value="M">Metro</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Qtd. Inicial</Label>
-                <Input
-                  type="number"
-                  value={productForm.quantidade_atual}
-                  onChange={(e) => setProductForm({ ...productForm, quantidade_atual: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Qtd. Mínima</Label>
-                <Input
-                  type="number"
-                  value={productForm.quantidade_minima}
-                  onChange={(e) => setProductForm({ ...productForm, quantidade_minima: parseInt(e.target.value) || 0 })}
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Localização</Label>
-              <Input
-                value={productForm.localizacao}
-                onChange={(e) => setProductForm({ ...productForm, localizacao: e.target.value })}
-                placeholder="Ex: Almoxarifado A, Prateleira 3"
-              />
-            </div>
+            {isSegurancaSetor(setor) ? (
+              <>
+                <div className="space-y-2">
+                  <Label>Nome do Item *</Label>
+                  <Input
+                    value={productForm.nome}
+                    onChange={(e) => setProductForm({ ...productForm, nome: e.target.value })}
+                    placeholder="Ex: Camisa P, Calça G, Jaleco M..."
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Número do C.A.</Label>
+                  <Input
+                    value={productForm.numero_ca}
+                    onChange={(e) => setProductForm({ ...productForm, numero_ca: e.target.value })}
+                    placeholder="Ex: 12345"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Quantidade Inicial</Label>
+                  <Input
+                    type="number"
+                    value={productForm.quantidade_atual}
+                    onChange={(e) => setProductForm({ ...productForm, quantidade_atual: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Data de Validade</Label>
+                  <Input
+                    type="date"
+                    value={productForm.data_validade}
+                    onChange={(e) => setProductForm({ ...productForm, data_validade: e.target.value })}
+                  />
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Nome *</Label>
+                    <Input
+                      value={productForm.nome}
+                      onChange={(e) => setProductForm({ ...productForm, nome: e.target.value })}
+                      placeholder="Nome do produto"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Código</Label>
+                    <Input
+                      value={productForm.codigo}
+                      onChange={(e) => setProductForm({ ...productForm, codigo: e.target.value })}
+                      placeholder="Código"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Descrição</Label>
+                  <Textarea
+                    value={productForm.descricao}
+                    onChange={(e) => setProductForm({ ...productForm, descricao: e.target.value })}
+                    placeholder="Descrição do produto"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Categoria</Label>
+                    <Input
+                      value={productForm.categoria}
+                      onChange={(e) => setProductForm({ ...productForm, categoria: e.target.value })}
+                      placeholder="Categoria"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Unidade</Label>
+                    <Select 
+                      value={productForm.unidade_medida}
+                      onValueChange={(v) => setProductForm({ ...productForm, unidade_medida: v })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="UN">Unidade</SelectItem>
+                        <SelectItem value="CX">Caixa</SelectItem>
+                        <SelectItem value="PC">Peça</SelectItem>
+                        <SelectItem value="KG">Quilograma</SelectItem>
+                        <SelectItem value="L">Litro</SelectItem>
+                        <SelectItem value="M">Metro</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Qtd. Inicial</Label>
+                    <Input
+                      type="number"
+                      value={productForm.quantidade_atual}
+                      onChange={(e) => setProductForm({ ...productForm, quantidade_atual: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Qtd. Mínima</Label>
+                    <Input
+                      type="number"
+                      value={productForm.quantidade_minima}
+                      onChange={(e) => setProductForm({ ...productForm, quantidade_minima: parseInt(e.target.value) || 0 })}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Localização</Label>
+                  <Input
+                    value={productForm.localizacao}
+                    onChange={(e) => setProductForm({ ...productForm, localizacao: e.target.value })}
+                    placeholder="Ex: Almoxarifado A, Prateleira 3"
+                  />
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setAddProductDialog(false)}>
@@ -690,6 +816,45 @@ export const InventarioModule = ({ setor }: InventarioModuleProps) => {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 pt-4">
+            {isSegurancaSetor(setor) && (
+              <div className="space-y-2 relative">
+                <Label>Colaborador *</Label>
+                <Input
+                  value={buscaColab}
+                  onChange={(e) => {
+                    setBuscaColab(e.target.value);
+                    setShowColabList(true);
+                    if (!e.target.value) setSelectedColab(null);
+                  }}
+                  onFocus={() => buscaColab && setShowColabList(true)}
+                  placeholder="Digite o nome do colaborador..."
+                />
+                {showColabList && buscaColab.length >= 2 && (
+                  <div className="absolute z-50 w-full mt-1 bg-popover border rounded-md shadow-lg max-h-48 overflow-y-auto">
+                    {colaboradores
+                      .filter(c => c.full_name.toLowerCase().includes(buscaColab.toLowerCase()))
+                      .slice(0, 10)
+                      .map((c) => (
+                        <button
+                          key={c.user_id}
+                          type="button"
+                          className="w-full text-left px-3 py-2 hover:bg-accent text-sm"
+                          onClick={() => {
+                            setSelectedColab(c);
+                            setBuscaColab(c.full_name);
+                            setShowColabList(false);
+                          }}
+                        >
+                          {c.full_name}
+                        </button>
+                      ))}
+                    {colaboradores.filter(c => c.full_name.toLowerCase().includes(buscaColab.toLowerCase())).length === 0 && (
+                      <div className="px-3 py-2 text-sm text-muted-foreground">Nenhum colaborador encontrado</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="space-y-2">
               <Label>Quantidade *</Label>
               <Input

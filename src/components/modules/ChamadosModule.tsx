@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
+import { useRealtimeSync, REALTIME_PRESETS } from "@/hooks/useRealtimeSync";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -155,6 +156,7 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
   const { role } = useUserRole();
   const { logAction } = useLogAccess();
   const { toast } = useToast();
+  useRealtimeSync(REALTIME_PRESETS.chamados);
   
   const [chamados, setChamados] = useState<Chamado[]>([]);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
@@ -258,14 +260,27 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
   const fetchChamados = async () => {
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("chamados")
-        .select("*")
-        .eq("categoria", setor)
-        .order("created_at", { ascending: false });
+      // Paginated fetch to handle >1000 records
+      const pageSize = 1000;
+      let allChamados: Chamado[] = [];
+      let from = 0;
+      let hasMore = true;
 
-      if (error) throw error;
-      setChamados(data || []);
+      while (hasMore) {
+        const { data, error } = await supabase
+          .from("chamados")
+          .select("*")
+          .eq("categoria", setor)
+          .order("created_at", { ascending: false })
+          .range(from, from + pageSize - 1);
+
+        if (error) throw error;
+        allChamados = allChamados.concat((data || []) as Chamado[]);
+        hasMore = (data || []).length === pageSize;
+        from += pageSize;
+      }
+
+      setChamados(allChamados);
     } catch (error) {
       console.error("Error fetching chamados:", error);
       toast({
@@ -542,11 +557,13 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
     });
   }, [chamados, searchTerm, statusFilter, filterDay, filterMonth, filterYear]);
 
+  const hasFilters = searchTerm || statusFilter !== "todos" || filterDay !== "todos" || filterMonth !== "todos" || filterYear !== "todos";
+  const statsSource = hasFilters ? filteredChamados : chamados;
   const stats = {
-    total: chamados.length,
-    abertos: chamados.filter(c => c.status === 'aberto').length,
-    emAndamento: chamados.filter(c => c.status === 'em_andamento').length,
-    resolvidos: chamados.filter(c => c.status === 'resolvido').length,
+    total: statsSource.length,
+    abertos: statsSource.filter(c => c.status === 'aberto').length,
+    emAndamento: statsSource.filter(c => c.status === 'em_andamento').length,
+    resolvidos: statsSource.filter(c => c.status === 'resolvido').length,
   };
 
   // Importar chamados de Excel

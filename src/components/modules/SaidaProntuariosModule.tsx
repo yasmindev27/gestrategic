@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { SalusImportModule } from "@/components/nir";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,7 +51,9 @@ import {
   XCircle,
   Pencil,
   Save,
-  FileStack
+  FileStack,
+  Trash2,
+  Upload
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -57,9 +62,21 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { PdfPatientCounter } from "./PdfPatientCounter";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { EntregaProntuariosDialog } from "./EntregaProntuariosDialog";
+import { ImportarSaidasDialog } from "./ImportarSaidasDialog";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCSV, exportToPDF } from "@/lib/export-utils";
-import { safeFormatDate } from "@/lib/brasilia-time";
+import { safeFormatDate, getBrasiliaDateString } from "@/lib/brasilia-time";
 
 interface AnalysisResult {
   success: boolean;
@@ -88,7 +105,20 @@ interface SaidaProntuario {
   conferido_nir_por: string | null;
   observacao_nir: string | null;
   is_folha_avulsa: boolean | null;
+  possui_carimbo_medico: boolean | null;
+  cadastro_conferido: boolean | null;
+  checklist_validacao: Record<string, string> | null;
+  pendencia_resolvida_em: string | null;
+  pendencia_resolvida_por: string | null;
   created_at: string;
+}
+
+interface EntregaInfo {
+  data_hora: string;
+  entregador_nome: string;
+  responsavel_recebimento_nome: string;
+  setor_origem: string;
+  setor_destino: string;
 }
 
 export const SaidaProntuariosModule = () => {
@@ -101,10 +131,17 @@ export const SaidaProntuariosModule = () => {
   const [faltantesSalus, setFaltantesSalus] = useState<SaidaProntuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
+  // Entregas lookup: saida_prontuario_id -> array of EntregaInfo
+  const [entregasMap, setEntregasMap] = useState<Record<string, EntregaInfo[]>>({});
+  
   // Contagens reais (independente do limite de 1000 linhas)
   const [totalSaidasCount, setTotalSaidasCount] = useState(0);
+  const [totalSaidasHojeCount, setTotalSaidasHojeCount] = useState(0);
   const [totalFolhasCount, setTotalFolhasCount] = useState(0);
   const [totalFaltantesCount, setTotalFaltantesCount] = useState(0);
+  const [filteredSaidasCount, setFilteredSaidasCount] = useState<number | null>(null);
+  const [filteredFolhasCount, setFilteredFolhasCount] = useState<number | null>(null);
+  const [filteredFaltantesCount, setFilteredFaltantesCount] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [newProntuarioOpen, setNewProntuarioOpen] = useState(false);
   const [newFolhaAvulsaOpen, setNewFolhaAvulsaOpen] = useState(false);
@@ -114,7 +151,7 @@ export const SaidaProntuariosModule = () => {
   // Filter states
   const [dataInicio, setDataInicio] = useState("");
   const [dataFim, setDataFim] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("todos");
+  const [statusFilter, setStatusFilter] = useState<string>("em_fluxo");
   const [showFilters, setShowFilters] = useState(false);
   const [salusAnalysis, setSalusAnalysis] = useState<AnalysisResult | null>(null);
   
@@ -128,13 +165,27 @@ export const SaidaProntuariosModule = () => {
   const [folhasDataInicio, setFolhasDataInicio] = useState("");
   const [folhasDataFim, setFolhasDataFim] = useState("");
   
+  // Track which folhas avulsas have a corresponding main prontuário (with details)
+  const [folhasVinculadasMap, setFolhasVinculadasMap] = useState<Record<string, { data_registro: string; status: string; origem_pendencia?: string }>>({}); 
+  
   // Form states
   const [pacienteNome, setPacienteNome] = useState("");
   const [nascimentoMae, setNascimentoMae] = useState("");
   const [dataAtendimento, setDataAtendimento] = useState("");
+  const [cadastroConferido, setCadastroConferido] = useState(false);
+  const [possuiCarimboMedico, setPossuiCarimboMedico] = useState(false);
+  const [observacaoSaida, setObservacaoSaida] = useState("");
   const [existeFisicamente, setExisteFisicamente] = useState(true);
   const [observacao, setObservacao] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [checklistValidacao, setChecklistValidacao] = useState({
+    carimbo_enfermagem: "pendente",
+    evolucao: "pendente",
+    ficha_medicacao: "pendente",
+    pedidos_exames: "pendente",
+    alta_medica: "pendente",
+  });
+  const [observacaoChecklist, setObservacaoChecklist] = useState("");
 
   // Folha Avulsa form states
   const [folhaAvulsaPaciente, setFolhaAvulsaPaciente] = useState("");
@@ -148,85 +199,352 @@ export const SaidaProntuariosModule = () => {
   const [editPacienteNome, setEditPacienteNome] = useState("");
   const [editNascimentoMae, setEditNascimentoMae] = useState("");
   const [editDataAtendimento, setEditDataAtendimento] = useState("");
+  const [entregaDialogOpen, setEntregaDialogOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deletingSaida, setDeletingSaida] = useState<SaidaProntuario | null>(null);
+  const [importarOpen, setImportarOpen] = useState(false);
 
   const canAccess = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
   const canInsert = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
   const canValidateClassificacao = isClassificacao || isAdmin;
   const canValidateNir = isNir || isAdmin;
+  const isFullAccessRole = isFaturamento || isAdmin || isNir || isClassificacao;
+
+  // Data de referência no fuso de Brasília (UTC-3) com offset explícito para filtros de created_at
+  const hoje = getBrasiliaDateString();
+  const inicioHoje = `${hoje}T00:00:00-03:00`;
+  const fimHoje = `${hoje}T23:59:59-03:00`;
+
+  // Pagination técnica (sem navegação visual): manter limite alto para evitar corte de registros recentes
+  const PAGE_SIZE = 1000;
+  const [saidasPage, setSaidasPage] = useState(0);
+  const [folhasPage, setFolhasPage] = useState(0);
+  const [faltantesPage, setFaltantesPage] = useState(0);
+
+  // Section visibility: only one section visible at a time
+  type VisibleSection = "fluxo" | "folhas" | "faltantes" | null;
+  const [visibleSection, setVisibleSection] = useState<VisibleSection>("fluxo");
+
+  useEffect(() => {
+    if (
+      !isLoadingRole &&
+      isClassificacao &&
+      !isAdmin &&
+      !isNir &&
+      !isFaturamento &&
+      statusFilter === "em_fluxo"
+    ) {
+      setStatusFilter("todos");
+    }
+  }, [isLoadingRole, isClassificacao, isAdmin, isNir, isFaturamento, statusFilter]);
 
   useEffect(() => {
     if (!isLoadingRole && canAccess) {
-      fetchSaidas();
+      fetchCounts();
       logAction("acesso", "saida_prontuarios", { role: role || "unknown" });
     }
   }, [canAccess, isLoadingRole, role]);
 
-  const fetchSaidas = async () => {
+  // Fetch only counts on load (very fast)
+  const fetchCounts = async () => {
     setIsLoading(true);
     try {
-      // Get total count first (bypasses 1000 row limit)
-      const { count: totalCount, error: countError } = await supabase
+      const restrictedToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
+
+      const regularCountQuery = supabase
         .from("saida_prontuarios")
-        .select("*", { count: 'exact', head: true });
-      
-      if (countError) throw countError;
-      
-      // Paginated fetch to get ALL records (Supabase default limit is 1000)
-      const allRecords: SaidaProntuario[] = [];
-      const pageSize = 1000;
-      let page = 0;
-      let hasMore = true;
-      
-      while (hasMore) {
-        const { data: pageData, error: pageError } = await supabase
-          .from("saida_prontuarios")
-          .select("*")
-          .order("created_at", { ascending: false })
-          .range(page * pageSize, (page + 1) * pageSize - 1);
-        
-        if (pageError) throw pageError;
-        
-        if (pageData && pageData.length > 0) {
-          allRecords.push(...pageData);
-          hasMore = pageData.length === pageSize;
-          page++;
-        } else {
-          hasMore = false;
-        }
+        .select("*", { count: "exact", head: true })
+        .eq("is_folha_avulsa", false);
+
+      // Contagem "Registros do Dia" para Recepção: hoje + em fluxo (não concluído)
+      const regularHojeQueryBuilder = supabase
+        .from("saida_prontuarios")
+        .select("*", { count: "exact", head: true })
+        .eq("is_folha_avulsa", false)
+        .gte("created_at", inicioHoje)
+        .lte("created_at", fimHoje)
+        .neq("status", "concluido");
+
+      // Folhas avulsas: restringir contagem para recepção/classificação
+      let folhasCountQueryBase = supabase
+        .from("saida_prontuarios")
+        .select("*", { count: "exact", head: true })
+        .eq("is_folha_avulsa", true);
+
+      if (restrictedToToday) {
+        folhasCountQueryBase = folhasCountQueryBase.gte("created_at", inicioHoje).lte("created_at", fimHoje);
       }
-      
-      // Filter records in memory for accurate categorization
-      // This handles NULL values properly which Supabase .not() and .or() struggle with
-      const regular = allRecords.filter(s => 
-        !s.is_folha_avulsa && 
-        (!s.observacao_classificacao || !s.observacao_classificacao.toLowerCase().includes('importado via salus'))
-      );
-      
-      const folhas = allRecords.filter(s => s.is_folha_avulsa === true);
-      
-      const salusImports = allRecords.filter(s => 
-        s.observacao_classificacao?.toLowerCase().includes('importado via salus')
-      );
 
-      // Set counts from filtered data (accurate counts)
-      setTotalSaidasCount(regular.length);
-      setTotalFolhasCount(folhas.length);
-      setTotalFaltantesCount(salusImports.length);
+      let faltantesCountQueryBase = supabase
+        .from("saida_prontuarios")
+        .select("*", { count: "exact", head: true })
+        .ilike("observacao_classificacao", "%importado via salus%")
+        .eq("status", "pendente");
 
-      // Set data
-      setSaidas(regular);
-      setFolhasAvulsas(folhas);
-      setFaltantesSalus(salusImports);
-    } catch (error) {
-      console.error("Error fetching saidas:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar lista de saída.",
-        variant: "destructive",
-      });
+      const [regularCount, regularHojeCount, folhasCount, salusCount] = await Promise.all([
+        regularCountQuery,
+        regularHojeQueryBuilder,
+        folhasCountQueryBase,
+        restrictedToToday
+          ? faltantesCountQueryBase.gte("created_at", inicioHoje).lte("created_at", fimHoje)
+          : faltantesCountQueryBase,
+      ]);
+      setTotalSaidasCount(regularCount.count ?? 0);
+      setTotalSaidasHojeCount(regularHojeCount.count ?? 0);
+      setTotalFolhasCount(folhasCount.count ?? 0);
+      setTotalFaltantesCount(salusCount.count ?? 0);
     } finally {
       setIsLoading(false);
     }
+    fetchSaidasPage(0);
+    fetchFolhasPage(0);
+    fetchFaltantesPage(0);
+  };
+
+
+
+  const applySaidasFilters = (query: any) => {
+    // Filtrar por status baseado no setor do usuário
+    if (isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao) {
+      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
+    } else if (isNir && !isAdmin && !isFaturamento && !isClassificacao) {
+      query = query.in("status", ["aguardando_nir"]);
+    } else {
+      if (statusFilter === "em_fluxo") {
+        query = query.neq("status", "concluido");
+      } else if (statusFilter !== "todos") {
+        query = query.eq("status", statusFilter);
+      }
+    }
+
+    if (debouncedSearchTerm) query = query.ilike("paciente_nome", `%${debouncedSearchTerm}%`);
+    if (dataInicio) query = query.gte("data_atendimento", dataInicio);
+    if (dataFim) query = query.lte("data_atendimento", dataFim);
+    return query;
+  };
+
+  const fetchSaidasPage = async (page: number) => {
+    const from = page * PAGE_SIZE;
+    let query = supabase
+      .from("saida_prontuarios")
+      .select("*")
+      .eq("is_folha_avulsa", false)
+      .order("data_atendimento", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+
+    query = applySaidasFilters(query);
+
+    // Count query with same filters (no range/order)
+    let countQuery = supabase
+      .from("saida_prontuarios")
+      .select("*", { count: "exact", head: true })
+      .eq("is_folha_avulsa", false);
+    countQuery = applySaidasFilters(countQuery);
+
+    const [{ data, error }, { count: filteredCount }] = await Promise.all([query, countQuery]);
+    if (!error && data) {
+      setSaidas(data as SaidaProntuario[]);
+      fetchEntregas(data.map((d: any) => d.id));
+    }
+    setFilteredSaidasCount(filteredCount ?? 0);
+    setSaidasPage(page);
+  };
+
+  const fetchEntregas = async (saidaIds: string[]) => {
+    if (saidaIds.length === 0) { setEntregasMap({}); return; }
+    
+    // Batch IDs em grupos de 200 para evitar exceder o limite de URL do PostgREST
+    const BATCH_SIZE = 200;
+    const allItens: { saida_prontuario_id: string; entrega_id: string }[] = [];
+    
+    for (let i = 0; i < saidaIds.length; i += BATCH_SIZE) {
+      const batch = saidaIds.slice(i, i + BATCH_SIZE);
+      const { data, error } = await supabase
+        .from("entregas_prontuarios_itens")
+        .select("saida_prontuario_id, entrega_id")
+        .in("saida_prontuario_id", batch);
+      if (!error && data) allItens.push(...data);
+    }
+    
+    if (allItens.length === 0) { setEntregasMap({}); return; }
+
+    const entregaIds = [...new Set(allItens.map(d => d.entrega_id))];
+    
+    // Também fazer batch nos entrega IDs
+    const allEntregas: any[] = [];
+    for (let i = 0; i < entregaIds.length; i += BATCH_SIZE) {
+      const batch = entregaIds.slice(i, i + BATCH_SIZE);
+      const { data } = await supabase
+        .from("entregas_prontuarios")
+        .select("id, data_hora, entregador_nome, responsavel_recebimento_nome, setor_origem, setor_destino")
+        .in("id", batch);
+      if (data) allEntregas.push(...data);
+    }
+
+    if (allEntregas.length === 0) { setEntregasMap({}); return; }
+    const entregaById = Object.fromEntries(allEntregas.map(e => [e.id, e]));
+
+    const map: Record<string, EntregaInfo[]> = {};
+    for (const item of allItens) {
+      const e = entregaById[item.entrega_id];
+      if (!e) continue;
+      if (!map[item.saida_prontuario_id]) map[item.saida_prontuario_id] = [];
+      map[item.saida_prontuario_id].push({
+        data_hora: e.data_hora,
+        entregador_nome: e.entregador_nome,
+        responsavel_recebimento_nome: e.responsavel_recebimento_nome,
+        setor_origem: e.setor_origem,
+        setor_destino: e.setor_destino,
+      });
+    }
+    setEntregasMap(map);
+  };
+
+  const applyFolhasFilters = (query: any) => {
+    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
+    if (restrictToToday) {
+      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
+    }
+    if (debouncedFolhasSearch) query = query.ilike("paciente_nome", `%${debouncedFolhasSearch}%`);
+    if (folhasDataInicio) query = query.gte("data_atendimento", folhasDataInicio);
+    if (folhasDataFim) query = query.lte("data_atendimento", folhasDataFim);
+    return query;
+  };
+
+  const fetchFolhasPage = async (page: number) => {
+    let query = supabase
+      .from("saida_prontuarios")
+      .select("*")
+      .eq("is_folha_avulsa", true)
+      .order("data_atendimento", { ascending: false })
+      .limit(2000);
+    query = applyFolhasFilters(query);
+
+    let countQuery = supabase
+      .from("saida_prontuarios")
+      .select("*", { count: "exact", head: true })
+      .eq("is_folha_avulsa", true);
+    countQuery = applyFolhasFilters(countQuery);
+
+    const hasFolhasFilters = debouncedFolhasSearch || folhasDataInicio || folhasDataFim;
+
+    const [{ data, error }, { count: fCount }] = await Promise.all([query, countQuery]);
+    if (!error && data) {
+      const folhas = data as SaidaProntuario[];
+      setFolhasAvulsas(folhas);
+      
+      // Check which folhas avulsas have a corresponding main record (batched)
+      const vinculadosMap: Record<string, { data_registro: string; status: string; origem_pendencia?: string }> = {};
+      const checks = folhas
+        .filter(f => f.paciente_nome && f.data_atendimento)
+        .map(async (folha) => {
+          const { data: match } = await supabase
+            .from("saida_prontuarios")
+            .select("id, created_at, status, validado_classificacao_em, conferido_nir_em")
+            .eq("is_folha_avulsa", false)
+            .eq("paciente_nome", folha.paciente_nome!)
+            .eq("data_atendimento", folha.data_atendimento!)
+            .limit(1)
+            .maybeSingle();
+          if (match) {
+            let origem_pendencia: string | undefined;
+            if (match.status === "pendente" || match.status === "aguardando_pendencia") {
+              if (match.conferido_nir_em) origem_pendencia = "NIR";
+              else if (match.validado_classificacao_em) origem_pendencia = "Classificação";
+              else origem_pendencia = "Recepção";
+            }
+            vinculadosMap[folha.id] = {
+              data_registro: match.created_at,
+              status: match.status,
+              origem_pendencia,
+            };
+          }
+        });
+      await Promise.all(checks);
+      setFolhasVinculadasMap(vinculadosMap);
+    }
+    if (hasFolhasFilters) setFilteredFolhasCount(fCount ?? 0);
+    else setFilteredFolhasCount(null);
+    setFolhasPage(page);
+  };
+
+  const applyFaltantesFilters = (query: any) => {
+    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
+    if (restrictToToday) {
+      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
+    }
+    if (debouncedFaltantesSearch) query = query.ilike("paciente_nome", `%${debouncedFaltantesSearch}%`);
+    if (faltantesDataInicio) query = query.gte("data_atendimento", faltantesDataInicio);
+    if (faltantesDataFim) query = query.lte("data_atendimento", faltantesDataFim);
+    return query;
+  };
+
+  const fetchFaltantesPage = async (page: number) => {
+    const from = page * PAGE_SIZE;
+    let query = supabase
+      .from("saida_prontuarios")
+      .select("*")
+      .ilike("observacao_classificacao", "%importado via salus%")
+      .eq("status", "pendente")
+      .order("data_atendimento", { ascending: false })
+      .range(from, from + PAGE_SIZE - 1);
+    query = applyFaltantesFilters(query);
+
+    let countQuery = supabase
+      .from("saida_prontuarios")
+      .select("*", { count: "exact", head: true })
+      .ilike("observacao_classificacao", "%importado via salus%")
+      .eq("status", "pendente");
+    countQuery = applyFaltantesFilters(countQuery);
+
+    const hasFaltantesFilters = debouncedFaltantesSearch || faltantesDataInicio || faltantesDataFim;
+
+    const [{ data, error }, { count: fCount }] = await Promise.all([query, countQuery]);
+    if (!error && data) setFaltantesSalus(data as SaidaProntuario[]);
+    if (hasFaltantesFilters) setFilteredFaltantesCount(fCount ?? 0);
+    else setFilteredFaltantesCount(null);
+    setFaltantesPage(page);
+  };
+
+  // Debounced search values
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
+  const [debouncedFaltantesSearch, setDebouncedFaltantesSearch] = useState("");
+  const [debouncedFolhasSearch, setDebouncedFolhasSearch] = useState("");
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearchTerm(searchTerm), 400);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedFaltantesSearch(faltantesSearchTerm), 400);
+    return () => clearTimeout(t);
+  }, [faltantesSearchTerm]);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedFolhasSearch(folhasSearchTerm), 400);
+    return () => clearTimeout(t);
+  }, [folhasSearchTerm]);
+
+  // Re-fetch when filters change (debounced)
+  useEffect(() => {
+    if (!isLoadingRole && canAccess) {
+      fetchSaidasPage(0);
+    }
+  }, [debouncedSearchTerm, dataInicio, dataFim, statusFilter]);
+
+  useEffect(() => {
+    if (!isLoadingRole && canAccess) {
+      fetchFolhasPage(0);
+    }
+  }, [debouncedFolhasSearch, folhasDataInicio, folhasDataFim]);
+
+  useEffect(() => {
+    if (!isLoadingRole && canAccess) {
+      fetchFaltantesPage(0);
+    }
+  }, [debouncedFaltantesSearch, faltantesDataInicio, faltantesDataFim]);
+
+  const fetchSaidas = async () => {
+    await fetchCounts();
   };
 
   const handleAddSaida = async () => {
@@ -234,18 +552,77 @@ export const SaidaProntuariosModule = () => {
     
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
+      // Verificar duplicidade: mesmo paciente + mesma data de atendimento
+      // Verificar duplicidade: mesmo paciente + mesma data de atendimento (case-insensitive)
+      const { data: existente } = await supabase
         .from("saida_prontuarios")
-        .insert({
-          paciente_nome: pacienteNome.trim(),
-          nascimento_mae: nascimentoMae || null,
-          data_atendimento: dataAtendimento,
-          registrado_recepcao_por: userId,
-          registrado_recepcao_em: new Date().toISOString(),
-          status: "aguardando_classificacao",
-        });
+        .select("id, status, observacao_classificacao")
+        .ilike("paciente_nome", pacienteNome.trim())
+        .eq("data_atendimento", dataAtendimento)
+        .eq("is_folha_avulsa", false)
+        .maybeSingle();
 
-      if (error) throw error;
+      if (existente) {
+        // Se for um faltante do Salus, atualizar em vez de bloquear
+        const isFaltanteSalus = existente.status === "pendente" && 
+          (existente.observacao_classificacao || "").toLowerCase().includes("importado via salus");
+        
+        if (isFaltanteSalus) {
+          const { error: updateError } = await supabase
+            .from("saida_prontuarios")
+            .update({
+              nascimento_mae: nascimentoMae || null,
+              cadastro_conferido: cadastroConferido,
+              possui_carimbo_medico: possuiCarimboMedico,
+              observacao_classificacao: observacaoSaida.trim() || null,
+              registrado_recepcao_por: userId,
+              registrado_recepcao_em: new Date().toISOString(),
+              status: "aguardando_classificacao",
+            })
+            .eq("id", existente.id);
+
+          if (updateError) throw updateError;
+
+          toast({
+            title: "Prontuário faltante resolvido",
+            description: "O prontuário foi localizado e removido da lista de faltantes.",
+          });
+        } else {
+          toast({
+            title: "Registro duplicado",
+            description: "Já existe um prontuário registrado para este paciente nesta data de atendimento.",
+            variant: "destructive",
+          });
+          setIsSubmitting(false);
+          return;
+        }
+      } else {
+        const hasPendencia = !cadastroConferido || !possuiCarimboMedico;
+        const pendenciaItems: string[] = [];
+        if (!cadastroConferido) pendenciaItems.push("Cadastro não conferido");
+        if (!possuiCarimboMedico) pendenciaItems.push("Sem carimbo médico");
+        
+        const observacaoFinal = hasPendencia
+          ? [observacaoSaida.trim(), `Pendência (Recepção): ${pendenciaItems.join(", ")}`].filter(Boolean).join(" | ")
+          : observacaoSaida.trim() || null;
+
+        const { error } = await supabase
+          .from("saida_prontuarios")
+          .insert({
+            paciente_nome: pacienteNome.trim(),
+            nascimento_mae: nascimentoMae || null,
+            data_atendimento: dataAtendimento,
+            cadastro_conferido: cadastroConferido,
+            possui_carimbo_medico: possuiCarimboMedico,
+            observacao_classificacao: observacaoFinal,
+            registrado_recepcao_por: userId,
+            registrado_recepcao_em: new Date().toISOString(),
+            status: hasPendencia ? "pendente" : "aguardando_classificacao",
+          });
+
+        if (error) throw error;
+      }
+
 
       await logAction("registrar_saida", "saida_prontuarios", { 
         paciente: pacienteNome,
@@ -261,6 +638,9 @@ export const SaidaProntuariosModule = () => {
       setPacienteNome("");
       setNascimentoMae("");
       setDataAtendimento("");
+      setCadastroConferido(false);
+      setPossuiCarimboMedico(false);
+      setObservacaoSaida("");
       fetchSaidas();
     } catch (error) {
       console.error("Error:", error);
@@ -334,7 +714,8 @@ export const SaidaProntuariosModule = () => {
           validado_classificacao_em: new Date().toISOString(),
           existe_fisicamente: existeFisicamente,
           observacao_classificacao: observacao || null,
-          status: "aguardando_nir",
+          checklist_validacao: JSON.parse(JSON.stringify({ ...checklistValidacao, observacao: observacaoChecklist || null })),
+          status: Object.values(checklistValidacao).some(v => v === "pendente") ? "pendente" : "aguardando_nir",
         })
         .eq("id", selectedSaida.id);
 
@@ -355,12 +736,21 @@ export const SaidaProntuariosModule = () => {
       setSelectedSaida(null);
       setObservacao("");
       setExisteFisicamente(true);
+      setChecklistValidacao({ carimbo_enfermagem: "pendente", evolucao: "pendente", ficha_medicacao: "pendente", pedidos_exames: "pendente", alta_medica: "pendente" });
+      setObservacaoChecklist("");
+      setExisteFisicamente(true);
       fetchSaidas();
-    } catch (error) {
-      console.error("Error:", error);
+    } catch (error: any) {
+      console.error("Erro ao validar classificação:", error);
+      console.error("Dados enviados:", {
+        validado_classificacao_por: userId,
+        existe_fisicamente: existeFisicamente,
+        checklist: checklistValidacao,
+        selectedSaidaId: selectedSaida?.id,
+      });
       toast({
         title: "Erro",
-        description: "Erro ao validar.",
+        description: `Erro ao validar: ${error?.message || error?.details || "Erro desconhecido"}`,
         variant: "destructive",
       });
     } finally {
@@ -463,18 +853,49 @@ export const SaidaProntuariosModule = () => {
     }
   };
 
+  // Delete prontuário (admin only)
+  const handleDeleteSaida = async () => {
+    if (!deletingSaida) return;
+    setIsSubmitting(true);
+    try {
+      const { error } = await supabase
+        .from("saida_prontuarios")
+        .delete()
+        .eq("id", deletingSaida.id);
+
+      if (error) throw error;
+
+      await logAction("excluir_prontuario", "saida_prontuarios", {
+        id: deletingSaida.id,
+        paciente: deletingSaida.paciente_nome,
+      });
+
+      toast({ title: "Sucesso", description: "Registro excluído com sucesso!" });
+      setDeleteConfirmOpen(false);
+      setDeletingSaida(null);
+      fetchSaidas();
+      fetchCounts();
+    } catch (error) {
+      console.error("Error deleting:", error);
+      toast({ title: "Erro", description: "Erro ao excluir registro.", variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const statusConfig: Record<string, { label: string; className: string }> = {
-      aguardando_classificacao: { label: "Aguardando Classificação", className: "bg-warning text-warning-foreground" },
-      aguardando_nir: { label: "Aguardando NIR", className: "bg-info text-info-foreground" },
-      aguardando_faturamento: { label: "Aguardando Faturamento", className: "bg-primary text-primary-foreground" },
-      em_avaliacao: { label: "Em Avaliação", className: "bg-secondary text-secondary-foreground" },
-      concluido: { label: "Concluído", className: "bg-success text-success-foreground" },
-      pendente: { label: "Pendente", className: "bg-destructive text-destructive-foreground" },
+      aguardando_classificacao: { label: "Aguardando Classificação", className: "bg-amber-50 text-amber-700 border border-amber-200" },
+      aguardando_nir: { label: "Aguardando NIR", className: "bg-sky-50 text-sky-700 border border-sky-200" },
+      pendente: { label: "Aguardando Resolução de Pendência", className: "bg-amber-50 text-amber-700 border border-amber-200" },
+      aguardando_pendencia: { label: "Aguardando Resolução de Pendência", className: "bg-amber-50 text-amber-700 border border-amber-200" },
+      aguardando_faturamento: { label: "Aguardando Faturamento", className: "bg-blue-50 text-blue-700 border border-blue-200" },
+      em_avaliacao: { label: "Em Avaliação", className: "bg-slate-50 text-slate-600 border border-slate-200" },
+      concluido: { label: "Concluído", className: "bg-emerald-50 text-emerald-700 border border-emerald-200" },
     };
     
-    const config = statusConfig[status] || { label: status, className: "bg-secondary" };
-    return <Badge className={config.className}>{config.label}</Badge>;
+    const config = statusConfig[status] || { label: status, className: "bg-slate-50 text-slate-600 border border-slate-200" };
+    return <Badge className={`${config.className} font-medium text-[11px] px-2 py-0.5`}>{config.label}</Badge>;
   };
 
   const getActionButton = (saida: SaidaProntuario) => {
@@ -491,6 +912,21 @@ export const SaidaProntuariosModule = () => {
           title="Editar registro"
         >
           <Pencil className="h-4 w-4" />
+        </Button>
+      );
+      buttons.push(
+        <Button 
+          key="delete"
+          size="sm" 
+          variant="ghost"
+          className="text-destructive hover:text-destructive"
+          onClick={() => {
+            setDeletingSaida(saida);
+            setDeleteConfirmOpen(true);
+          }}
+          title="Excluir registro"
+        >
+          <Trash2 className="h-4 w-4" />
         </Button>
       );
     }
@@ -529,51 +965,60 @@ export const SaidaProntuariosModule = () => {
       );
     }
 
-    if (buttons.length === 0) return null;
+    // Faturamento: marcar como concluído quando aguardando_faturamento
+    if ((isFaturamento || isAdmin) && saida.status === "aguardando_faturamento") {
+      buttons.push(
+        <Button 
+          key="concluir"
+          size="sm" 
+          variant="outline"
+          className="text-success border-success hover:bg-success/10"
+          onClick={async () => {
+            try {
+              const { error } = await supabase
+                .from("saida_prontuarios")
+                .update({ status: "concluido" } as any)
+                .eq("id", saida.id);
+              if (error) throw error;
+              await logAction("concluir_prontuario", "saida_prontuarios", {
+                id: saida.id,
+                paciente: saida.paciente_nome,
+              });
+              toast({ title: "Sucesso", description: "Prontuário concluído!" });
+              fetchSaidas();
+            } catch (err: any) {
+              toast({ title: "Erro", description: err.message || "Erro ao concluir.", variant: "destructive" });
+            }
+          }}
+        >
+          <Check className="h-4 w-4 mr-1" />
+          Concluir
+        </Button>
+      );
+    }
+
+    if (buttons.length === 0) return <span className="text-muted-foreground text-[10px]">-</span>;
     
     return <div className="flex gap-1">{buttons}</div>;
   };
 
-  // Apply all filters
-  const filteredSaidas = saidas.filter(s => {
-    // Text search - only by patient name now
-    const matchesSearch = 
-      !searchTerm ||
-      (s.paciente_nome && s.paciente_nome.toLowerCase().includes(searchTerm.toLowerCase()));
+  // Server-side filtered — data already filtered by the DB
+  const filteredSaidas = saidas;
+  const filteredFolhasAvulsas = folhasAvulsas;
+  const filteredFaltantesSalus = faltantesSalus;
 
-    // Date filter - now uses data_atendimento instead of created_at
-    let matchesDate = true;
-    if (dataInicio || dataFim) {
-      if (s.data_atendimento) {
-        const recordDate = new Date(s.data_atendimento + "T12:00:00");
-        if (dataInicio) {
-          const startDate = new Date(dataInicio + "T00:00:00");
-          matchesDate = matchesDate && recordDate >= startDate;
-        }
-        if (dataFim) {
-          const endDate = new Date(dataFim + "T23:59:59");
-          matchesDate = matchesDate && recordDate <= endDate;
-        }
-      } else {
-        // If no data_atendimento, exclude from filtered results when date filter is active
-        matchesDate = false;
-      }
-    }
-
-    // Status filter
-    const matchesStatus = statusFilter === "todos" || s.status === statusFilter;
-
-    return matchesSearch && matchesDate && matchesStatus;
-  });
+  const defaultStatusFilter =
+    isClassificacao && !isAdmin && !isNir && !isFaturamento ? "todos" : "em_fluxo";
 
   const clearFilters = () => {
     setSearchTerm("");
     setDataInicio("");
     setDataFim("");
-    setStatusFilter("todos");
+    setStatusFilter(defaultStatusFilter);
+    setFilteredSaidasCount(null);
   };
 
-  const hasActiveFilters = searchTerm || dataInicio || dataFim || statusFilter !== "todos";
+  const hasActiveFilters = searchTerm || dataInicio || dataFim || (statusFilter !== defaultStatusFilter);
 
   // Check if a record is missing from Salus analysis
   const isMissingFromSalus = (saida: SaidaProntuario): boolean => {
@@ -601,33 +1046,6 @@ export const SaidaProntuariosModule = () => {
     });
   };
 
-  // Get filtered faltantes from database
-  const filteredFaltantesSalus = faltantesSalus.filter(s => {
-    // Text search - only by patient name now
-    const matchesSearch = 
-      !faltantesSearchTerm ||
-      (s.paciente_nome && s.paciente_nome.toLowerCase().includes(faltantesSearchTerm.toLowerCase()));
-
-    let matchesDate = true;
-    if (faltantesDataInicio || faltantesDataFim) {
-      if (s.data_atendimento) {
-        const recordDate = new Date(s.data_atendimento + "T12:00:00");
-        if (faltantesDataInicio) {
-          const startDate = new Date(faltantesDataInicio + "T00:00:00");
-          matchesDate = matchesDate && recordDate >= startDate;
-        }
-        if (faltantesDataFim) {
-          const endDate = new Date(faltantesDataFim + "T23:59:59");
-          matchesDate = matchesDate && recordDate <= endDate;
-        }
-      } else {
-        matchesDate = false;
-      }
-    }
-
-    return matchesSearch && matchesDate;
-  });
-
   const clearFaltantesFilters = () => {
     setFaltantesSearchTerm("");
     setFaltantesDataInicio("");
@@ -635,32 +1053,6 @@ export const SaidaProntuariosModule = () => {
   };
 
   const hasFaltantesActiveFilters = faltantesSearchTerm || faltantesDataInicio || faltantesDataFim;
-
-  // Filters for folhas avulsas
-  const filteredFolhasAvulsas = folhasAvulsas.filter(s => {
-    const matchesSearch = 
-      !folhasSearchTerm ||
-      (s.paciente_nome && s.paciente_nome.toLowerCase().includes(folhasSearchTerm.toLowerCase()));
-
-    let matchesDate = true;
-    if (folhasDataInicio || folhasDataFim) {
-      if (s.data_atendimento) {
-        const recordDate = new Date(s.data_atendimento + "T12:00:00");
-        if (folhasDataInicio) {
-          const startDate = new Date(folhasDataInicio + "T00:00:00");
-          matchesDate = matchesDate && recordDate >= startDate;
-        }
-        if (folhasDataFim) {
-          const endDate = new Date(folhasDataFim + "T23:59:59");
-          matchesDate = matchesDate && recordDate <= endDate;
-        }
-      } else {
-        matchesDate = false;
-      }
-    }
-
-    return matchesSearch && matchesDate;
-  });
 
   const clearFolhasFilters = () => {
     setFolhasSearchTerm("");
@@ -671,13 +1063,14 @@ export const SaidaProntuariosModule = () => {
   const hasFolhasActiveFilters = folhasSearchTerm || folhasDataInicio || folhasDataFim;
 
   const getFolhasExportData = () => {
-    const headers = ['Paciente', 'Data Nascimento', 'Data Atendimento', 'Status', 'Observação'];
+    const headers = ['Paciente', 'Data Nascimento', 'Data Atendimento', 'Status', 'Observação', 'Vínculo'];
     const rows = filteredFolhasAvulsas.map(s => [
       s.paciente_nome || '-',
       safeFormatDate(s.nascimento_mae, "dd/MM/yyyy"),
       safeFormatDate(s.data_atendimento, "dd/MM/yyyy"),
       'Folha Avulsa',
       s.observacao_classificacao || '-',
+      folhasVinculadasMap[s.id] ? `Vinculado - ${safeFormatDate(folhasVinculadasMap[s.id].data_registro, "dd/MM/yyyy")} - ${folhasVinculadasMap[s.id].status}` : 'Sem prontuário',
     ]);
     return { headers, rows };
   };
@@ -756,16 +1149,21 @@ export const SaidaProntuariosModule = () => {
   };
 
   const getExportData = () => {
-    const headers = ['Paciente', 'Data Nasc.', 'Data Atendimento', 'Status', 'Recepção', 'Classificação', 'NIR'];
-    const rows = filteredSaidas.map(s => [
+    const headers = ['Paciente', 'Data Nasc.', 'Data Atendimento', 'Pendências', 'Status', 'Recepção', 'Classificação', 'NIR'];
+    const rows = filteredSaidas.map(s => {
+      const cl = s.checklist_validacao as Record<string, string> | null;
+      const pendCount = cl ? Object.entries(cl).filter(([k, v]) => k !== "observacao" && v === "pendente").length : 0;
+      return [
       s.paciente_nome || '-',
       safeFormatDate(s.nascimento_mae, "dd/MM/yyyy"),
       safeFormatDate(s.data_atendimento, "dd/MM/yyyy"),
+      pendCount > 0 ? `${pendCount} pendência(s)` : 'Nenhuma',
       s.status,
       safeFormatDate(s.registrado_recepcao_em, "dd/MM/yy HH:mm"),
       safeFormatDate(s.validado_classificacao_em, "dd/MM/yy HH:mm"),
       safeFormatDate(s.conferido_nir_em, "dd/MM/yy HH:mm"),
-    ]);
+      ];
+    });
     return { headers, rows };
   };
 
@@ -847,34 +1245,66 @@ export const SaidaProntuariosModule = () => {
           <p className="text-muted-foreground">Controle de fluxo entre setores</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <PdfPatientCounter onAnalysisComplete={setSalusAnalysis} onLaunchComplete={fetchSaidas} />
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Exportar
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExportCSV}>
-                <FileText className="h-4 w-4 mr-2" />
-                Exportar CSV
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleExportPDF}>
-                <FileText className="h-4 w-4 mr-2" />
-                Exportar PDF
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {isNir && <SalusImportModule />}
+          {!isRecepcao && !isClassificacao && (
+            <>
+              {isAdmin && (
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span><PdfPatientCounter onAnalysisComplete={setSalusAnalysis} onLaunchComplete={fetchSaidas} /></span>
+                  </TooltipTrigger>
+                  <TooltipContent>Importar lista de pacientes a partir de PDF do Salus</TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              )}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="outline">
+                          <Download className="h-4 w-4 mr-2" />
+                          Exportar
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Exportar registros em CSV ou PDF</TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={handleExportCSV}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Exportar CSV
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportPDF}>
+                    <FileText className="h-4 w-4 mr-2" />
+                    Exportar PDF
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </>
+          )}
           {canInsert && (
             <>
+              <Button variant="outline" onClick={() => setImportarOpen(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Importar Planilha
+              </Button>
               <Dialog open={newProntuarioOpen} onOpenChange={setNewProntuarioOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Registrar Saída
-                  </Button>
-                </DialogTrigger>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DialogTrigger asChild>
+                        <Button>
+                          <Plus className="h-4 w-4 mr-2" />
+                          Registrar Saída
+                        </Button>
+                      </DialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>Registrar a saída de um prontuário do setor</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Registrar Saída de Prontuário</DialogTitle>
@@ -912,6 +1342,43 @@ export const SaidaProntuariosModule = () => {
                         onChange={(e) => setDataAtendimento(e.target.value)}
                       />
                     </div>
+                    <div className="border rounded-lg p-4 bg-muted/30">
+                      <p className="text-sm font-medium mb-3">Checklist de Verificação</p>
+                      <div className="space-y-3">
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
+                            id="cadastro-conferido"
+                            checked={cadastroConferido}
+                            onCheckedChange={(checked) => setCadastroConferido(checked === true)}
+                          />
+                          <label htmlFor="cadastro-conferido" className="text-sm cursor-pointer">
+                            Cadastro conferido e identificação do paciente correta?
+                          </label>
+                        </div>
+                        <div className="flex items-center space-x-3">
+                          <Checkbox
+                            id="carimbo-medico"
+                            checked={possuiCarimboMedico}
+                            onCheckedChange={(checked) => setPossuiCarimboMedico(checked === true)}
+                          />
+                          <label htmlFor="carimbo-medico" className="text-sm cursor-pointer">
+                            O prontuário possui carimbo médico?
+                          </label>
+                        </div>
+                      </div>
+                      {(!cadastroConferido || !possuiCarimboMedico) && (
+                        <p className="text-xs text-warning mt-2">Atenção: itens desmarcados serão registrados como pendência.</p>
+                      )}
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium">Observação</label>
+                      <Textarea
+                        value={observacaoSaida}
+                        onChange={(e) => setObservacaoSaida(e.target.value)}
+                        placeholder="Observações adicionais (opcional)..."
+                        rows={2}
+                      />
+                    </div>
                   </div>
                   <DialogFooter>
                     <Button 
@@ -929,13 +1396,20 @@ export const SaidaProntuariosModule = () => {
                 </DialogContent>
               </Dialog>
 
-              <Dialog open={newFolhaAvulsaOpen} onOpenChange={setNewFolhaAvulsaOpen}>
-                <DialogTrigger asChild>
-                  <Button variant="secondary">
-                    <FileStack className="h-4 w-4 mr-2" />
-                    Folha Avulsa
-                  </Button>
-                </DialogTrigger>
+              {!isClassificacao && <Dialog open={newFolhaAvulsaOpen} onOpenChange={setNewFolhaAvulsaOpen}>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DialogTrigger asChild>
+                        <Button variant="secondary">
+                          <FileStack className="h-4 w-4 mr-2" />
+                          Folha Avulsa
+                        </Button>
+                      </DialogTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent>Registrar folha avulsa de prontuário incompleto</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle className="flex items-center gap-2">
@@ -1003,7 +1477,21 @@ export const SaidaProntuariosModule = () => {
                     </Button>
                   </DialogFooter>
                 </DialogContent>
-              </Dialog>
+              </Dialog>}
+
+              {(isNir || isAdmin || isRecepcao || isClassificacao || isFaturamento) && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="outline" onClick={() => setEntregaDialogOpen(true)}>
+                        <FileOutput className="h-4 w-4 mr-2" />
+                        Registrar Entrega
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Registrar entrega de prontuários entre setores</TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
             </>
           )}
         </div>
@@ -1031,7 +1519,7 @@ export const SaidaProntuariosModule = () => {
                 Filtros
                 {hasActiveFilters && (
                   <Badge className="ml-2 bg-primary text-primary-foreground" variant="secondary">
-                    {[searchTerm, dataInicio, dataFim, statusFilter !== "todos"].filter(Boolean).length}
+                    {[searchTerm, dataInicio, dataFim, statusFilter !== defaultStatusFilter].filter(Boolean).length}
                   </Badge>
                 )}
               </Button>
@@ -1065,18 +1553,31 @@ export const SaidaProntuariosModule = () => {
                 </div>
                 <div className="flex-1">
                   <label className="text-sm font-medium mb-1 block">Status</label>
-                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                   <Select value={statusFilter} onValueChange={setStatusFilter}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Todos" />
+                      <SelectValue placeholder="Em Fluxo" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="todos">Todos</SelectItem>
-                      <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
-                      <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
-                      <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
-                      <SelectItem value="em_avaliacao">Em Avaliação</SelectItem>
-                      <SelectItem value="concluido">Concluído</SelectItem>
-                      <SelectItem value="pendente">Pendente</SelectItem>
+                      {isNir && !isAdmin && !isFaturamento ? (
+                        <>
+                          <SelectItem value="em_fluxo">Aguardando NIR</SelectItem>
+                        </>
+                      ) : isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao ? (
+                        <>
+                          <SelectItem value="em_fluxo">Em Fluxo (não concluídos)</SelectItem>
+                        </>
+                      ) : (
+                        <>
+                          <SelectItem value="em_fluxo">Em Fluxo (não concluídos)</SelectItem>
+                          <SelectItem value="todos">Todos</SelectItem>
+                          <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
+                          <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
+                          <SelectItem value="pendente">Aguardando Resolução de Pendência</SelectItem>
+                          <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
+                          <SelectItem value="em_avaliacao">Em Avaliação</SelectItem>
+                          <SelectItem value="concluido">Concluído</SelectItem>
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1098,8 +1599,8 @@ export const SaidaProntuariosModule = () => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Total de Registros */}
         <Card 
-          className="bg-primary/5 border-primary/20 cursor-pointer hover:bg-primary/10 transition-colors"
-          onClick={() => document.getElementById('prontuarios-fluxo')?.scrollIntoView({ behavior: 'smooth' })}
+          className={`cursor-pointer hover:bg-primary/10 transition-colors ${visibleSection === "fluxo" ? "bg-primary/10 border-primary ring-2 ring-primary/30" : "bg-primary/5 border-primary/20"}`}
+          onClick={() => setVisibleSection(visibleSection === "fluxo" ? null : "fluxo")}
         >
           <CardContent className="py-4">
             <div className="flex items-center gap-3">
@@ -1107,9 +1608,16 @@ export const SaidaProntuariosModule = () => {
                 <Users className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-sm text-muted-foreground">Total de Registros</p>
-                <p className="text-2xl font-bold text-primary">{hasActiveFilters ? filteredSaidas.length : totalSaidasCount}</p>
-                {hasActiveFilters && (
+                <p className="text-sm text-muted-foreground">
+                  {isFullAccessRole ? "Total de Registros" : "Registros do Dia"}
+                </p>
+                <p className="text-2xl font-bold text-primary">
+                  {isFullAccessRole
+                    ? (hasActiveFilters && filteredSaidasCount !== null ? filteredSaidasCount : totalSaidasCount)
+                    : totalSaidasHojeCount
+                  }
+                </p>
+                {isFullAccessRole && hasActiveFilters && filteredSaidasCount !== null && (
                   <p className="text-xs text-muted-foreground">de {totalSaidasCount} totais</p>
                 )}
               </div>
@@ -1119,8 +1627,8 @@ export const SaidaProntuariosModule = () => {
 
         {/* Folhas Avulsas */}
         <Card 
-          className="bg-warning/5 border-warning/20 cursor-pointer hover:bg-warning/10 transition-colors"
-          onClick={() => document.getElementById('folhas-avulsas')?.scrollIntoView({ behavior: 'smooth' })}
+          className={`cursor-pointer hover:bg-warning/10 transition-colors ${visibleSection === "folhas" ? "bg-warning/10 border-warning ring-2 ring-warning/30" : "bg-warning/5 border-warning/20"}`}
+          onClick={() => setVisibleSection(visibleSection === "folhas" ? null : "folhas")}
         >
           <CardContent className="py-4">
             <div className="flex items-center gap-3">
@@ -1129,16 +1637,19 @@ export const SaidaProntuariosModule = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Folhas Avulsas</p>
-                <p className="text-2xl font-bold text-warning">{totalFolhasCount}</p>
+                <p className="text-2xl font-bold text-warning">{filteredFolhasCount !== null ? filteredFolhasCount : totalFolhasCount}</p>
+                {filteredFolhasCount !== null && (
+                  <p className="text-xs text-muted-foreground">de {totalFolhasCount} totais</p>
+                )}
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Prontuários Faltantes */}
-        <Card 
-          className="bg-destructive/5 border-destructive/20 cursor-pointer hover:bg-destructive/10 transition-colors"
-          onClick={() => document.getElementById('prontuarios-faltantes')?.scrollIntoView({ behavior: 'smooth' })}
+        {/* Prontuários Faltantes - oculto para NIR */}
+        {!isNir && <Card 
+          className={`cursor-pointer hover:bg-destructive/10 transition-colors ${visibleSection === "faltantes" ? "bg-destructive/10 border-destructive ring-2 ring-destructive/30" : "bg-destructive/5 border-destructive/20"}`}
+          onClick={() => setVisibleSection(visibleSection === "faltantes" ? null : "faltantes")}
         >
           <CardContent className="py-4">
             <div className="flex items-center gap-3">
@@ -1147,14 +1658,18 @@ export const SaidaProntuariosModule = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Prontuários Faltantes</p>
-                <p className="text-2xl font-bold text-destructive">{totalFaltantesCount}</p>
+                <p className="text-2xl font-bold text-destructive">{filteredFaltantesCount !== null ? filteredFaltantesCount : totalFaltantesCount}</p>
+                {filteredFaltantesCount !== null && (
+                  <p className="text-xs text-muted-foreground">de {totalFaltantesCount} totais</p>
+                )}
               </div>
             </div>
           </CardContent>
-        </Card>
+        </Card>}
       </div>
 
-      {/* Table */}
+      {/* Table - Prontuários em Fluxo */}
+      {visibleSection === "fluxo" && (
       <Card id="prontuarios-fluxo">
         <CardHeader>
           <CardTitle>Prontuários em Fluxo</CardTitle>
@@ -1176,18 +1691,24 @@ export const SaidaProntuariosModule = () => {
               Nenhum prontuário encontrado.
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Data Nasc.</TableHead>
-                    <TableHead>Data Atendimento</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Recepção</TableHead>
-                    <TableHead>Classificação</TableHead>
-                    <TableHead>NIR</TableHead>
-                    <TableHead>Ações</TableHead>
+            <div className="border rounded-md overflow-hidden">
+              <div className="overflow-x-auto overflow-y-auto max-h-[65vh] relative scrollbar-thin">
+              <Table className="text-xs min-w-[1100px]">
+                <TableHeader className="sticky top-0 z-30">
+                  <TableRow className="bg-[hsl(var(--sidebar-background))] hover:bg-[hsl(var(--sidebar-background))]">
+                    <TableHead className="sticky left-0 z-40 bg-[hsl(var(--sidebar-background))] min-w-[180px] max-w-[220px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.15)] text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 px-3">Paciente</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 whitespace-nowrap min-w-[75px] px-2">Dt. Nasc.</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 whitespace-nowrap min-w-[75px] px-2">Dt. Atend.</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 min-w-[90px] px-2">Pendências</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 min-w-[90px] px-2">Resolução</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 min-w-[100px] px-2">Status</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 whitespace-nowrap min-w-[85px] px-2">Recepção</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 whitespace-nowrap min-w-[85px] px-2">Entr. Rec.</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 whitespace-nowrap min-w-[85px] px-2">Classif.</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 whitespace-nowrap min-w-[85px] px-2">Entr. Cl.</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 min-w-[80px] px-2">NIR</TableHead>
+                    <TableHead className="text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 whitespace-nowrap min-w-[85px] px-2">Entr. Fat.</TableHead>
+                    <TableHead className="sticky right-0 z-40 bg-[hsl(var(--sidebar-background))] shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.15)] text-[10px] font-semibold text-white uppercase tracking-wider py-2.5 text-center min-w-[70px] px-2">Ações</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -1196,42 +1717,230 @@ export const SaidaProntuariosModule = () => {
                     return (
                       <TableRow 
                         key={saida.id}
-                        className={missingFromSalus ? "bg-destructive/10 border-l-4 border-l-destructive" : ""}
+                        className={`group ${missingFromSalus ? "bg-destructive/5 border-l-4 border-l-destructive" : "even:bg-muted/30 hover:bg-muted/50"}`}
                       >
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            {saida.paciente_nome || "-"}
+                        <TableCell className="font-medium uppercase sticky left-0 z-20 bg-card shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)] py-1.5 text-xs max-w-[220px] px-3">
+                          <div className="flex items-center gap-1 truncate">
+                            <span className="truncate">{saida.paciente_nome || "-"}</span>
                             {missingFromSalus && (
-                              <Badge variant="destructive" className="text-xs">
-                                Falta Salus
+                              <Badge variant="destructive" className="text-[9px] px-1 py-0 shrink-0">
+                                Salus
                               </Badge>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          {safeFormatDate(saida.nascimento_mae, "dd/MM/yyyy")}
+                        <TableCell className="py-1.5 whitespace-nowrap">
+                          {safeFormatDate(saida.nascimento_mae, "dd/MM/yy")}
+                        </TableCell>
+                        <TableCell className="py-1.5 whitespace-nowrap">
+                          {safeFormatDate(saida.data_atendimento, "dd/MM/yy")}
+                        </TableCell>
+                        <TableCell className="py-1.5">
+                          {(() => {
+                            const cl = saida.checklist_validacao as Record<string, string> | null;
+                            if (!cl) return <span className="text-xs text-muted-foreground">-</span>;
+                            const pendencias = Object.entries(cl)
+                              .filter(([k, v]) => k !== "observacao" && v === "pendente")
+                              .map(([k]) => {
+                                const labels: Record<string, string> = {
+                                  carimbo_enfermagem: "Carimbo Enfermagem",
+                                  evolucao: "Evolução da medicação",
+                                  ficha_medicacao: "Ficha de medicação",
+                                  pedidos_exames: "Pedidos de exames",
+                                  alta_medica: "Alta médica",
+                                };
+                                return labels[k] || k;
+                              });
+                            if (pendencias.length === 0) {
+                              return <Badge className="bg-success text-success-foreground text-xs">Nenhuma</Badge>;
+                            }
+                            if (saida.pendencia_resolvida_em) {
+                              return (
+                                <Popover>
+                                  <PopoverTrigger asChild>
+                                    <Button variant="outline" size="sm" className="text-xs text-muted-foreground h-7">
+                                      Houveram {pendencias.length} pendência{pendencias.length > 1 ? "s" : ""}
+                                    </Button>
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-64 p-3">
+                                    <p className="text-sm font-medium mb-2">Pendências Resolvidas</p>
+                                    <ul className="space-y-1">
+                                      {pendencias.map((p, i) => (
+                                        <li key={i} className="text-sm flex items-center gap-1.5">
+                                          <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+                                          {p}
+                                        </li>
+                                      ))}
+                                    </ul>
+                                    {cl.observacao && (
+                                      <p className="text-xs text-muted-foreground mt-2 border-t pt-2">
+                                        <strong>Obs:</strong> {cl.observacao}
+                                      </p>
+                                    )}
+                                  </PopoverContent>
+                                </Popover>
+                              );
+                            }
+                            return (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" size="sm" className="text-xs text-destructive border-destructive h-7">
+                                    <AlertCircle className="h-3 w-3 mr-1" />
+                                    {pendencias.length} pendência{pendencias.length > 1 ? "s" : ""}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-64 p-3">
+                                  <p className="text-sm font-medium mb-2">Itens Pendentes</p>
+                                  <ul className="space-y-1">
+                                    {pendencias.map((p, i) => (
+                                      <li key={i} className="text-sm flex items-center gap-1.5">
+                                        <span className="h-1.5 w-1.5 rounded-full bg-destructive" />
+                                        {p}
+                                      </li>
+                                    ))}
+                                  </ul>
+                                  {cl.observacao && (
+                                    <p className="text-xs text-muted-foreground mt-2 border-t pt-2">
+                                      <strong>Obs:</strong> {cl.observacao}
+                                    </p>
+                                  )}
+                                </PopoverContent>
+                              </Popover>
+                            );
+                          })()}
                         </TableCell>
                         <TableCell>
-                          {safeFormatDate(saida.data_atendimento, "dd/MM/yyyy")}
+                          {(() => {
+                            const cl = saida.checklist_validacao as Record<string, string> | null;
+                            const hasPendencias = cl && Object.entries(cl).some(([k, v]) => k !== "observacao" && v === "pendente");
+                            if (!hasPendencias) return <span className="text-xs text-muted-foreground">-</span>;
+                            if (saida.pendencia_resolvida_em) {
+                              return (
+                                <div className="flex flex-col">
+                                  <Badge className="bg-success text-success-foreground text-xs w-fit">Resolvida</Badge>
+                                  <span className="text-xs text-muted-foreground mt-0.5">
+                                    {safeFormatDate(saida.pendencia_resolvida_em, "dd/MM/yy HH:mm")}
+                                  </span>
+                                </div>
+                              );
+                            }
+                            return (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="text-xs h-7"
+                                onClick={async () => {
+                                  try {
+                                    const { error } = await supabase
+                                      .from("saida_prontuarios")
+                                      .update({
+                                        pendencia_resolvida_em: new Date().toISOString(),
+                                        pendencia_resolvida_por: userId,
+                                        status: "aguardando_nir",
+                                      } as any)
+                                      .eq("id", saida.id);
+                                    if (error) throw error;
+                                    toast({ title: "Sucesso", description: "Pendência marcada como resolvida!" });
+                                    fetchSaidas();
+                                  } catch (err) {
+                                    console.error(err);
+                                    toast({ title: "Erro", description: "Erro ao resolver pendência.", variant: "destructive" });
+                                  }
+                                }}
+                              >
+                                <Check className="h-3 w-3 mr-1" />
+                                Resolver
+                              </Button>
+                            );
+                          })()}
                         </TableCell>
-                        <TableCell>{getStatusBadge(saida.status)}</TableCell>
-                        <TableCell>
-                          {safeFormatDate(saida.registrado_recepcao_em, "dd/MM/yy HH:mm")}
+                        <TableCell className="py-1.5">{getStatusBadge(saida.status)}</TableCell>
+                        <TableCell className="py-1.5 whitespace-nowrap">
+                          {safeFormatDate(saida.registrado_recepcao_em, "dd/MM HH:mm")}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-1.5 whitespace-nowrap">
+                          {(() => {
+                            const entrega = entregasMap[saida.id]?.find(e => e.setor_origem === "Recepção");
+                            if (!entrega) return <span className="text-muted-foreground">-</span>;
+                            return (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" size="sm" className="text-[10px] h-6 gap-1 px-1.5">
+                                    {safeFormatDate(entrega.data_hora, "dd/MM HH:mm")}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-56 p-3">
+                                  <p className="text-sm font-medium mb-2">Entrega Rec. → Class.</p>
+                                  <div className="space-y-1 text-sm">
+                                    <p><strong>Entregador:</strong> {entrega.entregador_nome}</p>
+                                    <p><strong>Recebido por:</strong> {entrega.responsavel_recebimento_nome}</p>
+                                    <p className="text-xs text-muted-foreground">{safeFormatDate(entrega.data_hora, "dd/MM/yyyy HH:mm:ss")}</p>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            );
+                          })()}
+                        </TableCell>
+                        <TableCell className="py-1.5 whitespace-nowrap">
                           <div className="flex flex-col">
-                            {safeFormatDate(saida.validado_classificacao_em, "dd/MM/yy HH:mm")}
+                            {safeFormatDate(saida.validado_classificacao_em, "dd/MM HH:mm")}
                             {saida.existe_fisicamente !== null && (
-                              <span className={`text-xs ${saida.existe_fisicamente ? "text-success" : "text-destructive"}`}>
+                              <span className={`text-[10px] ${saida.existe_fisicamente ? "text-success" : "text-destructive"}`}>
                                 {saida.existe_fisicamente ? "✓ Existe" : "✗ Não existe"}
                               </span>
                             )}
                           </div>
                         </TableCell>
-                        <TableCell>
-                          {safeFormatDate(saida.conferido_nir_em, "dd/MM/yy HH:mm")}
+                        <TableCell className="py-1.5 whitespace-nowrap">
+                          {(() => {
+                            const entrega = entregasMap[saida.id]?.find(e => e.setor_origem === "Classificação");
+                            if (!entrega) return <span className="text-muted-foreground">-</span>;
+                            return (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" size="sm" className="text-[10px] h-6 gap-1 px-1.5">
+                                    {safeFormatDate(entrega.data_hora, "dd/MM HH:mm")}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-56 p-3">
+                                  <p className="text-sm font-medium mb-2">Entrega Class. → NIR</p>
+                                  <div className="space-y-1 text-sm">
+                                    <p><strong>Entregador:</strong> {entrega.entregador_nome}</p>
+                                    <p><strong>Recebido por:</strong> {entrega.responsavel_recebimento_nome}</p>
+                                    <p className="text-xs text-muted-foreground">{safeFormatDate(entrega.data_hora, "dd/MM/yyyy HH:mm:ss")}</p>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            );
+                          })()}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="py-1.5 whitespace-nowrap">
+                          {safeFormatDate(saida.conferido_nir_em, "dd/MM HH:mm")}
+                        </TableCell>
+                        <TableCell className="py-1.5 whitespace-nowrap">
+                          {(() => {
+                            const entrega = entregasMap[saida.id]?.find(e => e.setor_origem === "NIR");
+                            if (!entrega) return <span className="text-muted-foreground">-</span>;
+                            return (
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <Button variant="outline" size="sm" className="text-[10px] h-6 gap-1 px-1.5">
+                                    {safeFormatDate(entrega.data_hora, "dd/MM HH:mm")}
+                                  </Button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-56 p-3">
+                                  <p className="text-sm font-medium mb-2">Entrega NIR → Fat.</p>
+                                  <div className="space-y-1 text-sm">
+                                    <p><strong>Entregador:</strong> {entrega.entregador_nome}</p>
+                                    <p><strong>Recebido por:</strong> {entrega.responsavel_recebimento_nome}</p>
+                                    <p className="text-xs text-muted-foreground">{safeFormatDate(entrega.data_hora, "dd/MM/yyyy HH:mm:ss")}</p>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
+                            );
+                          })()}
+                        </TableCell>
+                        <TableCell className="sticky right-0 z-20 bg-card shadow-[-2px_0_5px_-2px_rgba(0,0,0,0.15)] py-1.5 px-2 text-center">
                           {getActionButton(saida)}
                         </TableCell>
                       </TableRow>
@@ -1239,12 +1948,15 @@ export const SaidaProntuariosModule = () => {
                   })}
                 </TableBody>
               </Table>
+              </div>
             </div>
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Folhas Avulsas */}
+      {visibleSection === "folhas" && (
       <Card id="folhas-avulsas" className="bg-warning/5 border-warning/30">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -1345,6 +2057,7 @@ export const SaidaProntuariosModule = () => {
                       <TableHead>Data Nasc.</TableHead>
                       <TableHead>Data Atendimento</TableHead>
                       <TableHead>Observação</TableHead>
+                      <TableHead>Vínculo</TableHead>
                       <TableHead>Status</TableHead>
                       {isAdmin && <TableHead>Ações</TableHead>}
                     </TableRow>
@@ -1352,7 +2065,7 @@ export const SaidaProntuariosModule = () => {
                   <TableBody>
                     {filteredFolhasAvulsas.length === 0 ? (
                       <TableRow>
-                        <TableCell colSpan={isAdmin ? 7 : 6} className="text-center text-muted-foreground py-8">
+                        <TableCell colSpan={isAdmin ? 8 : 7} className="text-center text-muted-foreground py-8">
                           Nenhum registro encontrado com os filtros aplicados
                         </TableCell>
                       </TableRow>
@@ -1360,7 +2073,7 @@ export const SaidaProntuariosModule = () => {
                       filteredFolhasAvulsas.map((item, index) => (
                         <TableRow key={item.id} className="bg-warning/5">
                           <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
-                          <TableCell className="font-medium">{item.paciente_nome || '-'}</TableCell>
+                          <TableCell className="font-medium uppercase">{item.paciente_nome || '-'}</TableCell>
                           <TableCell>
                             {safeFormatDate(item.nascimento_mae, "dd/MM/yyyy")}
                           </TableCell>
@@ -1369,6 +2082,43 @@ export const SaidaProntuariosModule = () => {
                           </TableCell>
                           <TableCell className="max-w-[200px] truncate" title={item.observacao_classificacao || ''}>
                             {item.observacao_classificacao || '-'}
+                          </TableCell>
+                          <TableCell>
+                            {folhasVinculadasMap[item.id] ? (
+                              <div className="space-y-1">
+                                <Badge variant="outline" className="bg-success/10 text-success border-success/30">
+                                  <Check className="h-3 w-3 mr-1" />
+                                  Vinculado
+                                </Badge>
+                                <div className="text-xs text-muted-foreground">
+                                  <span className="block">Registrado: {safeFormatDate(folhasVinculadasMap[item.id].data_registro, "dd/MM/yyyy HH:mm")}</span>
+                                  <span className="block">Etapa: {
+                                    (() => {
+                                      const info = folhasVinculadasMap[item.id];
+                                      const statusLabels: Record<string, string> = {
+                                        aguardando_classificacao: "Classificação",
+                                        aguardando_nir: "NIR",
+                                        pendente: "Pendência",
+                                        aguardando_pendencia: "Pendência",
+                                        aguardando_faturamento: "Faturamento",
+                                        em_avaliacao: "Em Avaliação",
+                                        concluido: "Concluído",
+                                      };
+                                      const label = statusLabels[info.status] || info.status;
+                                      if (info.origem_pendencia) {
+                                        return `${label} (${info.origem_pendencia})`;
+                                      }
+                                      return label;
+                                    })()
+                                  }</span>
+                                </div>
+                              </div>
+                            ) : (
+                              <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/30">
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                Sem prontuário
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell>
                             <Badge className="flex items-center gap-1 w-fit bg-warning text-warning-foreground">
@@ -1398,8 +2148,10 @@ export const SaidaProntuariosModule = () => {
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Prontuários Faltantes - Importados via Salus */}
+      {visibleSection === "faltantes" && !isNir && (
       <Card id="prontuarios-faltantes" className="bg-destructive/5 border-destructive/30">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -1513,7 +2265,7 @@ export const SaidaProntuariosModule = () => {
                       filteredFaltantesSalus.map((item, index) => (
                         <TableRow key={item.id} className="bg-destructive/5">
                           <TableCell className="font-medium text-muted-foreground">{index + 1}</TableCell>
-                          <TableCell className="font-medium">{item.paciente_nome || '-'}</TableCell>
+                          <TableCell className="font-medium uppercase">{item.paciente_nome || '-'}</TableCell>
                           <TableCell>
                             {safeFormatDate(item.nascimento_mae, "dd/MM/yyyy")}
                           </TableCell>
@@ -1536,10 +2288,11 @@ export const SaidaProntuariosModule = () => {
           )}
         </CardContent>
       </Card>
+      )}
 
       {/* Validation Dialog */}
       <Dialog open={validarOpen} onOpenChange={setValidarOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               {selectedSaida?.status === "aguardando_classificacao" 
@@ -1547,45 +2300,95 @@ export const SaidaProntuariosModule = () => {
                 : "Conferência NIR"}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4 pt-4">
-            <div>
-              <label className="text-sm font-medium">Nome do Paciente</label>
-              <Input value={selectedSaida?.paciente_nome || "-"} disabled />
+          <div className="space-y-3 pt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Paciente</label>
+                <Input value={selectedSaida?.paciente_nome || "-"} disabled className="h-8 text-sm" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Dt. Nascimento</label>
+                <Input 
+                  value={safeFormatDate(selectedSaida?.nascimento_mae, "dd/MM/yyyy")} 
+                  disabled className="h-8 text-sm"
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-sm font-medium">Data de Nascimento</label>
-              <Input 
-                value={safeFormatDate(selectedSaida?.nascimento_mae, "dd/MM/yyyy")} 
-                disabled 
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Data de Atendimento</label>
-              <Input 
-                value={safeFormatDate(selectedSaida?.data_atendimento, "dd/MM/yyyy")} 
-                disabled 
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-muted-foreground">Dt. Atendimento</label>
+                <Input 
+                  value={safeFormatDate(selectedSaida?.data_atendimento, "dd/MM/yyyy")} 
+                  disabled className="h-8 text-sm"
+                />
+              </div>
+              {selectedSaida?.status === "aguardando_classificacao" && (
+                <div className="flex items-center pt-5">
+                  <Checkbox
+                    id="existeFisicamente"
+                    checked={existeFisicamente}
+                    onCheckedChange={(checked) => setExisteFisicamente(checked as boolean)}
+                  />
+                  <label htmlFor="existeFisicamente" className="text-sm font-medium cursor-pointer ml-2">
+                    Existe fisicamente
+                  </label>
+                </div>
+              )}
             </div>
             
             {selectedSaida?.status === "aguardando_classificacao" && (
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="existeFisicamente"
-                  checked={existeFisicamente}
-                  onCheckedChange={(checked) => setExisteFisicamente(checked as boolean)}
-                />
-                <label htmlFor="existeFisicamente" className="text-sm font-medium cursor-pointer">
-                  Prontuário existe fisicamente
-                </label>
-              </div>
+              <>
+                <div className="border rounded-lg p-3 bg-muted/30">
+                  <p className="text-sm font-medium mb-2">Checklist de Verificação</p>
+                  <div className="space-y-2">
+                    {[
+                      { key: "carimbo_enfermagem", label: "Carimbo e assinatura Enfermagem" },
+                      { key: "evolucao", label: "Evolução da medicação" },
+                      { key: "ficha_medicacao", label: "Ficha de medicação" },
+                      { key: "pedidos_exames", label: "Pedidos de exames" },
+                      { key: "alta_medica", label: "Alta médica" },
+                    ].map((item) => (
+                      <div key={item.key} className="flex items-center justify-between gap-2">
+                        <span className="text-sm">{item.label}</span>
+                        <Select
+                          value={checklistValidacao[item.key as keyof typeof checklistValidacao]}
+                          onValueChange={(val) =>
+                            setChecklistValidacao((prev) => ({ ...prev, [item.key]: val }))
+                          }
+                        >
+                          <SelectTrigger className="w-[140px] h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="sim">Sim</SelectItem>
+                            <SelectItem value="nao_se_aplica">Não se aplica</SelectItem>
+                            <SelectItem value="pendente">Pendente</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground">Observação do checklist (opcional)</label>
+                  <Textarea
+                    value={observacaoChecklist}
+                    onChange={(e) => setObservacaoChecklist(e.target.value)}
+                    placeholder="Observações sobre os itens verificados..."
+                    className="min-h-[60px]"
+                  />
+                </div>
+              </>
             )}
             
             <div>
-              <label className="text-sm font-medium">Observações (opcional)</label>
+              <label className="text-xs font-medium text-muted-foreground">Observações gerais (opcional)</label>
               <Textarea
                 value={observacao}
                 onChange={(e) => setObservacao(e.target.value)}
                 placeholder="Adicione observações..."
+                className="min-h-[60px]"
               />
             </div>
           </div>
@@ -1666,6 +2469,42 @@ export const SaidaProntuariosModule = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <EntregaProntuariosDialog
+        open={entregaDialogOpen}
+        onOpenChange={setEntregaDialogOpen}
+        onSuccess={() => fetchCounts()}
+      />
+
+      <AlertDialog open={deleteConfirmOpen} onOpenChange={setDeleteConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja excluir o registro de{" "}
+              <strong>{deletingSaida?.paciente_nome}</strong>? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSaida}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <ImportarSaidasDialog
+        open={importarOpen}
+        onOpenChange={setImportarOpen}
+        userId={userId || ""}
+        onImportComplete={() => fetchCounts()}
+      />
     </div>
   );
 };

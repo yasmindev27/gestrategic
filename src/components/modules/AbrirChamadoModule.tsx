@@ -41,6 +41,7 @@ import {
   Eye,
   Sparkles,
   AlertCircle,
+  ExternalLink,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -97,7 +98,11 @@ const statusLabels: Record<string, string> = {
   cancelado: "Cancelado",
 };
 
-export const AbrirChamadoModule = () => {
+interface AbrirChamadoModuleProps {
+  onOpenExternal?: (url: string, title: string) => void;
+}
+
+export const AbrirChamadoModule = ({ onOpenExternal }: AbrirChamadoModuleProps) => {
   const { logAction } = useLogAccess();
   const { toast } = useToast();
   
@@ -312,19 +317,51 @@ export const AbrirChamadoModule = () => {
   };
 
   const handleAbrirChamado = () => {
-    window.open("https://suporte.santacasachavantes.org/index.php", "_blank");
+    const url = "https://suporte.santacasachavantes.org/index.php";
+    if (onOpenExternal) {
+      onOpenExternal(url, "GLPI - Suporte");
+    } else {
+      window.open(url, "_blank");
+    }
   };
 
   return (
     <div className="space-y-6">
+      {/* Card de acesso ao portal GLPI */}
+      <Card className="border-primary/30 bg-primary/5">
+        <CardContent className="pt-6">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="p-3 bg-primary/10 rounded-lg">
+                <Ticket className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold text-foreground">Portal GLPI - Suporte</h2>
+                <p className="text-muted-foreground text-sm">
+                  Acesse o portal GLPI para abrir e acompanhar chamados de TI, Manutenção e Engenharia Clínica
+                </p>
+              </div>
+            </div>
+            <Button 
+              onClick={() => window.open("https://suporte.santacasachavantes.org/index.php", "_blank", "noopener,noreferrer")} 
+              size="lg" 
+              className="gap-2 whitespace-nowrap"
+            >
+              <ExternalLink className="h-5 w-5" />
+              Acessar Portal
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-foreground">Central de Chamados - GLPI</h2>
-          <p className="text-muted-foreground">Abra chamados para TI, Manutenção ou Engenharia Clínica no GLPI</p>
+          <h2 className="text-2xl font-bold text-foreground">Chamados Internos</h2>
+          <p className="text-muted-foreground">Abra e acompanhe chamados internos pelo sistema</p>
         </div>
-        <Button onClick={handleAbrirChamado} size="lg">
+        <Button onClick={() => setCreateDialog(true)} size="lg">
           <Plus className="h-5 w-5 mr-2" />
-          Abrir Chamado no GLPI
+          Novo Chamado Interno
         </Button>
       </div>
 
@@ -551,10 +588,10 @@ export const AbrirChamadoModule = () => {
                     <SelectValue placeholder="Selecione ou deixe em branco para IA classificar" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="baixa">🟢 Baixa - Melhorias, preventivas</SelectItem>
-                    <SelectItem value="media">🟡 Média - Afeta produtividade</SelectItem>
-                    <SelectItem value="alta">🟠 Alta - Equipamentos importantes</SelectItem>
-                    <SelectItem value="urgente">🔴 Urgente - Risco à vida/suporte vital</SelectItem>
+                    <SelectItem value="baixa">Baixa - Melhorias, preventivas</SelectItem>
+                    <SelectItem value="media">Média — Afeta produtividade</SelectItem>
+                    <SelectItem value="alta">Alta — Equipamentos importantes</SelectItem>
+                    <SelectItem value="urgente">Urgente — Risco à vida / suporte vital</SelectItem>
                   </SelectContent>
                 </Select>
               )}

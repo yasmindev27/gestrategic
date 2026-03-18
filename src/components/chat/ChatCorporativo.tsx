@@ -75,9 +75,13 @@ interface Usuario {
 
 const CANAL_GERAL_ID = "00000000-0000-0000-0000-000000000001";
 
-export const ChatCorporativo = () => {
+interface ChatCorporativoProps {
+  initialConversaId?: string | null;
+}
+
+export const ChatCorporativo = ({ initialConversaId }: ChatCorporativoProps = {}) => {
   const { isAdmin } = useUserRole();
-  const [conversaSelecionada, setConversaSelecionada] = useState<string | null>(null);
+  const [conversaSelecionada, setConversaSelecionada] = useState<string | null>(initialConversaId ?? null);
   const [novaMensagem, setNovaMensagem] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [novaConversaNome, setNovaConversaNome] = useState("");
@@ -96,6 +100,7 @@ export const ChatCorporativo = () => {
   const [showMentions, setShowMentions] = useState(false);
   const [mentionSearch, setMentionSearch] = useState("");
   const [uploadingFile, setUploadingFile] = useState(false);
+  const [privateUserSearch, setPrivateUserSearch] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -119,6 +124,13 @@ export const ChatCorporativo = () => {
     };
     getUser();
   }, []);
+
+  // Reagir a mudança de initialConversaId (ex: clique em notificação)
+  useEffect(() => {
+    if (initialConversaId) {
+      setConversaSelecionada(initialConversaId);
+    }
+  }, [initialConversaId]);
 
   // Auto-join no canal geral
   useEffect(() => {
@@ -391,7 +403,7 @@ export const ChatCorporativo = () => {
     };
   }, [userId, conversaSelecionada, queryClient]);
 
-  // Realtime para mensagens
+  // Realtime para mensagens - append instantâneo
   useEffect(() => {
     if (!conversaSelecionada) return;
 
@@ -400,7 +412,70 @@ export const ChatCorporativo = () => {
       .on(
         'postgres_changes',
         {
-          event: '*',
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_mensagens',
+          filter: `conversa_id=eq.${conversaSelecionada}`
+        },
+        async (payload) => {
+          const newMsg = payload.new as Mensagem;
+          
+          // Se é mensagem própria, usar userName local (já está no cache otimista)
+          let remetenteNome = "Usuário";
+          if (newMsg.remetente_id === userId) {
+            remetenteNome = userName || "Você";
+          } else {
+            // Tentar do cache de usuários primeiro
+            const cachedUsers = queryClient.getQueryData<Usuario[]>(["todos-usuarios"]);
+            const cached = cachedUsers?.find(u => u.user_id === newMsg.remetente_id);
+            if (cached) {
+              remetenteNome = cached.full_name;
+            } else {
+              const { data: profile } = await supabase
+                .from("profiles")
+                .select("full_name")
+                .eq("user_id", newMsg.remetente_id)
+                .single();
+              remetenteNome = profile?.full_name || "Usuário";
+            }
+          }
+
+          const msgComNome: Mensagem = {
+            ...newMsg,
+            remetente_nome: remetenteNome,
+            lido: false,
+            lidoPorTodos: false,
+          };
+
+          // Append à lista existente sem refetch completo
+          queryClient.setQueryData(
+            ["chat-mensagens", conversaSelecionada],
+            (old: Mensagem[] | undefined) => {
+              if (!old) return [msgComNome];
+              // Evitar duplicatas (incluindo temp messages)
+              const filtered = old.filter(m => !m.id.startsWith('temp-'));
+              if (filtered.some(m => m.id === newMsg.id)) return filtered;
+              return [...filtered, msgComNome];
+            }
+          );
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'chat_mensagens',
+          filter: `conversa_id=eq.${conversaSelecionada}`
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ["chat-mensagens", conversaSelecionada] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
           schema: 'public',
           table: 'chat_mensagens',
           filter: `conversa_id=eq.${conversaSelecionada}`
@@ -414,7 +489,7 @@ export const ChatCorporativo = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [conversaSelecionada, queryClient]);
+  }, [conversaSelecionada, queryClient, userId, userName]);
 
   // Scroll para última mensagem
   useEffect(() => {
@@ -456,11 +531,34 @@ export const ChatCorporativo = () => {
   const enviarMensagem = useCallback(async () => {
     if (!novaMensagem.trim() || !conversaSelecionada || !userId || enviando) return;
 
+    const mensagemTexto = novaMensagem.trim();
     setEnviando(true);
+    setNovaMensagem("");
+    
+    // Optimistic: adicionar mensagem instantaneamente na UI
+    const tempId = `temp-${Date.now()}`;
+    const mensagemOtimista: Mensagem = {
+      id: tempId,
+      conversa_id: conversaSelecionada,
+      remetente_id: userId,
+      conteudo: mensagemTexto,
+      tipo: "texto",
+      created_at: new Date().toISOString(),
+      excluido: false,
+      remetente_nome: userName || "Você",
+      lido: false,
+      lidoPorTodos: false,
+    };
+    
+    queryClient.setQueryData(
+      ["chat-mensagens", conversaSelecionada],
+      (old: Mensagem[] | undefined) => old ? [...old, mensagemOtimista] : [mensagemOtimista]
+    );
+
     try {
       const { data, error } = await supabase.functions.invoke("moderar-mensagem", {
         body: {
-          conteudo: novaMensagem.trim(),
+          conteudo: mensagemTexto,
           tipo: "texto",
           conversa_id: conversaSelecionada
         }
@@ -469,6 +567,11 @@ export const ChatCorporativo = () => {
       if (error) throw error;
 
       if (!data.approved) {
+        // Remover mensagem otimista se bloqueada
+        queryClient.setQueryData(
+          ["chat-mensagens", conversaSelecionada],
+          (old: Mensagem[] | undefined) => old ? old.filter(m => m.id !== tempId) : []
+        );
         toast({
           title: "Mensagem bloqueada",
           description: data.reason,
@@ -476,9 +579,12 @@ export const ChatCorporativo = () => {
         });
         return;
       }
-
-      setNovaMensagem("");
-      queryClient.invalidateQueries({ queryKey: ["chat-mensagens", conversaSelecionada] });
+      
+      // Remover a mensagem temporária - o realtime vai inserir a real
+      queryClient.setQueryData(
+        ["chat-mensagens", conversaSelecionada],
+        (old: Mensagem[] | undefined) => old ? old.filter(m => m.id !== tempId) : []
+      );
     } catch (error) {
       console.error("Erro ao enviar mensagem:", error);
       toast({
@@ -489,7 +595,7 @@ export const ChatCorporativo = () => {
     } finally {
       setEnviando(false);
     }
-  }, [novaMensagem, conversaSelecionada, userId, enviando, queryClient]);
+  }, [novaMensagem, conversaSelecionada, userId, enviando, queryClient, userName]);
 
   // Upload e envio de arquivo
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -528,9 +634,8 @@ export const ChatCorporativo = () => {
         throw uploadError;
       }
 
-      const { data: { publicUrl } } = supabase.storage
-        .from('chat-anexos')
-        .getPublicUrl(fileName);
+      // Use the storage path as reference (bucket is now private)
+      const fileStoragePath = fileName;
 
       // Enviar mensagem com arquivo
       const { data, error } = await supabase.functions.invoke("moderar-mensagem", {
@@ -538,7 +643,7 @@ export const ChatCorporativo = () => {
           conteudo: file.name,
           tipo: "arquivo",
           conversa_id: conversaSelecionada,
-          arquivo_url: publicUrl
+          arquivo_url: fileStoragePath
         }
       });
 
@@ -559,8 +664,7 @@ export const ChatCorporativo = () => {
         title: "Arquivo enviado",
         description: "Arquivo anexado com sucesso",
       });
-
-      queryClient.invalidateQueries({ queryKey: ["chat-mensagens", conversaSelecionada] });
+      // Realtime vai atualizar automaticamente
     } catch (error) {
       console.error("Erro ao enviar arquivo:", error);
       toast({
@@ -861,7 +965,7 @@ export const ChatCorporativo = () => {
             </CardTitle>
             <div className="flex gap-1">
               {/* Novo Chat Privado */}
-              <Dialog open={privateChatDialogOpen} onOpenChange={setPrivateChatDialogOpen}>
+              <Dialog open={privateChatDialogOpen} onOpenChange={(open) => { setPrivateChatDialogOpen(open); if (!open) setPrivateUserSearch(""); }}>
                 <DialogTrigger asChild>
                   <Button variant="ghost" size="icon" title="Novo Chat Privado">
                     <User className="h-4 w-4" />
@@ -872,8 +976,20 @@ export const ChatCorporativo = () => {
                     <DialogTitle>Novo Chat Privado</DialogTitle>
                     <DialogDescription>Selecione um usuário para iniciar uma conversa</DialogDescription>
                   </DialogHeader>
+                  <div className="relative mb-2">
+                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Buscar pessoa..."
+                      value={privateUserSearch}
+                      onChange={(e) => setPrivateUserSearch(e.target.value)}
+                      className="pl-8"
+                    />
+                  </div>
                   <ScrollArea className="h-64 border rounded-md p-2">
-                    {todosUsuarios.filter(u => u.user_id !== userId).map((usuario) => (
+                    {todosUsuarios
+                      .filter(u => u.user_id !== userId)
+                      .filter(u => !privateUserSearch || u.full_name.toLowerCase().includes(privateUserSearch.toLowerCase()))
+                      .map((usuario) => (
                       <button
                         key={usuario.user_id}
                         onClick={() => setSelectedPrivateUser(usuario.user_id)}
@@ -1225,15 +1341,23 @@ export const ChatCorporativo = () => {
                               isOwn ? "bg-primary text-primary-foreground" : "bg-muted"
                             }`}>
                               {msg.tipo === "arquivo" && msg.arquivo_url ? (
-                                <a 
-                                  href={msg.arquivo_url} 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="flex items-center gap-2 hover:underline"
+                                <button 
+                                  onClick={async () => {
+                                    const filePath = msg.arquivo_url!;
+                                    const { data, error } = await supabase.storage
+                                      .from('chat-anexos')
+                                      .createSignedUrl(filePath, 3600);
+                                    if (data?.signedUrl) {
+                                      window.open(data.signedUrl, '_blank');
+                                    } else {
+                                      toast({ title: "Erro ao abrir arquivo", description: "Não foi possível gerar link de acesso", variant: "destructive" });
+                                    }
+                                  }}
+                                  className="flex items-center gap-2 hover:underline cursor-pointer text-left"
                                 >
                                   {getFileIcon(msg.arquivo_url)}
                                   <span className="text-sm">{msg.conteudo}</span>
-                                </a>
+                                </button>
                               ) : (
                                 <p className="text-sm whitespace-pre-wrap break-words">
                                   {renderMensagemComMencoes(msg.conteudo)}

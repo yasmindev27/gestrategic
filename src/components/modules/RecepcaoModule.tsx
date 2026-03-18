@@ -1,89 +1,60 @@
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { ClipboardList, ClipboardX, FileText, UserCheck } from "lucide-react";
+import { ClipboardList, ClipboardX, Calendar } from "lucide-react";
 import { ControleFichasModule } from "./ControleFichasModule";
+import { EscalaTecEnfermagem } from "@/components/enfermagem";
+import { cn } from "@/lib/utils";
 
-type RecepcaoView = "menu" | "controle-fichas";
+const NAV_ITEMS = [
+  { id: "controle-fichas", label: "Controle de Fichas", icon: ClipboardX },
+  { id: "escala-recepcao", label: "Escala Recepção", icon: Calendar },
+];
 
 export const RecepcaoModule = () => {
-  const [currentView, setCurrentView] = useState<RecepcaoView>("menu");
+  const [activeTab, setActiveTab] = useState("controle-fichas");
 
-  if (currentView === "controle-fichas") {
-    return (
-      <div className="space-y-4">
-        <Button variant="ghost" onClick={() => setCurrentView("menu")} className="mb-2">
-          ← Voltar à Recepção
-        </Button>
-        <ControleFichasModule />
-      </div>
-    );
-  }
+  const renderContent = () => {
+    switch (activeTab) {
+      case "controle-fichas":
+        return <ControleFichasModule />;
+      case "escala-recepcao":
+        return <EscalaTecEnfermagem tipo="recepcao" />;
+      default:
+        return null;
+    }
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div>
-        <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-          <ClipboardList className="h-6 w-6 text-primary" />
+        <h1 className="text-lg font-bold text-foreground flex items-center gap-2">
+          <ClipboardList className="h-5 w-5 text-primary" />
           Recepção
-        </h2>
-        <p className="text-muted-foreground">Gestão de atendimento e controle de fichas</p>
+        </h1>
+        <p className="text-xs text-muted-foreground">Gestão de atendimento, controle de fichas e escalas</p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <Card 
-          className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
-          onClick={() => setCurrentView("controle-fichas")}
-        >
-          <CardHeader className="text-center pb-2">
-            <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
-              <ClipboardX className="h-8 w-8 text-primary" />
-            </div>
-            <CardTitle className="mt-4">Controle de Fichas</CardTitle>
-            <CardDescription>
-              Cadastros inconsistentes e fichas com dados incompletos
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Button variant="outline" className="w-full">
-              Acessar Controle
-            </Button>
-          </CardContent>
-        </Card>
+      <div className="flex gap-4">
+        <nav className="w-48 shrink-0 space-y-0.5">
+          {NAV_ITEMS.map(({ id, label, icon: Icon }) => (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              className={cn(
+                "w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left text-[13px] transition-colors",
+                activeTab === id
+                  ? "bg-primary text-primary-foreground font-medium"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+              )}
+            >
+              <Icon className="h-4 w-4 shrink-0" />
+              {label}
+            </button>
+          ))}
+        </nav>
 
-        <Card className="opacity-60 cursor-not-allowed">
-          <CardHeader className="text-center pb-2">
-            <div className="mx-auto p-4 bg-muted rounded-full w-fit">
-              <UserCheck className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <CardTitle className="mt-4 text-muted-foreground">Check-in Pacientes</CardTitle>
-            <CardDescription>
-              Registro de entrada de pacientes (em breve)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Button variant="outline" className="w-full" disabled>
-              Em Breve
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="opacity-60 cursor-not-allowed">
-          <CardHeader className="text-center pb-2">
-            <div className="mx-auto p-4 bg-muted rounded-full w-fit">
-              <FileText className="h-8 w-8 text-muted-foreground" />
-            </div>
-            <CardTitle className="mt-4 text-muted-foreground">Documentação</CardTitle>
-            <CardDescription>
-              Gestão de documentos e formulários (em breve)
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="text-center">
-            <Button variant="outline" className="w-full" disabled>
-              Em Breve
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="flex-1 min-w-0">
+          {renderContent()}
+        </div>
       </div>
     </div>
   );

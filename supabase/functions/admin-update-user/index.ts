@@ -3,7 +3,11 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  "X-Content-Type-Options": "nosniff",
+  "X-Frame-Options": "DENY",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Cache-Control": "no-store, no-cache, must-revalidate",
 };
 
 serve(async (req) => {
@@ -88,10 +92,19 @@ serve(async (req) => {
       }
     }
 
-    // Update auth user if email or password changed
-    const authUpdates: { email?: string; password?: string } = {};
-    if (email) authUpdates.email = email;
+    // Update auth user if email, password, or matricula changed
+    const authUpdates: { email?: string; password?: string; user_metadata?: Record<string, string> } = {};
+    if (email) {
+      authUpdates.email = email;
+    } else if (matricula !== undefined && !email) {
+      // If matricula changed but no explicit email, update the internal email to match
+      const { data: currentAuth } = await supabaseAdmin.auth.admin.getUserById(user_id);
+      if (currentAuth?.user?.email?.endsWith('@interno.local')) {
+        authUpdates.email = `${matricula}@interno.local`;
+      }
+    }
     if (password) authUpdates.password = password;
+    if (full_name) authUpdates.user_metadata = { full_name };
 
     if (Object.keys(authUpdates).length > 0) {
       const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(

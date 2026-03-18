@@ -26,3 +26,21 @@ verify_jwt = false
 
 [functions.resumo-semanal-incidentes]
 verify_jwt = false
+
+[functions.gerar-quiz-ia]
+verify_jwt = false
+
+[functions.proxy-iframe]
+verify_jwt = false
+
+[functions.gerar-ata-reuniao]
+verify_jwt = false
+
+[functions.enviar-push]
+verify_jwt = false
+
+[functions.gerar-vapid-keys]
+verify_jwt = false
+
+[functions.admin-reset-senhas-massa]
+verify_jwt = false

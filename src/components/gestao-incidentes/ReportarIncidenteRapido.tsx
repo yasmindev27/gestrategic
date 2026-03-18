@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { AlertTriangle, Send, Shield, User, Calendar, Clock, MapPin } from "lucide-react";
@@ -16,13 +17,15 @@ interface ReportarIncidenteRapidoProps {
   onIncidenteRegistrado?: () => void;
 }
 
+import { PersonStanding, Pill, Wrench, Tag, FileStack, MoreHorizontal } from "lucide-react";
+
 const tiposIncidente = [
-  { value: "queda", label: "Queda", icon: "🚶" },
-  { value: "erro_medicacao", label: "Erro de Medicação", icon: "💊" },
-  { value: "falha_equipamento", label: "Falha em Equipamento", icon: "🔧" },
-  { value: "erro_identificacao", label: "Erro de Identificação", icon: "🏷️" },
-  { value: "atraso_laudo", label: "Atraso em Laudo", icon: "📋" },
-  { value: "outros", label: "Outros", icon: "📝" },
+  { value: "queda", label: "Queda", icon: PersonStanding },
+  { value: "erro_medicacao", label: "Erro de Medicação", icon: Pill },
+  { value: "falha_equipamento", label: "Falha em Equipamento", icon: Wrench },
+  { value: "erro_identificacao", label: "Erro de Identificação", icon: Tag },
+  { value: "atraso_laudo", label: "Atraso em Laudo", icon: FileStack },
+  { value: "outros", label: "Outros", icon: MoreHorizontal },
 ];
 
 const setoresCompletos = [
@@ -144,7 +147,7 @@ export function ReportarIncidenteRapido({ onIncidenteRegistrado }: ReportarIncid
       <CardHeader className="bg-primary/5 pb-4">
         <CardTitle className="flex items-center gap-2 text-xl">
           <AlertTriangle className="h-5 w-5 text-primary" />
-          Reportar Incidente
+          Abrir Notificação
         </CardTitle>
         <CardDescription>
           Notifique quase-erros, incidentes ou eventos adversos de forma rápida
@@ -241,7 +244,9 @@ export function ReportarIncidenteRapido({ onIncidenteRegistrado }: ReportarIncid
         <div className="space-y-3">
           <Label className="text-sm font-medium">Tipo de Incidente *</Label>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            {tiposIncidente.map((tipo) => (
+            {tiposIncidente.map((tipo) => {
+              const Icon = tipo.icon;
+              return (
               <button
                 key={tipo.value}
                 type="button"
@@ -253,11 +258,12 @@ export function ReportarIncidenteRapido({ onIncidenteRegistrado }: ReportarIncid
                 }`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-xl">{tipo.icon}</span>
+                  <Icon className="h-5 w-5 text-muted-foreground" />
                   <span className="font-medium text-sm">{tipo.label}</span>
                 </div>
               </button>
-            ))}
+            );
+            })}
           </div>
         </div>
 
@@ -274,15 +280,22 @@ export function ReportarIncidenteRapido({ onIncidenteRegistrado }: ReportarIncid
 
         {/* Submit */}
         <div className="flex justify-end pt-2">
-          <Button 
-            onClick={handleSubmit} 
-            disabled={isSubmitting}
-            size="lg"
-            className="gap-2"
-          >
-            <Send className="h-4 w-4" />
-            {isSubmitting ? "Enviando..." : "Enviar Notificação"}
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={handleSubmit} 
+                  disabled={isSubmitting}
+                  size="lg"
+                  className="gap-2"
+                >
+                  <Send className="h-4 w-4" />
+                  {isSubmitting ? "Enviando..." : "Enviar Notificação"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Registrar a notificação para análise da equipe de Qualidade/NSP</TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </CardContent>
     </Card>

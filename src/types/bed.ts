@@ -9,9 +9,11 @@ export interface Patient {
   dataInternacao: string;
   susFacil: 'sim' | 'nao' | '';
   numeroSusFacil: string;
+  cti: 'sim' | 'nao' | '';
   motivoAlta: MotivoAlta;
   estabelecimentoTransferencia: string;
   dataAlta?: string;
+  registradoEm?: string;
 }
 
 export interface Bed {
@@ -48,5 +50,5 @@ export const SECTORS: SectorConfig[] = [
   { id: 'enfermaria-feminina', name: 'Enfermaria Feminina', beds: [6, 7, 8, 9, 10], extraBeds: ['EXTRA'] },
   { id: 'pediatria', name: 'Pediatria', beds: [11, 12, 13, 14, 15], extraBeds: ['EXTRA'] },
   { id: 'isolamento', name: 'Isolamento', beds: [16, 17] },
-  { id: 'urgencia', name: 'Urgência', beds: [18, 19, 20], extraBeds: ['MACA EXTRA', 'MACA PCR'] },
+  { id: 'urgencia', name: 'Urgência', beds: [18, 19, 20], extraBeds: ['DE APOIO', 'DE APOIO 2', 'MACA PCR'] },
 ];

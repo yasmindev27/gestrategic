@@ -69,13 +69,29 @@ export function IncidentesList({ refreshTrigger }: IncidentesListProps) {
 
   const loadIncidentes = async () => {
     setIsLoading(true);
-    const { data } = await supabase
-      .from("incidentes_nsp")
-      .select("*")
-      .order("data_ocorrencia", { ascending: false })
-      .limit(100);
-    
-    if (data) setIncidentes(data);
+    // Paginated fetch to handle >1000 records
+    const pageSize = 1000;
+    let allIncidentes: Incidente[] = [];
+    let from = 0;
+    let hasMore = true;
+
+    while (hasMore) {
+      const { data } = await supabase
+        .from("incidentes_nsp")
+        .select("*")
+        .order("data_ocorrencia", { ascending: false })
+        .range(from, from + pageSize - 1);
+
+      if (data && data.length > 0) {
+        allIncidentes = allIncidentes.concat(data as Incidente[]);
+        hasMore = data.length === pageSize;
+        from += pageSize;
+      } else {
+        hasMore = false;
+      }
+    }
+
+    setIncidentes(allIncidentes);
     setIsLoading(false);
   };
 
@@ -120,15 +136,12 @@ export function IncidentesList({ refreshTrigger }: IncidentesListProps) {
     XLSX.writeFile(wb, `incidentes-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
   };
 
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Relatório de Incidentes", 14, 20);
-    doc.setFontSize(10);
-    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 28);
+  const exportToPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Relatório de Incidentes');
     
     autoTable(doc, {
-      startY: 35,
+      startY: 32,
       head: [["Número", "Data", "Tipo", "Setor", "Risco", "Status"]],
       body: filteredIncidentes.map(i => [
         i.numero_notificacao,
@@ -139,8 +152,9 @@ export function IncidentesList({ refreshTrigger }: IncidentesListProps) {
         i.status,
       ]),
       styles: { fontSize: 8 },
+      margin: { bottom: 28 },
     });
-    doc.save(`incidentes-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    savePdfWithFooter(doc, 'Relatório de Incidentes', `incidentes-${format(new Date(), "yyyy-MM-dd")}`, logoImg);
   };
 
   if (isLoading) {
@@ -214,7 +228,7 @@ export function IncidentesList({ refreshTrigger }: IncidentesListProps) {
                   <TableRow key={inc.id}>
                     <TableCell className="font-mono text-sm">{inc.numero_notificacao}</TableCell>
                     <TableCell className="text-sm">
-                      {format(new Date(inc.data_ocorrencia), "dd/MM/yy HH:mm")}
+                      {format(new Date(inc.data_ocorrencia), "dd/MM/yyyy HH:mm")}
                     </TableCell>
                     <TableCell>
                       <Badge variant="outline" className="text-xs">

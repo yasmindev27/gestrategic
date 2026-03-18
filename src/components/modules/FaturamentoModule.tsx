@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
+import { DashboardFaturamento } from "@/components/faturamento/DashboardFaturamento";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -48,10 +49,18 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  Eye
+  Eye,
+  BarChart2,
+  Calendar as CalendarIcon,
+  Filter,
+  X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { safeFormatDate } from "@/lib/brasilia-time";
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+type DateFilterPreset = "hoje" | "semana" | "mes" | "ano" | "custom" | null;
 
 interface SaidaProntuario {
   id: string;
@@ -90,6 +99,7 @@ interface Avaliacao {
   is_finalizada: boolean;
   data_inicio: string;
   data_conclusao: string | null;
+  data_atendimento?: string | null;
   avaliador_id: string;
 }
 
@@ -135,6 +145,10 @@ const unidadeSetorOptions = [
   { value: "atendimento_medico_pa", label: "Atendimento Médico – P.A" },
 ];
 
+const setorLabelMap: Record<string, string> = Object.fromEntries(
+  unidadeSetorOptions.map(o => [o.value, o.label])
+);
+
 const conformeOptions = [
   { value: "conforme", label: "Conforme" },
   { value: "nao_conforme", label: "Não Conforme" },
@@ -158,7 +172,7 @@ const resultadoFinalOptions = [
 ];
 
 export const FaturamentoModule = () => {
-  const { isFaturamento, isAdmin, userId, isLoading: isLoadingRole } = useUserRole();
+  const { isFaturamento, isAdmin, isGestor, userId, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
   const { toast } = useToast();
   
@@ -167,7 +181,23 @@ export const FaturamentoModule = () => {
   const [prontuariosFaltantes, setProntuariosFaltantes] = useState<SaidaProntuario[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<"lista" | "faltantes" | "avaliados">("lista");
+  const [activeTab, setActiveTab] = useState<"faltantes" | "avaliados" | "dashboard">("faltantes");
+  const [datePreset, setDatePreset] = useState<DateFilterPreset>(null);
+  const [customDateStart, setCustomDateStart] = useState("");
+  const [customDateEnd, setCustomDateEnd] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("todos");
+
+  // Server-side pagination
+  const PAGE_SIZE = 100;
+  const [currentPage, setCurrentPage] = useState(0);
+  const [totalCount, setTotalCount] = useState(0);
+  const [faltantesCount, setFaltantesCount] = useState(0);
+  const [avaliadosCount, setAvaliadosCount] = useState(0);
+
+  // Avaliacoes lookup map (only for current page saidas)
+  const [avaliacoesMap, setAvaliacoesMap] = useState<Map<string, Avaliacao>>(new Map());
+
+  const canSeeDashboard = isAdmin || isGestor;
   
   // Form dialog
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -181,84 +211,180 @@ export const FaturamentoModule = () => {
 
   const canAccess = isFaturamento || isAdmin;
 
+  // Debounce search term
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchTerm), 400);
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
+
   useEffect(() => {
     if (!isLoadingRole && canAccess) {
-      fetchData();
       logAction("acesso", "faturamento", { modulo: "prontuarios" });
     }
   }, [canAccess, isLoadingRole]);
 
-  const fetchData = async () => {
+  // Fetch counts (lightweight)
+  useEffect(() => {
+    if (!isLoadingRole && canAccess) {
+      fetchCounts();
+    }
+  }, [canAccess, isLoadingRole]);
+
+  // Re-fetch data when filters/tab/page change
+  useEffect(() => {
+    if (!isLoadingRole && canAccess && activeTab !== "dashboard") {
+      fetchPageData();
+    }
+  }, [canAccess, isLoadingRole, activeTab, currentPage, debouncedSearch, datePreset, customDateStart, customDateEnd, statusFilter]);
+
+  // Reset page on filter/tab change
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [activeTab, debouncedSearch, datePreset, customDateStart, customDateEnd, statusFilter]);
+
+  const getDateRangeForQuery = (): { start: string; end: string } | null => {
+    const now = new Date();
+    switch (datePreset) {
+      case "hoje":
+        return { start: format(startOfDay(now), "yyyy-MM-dd"), end: format(endOfDay(now), "yyyy-MM-dd'T'23:59:59") };
+      case "semana":
+        return { start: format(startOfWeek(now, { locale: ptBR }), "yyyy-MM-dd"), end: format(endOfWeek(now, { locale: ptBR }), "yyyy-MM-dd'T'23:59:59") };
+      case "mes":
+        return { start: format(startOfMonth(now), "yyyy-MM-dd"), end: format(endOfMonth(now), "yyyy-MM-dd'T'23:59:59") };
+      case "ano":
+        return { start: format(startOfYear(now), "yyyy-MM-dd"), end: format(endOfYear(now), "yyyy-MM-dd'T'23:59:59") };
+      case "custom":
+        if (customDateStart) {
+          return { start: customDateStart, end: customDateEnd || customDateStart + "T23:59:59" };
+        }
+        return null;
+      default:
+        return null;
+    }
+  };
+
+  const applyFiltersToQuery = (query: any) => {
+    if (debouncedSearch) {
+      query = query.ilike("paciente_nome", `%${debouncedSearch}%`);
+    }
+    if (statusFilter !== "todos") {
+      query = query.eq("status", statusFilter);
+    }
+    const range = getDateRangeForQuery();
+    if (range) {
+      query = query.gte("data_atendimento", range.start).lte("data_atendimento", range.end);
+    }
+    return query;
+  };
+
+  const fetchCounts = async () => {
+    try {
+      const [totalRes, avaliadosDistinctRes] = await Promise.all([
+        supabase.from("saida_prontuarios").select("*", { count: "exact", head: true }).eq("is_folha_avulsa", false),
+        // Count distinct saidas that have a finalized avaliacao (ignores orphans with NULL saida_prontuario_id)
+        supabase.from("avaliacoes_prontuarios").select("saida_prontuario_id", { count: "exact", head: true })
+          .eq("is_finalizada", true)
+          .not("saida_prontuario_id", "is", null),
+      ]);
+      const total = totalRes.count ?? 0;
+      const avaliados = avaliadosDistinctRes.count ?? 0;
+      setTotalCount(total);
+      setAvaliadosCount(avaliados);
+      setFaltantesCount(Math.max(0, total - avaliados));
+    } catch (e) {
+      console.error("Error fetching counts:", e);
+    }
+  };
+
+  const fetchPageData = async () => {
     setIsLoading(true);
     try {
-      // Supabase has a default limit of 1000 rows per request.
-      // For this module we need the full dataset to correctly compute "Lista Geral" and "Faltantes".
-      const pageSize = 1000;
+      const from = currentPage * PAGE_SIZE;
 
-      const fetchAllSaidas = async (): Promise<SaidaProntuario[]> => {
-        const all: SaidaProntuario[] = [];
-        let from = 0;
+      if (activeTab === "avaliados") {
+        // Fetch finalized avaliacoes with server-side pagination
+        let query = supabase
+          .from("avaliacoes_prontuarios")
+          .select("*")
+          .eq("is_finalizada", true)
+          .order("data_inicio", { ascending: false })
+          .range(from, from + PAGE_SIZE - 1);
 
-        while (true) {
-          const { data, error } = await supabase
+        if (debouncedSearch) {
+          query = query.ilike("paciente_nome", `%${debouncedSearch}%`);
+        }
+
+        if (statusFilter !== "todos") {
+          query = query.eq("resultado_final", statusFilter === "concluido" ? "completo" : statusFilter);
+        }
+
+        const range = getDateRangeForQuery();
+        if (range) {
+          query = query.gte("data_inicio", range.start).lte("data_inicio", range.end);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        // Enrich from saida_prontuarios (paciente_nome + data_atendimento)
+        const rows = (data || []) as Avaliacao[];
+        const needsEnrichment = rows.filter(r => r.saida_prontuario_id);
+        if (needsEnrichment.length > 0) {
+          const saidaIds = needsEnrichment.map(r => r.saida_prontuario_id!);
+          const { data: saidasData } = await supabase
             .from("saida_prontuarios")
-            .select("*")
-            .order("created_at", { ascending: false })
-            .order("id", { ascending: false })
-            .range(from, from + pageSize - 1);
-
-          if (error) throw error;
-
-          const rows = (data || []) as SaidaProntuario[];
-          all.push(...rows);
-
-          if (rows.length < pageSize) break;
-          from += pageSize;
+            .select("id, paciente_nome, data_atendimento, nascimento_mae")
+            .in("id", saidaIds);
+          const saidaMap = new Map((saidasData || []).map((s: any) => [s.id, s]));
+          rows.forEach(r => {
+            if (r.saida_prontuario_id) {
+              const saida = saidaMap.get(r.saida_prontuario_id);
+              if (saida) {
+                if (!r.paciente_nome) (r as any).paciente_nome = saida.paciente_nome || null;
+                (r as any).data_atendimento = saida.data_atendimento || null;
+                (r as any).nascimento_mae = saida.nascimento_mae || null;
+              }
+            }
+          });
         }
 
-        return all;
-      };
+        setAvaliacoes(rows);
+        setSaidas([]);
+        setProntuariosFaltantes([]);
+      } else if (activeTab === "faltantes") {
+        // Fetch saidas that do NOT have a finalized avaliacao
+        // Strategy: fetch saidas page, then check which have avaliacoes
+        let query = supabase
+          .from("saida_prontuarios")
+          .select("*")
+          .eq("is_folha_avulsa", false)
+          .order("created_at", { ascending: false });
 
-      const fetchAllAvaliacoes = async (): Promise<Avaliacao[]> => {
-        const all: Avaliacao[] = [];
-        let from = 0;
+        query = applyFiltersToQuery(query);
 
-        while (true) {
-          const { data, error } = await supabase
+        // We fetch more to compensate for filtering out avaliados
+        const { data: saidasData, error } = await query.range(from, from + PAGE_SIZE * 2 - 1);
+        if (error) throw error;
+
+        const rows = (saidasData || []) as SaidaProntuario[];
+        if (rows.length > 0) {
+          const ids = rows.map(r => r.id);
+          const { data: avData } = await supabase
             .from("avaliacoes_prontuarios")
-            .select("*")
-            .order("data_inicio", { ascending: false })
-            .order("id", { ascending: false })
-            .range(from, from + pageSize - 1);
+            .select("saida_prontuario_id")
+            .eq("is_finalizada", true)
+            .in("saida_prontuario_id", ids);
 
-          if (error) throw error;
-
-          const rows = (data || []) as Avaliacao[];
-          all.push(...rows);
-
-          if (rows.length < pageSize) break;
-          from += pageSize;
+          const avaliadosSet = new Set((avData || []).map(a => a.saida_prontuario_id));
+          const faltantes = rows.filter(r => !avaliadosSet.has(r.id)).slice(0, PAGE_SIZE);
+          setProntuariosFaltantes(faltantes);
+        } else {
+          setProntuariosFaltantes([]);
         }
-
-        return all;
-      };
-
-      const [saidasData, avaliacoesData] = await Promise.all([
-        fetchAllSaidas(),
-        fetchAllAvaliacoes(),
-      ]);
-
-      setSaidas(saidasData);
-      setAvaliacoes(avaliacoesData);
-
-      // Filter faltantes - those without completed evaluation (using saida_prontuario_id)
-      const avaliadosSaidaIdSet = new Set(
-        avaliacoesData
-          .filter((a) => a.is_finalizada && !!a.saida_prontuario_id)
-          .map((a) => a.saida_prontuario_id as string)
-      );
-
-      setProntuariosFaltantes(saidasData.filter((s) => !avaliadosSaidaIdSet.has(s.id)));
+        setSaidas([]);
+         setAvaliacoes([]);
+       }
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -269,6 +395,11 @@ export const FaturamentoModule = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const fetchData = async () => {
+    await fetchCounts();
+    await fetchPageData();
   };
 
   const handleOpenForm = (saida: SaidaProntuario) => {
@@ -294,6 +425,24 @@ export const FaturamentoModule = () => {
     }
     
     setIsSubmitting(true);
+
+    // Check if avaliacao already exists for this saida
+    const { data: existing } = await supabase
+      .from("avaliacoes_prontuarios")
+      .select("id")
+      .eq("saida_prontuario_id", selectedProntuario.id)
+      .eq("is_finalizada", true)
+      .maybeSingle();
+
+    if (existing) {
+      toast({
+        title: "Avaliação já existe",
+        description: "Este prontuário já possui uma avaliação finalizada.",
+        variant: "destructive",
+      });
+      setIsSubmitting(false);
+      return;
+    }
     try {
       // Get or create prontuario
       let prontuarioId: string | null = selectedProntuario.prontuario_id;
@@ -330,6 +479,7 @@ export const FaturamentoModule = () => {
           prontuario_id: prontuarioId,
           saida_prontuario_id: selectedProntuario.id,
           avaliador_id: userId,
+          paciente_nome: selectedProntuario.paciente_nome || null,
           numero_prontuario: selectedProntuario.numero_prontuario,
           unidade_setor: formData.unidade_setor,
           identificacao_paciente: formData.identificacao_paciente,
@@ -444,28 +594,15 @@ export const FaturamentoModule = () => {
   };
 
   const isProntuarioAvaliado = (saidaId: string) => {
-    return avaliacoes.some(a => a.saida_prontuario_id === saidaId && a.is_finalizada);
+    return avaliacoesMap.has(saidaId);
   };
 
-  const getListaAtual = () => {
-    switch (activeTab) {
-      case "lista":
-        return saidas;
-      case "faltantes":
-        return prontuariosFaltantes;
-      case "avaliados":
-        return saidas.filter(s => isProntuarioAvaliado(s.id));
-      default:
-        return saidas;
-    }
-  };
-
-  const filteredSaidas = getListaAtual().filter(
-    s => (s.paciente_nome || '').toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Data is now server-side filtered; return current data per active tab
+  const displayData = activeTab === "faltantes" ? prontuariosFaltantes : [];
+  const displayCount = activeTab === "avaliados" ? avaliacoes.length : displayData.length;
 
   const handleViewAvaliacao = (saidaId: string) => {
-    const avaliacao = avaliacoes.find(a => a.saida_prontuario_id === saidaId && a.is_finalizada);
+    const avaliacao = avaliacoesMap.get(saidaId);
     if (avaliacao) {
       setSelectedAvaliacao(avaliacao);
       setViewDialogOpen(true);
@@ -541,31 +678,39 @@ export const FaturamentoModule = () => {
       {/* Tabs */}
       <div className="flex gap-2 flex-wrap">
         <Button
-          variant={activeTab === "lista" ? "default" : "outline"}
-          onClick={() => setActiveTab("lista")}
-        >
-          <FileText className="h-4 w-4 mr-2" />
-          Lista Geral ({saidas.length})
-        </Button>
-        <Button
           variant={activeTab === "faltantes" ? "default" : "outline"}
           onClick={() => setActiveTab("faltantes")}
         >
           <AlertCircle className="h-4 w-4 mr-2" />
-          Faltantes ({prontuariosFaltantes.length})
+          Faltantes ({faltantesCount})
         </Button>
         <Button
           variant={activeTab === "avaliados" ? "default" : "outline"}
           onClick={() => setActiveTab("avaliados")}
         >
           <CheckCircle className="h-4 w-4 mr-2" />
-          Avaliados ({avaliacoes.filter(a => a.is_finalizada).length})
+          Avaliados ({avaliadosCount})
         </Button>
+        {canSeeDashboard && (
+          <Button
+            variant={activeTab === "dashboard" ? "default" : "outline"}
+            onClick={() => setActiveTab("dashboard")}
+          >
+            <BarChart2 className="h-4 w-4 mr-2" />
+            Dashboard Gerencial
+          </Button>
+        )}
       </div>
 
-      {/* Search */}
+      {/* Dashboard Tab */}
+      {activeTab === "dashboard" && canSeeDashboard && (
+        <DashboardFaturamento />
+      )}
+
+      {activeTab !== "dashboard" && (<>
+      {/* Search & Filters */}
       <Card>
-        <CardContent className="pt-6">
+        <CardContent className="pt-6 space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -575,6 +720,108 @@ export const FaturamentoModule = () => {
               className="pl-10"
             />
           </div>
+
+          {/* Date filter presets */}
+          <div className="flex flex-wrap items-center gap-2">
+            <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground mr-1">Filtrar por:</span>
+            {([
+              { key: "hoje", label: "Hoje" },
+              { key: "semana", label: "Semana" },
+              { key: "mes", label: "Mês" },
+              { key: "ano", label: "Ano" },
+            ] as { key: DateFilterPreset; label: string }[]).map(({ key, label }) => (
+              <Button
+                key={key}
+                size="sm"
+                variant={datePreset === key ? "default" : "outline"}
+                onClick={() => {
+                  setDatePreset(datePreset === key ? null : key);
+                  setCustomDateStart("");
+                  setCustomDateEnd("");
+                }}
+                className="h-8"
+              >
+                {label}
+              </Button>
+            ))}
+
+            <Separator orientation="vertical" className="h-6 mx-1" />
+
+            {/* Custom date range */}
+            <Input
+              type="date"
+              value={customDateStart}
+              onChange={(e) => {
+                setCustomDateStart(e.target.value);
+                setDatePreset(e.target.value ? "custom" : null);
+              }}
+              className="h-8 w-36 text-xs"
+              placeholder="Data início"
+            />
+            <span className="text-xs text-muted-foreground">até</span>
+            <Input
+              type="date"
+              value={customDateEnd}
+              onChange={(e) => {
+                setCustomDateEnd(e.target.value);
+                if (customDateStart) setDatePreset("custom");
+              }}
+              className="h-8 w-36 text-xs"
+              placeholder="Data fim"
+            />
+
+            {datePreset && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setDatePreset(null);
+                  setCustomDateStart("");
+                  setCustomDateEnd("");
+                }}
+                className="h-8 text-muted-foreground"
+              >
+                <X className="h-3 w-3 mr-1" />
+                Limpar
+              </Button>
+            )}
+          </div>
+
+          {/* Status filter */}
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">{activeTab === "avaliados" ? "Resultado:" : "Status:"}</span>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-8 w-48 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos</SelectItem>
+                {activeTab === "avaliados" ? (
+                  <>
+                    <SelectItem value="completo">Completo</SelectItem>
+                    <SelectItem value="com_pendencias">Com Pendências</SelectItem>
+                    <SelectItem value="incompleto">Incompleto</SelectItem>
+                  </>
+                ) : (
+                  <>
+                    <SelectItem value="pendente">Pendente</SelectItem>
+                    <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
+                    <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
+                    <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
+                    <SelectItem value="concluido">Concluído</SelectItem>
+                  </>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {(datePreset || statusFilter !== "todos") && (
+            <p className="text-xs text-muted-foreground">
+              Exibindo <span className="font-medium text-foreground">{displayCount}</span> registro(s) filtrado(s)
+            </p>
+          )}
         </CardContent>
       </Card>
 
@@ -582,14 +829,10 @@ export const FaturamentoModule = () => {
       <Card>
         <CardHeader>
           <CardTitle>
-            {activeTab === "lista" && "Lista de Prontuários"}
-            {activeTab === "faltantes" && "Prontuários Faltantes"}
-            {activeTab === "avaliados" && "Prontuários Avaliados"}
+            {activeTab === "faltantes" ? "Prontuários Faltantes" : "Prontuários Avaliados"}
           </CardTitle>
           <CardDescription>
-            {activeTab === "lista" && "Todos os prontuários registrados no sistema"}
-            {activeTab === "faltantes" && "Prontuários que ainda não foram avaliados"}
-            {activeTab === "avaliados" && "Prontuários com avaliação finalizada"}
+            {activeTab === "faltantes" ? "Prontuários que ainda não foram avaliados" : "Prontuários com avaliação finalizada"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -597,7 +840,50 @@ export const FaturamentoModule = () => {
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : filteredSaidas.length === 0 ? (
+          ) : activeTab === "avaliados" ? (
+            // Avaliados tab - show avaliacoes directly
+            avaliacoes.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                Nenhuma avaliação encontrada.
+              </div>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                     <TableHead>Paciente</TableHead>
+                     <TableHead>Data Nasc.</TableHead>
+                     <TableHead>Setor</TableHead>
+                     <TableHead>Data Atendimento</TableHead>
+                     <TableHead>Resultado</TableHead>
+                     <TableHead>Data Avaliação</TableHead>
+                     <TableHead>Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {avaliacoes.map((av) => (
+                    <TableRow key={av.id}>
+                      <TableCell className="font-medium uppercase">{av.paciente_nome || "-"}</TableCell>
+                      <TableCell>{safeFormatDate((av as any).nascimento_mae, "dd/MM/yyyy")}</TableCell>
+                      <TableCell>{(av.unidade_setor && setorLabelMap[av.unidade_setor]) || av.unidade_setor || "-"}</TableCell>
+                      <TableCell>{safeFormatDate(av.data_atendimento, "dd/MM/yyyy")}</TableCell>
+                      <TableCell>{getResultadoBadge(av.resultado_final)}</TableCell>
+                      <TableCell>{safeFormatDate(av.data_inicio, "dd/MM/yyyy")}</TableCell>
+                      <TableCell>
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => { setSelectedAvaliacao(av); setViewDialogOpen(true); }}
+                        >
+                          <Eye className="h-4 w-4 mr-1" />
+                          Visualizar
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )
+          ) : displayData.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               Nenhum prontuário encontrado.
             </div>
@@ -607,6 +893,7 @@ export const FaturamentoModule = () => {
                 <TableRow>
                   <TableHead>Paciente</TableHead>
                   <TableHead>Data Nasc.</TableHead>
+                  <TableHead>Data Atendimento</TableHead>
                   <TableHead>Status Fluxo</TableHead>
                   <TableHead>Recepção</TableHead>
                   <TableHead>Classificação</TableHead>
@@ -616,13 +903,16 @@ export const FaturamentoModule = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredSaidas.map((saida) => {
-                  const avaliacao = avaliacoes.find(a => a.saida_prontuario_id === saida.id && a.is_finalizada);
+                {displayData.map((saida) => {
+                  const avaliacao = avaliacoesMap.get(saida.id);
                   return (
                     <TableRow key={saida.id}>
-                      <TableCell className="font-medium">{saida.paciente_nome || "-"}</TableCell>
+                      <TableCell className="font-medium uppercase">{saida.paciente_nome || "-"}</TableCell>
                       <TableCell>
                         {safeFormatDate(saida.nascimento_mae, "dd/MM/yyyy")}
+                      </TableCell>
+                      <TableCell>
+                        {safeFormatDate(saida.data_atendimento, "dd/MM/yyyy")}
                       </TableCell>
                       <TableCell>{getStatusBadge(saida.status)}</TableCell>
                       <TableCell>
@@ -663,8 +953,33 @@ export const FaturamentoModule = () => {
               </TableBody>
             </Table>
           )}
+
+          {/* Pagination */}
+          {!isLoading && (activeTab !== "avaliados" ? displayData.length >= PAGE_SIZE : avaliacoes.length >= PAGE_SIZE) && (
+            <div className="flex justify-center gap-2 mt-4">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                disabled={currentPage === 0}
+                onClick={() => setCurrentPage(p => p - 1)}
+              >
+                Anterior
+              </Button>
+              <span className="text-sm text-muted-foreground self-center">
+                Página {currentPage + 1}
+              </span>
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => setCurrentPage(p => p + 1)}
+              >
+                Próxima
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
+      </>)}
 
       {/* Evaluation Form Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

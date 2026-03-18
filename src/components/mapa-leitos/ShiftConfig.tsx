@@ -1,40 +1,365 @@
-import { useState } from 'react';
-import { Sun, Moon, Calendar, Stethoscope, Users, UserCheck, Save, Check } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Sun, Moon, Calendar, Stethoscope, Users, UserCheck, Save, Check, History, Loader2, Lock, CheckCircle2, Square, CheckSquare } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ShiftInfo } from '@/types/bed';
+import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+
+/** Formats a Date to yyyy-MM-dd using LOCAL time (not UTC) */
+function fmtDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+interface PendenciaItem {
+  text: string;
+  resolved: boolean;
+}
 
 interface ShiftConfigProps {
   shiftInfo: ShiftInfo;
   onShiftInfoChange: (info: ShiftInfo) => void;
   onSave?: () => Promise<void>;
+  onConcluirPlantao?: (justificativa?: string, pendencias?: string, destinatarioId?: string, destinatarioNome?: string) => Promise<void>;
+  pendenciasPassadas?: PendenciaItem[];
+  pendenciasEncontradasList?: PendenciaItem[];
+  onResolvePendencia?: (tipo: 'passadas' | 'encontradas', index: number) => void;
+  onReportPendenciasEncontradas?: (pendencias: string) => Promise<void>;
 }
 
-export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfigProps) {
+interface SavedShift {
+  id: string;
+  shift_date: string;
+  shift_type: string;
+  medicos: string | null;
+  enfermeiros: string | null;
+  regulador_nir: string | null;
+  created_at: string;
+}
+
+function isTimeAllowed(shiftDate: string, shiftType: string): { allowed: boolean; reason: string } {
+  // Use Brasília time (UTC-3) for all comparisons
+  const now = new Date();
+  const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+  const brasilia = new Date(utcMs - 3 * 3600000);
+  const brasiliaDateStr = fmtDate(brasilia);
+  const hour = brasilia.getHours();
+
+  if (shiftType === 'noturno') {
+    // Noturno runs from 19:00 to 06:59 next day
+    // shift_date = the day the shift STARTED (19h)
+    // Between 00:00-06:59 Brasília, the shift_date is yesterday
+    if (hour < 7) {
+      const yesterday = new Date(brasilia);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayStr = fmtDate(yesterday);
+      if (shiftDate === yesterdayStr) return { allowed: true, reason: '' };
+    }
+    // Between 19:00-23:59, shift_date is today
+    if (hour >= 19 && shiftDate === brasiliaDateStr) return { allowed: true, reason: '' };
+    // Also allow editing today's noturno during the day (for corrections)
+    if (shiftDate === brasiliaDateStr) return { allowed: true, reason: '' };
+    return { allowed: false, reason: 'Apenas o plantão do dia atual pode ser alterado.' };
+  }
+
+  // Diurno: 07:00-18:59, shift_date must be today
+  if (shiftDate !== brasiliaDateStr) {
+    return { allowed: false, reason: 'Apenas o plantão do dia atual pode ser alterado.' };
+  }
+
+  return { allowed: true, reason: '' };
+}
+
+export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave, onConcluirPlantao, pendenciasPassadas, pendenciasEncontradasList, onResolvePendencia, onReportPendenciasEncontradas }: ShiftConfigProps) {
   const [isSaving, setIsSaving] = useState(false);
+  const [isConcluindo, setIsConcluindo] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [savedShifts, setSavedShifts] = useState<SavedShift[]>([]);
+  const [isLoadingShifts, setIsLoadingShifts] = useState(false);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [concluirDialogOpen, setConcluirDialogOpen] = useState(false);
+  const [justificativa, setJustificativa] = useState('');
+  const [needsJustificativa, setNeedsJustificativa] = useState(false);
+  const [pendencias, setPendencias] = useState('');
+  const [pendenciasEncontradasDialog, setPendenciasEncontradasDialog] = useState(false);
+  const [pendenciasEncontradas, setPendenciasEncontradas] = useState('');
+  const [firstSaveDone, setFirstSaveDone] = useState(false);
+  const [profissionaisNIR, setProfissionaisNIR] = useState<{ user_id: string; full_name: string }[]>([]);
+  const [destinatarioId, setDestinatarioId] = useState('');
+
+  // User permission state
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUserName, setCurrentUserName] = useState('');
+  const [originalRegulador, setOriginalRegulador] = useState<string | null>(null);
+  const [shiftAlreadySaved, setShiftAlreadySaved] = useState(false);
+
+  // Load current user info and role
+  useEffect(() => {
+    const loadUserInfo = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const [profileRes, roleRes] = await Promise.all([
+        supabase.from('profiles').select('full_name').eq('user_id', user.id).single(),
+        supabase.from('user_roles').select('role').eq('user_id', user.id),
+      ]);
+
+      if (profileRes.data) setCurrentUserName(profileRes.data.full_name || '');
+      if (roleRes.data) {
+        setIsAdmin(roleRes.data.some((r: any) => r.role === 'admin'));
+      }
+    };
+    loadUserInfo();
+  }, []);
+
+  // Load NIR professionals for the selector
+  useEffect(() => {
+    const loadProfissionais = async () => {
+      const { data } = await supabase
+        .from('profiles')
+        .select('user_id, full_name')
+        .not('full_name', 'is', null)
+        .order('full_name');
+      if (data) setProfissionaisNIR(data.filter(p => p.full_name));
+    };
+    loadProfissionais();
+  }, []);
+
+  // Load original regulador when shift date/type changes and reset firstSaveDone per turno
+  useEffect(() => {
+    setFirstSaveDone(false); // Reset per turno change
+    const loadOriginalRegulador = async () => {
+      if (!shiftInfo.data || !shiftInfo.tipo) return;
+
+      const { data } = await supabase
+        .from('shift_configurations')
+        .select('regulador_nir')
+        .eq('shift_date', shiftInfo.data)
+        .eq('shift_type', shiftInfo.tipo)
+        .limit(1)
+        .maybeSingle();
+
+      if (data) {
+        setOriginalRegulador(data.regulador_nir);
+        setShiftAlreadySaved(true);
+      } else {
+        setOriginalRegulador(null);
+        setShiftAlreadySaved(false);
+      }
+    };
+    loadOriginalRegulador();
+  }, [shiftInfo.data, shiftInfo.tipo]);
+
+  const timeCheck = useMemo(
+    () => isTimeAllowed(shiftInfo.data, shiftInfo.tipo),
+    [shiftInfo.data, shiftInfo.tipo]
+  );
+
+  // Permission: any NIR user can edit the current active shift, admin can edit any shift
+  const userCanEdit = useMemo(() => {
+    // If shift was never saved, anyone can create the first entry
+    if (!shiftAlreadySaved) return true;
+
+    // Admin always can edit (any day)
+    if (isAdmin) return true;
+
+    // Calculate if this is the current active shift
+    const now = new Date();
+    const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+    const brasilia = new Date(utcMs - 3 * 3600000);
+    const brasiliaDate = fmtDate(brasilia);
+    const hour = brasilia.getHours();
+
+    let isCurrentShift = false;
+    if (shiftInfo.tipo === 'noturno') {
+      if (hour < 7) {
+        const yesterday = new Date(brasilia);
+        yesterday.setDate(yesterday.getDate() - 1);
+        isCurrentShift = shiftInfo.data === fmtDate(yesterday);
+      } else {
+        isCurrentShift = shiftInfo.data === brasiliaDate;
+      }
+    } else {
+      isCurrentShift = shiftInfo.data === brasiliaDate;
+    }
+
+    // Any NIR user can edit the current active shift
+    if (isCurrentShift) return true;
+
+    return false;
+  }, [shiftAlreadySaved, isAdmin, shiftInfo.data, shiftInfo.tipo]);
+
+  const editAllowed = timeCheck.allowed && userCanEdit;
+  const blockReason = !timeCheck.allowed 
+    ? timeCheck.reason 
+    : !userCanEdit 
+      ? 'Apenas o administrador, o regulador do plantão ou Blendon podem alterar este plantão.' 
+      : '';
 
   const handleChange = (field: keyof ShiftInfo, value: string) => {
+    if (field !== 'tipo' && field !== 'data' && !editAllowed) {
+      toast.error(blockReason);
+      return;
+    }
     setSaved(false);
     onShiftInfoChange({ ...shiftInfo, [field]: value });
   };
 
   const handleSave = async () => {
+    if (!editAllowed) {
+      toast.error(blockReason);
+      return;
+    }
     setIsSaving(true);
     try {
       if (onSave) {
         await onSave();
       }
       setSaved(true);
+      setOriginalRegulador(shiftInfo.reguladorNIR);
+
+      // On the first save of this shift, ask about found pendências
+      if (!shiftAlreadySaved && !firstSaveDone) {
+        setFirstSaveDone(true);
+        setPendenciasEncontradas('');
+        setPendenciasEncontradasDialog(true);
+      }
+
+      setShiftAlreadySaved(true);
       toast.success('Configuração do plantão salva com sucesso!');
       setTimeout(() => setSaved(false), 3000);
     } catch (error) {
       toast.error('Erro ao salvar configuração');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleConfirmPendenciasEncontradas = async () => {
+    if (pendenciasEncontradas.trim() && onReportPendenciasEncontradas) {
+      await onReportPendenciasEncontradas(pendenciasEncontradas.trim());
+      toast.success('Pendências encontradas registradas com sucesso!');
+    }
+    setPendenciasEncontradasDialog(false);
+  };
+
+  const loadSavedShifts = async () => {
+    setIsLoadingShifts(true);
+    try {
+      const { data, error } = await supabase
+        .from('shift_configurations')
+        .select('*')
+        .order('shift_date', { ascending: false })
+        .order('shift_type', { ascending: true })
+        .limit(50);
+
+      if (error) throw error;
+      setSavedShifts(data || []);
+    } catch (error) {
+      toast.error('Erro ao carregar plantões salvos');
+    } finally {
+      setIsLoadingShifts(false);
+    }
+  };
+
+  const handleSelectShift = (shift: SavedShift) => {
+    onShiftInfoChange({
+      tipo: shift.shift_type as 'diurno' | 'noturno',
+      data: shift.shift_date,
+      medicos: shift.medicos || '',
+      enfermeiros: shift.enfermeiros || '',
+      reguladorNIR: shift.regulador_nir || '',
+    });
+    setDialogOpen(false);
+    toast.success(`Plantão de ${format(new Date(shift.shift_date + 'T12:00:00'), "dd/MM/yyyy", { locale: ptBR })} carregado`);
+  };
+
+  // Check if we're within the last 60 minutes of the shift (allows conclusion)
+  const isWithinLastHour = useMemo(() => {
+    const now = new Date();
+    const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+    const brasilia = new Date(utcMs - 3 * 3600000);
+    const currentMinutes = brasilia.getHours() * 60 + brasilia.getMinutes();
+    const brasiliaDate = fmtDate(brasilia);
+
+    if (shiftInfo.tipo === 'diurno') {
+      // Diurno ends at 19:00 (1140 min). Last hour = 18:00 (1080 min)
+      if (shiftInfo.data !== brasiliaDate) return false;
+      return currentMinutes >= 1080 && currentMinutes < 1140;
+    } else {
+      // Noturno ends at 07:00 (420 min). Last hour = 06:00 (360 min)
+      if (currentMinutes < 420) {
+        const yesterday = new Date(brasilia);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (shiftInfo.data !== fmtDate(yesterday)) return false;
+      } else {
+        if (shiftInfo.data !== brasiliaDate) return false;
+      }
+      return currentMinutes >= 360 && currentMinutes < 420;
+    }
+  }, [shiftInfo.data, shiftInfo.tipo]);
+
+  const isWithin15MinOfEnd = useMemo(() => {
+    const now = new Date();
+    const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
+    const brasilia = new Date(utcMs - 3 * 3600000);
+    const currentMinutes = brasilia.getHours() * 60 + brasilia.getMinutes();
+    const brasiliaDate = fmtDate(brasilia);
+    
+    if (shiftInfo.tipo === 'diurno') {
+      if (shiftInfo.data !== brasiliaDate) return false;
+      return currentMinutes >= 1125 && currentMinutes < 1140;
+    } else {
+      if (currentMinutes < 420) {
+        const yesterday = new Date(brasilia);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (shiftInfo.data !== fmtDate(yesterday)) return false;
+      } else {
+        if (shiftInfo.data !== brasiliaDate) return false;
+      }
+      return currentMinutes >= 405 && currentMinutes < 420;
+    }
+  }, [shiftInfo.data, shiftInfo.tipo]);
+
+  const handleConcluirClick = () => {
+    if (isWithin15MinOfEnd) {
+      setNeedsJustificativa(false);
+    } else {
+      setNeedsJustificativa(true);
+    }
+    setJustificativa('');
+    setPendencias('');
+    setDestinatarioId('');
+    setConcluirDialogOpen(true);
+  };
+
+  const handleConfirmConcluir = async () => {
+    if (!onConcluirPlantao) return;
+    if (!destinatarioId) {
+      toast.error('Selecione o profissional que está recebendo o plantão.');
+      return;
+    }
+    const destinatario = profissionaisNIR.find(p => p.user_id === destinatarioId);
+    setIsConcluindo(true);
+    try {
+      await onConcluirPlantao(
+        needsJustificativa ? justificativa : undefined,
+        pendencias.trim() || undefined,
+        destinatarioId,
+        destinatario?.full_name || ''
+      );
+      setConcluirDialogOpen(false);
+      toast.success('Plantão concluído! Dados transferidos para o próximo plantão.');
+    } catch (error) {
+      toast.error('Erro ao concluir plantão.');
+    } finally {
+      setIsConcluindo(false);
     }
   };
 
@@ -45,22 +370,181 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
           <Calendar className="w-5 h-5 text-primary" />
           Configuração do Plantão
         </h2>
-        <Button 
-          onClick={handleSave} 
-          disabled={isSaving}
-          className="gap-2"
-          variant={saved ? "outline" : "default"}
-        >
-          {isSaving ? (
-            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
-          ) : saved ? (
-            <Check className="w-4 h-4 text-hospital-green" />
-          ) : (
-            <Save className="w-4 h-4" />
+        <div className="flex items-center gap-2">
+          <Dialog open={dialogOpen} onOpenChange={(open) => {
+            setDialogOpen(open);
+            if (open) loadSavedShifts();
+          }}>
+            <DialogTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                <History className="w-4 h-4" />
+                Plantões Salvos
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <History className="w-5 h-5 text-primary" />
+                  Plantões Salvos
+                </DialogTitle>
+              </DialogHeader>
+              {isLoadingShifts ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : savedShifts.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">Nenhum plantão salvo encontrado.</p>
+              ) : (
+                <div className="space-y-2">
+                  {savedShifts.map((shift) => (
+                    <button
+                      key={shift.id}
+                      onClick={() => handleSelectShift(shift)}
+                      className="w-full text-left rounded-lg border p-4 hover:bg-muted/50 transition-colors"
+                    >
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          {shift.shift_type === 'diurno' ? (
+                            <Sun className="w-4 h-4 text-amber-500" />
+                          ) : (
+                            <Moon className="w-4 h-4 text-indigo-500" />
+                          )}
+                          <span className="font-semibold">
+                            {format(new Date(shift.shift_date + 'T12:00:00'), "dd/MM/yyyy (EEEE)", { locale: ptBR })}
+                          </span>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground">
+                            {shift.shift_type === 'diurno' ? 'Diurno' : 'Noturno'}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-1 text-xs text-muted-foreground">
+                        {shift.regulador_nir && (
+                          <p><span className="font-medium">Regulador:</span> {shift.regulador_nir}</p>
+                        )}
+                        {shift.medicos && (
+                          <p className="truncate"><span className="font-medium">Médicos:</span> {shift.medicos}</p>
+                        )}
+                        {shift.enfermeiros && (
+                          <p className="truncate"><span className="font-medium">Enfermeiros:</span> {shift.enfermeiros}</p>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </DialogContent>
+          </Dialog>
+
+          <Button 
+            onClick={handleSave} 
+            disabled={isSaving || !editAllowed}
+            className="gap-2"
+            variant={saved ? "outline" : "default"}
+          >
+            {isSaving ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+            ) : !editAllowed ? (
+              <Lock className="w-4 h-4" />
+            ) : saved ? (
+              <Check className="w-4 h-4 text-hospital-green" />
+            ) : (
+              <Save className="w-4 h-4" />
+            )}
+           {saved ? 'Salvo' : !editAllowed ? 'Bloqueado' : 'Salvar'}
+          </Button>
+
+          {onConcluirPlantao && editAllowed && (
+            <Button
+              onClick={handleConcluirClick}
+              disabled={isConcluindo || (!isAdmin && !isWithinLastHour)}
+              variant="outline"
+              className="gap-2 border-green-500 text-green-700 hover:bg-green-50"
+              title={!isWithinLastHour && !isAdmin ? `Conclusão disponível apenas na última hora do turno (${shiftInfo.tipo === 'diurno' ? '18:00–19:00' : '06:00–07:00'})` : ''}
+            >
+              {isConcluindo ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (!isAdmin && !isWithinLastHour) ? (
+                <Lock className="w-4 h-4" />
+              ) : (
+                <CheckCircle2 className="w-4 h-4" />
+              )}
+              {(!isAdmin && !isWithinLastHour) ? 'Conclusão indisponível' : 'Concluir Plantão'}
+            </Button>
           )}
-          {saved ? 'Salvo' : 'Salvar Plantão'}
-        </Button>
+        </div>
       </div>
+
+      {/* Dialog de justificativa para conclusão antecipada */}
+      <Dialog open={concluirDialogOpen} onOpenChange={setConcluirDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {needsJustificativa ? 'Justificativa para conclusão antecipada' : 'Confirmar conclusão do plantão'}
+            </DialogTitle>
+          </DialogHeader>
+          {needsJustificativa && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-destructive">Justificativa (obrigatória)</Label>
+              <p className="text-xs text-muted-foreground">
+                Faltam mais de 15 minutos para o fim do plantão.
+              </p>
+              <Textarea
+                value={justificativa}
+                onChange={(e) => setJustificativa(e.target.value)}
+                placeholder="Informe o motivo da conclusão antecipada..."
+                rows={2}
+              />
+            </div>
+          )}
+
+          {!needsJustificativa && (
+            <p className="text-sm text-muted-foreground">
+              Ao concluir, os dados dos leitos serão transferidos para o próximo plantão.
+            </p>
+          )}
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Profissional que está recebendo o plantão *</Label>
+            <Select value={destinatarioId} onValueChange={setDestinatarioId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione o profissional..." />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                {profissionaisNIR.map(p => (
+                  <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">Pendências para o próximo regulador</Label>
+            <p className="text-xs text-muted-foreground">Cada linha será uma pendência individual rastreada com horário de registro e resolução.</p>
+            <Textarea
+              value={pendencias}
+              onChange={(e) => setPendencias(e.target.value)}
+              placeholder="Uma pendência por linha. Ex:&#10;Paciente leito 4 aguardando vaga UTI&#10;Falta resultado exame leito 8"
+              rows={4}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConcluirDialogOpen(false)}>Cancelar</Button>
+            <Button
+              onClick={handleConfirmConcluir}
+              disabled={(needsJustificativa && !justificativa.trim()) || !destinatarioId}
+            >
+              Confirmar Conclusão
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {!editAllowed && blockReason && (
+        <div className="mb-4 flex items-center gap-2 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-2 text-sm text-destructive">
+          <Lock className="w-4 h-4 shrink-0" />
+          {blockReason}
+        </div>
+      )}
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div className="space-y-2">
@@ -117,7 +601,63 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
             value={shiftInfo.reguladorNIR}
             onChange={(e) => handleChange('reguladorNIR', e.target.value)}
             placeholder="Nome do regulador"
+            disabled={!editAllowed}
           />
+          {/* Pendências Passadas */}
+          {pendenciasPassadas && pendenciasPassadas.length > 0 && (
+            <div className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm">
+              <p className="font-medium text-amber-800 mb-2">Pendências do plantão anterior:</p>
+              <ul className="space-y-1">
+                {pendenciasPassadas.map((p, i) => (
+                  <li key={`p-${i}`} className="flex items-start gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onResolvePendencia?.('passadas', i)}
+                      className="mt-0.5 shrink-0"
+                      title={p.resolved ? 'Resolvida' : 'Marcar como resolvida'}
+                    >
+                      {p.resolved ? (
+                        <CheckSquare className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Square className="w-4 h-4 text-amber-600" />
+                      )}
+                    </button>
+                    <span className={`${p.resolved ? 'line-through text-amber-500' : 'text-amber-700'}`}>
+                      {p.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Pendências Encontradas */}
+          {pendenciasEncontradasList && pendenciasEncontradasList.length > 0 && (
+            <div className="mt-2 rounded-md border border-blue-300 bg-blue-50 px-3 py-2 text-sm">
+              <p className="font-medium text-blue-800 mb-2">Pendências encontradas na assunção:</p>
+              <ul className="space-y-1">
+                {pendenciasEncontradasList.map((p, i) => (
+                  <li key={`e-${i}`} className="flex items-start gap-2">
+                    <button
+                      type="button"
+                      onClick={() => onResolvePendencia?.('encontradas', i)}
+                      className="mt-0.5 shrink-0"
+                      title={p.resolved ? 'Resolvida' : 'Marcar como resolvida'}
+                    >
+                      {p.resolved ? (
+                        <CheckSquare className="w-4 h-4 text-green-600" />
+                      ) : (
+                        <Square className="w-4 h-4 text-blue-600" />
+                      )}
+                    </button>
+                    <span className={`${p.resolved ? 'line-through text-blue-400' : 'text-blue-700'}`}>
+                      {p.text}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
 
         <div className="space-y-2 md:col-span-2 lg:col-span-1">
@@ -131,6 +671,7 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
             onChange={(e) => handleChange('medicos', e.target.value)}
             placeholder="Nomes dos médicos de plantão"
             rows={2}
+            disabled={!editAllowed}
           />
         </div>
 
@@ -145,9 +686,46 @@ export function ShiftConfig({ shiftInfo, onShiftInfoChange, onSave }: ShiftConfi
             onChange={(e) => handleChange('enfermeiros', e.target.value)}
             placeholder="Nomes dos enfermeiros de plantão"
             rows={2}
+            disabled={!editAllowed}
           />
         </div>
       </div>
+
+      {/* Dialog de pendências encontradas ao assumir plantão */}
+      <Dialog open={pendenciasEncontradasDialog} onOpenChange={setPendenciasEncontradasDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              Pendências encontradas ao assumir o plantão
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Você identificou alguma pendência ao assumir este plantão? Registre abaixo para manter o histórico de continuidade assistencial.
+            </p>
+            <Textarea
+              value={pendenciasEncontradas}
+              onChange={(e) => setPendenciasEncontradas(e.target.value)}
+              placeholder="Descreva as pendências encontradas ao assumir o plantão (ex.: paciente aguardando resultado de exame, solicitação de transferência pendente...)"
+              rows={4}
+            />
+            <p className="text-xs text-muted-foreground italic">
+              Essas pendências ficarão visíveis como "Pendências identificadas na assunção" junto ao campo do Regulador.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendenciasEncontradasDialog(false)}>
+              Nenhuma pendência
+            </Button>
+            <Button
+              onClick={handleConfirmPendenciasEncontradas}
+              disabled={!pendenciasEncontradas.trim()}
+            >
+              Registrar Pendências
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

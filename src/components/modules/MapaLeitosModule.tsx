@@ -1,11 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Ambulance, Loader2 } from 'lucide-react';
+// jsPDF is dynamically imported via export-utils
+import autoTable from 'jspdf-autotable';
+import { differenceInDays, differenceInHours, parseISO } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
+import { supabase } from '@/integrations/supabase/client';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useBeds } from '@/hooks/useBeds';
 import { useBedRecords } from '@/hooks/useBedRecords';
 import { useShiftConfig } from '@/hooks/useShiftConfig';
 import { useLogAccess } from '@/hooks/useLogAccess';
+import { useRealtimeSync, REALTIME_PRESETS } from '@/hooks/useRealtimeSync';
 import { 
   BedGrid, 
   BedModal, 
@@ -13,25 +18,95 @@ import {
   OccupancySummary, 
   ShiftConfig 
 } from '@/components/mapa-leitos';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
 import { Bed, Patient, Sector, SECTORS } from '@/types/bed';
 
 export const MapaLeitosModule = () => {
-  const { isAdmin, isNir, isLoading: isLoadingRole } = useUserRole();
+  const { isAdmin, isNir, isEnfermagem, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
+  useRealtimeSync(REALTIME_PRESETS.mapaLeitos);
   
   const { shiftInfo, isLoading: isShiftLoading, updateShiftInfo, saveShiftConfig } = useShiftConfig();
   
   const [activeSector, setActiveSector] = useState<Sector>('enfermaria-masculina');
   const [selectedBed, setSelectedBed] = useState<Bed | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [pendenciasPlantao, setPendenciasPlantao] = useState<string | null>(null);
+  const [pendenciasEncontradas, setPendenciasEncontradas] = useState<string | null>(null);
+  const [resolvedPassadas, setResolvedPassadas] = useState<Set<number>>(new Set());
+  const [resolvedEncontradas, setResolvedEncontradas] = useState<Set<number>>(new Set());
+  const [passagemId, setPassagemId] = useState<string | null>(null);
 
-  const { beds, isLoading: isBedsLoading, updateBed, transferPatient, occupancyBySector, totalOccupancy } = useBeds(shiftInfo.data);
+  const { beds, isLoading: isBedsLoading, updateBed, transferPatient, occupancyBySector, totalOccupancy } = useBeds(shiftInfo.data, shiftInfo.tipo);
   const { saveBedRecord, updateDailyStatistics } = useBedRecords();
   
   const syncedBedsRef = useRef<Set<string>>(new Set());
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const hasAccess = isAdmin || isNir;
+  const hasAccess = isAdmin || isNir || isEnfermagem;
+  const isLoading = isShiftLoading || isBedsLoading;
+
+  // Load pendências from previous shift's passagem
+  useEffect(() => {
+    const loadPendencias = async () => {
+      // Determine previous shift
+      let prevDate = shiftInfo.data;
+      let prevType: string;
+      if (shiftInfo.tipo === 'diurno') {
+        prevType = 'noturno';
+        const d = new Date(shiftInfo.data + 'T12:00:00');
+        d.setDate(d.getDate() - 1);
+        prevDate = d.toISOString().split('T')[0];
+      } else {
+        prevType = 'diurno';
+      }
+
+      // Load pendências from previous shift conclusion
+      const { data: prevData } = await supabase
+        .from('passagem_plantao')
+        .select('pendencias')
+        .eq('shift_date', prevDate)
+        .eq('shift_type', prevType)
+        .not('pendencias', 'is', null)
+        .order('data_hora_conclusao', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      setPendenciasPlantao(prevData?.pendencias || null);
+
+      // Load current shift passagem for encontradas and resolvidas
+      const { data: currentData } = await supabase
+        .from('passagem_plantao')
+        .select('id, pendencias_encontradas, pendencias_resolvidas')
+        .eq('shift_date', shiftInfo.data)
+        .eq('shift_type', shiftInfo.tipo)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (currentData) {
+        setPassagemId(currentData.id);
+        setPendenciasEncontradas(currentData.pendencias_encontradas || null);
+        // Parse resolved items
+        if (currentData.pendencias_resolvidas) {
+          try {
+            const parsed = JSON.parse(currentData.pendencias_resolvidas);
+            setResolvedPassadas(new Set(parsed.passadas || []));
+            setResolvedEncontradas(new Set(parsed.encontradas || []));
+          } catch {
+            setResolvedPassadas(new Set());
+            setResolvedEncontradas(new Set());
+          }
+        }
+      } else {
+        setPassagemId(null);
+        setPendenciasEncontradas(null);
+        setResolvedPassadas(new Set());
+        setResolvedEncontradas(new Set());
+      }
+    };
+    loadPendencias();
+  }, [shiftInfo.data, shiftInfo.tipo]);
 
   useEffect(() => {
     if (hasAccess && !isLoadingRole) {
@@ -83,20 +158,151 @@ export const MapaLeitosModule = () => {
     };
   }, [beds, syncToDatabase]);
 
+  const getExportData = useCallback(() => {
+    return beds
+      .filter(b => b.patient !== null)
+      .sort((a, b) => {
+        const sectorOrder = SECTORS.findIndex(s => s.id === a.sector) - SECTORS.findIndex(s => s.id === b.sector);
+        if (sectorOrder !== 0) return sectorOrder;
+        const numA = typeof a.number === 'number' ? a.number : 9999;
+        const numB = typeof b.number === 'number' ? b.number : 9999;
+        return numA - numB;
+      })
+      .map(bed => {
+        const sectorName = SECTORS.find(s => s.id === bed.sector)?.name || bed.sector;
+        const bedLabel = typeof bed.number === 'string' ? bed.number : String(bed.number);
+        let permanencia = '-';
+        const timestamp = bed.patient?.registradoEm;
+        if (timestamp) {
+          try {
+            const dataReg = parseISO(timestamp);
+            const now = new Date();
+            const dias = differenceInDays(now, dataReg);
+            const horas = differenceInHours(now, dataReg) % 24;
+            permanencia = dias > 0 ? `${dias}d ${horas}h` : `${horas}h`;
+          } catch { /* ignore */ }
+        }
+        let idadeStr = '-';
+        const dn = bed.patient?.dataNascimento;
+        if (dn) {
+          try {
+            const nascimento = parseISO(dn);
+            const anos = differenceInDays(new Date(), nascimento);
+            idadeStr = `${Math.floor(anos / 365)} anos`;
+          } catch { /* ignore */ }
+        }
+        return {
+          setor: sectorName,
+          leito: `Leito ${bedLabel}`,
+          paciente: (bed.patient?.nome || '-').trim(),
+          dataNascimento: dn || '-',
+          idade: idadeStr,
+          hipotese: bed.patient?.hipoteseDiagnostica || '-',
+          conduta: bed.patient?.condutasOutros || '-',
+          observacao: bed.patient?.observacao || '-',
+          dataInternacao: bed.patient?.dataInternacao || '-',
+          permanencia,
+          cti: bed.patient?.cti === 'sim' ? 'Sim' : bed.patient?.cti === 'nao' ? 'Nao' : '-',
+        };
+      });
+  }, [beds]);
+
+  const handleExportExcel = useCallback(async () => {
+    const data = getExportData();
+    const XLSX = await import('xlsx');
+    
+    const wb = XLSX.utils.book_new();
+    
+    // Header info rows
+    const headerRows = [
+      ['Mapa de Leitos'],
+      [`Data: ${shiftInfo.data}`, `Plantao: ${shiftInfo.tipo === 'noturno' ? 'Noturno' : 'Diurno'}`],
+      [`Regulador NIR: ${shiftInfo.reguladorNIR || '-'}`],
+      [`Medicos: ${shiftInfo.medicos || '-'}`],
+      [`Enfermeiros: ${shiftInfo.enfermeiros || '-'}`],
+      [`Ocupacao: ${totalOccupancy.occupied}/${totalOccupancy.total}`],
+      [],
+    ];
+    
+    const tableHeaders = ['Setor', 'Leito', 'Paciente', 'Dt. Nasc.', 'Idade', 'Hipotese Diagnostica', 'Conduta', 'Observacoes', 'Internacao', 'Permanencia', 'CTI'];
+    const tableRows = data.map(row => [row.setor, row.leito, row.paciente, row.dataNascimento, row.idade, row.hipotese, row.conduta, row.observacao, row.dataInternacao, row.permanencia, row.cti]);
+    
+    const wsData = [...headerRows, tableHeaders, ...tableRows];
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    
+    // Set column widths for proper display
+    ws['!cols'] = [
+      { wch: 22 },  // Setor
+      { wch: 14 },  // Leito
+      { wch: 32 },  // Paciente
+      { wch: 12 },  // Dt. Nasc.
+      { wch: 10 },  // Idade
+      { wch: 30 },  // Hipotese
+      { wch: 28 },  // Conduta
+      { wch: 28 },  // Observacoes
+      { wch: 14 },  // Internacao
+      { wch: 12 },  // Permanencia
+      { wch: 10 },  // CTI
+    ];
+    
+    // Merge title row
+    ws['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 10 } }];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Mapa de Leitos');
+    const turno = shiftInfo.tipo === 'noturno' ? 'NOTURNO' : 'DIURNO';
+    const primeiroNome = (shiftInfo.reguladorNIR || 'SEM-REGULADOR').split(' ')[0].toUpperCase();
+    const [, mes, dia] = shiftInfo.data.split('-');
+    const nomeArquivo = `PLANTAO ${turno} ${primeiroNome} ${dia}-${mes}`;
+    XLSX.writeFile(wb, `${nomeArquivo}.xlsx`);
+  }, [getExportData, shiftInfo, totalOccupancy]);
+
+  const handleExportPDF = useCallback(async () => {
+    const data = getExportData();
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Mapa de Leitos', 'landscape');
+
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Data: ${shiftInfo.data} | Plantao: ${shiftInfo.tipo === 'noturno' ? 'Noturno' : 'Diurno'} | Regulador NIR: ${shiftInfo.reguladorNIR || '-'}`, 14, 32);
+    doc.text(`Medicos: ${shiftInfo.medicos || '-'}`, 14, 37);
+    doc.text(`Enfermeiros: ${shiftInfo.enfermeiros || '-'}`, 14, 42);
+    doc.text(`Ocupacao: ${totalOccupancy.occupied}/${totalOccupancy.total}`, 14, 47);
+
+    autoTable(doc, {
+      startY: 52,
+      head: [['Setor', 'Leito', 'Paciente', 'Dt.Nasc.', 'Idade', 'Hipotese', 'Conduta', 'Obs.', 'Internacao', 'Perm.', 'CTI']],
+      body: data.map(r => [r.setor, r.leito, r.paciente, r.dataNascimento, r.idade, r.hipotese, r.conduta, r.observacao, r.dataInternacao, r.permanencia, r.cti]),
+      styles: { fontSize: 7 },
+      headStyles: { fillColor: [37, 99, 235] },
+      margin: { top: 32, bottom: 28 },
+    });
+
+    const turno = shiftInfo.tipo === 'noturno' ? 'NOTURNO' : 'DIURNO';
+    const primeiroNome = (shiftInfo.reguladorNIR || 'SEM-REGULADOR').split(' ')[0].toUpperCase();
+    const [, mes, dia] = shiftInfo.data.split('-');
+    const nomeArquivo = `PLANTAO ${turno} ${primeiroNome} ${dia}-${mes}`;
+    savePdfWithFooter(doc, 'Mapa de Leitos', nomeArquivo, logoImg);
+  }, [getExportData, shiftInfo, totalOccupancy]);
+
   const handleBedClick = (bed: Bed) => {
     setSelectedBed(bed);
     setIsModalOpen(true);
   };
 
   const handleSaveBed = async (bed: Bed, patient: Patient | null, isDischarge?: boolean) => {
-    updateBed(bed.id, patient);
-    
-    syncedBedsRef.current.delete(`${bed.id}-${JSON.stringify(bed.patient)}`);
+    // Clear sync cache for this bed so next sync picks up the change
+    syncedBedsRef.current = new Set(
+      [...syncedBedsRef.current].filter(k => !k.startsWith(`${bed.id}-`))
+    );
     
     if (isDischarge && patient?.dataAlta) {
-      await saveBedRecord({ ...bed, patient }, shiftInfo, patient.dataAlta);
+      // Save discharge record immediately (no debounce) FIRST, then clear the bed
+      await saveBedRecord({ ...bed, patient }, shiftInfo, patient.dataAlta, true);
       updateBed(bed.id, null);
+      // Mark the discharged bed as already synced so background sync won't delete the record
+      syncedBedsRef.current.add(`${bed.id}-${JSON.stringify(null)}`);
     } else {
+      updateBed(bed.id, patient);
       await saveBedRecord({ ...bed, patient }, shiftInfo);
     }
 
@@ -115,6 +321,113 @@ export const MapaLeitosModule = () => {
       paciente: fromBed.patient?.nome,
     });
   };
+
+  const handleConcluirPlantao = useCallback(async (justificativa?: string, pendencias?: string, destinatarioId?: string, destinatarioNome?: string) => {
+    // Determine next shift
+    const nextShiftType = shiftInfo.tipo === 'diurno' ? 'noturno' : 'diurno';
+    let nextDate = shiftInfo.data;
+    // If current is noturno, next diurno is next day
+    if (shiftInfo.tipo === 'noturno') {
+      const d = new Date(shiftInfo.data + 'T12:00:00');
+      d.setDate(d.getDate() + 1);
+      nextDate = d.toISOString().split('T')[0];
+    }
+
+    // Save current shift config first
+    await saveShiftConfig();
+
+    // Copy all bed records to the next shift with blank staff
+    const bedsWithPatients = beds.filter(bed => bed.patient !== null && !bed.patient.motivoAlta);
+    
+    for (const bed of bedsWithPatients) {
+      if (bed.patient) {
+        await supabase.from('bed_records').upsert({
+          bed_id: bed.id,
+          bed_number: String(bed.number),
+          sector: bed.sector,
+          shift_date: nextDate,
+          shift_type: nextShiftType,
+          patient_name: bed.patient.nome || null,
+          hipotese_diagnostica: bed.patient.hipoteseDiagnostica || null,
+          data_internacao: bed.patient.dataInternacao || null,
+          data_nascimento: bed.patient.dataNascimento || null,
+          observacao: bed.patient.observacao || null,
+          condutas_outros: bed.patient.condutasOutros || null,
+          sus_facil: bed.patient.susFacil || null,
+          numero_sus_facil: bed.patient.numeroSusFacil || null,
+          cti: bed.patient.cti || null,
+          medicos: '',
+          enfermeiros: '',
+          regulador_nir: '',
+        }, {
+          onConflict: 'bed_id,shift_date,shift_type'
+        });
+      }
+    }
+
+    // Create next shift config with blank staff
+    await supabase.from('shift_configurations').upsert({
+      shift_date: nextDate,
+      shift_type: nextShiftType,
+      medicos: '',
+      enfermeiros: '',
+      regulador_nir: '',
+    }, {
+      onConflict: 'shift_date,shift_type'
+    });
+
+    // Record passagem de plantão
+    const { data: { user } } = await supabase.auth.getUser();
+    const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Desconhecido';
+
+    const { data: passagemData } = await supabase.from('passagem_plantao').insert({
+      shift_date: shiftInfo.data,
+      shift_type: shiftInfo.tipo,
+      colaborador_saida_id: user?.id || null,
+      colaborador_saida_nome: userName,
+      data_hora_conclusao: new Date().toISOString(),
+      colaborador_entrada_id: destinatarioId || null,
+      colaborador_entrada_nome: destinatarioNome || null,
+      justificativa: justificativa || null,
+      pendencias: pendencias || null,
+    }).select('id').single();
+
+    // Create individual pendências records with timestamps and notifications
+    if (pendencias && passagemData?.id && destinatarioId) {
+      const linhas = pendencias.split('\n').filter(l => l.trim().length > 0);
+      for (const linha of linhas) {
+        const { data: pendenciaData } = await supabase.from('passagem_plantao_pendencias').insert({
+          passagem_id: passagemData.id,
+          descricao: linha.trim(),
+          registrado_por_id: user?.id || null,
+          registrado_por_nome: userName,
+          destinatario_id: destinatarioId,
+          destinatario_nome: destinatarioNome || '',
+          data_hora_registro: new Date().toISOString(),
+          status: 'pendente',
+        }).select('id').single();
+
+        // Create notification for the receiving professional
+        if (pendenciaData?.id) {
+          await supabase.from('notificacoes_pendencias').insert({
+            pendencia_id: pendenciaData.id,
+            destinatario_id: destinatarioId,
+            titulo: 'Pendência de Passagem de Plantão',
+            mensagem: `${userName} registrou uma pendência: "${linha.trim()}". Resolva e dê baixa.`,
+          });
+        }
+      }
+    }
+
+    // Log the action
+    logAction('mapa_leitos', 'concluir_plantao', {
+      data: shiftInfo.data,
+      tipo: shiftInfo.tipo,
+      proximo_plantao: `${nextDate} ${nextShiftType}`,
+      destinatario: destinatarioNome || 'Não informado',
+      justificativa: justificativa || 'Dentro do horário permitido',
+    });
+  }, [beds, shiftInfo, saveShiftConfig, logAction]);
 
   if (isLoadingRole) {
     return (
@@ -137,7 +450,8 @@ export const MapaLeitosModule = () => {
     );
   }
 
-  const isLoading = isShiftLoading || isBedsLoading;
+  // Enfermagem: view-only (grid + transfer), no shift config / exports / passagem
+  const isFullAccess = isAdmin || isNir;
 
   return (
     <div className="space-y-6">
@@ -148,21 +462,110 @@ export const MapaLeitosModule = () => {
             Mapa de Leitos
           </h2>
           <p className="text-muted-foreground">
-            Sistema de Gestão de Ocupação Hospitalar - NIR
+            {isFullAccess
+              ? 'Sistema de Gestão de Ocupação Hospitalar - NIR'
+              : 'Visualização e Movimentação de Leitos'}
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <ExportDropdown onExportPDF={handleExportPDF} onExportExcel={handleExportExcel} />
           <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-primary/10 text-primary">
-            {shiftInfo.tipo === 'noturno' ? '🌙 Plantão Noturno' : '☀️ Plantão Diurno'}
+            {shiftInfo.tipo === 'noturno' ? 'Plantão Noturno' : 'Plantão Diurno'}
           </span>
         </div>
       </div>
 
-      <ShiftConfig
-        shiftInfo={shiftInfo}
-        onShiftInfoChange={updateShiftInfo}
-        onSave={saveShiftConfig}
-      />
+      {isFullAccess && (
+        <ShiftConfig
+          shiftInfo={shiftInfo}
+          onShiftInfoChange={updateShiftInfo}
+          onSave={saveShiftConfig}
+          onConcluirPlantao={handleConcluirPlantao}
+          pendenciasPassadas={
+            pendenciasPlantao
+              ? pendenciasPlantao.split('\n').filter(l => l.trim()).map((text, i) => ({
+                  text,
+                  resolved: resolvedPassadas.has(i),
+                }))
+              : []
+          }
+          pendenciasEncontradasList={
+            pendenciasEncontradas
+              ? pendenciasEncontradas.split('\n').filter(l => l.trim()).map((text, i) => ({
+                  text,
+                  resolved: resolvedEncontradas.has(i),
+                }))
+              : []
+          }
+          onResolvePendencia={async (tipo, index) => {
+            const newSet = tipo === 'passadas'
+              ? new Set(resolvedPassadas)
+              : new Set(resolvedEncontradas);
+
+            if (newSet.has(index)) {
+              newSet.delete(index);
+            } else {
+              newSet.add(index);
+            }
+
+            if (tipo === 'passadas') {
+              setResolvedPassadas(newSet);
+            } else {
+              setResolvedEncontradas(newSet);
+            }
+
+            const resolvedData = JSON.stringify({
+              passadas: Array.from(tipo === 'passadas' ? newSet : resolvedPassadas),
+              encontradas: Array.from(tipo === 'encontradas' ? newSet : resolvedEncontradas),
+            });
+
+            if (passagemId) {
+              await supabase.from('passagem_plantao').update({
+                pendencias_resolvidas: resolvedData,
+              }).eq('id', passagemId);
+            } else {
+              const { data: { user } } = await supabase.auth.getUser();
+              const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
+              const { data: newRec } = await supabase.from('passagem_plantao').insert({
+                shift_date: shiftInfo.data,
+                shift_type: shiftInfo.tipo,
+                colaborador_saida_nome: userName,
+                colaborador_saida_id: user?.id || null,
+                data_hora_conclusao: new Date().toISOString(),
+                tempo_troca_minutos: 0,
+                pendencias_resolvidas: resolvedData,
+              }).select('id').single();
+              if (newRec) setPassagemId(newRec.id);
+            }
+          }}
+          onReportPendenciasEncontradas={async (text) => {
+            const { data: { user } } = await supabase.auth.getUser();
+            
+            if (passagemId) {
+              await supabase.from('passagem_plantao').update({
+                pendencias_encontradas: text,
+              }).eq('id', passagemId);
+            } else {
+              const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || '';
+              const { data: newRec } = await supabase.from('passagem_plantao').insert({
+                shift_date: shiftInfo.data,
+                shift_type: shiftInfo.tipo,
+                colaborador_saida_nome: userName,
+                colaborador_saida_id: user?.id || null,
+                data_hora_conclusao: new Date().toISOString(),
+                colaborador_entrada_nome: userName,
+                colaborador_entrada_id: user?.id || null,
+                data_hora_assuncao: new Date().toISOString(),
+                tempo_troca_minutos: 0,
+                pendencias_encontradas: text,
+              }).select('id').single();
+              if (newRec) setPassagemId(newRec.id);
+            }
+            
+            setPendenciasEncontradas(text);
+          }}
+        />
+      )}
 
       <OccupancySummary
         occupied={totalOccupancy.occupied}
@@ -191,8 +594,9 @@ export const MapaLeitosModule = () => {
         bed={selectedBed}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSave={handleSaveBed}
+        onSave={isFullAccess ? handleSaveBed : undefined}
         sectorBeds={beds.filter(b => b.sector === activeSector)}
+        allBeds={beds}
         onTransfer={handleTransfer}
       />
     </div>

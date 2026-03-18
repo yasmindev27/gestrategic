@@ -1,86 +1,148 @@
 
-# Plano: Correções na Exibição de Dados e Campos de Avaliação
+## CONTEXTO INSTITUCIONAL — NÃO REMOVER
+Este projeto é o sistema de gestão de uma **instituição hospitalar (UPA 24h)**. A integridade e fidedignidade dos dados é crítica — erros de estatística, contagem duplicada ou inconsistências em relatórios podem impactar decisões clínicas e operacionais. Todo processamento de dados deve priorizar precisão, deduplicação e auditabilidade. Conformidade com LGPD e ONA são requisitos permanentes.
+
+---
+
+# Plano de Atualizacoes Estruturais, Visuais e de Conformidade
 
 ## Resumo
-Este plano corrige o problema de exibição incorreta da data de atendimento e adiciona os campos solicitados na seção de avaliação e na tabela de prontuários faltantes.
 
-## Problemas Identificados
-
-### 1. Data de Atendimento Exibindo Incorretamente
-O problema ocorre porque a data é armazenada no formato `YYYY-MM-DD` (ex: `2026-01-25`) e quando convertida com `new Date("2026-01-25")`, o JavaScript interpreta como UTC meia-noite. Ao exibir no fuso horário de Brasília (UTC-3), a data pode mostrar o dia anterior.
-
-**Solução**: Usar a função de parsing correta do `date-fns` (`parseISO`) ou adicionar "T00:00:00" para garantir interpretação local.
-
-### 2. Dialog de Avaliação Faltando Campos
-Atualmente o dialog só mostra "Número do Prontuário". O usuário precisa:
-- Nome do Paciente
-- Data de Nascimento  
-- Data de Atendimento (no lugar do nº prontuário)
-
-### 3. Tabela de Prontuários Faltantes (Salus)
-Atualmente tem: #, Paciente, Nº Prontuário, Data de Registro, Status
-O usuário quer: #, Paciente, Data Nascimento, Data Atendimento, Status
+Este plano cobre tres areas: (1) ajustes de conformidade LGPD e UX em links externos, (2) confirmacao dos itens ja implementados no dashboard, e (3) criacao do modulo de Sala de Reuniao Virtual com IA.
 
 ---
 
-## Alterações Técnicas
+## Parte 1 - Branding, LGPD e Links Externos
 
-### Arquivo: `src/components/modules/SaidaProntuariosModule.tsx`
+### 1.1 Itens ja implementados (sem alteracoes necessarias)
 
-#### 1. Corrigir formatação de data (evitar problema de timezone)
-Criar função auxiliar para formatar datas do tipo `YYYY-MM-DD`:
+- **Cabecalho PDF com logo Gestrategic**: Ja funcional em `src/lib/export-utils.ts` (logo no canto superior direito).
+- **Rodape LGPD em PDFs**: Presente em todas as paginas com texto de conformidade em fonte 7pt cinza.
+- **Cards interativos com tooltips**: Implementados na ultima sessao em `DashboardPersonalizado.tsx`.
+- **Badge de notificacao no chat**: Ja presente em `FloatingChatButton.tsx`.
 
-```typescript
-const formatDateOnly = (dateStr: string | null) => {
-  if (!dateStr) return "-";
-  // Adiciona hora para evitar interpretação UTC
-  const date = new Date(dateStr + "T12:00:00");
-  return format(date, "dd/MM/yyyy", { locale: ptBR });
-};
-```
+### 1.2 Banner de Cookies no Rodape (novo)
 
-Aplicar em todos os locais que usam `data_atendimento` e `nascimento_mae`.
+O componente `LGPDConsent.tsx` atual e um dialog modal que bloqueia a tela. O pedido e por um **banner fixo no rodape** da aplicacao, mais discreto.
 
-#### 2. Atualizar Dialog de Validação (linhas 1028-1055)
-Substituir campo de "Número do Prontuário" por:
+**Acao:** Criar um componente `CookieBanner.tsx` que:
+- Aparece fixo no rodape (`fixed bottom-0`) com fundo escuro semi-transparente
+- Texto: "A Gstrategic utiliza cookies essenciais para garantir seguranca, autenticacao e a melhor experiencia de uso. Ao continuar, voce concorda com nossa Politica de Privacidade."
+- Botoes "Aceitar" e "Saiba mais"
+- Persiste a escolha em `localStorage` via o hook `useLGPDConsent` existente
+- Renderizado no `Dashboard.tsx` quando o consentimento esta pendente
+
+### 1.3 Aviso de Redirecionamento em Links Externos (novo)
+
+Ao clicar em links para Salus, Interact ou Pega Plantao, exibir um toast informativo antes da abertura.
+
+**Acao:** Modificar o `Sidebar.tsx` e `MedicosModule.tsx` para exibir um toast: "Acessando ambiente seguro do parceiro..." com um delay de ~1.5s antes do `window.open`.
+
+---
+
+## Parte 2 - Dashboard (confirmacao)
+
+Todos os itens solicitados ja foram implementados:
+- Cards clicaveis com `cursor-pointer` e efeito hover (elevacao + brilho)
+- Redirecionamento direto para modulos (Capacitacoes -> LMS, Prontuarios -> Saida Prontuarios, Agenda -> Agenda, Escalas -> Escala Laboratorio)
+- Tooltips informativos com delay de 300ms
+
+Nenhuma acao adicional necessaria.
+
+---
+
+## Parte 3 - Sala de Reuniao Virtual com Ata por IA
+
+Esta e a parte mais complexa e sera dividida em etapas.
+
+### 3.1 Formulario de Setup da Reuniao
+
+**Novo componente:** `src/components/reuniao/SetupReuniao.tsx`
+- Campos: Titulo da Reuniao, Pauta/Objetivos (textarea), Participantes (multi-select de colaboradores)
+- Botao "Iniciar Reuniao" que cria o registro no banco e abre a sala
+
+### 3.2 Interface da Sala de Reuniao
+
+**Novo componente:** `src/components/reuniao/SalaReuniao.tsx`
+- **Video/Audio**: Utilizar a Web API `getUserMedia` para captura de camera e microfone locais (videoconferencia peer-to-peer nao e viavel sem um servidor WebRTC/TURN, entao a implementacao sera para gravacao local com visualizacao da propria camera)
+- **Controles**: Botoes Mutar, Camera On/Off, botao REC (gravacao via MediaRecorder API)
+- **Transcricao em tempo real**: Barra lateral usando Web Speech API (`SpeechRecognition`) para exibir texto ao vivo
+- **Banner LGPD**: Faixa fixa no topo: "Esta reuniao esta sendo gravada e transcrita para fins de registro institucional conforme a LGPD."
+
+### 3.3 Gravacao e Armazenamento
+
+- Gravar video/audio via `MediaRecorder` em formato WebM
+- Ao encerrar, fazer upload do arquivo para um bucket de storage `reunioes` (novo)
+- Salvar metadados na tabela `reunioes` (nova)
+
+### 3.4 Geracao Automatica de Ata com IA
+
+**Nova Edge Function:** `supabase/functions/gerar-ata-reuniao/index.ts`
+- Recebe a transcricao completa da reuniao
+- Utiliza Lovable AI (modelo `google/gemini-3-flash-preview`) para gerar:
+  - Resumo Executivo
+  - Decisoes Tomadas
+  - Plano de Acao (lista de tarefas)
+- Retorna JSON estruturado
+
+**Componente de resultado:** `src/components/reuniao/AtaReuniao.tsx`
+- Exibe a ata gerada com formatacao limpa
+- Botao "Exportar PDF" usando o padrao de branding ja existente (`createStandardPdf` + `savePdfWithFooter`)
+
+### 3.5 Integracao no Menu e Roteamento
+
+- Adicionar item "Reunioes" no menu lateral (Sidebar)
+- Registrar rota `reuniao` no switch do `Dashboard.tsx`
+
+---
+
+## Detalhes Tecnicos
+
+### Novas tabelas no banco de dados
 
 ```text
-+--------------------+
-| Nome do Paciente   |  ← Input desabilitado
-+--------------------+
-| Data de Nascimento |  ← Input desabilitado
-+--------------------+
-| Data de Atendimento|  ← Input desabilitado
-+--------------------+
-| [checkbox] Existe  |
-| Observações        |
-+--------------------+
+reunioes
+  - id (uuid, PK)
+  - titulo (text)
+  - pauta (text)
+  - participantes (uuid[])
+  - transcricao (text)
+  - ata_gerada (jsonb)
+  - gravacao_url (text)
+  - status (text: 'agendada', 'em_andamento', 'encerrada')
+  - criado_por (uuid)
+  - created_at, updated_at (timestamptz)
 ```
 
-#### 3. Atualizar Tabela de Prontuários Faltantes (linhas 974-1011)
-Modificar colunas de:
-```
-# | Paciente | Nº Prontuário | Data de Registro | Status
-```
-Para:
-```
-# | Paciente | Data Nasc. | Data Atendimento | Status
-```
+### Novo bucket de storage
 
-#### 4. Atualizar exportação de Faltantes (linhas 463-472)
-Modificar headers e dados para refletir as novas colunas.
+- Nome: `reunioes`
+- Publico: Nao
+- RLS: Apenas participantes podem acessar
 
----
+### Nova Edge Function
 
-## Resultado Esperado
+- `gerar-ata-reuniao`: Usa LOVABLE_API_KEY com Lovable AI Gateway, sem necessidade de chave adicional
 
-1. **Datas corretas**: A data 25/01/2026 lançada será exibida como 25/01/2026 (sem mais mostrar o dia anterior)
+### Arquivos a criar
 
-2. **Dialog de Avaliação completo** com:
-   - Nome do paciente (somente leitura)
-   - Data de nascimento (somente leitura)
-   - Data de atendimento (somente leitura)
-   - Checkbox "Existe fisicamente" (editável)
-   - Campo de observações (editável)
+- `src/components/reuniao/SetupReuniao.tsx`
+- `src/components/reuniao/SalaReuniao.tsx`
+- `src/components/reuniao/AtaReuniao.tsx`
+- `src/components/reuniao/index.ts`
+- `src/components/reuniao/CookieBanner.tsx` (ou em `src/components/`)
+- `supabase/functions/gerar-ata-reuniao/index.ts`
 
-3. **Tabela Faltantes atualizada** mostrando Data de Nascimento e Data de Atendimento ao invés do número do prontuário
+### Arquivos a modificar
+
+- `src/components/Sidebar.tsx` (menu + toast de redirecionamento)
+- `src/components/modules/MedicosModule.tsx` (toast de redirecionamento)
+- `src/pages/Dashboard.tsx` (rota reuniao + cookie banner)
+- `supabase/config.toml` (nova edge function)
+
+### Limitacoes importantes
+
+- A videoconferencia sera **local** (camera do proprio usuario), nao multiplos participantes em tempo real - isso exigiria infraestrutura WebRTC (TURN/STUN servers) que esta fora do escopo de uma aplicacao web frontend
+- A Web Speech API funciona melhor no Chrome e pode nao estar disponivel em todos os navegadores
+- A gravacao sera armazenada no dispositivo e enviada ao storage ao encerrar
+

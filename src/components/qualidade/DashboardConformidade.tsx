@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -94,7 +95,7 @@ const IndicadorCard = ({ indicador }: { indicador: IndicadorONA }) => {
             <span className="text-sm text-muted-foreground">Meta: {indicador.meta}{indicador.unidade}</span>
           </div>
           <Progress 
-            value={Math.min((indicador.valor_atual / indicador.meta) * 100, 100)} 
+            value={indicador.meta !== 0 ? Math.min((indicador.valor_atual / indicador.meta) * 100, 100) : (indicador.valor_atual === 0 ? 100 : 0)} 
             className="h-2"
           />
           <p className="text-xs text-muted-foreground">{indicador.descricao}</p>
@@ -149,13 +150,13 @@ export const DashboardConformidade = () => {
     XLSX.writeFile(wb, `conformidade-${format(new Date(), "yyyy-MM-dd")}.xlsx`);
   };
 
-  const exportToPDF = () => {
-    const doc = new jsPDF();
-    doc.setFontSize(16);
-    doc.text("Relatório de Conformidade ONA/ISO 9001/Qmentum", 14, 20);
+  const exportToPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Relatório de Conformidade ONA/ISO 9001/Qmentum');
+    
     doc.setFontSize(10);
-    doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm", { locale: ptBR })}`, 14, 28);
-    doc.text(`Score ONA: ${conformidadeGeral.ona_score}% | ISO 9001: ${conformidadeGeral.iso_score}% | Qmentum: ${conformidadeGeral.qmentum_score}%`, 14, 34);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Score ONA: ${conformidadeGeral.ona_score}% | ISO 9001: ${conformidadeGeral.iso_score}% | Qmentum: ${conformidadeGeral.qmentum_score}%`, 14, 32);
 
     const tableData = indicadoresPorModulo.flatMap(modulo => 
       modulo.indicadores.map(ind => [
@@ -168,12 +169,13 @@ export const DashboardConformidade = () => {
     );
 
     autoTable(doc, {
-      startY: 42,
+      startY: 38,
       head: [["Módulo", "Indicador", "Valor", "Meta", "Status"]],
       body: tableData,
       styles: { fontSize: 7 },
+      margin: { bottom: 28 },
     });
-    doc.save(`conformidade-${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    savePdfWithFooter(doc, 'Relatório de Conformidade ONA/ISO 9001/Qmentum', `conformidade-${format(new Date(), "yyyy-MM-dd")}`, logoImg);
   };
 
   if (isLoading) {
@@ -187,25 +189,21 @@ export const DashboardConformidade = () => {
         <div>
           <h2 className="text-2xl font-bold flex items-center gap-2">
             <Award className="h-6 w-6 text-primary" />
-            Dashboard de Conformidade
+            Dashboard de Conformidade - ONA Nível 1
           </h2>
           <p className="text-muted-foreground">
-            Indicadores de acreditação ONA, ISO 9001 e Qmentum
+            Indicadores de acreditação ONA Nível 1, ISO 9001 e Qmentum
           </p>
         </div>
         <div className="flex items-center gap-2">
+          <Badge variant="outline" className="border-primary text-primary font-semibold px-3 py-1">
+            ONA N1
+          </Badge>
           <Button variant="outline" size="sm" onClick={recarregar}>
             <RefreshCcw className="h-4 w-4 mr-2" />
             Atualizar
           </Button>
-          <Button variant="outline" size="sm" onClick={exportToExcel}>
-            <Download className="h-4 w-4 mr-2" />
-            Excel
-          </Button>
-          <Button variant="outline" size="sm" onClick={exportToPDF}>
-            <FileText className="h-4 w-4 mr-2" />
-            PDF
-          </Button>
+          <ExportDropdown onExportExcel={exportToExcel} onExportPDF={exportToPDF} />
         </div>
       </div>
 

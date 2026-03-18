@@ -30,6 +30,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { getBrasiliaDate, getBrasiliaDateString, getBrasiliaTimeString } from "@/lib/brasilia-time";
 
 interface Colaborador {
   id: string;
@@ -101,24 +102,34 @@ const hashCPF = async (cpf: string): Promise<string> => {
 };
 
 // Determinar tipo de refeição com base no horário (fuso de Brasília)
+// Faixas ampliadas para evitar que colaboradores caiam em "fora de horário"
 const determinarTipoRefeicao = (): TipoRefeicao => {
-  // Usar horário de Brasília (America/Sao_Paulo)
-  const now = new Date();
-  const brasiliaTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
+  const brasiliaTime = getBrasiliaDate();
   const horas = brasiliaTime.getHours();
   const minutos = brasiliaTime.getMinutes();
   const tempoTotal = horas * 60 + minutos;
   
-  // 06:30 às 08:30 → Café da manhã
-  if (tempoTotal >= 390 && tempoTotal <= 510) return "cafe";
-  // 11:30 às 13:00 → Almoço
-  if (tempoTotal >= 690 && tempoTotal <= 780) return "almoco";
-  // 15:30 às 16:30 → Café da tarde
-  if (tempoTotal >= 930 && tempoTotal <= 990) return "lanche";
-  // 19:30 às 22:00 → Jantar
-  if (tempoTotal >= 1170 && tempoTotal <= 1320) return "jantar";
-  // Fora de horário
+  // 05:30 às 09:59 → Café da manhã
+  if (tempoTotal >= 330 && tempoTotal <= 599) return "cafe";
+  // 10:00 às 14:59 → Almoço
+  if (tempoTotal >= 600 && tempoTotal <= 899) return "almoco";
+  // 15:00 às 17:59 → Café da tarde
+  if (tempoTotal >= 900 && tempoTotal <= 1079) return "lanche";
+  // 18:00 às 23:59 → Jantar
+  if (tempoTotal >= 1080 && tempoTotal <= 1439) return "jantar";
+  // 00:00 às 05:29 → Fora de horário (madrugada)
   return "fora_horario";
+};
+
+// Sugerir o tipo de refeição mais provável para o modal fora-de-horário
+const sugerirTipoRefeicao = (): TipoRefeicao => {
+  const brasiliaTime = getBrasiliaDate();
+  const horas = brasiliaTime.getHours();
+  if (horas < 6) return "jantar";
+  if (horas < 10) return "cafe";
+  if (horas < 15) return "almoco";
+  if (horas < 18) return "lanche";
+  return "jantar";
 };
 
 const TotemRefeicoes = () => {
@@ -237,7 +248,7 @@ const TotemRefeicoes = () => {
     // Se está fora de horário, abre modal para selecionar o tipo
     if (tipoRefeicaoAtual === "fora_horario") {
       setColaboradorPendente(colaborador);
-      setTipoRefeicaoSelecionado(null);
+      setTipoRefeicaoSelecionado(sugerirTipoRefeicao());
       setShowSelecionarRefeicaoModal(true);
     } else {
       registrarRefeicaoColaborador(colaborador, tipoRefeicaoAtual);
@@ -251,9 +262,8 @@ const TotemRefeicoes = () => {
     setIsRegistrando(true);
     try {
       // Obter data e hora no fuso de Brasília
-      const now = new Date();
-      const brasiliaTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-      const dataRegistro = `${brasiliaTime.getFullYear()}-${String(brasiliaTime.getMonth() + 1).padStart(2, "0")}-${String(brasiliaTime.getDate()).padStart(2, "0")}`;
+      const dataRegistro = getBrasiliaDateString();
+      const brasiliaTime = getBrasiliaDate();
       const horaRegistro = `${String(brasiliaTime.getHours()).padStart(2, "0")}:${String(brasiliaTime.getMinutes()).padStart(2, "0")}:${String(brasiliaTime.getSeconds()).padStart(2, "0")}`;
       
       // Verificar se já existe um registro para este colaborador, nesta data e tipo de refeição
@@ -282,7 +292,7 @@ const TotemRefeicoes = () => {
         });
         
         toast({
-          title: "⚠️ Refeição já registrada",
+          title: "Refeição já registrada",
           description: `${colaborador.nome} já registrou ${tipoRefeicaoInfo[tipoRefeicao].label} hoje.`,
           variant: "destructive",
         });
@@ -372,7 +382,7 @@ const TotemRefeicoes = () => {
     if (tipoRefeicaoAtual === "fora_horario") {
       const cpfHash = await hashCPF(visitanteCPF);
       setVisitantePendente({ nome: visitanteNome.trim(), cpfHash });
-      setTipoRefeicaoVisitanteSelecionado(null);
+      setTipoRefeicaoVisitanteSelecionado(sugerirTipoRefeicao());
       setShowVisitanteModal(false);
       setShowSelecionarRefeicaoVisitanteModal(true);
       return;
@@ -397,9 +407,8 @@ const TotemRefeicoes = () => {
       }
       
       // Obter data e hora no fuso de Brasília
-      const now = new Date();
-      const brasiliaTime = new Date(now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" }));
-      const dataRegistro = `${brasiliaTime.getFullYear()}-${String(brasiliaTime.getMonth() + 1).padStart(2, "0")}-${String(brasiliaTime.getDate()).padStart(2, "0")}`;
+      const dataRegistro = getBrasiliaDateString();
+      const brasiliaTime = getBrasiliaDate();
       const horaRegistro = `${String(brasiliaTime.getHours()).padStart(2, "0")}:${String(brasiliaTime.getMinutes()).padStart(2, "0")}:${String(brasiliaTime.getSeconds()).padStart(2, "0")}`;
       
       // Verificar se já existe um registro para este visitante (por CPF hash), nesta data e tipo de refeição
@@ -429,7 +438,7 @@ const TotemRefeicoes = () => {
         });
         
         toast({
-          title: "⚠️ Refeição já registrada",
+          title: "Refeição já registrada",
           description: `${nomeVisitante} já registrou ${tipoRefeicaoInfo[tipoRefeicao].label} hoje.`,
           variant: "destructive",
         });
@@ -954,7 +963,7 @@ const TotemRefeicoes = () => {
             <Sun className="h-3 w-3" /> Almoço: 11:30-13:00
           </span>
           <span className="flex items-center gap-1">
-            <Cookie className="h-3 w-3" /> Lanche: 15:30-16:30
+            <Cookie className="h-3 w-3" /> Café da Tarde: 15:30-16:30
           </span>
           <span className="flex items-center gap-1">
             <Moon className="h-3 w-3" /> Jantar: 19:30-22:00

@@ -4,8 +4,10 @@ import { supabase } from "@/integrations/supabase/client";
 import { 
   Stethoscope, Plus, Upload, Calendar, Clock, MapPin, 
   ChevronLeft, ChevronRight, Users, Download, FileSpreadsheet,
-  MoreHorizontal, Pencil, Trash2, CheckCircle, AlertCircle
+  MoreHorizontal, Pencil, Trash2, CheckCircle, AlertCircle, ExternalLink,
+  BarChart3, ClipboardCheck, Activity
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,6 +37,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { Skeleton } from "@/components/ui/skeleton";
+import { IndicadoresNSP, IndicadoresUPA } from "@/components/indicadores";
+import AvaliacaoProntuariosCC from "@/components/medicos/AvaliacaoProntuariosCC";
+import { useSetoresNomes } from "@/hooks/useSetores";
 import { format, addDays, subDays, parseISO, isToday } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
@@ -59,17 +64,6 @@ interface EscalaMedico {
   profissionais_saude?: Profissional;
 }
 
-const setoresUPA = [
-  "Emergência",
-  "Sala Vermelha",
-  "Sala Amarela",
-  "Sala Verde",
-  "Observação Adulto",
-  "Observação Pediátrica",
-  "Pediatria",
-  "Ortopedia",
-];
-
 const tipoPlantaoConfig = {
   regular: { label: "Regular", variant: "default" as const },
   sobreaviso: { label: "Sobreaviso", variant: "secondary" as const },
@@ -83,9 +77,10 @@ const statusConfig = {
   cancelado: { label: "Cancelado", variant: "destructive" as const, icon: AlertCircle },
 };
 
-const MedicosModule = () => {
+const MedicosModule = ({ onOpenExternal }: { onOpenExternal?: (url: string, title: string) => void }) => {
   const { toast } = useToast();
   const { logAction } = useLogAccess();
+  const { data: setoresUPA = [] } = useSetoresNomes();
 
   useEffect(() => {
     logAction("acesso_modulo", "medicos");
@@ -108,18 +103,46 @@ const MedicosModule = () => {
 
   const dateStr = format(selectedDate, "yyyy-MM-dd");
 
-  // Query médicos cadastrados
+  // Query médicos cadastrados (profissionais_saude + NIR bed_records)
   const { data: medicos, isLoading: loadingMedicos } = useQuery({
-    queryKey: ["profissionais_medicos"],
+    queryKey: ["profissionais_medicos_com_nir"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // 1. Profissionais de saúde cadastrados
+      const { data: profissionais, error: errProf } = await supabase
         .from("profissionais_saude")
         .select("id, nome, registro_profissional, especialidade")
         .eq("tipo", "medico")
         .eq("status", "ativo")
         .order("nome");
-      if (error) throw error;
-      return data as Profissional[];
+      if (errProf) throw errProf;
+
+      // 2. Médicos dos registros do NIR (bed_records)
+      const { data: nirRecords, error: errNir } = await supabase
+        .from("bed_records")
+        .select("medicos")
+        .not("medicos", "is", null)
+        .not("medicos", "eq", "");
+      if (errNir) throw errNir;
+
+      // Extrair nomes únicos do NIR que não estão no cadastro
+      const profNomes = new Set((profissionais || []).map(p => p.nome.toUpperCase()));
+      const nirNomes = new Set<string>();
+      (nirRecords || []).forEach((r: any) => {
+        const nomes = (r.medicos as string).split(/[,;\/\n]/).map((n: string) => n.trim().toUpperCase()).filter(Boolean);
+        nomes.forEach(n => {
+          if (!profNomes.has(n) && n.length > 2) nirNomes.add(n);
+        });
+      });
+
+      // Combinar: profissionais cadastrados + médicos do NIR (como entradas virtuais)
+      const nirEntries: Profissional[] = Array.from(nirNomes).sort().map(nome => ({
+        id: `nir_${nome}`,
+        nome,
+        registro_profissional: null,
+        especialidade: "NIR",
+      }));
+
+      return [...(profissionais as Profissional[]), ...nirEntries];
     },
   });
 
@@ -145,8 +168,23 @@ const MedicosModule = () => {
   // Mutations
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
+      let profId = data.profissional_id;
+
+      // Se for médico do NIR (virtual), cadastrar primeiro em profissionais_saude
+      if (profId.startsWith("nir_")) {
+        const nome = profId.replace("nir_", "");
+        const { data: newProf, error: errNew } = await supabase
+          .from("profissionais_saude")
+          .insert({ nome, tipo: "medico", status: "ativo" })
+          .select("id")
+          .single();
+        if (errNew) throw errNew;
+        profId = newProf.id;
+        queryClient.invalidateQueries({ queryKey: ["profissionais_medicos_com_nir"] });
+      }
+
       const { error } = await supabase.from("escalas_medicos").insert({
-        profissional_id: data.profissional_id,
+        profissional_id: profId,
         data_plantao: data.data_plantao,
         hora_inicio: data.hora_inicio,
         hora_fim: data.hora_fim,
@@ -343,21 +381,53 @@ const MedicosModule = () => {
             <Stethoscope className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold text-foreground">Escala Médica</h2>
-            <p className="text-sm text-muted-foreground">Gestão de plantões médicos</p>
+            <h2 className="text-xl font-semibold text-foreground">Módulo Médicos</h2>
+            <p className="text-sm text-muted-foreground">Gestão de plantões e indicadores de internação</p>
           </div>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
-            <Upload className="h-4 w-4 mr-2" />
-            Importar Escala
-          </Button>
-          <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
-            <Plus className="h-4 w-4 mr-2" />
-            Adicionar
-          </Button>
-        </div>
       </div>
+
+      <Tabs defaultValue="escalas">
+        <TabsList className="h-auto p-1">
+          <TabsTrigger value="escalas" className="gap-2 text-sm px-4 py-2">
+            <Calendar className="h-4 w-4" />
+            Escala Médica
+          </TabsTrigger>
+          <TabsTrigger value="indicadores-nsp" className="gap-2 text-sm px-4 py-2">
+            <BarChart3 className="h-4 w-4" />
+            Indicadores NSP
+          </TabsTrigger>
+          <TabsTrigger value="perfil-epidemiologico" className="gap-2 text-sm px-4 py-2">
+            <Activity className="h-4 w-4" />
+            Perfil Epidemiológico
+          </TabsTrigger>
+          <TabsTrigger value="avaliacao-prontuarios" className="gap-2 text-sm px-4 py-2">
+            <ClipboardCheck className="h-4 w-4" />
+            Avaliação de Prontuários
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="escalas" className="mt-6 space-y-6">
+          <div className="flex gap-2 justify-end">
+            <Button
+              variant="outline"
+              onClick={() => {
+                toast({ title: "Redirecionando", description: "Acessando ambiente seguro do parceiro..." });
+                setTimeout(() => window.open("https://www.pegaplantao.com.br/login/", "_blank", "noopener,noreferrer"), 1500);
+              }}
+            >
+              <ExternalLink className="h-4 w-4 mr-2" />
+              Pega Plantão
+            </Button>
+            <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+              <Upload className="h-4 w-4 mr-2" />
+              Importar Escala
+            </Button>
+            <Button onClick={() => { resetForm(); setDialogOpen(true); }}>
+              <Plus className="h-4 w-4 mr-2" />
+              Adicionar
+            </Button>
+          </div>
 
       {/* Date Navigation */}
       <Card>
@@ -539,7 +609,7 @@ const MedicosModule = () => {
                 <SelectContent>
                   {medicos?.map((m) => (
                     <SelectItem key={m.id} value={m.id}>
-                      {m.nome} {m.registro_profissional && `(${m.registro_profissional})`}
+                      {m.nome} {m.registro_profissional ? `(${m.registro_profissional})` : m.especialidade === "NIR" ? "(NIR)" : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -677,6 +747,20 @@ const MedicosModule = () => {
           </div>
         </DialogContent>
       </Dialog>
+        </TabsContent>
+
+        <TabsContent value="indicadores-nsp" className="mt-6">
+          <IndicadoresNSP />
+        </TabsContent>
+
+        <TabsContent value="perfil-epidemiologico" className="mt-6">
+          <IndicadoresUPA />
+        </TabsContent>
+
+        <TabsContent value="avaliacao-prontuarios" className="mt-6">
+          <AvaliacaoProntuariosCC />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

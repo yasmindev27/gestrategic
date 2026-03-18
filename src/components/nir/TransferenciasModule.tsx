@@ -1,0 +1,905 @@
+import { useState, useEffect, useCallback } from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useUserRole } from "@/hooks/useUserRole";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import { Truck, Search, Clock, CheckCircle, AlertTriangle, Loader2, ArrowRight, Download, FileText, FileSpreadsheet, BarChart3, ArrowRightLeft, Plus, ClipboardList } from "lucide-react";
+import { createStandardPdf, applyPdfHeaderFooter } from "@/lib/export-utils";
+import autoTable from "jspdf-autotable";
+import { sendPushToUsers } from "@/hooks/usePushNotifications";
+import * as XLSX from "xlsx";
+import { RelatorioTransferencias } from "./RelatorioTransferencias";
+
+interface Veiculo {
+  id: string;
+  placa: string;
+  tipo: string;
+  motorista_nome: string;
+  status: string;
+}
+
+interface Solicitacao {
+  id: string;
+  paciente_nome: string;
+  setor_origem: string;
+  destino: string;
+  motivo: string | null;
+  prioridade: string;
+  status: string;
+  veiculo_id: string | null;
+  hora_saida: string | null;
+  hora_chegada: string | null;
+  solicitado_por_nome: string;
+  created_at: string;
+}
+
+interface PacienteInternado {
+  bed_id: string;
+  patient_name: string;
+  sector: string;
+  hipotese_diagnostica: string | null;
+  data_internacao: string | null;
+}
+
+interface Motorista {
+  user_id: string;
+  full_name: string;
+}
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof Clock }> = {
+  pendente: { label: "Pendente", color: "bg-yellow-500", icon: Clock },
+  em_transporte: { label: "Em Transporte", color: "bg-blue-500", icon: Truck },
+  concluida: { label: "Concluída", color: "bg-green-500", icon: CheckCircle },
+  cancelada: { label: "Cancelada", color: "bg-destructive", icon: AlertTriangle },
+};
+
+const VEICULO_STATUS: Record<string, { label: string; color: string }> = {
+  disponivel: { label: "Disponível", color: "bg-green-500" },
+  em_uso: { label: "Em Uso", color: "bg-blue-500" },
+  manutencao: { label: "Manutenção", color: "bg-yellow-500" },
+  indisponivel: { label: "Indisponível", color: "bg-destructive" },
+};
+
+export const TransferenciasModule = () => {
+  const { toast } = useToast();
+  const userRole = useUserRole();
+  const [veiculos, setVeiculos] = useState<Veiculo[]>([]);
+  const [motoristas, setMotoristas] = useState<Motorista[]>([]);
+  const [solicitacoes, setSolicitacoes] = useState<Solicitacao[]>([]);
+  const [pacientes, setPacientes] = useState<PacienteInternado[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [searchPaciente, setSearchPaciente] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedSolicitacao, setSelectedSolicitacao] = useState<Solicitacao | null>(null);
+  const [selectedPaciente, setSelectedPaciente] = useState<PacienteInternado | null>(null);
+  const [veiculoStatsOpen, setVeiculoStatsOpen] = useState(false);
+  const [veiculoStatsId, setVeiculoStatsId] = useState<string | null>(null);
+  const [veiculoStatsData, setVeiculoStatsData] = useState<{ dia: number; semana: number; mes: number; ano: number; kmDia: number; kmSemana: number; kmMes: number; kmAno: number } | null>(null);
+  const [loadingStats, setLoadingStats] = useState(false);
+  const [activeTab, setActiveTab] = useState<"gestao" | "relatorio">("gestao");
+
+  // Form state
+  const [formDestino, setFormDestino] = useState("");
+  const [formMotivo, setFormMotivo] = useState("");
+  const [formPrioridade, setFormPrioridade] = useState("normal");
+  const [formPacienteNome, setFormPacienteNome] = useState("");
+  const [formSetorOrigem, setFormSetorOrigem] = useState("");
+  const [formVeiculoId, setFormVeiculoId] = useState("");
+  const [formMotorista, setFormMotorista] = useState("");
+  const [isSaving, setIsSaving] = useState(false);
+  const [reguladorNome, setReguladorNome] = useState("");
+
+  // Load regulador name from profile
+  useEffect(() => {
+    const loadRegulador = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.id) {
+        const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).single();
+        if (profile?.full_name) setReguladorNome(profile.full_name);
+      }
+    };
+    loadRegulador();
+  }, []);
+
+  const loadData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const today = new Date().toISOString().split("T")[0];
+
+      const [veiculosRes, solicitacoesRes, bedRes, motoristasRes] = await Promise.all([
+        supabase.from("transferencia_veiculos").select("*").order("motorista_nome"),
+        supabase.from("transferencia_solicitacoes").select("*").order("created_at", { ascending: false }).limit(50),
+        supabase.from("bed_records").select("bed_id, patient_name, sector, hipotese_diagnostica, data_internacao").eq("shift_date", today).not("patient_name", "is", null).is("data_alta", null),
+        supabase.from("profiles").select("user_id, full_name").eq("cargo", "CONDUTOR DE AMBULÂNCIA").order("full_name"),
+      ]);
+
+      if (veiculosRes.data) setVeiculos(veiculosRes.data);
+      if (solicitacoesRes.data) setSolicitacoes(solicitacoesRes.data);
+      if (bedRes.data) setPacientes(bedRes.data as PacienteInternado[]);
+      if (motoristasRes.data) setMotoristas(motoristasRes.data as Motorista[]);
+    } catch (err) {
+      console.error("Erro ao carregar dados:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadData();
+  }, [loadData]);
+
+  const [externalDialogOpen, setExternalDialogOpen] = useState(false);
+  const [extDescricao, setExtDescricao] = useState("");
+  const [extDestino, setExtDestino] = useState("");
+  const [extPrioridade, setExtPrioridade] = useState("normal");
+  const [extVeiculoId, setExtVeiculoId] = useState("");
+  const [extMotorista, setExtMotorista] = useState("");
+  const [extMotivo, setExtMotivo] = useState("");
+  const [isSavingExt, setIsSavingExt] = useState(false);
+
+  const handleNovaTransferencia = () => {
+    setSelectedPaciente(null);
+    setFormPacienteNome("");
+    setFormSetorOrigem("UPA Antônio José dos Santos");
+    setFormDestino("");
+    setFormMotivo("");
+    setFormPrioridade("normal");
+    setFormVeiculoId("");
+    setFormMotorista("");
+    setDialogOpen(true);
+  };
+
+  const handleSolicitar = (p: PacienteInternado) => {
+    setSelectedPaciente(p);
+    setFormPacienteNome(p.patient_name || "");
+    setFormSetorOrigem("UPA Antônio José dos Santos");
+    setFormDestino("");
+    setFormMotivo("");
+    setFormPrioridade("normal");
+    setFormVeiculoId("");
+    setFormMotorista("");
+    setDialogOpen(true);
+  };
+
+  const handleOpenExternalDialog = () => {
+    setExtDescricao("");
+    setExtDestino("");
+    setExtPrioridade("normal");
+    setExtVeiculoId("");
+    setExtMotorista("");
+    setExtMotivo("");
+    setExternalDialogOpen(true);
+  };
+
+  const handleSubmitExternal = async () => {
+    if (!extDescricao || !extDestino || !extVeiculoId) {
+      toast({ title: "Preencha descrição, destino e veículo", variant: "destructive" });
+      return;
+    }
+    setIsSavingExt(true);
+    try {
+      const user = (await supabase.auth.getUser()).data.user;
+      const selectedVeiculo = veiculos.find(v => v.id === extVeiculoId);
+      const veiculoIsSamu = selectedVeiculo?.tipo?.toLowerCase().includes('samu') ?? false;
+      const { error } = await supabase.from("transferencia_solicitacoes").insert({
+        paciente_nome: `[EXTERNA] ${extDescricao}`,
+        setor_origem: "UPA Antônio José dos Santos",
+        destino: extDestino,
+        motivo: extMotivo || null,
+        prioridade: extPrioridade,
+        veiculo_id: extVeiculoId || null,
+        veiculo_placa: selectedVeiculo?.placa || null,
+        veiculo_tipo: selectedVeiculo?.tipo || null,
+        motorista_nome: veiculoIsSamu ? "SAMU" : (extMotorista || null),
+        status: veiculoIsSamu ? "concluida" : "pendente",
+        hora_saida: veiculoIsSamu ? new Date().toISOString() : null,
+        hora_chegada: veiculoIsSamu ? new Date().toISOString() : null,
+        solicitado_por: user?.id,
+        solicitado_por_nome: reguladorNome || user?.email || "—",
+      });
+      if (error) throw error;
+      toast({ title: "Solicitação externa registrada!" });
+      setExternalDialogOpen(false);
+      loadData();
+    } catch (err: any) {
+      toast({ title: "Erro ao registrar", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSavingExt(false);
+    }
+  };
+
+  const selectedVeiculoObj = veiculos.find(v => v.id === formVeiculoId);
+  const isSamu = selectedVeiculoObj?.tipo?.toLowerCase().includes('samu') ?? false;
+
+  const handleSubmit = async () => {
+    if (!formPacienteNome || !formDestino || !formVeiculoId || (!isSamu && !formMotorista)) {
+      toast({ title: "Preencha os campos obrigatórios (paciente, destino, veículo" + (isSamu ? "" : " e motorista") + ")", variant: "destructive" });
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const user = (await supabase.auth.getUser()).data.user;
+      const selectedVeiculo = veiculos.find(v => v.id === formVeiculoId);
+      const veiculoIsSamu = selectedVeiculo?.tipo?.toLowerCase().includes('samu') ?? false;
+      const { error } = await supabase.from("transferencia_solicitacoes").insert({
+        paciente_nome: formPacienteNome,
+        setor_origem: "UPA Antônio José dos Santos",
+        destino: formDestino,
+        motivo: formMotivo || null,
+        prioridade: formPrioridade,
+        veiculo_id: formVeiculoId || null,
+        veiculo_placa: selectedVeiculo?.placa || null,
+        veiculo_tipo: selectedVeiculo?.tipo || null,
+        motorista_nome: veiculoIsSamu ? "SAMU" : (formMotorista || null),
+        status: veiculoIsSamu ? "concluida" : "pendente",
+        hora_saida: veiculoIsSamu ? new Date().toISOString() : null,
+        hora_chegada: veiculoIsSamu ? new Date().toISOString() : null,
+        solicitado_por: user?.id,
+        solicitado_por_nome: reguladorNome || user?.email || "—",
+      });
+
+      if (error) throw error;
+
+      // Send push to the assigned driver (if not SAMU)
+      if (!veiculoIsSamu && formMotorista) {
+        // Find the driver's user_id by name
+        const { data: driverProfiles } = await supabase
+          .from("profiles")
+          .select("user_id")
+          .ilike("full_name", `%${formMotorista}%`);
+
+        if (driverProfiles && driverProfiles.length > 0) {
+          const driverIds = driverProfiles.map(d => d.user_id);
+          sendPushToUsers(
+            driverIds,
+            "Novo Transporte Atribuído",
+            `Paciente: ${formPacienteNome} → ${formDestino} (${formPrioridade.toUpperCase()})`,
+            { tipo: "transporte", tag: "transporte-novo" }
+          );
+        }
+      }
+
+      toast({ title: "Transferência solicitada com sucesso!" });
+      setDialogOpen(false);
+      loadData();
+    } catch (err: any) {
+      toast({ title: "Erro ao solicitar", description: err.message, variant: "destructive" });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const getSectorLabel = (sector: string) => {
+    const map: Record<string, string> = {
+      "enfermaria-masculina": "Enf. Masculina",
+      "enfermaria-feminina": "Enf. Feminina",
+      pediatria: "Pediatria",
+      isolamento: "Isolamento",
+      urgencia: "Urgência",
+    };
+    return map[sector] || sector;
+  };
+
+  // Map patient names to their latest transfer status
+  const getPatientTransferStatus = (patientName: string | null) => {
+    if (!patientName) return null;
+    const sol = solicitacoes.find(
+      (s) => s.paciente_nome === patientName && s.status !== "cancelada" && s.status !== "concluida"
+    );
+    if (!sol) return null;
+    if (sol.status === "em_transporte") return { label: "Em Transporte", color: "bg-primary text-primary-foreground shadow-sm" };
+    if (sol.veiculo_id && (sol as any).motorista_nome) return { label: "Aguardando Saída", color: "bg-emerald-50 text-emerald-700 border border-emerald-200" };
+    if (sol.veiculo_id) return { label: "Aguardando Motorista", color: "bg-amber-50 text-amber-700 border border-amber-200" };
+    return { label: "Transferência Pendente", color: "bg-orange-50 text-orange-700 border border-orange-200" };
+  };
+
+  const filteredPacientes = pacientes.filter(
+    (p) =>
+      !searchPaciente ||
+      p.patient_name?.toLowerCase().includes(searchPaciente.toLowerCase()) ||
+      getSectorLabel(p.sector).toLowerCase().includes(searchPaciente.toLowerCase())
+  );
+
+  // ---- Gantt helpers ----
+  const now = new Date();
+  const ganttStart = new Date(now);
+  ganttStart.setHours(0, 0, 0, 0);
+  const ganttEnd = new Date(now);
+  ganttEnd.setHours(23, 59, 59, 999);
+  const totalMs = ganttEnd.getTime() - ganttStart.getTime();
+
+  const getBarStyle = (sol: Solicitacao) => {
+    const start = sol.hora_saida ? new Date(sol.hora_saida) : new Date(sol.created_at);
+    const end = sol.hora_chegada ? new Date(sol.hora_chegada) : sol.status === "em_transporte" ? now : new Date(start.getTime() + 60 * 60 * 1000);
+    const leftPct = Math.max(0, ((start.getTime() - ganttStart.getTime()) / totalMs) * 100);
+    const widthPct = Math.max(2, Math.min(100 - leftPct, ((end.getTime() - start.getTime()) / totalMs) * 100));
+    return { left: `${leftPct}%`, width: `${widthPct}%` };
+  };
+
+  const getBarColor = (status: string) => {
+    switch (status) {
+      case "em_transporte": return "bg-blue-500";
+      case "concluida": return "bg-green-500";
+      case "cancelada": return "bg-destructive/60";
+      default: return "bg-yellow-500";
+    }
+  };
+
+  // Group solicitacoes by vehicle/motorista
+  const veiculoMap = new Map<string, { label: string; solicitacoes: Solicitacao[] }>();
+  veiculos.forEach((v) => {
+    veiculoMap.set(v.id, { label: `${v.motorista_nome} — ${v.placa}`, solicitacoes: [] });
+  });
+  solicitacoes.forEach((s) => {
+    const key = s.veiculo_id;
+    if (key && veiculoMap.has(key)) {
+      veiculoMap.get(key)!.solicitacoes.push(s);
+    }
+  });
+
+  // Time markers
+  const getStatusLabel = (status: string) => STATUS_CONFIG[status]?.label || status;
+
+  const exportPdf = async () => {
+    const { doc, logoImg } = await createStandardPdf("Relatório de Transferências");
+    let y = 34;
+
+    // KPIs
+    const total = solicitacoes.length;
+    const pendentes = solicitacoes.filter(s => s.status === "pendente").length;
+    const emTransporte = solicitacoes.filter(s => s.status === "em_transporte").length;
+    const concluidas = solicitacoes.filter(s => s.status === "concluida").length;
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Resumo", 14, y); y += 6;
+    doc.setFont("helvetica", "normal");
+    doc.text(`Total: ${total}  |  Pendentes: ${pendentes}  |  Em Transporte: ${emTransporte}  |  Concluídas: ${concluidas}`, 14, y);
+    y += 10;
+
+    // Table
+    const rows = solicitacoes.map(s => [
+      s.paciente_nome,
+      s.setor_origem,
+      s.destino,
+      (s as any).veiculo_tipo || "—",
+      (s as any).veiculo_placa || "—",
+      (s as any).motorista_nome || "—",
+      getStatusLabel(s.status),
+      s.prioridade,
+      format(new Date(s.created_at), "dd/MM/yyyy HH:mm"),
+    ]);
+
+    autoTable(doc, {
+      startY: y,
+      head: [["Paciente", "Origem", "Destino", "Veículo", "Placa", "Motorista", "Status", "Prioridade", "Data"]],
+      body: rows,
+      styles: { fontSize: 7, cellPadding: 2 },
+      headStyles: { fillColor: [45, 125, 210], textColor: 255, fontStyle: "bold" },
+      margin: { left: 14, right: 14 },
+    });
+
+    applyPdfHeaderFooter(doc, "Relatório de Transferências", logoImg);
+    doc.save(`transferencias_${format(new Date(), "yyyy-MM-dd")}.pdf`);
+    toast({ title: "PDF exportado com sucesso!" });
+  };
+
+  const exportExcel = () => {
+    const rows = solicitacoes.map(s => ({
+      Paciente: s.paciente_nome,
+      "Setor Origem": s.setor_origem,
+      Destino: s.destino,
+      Veículo: (s as any).veiculo_tipo || "",
+      Placa: (s as any).veiculo_placa || "",
+      Motorista: (s as any).motorista_nome || "",
+      Status: getStatusLabel(s.status),
+      Prioridade: s.prioridade,
+      "Solicitado por": s.solicitado_por_nome,
+      Data: format(new Date(s.created_at), "dd/MM/yyyy HH:mm"),
+    }));
+    const ws = XLSX.utils.json_to_sheet(rows);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Transferências");
+    XLSX.writeFile(wb, `transferencias_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+    toast({ title: "Excel exportado com sucesso!" });
+  };
+
+
+  const loadVeiculoStats = async (veiculoId: string) => {
+    setVeiculoStatsId(veiculoId);
+    setVeiculoStatsOpen(true);
+    setLoadingStats(true);
+    try {
+      const now = new Date();
+      const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+      const dayOfWeek = now.getDay() === 0 ? 6 : now.getDay() - 1;
+      const startOfWeek = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek).toISOString();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const startOfYear = new Date(now.getFullYear(), 0, 1).toISOString();
+
+      const { data: allSols } = await supabase
+        .from("transferencia_solicitacoes")
+        .select("created_at, status, km_rodados")
+        .eq("veiculo_id", veiculoId)
+        .gte("created_at", startOfYear);
+
+      const sols = (allSols || []) as Array<{ created_at: string; status: string; km_rodados: number | null }>;
+      const concluded = sols.filter(s => s.status === "concluida");
+
+      const countAfter = (date: string) => concluded.filter(s => s.created_at >= date).length;
+      const kmAfter = (date: string) => concluded.filter(s => s.created_at >= date).reduce((sum, s) => sum + (s.km_rodados || 0), 0);
+
+      setVeiculoStatsData({
+        dia: countAfter(startOfDay),
+        semana: countAfter(startOfWeek),
+        mes: countAfter(startOfMonth),
+        ano: concluded.length,
+        kmDia: kmAfter(startOfDay),
+        kmSemana: kmAfter(startOfWeek),
+        kmMes: kmAfter(startOfMonth),
+        kmAno: kmAfter(startOfYear),
+      });
+    } catch (err) {
+      console.error("Erro ao carregar stats:", err);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  // Time markers
+  const hours = Array.from({ length: 13 }, (_, i) => i * 2);
+
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-4">
+        <div>
+          <h3 className="text-xl font-bold text-foreground flex items-center gap-2">
+            <Truck className="h-5 w-5 text-primary" />
+            Transferências
+          </h3>
+          <p className="text-sm text-muted-foreground">Gestão de transferências de pacientes e acompanhamento de veículos</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex rounded-lg border bg-muted p-0.5">
+            <button
+              onClick={() => setActiveTab("gestao")}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${activeTab === "gestao" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <Truck className="h-3.5 w-3.5 inline mr-1.5" />
+              Gestão
+            </button>
+            <button
+              onClick={() => setActiveTab("relatorio")}
+              className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors ${activeTab === "relatorio" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}
+            >
+              <ArrowRightLeft className="h-3.5 w-3.5 inline mr-1.5" />
+              Relatório de Transferências
+            </button>
+          </div>
+          {activeTab === "gestao" && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Download className="h-4 w-4" />
+                  Exportar
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="bg-popover">
+                <DropdownMenuItem onClick={exportPdf} className="gap-2 cursor-pointer">
+                  <FileText className="h-4 w-4 text-destructive" />
+                  Exportar PDF
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={exportExcel} className="gap-2 cursor-pointer">
+                  <FileSpreadsheet className="h-4 w-4 text-primary" />
+                  Exportar Excel
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+        </div>
+      </div>
+
+      {activeTab === "relatorio" ? (
+        <RelatorioTransferencias />
+      ) : (
+      <>
+
+      {/* Gantt Chart */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Diagrama de Gantt — Veículos / Motoristas</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {veiculos.length === 0 && solicitacoes.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">
+              Nenhum veículo ou transferência cadastrado ainda.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="min-w-[700px]">
+                {/* Time header */}
+                <div className="flex border-b pb-1 mb-2">
+                  <div className="w-48 shrink-0 text-xs font-medium text-muted-foreground">Motorista / Veículo</div>
+                  <div className="flex-1 relative h-5">
+                    {hours.map((h) => (
+                      <span
+                        key={h}
+                        className="absolute text-[10px] text-muted-foreground -translate-x-1/2"
+                        style={{ left: `${(h / 24) * 100}%` }}
+                      >
+                        {String(h).padStart(2, "0")}h
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Rows */}
+                {Array.from(veiculoMap.entries()).map(([key, { label, solicitacoes: sols }]) => {
+                  const veiculo = veiculos.find((v) => v.id === key);
+                  const vStatus = veiculo ? VEICULO_STATUS[veiculo.status] : null;
+
+                  return (
+                    <div key={key} className="flex items-center border-b last:border-0 py-2 min-h-[40px]">
+                      <div 
+                        className="w-48 shrink-0 pr-2 cursor-pointer hover:bg-muted/50 rounded-md p-1 -m-1 transition-colors"
+                        onClick={() => loadVeiculoStats(key)}
+                      >
+                        <div className="text-xs font-medium truncate flex items-center gap-1">
+                          {label}
+                          <BarChart3 className="h-3 w-3 text-muted-foreground shrink-0" />
+                        </div>
+                        {vStatus && (
+                          <Badge variant="outline" className="text-[10px] gap-1 mt-0.5">
+                            <span className={`w-1.5 h-1.5 rounded-full ${vStatus.color}`} />
+                            {vStatus.label}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="flex-1 relative h-8 bg-muted/30 rounded">
+                        {/* Grid lines */}
+                        {hours.map((h) => (
+                          <div
+                            key={h}
+                            className="absolute top-0 bottom-0 border-l border-border/30"
+                            style={{ left: `${(h / 24) * 100}%` }}
+                          />
+                        ))}
+                        {/* Now indicator */}
+                        <div
+                          className="absolute top-0 bottom-0 border-l-2 border-primary z-10"
+                          style={{ left: `${((now.getTime() - ganttStart.getTime()) / totalMs) * 100}%` }}
+                        />
+                        {/* Bars */}
+                        <TooltipProvider>
+                          {sols.map((s) => {
+                            const barStyle = getBarStyle(s);
+                            const cfg = STATUS_CONFIG[s.status] || STATUS_CONFIG.pendente;
+                            return (
+                              <Tooltip key={s.id}>
+                                <TooltipTrigger asChild>
+                                  <div
+                                    className={`absolute top-1 bottom-1 rounded ${getBarColor(s.status)} opacity-80 hover:opacity-100 cursor-pointer transition-opacity`}
+                                    style={barStyle}
+                                  />
+                                </TooltipTrigger>
+                                <TooltipContent side="top" className="max-w-xs">
+                                  <p className="font-medium">{s.paciente_nome}</p>
+                                  <p className="text-xs">{s.setor_origem} → {s.destino}</p>
+                                  <p className="text-xs">Status: {cfg.label}</p>
+                                  {s.hora_saida && <p className="text-xs">Saída: {format(new Date(s.hora_saida), "HH:mm")}</p>}
+                                  {s.hora_chegada && <p className="text-xs">Chegada: {format(new Date(s.hora_chegada), "HH:mm")}</p>}
+                                </TooltipContent>
+                              </Tooltip>
+                            );
+                          })}
+                        </TooltipProvider>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap gap-4 mt-4 pt-3 border-t">
+                {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+                  <div key={key} className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <span className={`w-3 h-3 rounded ${getBarColor(key)}`} />
+                    {cfg.label}
+                  </div>
+                ))}
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span className="w-3 h-0.5 bg-primary" />
+                  Horário atual
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Action Buttons */}
+      <div className="flex items-center gap-3">
+        <Button onClick={handleNovaTransferencia} className="gap-2">
+          <Plus className="h-4 w-4" />
+          Nova Transferência
+        </Button>
+        <Button onClick={handleOpenExternalDialog} className="gap-2">
+          <ClipboardList className="h-4 w-4" />
+          Solicitações Externas
+        </Button>
+      </div>
+
+      {/* Dialog Solicitar Transferência */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Solicitar Transferência</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Paciente *</Label>
+              <Input value={formPacienteNome} onChange={(e) => setFormPacienteNome(e.target.value)} placeholder="Nome do paciente" />
+            </div>
+            <div>
+              <Label>Unidade de Origem</Label>
+              <Input value="UPA Antônio José dos Santos" readOnly className="bg-muted/50" />
+            </div>
+            <div>
+              <Label>Destino *</Label>
+              <Input
+                placeholder="Ex: Hospital Regional, Santa Casa..."
+                value={formDestino}
+                onChange={(e) => setFormDestino(e.target.value)}
+              />
+            </div>
+            <div>
+              <Label>Regulador</Label>
+              <Input value={reguladorNome || "Carregando..."} readOnly className="bg-muted/50" />
+            </div>
+            <div>
+              <Label>Prioridade</Label>
+              <Select value={formPrioridade} onValueChange={setFormPrioridade}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="baixa">Baixa</SelectItem>
+                  <SelectItem value="normal">Normal</SelectItem>
+                  <SelectItem value="alta">Alta</SelectItem>
+                  <SelectItem value="urgente">Urgente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Veículo *</Label>
+              <Select value={formVeiculoId} onValueChange={(val) => {
+                setFormVeiculoId(val);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o veículo" />
+                </SelectTrigger>
+                <SelectContent>
+                  {veiculos.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>
+                      {v.tipo} — {v.placa}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {!isSamu && (
+            <div>
+              <Label>Motorista *</Label>
+              <Select value={formMotorista} onValueChange={setFormMotorista}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o motorista" />
+                </SelectTrigger>
+                <SelectContent>
+                  {motoristas.map((m) => (
+                    <SelectItem key={m.user_id} value={m.full_name}>
+                      {m.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            )}
+            {isSamu && (
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3">
+                <p className="text-sm text-primary font-medium">Ambulância SAMU selecionada</p>
+                <p className="text-xs text-muted-foreground mt-1">Não é necessário atribuir motorista. A transferência será registrada como concluída automaticamente.</p>
+              </div>
+            )}
+            <div>
+              <Label>Motivo</Label>
+              <Textarea
+                placeholder="Descreva o motivo da transferência..."
+                value={formMotivo}
+                onChange={(e) => setFormMotivo(e.target.value)}
+                rows={3}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setDialogOpen(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSubmit} disabled={isSaving}>
+                {isSaving && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                Solicitar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
+      {/* Dialog Solicitação Externa */}
+      <Dialog open={externalDialogOpen} onOpenChange={setExternalDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <ClipboardList className="h-5 w-5 text-primary" />
+              Solicitação Externa
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Descrição da Solicitação *</Label>
+              <Input value={extDescricao} onChange={(e) => setExtDescricao(e.target.value)} placeholder="Ex: Buscar material, entrega de documentos..." />
+            </div>
+            <div>
+              <Label>Destino *</Label>
+              <Input value={extDestino} onChange={(e) => setExtDestino(e.target.value)} placeholder="Local de destino" />
+            </div>
+            <div>
+              <Label>Prioridade</Label>
+              <Select value={extPrioridade} onValueChange={setExtPrioridade}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="baixa">Baixa</SelectItem>
+                  <SelectItem value="normal">Normal</SelectItem>
+                  <SelectItem value="alta">Alta</SelectItem>
+                  <SelectItem value="urgente">Urgente</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Veículo *</Label>
+              <Select value={extVeiculoId} onValueChange={setExtVeiculoId}>
+                <SelectTrigger><SelectValue placeholder="Selecione o veículo" /></SelectTrigger>
+                <SelectContent>
+                  {veiculos.map((v) => (
+                    <SelectItem key={v.id} value={v.id}>{v.tipo} — {v.placa}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {!(veiculos.find(v => v.id === extVeiculoId)?.tipo?.toLowerCase().includes('samu')) && (
+              <div>
+                <Label>Motorista</Label>
+                <Select value={extMotorista} onValueChange={setExtMotorista}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o motorista" /></SelectTrigger>
+                  <SelectContent>
+                    {motoristas.map((m) => (
+                      <SelectItem key={m.user_id} value={m.full_name}>{m.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div>
+              <Label>Motivo / Observações</Label>
+              <Textarea value={extMotivo} onChange={(e) => setExtMotivo(e.target.value)} placeholder="Detalhes adicionais..." rows={3} />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setExternalDialogOpen(false)}>Cancelar</Button>
+              <Button onClick={handleSubmitExternal} disabled={isSavingExt}>
+                {isSavingExt && <Loader2 className="h-4 w-4 mr-1 animate-spin" />}
+                Registrar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+
+      <Dialog open={veiculoStatsOpen} onOpenChange={setVeiculoStatsOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5 text-primary" />
+              Estatísticas do Veículo
+            </DialogTitle>
+          </DialogHeader>
+          {(() => {
+            const v = veiculos.find(v => v.id === veiculoStatsId);
+            if (!v) return null;
+            return (
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 pb-3 border-b">
+                  <div className="p-2 bg-primary/10 rounded-full">
+                    <Truck className="h-6 w-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-sm">{v.motorista_nome}</p>
+                    <p className="text-xs text-muted-foreground">{v.tipo} — {v.placa}</p>
+                  </div>
+                </div>
+
+                {loadingStats ? (
+                  <div className="flex justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                  </div>
+                ) : veiculoStatsData ? (
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Transferências Concluídas</h4>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { label: "Hoje", value: veiculoStatsData.dia },
+                          { label: "Semana", value: veiculoStatsData.semana },
+                          { label: "Mês", value: veiculoStatsData.mes },
+                          { label: "Ano", value: veiculoStatsData.ano },
+                        ].map(({ label, value }) => (
+                          <Card key={label} className="text-center">
+                            <CardContent className="p-3">
+                              <p className="text-xl font-bold text-primary">{value}</p>
+                              <p className="text-[10px] text-muted-foreground">{label}</p>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Km Rodados</h4>
+                      <div className="grid grid-cols-4 gap-2">
+                        {[
+                          { label: "Hoje", value: veiculoStatsData.kmDia },
+                          { label: "Semana", value: veiculoStatsData.kmSemana },
+                          { label: "Mês", value: veiculoStatsData.kmMes },
+                          { label: "Ano", value: veiculoStatsData.kmAno },
+                        ].map(({ label, value }) => (
+                          <Card key={label} className="text-center">
+                            <CardContent className="p-3">
+                              <p className="text-xl font-bold text-foreground">{value.toLocaleString("pt-BR")}</p>
+                              <p className="text-[10px] text-muted-foreground">{label}</p>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+      </>
+      )}
+    </div>
+  );
+};

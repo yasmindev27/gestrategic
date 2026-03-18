@@ -5,12 +5,31 @@
 
 /**
  * Retorna a data/hora atual no fuso horário de Brasília
+ * Usa Intl.DateTimeFormat para extrair partes individuais de forma confiável
  */
 export const getBrasiliaDate = (): Date => {
   const now = new Date();
-  // Cria uma string no formato de Brasília e converte de volta para Date
-  const brasiliaString = now.toLocaleString("en-US", { timeZone: "America/Sao_Paulo" });
-  return new Date(brasiliaString);
+  const formatter = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Sao_Paulo",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  });
+  const parts = formatter.formatToParts(now);
+  const get = (type: string) => parts.find(p => p.type === type)?.value || "0";
+  
+  return new Date(
+    parseInt(get("year")),
+    parseInt(get("month")) - 1,
+    parseInt(get("day")),
+    parseInt(get("hour")) % 24, // hour12:false pode retornar "24" para meia-noite
+    parseInt(get("minute")),
+    parseInt(get("second"))
+  );
 };
 
 /**
@@ -93,6 +112,8 @@ export const safeFormatDate = (
     const hours = date.getHours().toString().padStart(2, "0");
     const minutes = date.getMinutes().toString().padStart(2, "0");
     
+    const seconds = date.getSeconds().toString().padStart(2, "0");
+    
     switch (formatPattern) {
       case "dd/MM/yyyy":
         return `${day}/${month}/${year}`;
@@ -102,6 +123,10 @@ export const safeFormatDate = (
         return `${day}/${month}/${year} ${hours}:${minutes}`;
       case "dd/MM/yy HH:mm":
         return `${day}/${month}/${year.toString().slice(-2)} ${hours}:${minutes}`;
+      case "dd/MM HH:mm":
+        return `${day}/${month} ${hours}:${minutes}`;
+      case "dd/MM/yyyy HH:mm:ss":
+        return `${day}/${month}/${year} ${hours}:${minutes}:${seconds}`;
       default:
         return `${day}/${month}/${year}`;
     }

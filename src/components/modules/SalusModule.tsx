@@ -5,7 +5,11 @@ import {
   ExternalLink, 
   Activity,
   Link2,
-  Settings
+  Settings,
+  Loader2,
+  AlertTriangle,
+  Maximize2,
+  X
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,14 +24,37 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
-const SalusModule = () => {
+const getProxiedUrl = async (targetUrl: string): Promise<string> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return targetUrl;
+  
+  const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+  const encoded = encodeURIComponent(targetUrl);
+  return `https://${projectId}.supabase.co/functions/v1/proxy-iframe?url=${encoded}`;
+};
+
+const getAuthHeaders = async (): Promise<Record<string, string>> => {
+  const { data: { session } } = await supabase.auth.getSession();
+  if (!session?.access_token) return {};
+  return { Authorization: `Bearer ${session.access_token}` };
+};
+
+interface SalusModuleProps {
+  onOpenExternal?: (url: string, title: string) => void;
+}
+
+const SalusModule = ({ onOpenExternal }: SalusModuleProps) => {
   const { toast } = useToast();
   const [dashboardUrl, setDashboardUrl] = useState(() => 
     localStorage.getItem("salus_dashboard_url") || ""
   );
   const [urlInput, setUrlInput] = useState(dashboardUrl);
   const [isConfigOpen, setIsConfigOpen] = useState(false);
+  const [activeView, setActiveView] = useState<{ url: string; originalUrl: string; title: string } | null>(null);
+  const [iframeLoading, setIframeLoading] = useState(false);
+  const [iframeError, setIframeError] = useState(false);
 
   const handleSaveUrl = () => {
     if (urlInput.trim()) {
@@ -51,9 +78,107 @@ const SalusModule = () => {
     });
   };
 
-  const openExternalLink = (url: string) => {
-    window.open(url, "_blank", "noopener,noreferrer");
+  const openInline = async (url: string, title: string) => {
+    setIframeLoading(true);
+    setIframeError(false);
+    try {
+      const proxiedUrl = await getProxiedUrl(url);
+      setActiveView({ url: proxiedUrl, originalUrl: url, title });
+    } catch {
+      setActiveView({ url, originalUrl: url, title });
+    }
   };
+
+  const closeInline = () => {
+    setActiveView(null);
+    setIframeLoading(false);
+    setIframeError(false);
+  };
+
+  // If an inline view is active, show the embedded viewer
+  if (activeView) {
+    return (
+      <div className="flex flex-col h-[calc(100vh-8rem)] w-full">
+        {/* Viewer header */}
+        <div className="flex items-center justify-between px-4 py-2 bg-muted/50 border rounded-t-lg gap-2 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <Stethoscope className="h-4 w-4 text-primary shrink-0" />
+            <span className="text-sm font-medium truncate">{activeView.title}</span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs"
+              onClick={() => {
+                if (onOpenExternal) {
+                  onOpenExternal(activeView.originalUrl, activeView.title);
+                  closeInline();
+                } else {
+                  window.open(activeView.originalUrl, "_blank", "noopener,noreferrer");
+                }
+              }}
+            >
+              <Maximize2 className="h-3 w-3 mr-1" />
+              Tela cheia
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="text-xs"
+              onClick={() => window.open(activeView.originalUrl, "_blank", "noopener,noreferrer")}
+            >
+              <ExternalLink className="h-3 w-3 mr-1" />
+              Nova aba
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={closeInline}>
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Iframe area */}
+        <div className="flex-1 relative min-h-0 border border-t-0 rounded-b-lg overflow-hidden">
+          {iframeLoading && !iframeError && (
+            <div className="absolute inset-0 flex items-center justify-center bg-background z-10">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <span className="text-sm text-muted-foreground">Carregando painel Salus...</span>
+              </div>
+            </div>
+          )}
+
+          {iframeError ? (
+            <div className="absolute inset-0 flex items-center justify-center bg-background z-10">
+              <div className="flex flex-col items-center gap-4 text-center p-8 max-w-md">
+                <AlertTriangle className="h-12 w-12 text-amber-500" />
+                <h3 className="text-lg font-semibold">O painel do Salus está pronto</h3>
+                <p className="text-sm text-muted-foreground">
+                  Para sua segurança, clique no botão abaixo para visualizar em tela cheia.
+                </p>
+                <Button onClick={() => window.open(activeView.originalUrl, "_blank", "noopener,noreferrer")}>
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Abrir Painel Salus
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <iframe
+              src={activeView.url}
+              className="w-full h-full border-0"
+              title={activeView.title}
+              sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+              onLoad={() => setIframeLoading(false)}
+              onError={() => {
+                setIframeLoading(false);
+                setIframeError(true);
+              }}
+            />
+          )}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -75,7 +200,7 @@ const SalusModule = () => {
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Acessar Salus */}
-        <Card className="card-hover cursor-pointer" onClick={() => openExternalLink("https://novaserrana.sistemasalus.com.br/")}>
+        <Card className="card-hover cursor-pointer" onClick={() => window.open("https://novaserrana.sistemasalus.com.br/", "_blank", "noopener,noreferrer")}>
           <CardHeader className="pb-3">
             <CardTitle className="text-lg flex items-center gap-2">
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -84,7 +209,7 @@ const SalusModule = () => {
               Acessar Salus
             </CardTitle>
             <CardDescription>
-              Abrir o sistema Salus em nova aba
+              Visualizar o sistema Salus integrado
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -114,7 +239,7 @@ const SalusModule = () => {
                 <Button 
                   variant="default" 
                   className="flex-1 gap-2"
-                  onClick={() => openExternalLink(dashboardUrl)}
+                  onClick={() => openInline(dashboardUrl, "Dashboard Salus")}
                 >
                   <ExternalLink className="h-4 w-4" />
                   Abrir Dashboard
@@ -206,7 +331,7 @@ const SalusModule = () => {
           <Button
             variant="outline"
             className="w-full h-auto p-4 flex items-center gap-4 justify-start transition-all border-border hover:bg-info hover:text-info-foreground hover:border-info"
-            onClick={() => openExternalLink("https://dashboard-appolus.streamlit.app/#painel-entrada-por-classificacao")}
+            onClick={() => openInline("https://dashboard-appolus.streamlit.app/#painel-entrada-por-classificacao", "Visão Geral da Unidade")}
           >
             <div className="p-2 rounded-lg bg-info/10 text-info">
               <Activity className="h-5 w-5" />

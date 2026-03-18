@@ -48,11 +48,13 @@ interface RegistroRefeicao {
 
 interface SolicitacaoDieta {
   id: string;
+  paciente_nome: string | null;
   horarios_refeicoes: string[] | null;
   data_inicio: string;
   data_fim: string | null;
   status: string;
   tem_acompanhante: boolean | null;
+  observacoes: string | null;
 }
 
 interface CafeLitroDiario {
@@ -81,6 +83,11 @@ interface DailyQuantitativo {
   dietasLanche: number;
   dietasJantar: number;
   totalDietas: number;
+  extraCafe: number;
+  extraAlmoco: number;
+  extraLanche: number;
+  extraJantar: number;
+  totalExtra: number;
   totalGeral: number;
   cafeLitro: number;
 }
@@ -95,9 +102,10 @@ const tipoRefeicaoLabels: Record<string, { label: string; icon: React.ReactNode;
 
 interface RelatorioQuantitativoRefeicoesProps {
   isAdmin?: boolean;
+  canViewValues?: boolean;
 }
 
-export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQuantitativoRefeicoesProps) => {
+export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false, canViewValues = false }: RelatorioQuantitativoRefeicoesProps) => {
   const { toast } = useToast();
   const [dataInicio, setDataInicio] = useState(format(startOfMonth(new Date()), "yyyy-MM-dd"));
   const [dataFim, setDataFim] = useState(format(endOfMonth(new Date()), "yyyy-MM-dd"));
@@ -108,6 +116,10 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
   const [cafeLitroRegistros, setCafeLitroRegistros] = useState<CafeLitroDiario[]>([]);
   const [cafeLitroInputs, setCafeLitroInputs] = useState<Record<string, string>>({});
   const [savingCafeLitro, setSavingCafeLitro] = useState<string | null>(null);
+  const [editingCell, setEditingCell] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [savingCell, setSavingCell] = useState<string | null>(null);
+  const [ajustesOverrides, setAjustesOverrides] = useState<Record<string, number>>({});
   const [valoresRefeicoes, setValoresRefeicoes] = useState<Record<string, number>>({
     cafe: 0, almoco: 0, lanche: 0, jantar: 0, cafe_litro: 0
   });
@@ -117,36 +129,52 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
   const [savingValor, setSavingValor] = useState<string | null>(null);
   const [showValoresConfig, setShowValoresConfig] = useState(false);
 
-  const fetchData = async () => {
-    setIsLoading(true);
+  const fetchData = async (silent = false) => {
+    if (!silent) setIsLoading(true);
     try {
-      // Buscar registros do totem
-      const { data: refeicoes, error: refeicoesError } = await supabase
-        .from("refeicoes_registros")
-        .select("id, tipo_pessoa, colaborador_nome, tipo_refeicao, data_registro, hora_registro")
-        .gte("data_registro", dataInicio)
-        .lte("data_registro", dataFim)
-        .order("data_registro", { ascending: true });
+      // Buscar TODOS os registros do totem com paginação (limite de 1000 por request)
+      let allRefeicoes: RegistroRefeicao[] = [];
+      let page = 0;
+      const pageSize = 1000;
+      while (true) {
+        const { data: refeicoes, error: refeicoesError } = await supabase
+          .from("refeicoes_registros")
+          .select("id, tipo_pessoa, colaborador_nome, tipo_refeicao, data_registro, hora_registro")
+          .gte("data_registro", dataInicio)
+          .lte("data_registro", dataFim)
+          .order("data_registro", { ascending: true })
+          .range(page * pageSize, (page + 1) * pageSize - 1);
 
-      if (refeicoesError) throw refeicoesError;
-      setRegistrosRefeicoes(refeicoes || []);
+        if (refeicoesError) throw refeicoesError;
+        allRefeicoes = [...allRefeicoes, ...(refeicoes || [])];
+        if (!refeicoes || refeicoes.length < pageSize) break;
+        page++;
+      }
 
-      // Buscar solicitações de dieta aprovadas no período
-      const { data: dietas, error: dietasError } = await supabase
-        .from("solicitacoes_dieta")
-        .select("id, horarios_refeicoes, data_inicio, data_fim, status, tem_acompanhante")
-        .eq("status", "aprovada")
-        .lte("data_inicio", dataFim)
-        .order("data_inicio", { ascending: true });
+      setRegistrosRefeicoes(allRefeicoes);
 
-      if (dietasError) throw dietasError;
+      // Buscar solicitações de dieta aprovadas que se sobrepõem ao período selecionado
+      // Filtra no banco: data_inicio <= dataFim AND (data_fim >= dataInicio OR data_fim IS NULL)
+      let allDietas: SolicitacaoDieta[] = [];
+      let dietaPage = 0;
+      while (true) {
+        const { data: dietas, error: dietasError } = await supabase
+          .from("solicitacoes_dieta")
+          .select("id, paciente_nome, horarios_refeicoes, data_inicio, data_fim, status, tem_acompanhante, observacoes")
+          .eq("status", "aprovada")
+          .lte("data_inicio", dataFim)
+          .or(`data_fim.gte.${dataInicio},data_fim.is.null`)
+          .order("data_inicio", { ascending: true })
+          .range(dietaPage * pageSize, (dietaPage + 1) * pageSize - 1);
+
+        if (dietasError) throw dietasError;
+        allDietas = [...allDietas, ...(dietas || [])];
+        
+        if (!dietas || dietas.length < pageSize) break;
+        dietaPage++;
+      }
       
-      // Filtrar dietas que estão ativas no período selecionado
-      const dietasNoPeriodo = (dietas || []).filter(d => {
-        const inicio = d.data_inicio;
-        const fim = d.data_fim || dataFim;
-        return inicio <= dataFim && fim >= dataInicio;
-      });
+      const dietasNoPeriodo = allDietas;
       
       setSolicitacoesDieta(dietasNoPeriodo);
 
@@ -184,8 +212,21 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       setValoresRefeicoes(valoresMap);
       setValoresInputs(inputsValores);
 
+      // Buscar ajustes de override do quantitativo
+      const { data: ajustes } = await supabase
+        .from("quantitativo_ajustes")
+        .select("data, categoria, tipo_refeicao, valor_override")
+        .gte("data", dataInicio)
+        .lte("data", dataFim);
+
+      const ajustesMap: Record<string, number> = {};
+      (ajustes || []).forEach((a: any) => {
+        ajustesMap[`${a.data}-${a.categoria}-${a.tipo_refeicao}`] = a.valor_override;
+      });
+      setAjustesOverrides(ajustesMap);
+
       // Processar quantitativos por dia
-      processarQuantitativos(refeicoes || [], dietasNoPeriodo, cafeLitro || []);
+      processarQuantitativos(allRefeicoes, dietasNoPeriodo, cafeLitro || [], ajustesMap);
     } catch (error) {
       console.error("Error fetching data:", error);
       toast({
@@ -194,12 +235,50 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   };
 
+  // Admin: save override for diet/extra cell via quantitativo_ajustes table
+  const saveOverrideCell = async (dataStr: string, categoria: string, tipoRefeicao: string, newValue: number) => {
+    const cellKey = `${dataStr}-${categoria}-${tipoRefeicao}`;
+    setSavingCell(cellKey);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("Usuário não autenticado");
 
-  const processarQuantitativos = (refeicoes: RegistroRefeicao[], dietas: SolicitacaoDieta[], cafeLitro: CafeLitroDiario[]) => {
+      const { data: existing } = await supabase
+        .from("quantitativo_ajustes")
+        .select("id")
+        .eq("data", dataStr)
+        .eq("categoria", categoria)
+        .eq("tipo_refeicao", tipoRefeicao)
+        .maybeSingle();
+
+      if (existing) {
+        const { error } = await supabase
+          .from("quantitativo_ajustes")
+          .update({ valor_override: newValue, ajustado_por: user.id, ajustado_por_nome: "Admin" })
+          .eq("id", existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase
+          .from("quantitativo_ajustes")
+          .insert({ data: dataStr, categoria, tipo_refeicao: tipoRefeicao, valor_override: newValue, ajustado_por: user.id, ajustado_por_nome: "Admin" });
+        if (error) throw error;
+      }
+
+      toast({ title: "Sucesso", description: "Quantidade atualizada!" });
+      setEditingCell(null);
+      fetchData(true);
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message || "Erro ao atualizar.", variant: "destructive" });
+    } finally {
+      setSavingCell(null);
+    }
+  };
+
+  const processarQuantitativos = (refeicoes: RegistroRefeicao[], dietas: SolicitacaoDieta[], cafeLitro: CafeLitroDiario[], overrides: Record<string, number> = {}) => {
     // Garantir parsing correto das datas do filtro
     const startDate = parseISO(dataInicio);
     const endDate = parseISO(dataFim);
@@ -224,31 +303,48 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       // Contar dietas ativas SOMENTE para este dia específico
       const dietasAtivasNoDia = dietas.filter(d => {
         const inicio = d.data_inicio;
-        const fim = d.data_fim || "9999-12-31";
+        const fim = d.data_fim || d.data_inicio;
         return dataStr >= inicio && dataStr <= fim;
       });
 
-      let dietasCafe = 0;
-      let dietasAlmoco = 0;
-      let dietasLanche = 0;
-      let dietasJantar = 0;
+      const dietasNormaisRaw = dietasAtivasNoDia.filter(d => !d.observacoes?.includes("[DIETA EXTRA]"));
+      const dietasExtrasRaw = dietasAtivasNoDia.filter(d => d.observacoes?.includes("[DIETA EXTRA]"));
 
-      dietasAtivasNoDia.forEach(d => {
-        // Se horarios_refeicoes for null, undefined ou array vazio, assume todos os horários
-        const horarios = (d.horarios_refeicoes && d.horarios_refeicoes.length > 0) 
-          ? d.horarios_refeicoes 
-          : ["cafe", "almoco", "lanche", "jantar"];
-        const multiplicador = d.tem_acompanhante ? 2 : 1;
+      const contarDietas = (lista: SolicitacaoDieta[]) => {
+        let cafe = 0, almoco = 0, lanche = 0, jantar = 0;
+        lista.forEach(d => {
+          const horarios = (d.horarios_refeicoes && d.horarios_refeicoes.length > 0) 
+            ? d.horarios_refeicoes 
+            : ["cafe", "almoco", "lanche", "jantar"];
+          const multiplicador = d.tem_acompanhante ? 2 : 1;
+          if (horarios.includes("cafe")) cafe += multiplicador;
+          if (horarios.includes("almoco")) almoco += multiplicador;
+          if (horarios.includes("lanche")) lanche += multiplicador;
+          if (horarios.includes("jantar")) jantar += multiplicador;
+        });
+        return { cafe, almoco, lanche, jantar };
+      };
 
-        if (horarios.includes("cafe")) dietasCafe += multiplicador;
-        if (horarios.includes("almoco")) dietasAlmoco += multiplicador;
-        if (horarios.includes("lanche")) dietasLanche += multiplicador;
-        if (horarios.includes("jantar")) dietasJantar += multiplicador;
-      });
+      // Contar dietas normais (valor calculado do banco)
+      const normais = contarDietas(dietasNormaisRaw);
+      
+      // Aplicar overrides: se existe override na tabela quantitativo_ajustes, usar o valor fixo
+      let dietasCafe = overrides[`${dataStr}-dieta-cafe`] ?? normais.cafe;
+      let dietasAlmoco = overrides[`${dataStr}-dieta-almoco`] ?? normais.almoco;
+      let dietasLanche = overrides[`${dataStr}-dieta-lanche`] ?? normais.lanche;
+      let dietasJantar = overrides[`${dataStr}-dieta-jantar`] ?? normais.jantar;
+
+      // Contar dietas extras
+      const extras = contarDietas(dietasExtrasRaw);
+      let extraCafe = overrides[`${dataStr}-extra-cafe`] ?? extras.cafe;
+      let extraAlmoco = overrides[`${dataStr}-extra-almoco`] ?? extras.almoco;
+      let extraLanche = overrides[`${dataStr}-extra-lanche`] ?? extras.lanche;
+      let extraJantar = overrides[`${dataStr}-extra-jantar`] ?? extras.jantar;
 
       const totalRefeicoes = cafe + almoco + lanche + jantar + foraHorario;
       const totalDietas = dietasCafe + dietasAlmoco + dietasLanche + dietasJantar;
-      const totalGeral = totalRefeicoes + totalDietas;
+      const totalExtra = extraCafe + extraAlmoco + extraLanche + extraJantar;
+      const totalGeral = totalRefeicoes + totalDietas + totalExtra;
 
       // Buscar café litro do dia específico
       const cafeLitroDoDia = cafeLitro.find(cl => cl.data === dataStr);
@@ -267,6 +363,11 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
         dietasLanche,
         dietasJantar,
         totalDietas,
+        extraCafe,
+        extraAlmoco,
+        extraLanche,
+        extraJantar,
+        totalExtra,
         totalGeral,
         cafeLitro: cafeLitroQtd,
       };
@@ -274,6 +375,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
 
     // Remover dias sem nenhum registro (manter apenas dias com dados)
     const resultadoFiltrado = resultado.filter(r => r.totalGeral > 0 || r.cafeLitro > 0);
+    
     setQuantitativos(resultadoFiltrado);
   };
 
@@ -312,7 +414,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       }
 
       toast({ title: "Sucesso", description: `Café Litro salvo para ${format(parseISO(data), "dd/MM/yyyy")}` });
-      fetchData(); // Recarregar dados
+      fetchData(true);
     } catch (error: any) {
       console.error("Erro ao salvar café litro:", error);
       toast({
@@ -363,7 +465,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       setValoresRefeicoes(prev => ({ ...prev, [tipo]: valorNum }));
       
       // Recarregar dados para atualizar os cálculos financeiros
-      fetchData();
+      fetchData(true);
       
       toast({ title: "Sucesso", description: `Valor de ${tipo === 'cafe_litro' ? 'Café Litro' : tipo.charAt(0).toUpperCase() + tipo.slice(1)} atualizado!` });
     } catch (error: any) {
@@ -381,6 +483,70 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
   useEffect(() => {
     fetchData();
   }, [dataInicio, dataFim]);
+
+  // Admin: save edited cell quantity
+  const saveEditedCell = async (dataStr: string, tipoRefeicao: string, newValue: number) => {
+    const cellKey = `${dataStr}-${tipoRefeicao}`;
+    setSavingCell(cellKey);
+    try {
+      // Get all records for that day+type and adjust
+      const { data: records } = await supabase
+        .from("refeicoes_registros")
+        .select("id")
+        .eq("data_registro", dataStr)
+        .eq("tipo_refeicao", tipoRefeicao);
+
+      const currentCount = records?.length || 0;
+      const diff = newValue - currentCount;
+
+      if (diff > 0) {
+        // Need to add records
+        const inserts = Array.from({ length: diff }, () => ({
+          tipo_pessoa: "colaborador",
+          colaborador_nome: "Ajuste administrativo",
+          tipo_refeicao: tipoRefeicao,
+          data_registro: dataStr,
+          hora_registro: "00:00",
+        }));
+        const { error } = await supabase.from("refeicoes_registros").insert(inserts);
+        if (error) throw error;
+      } else if (diff < 0) {
+        // Need to remove records (remove the most recent ones)
+        const toRemove = Math.abs(diff);
+        const { data: toDelete } = await supabase
+          .from("refeicoes_registros")
+          .select("id")
+          .eq("data_registro", dataStr)
+          .eq("tipo_refeicao", tipoRefeicao)
+          .order("created_at", { ascending: false })
+          .limit(toRemove);
+
+        if (toDelete && toDelete.length > 0) {
+          const { error } = await supabase
+            .from("refeicoes_registros")
+            .delete()
+            .in("id", toDelete.map(r => r.id));
+          if (error) throw error;
+        }
+      }
+
+      toast({ title: "Sucesso", description: "Quantidade atualizada!" });
+      setEditingCell(null);
+      fetchData(true);
+    } catch (error: any) {
+      toast({ title: "Erro", description: error.message || "Erro ao atualizar.", variant: "destructive" });
+    } finally {
+      setSavingCell(null);
+    }
+  };
+
+  // Wrappers for backward compatibility with template calls
+  const saveDietaCellEdited = (dataStr: string, tipoRefeicao: string, newValue: number, _currentValue: number) => {
+    saveOverrideCell(dataStr, 'dieta', tipoRefeicao, newValue);
+  };
+  const saveExtraCellEdited = (dataStr: string, tipoRefeicao: string, newValue: number, _currentValue: number) => {
+    saveOverrideCell(dataStr, 'extra', tipoRefeicao, newValue);
+  };
 
   // Função para determinar o tipo de refeição por horário
   const determinarTipoRefeicaoPorHorario = (hora: string): string => {
@@ -436,20 +602,30 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
     totalDietas: quantitativos.reduce((acc, q) => acc + q.totalDietas, 0),
   };
 
+  // Calcular extras somando os quantitativos diários
+  const totaisExtra = {
+    extraCafe: quantitativos.reduce((acc, q) => acc + q.extraCafe, 0),
+    extraAlmoco: quantitativos.reduce((acc, q) => acc + q.extraAlmoco, 0),
+    extraLanche: quantitativos.reduce((acc, q) => acc + q.extraLanche, 0),
+    extraJantar: quantitativos.reduce((acc, q) => acc + q.extraJantar, 0),
+    totalExtra: quantitativos.reduce((acc, q) => acc + q.totalExtra, 0),
+  };
+
   // Totais combinados para uso na interface
   const totaisGeraisCombinados = {
     ...totaisGerais,
     ...totaisDietas,
-    totalGeral: totaisGerais.totalRefeicoes + totaisDietas.totalDietas,
+    ...totaisExtra,
+    totalGeral: totaisGerais.totalRefeicoes + totaisDietas.totalDietas + totaisExtra.totalExtra,
   };
 
-  // Calcular valores financeiros totais (incluindo fora de horário distribuído por tipo)
+  // Calcular valores financeiros totais (incluindo fora de horário distribuído por tipo e extras)
   const valoresFinanceiros = {
     cafeLitro: totaisGerais.cafeLitro * (valoresRefeicoes.cafe_litro || 0),
-    cafe: (totaisGerais.cafe + totaisDietas.dietasCafe + foraHorarioDistribuido.foraHorarioCafe) * (valoresRefeicoes.cafe || 0),
-    almoco: (totaisGerais.almoco + totaisDietas.dietasAlmoco + foraHorarioDistribuido.foraHorarioAlmoco) * (valoresRefeicoes.almoco || 0),
-    lanche: (totaisGerais.lanche + totaisDietas.dietasLanche + foraHorarioDistribuido.foraHorarioLanche) * (valoresRefeicoes.lanche || 0),
-    jantar: (totaisGerais.jantar + totaisDietas.dietasJantar + foraHorarioDistribuido.foraHorarioJantar) * (valoresRefeicoes.jantar || 0),
+    cafe: (totaisGerais.cafe + totaisDietas.dietasCafe + totaisExtra.extraCafe + foraHorarioDistribuido.foraHorarioCafe) * (valoresRefeicoes.cafe || 0),
+    almoco: (totaisGerais.almoco + totaisDietas.dietasAlmoco + totaisExtra.extraAlmoco + foraHorarioDistribuido.foraHorarioAlmoco) * (valoresRefeicoes.almoco || 0),
+    lanche: (totaisGerais.lanche + totaisDietas.dietasLanche + totaisExtra.extraLanche + foraHorarioDistribuido.foraHorarioLanche) * (valoresRefeicoes.lanche || 0),
+    jantar: (totaisGerais.jantar + totaisDietas.dietasJantar + totaisExtra.extraJantar + foraHorarioDistribuido.foraHorarioJantar) * (valoresRefeicoes.jantar || 0),
     get total() {
       return this.cafeLitro + this.cafe + this.almoco + this.lanche + this.jantar;
     }
@@ -462,15 +638,20 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       "Café Litro": q.cafeLitro,
       "Café (Totem)": q.cafe,
       "Almoço (Totem)": q.almoco,
-      "Lanche (Totem)": q.lanche,
+      "Café da Tarde (Totem)": q.lanche,
       "Jantar (Totem)": q.jantar,
       "Fora Horário (Totem)": q.foraHorario,
       "Total Totem": q.totalRefeicoes,
       "Café (Dietas)": q.dietasCafe,
       "Almoço (Dietas)": q.dietasAlmoco,
-      "Lanche (Dietas)": q.dietasLanche,
+      "Café da Tarde (Dietas)": q.dietasLanche,
       "Jantar (Dietas)": q.dietasJantar,
       "Total Dietas": q.totalDietas,
+      "Café (Extra)": q.extraCafe,
+      "Almoço (Extra)": q.extraAlmoco,
+      "Café da Tarde (Extra)": q.extraLanche,
+      "Jantar (Extra)": q.extraJantar,
+      "Total Extra": q.totalExtra,
       "TOTAL GERAL": q.totalGeral,
     }));
 
@@ -481,15 +662,20 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       "Café Litro": totaisGerais.cafeLitro,
       "Café (Totem)": totaisGerais.cafe,
       "Almoço (Totem)": totaisGerais.almoco,
-      "Lanche (Totem)": totaisGerais.lanche,
+      "Café da Tarde (Totem)": totaisGerais.lanche,
       "Jantar (Totem)": totaisGerais.jantar,
       "Fora Horário (Totem)": totaisGerais.foraHorario,
       "Total Totem": totaisGerais.totalRefeicoes,
       "Café (Dietas)": totaisDietas.dietasCafe,
       "Almoço (Dietas)": totaisDietas.dietasAlmoco,
-      "Lanche (Dietas)": totaisDietas.dietasLanche,
+      "Café da Tarde (Dietas)": totaisDietas.dietasLanche,
       "Jantar (Dietas)": totaisDietas.dietasJantar,
       "Total Dietas": totaisDietas.totalDietas,
+      "Café (Extra)": totaisExtra.extraCafe,
+      "Almoço (Extra)": totaisExtra.extraAlmoco,
+      "Café da Tarde (Extra)": totaisExtra.extraLanche,
+      "Jantar (Extra)": totaisExtra.extraJantar,
+      "Total Extra": totaisExtra.totalExtra,
       "TOTAL GERAL": totaisGeraisCombinados.totalGeral,
     });
 
@@ -500,25 +686,23 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
     toast({ title: "Sucesso", description: "Arquivo Excel exportado!" });
   };
 
-  const exportToPDF = () => {
-    const doc = new jsPDF({ orientation: "landscape" });
+  const exportToPDF = async () => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const { doc, logoImg } = await createStandardPdf('Relatório Quantitativo de Refeições Diárias', 'landscape');
     
-    // Cores em RGB
-    const azulTotem = [59, 130, 246]; // bg-blue-500
-    const azulClaro = [219, 234, 254]; // bg-blue-100
-    const laranjaDeita = [249, 115, 22]; // bg-orange-500
-    const laranjaClaro = [255, 237, 213]; // bg-orange-100
-    const verdeTotal = [5, 150, 105]; // bg-emerald-600
-    const verdeClaro = [209, 250, 229]; // bg-emerald-100
+    const pageWidth = doc.internal.pageSize.getWidth();
 
-    // Título
-    doc.setFontSize(18);
-    doc.setFont("helvetica", "bold");
-    doc.text("Relatório Quantitativo de Refeições Diárias", 14, 15);
     doc.setFontSize(10);
     doc.setFont("helvetica", "normal");
-    doc.text(`Período: ${format(parseISO(dataInicio), "dd/MM/yyyy")} a ${format(parseISO(dataFim), "dd/MM/yyyy")}`, 14, 23);
-    doc.text(`Gerado em: ${new Date().toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })}`, 14, 29);
+    doc.text(`Período: ${format(parseISO(dataInicio), "dd/MM/yyyy")} a ${format(parseISO(dataFim), "dd/MM/yyyy")}`, 14, 32);
+
+    // Cores em RGB
+    const azulTotem = [59, 130, 246];
+    const azulClaro = [219, 234, 254];
+    const laranjaDeita = [249, 115, 22];
+    const laranjaClaro = [255, 237, 213];
+    const verdeTotal = [5, 150, 105];
+    const verdeClaro = [209, 250, 229];
 
     // Dashboard - KPIs
     doc.setFontSize(12);
@@ -526,87 +710,103 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
     doc.text("Dashboard - Resumo por Tipo de Refeição", 14, 40);
 
     // Cards do Dashboard
-    const cardWidth = 52;
+    const cardWidth = 43;
     const cardHeight = 22;
     const cardStartY = 45;
-    const cardGap = 4;
+    const cardGap = 3;
 
-    // Card Café (Amber)
-    doc.setFillColor(255, 243, 224);
+    // Card Café Litro (Cyan)
+    doc.setFillColor(207, 250, 254);
     doc.roundedRect(14, cardStartY, cardWidth, cardHeight, 2, 2, "F");
-    doc.setDrawColor(245, 158, 11);
+    doc.setDrawColor(6, 182, 212);
     doc.setLineWidth(0.8);
     doc.line(14, cardStartY, 14, cardStartY + cardHeight);
     doc.setFont("helvetica", "normal");
     doc.setFontSize(8);
-    doc.setTextColor(120, 53, 15);
-    doc.text("Total Cafe", 18, cardStartY + 6);
+    doc.setTextColor(14, 116, 144);
+    doc.text("Cafe Litro", 18, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(String(totaisGerais.cafe + totaisDietas.dietasCafe), 18, cardStartY + 14);
+    doc.text(totaisGerais.cafeLitro.toFixed(1) + "L", 18, cardStartY + 14);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Totem: ${totaisGerais.cafe} | Dietas: ${totaisDietas.dietasCafe}`, 18, cardStartY + 19);
+    doc.text(`${quantitativos.filter(q => q.cafeLitro > 0).length} dias`, 18, cardStartY + 19);
+
+    // Card Café (Amber)
+    doc.setFillColor(255, 243, 224);
+    doc.roundedRect(14 + cardWidth + cardGap, cardStartY, cardWidth, cardHeight, 2, 2, "F");
+    doc.setDrawColor(245, 158, 11);
+    doc.line(14 + cardWidth + cardGap, cardStartY, 14 + cardWidth + cardGap, cardStartY + cardHeight);
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(8);
+    doc.setTextColor(120, 53, 15);
+    doc.text("Total Cafe", 18 + cardWidth + cardGap, cardStartY + 6);
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.text(String(totaisGerais.cafe + totaisDietas.dietasCafe + totaisExtra.extraCafe), 18 + cardWidth + cardGap, cardStartY + 14);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.text(`T:${totaisGerais.cafe} D:${totaisDietas.dietasCafe} E:${totaisExtra.extraCafe}`, 18 + cardWidth + cardGap, cardStartY + 19);
 
     // Card Almoço (Orange)
     doc.setFillColor(255, 237, 213);
-    doc.roundedRect(14 + cardWidth + cardGap, cardStartY, cardWidth, cardHeight, 2, 2, "F");
+    doc.roundedRect(14 + (cardWidth + cardGap) * 2, cardStartY, cardWidth, cardHeight, 2, 2, "F");
     doc.setDrawColor(249, 115, 22);
-    doc.line(14 + cardWidth + cardGap, cardStartY, 14 + cardWidth + cardGap, cardStartY + cardHeight);
+    doc.line(14 + (cardWidth + cardGap) * 2, cardStartY, 14 + (cardWidth + cardGap) * 2, cardStartY + cardHeight);
     doc.setFontSize(8);
     doc.setTextColor(154, 52, 18);
-    doc.text("Total Almoco", 18 + cardWidth + cardGap, cardStartY + 6);
+    doc.text("Total Almoco", 18 + (cardWidth + cardGap) * 2, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(String(totaisGerais.almoco + totaisDietas.dietasAlmoco), 18 + cardWidth + cardGap, cardStartY + 14);
+    doc.text(String(totaisGerais.almoco + totaisDietas.dietasAlmoco + totaisExtra.extraAlmoco), 18 + (cardWidth + cardGap) * 2, cardStartY + 14);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Totem: ${totaisGerais.almoco} | Dietas: ${totaisDietas.dietasAlmoco}`, 18 + cardWidth + cardGap, cardStartY + 19);
+    doc.text(`T:${totaisGerais.almoco} D:${totaisDietas.dietasAlmoco} E:${totaisExtra.extraAlmoco}`, 18 + (cardWidth + cardGap) * 2, cardStartY + 19);
 
     // Card Lanche (Pink)
     doc.setFillColor(252, 231, 243);
-    doc.roundedRect(14 + (cardWidth + cardGap) * 2, cardStartY, cardWidth, cardHeight, 2, 2, "F");
+    doc.roundedRect(14 + (cardWidth + cardGap) * 3, cardStartY, cardWidth, cardHeight, 2, 2, "F");
     doc.setDrawColor(236, 72, 153);
-    doc.line(14 + (cardWidth + cardGap) * 2, cardStartY, 14 + (cardWidth + cardGap) * 2, cardStartY + cardHeight);
+    doc.line(14 + (cardWidth + cardGap) * 3, cardStartY, 14 + (cardWidth + cardGap) * 3, cardStartY + cardHeight);
     doc.setFontSize(8);
     doc.setTextColor(157, 23, 77);
-    doc.text("Total Lanche", 18 + (cardWidth + cardGap) * 2, cardStartY + 6);
+    doc.text("Total Café Tarde", 18 + (cardWidth + cardGap) * 3, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(String(totaisGerais.lanche + totaisDietas.dietasLanche), 18 + (cardWidth + cardGap) * 2, cardStartY + 14);
+    doc.text(String(totaisGerais.lanche + totaisDietas.dietasLanche + totaisExtra.extraLanche), 18 + (cardWidth + cardGap) * 3, cardStartY + 14);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Totem: ${totaisGerais.lanche} | Dietas: ${totaisDietas.dietasLanche}`, 18 + (cardWidth + cardGap) * 2, cardStartY + 19);
+    doc.text(`T:${totaisGerais.lanche} D:${totaisDietas.dietasLanche} E:${totaisExtra.extraLanche}`, 18 + (cardWidth + cardGap) * 3, cardStartY + 19);
 
     // Card Jantar (Indigo)
     doc.setFillColor(224, 231, 255);
-    doc.roundedRect(14 + (cardWidth + cardGap) * 3, cardStartY, cardWidth, cardHeight, 2, 2, "F");
+    doc.roundedRect(14 + (cardWidth + cardGap) * 4, cardStartY, cardWidth, cardHeight, 2, 2, "F");
     doc.setDrawColor(99, 102, 241);
-    doc.line(14 + (cardWidth + cardGap) * 3, cardStartY, 14 + (cardWidth + cardGap) * 3, cardStartY + cardHeight);
+    doc.line(14 + (cardWidth + cardGap) * 4, cardStartY, 14 + (cardWidth + cardGap) * 4, cardStartY + cardHeight);
     doc.setFontSize(8);
     doc.setTextColor(55, 48, 163);
-    doc.text("Total Jantar", 18 + (cardWidth + cardGap) * 3, cardStartY + 6);
+    doc.text("Total Jantar", 18 + (cardWidth + cardGap) * 4, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(String(totaisGerais.jantar + totaisDietas.dietasJantar), 18 + (cardWidth + cardGap) * 3, cardStartY + 14);
+    doc.text(String(totaisGerais.jantar + totaisDietas.dietasJantar + totaisExtra.extraJantar), 18 + (cardWidth + cardGap) * 4, cardStartY + 14);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Totem: ${totaisGerais.jantar} | Dietas: ${totaisDietas.dietasJantar}`, 18 + (cardWidth + cardGap) * 3, cardStartY + 19);
+    doc.text(`T:${totaisGerais.jantar} D:${totaisDietas.dietasJantar} E:${totaisExtra.extraJantar}`, 18 + (cardWidth + cardGap) * 4, cardStartY + 19);
 
     // Card Total Geral (Emerald)
     doc.setFillColor(209, 250, 229);
-    doc.roundedRect(14 + (cardWidth + cardGap) * 4, cardStartY, cardWidth, cardHeight, 2, 2, "F");
+    doc.roundedRect(14 + (cardWidth + cardGap) * 5, cardStartY, cardWidth, cardHeight, 2, 2, "F");
     doc.setDrawColor(5, 150, 105);
-    doc.line(14 + (cardWidth + cardGap) * 4, cardStartY, 14 + (cardWidth + cardGap) * 4, cardStartY + cardHeight);
+    doc.line(14 + (cardWidth + cardGap) * 5, cardStartY, 14 + (cardWidth + cardGap) * 5, cardStartY + cardHeight);
     doc.setFontSize(8);
     doc.setTextColor(6, 95, 70);
-    doc.text("Total Geral", 18 + (cardWidth + cardGap) * 4, cardStartY + 6);
+    doc.text("Total Geral", 18 + (cardWidth + cardGap) * 5, cardStartY + 6);
     doc.setFontSize(16);
     doc.setFont("helvetica", "bold");
-    doc.text(String(totaisGeraisCombinados.totalGeral), 18 + (cardWidth + cardGap) * 4, cardStartY + 14);
+    doc.text(String(totaisGeraisCombinados.totalGeral), 18 + (cardWidth + cardGap) * 5, cardStartY + 14);
     doc.setFontSize(7);
     doc.setFont("helvetica", "normal");
-    doc.text(`Totem: ${totaisGerais.totalRefeicoes} | Dietas: ${totaisDietas.totalDietas}`, 18 + (cardWidth + cardGap) * 4, cardStartY + 19);
+    doc.text(`T:${totaisGerais.totalRefeicoes} D:${totaisDietas.totalDietas} E:${totaisExtra.totalExtra}`, 18 + (cardWidth + cardGap) * 5, cardStartY + 19);
 
     // Reset text color
     doc.setTextColor(0, 0, 0);
@@ -614,7 +814,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
     // Seção de Valores Financeiros (apenas para admin)
     let finalY = cardStartY + cardHeight + 8;
 
-    if (isAdmin) {
+    if (isAdmin || canViewValues) {
       const financeiroY = cardStartY + cardHeight + 8;
       doc.setFontSize(11);
       doc.setFont("helvetica", "bold");
@@ -634,10 +834,10 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
         ]],
         body: [
           ["Cafe Litro", `${totaisGerais.cafeLitro.toFixed(1)} L`, formatCurrency(valoresRefeicoes.cafe_litro || 0), formatCurrency(valoresFinanceiros.cafeLitro)],
-          ["Café da Manhã", String(totaisGerais.cafe + totaisDietas.dietasCafe), formatCurrency(valoresRefeicoes.cafe || 0), formatCurrency(valoresFinanceiros.cafe)],
-          ["Almoco", String(totaisGerais.almoco + totaisDietas.dietasAlmoco), formatCurrency(valoresRefeicoes.almoco || 0), formatCurrency(valoresFinanceiros.almoco)],
-          ["Café da Tarde", String(totaisGerais.lanche + totaisDietas.dietasLanche), formatCurrency(valoresRefeicoes.lanche || 0), formatCurrency(valoresFinanceiros.lanche)],
-          ["Jantar", String(totaisGerais.jantar + totaisDietas.dietasJantar), formatCurrency(valoresRefeicoes.jantar || 0), formatCurrency(valoresFinanceiros.jantar)],
+          ["Café da Manhã", String(totaisGerais.cafe + totaisDietas.dietasCafe + totaisExtra.extraCafe), formatCurrency(valoresRefeicoes.cafe || 0), formatCurrency(valoresFinanceiros.cafe)],
+          ["Almoco", String(totaisGerais.almoco + totaisDietas.dietasAlmoco + totaisExtra.extraAlmoco), formatCurrency(valoresRefeicoes.almoco || 0), formatCurrency(valoresFinanceiros.almoco)],
+          ["Café da Tarde", String(totaisGerais.lanche + totaisDietas.dietasLanche + totaisExtra.extraLanche), formatCurrency(valoresRefeicoes.lanche || 0), formatCurrency(valoresFinanceiros.lanche)],
+          ["Jantar", String(totaisGerais.jantar + totaisDietas.dietasJantar + totaisExtra.extraJantar), formatCurrency(valoresRefeicoes.jantar || 0), formatCurrency(valoresFinanceiros.jantar)],
         ],
         foot: [[
           { content: "TOTAL GERAL", colSpan: 3, styles: { halign: "right", fillColor: [209, 213, 219] as [number, number, number], fontStyle: "bold" } },
@@ -661,6 +861,9 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
     }
 
     // Tabela principal com cores
+    const roxoExtra = [168, 85, 247];
+    const roxoClaro = [243, 232, 255];
+
     const tableBody = quantitativos.map(q => [
       format(parseISO(q.data), "dd/MM") + " (" + format(parseISO(q.data), "EEE", { locale: ptBR }) + ")",
       q.cafeLitro > 0 ? q.cafeLitro.toFixed(1) + "L" : "-",
@@ -674,6 +877,11 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       q.dietasLanche || "-",
       q.dietasJantar || "-",
       q.totalDietas,
+      q.extraCafe || "-",
+      q.extraAlmoco || "-",
+      q.extraLanche || "-",
+      q.extraJantar || "-",
+      q.totalExtra,
       q.totalGeral,
     ]);
 
@@ -691,6 +899,11 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
       totaisDietas.dietasLanche,
       totaisDietas.dietasJantar,
       totaisDietas.totalDietas,
+      totaisExtra.extraCafe,
+      totaisExtra.extraAlmoco,
+      totaisExtra.extraLanche,
+      totaisExtra.extraJantar,
+      totaisExtra.totalExtra,
       totaisGeraisCombinados.totalGeral,
     ]);
 
@@ -701,20 +914,26 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
           { content: "Data", rowSpan: 2, styles: { halign: "center", valign: "middle", fillColor: [229, 231, 235] } },
           { content: "Totem (Colaboradores/Visitantes)", colSpan: 6, styles: { halign: "center", fillColor: azulTotem as [number, number, number], textColor: 255 } },
           { content: "Dietas (Pacientes/Acompanhantes)", colSpan: 5, styles: { halign: "center", fillColor: laranjaDeita as [number, number, number], textColor: 255 } },
+          { content: "Extra", colSpan: 5, styles: { halign: "center", fillColor: roxoExtra as [number, number, number], textColor: 255 } },
           { content: "Total", rowSpan: 2, styles: { halign: "center", valign: "middle", fillColor: verdeTotal as [number, number, number], textColor: 255 } },
         ],
         [
           { content: "Cafe Litro", styles: { halign: "center", fillColor: [147, 197, 253] as [number, number, number], textColor: [30, 58, 138], fontStyle: "bold" } },
-          { content: "Café Manhã", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
-          { content: "Almoco", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
-          { content: "Café Tarde", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
-          { content: "Jantar", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
+          { content: "Café Manhã\n05:30-09:59", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
+          { content: "Almoço\n10:00-14:59", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
+          { content: "Café Tarde\n15:00-17:59", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
+          { content: "Jantar\n18:00-23:59", styles: { halign: "center", fillColor: azulClaro as [number, number, number], textColor: [30, 64, 175] } },
           { content: "Subtotal", styles: { halign: "center", fillColor: [147, 197, 253] as [number, number, number], textColor: [30, 58, 138], fontStyle: "bold" } },
           { content: "Café Manhã", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
           { content: "Almoco", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
           { content: "Café Tarde", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
           { content: "Jantar", styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], textColor: [154, 52, 18] } },
           { content: "Subtotal", styles: { halign: "center", fillColor: [253, 186, 116] as [number, number, number], textColor: [124, 45, 18], fontStyle: "bold" } },
+          { content: "Café Manhã", styles: { halign: "center", fillColor: roxoClaro as [number, number, number], textColor: [88, 28, 135] } },
+          { content: "Almoco", styles: { halign: "center", fillColor: roxoClaro as [number, number, number], textColor: [88, 28, 135] } },
+          { content: "Café Tarde", styles: { halign: "center", fillColor: roxoClaro as [number, number, number], textColor: [88, 28, 135] } },
+          { content: "Jantar", styles: { halign: "center", fillColor: roxoClaro as [number, number, number], textColor: [88, 28, 135] } },
+          { content: "Subtotal", styles: { halign: "center", fillColor: [192, 132, 252] as [number, number, number], textColor: [59, 7, 100], fontStyle: "bold" } },
         ],
       ],
       body: tableBody.slice(0, -1).map((row) => [
@@ -730,7 +949,12 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
         { content: row[9], styles: { halign: "center", fillColor: [255, 247, 237] as [number, number, number] } },
         { content: row[10], styles: { halign: "center", fillColor: [255, 247, 237] as [number, number, number] } },
         { content: row[11], styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
-        { content: row[12], styles: { halign: "center", fillColor: verdeClaro as [number, number, number], fontStyle: "bold", textColor: [6, 95, 70] } },
+        { content: row[12], styles: { halign: "center", fillColor: [250, 245, 255] as [number, number, number] } },
+        { content: row[13], styles: { halign: "center", fillColor: [250, 245, 255] as [number, number, number] } },
+        { content: row[14], styles: { halign: "center", fillColor: [250, 245, 255] as [number, number, number] } },
+        { content: row[15], styles: { halign: "center", fillColor: [250, 245, 255] as [number, number, number] } },
+        { content: row[16], styles: { halign: "center", fillColor: roxoClaro as [number, number, number], fontStyle: "bold", textColor: [88, 28, 135] } },
+        { content: row[17], styles: { halign: "center", fillColor: verdeClaro as [number, number, number], fontStyle: "bold", textColor: [6, 95, 70] } },
       ]),
       foot: [[
         { content: "TOTAIS", styles: { fillColor: [209, 213, 219] as [number, number, number], fontStyle: "bold" } },
@@ -745,17 +969,23 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
         { content: String(totaisDietas.dietasLanche), styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
         { content: String(totaisDietas.dietasJantar), styles: { halign: "center", fillColor: laranjaClaro as [number, number, number], fontStyle: "bold", textColor: [154, 52, 18] } },
         { content: String(totaisDietas.totalDietas), styles: { halign: "center", fillColor: laranjaDeita as [number, number, number], fontStyle: "bold", textColor: 255 } },
+        { content: String(totaisExtra.extraCafe), styles: { halign: "center", fillColor: roxoClaro as [number, number, number], fontStyle: "bold", textColor: [88, 28, 135] } },
+        { content: String(totaisExtra.extraAlmoco), styles: { halign: "center", fillColor: roxoClaro as [number, number, number], fontStyle: "bold", textColor: [88, 28, 135] } },
+        { content: String(totaisExtra.extraLanche), styles: { halign: "center", fillColor: roxoClaro as [number, number, number], fontStyle: "bold", textColor: [88, 28, 135] } },
+        { content: String(totaisExtra.extraJantar), styles: { halign: "center", fillColor: roxoClaro as [number, number, number], fontStyle: "bold", textColor: [88, 28, 135] } },
+        { content: String(totaisExtra.totalExtra), styles: { halign: "center", fillColor: roxoExtra as [number, number, number], fontStyle: "bold", textColor: 255 } },
         { content: String(totaisGeraisCombinados.totalGeral), styles: { halign: "center", fillColor: verdeTotal as [number, number, number], fontStyle: "bold", textColor: 255 } },
       ]],
-      styles: { fontSize: 7, cellPadding: 2 },
-      headStyles: { fontSize: 7 },
-      footStyles: { fontSize: 8 },
+      styles: { fontSize: 6, cellPadding: 1.5 },
+      headStyles: { fontSize: 6 },
+      footStyles: { fontSize: 7 },
+      margin: { top: 32, bottom: 30 },
       columnStyles: {
-        0: { cellWidth: 28 },
+        0: { cellWidth: 22 },
       },
     });
 
-    doc.save(`quantitativo_refeicoes_${format(new Date(), "yyyyMMdd_HHmm")}.pdf`);
+    savePdfWithFooter(doc, 'Relatório Quantitativo de Refeições Diárias', `quantitativo_refeicoes_${format(new Date(), "yyyyMMdd_HHmm")}`, logoImg);
     toast({ title: "Sucesso", description: "Arquivo PDF exportado com dashboard!" });
   };
 
@@ -883,8 +1113,8 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                 </Card>
               )}
 
-              {/* Resumo Financeiro - apenas Admin */}
-              {isAdmin && (
+              {/* Resumo Financeiro - Admin ou perfil com visualização */}
+              {(isAdmin || canViewValues) && (
               <div className="mb-6 p-4 bg-gradient-to-r from-emerald-50 to-teal-50 rounded-lg border border-emerald-200">
                 <div className="flex items-center gap-2 mb-3">
                   <DollarSign className="h-5 w-5 text-emerald-600" />
@@ -910,7 +1140,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                     </p>
                   </div>
                   <div className="text-center p-2 bg-white/60 rounded">
-                    <p className="text-xs text-muted-foreground">Lanche</p>
+                    <p className="text-xs text-muted-foreground">Café da Tarde</p>
                     <p className="font-bold text-emerald-700">
                       {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valoresFinanceiros.lanche)}
                     </p>
@@ -932,17 +1162,30 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
               )}
 
               {/* KPIs Resumo Geral */}
-              <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
+              <div className="grid grid-cols-2 md:grid-cols-7 gap-4 mb-6">
+                {/* Café Litro */}
+                <div className="p-4 bg-cyan-50 rounded-lg border-l-4 border-cyan-500">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Droplets className="h-4 w-4 text-cyan-600" />
+                    <p className="text-sm text-muted-foreground">Total Café Litro</p>
+                  </div>
+                  <p className="text-2xl font-bold text-cyan-700">
+                    {totaisGerais.cafeLitro.toFixed(1)}L
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {quantitativos.filter(q => q.cafeLitro > 0).length} dias registrados
+                  </p>
+                </div>
                 <div className="p-4 bg-amber-50 rounded-lg border-l-4 border-amber-500">
                   <div className="flex items-center gap-2 mb-1">
                     <Coffee className="h-4 w-4 text-amber-600" />
                     <p className="text-sm text-muted-foreground">Total Café</p>
                   </div>
                   <p className="text-2xl font-bold text-amber-700">
-                    {totaisGerais.cafe + totaisDietas.dietasCafe}
+                    {totaisGerais.cafe + totaisDietas.dietasCafe + totaisExtra.extraCafe}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Totem: {totaisGerais.cafe} | Dietas: {totaisDietas.dietasCafe}
+                    T: {totaisGerais.cafe} | D: {totaisDietas.dietasCafe} | E: {totaisExtra.extraCafe}
                   </p>
                 </div>
                 <div className="p-4 bg-orange-50 rounded-lg border-l-4 border-orange-500">
@@ -951,22 +1194,22 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                     <p className="text-sm text-muted-foreground">Total Almoço</p>
                   </div>
                   <p className="text-2xl font-bold text-orange-700">
-                    {totaisGerais.almoco + totaisDietas.dietasAlmoco}
+                    {totaisGerais.almoco + totaisDietas.dietasAlmoco + totaisExtra.extraAlmoco}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Totem: {totaisGerais.almoco} | Dietas: {totaisDietas.dietasAlmoco}
+                    T: {totaisGerais.almoco} | D: {totaisDietas.dietasAlmoco} | E: {totaisExtra.extraAlmoco}
                   </p>
                 </div>
                 <div className="p-4 bg-pink-50 rounded-lg border-l-4 border-pink-500">
                   <div className="flex items-center gap-2 mb-1">
                     <Cookie className="h-4 w-4 text-pink-600" />
-                    <p className="text-sm text-muted-foreground">Total Lanche</p>
+                    <p className="text-sm text-muted-foreground">Total Café da Tarde</p>
                   </div>
                   <p className="text-2xl font-bold text-pink-700">
-                    {totaisGerais.lanche + totaisDietas.dietasLanche}
+                    {totaisGerais.lanche + totaisDietas.dietasLanche + totaisExtra.extraLanche}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Totem: {totaisGerais.lanche} | Dietas: {totaisDietas.dietasLanche}
+                    T: {totaisGerais.lanche} | D: {totaisDietas.dietasLanche} | E: {totaisExtra.extraLanche}
                   </p>
                 </div>
                 <div className="p-4 bg-indigo-50 rounded-lg border-l-4 border-indigo-500">
@@ -975,10 +1218,10 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                     <p className="text-sm text-muted-foreground">Total Jantar</p>
                   </div>
                   <p className="text-2xl font-bold text-indigo-700">
-                    {totaisGerais.jantar + totaisDietas.dietasJantar}
+                    {totaisGerais.jantar + totaisDietas.dietasJantar + totaisExtra.extraJantar}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Totem: {totaisGerais.jantar} | Dietas: {totaisDietas.dietasJantar}
+                    T: {totaisGerais.jantar} | D: {totaisDietas.dietasJantar} | E: {totaisExtra.extraJantar}
                   </p>
                 </div>
                 {totaisGerais.foraHorario > 0 && (
@@ -1004,7 +1247,7 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                     {totaisGeraisCombinados.totalGeral}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Totem: {totaisGerais.totalRefeicoes} | Dietas: {totaisDietas.totalDietas}
+                    T: {totaisGerais.totalRefeicoes} | D: {totaisDietas.totalDietas} | E: {totaisExtra.totalExtra}
                   </p>
                 </div>
               </div>
@@ -1022,10 +1265,13 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                       <TableRow>
                         <TableHead rowSpan={2} className="border-r bg-muted">Data</TableHead>
                         <TableHead colSpan={7} className="text-center border-r bg-blue-500 text-white">
-                          🖥️ Totem (Colaboradores/Visitantes)
+                          Totem (Colaboradores/Visitantes)
                         </TableHead>
                         <TableHead colSpan={5} className="text-center border-r bg-orange-500 text-white">
-                          🍽️ Dietas (Pacientes/Acompanhantes)
+                          Dietas (Pacientes/Acompanhantes)
+                        </TableHead>
+                        <TableHead colSpan={5} className="text-center border-r bg-purple-500 text-white">
+                          Extra
                         </TableHead>
                         <TableHead rowSpan={2} className="text-center bg-emerald-600 text-white font-bold">
                           Total
@@ -1039,27 +1285,39 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                           </div>
                         </TableHead>
                         <TableHead className="text-center bg-blue-100 text-blue-800">
-                          <div className="flex items-center justify-center gap-1">
-                            <Coffee className="h-3 w-3" />
-                            Café
+                          <div className="flex flex-col items-center justify-center gap-0.5">
+                            <div className="flex items-center gap-1">
+                              <Coffee className="h-3 w-3" />
+                              Café
+                            </div>
+                            <span className="text-[10px] font-normal opacity-70">05:30–09:59</span>
                           </div>
                         </TableHead>
                         <TableHead className="text-center bg-blue-100 text-blue-800">
-                          <div className="flex items-center justify-center gap-1">
-                            <Sun className="h-3 w-3" />
-                            Almoço
+                          <div className="flex flex-col items-center justify-center gap-0.5">
+                            <div className="flex items-center gap-1">
+                              <Sun className="h-3 w-3" />
+                              Almoço
+                            </div>
+                            <span className="text-[10px] font-normal opacity-70">10:00–14:59</span>
                           </div>
                         </TableHead>
                         <TableHead className="text-center bg-blue-100 text-blue-800">
-                          <div className="flex items-center justify-center gap-1">
-                            <Cookie className="h-3 w-3" />
-                            Lanche
+                          <div className="flex flex-col items-center justify-center gap-0.5">
+                            <div className="flex items-center gap-1">
+                              <Cookie className="h-3 w-3" />
+                              Café Tarde
+                            </div>
+                            <span className="text-[10px] font-normal opacity-70">15:00–17:59</span>
                           </div>
                         </TableHead>
                         <TableHead className="text-center bg-blue-100 text-blue-800">
-                          <div className="flex items-center justify-center gap-1">
-                            <Moon className="h-3 w-3" />
-                            Jantar
+                          <div className="flex flex-col items-center justify-center gap-0.5">
+                            <div className="flex items-center gap-1">
+                              <Moon className="h-3 w-3" />
+                              Jantar
+                            </div>
+                            <span className="text-[10px] font-normal opacity-70">18:00–23:59</span>
                           </div>
                         </TableHead>
                         <TableHead className="text-center bg-gray-200 text-gray-800">
@@ -1069,31 +1327,16 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                           </div>
                         </TableHead>
                         <TableHead className="text-center border-r bg-blue-200 text-blue-900 font-semibold">Subtotal</TableHead>
-                        <TableHead className="text-center bg-orange-100 text-orange-800">
-                          <div className="flex items-center justify-center gap-1">
-                            <Coffee className="h-3 w-3" />
-                            Café
-                          </div>
-                        </TableHead>
-                        <TableHead className="text-center bg-orange-100 text-orange-800">
-                          <div className="flex items-center justify-center gap-1">
-                            <Sun className="h-3 w-3" />
-                            Almoço
-                          </div>
-                        </TableHead>
-                        <TableHead className="text-center bg-orange-100 text-orange-800">
-                          <div className="flex items-center justify-center gap-1">
-                            <Cookie className="h-3 w-3" />
-                            Lanche
-                          </div>
-                        </TableHead>
-                        <TableHead className="text-center bg-orange-100 text-orange-800">
-                          <div className="flex items-center justify-center gap-1">
-                            <Moon className="h-3 w-3" />
-                            Jantar
-                          </div>
-                        </TableHead>
+                        <TableHead className="text-center bg-orange-100 text-orange-800">Café</TableHead>
+                        <TableHead className="text-center bg-orange-100 text-orange-800">Almoço</TableHead>
+                        <TableHead className="text-center bg-orange-100 text-orange-800">Café Tarde</TableHead>
+                        <TableHead className="text-center bg-orange-100 text-orange-800">Jantar</TableHead>
                         <TableHead className="text-center border-r bg-orange-200 text-orange-900 font-semibold">Subtotal</TableHead>
+                        <TableHead className="text-center bg-purple-100 text-purple-800">Café</TableHead>
+                        <TableHead className="text-center bg-purple-100 text-purple-800">Almoço</TableHead>
+                        <TableHead className="text-center bg-purple-100 text-purple-800">Café Tarde</TableHead>
+                        <TableHead className="text-center bg-purple-100 text-purple-800">Jantar</TableHead>
+                        <TableHead className="text-center border-r bg-purple-200 text-purple-900 font-semibold">Subtotal</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1133,20 +1376,167 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                               </Button>
                             </div>
                           </TableCell>
-                          <TableCell className="text-center bg-blue-50">{q.cafe || "-"}</TableCell>
-                          <TableCell className="text-center bg-blue-50">{q.almoco || "-"}</TableCell>
-                          <TableCell className="text-center bg-blue-50">{q.lanche || "-"}</TableCell>
-                          <TableCell className="text-center bg-blue-50">{q.jantar || "-"}</TableCell>
+                          <TableCell className="text-center bg-blue-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-cafe` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveEditedCell(q.data, 'cafe', parseInt(editValue) || 0); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveEditedCell(q.data, 'cafe', parseInt(editValue) || 0)} disabled={savingCell === `${q.data}-cafe`}>{savingCell === `${q.data}-cafe` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-cafe`); setEditValue(String(q.cafe)); }}>{q.cafe || "-"}</span>
+                              )
+                            ) : (q.cafe || "-")}
+                          </TableCell>
+                          <TableCell className="text-center bg-blue-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-almoco` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveEditedCell(q.data, 'almoco', parseInt(editValue) || 0); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveEditedCell(q.data, 'almoco', parseInt(editValue) || 0)} disabled={savingCell === `${q.data}-almoco`}>{savingCell === `${q.data}-almoco` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-almoco`); setEditValue(String(q.almoco)); }}>{q.almoco || "-"}</span>
+                              )
+                            ) : (q.almoco || "-")}
+                          </TableCell>
+                          <TableCell className="text-center bg-blue-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-lanche` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveEditedCell(q.data, 'lanche', parseInt(editValue) || 0); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveEditedCell(q.data, 'lanche', parseInt(editValue) || 0)} disabled={savingCell === `${q.data}-lanche`}>{savingCell === `${q.data}-lanche` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-lanche`); setEditValue(String(q.lanche)); }}>{q.lanche || "-"}</span>
+                              )
+                            ) : (q.lanche || "-")}
+                          </TableCell>
+                          <TableCell className="text-center bg-blue-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-jantar` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveEditedCell(q.data, 'jantar', parseInt(editValue) || 0); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveEditedCell(q.data, 'jantar', parseInt(editValue) || 0)} disabled={savingCell === `${q.data}-jantar`}>{savingCell === `${q.data}-jantar` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-jantar`); setEditValue(String(q.jantar)); }}>{q.jantar || "-"}</span>
+                              )
+                            ) : (q.jantar || "-")}
+                          </TableCell>
                           <TableCell className="text-center bg-gray-100">{q.foraHorario || "-"}</TableCell>
                           <TableCell className="text-center border-r bg-blue-100 font-semibold text-blue-800">
                             {q.totalRefeicoes}
                           </TableCell>
-                          <TableCell className="text-center bg-orange-50">{q.dietasCafe || "-"}</TableCell>
-                          <TableCell className="text-center bg-orange-50">{q.dietasAlmoco || "-"}</TableCell>
-                          <TableCell className="text-center bg-orange-50">{q.dietasLanche || "-"}</TableCell>
-                          <TableCell className="text-center bg-orange-50">{q.dietasJantar || "-"}</TableCell>
+                          {/* Dietas - Café */}
+                          <TableCell className={`text-center bg-orange-50 ${isAdmin && editingCell !== `${q.data}-dieta-cafe` ? 'cursor-pointer hover:bg-orange-100' : ''}`} onClick={() => { if (isAdmin && editingCell !== `${q.data}-dieta-cafe`) { console.log('Editing diet cafe for', q.data); setEditingCell(`${q.data}-dieta-cafe`); setEditValue(String(q.dietasCafe)); } }}>
+                            {isAdmin ? (
+                              editingCell === `${q.data}-dieta-cafe` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'cafe', parseInt(editValue) || 0, q.dietasCafe); if (e.key === 'Escape') setEditingCell(null); }} onClick={(e) => e.stopPropagation()} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); saveDietaCellEdited(q.data, 'cafe', parseInt(editValue) || 0, q.dietasCafe); }} disabled={savingCell === `${q.data}-dieta-cafe`}>{savingCell === `${q.data}-dieta-cafe` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span>{q.dietasCafe || "-"}</span>
+                              )
+                            ) : (q.dietasCafe || "-")}
+                          </TableCell>
+                          {/* Dietas - Almoço */}
+                          <TableCell className={`text-center bg-orange-50 ${isAdmin && editingCell !== `${q.data}-dieta-almoco` ? 'cursor-pointer hover:bg-orange-100' : ''}`} onClick={() => { if (isAdmin && editingCell !== `${q.data}-dieta-almoco`) { console.log('Editing diet almoco for', q.data); setEditingCell(`${q.data}-dieta-almoco`); setEditValue(String(q.dietasAlmoco)); } }}>
+                            {isAdmin ? (
+                              editingCell === `${q.data}-dieta-almoco` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'almoco', parseInt(editValue) || 0, q.dietasAlmoco); if (e.key === 'Escape') setEditingCell(null); }} onClick={(e) => e.stopPropagation()} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); saveDietaCellEdited(q.data, 'almoco', parseInt(editValue) || 0, q.dietasAlmoco); }} disabled={savingCell === `${q.data}-dieta-almoco`}>{savingCell === `${q.data}-dieta-almoco` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span>{q.dietasAlmoco || "-"}</span>
+                              )
+                            ) : (q.dietasAlmoco || "-")}
+                          </TableCell>
+                          {/* Dietas - Lanche */}
+                          <TableCell className={`text-center bg-orange-50 ${isAdmin && editingCell !== `${q.data}-dieta-lanche` ? 'cursor-pointer hover:bg-orange-100' : ''}`} onClick={() => { if (isAdmin && editingCell !== `${q.data}-dieta-lanche`) { console.log('Editing diet lanche for', q.data); setEditingCell(`${q.data}-dieta-lanche`); setEditValue(String(q.dietasLanche)); } }}>
+                            {isAdmin ? (
+                              editingCell === `${q.data}-dieta-lanche` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'lanche', parseInt(editValue) || 0, q.dietasLanche); if (e.key === 'Escape') setEditingCell(null); }} onClick={(e) => e.stopPropagation()} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); saveDietaCellEdited(q.data, 'lanche', parseInt(editValue) || 0, q.dietasLanche); }} disabled={savingCell === `${q.data}-dieta-lanche`}>{savingCell === `${q.data}-dieta-lanche` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span>{q.dietasLanche || "-"}</span>
+                              )
+                            ) : (q.dietasLanche || "-")}
+                          </TableCell>
+                          {/* Dietas - Jantar */}
+                          <TableCell className={`text-center bg-orange-50 ${isAdmin && editingCell !== `${q.data}-dieta-jantar` ? 'cursor-pointer hover:bg-orange-100' : ''}`} onClick={() => { if (isAdmin && editingCell !== `${q.data}-dieta-jantar`) { console.log('Editing diet jantar for', q.data); setEditingCell(`${q.data}-dieta-jantar`); setEditValue(String(q.dietasJantar)); } }}>
+                            {isAdmin ? (
+                              editingCell === `${q.data}-dieta-jantar` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveDietaCellEdited(q.data, 'jantar', parseInt(editValue) || 0, q.dietasJantar); if (e.key === 'Escape') setEditingCell(null); }} onClick={(e) => e.stopPropagation()} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); saveDietaCellEdited(q.data, 'jantar', parseInt(editValue) || 0, q.dietasJantar); }} disabled={savingCell === `${q.data}-dieta-jantar`}>{savingCell === `${q.data}-dieta-jantar` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span>{q.dietasJantar || "-"}</span>
+                              )
+                            ) : (q.dietasJantar || "-")}
+                          </TableCell>
                           <TableCell className="text-center border-r bg-orange-100 font-semibold text-orange-800">
                             {q.totalDietas}
+                          </TableCell>
+                          {/* Extra - Café */}
+                          <TableCell className="text-center bg-purple-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-extra-cafe` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveExtraCellEdited(q.data, 'cafe', parseInt(editValue) || 0, q.extraCafe); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveExtraCellEdited(q.data, 'cafe', parseInt(editValue) || 0, q.extraCafe)} disabled={savingCell === `${q.data}-extra-cafe`}>{savingCell === `${q.data}-extra-cafe` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-extra-cafe`); setEditValue(String(q.extraCafe)); }}>{q.extraCafe || "-"}</span>
+                              )
+                            ) : (q.extraCafe || "-")}
+                          </TableCell>
+                          {/* Extra - Almoço */}
+                          <TableCell className="text-center bg-purple-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-extra-almoco` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveExtraCellEdited(q.data, 'almoco', parseInt(editValue) || 0, q.extraAlmoco); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveExtraCellEdited(q.data, 'almoco', parseInt(editValue) || 0, q.extraAlmoco)} disabled={savingCell === `${q.data}-extra-almoco`}>{savingCell === `${q.data}-extra-almoco` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-extra-almoco`); setEditValue(String(q.extraAlmoco)); }}>{q.extraAlmoco || "-"}</span>
+                              )
+                            ) : (q.extraAlmoco || "-")}
+                          </TableCell>
+                          {/* Extra - Lanche */}
+                          <TableCell className="text-center bg-purple-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-extra-lanche` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveExtraCellEdited(q.data, 'lanche', parseInt(editValue) || 0, q.extraLanche); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveExtraCellEdited(q.data, 'lanche', parseInt(editValue) || 0, q.extraLanche)} disabled={savingCell === `${q.data}-extra-lanche`}>{savingCell === `${q.data}-extra-lanche` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-extra-lanche`); setEditValue(String(q.extraLanche)); }}>{q.extraLanche || "-"}</span>
+                              )
+                            ) : (q.extraLanche || "-")}
+                          </TableCell>
+                          {/* Extra - Jantar */}
+                          <TableCell className="text-center bg-purple-50">
+                            {isAdmin ? (
+                              editingCell === `${q.data}-extra-jantar` ? (
+                                <div className="flex items-center justify-center gap-1">
+                                  <Input type="number" min="0" value={editValue} onChange={(e) => setEditValue(e.target.value)} className="w-14 h-7 text-center text-sm p-1" autoFocus onKeyDown={(e) => { if (e.key === 'Enter') saveExtraCellEdited(q.data, 'jantar', parseInt(editValue) || 0, q.extraJantar); if (e.key === 'Escape') setEditingCell(null); }} />
+                                  <Button size="sm" variant="ghost" className="h-7 w-7 p-0" onClick={() => saveExtraCellEdited(q.data, 'jantar', parseInt(editValue) || 0, q.extraJantar)} disabled={savingCell === `${q.data}-extra-jantar`}>{savingCell === `${q.data}-extra-jantar` ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}</Button>
+                                </div>
+                              ) : (
+                                <span className="cursor-pointer hover:underline" onClick={() => { setEditingCell(`${q.data}-extra-jantar`); setEditValue(String(q.extraJantar)); }}>{q.extraJantar || "-"}</span>
+                              )
+                            ) : (q.extraJantar || "-")}
+                          </TableCell>
+                          <TableCell className="text-center border-r bg-purple-100 font-semibold text-purple-800">
+                            {q.totalExtra}
                           </TableCell>
                           <TableCell className="text-center bg-emerald-100 font-bold text-emerald-800">
                             {q.totalGeral}
@@ -1173,6 +1563,13 @@ export const RelatorioQuantitativoRefeicoes = ({ isAdmin = false }: RelatorioQua
                         <TableCell className="text-center bg-orange-100 text-orange-800">{totaisDietas.dietasJantar}</TableCell>
                         <TableCell className="text-center border-r bg-orange-500 text-white">
                           {totaisDietas.totalDietas}
+                        </TableCell>
+                        <TableCell className="text-center bg-purple-100 text-purple-800">{totaisExtra.extraCafe}</TableCell>
+                        <TableCell className="text-center bg-purple-100 text-purple-800">{totaisExtra.extraAlmoco}</TableCell>
+                        <TableCell className="text-center bg-purple-100 text-purple-800">{totaisExtra.extraLanche}</TableCell>
+                        <TableCell className="text-center bg-purple-100 text-purple-800">{totaisExtra.extraJantar}</TableCell>
+                        <TableCell className="text-center border-r bg-purple-500 text-white">
+                          {totaisExtra.totalExtra}
                         </TableCell>
                         <TableCell className="text-center bg-emerald-600 text-white">
                           {totaisGeraisCombinados.totalGeral}

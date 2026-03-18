@@ -1,0 +1,1 @@
+ALTER TABLE public.saida_prontuarios ADD COLUMN IF NOT EXISTS cadastro_conferido boolean DEFAULT false;

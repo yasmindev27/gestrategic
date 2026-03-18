@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { differenceInHours, parseISO, startOfMonth, endOfMonth } from "date-fns";
+import { differenceInHours, differenceInMinutes, parseISO, startOfMonth, endOfMonth } from "date-fns";
 
 // SLA em horas por prioridade (conforme ONA/ISO 9001)
 const SLA_HORAS = {
@@ -82,16 +82,16 @@ export const useConformidadeIndicadores = () => {
         escalasRes,
         bedRecordsRes,
       ] = await Promise.all([
-        supabase.from("incidentes_nsp").select("*"),
-        supabase.from("auditorias_seguranca_paciente").select("*").gte("data_auditoria", inicioMes.toISOString()),
-        supabase.from("chamados").select("*").gte("created_at", inicioMes.toISOString()),
-        supabase.from("acoes_incidentes").select("*"),
-        supabase.from("epis_seguranca").select("*"),
-        supabase.from("vacinas_seguranca").select("*"),
-        supabase.from("rondas_seguranca").select("*").gte("created_at", inicioMes.toISOString()),
-        supabase.from("atestados").select("*").gte("created_at", inicioMes.toISOString()),
-        supabase.from("enfermagem_escalas").select("*"),
-        supabase.from("bed_records").select("*").gte("created_at", inicioMes.toISOString()),
+        supabase.from("incidentes_nsp").select("id, status, classificacao_risco, responsavel_tratativa_nome, plano_acao, evidencia_url, data_conclusao, data_ocorrencia"),
+        supabase.from("auditorias_seguranca_paciente").select("id, respostas, data_auditoria").gte("data_auditoria", inicioMes.toISOString()),
+        supabase.from("chamados").select("id, status, prioridade, data_abertura, data_resolucao").gte("created_at", inicioMes.toISOString()),
+        supabase.from("acoes_incidentes").select("id, status"),
+        supabase.from("epis_seguranca").select("id, data_validade"),
+        supabase.from("vacinas_seguranca").select("id, status"),
+        supabase.from("rondas_seguranca").select("id").gte("created_at", inicioMes.toISOString()),
+        supabase.from("atestados").select("id, dias_afastamento").gte("created_at", inicioMes.toISOString()),
+        supabase.from("enfermagem_escalas").select("id, status"),
+        supabase.from("bed_records").select("id, patient_name").gte("created_at", inicioMes.toISOString()),
       ]);
 
       const incidentes = incidentesRes.data || [];
@@ -137,7 +137,8 @@ export const useConformidadeIndicadores = () => {
 
       const chamadosDentroSLA = chamados.filter(c => {
         if (!c.data_resolucao || !c.data_abertura) return false;
-        const horasResolucao = differenceInHours(parseISO(c.data_resolucao), parseISO(c.data_abertura));
+        // Use minutes/60 for precision consistent with ChamadosDashboard
+        const horasResolucao = differenceInMinutes(parseISO(c.data_resolucao), parseISO(c.data_abertura)) / 60;
         const slaHoras = SLA_HORAS[c.prioridade as keyof typeof SLA_HORAS] || 24;
         return horasResolucao <= slaHoras;
       }).length;
@@ -148,7 +149,7 @@ export const useConformidadeIndicadores = () => {
       // ========== INDICADORES DE INFRAESTRUTURA ==========
       const rondasRealizadas = rondas.length;
       const diasNoMes = new Date().getDate();
-      const rondasEsperadas = diasNoMes * 2; // 2 rondas por dia esperadas
+      const rondasEsperadas = diasNoMes * 2;
       const taxaRondas = rondasEsperadas > 0 
         ? Math.min((rondasRealizadas / rondasEsperadas) * 100, 100) 
         : 100;
@@ -167,18 +168,55 @@ export const useConformidadeIndicadores = () => {
         ? (vacinasEmDia / vacinas.length) * 100 
         : 100;
 
-      const escalasPreenchidas = escalas.filter(e => e.status === "confirmada").length;
+      const escalasPreenchidas = escalas.filter(e => e.status === "confirmado").length;
       const taxaEscalas = escalas.length > 0 
         ? (escalasPreenchidas / escalas.length) * 100 
         : 100;
 
       // ========== INDICADORES DE OCUPAÇÃO/ASSISTENCIAL ==========
-      const leitosOcupados = bedRecords.filter(b => b.patient_name).length;
-      const taxaOcupacao = bedRecords.length > 0 
-        ? (leitosOcupados / bedRecords.length) * 100 
+      // Deduplicate bed_records by bed_id, keeping only the latest record per bed
+      const latestBedRecords = new Map<string, typeof bedRecords[0]>();
+      bedRecords.forEach(b => {
+        const existing = latestBedRecords.get(b.id);
+        // bed_records don't have bed_id in the select, so we use unique snapshots
+        latestBedRecords.set(b.id, b);
+      });
+      const uniqueBedRecords = Array.from(latestBedRecords.values());
+      const leitosOcupados = uniqueBedRecords.filter(b => b.patient_name).length;
+      const taxaOcupacao = uniqueBedRecords.length > 0 
+        ? (leitosOcupados / uniqueBedRecords.length) * 100 
         : 0;
 
-      // Montar indicadores por módulo
+      // Novos indicadores baseados em incidentes
+      const comResponsavel = incidentes.filter(i => i.responsavel_tratativa_nome).length;
+      const taxaAtribuicao = incidentes.length > 0 
+        ? (comResponsavel / incidentes.length) * 100 
+        : 100;
+
+      const comPlano = incidentes.filter(i => i.plano_acao).length;
+      const taxaPlanoAcao = incidentes.length > 0 
+        ? (comPlano / incidentes.length) * 100 
+        : 100;
+
+      const comEvidencia = incidentes.filter(i => i.evidencia_url).length;
+      const taxaEvidencia = incidentes.length > 0 
+        ? (comEvidencia / incidentes.length) * 100 
+        : 100;
+
+      // Risco crítico: incidentes graves ou catastróficos abertos
+      const incidentesCriticos = incidentes.filter(
+        i => (i.classificacao_risco === "grave" || i.classificacao_risco === "catastrofico") && i.status !== "encerrado"
+      ).length;
+
+      // Tempo médio de tratativa (da notificação ao encerramento, em dias)
+      const encerradosComDatas = incidentes.filter(i => i.status === "encerrado" && i.data_conclusao && i.data_ocorrencia);
+      const tempoMedioTratativaDias = encerradosComDatas.length > 0
+        ? encerradosComDatas.reduce((acc, i) => {
+            const dias = differenceInHours(parseISO(i.data_conclusao!), parseISO(i.data_ocorrencia)) / 24;
+            return acc + Math.max(dias, 0);
+          }, 0) / encerradosComDatas.length
+        : 0;
+
       const indicadoresSegurancaPaciente: IndicadorONA[] = [
         {
           id: "inc_encerramento",
@@ -190,6 +228,61 @@ export const useConformidadeIndicadores = () => {
           status: calcularStatus(taxaEncerramento, 90),
           tendencia: "estavel",
           descricao: "Percentual de incidentes encerrados em relação ao total notificado",
+        },
+        {
+          id: "inc_atribuicao",
+          nome: "Taxa de Atribuição de Responsável",
+          categoria: "seguranca_paciente",
+          meta: 95,
+          valor_atual: taxaAtribuicao,
+          unidade: "%",
+          status: calcularStatus(taxaAtribuicao, 95),
+          tendencia: "estavel",
+          descricao: "Percentual de incidentes com responsável designado para tratativa",
+        },
+        {
+          id: "inc_plano_acao",
+          nome: "Taxa de Plano de Ação",
+          categoria: "seguranca_paciente",
+          meta: 85,
+          valor_atual: taxaPlanoAcao,
+          unidade: "%",
+          status: calcularStatus(taxaPlanoAcao, 85),
+          tendencia: "estavel",
+          descricao: "Percentual de incidentes com plano de ação registrado",
+        },
+        {
+          id: "inc_evidencia",
+          nome: "Taxa de Evidências Anexadas",
+          categoria: "seguranca_paciente",
+          meta: 80,
+          valor_atual: taxaEvidencia,
+          unidade: "%",
+          status: calcularStatus(taxaEvidencia, 80),
+          tendencia: "estavel",
+          descricao: "Percentual de incidentes com evidência documental anexada",
+        },
+        {
+          id: "inc_criticos_abertos",
+          nome: "Incidentes Críticos em Aberto",
+          categoria: "seguranca_paciente",
+          meta: 0,
+          valor_atual: incidentesCriticos,
+          unidade: "",
+          status: incidentesCriticos === 0 ? "conforme" : incidentesCriticos <= 2 ? "alerta" : "nao_conforme",
+          tendencia: "estavel",
+          descricao: "Quantidade de incidentes graves/catastróficos ainda sem encerramento",
+        },
+        {
+          id: "inc_tempo_tratativa",
+          nome: "Tempo Médio de Tratativa",
+          categoria: "seguranca_paciente",
+          meta: 15,
+          valor_atual: Math.round(tempoMedioTratativaDias * 10) / 10,
+          unidade: " dias",
+          status: calcularStatus(tempoMedioTratativaDias, 15, "menor_melhor"),
+          tendencia: "estavel",
+          descricao: "Média de dias entre a notificação e o encerramento do incidente",
         },
         {
           id: "acoes_implementadas",

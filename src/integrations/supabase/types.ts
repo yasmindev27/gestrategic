@@ -216,6 +216,54 @@ export type Database = {
         }
         Relationships: []
       }
+      alertas_seguranca: {
+        Row: {
+          atendido_em: string | null
+          atendido_por: string | null
+          atendido_por_nome: string | null
+          created_at: string
+          desfecho: string | null
+          id: string
+          observacao: string | null
+          setor: string
+          status: string
+          tipo: string
+          updated_at: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          atendido_em?: string | null
+          atendido_por?: string | null
+          atendido_por_nome?: string | null
+          created_at?: string
+          desfecho?: string | null
+          id?: string
+          observacao?: string | null
+          setor: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Update: {
+          atendido_em?: string | null
+          atendido_por?: string | null
+          atendido_por_nome?: string | null
+          created_at?: string
+          desfecho?: string | null
+          id?: string
+          observacao?: string | null
+          setor?: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+          usuario_id?: string
+          usuario_nome?: string
+        }
+        Relationships: []
+      }
       analises_incidentes: {
         Row: {
           analisado_por: string | null
@@ -265,6 +313,78 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      asos_seguranca: {
+        Row: {
+          cargo_atual: string | null
+          cargo_novo: string | null
+          colaborador_nome: string
+          colaborador_user_id: string | null
+          created_at: string
+          crm: string | null
+          data_exame: string
+          data_validade: string | null
+          exames_realizados: string | null
+          id: string
+          medico_nome: string | null
+          observacoes: string | null
+          registrado_por: string | null
+          registrado_por_nome: string
+          restricoes: string | null
+          resultado: string
+          riscos_ocupacionais: string | null
+          setor: string | null
+          status: string
+          tipo_aso: string
+          updated_at: string
+        }
+        Insert: {
+          cargo_atual?: string | null
+          cargo_novo?: string | null
+          colaborador_nome: string
+          colaborador_user_id?: string | null
+          created_at?: string
+          crm?: string | null
+          data_exame: string
+          data_validade?: string | null
+          exames_realizados?: string | null
+          id?: string
+          medico_nome?: string | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome: string
+          restricoes?: string | null
+          resultado?: string
+          riscos_ocupacionais?: string | null
+          setor?: string | null
+          status?: string
+          tipo_aso: string
+          updated_at?: string
+        }
+        Update: {
+          cargo_atual?: string | null
+          cargo_novo?: string | null
+          colaborador_nome?: string
+          colaborador_user_id?: string | null
+          created_at?: string
+          crm?: string | null
+          data_exame?: string
+          data_validade?: string | null
+          exames_realizados?: string | null
+          id?: string
+          medico_nome?: string | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string
+          restricoes?: string | null
+          resultado?: string
+          riscos_ocupacionais?: string | null
+          setor?: string | null
+          status?: string
+          tipo_aso?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       assistencia_social_atendimentos: {
         Row: {
@@ -530,6 +650,285 @@ export type Database = {
         }
         Relationships: []
       }
+      ativos: {
+        Row: {
+          categoria: string
+          created_at: string
+          created_by: string | null
+          criticidade: string
+          data_aquisicao: string | null
+          data_garantia_fim: string | null
+          descricao: string | null
+          fabricante: string | null
+          id: string
+          modelo: string | null
+          nome: string
+          numero_patrimonio: string | null
+          numero_serie: string | null
+          observacoes: string | null
+          setor_localizacao: string | null
+          setor_responsavel: string
+          status: string
+          updated_at: string
+          valor_aquisicao: number | null
+          vida_util_meses: number | null
+        }
+        Insert: {
+          categoria?: string
+          created_at?: string
+          created_by?: string | null
+          criticidade?: string
+          data_aquisicao?: string | null
+          data_garantia_fim?: string | null
+          descricao?: string | null
+          fabricante?: string | null
+          id?: string
+          modelo?: string | null
+          nome: string
+          numero_patrimonio?: string | null
+          numero_serie?: string | null
+          observacoes?: string | null
+          setor_localizacao?: string | null
+          setor_responsavel: string
+          status?: string
+          updated_at?: string
+          valor_aquisicao?: number | null
+          vida_util_meses?: number | null
+        }
+        Update: {
+          categoria?: string
+          created_at?: string
+          created_by?: string | null
+          criticidade?: string
+          data_aquisicao?: string | null
+          data_garantia_fim?: string | null
+          descricao?: string | null
+          fabricante?: string | null
+          id?: string
+          modelo?: string | null
+          nome?: string
+          numero_patrimonio?: string | null
+          numero_serie?: string | null
+          observacoes?: string | null
+          setor_localizacao?: string | null
+          setor_responsavel?: string
+          status?: string
+          updated_at?: string
+          valor_aquisicao?: number | null
+          vida_util_meses?: number | null
+        }
+        Relationships: []
+      }
+      ativos_disponibilidade: {
+        Row: {
+          ativo_id: string
+          created_at: string
+          data: string
+          horas_operacionais: number
+          horas_parado: number
+          id: string
+          motivo_parada: string | null
+          registrado_por: string | null
+          registrado_por_nome: string | null
+          setor: string
+        }
+        Insert: {
+          ativo_id: string
+          created_at?: string
+          data: string
+          horas_operacionais?: number
+          horas_parado?: number
+          id?: string
+          motivo_parada?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string | null
+          setor: string
+        }
+        Update: {
+          ativo_id?: string
+          created_at?: string
+          data?: string
+          horas_operacionais?: number
+          horas_parado?: number
+          id?: string
+          motivo_parada?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string | null
+          setor?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ativos_disponibilidade_ativo_id_fkey"
+            columns: ["ativo_id"]
+            isOneToOne: false
+            referencedRelation: "ativos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auditoria_formularios_config: {
+        Row: {
+          ativo: boolean | null
+          created_at: string
+          icone: string | null
+          id: string
+          nome: string
+          ordem: number | null
+          setores: string[] | null
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          created_at?: string
+          icone?: string | null
+          id?: string
+          nome: string
+          ordem?: number | null
+          setores?: string[] | null
+          tipo: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          created_at?: string
+          icone?: string | null
+          id?: string
+          nome?: string
+          ordem?: number | null
+          setores?: string[] | null
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      auditoria_perguntas_config: {
+        Row: {
+          ativo: boolean | null
+          codigo: string
+          created_at: string
+          id: string
+          label: string
+          opcoes: string[]
+          ordem: number | null
+          secao_id: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean | null
+          codigo: string
+          created_at?: string
+          id?: string
+          label: string
+          opcoes?: string[]
+          ordem?: number | null
+          secao_id: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean | null
+          codigo?: string
+          created_at?: string
+          id?: string
+          label?: string
+          opcoes?: string[]
+          ordem?: number | null
+          secao_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auditoria_perguntas_config_secao_id_fkey"
+            columns: ["secao_id"]
+            isOneToOne: false
+            referencedRelation: "auditoria_secoes_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auditoria_secoes_config: {
+        Row: {
+          created_at: string
+          formulario_id: string
+          id: string
+          nome: string
+          ordem: number | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          formulario_id: string
+          id?: string
+          nome: string
+          ordem?: number | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          formulario_id?: string
+          id?: string
+          nome?: string
+          ordem?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auditoria_secoes_config_formulario_id_fkey"
+            columns: ["formulario_id"]
+            isOneToOne: false
+            referencedRelation: "auditoria_formularios_config"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auditoria_temporalidade: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_fato: string
+          data_registro: string
+          delay_horas: number | null
+          descricao: string
+          id: string
+          justificado: boolean | null
+          justificativa_id: string | null
+          limite_horas: number
+          modulo: string
+          registro_id: string | null
+          setor: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_fato: string
+          data_registro: string
+          delay_horas?: number | null
+          descricao: string
+          id?: string
+          justificado?: boolean | null
+          justificativa_id?: string | null
+          limite_horas?: number
+          modulo: string
+          registro_id?: string | null
+          setor: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_fato?: string
+          data_registro?: string
+          delay_horas?: number | null
+          descricao?: string
+          id?: string
+          justificado?: boolean | null
+          justificativa_id?: string | null
+          limite_horas?: number
+          modulo?: string
+          registro_id?: string | null
+          setor?: string
+        }
+        Relationships: []
+      }
       auditorias_qualidade: {
         Row: {
           auditor: string
@@ -653,6 +1052,135 @@ export type Database = {
           tipo?: string
           unidade_atendimento?: string | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      avaliacoes_desempenho: {
+        Row: {
+          acoes_desenvolvimento: Json | null
+          avaliador: string
+          cargo: string | null
+          colaborador: string
+          created_at: string
+          data_avaliacao: string
+          feedback: string | null
+          id: string
+          medias_categorias: Json | null
+          nota_geral: number | null
+          oportunidades: string | null
+          pontos_fortes: string | null
+          registrado_por: string | null
+          scores: Json
+          updated_at: string
+        }
+        Insert: {
+          acoes_desenvolvimento?: Json | null
+          avaliador: string
+          cargo?: string | null
+          colaborador: string
+          created_at?: string
+          data_avaliacao?: string
+          feedback?: string | null
+          id?: string
+          medias_categorias?: Json | null
+          nota_geral?: number | null
+          oportunidades?: string | null
+          pontos_fortes?: string | null
+          registrado_por?: string | null
+          scores?: Json
+          updated_at?: string
+        }
+        Update: {
+          acoes_desenvolvimento?: Json | null
+          avaliador?: string
+          cargo?: string | null
+          colaborador?: string
+          created_at?: string
+          data_avaliacao?: string
+          feedback?: string | null
+          id?: string
+          medias_categorias?: Json | null
+          nota_geral?: number | null
+          oportunidades?: string | null
+          pontos_fortes?: string | null
+          registrado_por?: string | null
+          scores?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      avaliacoes_experiencia: {
+        Row: {
+          acoes_adequacao: string | null
+          assiduidade: string
+          avaliador_id: string | null
+          avaliador_nome: string
+          colaborador_nome: string
+          competencias_ajustes: string | null
+          competencias_destaque: string | null
+          created_at: string
+          data_admissao: string
+          data_avaliacao: string
+          data_termino_experiencia: string | null
+          disciplina: string
+          funcao: string | null
+          id: string
+          iniciativa: string
+          outros_comentarios: string | null
+          periodo_avaliacao: string
+          produtividade: string
+          responsabilidade: string
+          resultado: string
+          setor: string | null
+          updated_at: string
+        }
+        Insert: {
+          acoes_adequacao?: string | null
+          assiduidade: string
+          avaliador_id?: string | null
+          avaliador_nome: string
+          colaborador_nome: string
+          competencias_ajustes?: string | null
+          competencias_destaque?: string | null
+          created_at?: string
+          data_admissao: string
+          data_avaliacao?: string
+          data_termino_experiencia?: string | null
+          disciplina: string
+          funcao?: string | null
+          id?: string
+          iniciativa: string
+          outros_comentarios?: string | null
+          periodo_avaliacao: string
+          produtividade: string
+          responsabilidade: string
+          resultado: string
+          setor?: string | null
+          updated_at?: string
+        }
+        Update: {
+          acoes_adequacao?: string | null
+          assiduidade?: string
+          avaliador_id?: string | null
+          avaliador_nome?: string
+          colaborador_nome?: string
+          competencias_ajustes?: string | null
+          competencias_destaque?: string | null
+          created_at?: string
+          data_admissao?: string
+          data_avaliacao?: string
+          data_termino_experiencia?: string | null
+          disciplina?: string
+          funcao?: string | null
+          id?: string
+          iniciativa?: string
+          outros_comentarios?: string | null
+          periodo_avaliacao?: string
+          produtividade?: string
+          responsabilidade?: string
+          resultado?: string
+          setor?: string | null
+          updated_at?: string
         }
         Relationships: []
       }
@@ -862,6 +1390,7 @@ export type Database = {
           bed_number: string
           condutas_outros: string | null
           created_at: string | null
+          cti: string | null
           data_alta: string | null
           data_internacao: string | null
           data_nascimento: string | null
@@ -886,6 +1415,7 @@ export type Database = {
           bed_number: string
           condutas_outros?: string | null
           created_at?: string | null
+          cti?: string | null
           data_alta?: string | null
           data_internacao?: string | null
           data_nascimento?: string | null
@@ -910,6 +1440,7 @@ export type Database = {
           bed_number?: string
           condutas_outros?: string | null
           created_at?: string | null
+          cti?: string | null
           data_alta?: string | null
           data_internacao?: string | null
           data_nascimento?: string | null
@@ -1432,6 +1963,57 @@ export type Database = {
         }
         Relationships: []
       }
+      controle_vigencia: {
+        Row: {
+          arquivo_url: string | null
+          bloqueio_operacional: boolean | null
+          categoria: string
+          created_at: string
+          created_by: string | null
+          data_emissao: string | null
+          data_validade: string
+          descricao: string
+          id: string
+          referencia_id: string | null
+          referencia_nome: string | null
+          setor_responsavel: string | null
+          tipo_documento: string
+          updated_at: string
+        }
+        Insert: {
+          arquivo_url?: string | null
+          bloqueio_operacional?: boolean | null
+          categoria: string
+          created_at?: string
+          created_by?: string | null
+          data_emissao?: string | null
+          data_validade: string
+          descricao: string
+          id?: string
+          referencia_id?: string | null
+          referencia_nome?: string | null
+          setor_responsavel?: string | null
+          tipo_documento: string
+          updated_at?: string
+        }
+        Update: {
+          arquivo_url?: string | null
+          bloqueio_operacional?: boolean | null
+          categoria?: string
+          created_at?: string
+          created_by?: string | null
+          data_emissao?: string | null
+          data_validade?: string
+          descricao?: string
+          id?: string
+          referencia_id?: string | null
+          referencia_nome?: string | null
+          setor_responsavel?: string | null
+          tipo_documento?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       daily_statistics: {
         Row: {
           admissions: number | null
@@ -1462,6 +2044,63 @@ export type Database = {
           patients_by_sector?: Json | null
           total_patients?: number | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      disc_results: {
+        Row: {
+          cargo_atual: string
+          created_at: string
+          created_by: string | null
+          experiencia_lideranca: string
+          formacao: string
+          id: string
+          leadership_score: number
+          nome_completo: string
+          perfil_predominante: string
+          perfil_secundario: string
+          score_c: number
+          score_d: number
+          score_i: number
+          score_s: number
+          setor: string
+          tempo_atuacao: string
+        }
+        Insert: {
+          cargo_atual: string
+          created_at?: string
+          created_by?: string | null
+          experiencia_lideranca: string
+          formacao: string
+          id?: string
+          leadership_score?: number
+          nome_completo: string
+          perfil_predominante: string
+          perfil_secundario: string
+          score_c?: number
+          score_d?: number
+          score_i?: number
+          score_s?: number
+          setor: string
+          tempo_atuacao: string
+        }
+        Update: {
+          cargo_atual?: string
+          created_at?: string
+          created_by?: string | null
+          experiencia_lideranca?: string
+          formacao?: string
+          id?: string
+          leadership_score?: number
+          nome_completo?: string
+          perfil_predominante?: string
+          perfil_secundario?: string
+          score_c?: number
+          score_d?: number
+          score_i?: number
+          score_s?: number
+          setor?: string
+          tempo_atuacao?: string
         }
         Relationships: []
       }
@@ -1651,6 +2290,81 @@ export type Database = {
           },
         ]
       }
+      entregas_prontuarios: {
+        Row: {
+          created_at: string
+          data_hora: string
+          entregador_id: string
+          entregador_nome: string
+          id: string
+          observacao: string | null
+          responsavel_recebimento_id: string | null
+          responsavel_recebimento_nome: string
+          setor_destino: string
+          setor_origem: string
+        }
+        Insert: {
+          created_at?: string
+          data_hora?: string
+          entregador_id: string
+          entregador_nome: string
+          id?: string
+          observacao?: string | null
+          responsavel_recebimento_id?: string | null
+          responsavel_recebimento_nome: string
+          setor_destino: string
+          setor_origem: string
+        }
+        Update: {
+          created_at?: string
+          data_hora?: string
+          entregador_id?: string
+          entregador_nome?: string
+          id?: string
+          observacao?: string | null
+          responsavel_recebimento_id?: string | null
+          responsavel_recebimento_nome?: string
+          setor_destino?: string
+          setor_origem?: string
+        }
+        Relationships: []
+      }
+      entregas_prontuarios_itens: {
+        Row: {
+          created_at: string
+          entrega_id: string
+          id: string
+          saida_prontuario_id: string
+        }
+        Insert: {
+          created_at?: string
+          entrega_id: string
+          id?: string
+          saida_prontuario_id: string
+        }
+        Update: {
+          created_at?: string
+          entrega_id?: string
+          id?: string
+          saida_prontuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entregas_prontuarios_itens_entrega_id_fkey"
+            columns: ["entrega_id"]
+            isOneToOne: false
+            referencedRelation: "entregas_prontuarios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "entregas_prontuarios_itens_saida_prontuario_id_fkey"
+            columns: ["saida_prontuario_id"]
+            isOneToOne: false
+            referencedRelation: "saida_prontuarios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       epis_seguranca: {
         Row: {
           ca_numero: string | null
@@ -1701,6 +2415,86 @@ export type Database = {
           usuario_nome?: string
         }
         Relationships: []
+      }
+      escala_tec_enf_dias: {
+        Row: {
+          dia: number
+          id: string
+          profissional_id: string
+          setor_codigo: string
+        }
+        Insert: {
+          dia: number
+          id?: string
+          profissional_id: string
+          setor_codigo?: string
+        }
+        Update: {
+          dia?: number
+          id?: string
+          profissional_id?: string
+          setor_codigo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escala_tec_enf_dias_profissional_id_fkey"
+            columns: ["profissional_id"]
+            isOneToOne: false
+            referencedRelation: "escala_tec_enf_profissionais"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      escala_tec_enf_profissionais: {
+        Row: {
+          coren: string
+          created_at: string
+          escala_id: string
+          grupo: string
+          horario: string
+          id: string
+          nome: string
+          ordem: number
+          profissional_saude_id: string | null
+        }
+        Insert: {
+          coren: string
+          created_at?: string
+          escala_id: string
+          grupo: string
+          horario: string
+          id?: string
+          nome: string
+          ordem?: number
+          profissional_saude_id?: string | null
+        }
+        Update: {
+          coren?: string
+          created_at?: string
+          escala_id?: string
+          grupo?: string
+          horario?: string
+          id?: string
+          nome?: string
+          ordem?: number
+          profissional_saude_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "escala_tec_enf_profissionais_escala_id_fkey"
+            columns: ["escala_id"]
+            isOneToOne: false
+            referencedRelation: "escalas_tec_enfermagem"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "escala_tec_enf_profissionais_profissional_saude_id_fkey"
+            columns: ["profissional_saude_id"]
+            isOneToOne: false
+            referencedRelation: "profissionais_saude"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       escalas_laboratorio: {
         Row: {
@@ -1796,6 +2590,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      escalas_tec_enfermagem: {
+        Row: {
+          ano: number
+          coordenadora_coren: string | null
+          coordenadora_nome: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          legenda: Json | null
+          mensagem_motivacional: string | null
+          mes: number
+          tipo: string
+          titulo: string | null
+          unidade: string | null
+          updated_at: string
+        }
+        Insert: {
+          ano: number
+          coordenadora_coren?: string | null
+          coordenadora_nome?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          legenda?: Json | null
+          mensagem_motivacional?: string | null
+          mes: number
+          tipo?: string
+          titulo?: string | null
+          unidade?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ano?: number
+          coordenadora_coren?: string | null
+          coordenadora_nome?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          legenda?: Json | null
+          mensagem_motivacional?: string | null
+          mes?: number
+          tipo?: string
+          titulo?: string | null
+          unidade?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       ferramentas_modulo: {
         Row: {
@@ -1976,6 +2818,199 @@ export type Database = {
         }
         Relationships: []
       }
+      gerencia_fornecedores: {
+        Row: {
+          ativo: boolean
+          cnpj: string
+          created_at: string
+          created_by: string | null
+          id: string
+          nome: string
+          updated_at: string
+        }
+        Insert: {
+          ativo?: boolean
+          cnpj: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome: string
+          updated_at?: string
+        }
+        Update: {
+          ativo?: boolean
+          cnpj?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gerencia_notas_fiscais: {
+        Row: {
+          ano: number
+          cnpj: string
+          competencia: string
+          created_at: string
+          created_by: string | null
+          data_envio: string | null
+          data_recebimento: string | null
+          fornecedor_id: string | null
+          fornecedor_nome: string
+          id: string
+          numero_nf: string
+          observacao: string | null
+          status: string
+          status_pagamento: string
+          updated_at: string
+          valor_nota: number
+        }
+        Insert: {
+          ano?: number
+          cnpj?: string
+          competencia: string
+          created_at?: string
+          created_by?: string | null
+          data_envio?: string | null
+          data_recebimento?: string | null
+          fornecedor_id?: string | null
+          fornecedor_nome: string
+          id?: string
+          numero_nf?: string
+          observacao?: string | null
+          status?: string
+          status_pagamento?: string
+          updated_at?: string
+          valor_nota?: number
+        }
+        Update: {
+          ano?: number
+          cnpj?: string
+          competencia?: string
+          created_at?: string
+          created_by?: string | null
+          data_envio?: string | null
+          data_recebimento?: string | null
+          fornecedor_id?: string | null
+          fornecedor_nome?: string
+          id?: string
+          numero_nf?: string
+          observacao?: string | null
+          status?: string
+          status_pagamento?: string
+          updated_at?: string
+          valor_nota?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gerencia_notas_fiscais_fornecedor_id_fkey"
+            columns: ["fornecedor_id"]
+            isOneToOne: false
+            referencedRelation: "gerencia_fornecedores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gerencia_planos_acao: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data_conclusao: string | null
+          data_criacao: string
+          descricao: string | null
+          id: string
+          observacoes: string | null
+          prazo: string
+          prioridade: string
+          responsavel_id: string | null
+          responsavel_nome: string
+          setor: string
+          status: string
+          titulo: string
+          ultima_atualizacao_em: string | null
+          ultima_atualizacao_por: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data_conclusao?: string | null
+          data_criacao?: string
+          descricao?: string | null
+          id?: string
+          observacoes?: string | null
+          prazo: string
+          prioridade?: string
+          responsavel_id?: string | null
+          responsavel_nome: string
+          setor: string
+          status?: string
+          titulo: string
+          ultima_atualizacao_em?: string | null
+          ultima_atualizacao_por?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data_conclusao?: string | null
+          data_criacao?: string
+          descricao?: string | null
+          id?: string
+          observacoes?: string | null
+          prazo?: string
+          prioridade?: string
+          responsavel_id?: string | null
+          responsavel_nome?: string
+          setor?: string
+          status?: string
+          titulo?: string
+          ultima_atualizacao_em?: string | null
+          ultima_atualizacao_por?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      gerencia_planos_historico: {
+        Row: {
+          acao: string
+          created_at: string
+          detalhes: string | null
+          executado_por: string | null
+          executado_por_nome: string
+          id: string
+          plano_id: string
+        }
+        Insert: {
+          acao: string
+          created_at?: string
+          detalhes?: string | null
+          executado_por?: string | null
+          executado_por_nome: string
+          id?: string
+          plano_id: string
+        }
+        Update: {
+          acao?: string
+          created_at?: string
+          detalhes?: string | null
+          executado_por?: string | null
+          executado_por_nome?: string
+          id?: string
+          plano_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gerencia_planos_historico_plano_id_fkey"
+            columns: ["plano_id"]
+            isOneToOne: false
+            referencedRelation: "gerencia_planos_acao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gestor_cargos: {
         Row: {
           cargo_id: string
@@ -2045,8 +3080,10 @@ export type Database = {
           categoria_operacional: string | null
           classificacao_risco: string
           created_at: string
+          data_conclusao: string | null
           data_ocorrencia: string
           descricao: string
+          evidencia_url: string | null
           id: string
           local_ocorrencia: string
           notificacao_anonima: boolean | null
@@ -2057,6 +3094,9 @@ export type Database = {
           paciente_envolvido: boolean | null
           paciente_nome: string | null
           paciente_prontuario: string | null
+          plano_acao: string | null
+          responsavel_tratativa_id: string | null
+          responsavel_tratativa_nome: string | null
           setor: string
           setor_origem: string | null
           status: string
@@ -2067,8 +3107,10 @@ export type Database = {
           categoria_operacional?: string | null
           classificacao_risco: string
           created_at?: string
+          data_conclusao?: string | null
           data_ocorrencia: string
           descricao: string
+          evidencia_url?: string | null
           id?: string
           local_ocorrencia: string
           notificacao_anonima?: boolean | null
@@ -2079,6 +3121,9 @@ export type Database = {
           paciente_envolvido?: boolean | null
           paciente_nome?: string | null
           paciente_prontuario?: string | null
+          plano_acao?: string | null
+          responsavel_tratativa_id?: string | null
+          responsavel_tratativa_nome?: string | null
           setor: string
           setor_origem?: string | null
           status?: string
@@ -2089,8 +3134,10 @@ export type Database = {
           categoria_operacional?: string | null
           classificacao_risco?: string
           created_at?: string
+          data_conclusao?: string | null
           data_ocorrencia?: string
           descricao?: string
+          evidencia_url?: string | null
           id?: string
           local_ocorrencia?: string
           notificacao_anonima?: boolean | null
@@ -2101,10 +3148,486 @@ export type Database = {
           paciente_envolvido?: boolean | null
           paciente_nome?: string | null
           paciente_prontuario?: string | null
+          plano_acao?: string | null
+          responsavel_tratativa_id?: string | null
+          responsavel_tratativa_nome?: string | null
           setor?: string
           setor_origem?: string | null
           status?: string
           tipo_incidente?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      justificativas_atraso: {
+        Row: {
+          acao_corretiva: string
+          aprovado_em: string | null
+          aprovado_por: string | null
+          aprovado_por_nome: string | null
+          auditoria_id: string
+          created_at: string
+          id: string
+          motivo: string
+          observacao_gerencia: string | null
+          prazo_correcao: string | null
+          responsavel_id: string | null
+          responsavel_nome: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          acao_corretiva: string
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          aprovado_por_nome?: string | null
+          auditoria_id: string
+          created_at?: string
+          id?: string
+          motivo: string
+          observacao_gerencia?: string | null
+          prazo_correcao?: string | null
+          responsavel_id?: string | null
+          responsavel_nome: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          acao_corretiva?: string
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          aprovado_por_nome?: string | null
+          auditoria_id?: string
+          created_at?: string
+          id?: string
+          motivo?: string
+          observacao_gerencia?: string | null
+          prazo_correcao?: string | null
+          responsavel_id?: string | null
+          responsavel_nome?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "justificativas_atraso_auditoria_id_fkey"
+            columns: ["auditoria_id"]
+            isOneToOne: false
+            referencedRelation: "auditoria_temporalidade"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      justificativas_extensao_jornada: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          aprovado_por_nome: string | null
+          colaborador_cargo: string | null
+          colaborador_nome: string
+          colaborador_setor: string | null
+          colaborador_user_id: string
+          created_at: string
+          data_extensao: string
+          hora_fim_extra: string
+          hora_inicio_extra: string
+          id: string
+          justificativa: string
+          minutos_extras: number
+          motivo: string
+          observacao_aprovador: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          aprovado_por_nome?: string | null
+          colaborador_cargo?: string | null
+          colaborador_nome: string
+          colaborador_setor?: string | null
+          colaborador_user_id: string
+          created_at?: string
+          data_extensao: string
+          hora_fim_extra: string
+          hora_inicio_extra: string
+          id?: string
+          justificativa: string
+          minutos_extras?: number
+          motivo: string
+          observacao_aprovador?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          aprovado_por_nome?: string | null
+          colaborador_cargo?: string | null
+          colaborador_nome?: string
+          colaborador_setor?: string | null
+          colaborador_user_id?: string
+          created_at?: string
+          data_extensao?: string
+          hora_fim_extra?: string
+          hora_inicio_extra?: string
+          id?: string
+          justificativa?: string
+          minutos_extras?: number
+          motivo?: string
+          observacao_aprovador?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      justificativas_ponto: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          aprovado_por_nome: string | null
+          cargo_funcao: string | null
+          colaborador_nome: string
+          colaborador_user_id: string | null
+          created_at: string
+          data_ocorrencia: string
+          id: string
+          jornada_contratual_entrada: string | null
+          jornada_contratual_saida: string | null
+          jornada_registrada_entrada: string | null
+          jornada_registrada_saida: string | null
+          justificativa: string | null
+          justificativa_aprovacao: string | null
+          matricula: string | null
+          minutos_excedentes: number | null
+          observacoes: string | null
+          registrado_por: string | null
+          registrado_por_nome: string | null
+          setor: string | null
+          status: string
+          unidade: string
+          updated_at: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          aprovado_por_nome?: string | null
+          cargo_funcao?: string | null
+          colaborador_nome: string
+          colaborador_user_id?: string | null
+          created_at?: string
+          data_ocorrencia: string
+          id?: string
+          jornada_contratual_entrada?: string | null
+          jornada_contratual_saida?: string | null
+          jornada_registrada_entrada?: string | null
+          jornada_registrada_saida?: string | null
+          justificativa?: string | null
+          justificativa_aprovacao?: string | null
+          matricula?: string | null
+          minutos_excedentes?: number | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string | null
+          setor?: string | null
+          status?: string
+          unidade?: string
+          updated_at?: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          aprovado_por_nome?: string | null
+          cargo_funcao?: string | null
+          colaborador_nome?: string
+          colaborador_user_id?: string | null
+          created_at?: string
+          data_ocorrencia?: string
+          id?: string
+          jornada_contratual_entrada?: string | null
+          jornada_contratual_saida?: string | null
+          jornada_registrada_entrada?: string | null
+          jornada_registrada_saida?: string | null
+          justificativa?: string | null
+          justificativa_aprovacao?: string | null
+          matricula?: string | null
+          minutos_excedentes?: number | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string | null
+          setor?: string | null
+          status?: string
+          unidade?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      lms_inscricoes: {
+        Row: {
+          created_at: string
+          data_conclusao: string | null
+          id: string
+          material_acessado_em: string | null
+          nota: number | null
+          setor: string | null
+          status: string
+          treinamento_id: string
+          updated_at: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          created_at?: string
+          data_conclusao?: string | null
+          id?: string
+          material_acessado_em?: string | null
+          nota?: number | null
+          setor?: string | null
+          status?: string
+          treinamento_id: string
+          updated_at?: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Update: {
+          created_at?: string
+          data_conclusao?: string | null
+          id?: string
+          material_acessado_em?: string | null
+          nota?: number | null
+          setor?: string | null
+          status?: string
+          treinamento_id?: string
+          updated_at?: string
+          usuario_id?: string
+          usuario_nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_inscricoes_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            isOneToOne: false
+            referencedRelation: "lms_treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_materiais: {
+        Row: {
+          created_at: string
+          criado_por: string | null
+          descricao: string | null
+          id: string
+          ordem: number | null
+          tipo: string
+          titulo: string
+          treinamento_id: string
+          updated_at: string
+          url: string | null
+        }
+        Insert: {
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          ordem?: number | null
+          tipo?: string
+          titulo: string
+          treinamento_id: string
+          updated_at?: string
+          url?: string | null
+        }
+        Update: {
+          created_at?: string
+          criado_por?: string | null
+          descricao?: string | null
+          id?: string
+          ordem?: number | null
+          tipo?: string
+          titulo?: string
+          treinamento_id?: string
+          updated_at?: string
+          url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_materiais_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            isOneToOne: false
+            referencedRelation: "lms_treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_quiz_perguntas: {
+        Row: {
+          created_at: string
+          id: string
+          opcao_a: string
+          opcao_b: string
+          opcao_c: string
+          opcao_d: string
+          ordem: number | null
+          pergunta: string
+          resposta_correta: string
+          treinamento_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          opcao_a: string
+          opcao_b: string
+          opcao_c: string
+          opcao_d: string
+          ordem?: number | null
+          pergunta: string
+          resposta_correta: string
+          treinamento_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          opcao_a?: string
+          opcao_b?: string
+          opcao_c?: string
+          opcao_d?: string
+          ordem?: number | null
+          pergunta?: string
+          resposta_correta?: string
+          treinamento_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_quiz_perguntas_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            isOneToOne: false
+            referencedRelation: "lms_treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_tentativas_quiz: {
+        Row: {
+          acertos: number
+          aprovado: boolean
+          created_at: string
+          id: string
+          inscricao_id: string
+          nota: number
+          respostas: Json
+          total_perguntas: number
+          treinamento_id: string
+          usuario_id: string
+        }
+        Insert: {
+          acertos?: number
+          aprovado?: boolean
+          created_at?: string
+          id?: string
+          inscricao_id: string
+          nota?: number
+          respostas?: Json
+          total_perguntas?: number
+          treinamento_id: string
+          usuario_id: string
+        }
+        Update: {
+          acertos?: number
+          aprovado?: boolean
+          created_at?: string
+          id?: string
+          inscricao_id?: string
+          nota?: number
+          respostas?: Json
+          total_perguntas?: number
+          treinamento_id?: string
+          usuario_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_tentativas_quiz_inscricao_id_fkey"
+            columns: ["inscricao_id"]
+            isOneToOne: false
+            referencedRelation: "lms_inscricoes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lms_tentativas_quiz_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            isOneToOne: false
+            referencedRelation: "lms_treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lms_treinamentos: {
+        Row: {
+          ano: number | null
+          carga_horaria: string | null
+          competencia: string | null
+          created_at: string
+          criado_por: string | null
+          data_limite: string | null
+          descricao: string | null
+          id: string
+          indicador_competencia: string | null
+          instrutor: string | null
+          mes_planejado: number | null
+          metodo_identificacao: string | null
+          nota_minima_aprovacao: number | null
+          objetivo: string | null
+          publico_alvo: string | null
+          setor_responsavel: string | null
+          setores_alvo: string[] | null
+          status: string
+          tipo_treinamento: string
+          titulo: string
+          updated_at: string
+        }
+        Insert: {
+          ano?: number | null
+          carga_horaria?: string | null
+          competencia?: string | null
+          created_at?: string
+          criado_por?: string | null
+          data_limite?: string | null
+          descricao?: string | null
+          id?: string
+          indicador_competencia?: string | null
+          instrutor?: string | null
+          mes_planejado?: number | null
+          metodo_identificacao?: string | null
+          nota_minima_aprovacao?: number | null
+          objetivo?: string | null
+          publico_alvo?: string | null
+          setor_responsavel?: string | null
+          setores_alvo?: string[] | null
+          status?: string
+          tipo_treinamento?: string
+          titulo: string
+          updated_at?: string
+        }
+        Update: {
+          ano?: number | null
+          carga_horaria?: string | null
+          competencia?: string | null
+          created_at?: string
+          criado_por?: string | null
+          data_limite?: string | null
+          descricao?: string | null
+          id?: string
+          indicador_competencia?: string | null
+          instrutor?: string | null
+          mes_planejado?: number | null
+          metodo_identificacao?: string | null
+          nota_minima_aprovacao?: number | null
+          objetivo?: string | null
+          publico_alvo?: string | null
+          setor_responsavel?: string | null
+          setores_alvo?: string[] | null
+          status?: string
+          tipo_treinamento?: string
+          titulo?: string
           updated_at?: string
         }
         Relationships: []
@@ -2171,6 +3694,158 @@ export type Database = {
           user_id?: string | null
         }
         Relationships: []
+      }
+      manutencoes_execucoes: {
+        Row: {
+          ativo_id: string
+          created_at: string
+          custo_real: number | null
+          data_execucao: string
+          descricao: string
+          executado_por: string | null
+          executado_por_nome: string
+          id: string
+          observacoes: string | null
+          pecas_utilizadas: string | null
+          preventiva_id: string | null
+          resultado: string | null
+          setor: string
+          tempo_parada_horas: number | null
+          tipo: string
+        }
+        Insert: {
+          ativo_id: string
+          created_at?: string
+          custo_real?: number | null
+          data_execucao?: string
+          descricao: string
+          executado_por?: string | null
+          executado_por_nome: string
+          id?: string
+          observacoes?: string | null
+          pecas_utilizadas?: string | null
+          preventiva_id?: string | null
+          resultado?: string | null
+          setor: string
+          tempo_parada_horas?: number | null
+          tipo?: string
+        }
+        Update: {
+          ativo_id?: string
+          created_at?: string
+          custo_real?: number | null
+          data_execucao?: string
+          descricao?: string
+          executado_por?: string | null
+          executado_por_nome?: string
+          id?: string
+          observacoes?: string | null
+          pecas_utilizadas?: string | null
+          preventiva_id?: string | null
+          resultado?: string | null
+          setor?: string
+          tempo_parada_horas?: number | null
+          tipo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manutencoes_execucoes_ativo_id_fkey"
+            columns: ["ativo_id"]
+            isOneToOne: false
+            referencedRelation: "ativos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "manutencoes_execucoes_preventiva_id_fkey"
+            columns: ["preventiva_id"]
+            isOneToOne: false
+            referencedRelation: "manutencoes_preventivas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manutencoes_preventivas: {
+        Row: {
+          ativo_id: string
+          certificado_calibracao: string | null
+          created_at: string
+          created_by: string | null
+          custo_estimado: number | null
+          data_vencimento_calibracao: string | null
+          descricao: string | null
+          id: string
+          observacoes: string | null
+          periodicidade_dias: number
+          prioridade: string
+          proxima_execucao: string
+          requer_calibracao: boolean | null
+          responsavel_id: string | null
+          responsavel_nome: string
+          setor: string
+          status: string
+          tipo: string
+          tipo_manutencao: string
+          titulo: string
+          ultima_execucao: string | null
+          updated_at: string
+        }
+        Insert: {
+          ativo_id: string
+          certificado_calibracao?: string | null
+          created_at?: string
+          created_by?: string | null
+          custo_estimado?: number | null
+          data_vencimento_calibracao?: string | null
+          descricao?: string | null
+          id?: string
+          observacoes?: string | null
+          periodicidade_dias?: number
+          prioridade?: string
+          proxima_execucao: string
+          requer_calibracao?: boolean | null
+          responsavel_id?: string | null
+          responsavel_nome: string
+          setor: string
+          status?: string
+          tipo?: string
+          tipo_manutencao?: string
+          titulo: string
+          ultima_execucao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ativo_id?: string
+          certificado_calibracao?: string | null
+          created_at?: string
+          created_by?: string | null
+          custo_estimado?: number | null
+          data_vencimento_calibracao?: string | null
+          descricao?: string | null
+          id?: string
+          observacoes?: string | null
+          periodicidade_dias?: number
+          prioridade?: string
+          proxima_execucao?: string
+          requer_calibracao?: boolean | null
+          responsavel_id?: string | null
+          responsavel_nome?: string
+          setor?: string
+          status?: string
+          tipo?: string
+          tipo_manutencao?: string
+          titulo?: string
+          ultima_execucao?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manutencoes_preventivas_ativo_id_fkey"
+            columns: ["ativo_id"]
+            isOneToOne: false
+            referencedRelation: "ativos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       modulos_sistema: {
         Row: {
@@ -2258,6 +3933,104 @@ export type Database = {
           },
         ]
       }
+      nir_colaboradores: {
+        Row: {
+          ativo: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          nome: string
+        }
+        Insert: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome: string
+        }
+        Update: {
+          ativo?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      nir_registros_producao: {
+        Row: {
+          atividade: string
+          colaborador: string
+          created_at: string
+          created_by: string | null
+          data: string
+          id: string
+          observacao: string | null
+          quantidade: number
+        }
+        Insert: {
+          atividade: string
+          colaborador: string
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          id?: string
+          observacao?: string | null
+          quantidade?: number
+        }
+        Update: {
+          atividade?: string
+          colaborador?: string
+          created_at?: string
+          created_by?: string | null
+          data?: string
+          id?: string
+          observacao?: string | null
+          quantidade?: number
+        }
+        Relationships: []
+      }
+      notificacoes_pendencias: {
+        Row: {
+          created_at: string
+          destinatario_id: string
+          id: string
+          lida: boolean
+          mensagem: string
+          pendencia_id: string
+          respondida: boolean
+          titulo: string
+        }
+        Insert: {
+          created_at?: string
+          destinatario_id: string
+          id?: string
+          lida?: boolean
+          mensagem: string
+          pendencia_id: string
+          respondida?: boolean
+          titulo: string
+        }
+        Update: {
+          created_at?: string
+          destinatario_id?: string
+          id?: string
+          lida?: boolean
+          mensagem?: string
+          pendencia_id?: string
+          respondida?: boolean
+          titulo?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notificacoes_pendencias_pendencia_id_fkey"
+            columns: ["pendencia_id"]
+            isOneToOne: false
+            referencedRelation: "passagem_plantao_pendencias"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notificacoes_seguranca: {
         Row: {
           created_at: string
@@ -2310,6 +4083,385 @@ export type Database = {
             columns: ["ronda_id"]
             isOneToOne: false
             referencedRelation: "rondas_seguranca"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nsp_action_plans: {
+        Row: {
+          analise_critica: string | null
+          ano: number
+          created_at: string
+          fator_causa: string | null
+          id: string
+          indicator_id: string | null
+          mes: string
+          plano_acao: string | null
+          prazo: string | null
+          responsavel: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          analise_critica?: string | null
+          ano: number
+          created_at?: string
+          fator_causa?: string | null
+          id?: string
+          indicator_id?: string | null
+          mes: string
+          plano_acao?: string | null
+          prazo?: string | null
+          responsavel?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          analise_critica?: string | null
+          ano?: number
+          created_at?: string
+          fator_causa?: string | null
+          id?: string
+          indicator_id?: string | null
+          mes?: string
+          plano_acao?: string | null
+          prazo?: string | null
+          responsavel?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nsp_action_plans_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "nsp_indicators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nsp_indicators: {
+        Row: {
+          ano: number
+          categoria: string
+          created_at: string
+          id: string
+          indicador: string
+          mes: string
+          meta: number | null
+          subcategoria: string | null
+          unidade_medida: string
+          updated_at: string
+          valor_numero: number | null
+          valor_percentual: number | null
+        }
+        Insert: {
+          ano: number
+          categoria: string
+          created_at?: string
+          id?: string
+          indicador: string
+          mes: string
+          meta?: number | null
+          subcategoria?: string | null
+          unidade_medida?: string
+          updated_at?: string
+          valor_numero?: number | null
+          valor_percentual?: number | null
+        }
+        Update: {
+          ano?: number
+          categoria?: string
+          created_at?: string
+          id?: string
+          indicador?: string
+          mes?: string
+          meta?: number | null
+          subcategoria?: string | null
+          unidade_medida?: string
+          updated_at?: string
+          valor_numero?: number | null
+          valor_percentual?: number | null
+        }
+        Relationships: []
+      }
+      passagem_plantao: {
+        Row: {
+          colaborador_entrada_id: string | null
+          colaborador_entrada_nome: string | null
+          colaborador_saida_id: string | null
+          colaborador_saida_nome: string
+          created_at: string
+          data_hora_assuncao: string | null
+          data_hora_conclusao: string
+          id: string
+          justificativa: string | null
+          pendencias: string | null
+          pendencias_encontradas: string | null
+          pendencias_resolvidas: string | null
+          shift_date: string
+          shift_type: string
+          tempo_troca_minutos: number | null
+          updated_at: string
+        }
+        Insert: {
+          colaborador_entrada_id?: string | null
+          colaborador_entrada_nome?: string | null
+          colaborador_saida_id?: string | null
+          colaborador_saida_nome: string
+          created_at?: string
+          data_hora_assuncao?: string | null
+          data_hora_conclusao?: string
+          id?: string
+          justificativa?: string | null
+          pendencias?: string | null
+          pendencias_encontradas?: string | null
+          pendencias_resolvidas?: string | null
+          shift_date: string
+          shift_type: string
+          tempo_troca_minutos?: number | null
+          updated_at?: string
+        }
+        Update: {
+          colaborador_entrada_id?: string | null
+          colaborador_entrada_nome?: string | null
+          colaborador_saida_id?: string | null
+          colaborador_saida_nome?: string
+          created_at?: string
+          data_hora_assuncao?: string | null
+          data_hora_conclusao?: string
+          id?: string
+          justificativa?: string | null
+          pendencias?: string | null
+          pendencias_encontradas?: string | null
+          pendencias_resolvidas?: string | null
+          shift_date?: string
+          shift_type?: string
+          tempo_troca_minutos?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      passagem_plantao_pendencias: {
+        Row: {
+          created_at: string
+          data_hora_registro: string
+          data_hora_resolucao: string | null
+          descricao: string
+          destinatario_id: string | null
+          destinatario_nome: string | null
+          id: string
+          passagem_id: string
+          registrado_por_id: string | null
+          registrado_por_nome: string
+          resolvido_por_id: string | null
+          resolvido_por_nome: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_hora_registro?: string
+          data_hora_resolucao?: string | null
+          descricao: string
+          destinatario_id?: string | null
+          destinatario_nome?: string | null
+          id?: string
+          passagem_id: string
+          registrado_por_id?: string | null
+          registrado_por_nome: string
+          resolvido_por_id?: string | null
+          resolvido_por_nome?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_hora_registro?: string
+          data_hora_resolucao?: string | null
+          descricao?: string
+          destinatario_id?: string | null
+          destinatario_nome?: string | null
+          id?: string
+          passagem_id?: string
+          registrado_por_id?: string | null
+          registrado_por_nome?: string
+          resolvido_por_id?: string | null
+          resolvido_por_nome?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passagem_plantao_pendencias_passagem_id_fkey"
+            columns: ["passagem_id"]
+            isOneToOne: false
+            referencedRelation: "passagem_plantao"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      passagem_plantao_social: {
+        Row: {
+          created_at: string
+          data_plantao: string
+          id: string
+          profissional_id: string
+          profissional_nome: string
+          texto_pendencias: string | null
+          turno: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          data_plantao?: string
+          id?: string
+          profissional_id: string
+          profissional_nome: string
+          texto_pendencias?: string | null
+          turno?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          data_plantao?: string
+          id?: string
+          profissional_id?: string
+          profissional_nome?: string
+          texto_pendencias?: string | null
+          turno?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      passagem_plantao_social_itens: {
+        Row: {
+          atendimento_id: string
+          created_at: string
+          id: string
+          observacao: string | null
+          passagem_id: string
+        }
+        Insert: {
+          atendimento_id: string
+          created_at?: string
+          id?: string
+          observacao?: string | null
+          passagem_id: string
+        }
+        Update: {
+          atendimento_id?: string
+          created_at?: string
+          id?: string
+          observacao?: string | null
+          passagem_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "passagem_plantao_social_itens_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "assistencia_social_atendimentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passagem_plantao_social_itens_passagem_id_fkey"
+            columns: ["passagem_id"]
+            isOneToOne: false
+            referencedRelation: "passagem_plantao_social"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      pedidos_compra: {
+        Row: {
+          aprovado_em: string | null
+          aprovado_por: string | null
+          arquivo_nome: string | null
+          arquivo_url: string | null
+          ativo_id: string | null
+          created_at: string
+          data_estimada_entrega: string | null
+          encaminhado_almoxarifado: boolean | null
+          encaminhado_em: string | null
+          id: string
+          item_descricao: string | null
+          item_nome: string
+          justificativa: string
+          observacoes_gerencia: string | null
+          produto_id: string | null
+          quantidade_solicitada: number
+          setor_solicitante: string
+          solicitante_id: string | null
+          solicitante_nome: string
+          status: string
+          unidade_medida: string | null
+          updated_at: string
+          urgencia: string
+        }
+        Insert: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          arquivo_nome?: string | null
+          arquivo_url?: string | null
+          ativo_id?: string | null
+          created_at?: string
+          data_estimada_entrega?: string | null
+          encaminhado_almoxarifado?: boolean | null
+          encaminhado_em?: string | null
+          id?: string
+          item_descricao?: string | null
+          item_nome: string
+          justificativa: string
+          observacoes_gerencia?: string | null
+          produto_id?: string | null
+          quantidade_solicitada?: number
+          setor_solicitante: string
+          solicitante_id?: string | null
+          solicitante_nome: string
+          status?: string
+          unidade_medida?: string | null
+          updated_at?: string
+          urgencia?: string
+        }
+        Update: {
+          aprovado_em?: string | null
+          aprovado_por?: string | null
+          arquivo_nome?: string | null
+          arquivo_url?: string | null
+          ativo_id?: string | null
+          created_at?: string
+          data_estimada_entrega?: string | null
+          encaminhado_almoxarifado?: boolean | null
+          encaminhado_em?: string | null
+          id?: string
+          item_descricao?: string | null
+          item_nome?: string
+          justificativa?: string
+          observacoes_gerencia?: string | null
+          produto_id?: string | null
+          quantidade_solicitada?: number
+          setor_solicitante?: string
+          solicitante_id?: string | null
+          solicitante_nome?: string
+          status?: string
+          unidade_medida?: string | null
+          updated_at?: string
+          urgencia?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pedidos_compra_ativo_id_fkey"
+            columns: ["ativo_id"]
+            isOneToOne: false
+            referencedRelation: "ativos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pedidos_compra_produto_id_fkey"
+            columns: ["produto_id"]
+            isOneToOne: false
+            referencedRelation: "produtos"
             referencedColumns: ["id"]
           },
         ]
@@ -2502,6 +4654,87 @@ export type Database = {
           },
         ]
       }
+      porta_ecg_atendimentos: {
+        Row: {
+          action_plan: string | null
+          age: number
+          arrival_time: string
+          competence_month: number
+          competence_year: number
+          conducts: string[] | null
+          created_at: string
+          created_by: string | null
+          delay_reason: string | null
+          delay_reason_other: string | null
+          door_to_ecg_minutes: number
+          ecg_time: string
+          first_doctor_time: string | null
+          goal_minutes: number
+          id: string
+          initial_diagnosis: string | null
+          medical_report: string | null
+          observations: string | null
+          patient_name: string | null
+          record_number: string
+          risk_classification: string
+          sex: string
+          updated_at: string
+          within_goal: boolean
+        }
+        Insert: {
+          action_plan?: string | null
+          age?: number
+          arrival_time: string
+          competence_month: number
+          competence_year: number
+          conducts?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          delay_reason?: string | null
+          delay_reason_other?: string | null
+          door_to_ecg_minutes?: number
+          ecg_time: string
+          first_doctor_time?: string | null
+          goal_minutes?: number
+          id?: string
+          initial_diagnosis?: string | null
+          medical_report?: string | null
+          observations?: string | null
+          patient_name?: string | null
+          record_number: string
+          risk_classification?: string
+          sex?: string
+          updated_at?: string
+          within_goal?: boolean
+        }
+        Update: {
+          action_plan?: string | null
+          age?: number
+          arrival_time?: string
+          competence_month?: number
+          competence_year?: number
+          conducts?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          delay_reason?: string | null
+          delay_reason_other?: string | null
+          door_to_ecg_minutes?: number
+          ecg_time?: string
+          first_doctor_time?: string | null
+          goal_minutes?: number
+          id?: string
+          initial_diagnosis?: string | null
+          medical_report?: string | null
+          observations?: string | null
+          patient_name?: string | null
+          record_number?: string
+          risk_classification?: string
+          sex?: string
+          updated_at?: string
+          within_goal?: boolean
+        }
+        Relationships: []
+      }
       produtos: {
         Row: {
           ativo: boolean | null
@@ -2509,10 +4742,12 @@ export type Database = {
           codigo: string | null
           created_at: string
           created_by: string | null
+          data_validade: string | null
           descricao: string | null
           id: string
           localizacao: string | null
           nome: string
+          numero_ca: string | null
           quantidade_atual: number | null
           quantidade_minima: number | null
           setor_responsavel: string
@@ -2525,10 +4760,12 @@ export type Database = {
           codigo?: string | null
           created_at?: string
           created_by?: string | null
+          data_validade?: string | null
           descricao?: string | null
           id?: string
           localizacao?: string | null
           nome: string
+          numero_ca?: string | null
           quantidade_atual?: number | null
           quantidade_minima?: number | null
           setor_responsavel: string
@@ -2541,10 +4778,12 @@ export type Database = {
           codigo?: string | null
           created_at?: string
           created_by?: string | null
+          data_validade?: string | null
           descricao?: string | null
           id?: string
           localizacao?: string | null
           nome?: string
+          numero_ca?: string | null
           quantidade_atual?: number | null
           quantidade_minima?: number | null
           setor_responsavel?: string
@@ -2595,8 +4834,53 @@ export type Database = {
         }
         Relationships: []
       }
+      profissionais_documentos: {
+        Row: {
+          arquivo_url: string
+          created_at: string
+          id: string
+          nome_arquivo: string
+          observacao: string | null
+          profissional_id: string
+          tipo_documento: string
+          uploaded_by: string | null
+          uploaded_by_nome: string
+        }
+        Insert: {
+          arquivo_url: string
+          created_at?: string
+          id?: string
+          nome_arquivo: string
+          observacao?: string | null
+          profissional_id: string
+          tipo_documento: string
+          uploaded_by?: string | null
+          uploaded_by_nome: string
+        }
+        Update: {
+          arquivo_url?: string
+          created_at?: string
+          id?: string
+          nome_arquivo?: string
+          observacao?: string | null
+          profissional_id?: string
+          tipo_documento?: string
+          uploaded_by?: string | null
+          uploaded_by_nome?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profissionais_documentos_profissional_id_fkey"
+            columns: ["profissional_id"]
+            isOneToOne: false
+            referencedRelation: "profissionais_saude"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profissionais_saude: {
         Row: {
+          coren: string | null
           created_at: string
           created_by: string | null
           email: string | null
@@ -2612,6 +4896,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          coren?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
@@ -2627,6 +4912,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          coren?: string | null
           created_at?: string
           created_by?: string | null
           email?: string | null
@@ -2679,6 +4965,471 @@ export type Database = {
           paciente_nome?: string
           status?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      protocolo_atendimentos: {
+        Row: {
+          achados_clinicos: Json | null
+          achados_neurologicos: Json | null
+          action_plan: string | null
+          admin_observations: string | null
+          age: number | null
+          arrival_time: string
+          assinatura_enfermeiro: string | null
+          assinatura_farmacia: string | null
+          assinatura_medico: string | null
+          atb_profissional: string | null
+          atb1_data: string | null
+          atb1_dose: string | null
+          atb1_horario_inicio: string | null
+          atb1_nome: string | null
+          atb2_data: string | null
+          atb2_dose: string | null
+          atb2_horario_inicio: string | null
+          atb2_nome: string | null
+          attachment_path: string | null
+          choque_lactato2_data_hora: string | null
+          choque_lactato3_data_hora: string | null
+          choque_lactato3_medicamento: string | null
+          choque_lactato3_medicamento_data_hora: string | null
+          choque_lactato3_necessita: boolean | null
+          choque_reposicao_data_hora: string | null
+          choque_reposicao_medicamento: string | null
+          choque_septico: boolean | null
+          choque_vasopressor_data_hora: string | null
+          choque_vasopressor_medicamento: string | null
+          competency: string
+          conduct_high_risk: boolean | null
+          conduct_low_risk: boolean | null
+          conduct_medication: boolean | null
+          conduct_moderate_risk: boolean | null
+          conduct_monitoring: boolean | null
+          conduct_observation: boolean | null
+          conduct_oxygen: boolean | null
+          conduct_referral: boolean | null
+          conduct_transfer: boolean | null
+          created_at: string
+          created_by: string | null
+          delay_reason: string | null
+          delay_reason_other: string | null
+          destination_hospital: string | null
+          destino_instituicao_nome: string | null
+          destino_paciente: string | null
+          disfuncao_consciencia: boolean | null
+          disfuncao_pa_baixa: boolean | null
+          disfuncao_sato2_baixa: boolean | null
+          ecg_time: string | null
+          first_doctor_time: string | null
+          foco_abdominal: boolean | null
+          foco_corrente_sanguinea_cateter: boolean | null
+          foco_pele_partes_moles: boolean | null
+          foco_pulmonar: boolean | null
+          foco_sem_foco_definido: boolean | null
+          foco_urinario: boolean | null
+          id: string
+          initial_diagnosis: string | null
+          investigation_name: string | null
+          investigation_status: string | null
+          kit_sepse_coletado: boolean | null
+          lab_villac_horario_chamado: string | null
+          lab_villac_horario_coleta: string | null
+          medical_report: string | null
+          necessidade_uti: boolean | null
+          pain_association: string | null
+          pain_characteristic: string | null
+          pain_duration: string | null
+          pain_irradiation: string | null
+          pain_location: string | null
+          pain_onset_date: string | null
+          pain_onset_time: string | null
+          pain_referral: string | null
+          patient_name: string | null
+          porta_ecg_minutes: number | null
+          protocol_opened_at: string | null
+          protocol_opened_by_sector: string | null
+          record_number: string
+          risk_classification: string | null
+          samu_arrival_time: string | null
+          sepse_horario: string | null
+          sepse_medico: string | null
+          sepse_motivo: string | null
+          sepse_suspeita: boolean | null
+          sex: string | null
+          sirs_bilirrubina: boolean | null
+          sirs_celulas_jovens: boolean | null
+          sirs_creatinina: boolean | null
+          sirs_fc_alta: boolean | null
+          sirs_fr_alta: boolean | null
+          sirs_lactato: boolean | null
+          sirs_leucocitose: boolean | null
+          sirs_leucopenia: boolean | null
+          sirs_plaquetas: boolean | null
+          sirs_temp_alta: boolean | null
+          sirs_temp_baixa: boolean | null
+          thrombolysis_complication: boolean | null
+          thrombolysis_conduct: string | null
+          thrombolysis_time: string | null
+          thrombolysis_type: string | null
+          tipo_protocolo: string
+          troponin_sample1_collection_time: string | null
+          troponin_sample1_collector: string | null
+          troponin_sample1_release_time: string | null
+          troponin_sample1_result: string | null
+          troponin_sample2_collection_time: string | null
+          troponin_sample2_collector: string | null
+          troponin_sample2_release_time: string | null
+          troponin_sample2_result: string | null
+          troponin_sample3_collection_time: string | null
+          troponin_sample3_collector: string | null
+          troponin_sample3_release_time: string | null
+          troponin_sample3_result: string | null
+          updated_at: string
+          updated_by: string | null
+          vital_fc: number | null
+          vital_fr: number | null
+          vital_pa: string | null
+          vital_spo2: number | null
+          vital_temperatura: number | null
+          within_target: boolean | null
+        }
+        Insert: {
+          achados_clinicos?: Json | null
+          achados_neurologicos?: Json | null
+          action_plan?: string | null
+          admin_observations?: string | null
+          age?: number | null
+          arrival_time: string
+          assinatura_enfermeiro?: string | null
+          assinatura_farmacia?: string | null
+          assinatura_medico?: string | null
+          atb_profissional?: string | null
+          atb1_data?: string | null
+          atb1_dose?: string | null
+          atb1_horario_inicio?: string | null
+          atb1_nome?: string | null
+          atb2_data?: string | null
+          atb2_dose?: string | null
+          atb2_horario_inicio?: string | null
+          atb2_nome?: string | null
+          attachment_path?: string | null
+          choque_lactato2_data_hora?: string | null
+          choque_lactato3_data_hora?: string | null
+          choque_lactato3_medicamento?: string | null
+          choque_lactato3_medicamento_data_hora?: string | null
+          choque_lactato3_necessita?: boolean | null
+          choque_reposicao_data_hora?: string | null
+          choque_reposicao_medicamento?: string | null
+          choque_septico?: boolean | null
+          choque_vasopressor_data_hora?: string | null
+          choque_vasopressor_medicamento?: string | null
+          competency?: string
+          conduct_high_risk?: boolean | null
+          conduct_low_risk?: boolean | null
+          conduct_medication?: boolean | null
+          conduct_moderate_risk?: boolean | null
+          conduct_monitoring?: boolean | null
+          conduct_observation?: boolean | null
+          conduct_oxygen?: boolean | null
+          conduct_referral?: boolean | null
+          conduct_transfer?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          delay_reason?: string | null
+          delay_reason_other?: string | null
+          destination_hospital?: string | null
+          destino_instituicao_nome?: string | null
+          destino_paciente?: string | null
+          disfuncao_consciencia?: boolean | null
+          disfuncao_pa_baixa?: boolean | null
+          disfuncao_sato2_baixa?: boolean | null
+          ecg_time?: string | null
+          first_doctor_time?: string | null
+          foco_abdominal?: boolean | null
+          foco_corrente_sanguinea_cateter?: boolean | null
+          foco_pele_partes_moles?: boolean | null
+          foco_pulmonar?: boolean | null
+          foco_sem_foco_definido?: boolean | null
+          foco_urinario?: boolean | null
+          id?: string
+          initial_diagnosis?: string | null
+          investigation_name?: string | null
+          investigation_status?: string | null
+          kit_sepse_coletado?: boolean | null
+          lab_villac_horario_chamado?: string | null
+          lab_villac_horario_coleta?: string | null
+          medical_report?: string | null
+          necessidade_uti?: boolean | null
+          pain_association?: string | null
+          pain_characteristic?: string | null
+          pain_duration?: string | null
+          pain_irradiation?: string | null
+          pain_location?: string | null
+          pain_onset_date?: string | null
+          pain_onset_time?: string | null
+          pain_referral?: string | null
+          patient_name?: string | null
+          porta_ecg_minutes?: number | null
+          protocol_opened_at?: string | null
+          protocol_opened_by_sector?: string | null
+          record_number: string
+          risk_classification?: string | null
+          samu_arrival_time?: string | null
+          sepse_horario?: string | null
+          sepse_medico?: string | null
+          sepse_motivo?: string | null
+          sepse_suspeita?: boolean | null
+          sex?: string | null
+          sirs_bilirrubina?: boolean | null
+          sirs_celulas_jovens?: boolean | null
+          sirs_creatinina?: boolean | null
+          sirs_fc_alta?: boolean | null
+          sirs_fr_alta?: boolean | null
+          sirs_lactato?: boolean | null
+          sirs_leucocitose?: boolean | null
+          sirs_leucopenia?: boolean | null
+          sirs_plaquetas?: boolean | null
+          sirs_temp_alta?: boolean | null
+          sirs_temp_baixa?: boolean | null
+          thrombolysis_complication?: boolean | null
+          thrombolysis_conduct?: string | null
+          thrombolysis_time?: string | null
+          thrombolysis_type?: string | null
+          tipo_protocolo: string
+          troponin_sample1_collection_time?: string | null
+          troponin_sample1_collector?: string | null
+          troponin_sample1_release_time?: string | null
+          troponin_sample1_result?: string | null
+          troponin_sample2_collection_time?: string | null
+          troponin_sample2_collector?: string | null
+          troponin_sample2_release_time?: string | null
+          troponin_sample2_result?: string | null
+          troponin_sample3_collection_time?: string | null
+          troponin_sample3_collector?: string | null
+          troponin_sample3_release_time?: string | null
+          troponin_sample3_result?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          vital_fc?: number | null
+          vital_fr?: number | null
+          vital_pa?: string | null
+          vital_spo2?: number | null
+          vital_temperatura?: number | null
+          within_target?: boolean | null
+        }
+        Update: {
+          achados_clinicos?: Json | null
+          achados_neurologicos?: Json | null
+          action_plan?: string | null
+          admin_observations?: string | null
+          age?: number | null
+          arrival_time?: string
+          assinatura_enfermeiro?: string | null
+          assinatura_farmacia?: string | null
+          assinatura_medico?: string | null
+          atb_profissional?: string | null
+          atb1_data?: string | null
+          atb1_dose?: string | null
+          atb1_horario_inicio?: string | null
+          atb1_nome?: string | null
+          atb2_data?: string | null
+          atb2_dose?: string | null
+          atb2_horario_inicio?: string | null
+          atb2_nome?: string | null
+          attachment_path?: string | null
+          choque_lactato2_data_hora?: string | null
+          choque_lactato3_data_hora?: string | null
+          choque_lactato3_medicamento?: string | null
+          choque_lactato3_medicamento_data_hora?: string | null
+          choque_lactato3_necessita?: boolean | null
+          choque_reposicao_data_hora?: string | null
+          choque_reposicao_medicamento?: string | null
+          choque_septico?: boolean | null
+          choque_vasopressor_data_hora?: string | null
+          choque_vasopressor_medicamento?: string | null
+          competency?: string
+          conduct_high_risk?: boolean | null
+          conduct_low_risk?: boolean | null
+          conduct_medication?: boolean | null
+          conduct_moderate_risk?: boolean | null
+          conduct_monitoring?: boolean | null
+          conduct_observation?: boolean | null
+          conduct_oxygen?: boolean | null
+          conduct_referral?: boolean | null
+          conduct_transfer?: boolean | null
+          created_at?: string
+          created_by?: string | null
+          delay_reason?: string | null
+          delay_reason_other?: string | null
+          destination_hospital?: string | null
+          destino_instituicao_nome?: string | null
+          destino_paciente?: string | null
+          disfuncao_consciencia?: boolean | null
+          disfuncao_pa_baixa?: boolean | null
+          disfuncao_sato2_baixa?: boolean | null
+          ecg_time?: string | null
+          first_doctor_time?: string | null
+          foco_abdominal?: boolean | null
+          foco_corrente_sanguinea_cateter?: boolean | null
+          foco_pele_partes_moles?: boolean | null
+          foco_pulmonar?: boolean | null
+          foco_sem_foco_definido?: boolean | null
+          foco_urinario?: boolean | null
+          id?: string
+          initial_diagnosis?: string | null
+          investigation_name?: string | null
+          investigation_status?: string | null
+          kit_sepse_coletado?: boolean | null
+          lab_villac_horario_chamado?: string | null
+          lab_villac_horario_coleta?: string | null
+          medical_report?: string | null
+          necessidade_uti?: boolean | null
+          pain_association?: string | null
+          pain_characteristic?: string | null
+          pain_duration?: string | null
+          pain_irradiation?: string | null
+          pain_location?: string | null
+          pain_onset_date?: string | null
+          pain_onset_time?: string | null
+          pain_referral?: string | null
+          patient_name?: string | null
+          porta_ecg_minutes?: number | null
+          protocol_opened_at?: string | null
+          protocol_opened_by_sector?: string | null
+          record_number?: string
+          risk_classification?: string | null
+          samu_arrival_time?: string | null
+          sepse_horario?: string | null
+          sepse_medico?: string | null
+          sepse_motivo?: string | null
+          sepse_suspeita?: boolean | null
+          sex?: string | null
+          sirs_bilirrubina?: boolean | null
+          sirs_celulas_jovens?: boolean | null
+          sirs_creatinina?: boolean | null
+          sirs_fc_alta?: boolean | null
+          sirs_fr_alta?: boolean | null
+          sirs_lactato?: boolean | null
+          sirs_leucocitose?: boolean | null
+          sirs_leucopenia?: boolean | null
+          sirs_plaquetas?: boolean | null
+          sirs_temp_alta?: boolean | null
+          sirs_temp_baixa?: boolean | null
+          thrombolysis_complication?: boolean | null
+          thrombolysis_conduct?: string | null
+          thrombolysis_time?: string | null
+          thrombolysis_type?: string | null
+          tipo_protocolo?: string
+          troponin_sample1_collection_time?: string | null
+          troponin_sample1_collector?: string | null
+          troponin_sample1_release_time?: string | null
+          troponin_sample1_result?: string | null
+          troponin_sample2_collection_time?: string | null
+          troponin_sample2_collector?: string | null
+          troponin_sample2_release_time?: string | null
+          troponin_sample2_result?: string | null
+          troponin_sample3_collection_time?: string | null
+          troponin_sample3_collector?: string | null
+          troponin_sample3_release_time?: string | null
+          troponin_sample3_result?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          vital_fc?: number | null
+          vital_fr?: number | null
+          vital_pa?: string | null
+          vital_spo2?: number | null
+          vital_temperatura?: number | null
+          within_target?: boolean | null
+        }
+        Relationships: []
+      }
+      protocolo_settings: {
+        Row: {
+          created_at: string
+          id: string
+          meta_minutos: number
+          tipo_protocolo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          meta_minutos?: number
+          tipo_protocolo: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          meta_minutos?: number
+          tipo_protocolo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      push_subscriptions: {
+        Row: {
+          auth: string
+          created_at: string
+          endpoint: string
+          id: string
+          p256dh: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          auth: string
+          created_at?: string
+          endpoint: string
+          id?: string
+          p256dh: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          auth?: string
+          created_at?: string
+          endpoint?: string
+          id?: string
+          p256dh?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      quantitativo_ajustes: {
+        Row: {
+          ajustado_por: string | null
+          ajustado_por_nome: string | null
+          categoria: string
+          created_at: string
+          data: string
+          id: string
+          tipo_refeicao: string
+          updated_at: string
+          valor_override: number
+        }
+        Insert: {
+          ajustado_por?: string | null
+          ajustado_por_nome?: string | null
+          categoria: string
+          created_at?: string
+          data: string
+          id?: string
+          tipo_refeicao: string
+          updated_at?: string
+          valor_override: number
+        }
+        Update: {
+          ajustado_por?: string | null
+          ajustado_por_nome?: string | null
+          categoria?: string
+          created_at?: string
+          data?: string
+          id?: string
+          tipo_refeicao?: string
+          updated_at?: string
+          valor_override?: number
         }
         Relationships: []
       }
@@ -2808,6 +5559,210 @@ export type Database = {
           tipo?: string
           updated_at?: string
           updated_by?: string | null
+        }
+        Relationships: []
+      }
+      replicacao_fila: {
+        Row: {
+          created_at: string | null
+          erro: string | null
+          id: string
+          operacao: string
+          payload: Json | null
+          processado_em: string | null
+          status: string | null
+          tabela: string
+          tentativas: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          erro?: string | null
+          id?: string
+          operacao: string
+          payload?: Json | null
+          processado_em?: string | null
+          status?: string | null
+          tabela: string
+          tentativas?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          erro?: string | null
+          id?: string
+          operacao?: string
+          payload?: Json | null
+          processado_em?: string | null
+          status?: string | null
+          tabela?: string
+          tentativas?: number | null
+        }
+        Relationships: []
+      }
+      reunioes: {
+        Row: {
+          ata_gerada: Json | null
+          created_at: string
+          criado_por: string
+          gravacao_url: string | null
+          hora_encerramento: string | null
+          hora_inicio: string | null
+          id: string
+          participantes: string[] | null
+          pauta: string | null
+          status: string
+          titulo: string
+          transcricao: string | null
+          updated_at: string
+        }
+        Insert: {
+          ata_gerada?: Json | null
+          created_at?: string
+          criado_por: string
+          gravacao_url?: string | null
+          hora_encerramento?: string | null
+          hora_inicio?: string | null
+          id?: string
+          participantes?: string[] | null
+          pauta?: string | null
+          status?: string
+          titulo: string
+          transcricao?: string | null
+          updated_at?: string
+        }
+        Update: {
+          ata_gerada?: Json | null
+          created_at?: string
+          criado_por?: string
+          gravacao_url?: string | null
+          hora_encerramento?: string | null
+          hora_inicio?: string | null
+          id?: string
+          participantes?: string[] | null
+          pauta?: string | null
+          status?: string
+          titulo?: string
+          transcricao?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rh_movimentacoes_setor: {
+        Row: {
+          aprovado_por: string | null
+          cargo: string
+          colaborador_matricula: string | null
+          colaborador_nome: string
+          created_at: string
+          data_mudanca: string
+          id: string
+          motivo: string | null
+          observacoes: string | null
+          registrado_por: string | null
+          registrado_por_nome: string
+          setor_anterior: string
+          setor_novo: string
+          updated_at: string
+        }
+        Insert: {
+          aprovado_por?: string | null
+          cargo: string
+          colaborador_matricula?: string | null
+          colaborador_nome: string
+          created_at?: string
+          data_mudanca?: string
+          id?: string
+          motivo?: string | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome: string
+          setor_anterior: string
+          setor_novo: string
+          updated_at?: string
+        }
+        Update: {
+          aprovado_por?: string | null
+          cargo?: string
+          colaborador_matricula?: string | null
+          colaborador_nome?: string
+          created_at?: string
+          data_mudanca?: string
+          id?: string
+          motivo?: string | null
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string
+          setor_anterior?: string
+          setor_novo?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      rh_ocorrencias_disciplinares: {
+        Row: {
+          arquivo_url: string | null
+          cargo: string | null
+          colaborador_matricula: string | null
+          colaborador_nome: string
+          created_at: string
+          data_assinatura: string | null
+          data_ocorrencia: string
+          descricao: string | null
+          dias_suspensao: number | null
+          id: string
+          motivo_clt: string
+          observacoes: string | null
+          registrado_por: string | null
+          registrado_por_nome: string
+          setor: string | null
+          status_assinatura: string
+          testemunha_1: string | null
+          testemunha_2: string | null
+          tipo_ocorrencia: string
+          updated_at: string
+        }
+        Insert: {
+          arquivo_url?: string | null
+          cargo?: string | null
+          colaborador_matricula?: string | null
+          colaborador_nome: string
+          created_at?: string
+          data_assinatura?: string | null
+          data_ocorrencia?: string
+          descricao?: string | null
+          dias_suspensao?: number | null
+          id?: string
+          motivo_clt: string
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome: string
+          setor?: string | null
+          status_assinatura?: string
+          testemunha_1?: string | null
+          testemunha_2?: string | null
+          tipo_ocorrencia: string
+          updated_at?: string
+        }
+        Update: {
+          arquivo_url?: string | null
+          cargo?: string | null
+          colaborador_matricula?: string | null
+          colaborador_nome?: string
+          created_at?: string
+          data_assinatura?: string | null
+          data_ocorrencia?: string
+          descricao?: string | null
+          dias_suspensao?: number | null
+          id?: string
+          motivo_clt?: string
+          observacoes?: string | null
+          registrado_por?: string | null
+          registrado_por_nome?: string
+          setor?: string | null
+          status_assinatura?: string
+          testemunha_1?: string | null
+          testemunha_2?: string | null
+          tipo_ocorrencia?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -3072,6 +6027,8 @@ export type Database = {
       }
       saida_prontuarios: {
         Row: {
+          cadastro_conferido: boolean | null
+          checklist_validacao: Json | null
           conferido_nir_em: string | null
           conferido_nir_por: string | null
           created_at: string
@@ -3084,6 +6041,9 @@ export type Database = {
           observacao_classificacao: string | null
           observacao_nir: string | null
           paciente_nome: string | null
+          pendencia_resolvida_em: string | null
+          pendencia_resolvida_por: string | null
+          possui_carimbo_medico: boolean | null
           prontuario_id: string | null
           registrado_recepcao_em: string | null
           registrado_recepcao_por: string | null
@@ -3093,6 +6053,8 @@ export type Database = {
           validado_classificacao_por: string | null
         }
         Insert: {
+          cadastro_conferido?: boolean | null
+          checklist_validacao?: Json | null
           conferido_nir_em?: string | null
           conferido_nir_por?: string | null
           created_at?: string
@@ -3105,6 +6067,9 @@ export type Database = {
           observacao_classificacao?: string | null
           observacao_nir?: string | null
           paciente_nome?: string | null
+          pendencia_resolvida_em?: string | null
+          pendencia_resolvida_por?: string | null
+          possui_carimbo_medico?: boolean | null
           prontuario_id?: string | null
           registrado_recepcao_em?: string | null
           registrado_recepcao_por?: string | null
@@ -3114,6 +6079,8 @@ export type Database = {
           validado_classificacao_por?: string | null
         }
         Update: {
+          cadastro_conferido?: boolean | null
+          checklist_validacao?: Json | null
           conferido_nir_em?: string | null
           conferido_nir_por?: string | null
           created_at?: string
@@ -3126,6 +6093,9 @@ export type Database = {
           observacao_classificacao?: string | null
           observacao_nir?: string | null
           paciente_nome?: string | null
+          pendencia_resolvida_em?: string | null
+          pendencia_resolvida_por?: string | null
+          possui_carimbo_medico?: boolean | null
           prontuario_id?: string | null
           registrado_recepcao_em?: string | null
           registrado_recepcao_por?: string | null
@@ -3481,6 +6451,213 @@ export type Database = {
         }
         Relationships: []
       }
+      seg_patrimonial_conflitos: {
+        Row: {
+          created_at: string
+          descricao: string
+          desfecho: string | null
+          grau_agressividade: string
+          id: string
+          nome_envolvido: string
+          registrado_por: string
+          registrado_por_nome: string
+          setor: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          desfecho?: string | null
+          grau_agressividade?: string
+          id?: string
+          nome_envolvido: string
+          registrado_por: string
+          registrado_por_nome: string
+          setor: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          desfecho?: string | null
+          grau_agressividade?: string
+          id?: string
+          nome_envolvido?: string
+          registrado_por?: string
+          registrado_por_nome?: string
+          setor?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      seg_patrimonial_danos: {
+        Row: {
+          created_at: string
+          descricao: string
+          encaminhado_manutencao: boolean | null
+          foto_url: string | null
+          id: string
+          local_dano: string
+          registrado_por: string
+          registrado_por_nome: string
+          status: string
+          tipo_dano: string
+          updated_at: string
+          urgencia: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          encaminhado_manutencao?: boolean | null
+          foto_url?: string | null
+          id?: string
+          local_dano: string
+          registrado_por: string
+          registrado_por_nome: string
+          status?: string
+          tipo_dano: string
+          updated_at?: string
+          urgencia?: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          encaminhado_manutencao?: boolean | null
+          foto_url?: string | null
+          id?: string
+          local_dano?: string
+          registrado_por?: string
+          registrado_por_nome?: string
+          status?: string
+          tipo_dano?: string
+          updated_at?: string
+          urgencia?: string
+        }
+        Relationships: []
+      }
+      seg_patrimonial_passagem_plantao: {
+        Row: {
+          created_at: string
+          id: string
+          lido_em: string | null
+          lido_por: string | null
+          lido_por_nome: string | null
+          pontos_atencao: string | null
+          relato: string
+          turno_entrada: string
+          turno_saida: string
+          usuario_saida_id: string
+          usuario_saida_nome: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lido_em?: string | null
+          lido_por?: string | null
+          lido_por_nome?: string | null
+          pontos_atencao?: string | null
+          relato: string
+          turno_entrada: string
+          turno_saida: string
+          usuario_saida_id: string
+          usuario_saida_nome: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lido_em?: string | null
+          lido_por?: string | null
+          lido_por_nome?: string | null
+          pontos_atencao?: string | null
+          relato?: string
+          turno_entrada?: string
+          turno_saida?: string
+          usuario_saida_id?: string
+          usuario_saida_nome?: string
+        }
+        Relationships: []
+      }
+      seg_patrimonial_rondas: {
+        Row: {
+          created_at: string
+          detalhes_infraestrutura: string | null
+          id: string
+          infraestrutura_ok: boolean | null
+          observacoes: string | null
+          setor: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Insert: {
+          created_at?: string
+          detalhes_infraestrutura?: string | null
+          id?: string
+          infraestrutura_ok?: boolean | null
+          observacoes?: string | null
+          setor: string
+          usuario_id: string
+          usuario_nome: string
+        }
+        Update: {
+          created_at?: string
+          detalhes_infraestrutura?: string | null
+          id?: string
+          infraestrutura_ok?: boolean | null
+          observacoes?: string | null
+          setor?: string
+          usuario_id?: string
+          usuario_nome?: string
+        }
+        Relationships: []
+      }
+      seg_patrimonial_visitantes: {
+        Row: {
+          created_at: string
+          documento: string | null
+          hora_entrada: string
+          hora_saida: string | null
+          id: string
+          nome_visitante: string
+          numero_prontuario: string | null
+          paciente_nome: string
+          parentesco: string | null
+          registrado_por: string
+          registrado_por_nome: string
+          setor_leito: string
+        }
+        Insert: {
+          created_at?: string
+          documento?: string | null
+          hora_entrada?: string
+          hora_saida?: string | null
+          id?: string
+          nome_visitante: string
+          numero_prontuario?: string | null
+          paciente_nome: string
+          parentesco?: string | null
+          registrado_por: string
+          registrado_por_nome: string
+          setor_leito: string
+        }
+        Update: {
+          created_at?: string
+          documento?: string | null
+          hora_entrada?: string
+          hora_saida?: string | null
+          id?: string
+          nome_visitante?: string
+          numero_prontuario?: string | null
+          paciente_nome?: string
+          parentesco?: string | null
+          registrado_por?: string
+          registrado_por_nome?: string
+          setor_leito?: string
+        }
+        Relationships: []
+      }
       setores: {
         Row: {
           ativo: boolean | null
@@ -3549,6 +6726,7 @@ export type Database = {
           data_fim: string | null
           data_inicio: string
           descricao_especifica: string | null
+          entregue: boolean
           horarios_refeicoes: string[] | null
           id: string
           observacoes: string | null
@@ -3570,6 +6748,7 @@ export type Database = {
           data_fim?: string | null
           data_inicio: string
           descricao_especifica?: string | null
+          entregue?: boolean
           horarios_refeicoes?: string[] | null
           id?: string
           observacoes?: string | null
@@ -3591,6 +6770,7 @@ export type Database = {
           data_fim?: string | null
           data_inicio?: string
           descricao_especifica?: string | null
+          entregue?: boolean
           horarios_refeicoes?: string[] | null
           id?: string
           observacoes?: string | null
@@ -3606,6 +6786,65 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      solicitacoes_suporte_social: {
+        Row: {
+          atendimento_id: string | null
+          created_at: string
+          descricao: string
+          destinatario_id: string | null
+          destinatario_nome: string | null
+          id: string
+          paciente_nome: string
+          respondido_em: string | null
+          resposta: string | null
+          solicitante_id: string
+          solicitante_nome: string
+          status: string
+          tipo_suporte: string
+          updated_at: string
+        }
+        Insert: {
+          atendimento_id?: string | null
+          created_at?: string
+          descricao: string
+          destinatario_id?: string | null
+          destinatario_nome?: string | null
+          id?: string
+          paciente_nome: string
+          respondido_em?: string | null
+          resposta?: string | null
+          solicitante_id: string
+          solicitante_nome: string
+          status?: string
+          tipo_suporte?: string
+          updated_at?: string
+        }
+        Update: {
+          atendimento_id?: string | null
+          created_at?: string
+          descricao?: string
+          destinatario_id?: string | null
+          destinatario_nome?: string | null
+          id?: string
+          paciente_nome?: string
+          respondido_em?: string | null
+          resposta?: string | null
+          solicitante_id?: string
+          solicitante_nome?: string
+          status?: string
+          tipo_suporte?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "solicitacoes_suporte_social_atendimento_id_fkey"
+            columns: ["atendimento_id"]
+            isOneToOne: false
+            referencedRelation: "assistencia_social_atendimentos"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       tentativas_duplicidade_refeicoes: {
         Row: {
@@ -3650,6 +6889,177 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      transferencia_coordenadas: {
+        Row: {
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          registrado_em: string
+          solicitacao_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          registrado_em?: string
+          solicitacao_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          registrado_em?: string
+          solicitacao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transferencia_coordenadas_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "transferencia_solicitacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transferencia_intercorrencias: {
+        Row: {
+          created_at: string
+          descricao: string
+          id: string
+          registrado_por: string | null
+          registrado_por_nome: string
+          solicitacao_id: string
+        }
+        Insert: {
+          created_at?: string
+          descricao: string
+          id?: string
+          registrado_por?: string | null
+          registrado_por_nome: string
+          solicitacao_id: string
+        }
+        Update: {
+          created_at?: string
+          descricao?: string
+          id?: string
+          registrado_por?: string | null
+          registrado_por_nome?: string
+          solicitacao_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transferencia_intercorrencias_solicitacao_id_fkey"
+            columns: ["solicitacao_id"]
+            isOneToOne: false
+            referencedRelation: "transferencia_solicitacoes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transferencia_solicitacoes: {
+        Row: {
+          created_at: string
+          destino: string
+          hora_chegada: string | null
+          hora_saida: string | null
+          id: string
+          km_rodados: number | null
+          motivo: string | null
+          motorista_nome: string | null
+          paciente_nome: string
+          prioridade: string
+          setor_origem: string
+          solicitado_por: string | null
+          solicitado_por_nome: string
+          status: string
+          updated_at: string
+          veiculo_id: string | null
+          veiculo_placa: string | null
+          veiculo_tipo: string | null
+        }
+        Insert: {
+          created_at?: string
+          destino: string
+          hora_chegada?: string | null
+          hora_saida?: string | null
+          id?: string
+          km_rodados?: number | null
+          motivo?: string | null
+          motorista_nome?: string | null
+          paciente_nome: string
+          prioridade?: string
+          setor_origem: string
+          solicitado_por?: string | null
+          solicitado_por_nome: string
+          status?: string
+          updated_at?: string
+          veiculo_id?: string | null
+          veiculo_placa?: string | null
+          veiculo_tipo?: string | null
+        }
+        Update: {
+          created_at?: string
+          destino?: string
+          hora_chegada?: string | null
+          hora_saida?: string | null
+          id?: string
+          km_rodados?: number | null
+          motivo?: string | null
+          motorista_nome?: string | null
+          paciente_nome?: string
+          prioridade?: string
+          setor_origem?: string
+          solicitado_por?: string | null
+          solicitado_por_nome?: string
+          status?: string
+          updated_at?: string
+          veiculo_id?: string | null
+          veiculo_placa?: string | null
+          veiculo_tipo?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transferencia_solicitacoes_veiculo_id_fkey"
+            columns: ["veiculo_id"]
+            isOneToOne: false
+            referencedRelation: "transferencia_veiculos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transferencia_veiculos: {
+        Row: {
+          created_at: string
+          id: string
+          motorista_nome: string
+          placa: string
+          status: string
+          tipo: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          motorista_nome: string
+          placa: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          motorista_nome?: string
+          placa?: string
+          status?: string
+          tipo?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       uniformes_seguranca: {
         Row: {
@@ -3699,6 +7109,104 @@ export type Database = {
           updated_at?: string
           usuario_id?: string
           usuario_nome?: string
+        }
+        Relationships: []
+      }
+      upa_action_plans: {
+        Row: {
+          analise_critica: string | null
+          ano: number
+          created_at: string
+          fator_causa: string | null
+          id: string
+          indicator_id: string | null
+          mes: string
+          plano_acao: string | null
+          prazo: string | null
+          responsavel: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          analise_critica?: string | null
+          ano: number
+          created_at?: string
+          fator_causa?: string | null
+          id?: string
+          indicator_id?: string | null
+          mes: string
+          plano_acao?: string | null
+          prazo?: string | null
+          responsavel?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          analise_critica?: string | null
+          ano?: number
+          created_at?: string
+          fator_causa?: string | null
+          id?: string
+          indicator_id?: string | null
+          mes?: string
+          plano_acao?: string | null
+          prazo?: string | null
+          responsavel?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "upa_action_plans_indicator_id_fkey"
+            columns: ["indicator_id"]
+            isOneToOne: false
+            referencedRelation: "upa_indicators"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      upa_indicators: {
+        Row: {
+          ano: number
+          categoria: string
+          created_at: string
+          id: string
+          indicador: string
+          mes: string
+          meta: number | null
+          subcategoria: string | null
+          unidade_medida: string
+          updated_at: string
+          valor_numero: number | null
+          valor_percentual: number | null
+        }
+        Insert: {
+          ano: number
+          categoria: string
+          created_at?: string
+          id?: string
+          indicador: string
+          mes: string
+          meta?: number | null
+          subcategoria?: string | null
+          unidade_medida?: string
+          updated_at?: string
+          valor_numero?: number | null
+          valor_percentual?: number | null
+        }
+        Update: {
+          ano?: number
+          categoria?: string
+          created_at?: string
+          id?: string
+          indicador?: string
+          mes?: string
+          meta?: number | null
+          subcategoria?: string | null
+          unidade_medida?: string
+          updated_at?: string
+          valor_numero?: number | null
+          valor_percentual?: number | null
         }
         Relationships: []
       }
@@ -3853,6 +7361,50 @@ export type Database = {
         }
         Relationships: []
       }
+      lms_quiz_perguntas_aluno: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          opcao_a: string | null
+          opcao_b: string | null
+          opcao_c: string | null
+          opcao_d: string | null
+          ordem: number | null
+          pergunta: string | null
+          treinamento_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          opcao_a?: string | null
+          opcao_b?: string | null
+          opcao_c?: string | null
+          opcao_d?: string | null
+          ordem?: number | null
+          pergunta?: string | null
+          treinamento_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          opcao_a?: string | null
+          opcao_b?: string | null
+          opcao_c?: string | null
+          opcao_d?: string | null
+          ordem?: number | null
+          pergunta?: string | null
+          treinamento_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lms_quiz_perguntas_treinamento_id_fkey"
+            columns: ["treinamento_id"]
+            isOneToOne: false
+            referencedRelation: "lms_treinamentos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       buscar_colaborador_totem: {
@@ -3868,6 +7420,14 @@ export type Database = {
         Args: { _matricula: string }
         Returns: {
           user_id: string
+        }[]
+      }
+      corrigir_quiz: {
+        Args: { _respostas: Json; _treinamento_id: string }
+        Returns: {
+          acertos: number
+          nota: number
+          total: number
         }[]
       }
       gestor_gerencia_usuario: {
@@ -3978,6 +7538,8 @@ export type Database = {
         | "nsp"
         | "seguranca"
         | "enfermagem"
+        | "medicos"
+        | "rouparia"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -4124,6 +7686,8 @@ export const Constants = {
         "nsp",
         "seguranca",
         "enfermagem",
+        "medicos",
+        "rouparia",
       ],
     },
   },
