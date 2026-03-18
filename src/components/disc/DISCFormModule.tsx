@@ -144,8 +144,9 @@ export function DISCFormModule() {
       if (error) throw error;
       setStep("thankyou");
       refetchResults();
-    } catch (err: any) {
-      toast({ title: "Erro", description: "Erro ao salvar resultados. Tente novamente.", variant: "destructive" });
+    } catch (err: Error | unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Erro desconhecido';
+      toast({ title: "Erro", description: `Erro ao salvar resultados: ${errorMsg}`, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }

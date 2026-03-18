@@ -249,7 +249,7 @@ export const LogsAuditoriaModule = () => {
       setLogs(logsWithNames);
       setTotalCount(count || 0);
     } catch (err) {
-      console.error("Erro ao buscar logs:", err);
+      // Error fetching logs handled silently
     } finally {
       setIsLoading(false);
     }

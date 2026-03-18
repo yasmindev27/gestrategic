@@ -22,10 +22,10 @@ export async function logAuditAction(
       user_id: user.id,
       acao,
       modulo,
-      detalhes: detalhes as any ?? null,
+      detalhes: (detalhes as Record<string, unknown>) ?? null,
     });
   } catch (error) {
-    console.error("[Audit] Erro ao registrar log:", error);
+    // Audit logging failure silently in production
   }
 }
 

@@ -57,7 +57,7 @@ const SalaReuniao = ({ reuniaoId, isHost, onEnd, onLeave }: SalaReuniaoProps) =>
         }
         setMediaReady(true);
       } catch (err) {
-        console.warn("Câmera+mic falhou, tentando apenas áudio...", err);
+        // Media access failed - attempt audio only fallback
         try {
           // Fallback: audio only
           const audioStream = await navigator.mediaDevices.getUserMedia({ video: false, audio: true });
@@ -66,7 +66,7 @@ const SalaReuniao = ({ reuniaoId, isHost, onEnd, onLeave }: SalaReuniaoProps) =>
           setIsCameraOn(false);
           toast({ title: "Aviso", description: "Câmera indisponível. Reunião funcionando apenas com áudio.", variant: "default" });
         } catch (err2) {
-          console.warn("Áudio também falhou:", err2);
+          // Audio also failed - allow text participation
           setMediaError(true);
           setMediaReady(true); // Allow entry anyway for text participation
           setIsCameraOn(false);

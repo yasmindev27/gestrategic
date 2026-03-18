@@ -132,10 +132,6 @@ Deno.serve(async (req) => {
     for (let i = 0; i < records.length; i += batchSize) {
       const batch = records.slice(i, i + batchSize);
       const rows = batch
-        .filter((r: any) => {
-          const desc = cleanText(r.descricao);
-          return desc.length > 5;
-        })
         .map((r: any) => {
           // Try data_ocorrido first, then data_abertura, then fallback
           const dataOcorrencia = parseDate(r.data_ocorrido) || parseDate(r.data_abertura) || new Date().toISOString();

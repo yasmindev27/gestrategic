@@ -417,7 +417,7 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
         conformidadeDietas,
       });
     } catch (error) {
-      console.error("Erro ao carregar estatísticas:", error);
+      // Error loading statistics handled silently
     } finally {
       setLoading(false);
     }

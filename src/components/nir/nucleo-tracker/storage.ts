@@ -38,7 +38,7 @@ export async function getRegistrosDB(onlyOwn: boolean = true): Promise<RegistroP
   const { data, error } = await query;
 
   if (error) {
-    console.error("Erro ao carregar registros:", error);
+    // Error loading records - return empty array
     return [];
   }
 

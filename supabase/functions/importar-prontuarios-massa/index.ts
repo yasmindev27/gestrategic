@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
       }
     }
 
-    console.log(`Total inseridos: ${totalInseridos}`);
+    // Success - no console.log
 
     return new Response(
       JSON.stringify({
@@ -73,7 +73,7 @@ Deno.serve(async (req) => {
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err) {
-    console.error("Erro geral:", err);
+    // Error handling without logging
     return new Response(
       JSON.stringify({ error: (err as Error).message }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

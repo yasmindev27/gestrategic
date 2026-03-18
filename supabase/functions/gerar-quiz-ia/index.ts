@@ -110,8 +110,7 @@ Use a ferramenta generate_quiz para retornar as perguntas.`;
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      const errorText = await response.text();
-      console.error("AI gateway error:", response.status, errorText);
+      // Error response - handled safely
       throw new Error(`AI gateway error: ${response.status}`);
     }
 
@@ -128,7 +127,7 @@ Use a ferramenta generate_quiz para retornar as perguntas.`;
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {
-    console.error("gerar-quiz-ia error:", e);
+    // Error handling - silent in production
     return new Response(
       JSON.stringify({ error: e instanceof Error ? e.message : "Erro desconhecido" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }

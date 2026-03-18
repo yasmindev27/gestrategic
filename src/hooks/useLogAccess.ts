@@ -27,7 +27,7 @@ export const useLogAccess = () => {
         detalhes: detalhes || null,
       });
     } catch (error) {
-      console.error("Error logging action:", error);
+      // Log action failure handled silently
     }
   }, []);
 

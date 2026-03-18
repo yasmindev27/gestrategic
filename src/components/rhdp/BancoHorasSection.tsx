@@ -611,7 +611,7 @@ export const BancoHorasSection = () => {
 
         loadData();
       } catch (error) {
-        console.error("Erro na importação:", error);
+        // Error importing - handled ui toast
         toast({
           title: "Erro",
           description: "Erro ao processar a planilha.",

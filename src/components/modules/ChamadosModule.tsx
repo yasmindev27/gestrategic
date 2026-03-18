@@ -231,7 +231,7 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
       if (error) throw error;
       setProdutos(data || []);
     } catch (error) {
-      console.error("Error fetching produtos:", error);
+      // Error fetching products handled silently
     }
   };
 

@@ -11,7 +11,8 @@ export function useProtocoloAtendimentos(tipo: TipoProtocolo, competency?: strin
         .from('protocolo_atendimentos')
         .select('*')
         .eq('tipo_protocolo', tipo)
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(1000);
       if (competency) query = query.eq('competency', competency);
       const { data, error } = await query;
       if (error) throw error;

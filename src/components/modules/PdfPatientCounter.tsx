@@ -106,7 +106,7 @@ export function PdfPatientCounter({ onAnalysisComplete, onLaunchComplete }: PdfP
         description: `${data.totalPdf} paciente(s) no PDF. ${data.faltando} faltando no sistema.`,
       });
     } catch (err) {
-      console.error('Error processing file:', err);
+      // File processing error - handled with user message
       const errorMessage = err instanceof Error ? err.message : 'Erro ao processar o arquivo';
       setError(errorMessage);
       toast({
@@ -194,7 +194,7 @@ export function PdfPatientCounter({ onAnalysisComplete, onLaunchComplete }: PdfP
       // Close dialog and reset
       handleClose();
     } catch (err) {
-      console.error('Error launching missing:', err);
+      // Error launching missing records
       toast({
         title: 'Erro',
         description: 'Erro ao lançar pacientes faltantes.',

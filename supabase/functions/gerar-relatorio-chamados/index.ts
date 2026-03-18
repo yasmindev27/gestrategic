@@ -181,8 +181,7 @@ Seja específico e baseie todas as conclusões nos dados fornecidos.`;
           { status: 402, headers: { ...corsHeaders, "Content-Type": "application/json" } }
         );
       }
-      const errorText = await response.text();
-      console.error("AI Gateway error:", response.status, errorText);
+      // Error fetching from AI gateway - handled silently
       throw new Error("Erro ao gerar relatório com IA");
     }
 
@@ -195,7 +194,7 @@ Seja específico e baseie todas as conclusões nos dados fornecidos.`;
     );
 
   } catch (error) {
-    console.error("Error:", error);
+    // Error generating report - return safe error message
     return new Response(
       JSON.stringify({ 
         error: error instanceof Error ? error.message : "Erro desconhecido ao gerar relatório" 
