@@ -35,42 +35,69 @@ export const useUserRole = () => {
     };
 
     const fetchRolesForUser = async (userId: string) => {
-      // 1) Try direct read from table (when RLS allows)
-      const { data, error } = await supabase
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", userId);
+      try {
+        // 1) Try direct read from table (when RLS allows) - PARALELO com RPC
+        const [{ data, error }, { data: rpcData, error: rpcError }] = await Promise.allSettled([
+          supabase
+            .from("user_roles")
+            .select("role")
+            .eq("user_id", userId)
+            .then(res => ({ ...res, data: res.data || [] })),
+          supabase.rpc("get_user_role", { _user_id: userId })
+            .then(res => ({ data: res.data, error: res.error }))
+        ]).then(results => {
+          const [directResult, rpcResult] = results;
+          return [
+            directResult.status === 'fulfilled' ? directResult.value : { data: [], error: new Error('Query failed') },
+            rpcResult.status === 'fulfilled' ? rpcResult.value : { data: null, error: new Error('RPC failed') }
+          ] as any[];
+        });
 
-      if (!error && data && data.length > 0) {
-        const roles = data.map((r) => r.role);
-        const primaryRole = resolvePrimaryRole(roles);
+        // 2) Use direct query se conseguir (múltiplas roles), senão RPC (fallback)
+        if (!error && data && data.length > 0) {
+          const roles = data.map((r) => r.role);
+          const primaryRole = resolvePrimaryRole(roles);
+          if (!isMounted) return;
+          setState({ roles, primaryRole, userId, isLoading: false });
+          return;
+        }
+
+        // 3) Fallback para RPC (apenas UMA role, melhor que nada)
+        if (!rpcError && rpcData) {
+          const roles: AppRole[] = [rpcData];
+          const primaryRole = resolvePrimaryRole(roles);
+          if (!isMounted) return;
+          setState({ roles, primaryRole, userId, isLoading: false });
+          return;
+        }
+
+        // 4) Nenhuma fonte funcionou - usuário sem roles
         if (!isMounted) return;
-        setState({ roles, primaryRole, userId, isLoading: false });
-        return;
-      }
-
-      // 2) Fallback: use RPC (works even when RLS blocks direct reads)
-      const { data: role, error: rpcError } = await supabase.rpc("get_user_role", { _user_id: userId });
-
-      if (!rpcError && role) {
-        const roles: AppRole[] = [role];
-        const primaryRole = resolvePrimaryRole(roles);
+        console.warn("[useUserRole] Nenhuma fonte de roles disponível para:", {
+          userId,
+          directError: error?.message,
+          rpcError: rpcError?.message
+        });
+        setState((prev) => ({ ...prev, roles: [], primaryRole: null, userId, isLoading: false }));
+      } catch (err) {
         if (!isMounted) return;
-        setState({ roles, primaryRole, userId, isLoading: false });
-        return;
+        console.error("[useUserRole] Erro crítico ao obter roles:", err instanceof Error ? err.message : String(err));
+        setState((prev) => ({ ...prev, roles: [], primaryRole: null, userId, isLoading: false }));
       }
-
-      // 3) No roles found / not allowed
-      if (!isMounted) return;
-      if (error) console.error("Error fetching user roles:", error);
-      if (rpcError) console.error("Error fetching user role via RPC:", rpcError);
-      setState((prev) => ({ ...prev, roles: [], primaryRole: null, userId, isLoading: false }));
     };
 
     const refresh = async () => {
       setLoading(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (sessionError) {
+          console.error("[useUserRole] Erro ao obter sessão:", sessionError.message);
+          if (!isMounted) return;
+          setState({ roles: [], primaryRole: null, userId: null, isLoading: false });
+          return;
+        }
+        
         const user = session?.user ?? null;
 
         if (!user) {
@@ -81,7 +108,7 @@ export const useUserRole = () => {
 
         await fetchRolesForUser(user.id);
       } catch (error) {
-        console.error("Error:", error);
+        console.error("[useUserRole] Erro crítico ao atualizar roles:", error instanceof Error ? error.message : String(error));
         if (!isMounted) return;
         setState((prev) => ({ ...prev, isLoading: false }));
       }

@@ -255,7 +255,7 @@ export const RestauranteModule = () => {
       const {
         data: cardapiosData,
         error: cardapiosError
-      } = await supabase.from("cardapios").select("*").gte("data", format(startDate, "yyyy-MM-dd")).lte("data", format(endDate, "yyyy-MM-dd")).order("data").order("tipo_refeicao");
+      } = await supabase.from("cardapios").select("*").gte("data", format(startDate, "yyyy-MM-dd")).lte("data", format(endDate, "yyyy-MM-dd")).order("data").order("tipo_refeicao").limit(500);
       if (cardapiosError) throw cardapiosError;
       setCardapios(cardapiosData || []);
 
@@ -271,7 +271,7 @@ export const RestauranteModule = () => {
           error: minhasError
         } = await supabase.from("solicitacoes_dieta").select("*").eq("solicitante_id", user.id).order("created_at", {
           ascending: false
-        });
+        }).limit(200);
         if (minhasError) throw minhasError;
         setMinhasSolicitacoes(minhasData || []);
 
@@ -282,7 +282,7 @@ export const RestauranteModule = () => {
             error: todasError
           } = await supabase.from("solicitacoes_dieta").select("*").order("created_at", {
             ascending: false
-          });
+          }).limit(500);
           if (todasError) throw todasError;
           setTodasSolicitacoes(todasData || []);
 
@@ -292,7 +292,7 @@ export const RestauranteModule = () => {
             error: refeicoesError
           } = await supabase.from("refeicoes_registros").select("*").order("created_at", {
             ascending: false
-          });
+          }).limit(500);
           if (refeicoesError) throw refeicoesError;
           setRegistrosRefeicoes(refeicoesData || []);
         }
@@ -715,7 +715,7 @@ export const RestauranteModule = () => {
         error
       } = await supabase.from("solicitacoes_dieta").select("*").gte("created_at", dashboardDataInicio).lte("created_at", dashboardDataFim + "T23:59:59").order("created_at", {
         ascending: false
-      });
+      }).limit(500);
       if (error) throw error;
       setDashboardSolicitacoes(data || []);
     } catch (error) {

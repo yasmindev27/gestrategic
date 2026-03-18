@@ -240,11 +240,11 @@ export const QualidadeModule = () => {
 
   const loadData = async () => {
     const [incidentesRes, analisesRes, acoesRes, auditoriasRes, usuariosRes] = await Promise.all([
-      supabase.from("incidentes_nsp").select("*").order("data_ocorrencia", { ascending: false }),
-      supabase.from("analises_incidentes").select("*").order("data_analise", { ascending: false }),
-      supabase.from("acoes_incidentes").select("*").order("created_at", { ascending: false }),
-      supabase.from("auditorias_qualidade").select("*").order("data_auditoria", { ascending: false }),
-      supabase.from("profiles").select("id, user_id, full_name").order("full_name"),
+      supabase.from("incidentes_nsp").select("*").order("data_ocorrencia", { ascending: false }).limit(100),
+      supabase.from("analises_incidentes").select("*").order("data_analise", { ascending: false }).limit(100),
+      supabase.from("acoes_incidentes").select("*").order("created_at", { ascending: false }).limit(100),
+      supabase.from("auditorias_qualidade").select("*").order("data_auditoria", { ascending: false }).limit(100),
+      supabase.from("profiles").select("id, user_id, full_name").order("full_name").limit(500),
     ]);
 
     if (incidentesRes.data) setIncidentes(incidentesRes.data);

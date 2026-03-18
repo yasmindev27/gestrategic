@@ -26,7 +26,7 @@ CREATE TABLE public.user_roles (
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_roles ENABLE ROW LEVEL SECURITY;
 
--- Função security definer para verificar role (evita recursão)
+-- Função security definer para verificar role (com validação de contexto)
 CREATE OR REPLACE FUNCTION public.has_role(_user_id UUID, _role app_role)
 RETURNS BOOLEAN
 LANGUAGE sql
@@ -34,12 +34,26 @@ STABLE
 SECURITY DEFINER
 SET search_path = public
 AS $$
-    SELECT EXISTS (
-        SELECT 1
-        FROM public.user_roles
-        WHERE user_id = _user_id
-          AND role = _role
-    )
+    -- Só permite verificação se é o próprio usuário OU chamando função de admin
+    SELECT CASE
+        -- Próprio usuário pode sempre verificar suas roles
+        WHEN auth.uid() = _user_id THEN
+            EXISTS (
+                SELECT 1 FROM public.user_roles
+                WHERE user_id = _user_id AND role = _role
+            )
+        -- Admin pode verificar qualquer um
+        WHEN EXISTS (
+            SELECT 1 FROM public.user_roles
+            WHERE user_id = auth.uid() AND role = 'admin'
+        ) THEN
+            EXISTS (
+                SELECT 1 FROM public.user_roles
+                WHERE user_id = _user_id AND role = _role
+            )
+        -- Outros casos: nega acesso
+        ELSE FALSE
+    END
 $$;
 
 -- Função para obter role do usuário

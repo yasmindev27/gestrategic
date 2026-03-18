@@ -166,10 +166,13 @@ const ControleFichasPublico = () => {
 
       fetchInconsistencias();
     } catch (error) {
-      console.error("Error:", error);
+      console.error("[ControleFichas] Erro ao resolver inconsistência:", {
+        inconsistenciaId: id,
+        erro: error instanceof Error ? error.message : String(error)
+      });
       toast({
         title: "Erro",
-        description: "Erro ao atualizar status.",
+        description: error instanceof Error ? error.message : "Erro ao marcar como resolvido",
         variant: "destructive",
       });
     }
