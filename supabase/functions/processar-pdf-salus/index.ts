@@ -1,4 +1,10 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { RateLimiter } from "../_shared/rate-limiter.ts";
+
+// ═════════════════════════════════════════════════════════════════
+// Rate Limiter
+// ═════════════════════════════════════════════════════════════════
+const rateLimiter = new RateLimiter();
 
 // ═════════════════════════════════════════════════════════════════
 // Constants
@@ -186,6 +192,34 @@ Deno.serve(async (req) => {
     }
 
     log('info', 'Usuário autenticado', { requestId, userId: user.id });
+
+    // 3.5. Check rate limit (2 req/min per user - heavy operation)
+    const rateLimitCheck = rateLimiter.check(
+      'processar-pdf-salus',
+      user.id,
+      { maxRequests: 2, windowMs: 60 * 1000 }
+    );
+
+    if (!rateLimitCheck.allowed) {
+      log('warn', 'Rate limit excedido para PDF', { requestId, userId: user.id });
+      return new Response(
+        JSON.stringify({
+          error: 'Taxa de requisições excedida. Tente novamente em ' + rateLimitCheck.retryAfter + ' segundos.',
+          success: false,
+          code: 'RATE_LIMIT_EXCEEDED',
+          timestamp: new Date().toISOString(),
+        }),
+        {
+          status: 429,
+          headers: {
+            ...CORS_HEADERS,
+            'X-RateLimit-Limit': String(rateLimitCheck.limit),
+            'X-RateLimit-Remaining': String(rateLimitCheck.remaining),
+            'Retry-After': String(rateLimitCheck.retryAfter),
+          },
+        }
+      );
+    }
 
     // 4. Verify user role
     const supabaseService = createClient(supabaseUrl, supabaseServiceKey);
