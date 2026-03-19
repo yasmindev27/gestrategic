@@ -7,10 +7,13 @@ import { useUserRole } from "@/hooks/useUserRole";
 
 export const FaturamentoUnificadoModule = () => {
   const [activeTab, setActiveTab] = useState("saida");
-  const { isRecepcao, isClassificacao } = useUserRole();
+  const { isRecepcao, isClassificacao, isNir, isFaturamento, isAdmin } = useUserRole();
 
-  // Recepção e Classificação só veem a aba de Saída de Prontuários
-  if (isRecepcao || isClassificacao) {
+  // Apenas Faturamento e Admin veem a aba de Avaliação
+  const showAvaliacaoTab = isFaturamento || isAdmin;
+
+  // Recepção, Classificação e NIR só veem a aba de Saída de Prontuários
+  if (!showAvaliacaoTab) {
     return (
       <div className="space-y-6">
         <div>
