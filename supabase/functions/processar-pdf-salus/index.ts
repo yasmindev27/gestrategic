@@ -335,7 +335,6 @@ REGRAS:
           max_tokens: 4000,
         }),
         signal: controller.signal,
-      } as RequestInit,
       });
     } catch (error) {
       clearTimeout(timeoutId);
