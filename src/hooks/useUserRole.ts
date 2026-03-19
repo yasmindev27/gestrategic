@@ -196,6 +196,11 @@ export const useUserRole = () => {
     isEnfermagem,
     isSeguranca,
     isRouparia,
+    isGerenteAdministrativo,
+    isFarmaceuticoRT,
+    isCoordenadorMedico,
+    isSupervisorOperacional,
+    isCoordenadorEnfermagem,
     isTecnico,
     // Permissões de módulo
     canAccessSaidaProntuarios,
