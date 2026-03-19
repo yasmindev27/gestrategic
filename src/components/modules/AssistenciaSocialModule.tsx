@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Users, ClipboardList, BarChart3, Plus, Eye, Send, BedDouble, Shield, Heart, Brain, HandHeart, ArrowRightLeft } from "lucide-react";
+import { Users, ClipboardList, BarChart3, Plus, Eye, Send, BedDouble, Shield, Heart, Brain, HandHeart, ArrowRightLeft, FileSpreadsheet, FileDown } from "lucide-react";
 import { ShieldX } from "lucide-react";
 import { PassagemPlantaoSocial } from "@/components/assistencia-social/PassagemPlantaoSocial";
 
@@ -33,6 +33,7 @@ import {
   BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
 import * as XLSX from "xlsx";
+import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 // --- Types ---
@@ -573,13 +574,61 @@ export const AssistenciaSocialModule = () => {
         <TabsContent value="corrida-leito" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BedDouble className="h-5 w-5" />
-                Pacientes Internados — Mapa de Leitos
-              </CardTitle>
-              <CardDescription>
-                Pacientes ativos no mapa de leitos do NIR • Clique em "Atender" para registrar atendimento social/psicológico
-              </CardDescription>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <BedDouble className="h-5 w-5" />
+                    Pacientes Internados — Mapa de Leitos
+                  </CardTitle>
+                  <CardDescription>
+                    Pacientes ativos no mapa de leitos do NIR • Clique em "Atender" para registrar atendimento social/psicológico
+                  </CardDescription>
+                </div>
+                <ExportDropdown
+                  onExportExcel={() => {
+                    const dataToExport = bedPatients.map(b => ({
+                      "Setor": sectorLabel(b.sector),
+                      "Leito": b.bed_number,
+                      "Paciente": b.patient_name,
+                      "Diagnóstico": b.hipotese_diagnostica || "-",
+                      "Data Internação": b.data_internacao ? format(new Date(b.data_internacao), "dd/MM/yyyy") : "-",
+                    }));
+                    
+                    const ws = XLSX.utils.json_to_sheet(dataToExport);
+                    ws['!cols'] = [{ wch: 20 }, { wch: 12 }, { wch: 30 }, { wch: 30 }, { wch: 15 }];
+                    const wb = XLSX.utils.book_new();
+                    XLSX.utils.book_append_sheet(wb, ws, "Corrida de Leitos");
+                    XLSX.writeFile(wb, `corrida-leitos_${format(new Date(), "ddMMyyyy_HHmm")}.xlsx`);
+                    toast.success("Lista exportada para Excel");
+                  }}
+                  onExportPDF={() => {
+                    const doc = new jsPDF();
+                    doc.setFontSize(16);
+                    doc.text("Corrida de Leitos - Pacientes Internados", 14, 15);
+                    doc.setFontSize(10);
+                    doc.text(`Data: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 22);
+                    doc.text(`Total: ${bedPatients.length} paciente(s)`, 14, 28);
+                    
+                    autoTable(doc, {
+                      head: [["Setor", "Leito", "Paciente", "Diagnóstico", "Internação"]],
+                      body: bedPatients.map(b => [
+                        sectorLabel(b.sector),
+                        b.bed_number,
+                        b.patient_name,
+                        b.hipotese_diagnostica || "-",
+                        b.data_internacao ? format(new Date(b.data_internacao), "dd/MM/yyyy") : "-"
+                      ]),
+                      startY: 35,
+                      margin: { top: 30, bottom: 10 },
+                      headStyles: { fillColor: [37, 99, 235] },
+                      bodyStyles: { fontSize: 9 },
+                    });
+                    
+                    doc.save(`corrida-leitos_${format(new Date(), "ddMMyyyy_HHmm")}.pdf`);
+                    toast.success("Lista exportada para PDF");
+                  }}
+                />
+              </div>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4 mb-4">
