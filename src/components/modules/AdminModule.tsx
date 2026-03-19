@@ -122,6 +122,11 @@ const roleLabels: Record<AppRole, string> = {
   enfermagem: "Enfermagem",
   medicos: "Médicos",
   rouparia: "Rouparia",
+  gerente_administrativo: "Gerente Administrativo",
+  farmaceutico_rt: "Farmacêutico RT",
+  coordenador_medico: "Coordenador Médico",
+  supervisor_operacional: "Supervisor de Serviços Operacionais",
+  coordenador_enfermagem: "Coordenador de Enfermagem",
 };
 
 // Roles disponíveis para seleção (exclui "funcionario" que é o padrão)
@@ -150,6 +155,11 @@ const roleColors: Record<AppRole, string> = {
   enfermagem: "bg-cyan-600 text-white",
   medicos: "bg-lime-600 text-white",
   rouparia: "bg-violet-500 text-white",
+  gerente_administrativo: "bg-blue-700 text-white",
+  farmaceutico_rt: "bg-green-600 text-white",
+  coordenador_medico: "bg-teal-600 text-white",
+  supervisor_operacional: "bg-amber-700 text-white",
+  coordenador_enfermagem: "bg-cyan-700 text-white",
 };
 
 export const AdminModule = () => {

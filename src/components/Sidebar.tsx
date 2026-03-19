@@ -42,7 +42,9 @@ const Sidebar = ({
     role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
     isLaboratorio, isTecnico, isRecepcao, isClassificacao, isNir,
     isFaturamento, isRHDP, isQualidade, isNSP, isMedicos, isEnfermagem,
-    isSeguranca, isAssistenciaSocial, isRestaurante, isRouparia
+    isSeguranca, isAssistenciaSocial, isRestaurante, isRouparia,
+    isGerenteAdministrativo, isFarmaceuticoRT, isCoordenadorMedico,
+    isSupervisorOperacional, isCoordenadorEnfermagem
   } = useUserRole();
   const [userName, setUserName] = useState<string>("Usuário");
   const [userEmail, setUserEmail] = useState<string>("");
@@ -252,6 +254,67 @@ const Sidebar = ({
         { icon: Shield, label: "Seg. Patrimonial", id: "seguranca-patrimonial", category: "apoio_logistica" },
         { icon: HardHat, label: "Seg. Trabalho", id: "seguranca-trabalho", category: "governanca" },
         { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
+      );
+      return items;
+    }
+
+    // Gerente Administrativo
+    if (isGerenteAdministrativo) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Building2, label: "Gerência", id: "gerencia", category: "dashboard" },
+        { icon: UserCog, label: "RH/DP", id: "rhdp", category: "administrativo" },
+        { icon: Receipt, label: "Faturamento", id: "faturamento", category: "assistencial" },
+        { icon: Users, label: "Equipe", id: "equipe", category: "administrativo" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" },
+      );
+      return items;
+    }
+    // Farmacêutico RT
+    if (isFarmaceuticoRT) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Syringe, label: "Enfermagem", id: "enfermagem", category: "assistencial" },
+        { icon: AlertTriangle, label: "Qualidade/NSP", id: "qualidade", category: "governanca" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" },
+      );
+      return items;
+    }
+    // Coordenador Médico
+    if (isCoordenadorMedico) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Stethoscope, label: "Médicos", id: "medicos", category: "assistencial" },
+        { icon: Ambulance, label: "NIR", id: "nir", category: "assistencial" },
+        { icon: FlaskConical, label: "Resultados Exames", id: "laboratorio", category: "assistencial" },
+        { icon: AlertTriangle, label: "Qualidade/NSP", id: "qualidade", category: "governanca" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" },
+      );
+      return items;
+    }
+    // Supervisor de Serviços Operacionais
+    if (isSupervisorOperacional) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Wrench, label: "Manutenção", id: "tecnico-manutencao", category: "apoio_logistica" },
+        { icon: Shirt, label: "Rouparia", id: "rouparia", category: "apoio_logistica" },
+        { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante", category: "apoio_logistica" },
+        { icon: Shield, label: "Seg. Patrimonial", id: "seguranca-patrimonial", category: "apoio_logistica" },
+        { icon: HardHat, label: "Seg. Trabalho", id: "seguranca-trabalho", category: "governanca" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" },
+      );
+      return items;
+    }
+    // Coordenador de Enfermagem
+    if (isCoordenadorEnfermagem) {
+      items.push(
+        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
+        { icon: Syringe, label: "Enfermagem", id: "enfermagem", category: "assistencial" },
+        { icon: Ambulance, label: "NIR", id: "nir", category: "assistencial" },
+        { icon: Heart, label: "Assist. Social/Psicologia", id: "assistencia-social", category: "assistencial" },
+        { icon: BedDouble, label: "Mapa de Leitos", id: "mapa-leitos", category: "assistencial" },
+        { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante", category: "apoio_logistica" },
+        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" },
       );
       return items;
     }
