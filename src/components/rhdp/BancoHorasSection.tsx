@@ -907,7 +907,60 @@ export const BancoHorasSection = () => {
             </Card>
           </div>
 
-
+          {/* Evolução Mensal - Trend Chart */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Evolução Mensal de Horas — {filterAno}
+                </CardTitle>
+                <Select value={evolFilterColab} onValueChange={setEvolFilterColab}>
+                  <SelectTrigger className="w-[220px]">
+                    <SelectValue placeholder="Colaborador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os colaboradores</SelectItem>
+                    {profiles.map(p => (
+                      <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[320px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={evolucaoMensal} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="gradCredito" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradDebito" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
+                      formatter={(value: number, name: string) => [
+                        formatHM(value),
+                        name === 'credito' ? 'Créditos' : name === 'debito' ? 'Débitos' : 'Saldo'
+                      ]}
+                    />
+                    <Legend formatter={(value) => value === 'credito' ? 'Créditos' : value === 'debito' ? 'Débitos' : 'Saldo'} />
+                    <Area type="monotone" dataKey="credito" stroke="hsl(142, 76%, 36%)" fill="url(#gradCredito)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="debito" stroke="hsl(0, 84%, 60%)" fill="url(#gradDebito)" strokeWidth={2} />
+                    <Line type="monotone" dataKey="saldo" stroke="hsl(var(--primary))" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
 
         </TabsContent>
 
