@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 
 type Resposta = 'sim' | 'nao' | 'na';
 
@@ -126,12 +128,18 @@ export function ChecklistGeralNSP({ storageKey, setor }: ChecklistNSPProps) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Shield className="h-5 w-5 text-primary" />
-          Checklist Geral — Nucleo de Segurança do Paciente
-        </h3>
-        <p className="text-sm text-muted-foreground">Setor/Unidade: {setor} — Auditoria de segurança por leito/local</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Shield className="h-5 w-5 text-primary" />
+            Checklist Geral — Nucleo de Segurança do Paciente
+          </h3>
+          <p className="text-sm text-muted-foreground">Setor/Unidade: {setor} — Auditoria de segurança por leito/local</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: `Checklist NSP — ${setor}`, headers: ['Data', 'Responsável', 'COREN', 'Setor', 'Observações', 'Data Registro'], rows: registros.map(r => [r.data, r.responsavel, r.coren, r.setorUnidade, r.observacoes, r.dataRegistro]), fileName: `checklist_nsp_${setor}` })}
+          onExportExcel={() => exportToExcel({ title: `Checklist NSP — ${setor}`, headers: ['Data', 'Responsável', 'COREN', 'Setor', 'Observações', 'Data Registro'], rows: registros.map(r => [r.data, r.responsavel, r.coren, r.setorUnidade, r.observacoes, r.dataRegistro]), fileName: `checklist_nsp_${setor}` })}
+        />
       </div>
 
       {/* KPIs */}

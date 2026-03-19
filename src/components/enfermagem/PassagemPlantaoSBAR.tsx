@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 
 // ===== TIPOS =====
 interface PassagemSBAR {
@@ -182,12 +184,18 @@ export function PassagemPlantaoSBAR({ storageKey, setor }: Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <ClipboardPen className="h-5 w-5 text-primary" />
-          Passagem de Plantão Enfermeiros — Método SBAR
-        </h3>
-        <p className="text-sm text-muted-foreground">{setor}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <ClipboardPen className="h-5 w-5 text-primary" />
+            Passagem de Plantão Enfermeiros — Método SBAR
+          </h3>
+          <p className="text-sm text-muted-foreground">{setor}</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: `SBAR Enfermeiros — ${setor}`, headers: ['Data', 'Turno', 'Paciente', 'Leito', 'HD', 'Enfermeiro', 'COREN'], rows: registros.map(r => [r.data, r.turno, r.pacienteNome, r.leito, r.hd, r.enfermeiroResponsavel, r.coren]), fileName: `sbar_enfermeiros_${setor}` })}
+          onExportExcel={() => exportToExcel({ title: `SBAR Enfermeiros — ${setor}`, headers: ['Data', 'Turno', 'Paciente', 'Leito', 'HD', 'Enfermeiro', 'COREN'], rows: registros.map(r => [r.data, r.turno, r.pacienteNome, r.leito, r.hd, r.enfermeiroResponsavel, r.coren]), fileName: `sbar_enfermeiros_${setor}` })}
+        />
       </div>
 
       {/* KPIs */}

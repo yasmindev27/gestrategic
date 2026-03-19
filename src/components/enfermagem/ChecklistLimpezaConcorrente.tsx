@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 
 type StatusItem = 'ok' | 'pendente' | 'na';
 
@@ -130,12 +132,18 @@ export function ChecklistLimpezaConcorrente({ storageKey, setor }: Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <SprayCanIcon className="h-5 w-5 text-primary" />
-          Checklist de Limpeza Concorrente
-        </h3>
-        <p className="text-sm text-muted-foreground">{setor} — Controle diário de limpeza por plantão</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <SprayCanIcon className="h-5 w-5 text-primary" />
+            Checklist de Limpeza Concorrente
+          </h3>
+          <p className="text-sm text-muted-foreground">{setor} — Controle diário de limpeza por plantão</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: `Limpeza Concorrente — ${setor}`, headers: ['Dia', 'Plantão', 'Responsável', 'Observações', 'Data Registro'], rows: registros.map(r => [r.dia, r.plantao, r.responsavel, r.observacoes, r.dataRegistro]), fileName: `limpeza_concorrente_${setor}` })}
+          onExportExcel={() => exportToExcel({ title: `Limpeza Concorrente — ${setor}`, headers: ['Dia', 'Plantão', 'Responsável', 'Observações', 'Data Registro'], rows: registros.map(r => [r.dia, r.plantao, r.responsavel, r.observacoes, r.dataRegistro]), fileName: `limpeza_concorrente_${setor}` })}
+        />
       </div>
 
       {/* KPIs */}

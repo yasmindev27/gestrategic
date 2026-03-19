@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 
 interface RegistroFluxBomba {
   id: string;
@@ -78,12 +80,18 @@ export function ChecklistFluxometrosBombas({ storageKey, setor }: Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Gauge className="h-5 w-5 text-primary" />
-          Checklist de Fluxômetros e Bombas de Infusão
-        </h3>
-        <p className="text-sm text-muted-foreground">{setor} — Controle por plantão diurno e noturno</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Gauge className="h-5 w-5 text-primary" />
+            Checklist de Fluxômetros e Bombas de Infusão
+          </h3>
+          <p className="text-sm text-muted-foreground">{setor} — Controle por plantão diurno e noturno</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: `Fluxômetros/Bombas — ${setor}`, headers: ['Data', 'Plantão', 'Qtd Fluxômetros', 'Qtd Bombas', 'Método', 'Responsável', 'COREN'], rows: registros.map(r => [r.data, r.plantao, r.qtdFluxometros, r.qtdBombasInfusao, r.metodo, r.responsavel, r.coren]), fileName: `fluxometros_bombas_${setor}` })}
+          onExportExcel={() => exportToExcel({ title: `Fluxômetros/Bombas — ${setor}`, headers: ['Data', 'Plantão', 'Qtd Fluxômetros', 'Qtd Bombas', 'Método', 'Responsável', 'COREN'], rows: registros.map(r => [r.data, r.plantao, r.qtdFluxometros, r.qtdBombasInfusao, r.metodo, r.responsavel, r.coren]), fileName: `fluxometros_bombas_${setor}` })}
+        />
       </div>
 
       {/* KPIs */}

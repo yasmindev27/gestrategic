@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 
 // ===== Conteúdo do termo baseado no formulário =====
 const ORIENTACOES_RISCO_QUEDA = [
@@ -177,12 +179,18 @@ export function TermoConsentimentoRiscos({ storageKey, setor }: Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <ShieldCheck className="h-5 w-5 text-primary" />
-          Termo de Consentimento e Esclarecido — Riscos Assistenciais
-        </h3>
-        <p className="text-sm text-muted-foreground">{setor} — Núcleo de Segurança do Paciente</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary" />
+            Termo de Consentimento e Esclarecido — Riscos Assistenciais
+          </h3>
+          <p className="text-sm text-muted-foreground">{setor} — Núcleo de Segurança do Paciente</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: `Termo Riscos — ${setor}`, headers: ['Data', 'Paciente', 'Leito', 'Responsável', 'Parentesco', 'Enfermeiro', 'COREN'], rows: registros.map(r => [r.data, r.pacienteNome, r.leito, r.nomeResponsavel, r.parentesco, r.enfermeiroResponsavel, r.coren]), fileName: `termo_riscos_${setor}` })}
+          onExportExcel={() => exportToExcel({ title: `Termo Riscos — ${setor}`, headers: ['Data', 'Paciente', 'Leito', 'Responsável', 'Parentesco', 'Enfermeiro', 'COREN'], rows: registros.map(r => [r.data, r.pacienteNome, r.leito, r.nomeResponsavel, r.parentesco, r.enfermeiroResponsavel, r.coren]), fileName: `termo_riscos_${setor}` })}
+        />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

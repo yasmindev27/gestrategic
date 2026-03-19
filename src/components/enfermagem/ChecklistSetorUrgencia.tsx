@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 
 // Equipamentos/materiais conforme formulário da UPA
 const ITENS_SETOR = [
@@ -135,12 +137,18 @@ export function ChecklistSetorUrgencia() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <ClipboardList className="h-5 w-5 text-primary" />
-          Checklist Setor da Urgência
-        </h3>
-        <p className="text-sm text-muted-foreground">Controle diário de equipamentos e materiais — Enfermagem</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 text-primary" />
+            Checklist Setor da Urgência
+          </h3>
+          <p className="text-sm text-muted-foreground">Controle diário de equipamentos e materiais — Enfermagem</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: 'Checklist Setor Urgência', headers: ['Mês', 'Dia', 'Enfermeiro', 'Observações', 'Data Registro'], rows: registros.map(r => [r.mes, r.dia, r.enfermeiroResponsavel, r.observacoes, r.dataRegistro]), fileName: 'checklist_setor_urgencia' })}
+          onExportExcel={() => exportToExcel({ title: 'Checklist Setor Urgência', headers: ['Mês', 'Dia', 'Enfermeiro', 'Observações', 'Data Registro'], rows: registros.map(r => [r.mes, r.dia, r.enfermeiroResponsavel, r.observacoes, r.dataRegistro]), fileName: 'checklist_setor_urgencia' })}
+        />
       </div>
 
       {/* KPIs */}

@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 
 interface SinaisVitaisPed {
   fc: string; fr: string; pa: string; temperatura: string; spo2: string; glicemiaCapilar: string; peso: string; altura: string; perimetroCefalico: string;
@@ -166,12 +168,18 @@ export function SAEPediatrico({ storageKey, setor }: Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Baby className="h-5 w-5 text-primary" />
-          SAE Pediátrico — Sistematização da Assistência de Enfermagem
-        </h3>
-        <p className="text-sm text-muted-foreground">{setor}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Baby className="h-5 w-5 text-primary" />
+            SAE Pediátrico — Sistematização da Assistência de Enfermagem
+          </h3>
+          <p className="text-sm text-muted-foreground">{setor}</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: `SAE Pediátrico — ${setor}`, headers: ['Data', 'Turno', 'Paciente', 'Leito', 'Enfermeiro', 'COREN', 'Data Registro'], rows: registros.map(r => [r.data, r.turno, r.pacienteNome, r.leito, r.enfermeiroResponsavel, r.coren, r.dataRegistro]), fileName: `sae_pediatrico_${setor}` })}
+          onExportExcel={() => exportToExcel({ title: `SAE Pediátrico — ${setor}`, headers: ['Data', 'Turno', 'Paciente', 'Leito', 'Enfermeiro', 'COREN', 'Data Registro'], rows: registros.map(r => [r.data, r.turno, r.pacienteNome, r.leito, r.enfermeiroResponsavel, r.coren, r.dataRegistro]), fileName: `sae_pediatrico_${setor}` })}
+        />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

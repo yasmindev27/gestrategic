@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 
 type StatusItem = 'ok' | 'falha' | 'na';
 
@@ -124,12 +126,18 @@ export function ChecklistUTIMovel({ storageKey, setor }: Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Ambulance className="h-5 w-5 text-primary" />
-          Checklist UTI Móvel
-        </h3>
-        <p className="text-sm text-muted-foreground">{setor} — Controle diário de equipamentos por plantão</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Ambulance className="h-5 w-5 text-primary" />
+            Checklist UTI Móvel
+          </h3>
+          <p className="text-sm text-muted-foreground">{setor} — Controle diário de equipamentos por plantão</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: `UTI Móvel — ${setor}`, headers: ['Dia', 'Plantão', 'Responsável', 'Observações', 'Data Registro'], rows: registros.map(r => [r.dia, r.plantao, r.responsavel, r.observacoes, r.dataRegistro]), fileName: `uti_movel_${setor}` })}
+          onExportExcel={() => exportToExcel({ title: `UTI Móvel — ${setor}`, headers: ['Dia', 'Plantão', 'Responsável', 'Observações', 'Data Registro'], rows: registros.map(r => [r.dia, r.plantao, r.responsavel, r.observacoes, r.dataRegistro]), fileName: `uti_movel_${setor}` })}
+        />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

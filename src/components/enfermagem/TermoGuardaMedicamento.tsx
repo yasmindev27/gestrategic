@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 
 interface MedicamentoItem {
   medicamento: string;
@@ -137,12 +139,18 @@ export function TermoGuardaMedicamento({ storageKey, setor }: Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Pill className="h-5 w-5 text-primary" />
-          Termo de Guarda e Recolhimento de Medicamento
-        </h3>
-        <p className="text-sm text-muted-foreground">Propriedade do paciente — {setor}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Pill className="h-5 w-5 text-primary" />
+            Termo de Guarda e Recolhimento de Medicamento
+          </h3>
+          <p className="text-sm text-muted-foreground">Propriedade do paciente — {setor}</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: `Guarda Medicamento — ${setor}`, headers: ['Data', 'Paciente', 'Prontuário', 'Enfermeiro', 'COREN', 'Aceita Recolhimento', 'Data Registro'], rows: registros.map(r => [r.data, r.pacienteNome, r.prontuario, r.enfermeiroResponsavel, r.coren, r.aceitaRecolhimento, r.dataRegistro]), fileName: `guarda_medicamento_${setor}` })}
+          onExportExcel={() => exportToExcel({ title: `Guarda Medicamento — ${setor}`, headers: ['Data', 'Paciente', 'Prontuário', 'Enfermeiro', 'COREN', 'Aceita Recolhimento', 'Data Registro'], rows: registros.map(r => [r.data, r.pacienteNome, r.prontuario, r.enfermeiroResponsavel, r.coren, r.aceitaRecolhimento, r.dataRegistro]), fileName: `guarda_medicamento_${setor}` })}
+        />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

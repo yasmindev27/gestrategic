@@ -30,6 +30,8 @@ import { TermoConsentimentoRiscos } from './TermoConsentimentoRiscos';
 import { SAEAdulto } from './SAEAdulto';
 import { SAEPediatrico } from './SAEPediatrico';
 import { TermoGuardaMedicamento } from './TermoGuardaMedicamento';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { getBrasiliaDate, getBrasiliaDateString } from '@/lib/brasilia-time';
@@ -426,6 +428,10 @@ export function InternacaoArea() {
           </h2>
           <p className="text-sm text-muted-foreground">Gestão de pacientes internados, passagem de plantão e checklists de cuidados</p>
         </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: 'Internação — Pacientes', headers: ['Leito', 'Paciente', 'Setor', 'Diagnóstico', 'Médico', 'Risco', 'Internação'], rows: pacientes.map(p => [p.leito, p.nome, p.setor, p.diagnostico || '', p.medico || '', p.risco, p.dataInternacao || '']), fileName: 'internacao_pacientes' })}
+          onExportExcel={() => exportToExcel({ title: 'Internação — Pacientes', headers: ['Leito', 'Paciente', 'Setor', 'Diagnóstico', 'Médico', 'Risco', 'Internação'], rows: pacientes.map(p => [p.leito, p.nome, p.setor, p.diagnostico || '', p.medico || '', p.risco, p.dataInternacao || '']), fileName: 'internacao_pacientes' })}
+        />
       </div>
 
       {/* KPIs */}

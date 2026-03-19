@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 
 interface RegistroPassagem {
   id: string;
@@ -76,12 +78,18 @@ export function PassagemPlantaoTecEnfermagem({ storageKey, setor }: Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <ClipboardPen className="h-5 w-5 text-primary" />
-          Passagem de Plantão — Técnico de Enfermagem
-        </h3>
-        <p className="text-sm text-muted-foreground">{setor} — Registro de relatórios por plantão diurno e noturno</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <ClipboardPen className="h-5 w-5 text-primary" />
+            Passagem de Plantão — Técnico de Enfermagem
+          </h3>
+          <p className="text-sm text-muted-foreground">{setor} — Registro de relatórios por plantão diurno e noturno</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: `Passagem Plantão Téc. Enf. — ${setor}`, headers: ['Data', 'Plantão', 'Profissionais', 'Relatório', 'Responsável', 'COREN'], rows: registros.map(r => [r.data, r.plantao, r.profissionais, r.relatorio.substring(0, 100), r.responsavel, r.coren]), fileName: `passagem_plantao_tec_${setor}` })}
+          onExportExcel={() => exportToExcel({ title: `Passagem Plantão Téc. Enf. — ${setor}`, headers: ['Data', 'Plantão', 'Profissionais', 'Relatório', 'Responsável', 'COREN'], rows: registros.map(r => [r.data, r.plantao, r.profissionais, r.relatorio, r.responsavel, r.coren]), fileName: `passagem_plantao_tec_${setor}` })}
+        />
       </div>
 
       {/* KPIs */}
