@@ -44,6 +44,3 @@ verify_jwt = false
 
 [functions.admin-reset-senhas-massa]
 verify_jwt = false
-
-[functions.webhook-google-forms]
-verify_jwt = false
