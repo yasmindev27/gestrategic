@@ -601,13 +601,14 @@ export const AssistenciaSocialModule = () => {
                     XLSX.writeFile(wb, `corrida-leitos_${format(new Date(), "ddMMyyyy_HHmm")}.xlsx`);
                     toast.success("Lista exportada para Excel");
                   }}
-                  onExportPDF={() => {
-                    const doc = new jsPDF();
-                    doc.setFontSize(16);
-                    doc.text("Corrida de Leitos - Pacientes Internados", 14, 15);
+                  onExportPDF={async () => {
+                    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+                    const { doc, logoImg } = await createStandardPdf('Corrida de Leitos - Pacientes Internados');
+                    
                     doc.setFontSize(10);
-                    doc.text(`Data: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 22);
-                    doc.text(`Total: ${bedPatients.length} paciente(s)`, 14, 28);
+                    doc.setFont('helvetica', 'normal');
+                    doc.text(`Data: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 32);
+                    doc.text(`Total: ${bedPatients.length} paciente(s)`, 14, 38);
                     
                     autoTable(doc, {
                       head: [["Setor", "Leito", "Paciente", "Diagnóstico", "Internação"]],
@@ -618,13 +619,14 @@ export const AssistenciaSocialModule = () => {
                         b.hipotese_diagnostica || "-",
                         b.data_internacao ? format(new Date(b.data_internacao), "dd/MM/yyyy") : "-"
                       ]),
-                      startY: 35,
-                      margin: { top: 30, bottom: 10 },
-                      headStyles: { fillColor: [37, 99, 235] },
+                      startY: 45,
+                      margin: { bottom: 28 },
+                      headStyles: { fillColor: [37, 99, 235], textColor: 255, fontStyle: 'bold' },
                       bodyStyles: { fontSize: 9 },
+                      alternateRowStyles: { fillColor: [245, 245, 245] },
                     });
                     
-                    doc.save(`corrida-leitos_${format(new Date(), "ddMMyyyy_HHmm")}.pdf`);
+                    savePdfWithFooter(doc, 'Corrida de Leitos - Pacientes Internados', `corrida-leitos_${format(new Date(), 'yyyy-MM-dd')}`, logoImg);
                     toast.success("Lista exportada para PDF");
                   }}
                 />
