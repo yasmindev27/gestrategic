@@ -9,7 +9,7 @@ import { SearchInput } from '@/components/ui/search-input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingState } from '@/components/ui/loading-state';
 import { toast } from 'sonner';
-import { Upload, ExternalLink, Bug, FileSpreadsheet, Users, Calendar, AlertTriangle } from 'lucide-react';
+import { Upload, ExternalLink, Bug, FileSpreadsheet, Users, Calendar, AlertTriangle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 
@@ -79,6 +79,7 @@ export function NotificacoesArboviroses() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState('');
   const [importing, setImporting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const { data: registros = [], isLoading } = useQuery({
     queryKey: ['notificacoes-arboviroses'],
@@ -186,6 +187,31 @@ export function NotificacoesArboviroses() {
     }
   };
 
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast.error('Não autenticado'); return; }
+
+      const response = await supabase.functions.invoke('sync-arboviroses', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (response.error) throw response.error;
+      const result = response.data;
+      if (result.success) {
+        toast.success(result.message);
+        queryClient.invalidateQueries({ queryKey: ['notificacoes-arboviroses'] });
+      } else {
+        toast.error(result.error || 'Erro na sincronização');
+      }
+    } catch (err: any) {
+      toast.error('Erro: ' + (err.message || 'Falha na sincronização'));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const filtered = useMemo(() => {
     if (!search) return registros;
     const term = search.toLowerCase();
@@ -237,14 +263,18 @@ export function NotificacoesArboviroses() {
           </h2>
           <p className="text-sm text-muted-foreground">Vigilância epidemiológica de Dengue, Zika e Chikungunya</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => window.open(GOOGLE_SHEET_URL, '_blank')}>
             <ExternalLink className="h-4 w-4 mr-2" />
             Planilha Google
           </Button>
+          <Button size="sm" onClick={handleSync} disabled={syncing} className="gap-2">
+            <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Sincronizando...' : 'Sincronizar'}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={importing}>
             <Upload className="h-4 w-4 mr-2" />
-            {importing ? 'Importando...' : 'Importar Planilha'}
+            {importing ? 'Importando...' : 'Importar .xlsx'}
           </Button>
           <input
             ref={fileInputRef}
