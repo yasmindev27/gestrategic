@@ -122,6 +122,11 @@ const roleLabels: Record<AppRole, string> = {
   enfermagem: "Enfermagem",
   medicos: "Médicos",
   rouparia: "Rouparia",
+  gerente_administrativo: "Gerente Administrativo",
+  farmaceutico_rt: "Farmacêutico RT",
+  coordenador_medico: "Coordenador Médico",
+  supervisor_operacional: "Supervisor de Serviços Operacionais",
+  coordenador_enfermagem: "Coordenador de Enfermagem",
 };
 
 // Roles disponíveis para seleção (exclui "funcionario" que é o padrão)
