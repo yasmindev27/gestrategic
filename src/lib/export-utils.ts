@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
 
 /**
  * Load the Gestrategic logo and execute callback
