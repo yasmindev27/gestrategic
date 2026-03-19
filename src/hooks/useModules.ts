@@ -50,7 +50,7 @@ export const useModules = () => {
     laboratorio: isAdmin || isLaboratorio || isMedicos || isGestor,
     restaurante: isAdmin || isRestaurante || isEnfermagem,
     rhdp: isAdmin || isRHDP,
-    assistenciaSocial: isAdmin || isAssistenciaSocial,
+    assistenciaSocial: isAdmin || isAssistenciaSocial || isEnfermagem,
     qualidade: isAdmin || isQualidade,
     recepcao: isAdmin || isRecepcao,
     tecnicoTI: isAdmin || isTI,
