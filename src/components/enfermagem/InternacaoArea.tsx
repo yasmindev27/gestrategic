@@ -249,80 +249,52 @@ export function InternacaoArea() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Buscar por nome ou leito..." value={busca} onChange={e => setBusca(e.target.value)} className="pl-9" />
               </div>
-              <Dialog open={novoDialogOpen} onOpenChange={setNovoDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button><Plus className="h-4 w-4 mr-1" />Novo Paciente</Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader><DialogTitle>Registrar Paciente Internado</DialogTitle></DialogHeader>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><Label>Nome</Label><Input value={formPaciente.nome} onChange={e => setFormPaciente(p => ({ ...p, nome: e.target.value }))} /></div>
-                      <div><Label>Leito</Label><Input value={formPaciente.leito} onChange={e => setFormPaciente(p => ({ ...p, leito: e.target.value }))} placeholder="Ex: 01A" /></div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><Label>Setor</Label>
-                        <Select value={formPaciente.setor} onValueChange={v => setFormPaciente(p => ({ ...p, setor: v }))}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Observação">Observação</SelectItem>
-                            <SelectItem value="Sala Amarela">Sala Amarela</SelectItem>
-                            <SelectItem value="Sala Vermelha">Sala Vermelha</SelectItem>
-                            <SelectItem value="Pediatria">Pediatria</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div><Label>Risco</Label>
-                        <Select value={formPaciente.risco} onValueChange={v => setFormPaciente(p => ({ ...p, risco: v as any }))}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="baixo">Baixo</SelectItem>
-                            <SelectItem value="moderado">Moderado</SelectItem>
-                            <SelectItem value="alto">Alto</SelectItem>
-                            <SelectItem value="critico">Crítico</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div><Label>Diagnóstico</Label><Input value={formPaciente.diagnostico} onChange={e => setFormPaciente(p => ({ ...p, diagnostico: e.target.value }))} /></div>
-                    <div><Label>Médico Responsável</Label><Input value={formPaciente.medico} onChange={e => setFormPaciente(p => ({ ...p, medico: e.target.value }))} /></div>
-                    <div><Label>Observações</Label><Textarea value={formPaciente.observacoes} onChange={e => setFormPaciente(p => ({ ...p, observacoes: e.target.value }))} /></div>
-                    <Button onClick={handleAddPaciente} className="w-full">Registrar</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <Button variant="outline" size="sm" onClick={fetchPacientesFromBedMap} disabled={isLoadingPacientes}>
+                <RefreshCw className={cn("h-4 w-4 mr-1", isLoadingPacientes && "animate-spin")} />
+                Atualizar
+              </Button>
             </div>
 
-            <div className="rounded-md border overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Leito</TableHead>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Setor</TableHead>
-                    <TableHead>Diagnóstico</TableHead>
-                    <TableHead>Médico</TableHead>
-                    <TableHead>Risco</TableHead>
-                    <TableHead>Internação</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pacientesFiltrados.length === 0 ? (
-                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhum paciente internado registrado</TableCell></TableRow>
-                  ) : pacientesFiltrados.map(p => (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-mono font-semibold">{p.leito}</TableCell>
-                      <TableCell className="font-medium">{p.nome}</TableCell>
-                      <TableCell>{p.setor}</TableCell>
-                      <TableCell>{p.diagnostico}</TableCell>
-                      <TableCell>{p.medico}</TableCell>
-                      <TableCell><Badge className={riscoColor(p.risco)}>{p.risco}</Badge></TableCell>
-                      <TableCell>{p.dataInternacao}</TableCell>
+            {isLoadingPacientes ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
+                <span className="text-muted-foreground">Carregando pacientes do mapa de leitos...</span>
+              </div>
+            ) : (
+              <div className="rounded-md border overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Leito</TableHead>
+                      <TableHead>Paciente</TableHead>
+                      <TableHead>Setor</TableHead>
+                      <TableHead>Diagnóstico</TableHead>
+                      <TableHead>Médico</TableHead>
+                      <TableHead>Risco</TableHead>
+                      <TableHead>Internação</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {pacientesFiltrados.length === 0 ? (
+                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhum paciente internado no turno atual</TableCell></TableRow>
+                    ) : pacientesFiltrados.map(p => (
+                      <TableRow key={p.id}>
+                        <TableCell className="font-mono font-semibold">{p.leito}</TableCell>
+                        <TableCell className="font-medium">{p.nome}</TableCell>
+                        <TableCell>{p.setor}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{p.diagnostico || '—'}</TableCell>
+                        <TableCell>{p.medico || '—'}</TableCell>
+                        <TableCell><Badge className={riscoColor(p.risco)}>{p.risco}</Badge></TableCell>
+                        <TableCell>{p.dataInternacao ? new Date(p.dataInternacao + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Dados sincronizados com o Mapa de Leitos (NIR) — Turno: {getCurrentShift().type === 'diurno' ? 'Diurno' : 'Noturno'} | {pacientes.length} paciente(s)
+            </p>
           </div>
         );
 
