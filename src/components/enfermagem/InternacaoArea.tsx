@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,8 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   BedDouble, ClipboardList, AlertTriangle, Plus, Search,
-  CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Activity, Stethoscope, FileText, ShieldCheck, HeartPulse, Pill
+  CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Activity, Stethoscope, FileText, ShieldCheck, HeartPulse, Pill, Loader2, RefreshCw
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ChecklistCarrinhoInternacao } from './ChecklistCarrinhoInternacao';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
@@ -31,6 +32,7 @@ import { SAEPediatrico } from './SAEPediatrico';
 import { TermoGuardaMedicamento } from './TermoGuardaMedicamento';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { getBrasiliaDate, getBrasiliaDateString } from '@/lib/brasilia-time';
 
 interface PacienteInternado {
   id: string;
@@ -40,7 +42,7 @@ interface PacienteInternado {
   diagnostico: string;
   dataInternacao: string;
   medico: string;
-  risco: 'baixo' | 'moderado' | 'alto' | 'critico';
+  risco: string;
   observacoes: string;
 }
 
@@ -76,6 +78,37 @@ const CHECKLIST_PADRAO: Omit<ChecklistCuidado, 'id' | 'concluido' | 'horario'>[]
   { descricao: 'Registrar balanço hídrico', categoria: 'Monitoramento' },
 ];
 
+/** Calcula o turno atual baseado no horário de Brasília */
+function getCurrentShift(): { date: string; type: 'diurno' | 'noturno' } {
+  const now = getBrasiliaDate();
+  const hours = now.getHours();
+  
+  // Diurno: 7h-18h59 | Noturno: 19h-6h59
+  if (hours >= 7 && hours < 19) {
+    return { date: getBrasiliaDateString(), type: 'diurno' };
+  } else {
+    // Se for após meia-noite (0h-6h59), o turno noturno pertence ao dia anterior
+    if (hours < 7) {
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const y = yesterday.getFullYear();
+      const m = (yesterday.getMonth() + 1).toString().padStart(2, '0');
+      const d = yesterday.getDate().toString().padStart(2, '0');
+      return { date: `${y}-${m}-${d}`, type: 'noturno' };
+    }
+    return { date: getBrasiliaDateString(), type: 'noturno' };
+  }
+}
+
+/** Mapeia classificação de risco do mapa de leitos */
+function mapRisco(record: any): string {
+  // Tentar inferir risco pelo setor
+  const sector = (record.sector || '').toLowerCase();
+  if (sector.includes('vermelha') || sector.includes('uti')) return 'critico';
+  if (sector.includes('amarela')) return 'alto';
+  return 'moderado';
+}
+
 const SUB_NAV_ITEMS = [
   { id: 'pacientes', label: 'Pacientes', icon: BedDouble },
   { id: 'passagem', label: 'Passagem de Plantão', icon: ClipboardList },
@@ -99,43 +132,78 @@ const SUB_NAV_ITEMS = [
 
 export function InternacaoArea() {
   const [activeTab, setActiveTab] = useState('pacientes');
-  const [pacientes, setPacientes] = useLocalStorage<PacienteInternado[]>('enf-internacao-pacientes', []);
+  const [pacientes, setPacientes] = useState<PacienteInternado[]>([]);
+  const [isLoadingPacientes, setIsLoadingPacientes] = useState(true);
   const [passagens, setPassagens] = useLocalStorage<PassagemPlantaoItem[]>('enf-internacao-passagens', []);
   const [checklist, setChecklist] = useState<ChecklistCuidado[]>(
     CHECKLIST_PADRAO.map((c, i) => ({ ...c, id: `ck-${i}`, concluido: false }))
   );
-  const [novoDialogOpen, setNovoDialogOpen] = useState(false);
   const [passagemDialogOpen, setPassagemDialogOpen] = useState(false);
   const [busca, setBusca] = useState('');
-
-  const [formPaciente, setFormPaciente] = useState({
-    nome: '', leito: '', setor: 'Observação', diagnostico: '', medico: '', risco: 'moderado' as PacienteInternado['risco'], observacoes: ''
-  });
 
   const [formPassagem, setFormPassagem] = useState({
     turno: 'diurno', paciente: '', leito: '', informacoes: '', pendencias: '', registradoPor: ''
   });
 
+  // Buscar pacientes internados do mapa de leitos (bed_records)
+  const fetchPacientesFromBedMap = async () => {
+    setIsLoadingPacientes(true);
+    try {
+      const shift = getCurrentShift();
+      
+      const { data, error } = await supabase
+        .from('bed_records')
+        .select('*')
+        .eq('shift_date', shift.date)
+        .eq('shift_type', shift.type)
+        .not('patient_name', 'is', null)
+        .is('motivo_alta', null)
+        .is('data_alta', null);
+
+      if (error) throw error;
+
+      // Deduplicar por nome do paciente (manter registro mais recente)
+      const dedupMap = new Map<string, any>();
+      (data || []).forEach(record => {
+        const name = (record.patient_name || '').trim().toLowerCase();
+        if (!name) return;
+        const existing = dedupMap.get(name);
+        if (!existing || (record.created_at && (!existing.created_at || record.created_at > existing.created_at))) {
+          dedupMap.set(name, record);
+        }
+      });
+
+      const mapped: PacienteInternado[] = Array.from(dedupMap.values()).map(record => ({
+        id: record.id,
+        nome: record.patient_name || '',
+        leito: record.bed_number || '',
+        setor: record.sector || '',
+        diagnostico: record.hipotese_diagnostica || '',
+        dataInternacao: record.data_internacao || record.shift_date || '',
+        medico: record.medicos || '',
+        risco: mapRisco(record),
+        observacoes: record.observacao || '',
+      }));
+
+      // Ordenar por setor e leito
+      mapped.sort((a, b) => a.setor.localeCompare(b.setor) || a.leito.localeCompare(b.leito));
+      setPacientes(mapped);
+    } catch (err) {
+      console.error('[InternacaoArea] Erro ao buscar pacientes:', err);
+      toast.error('Erro ao carregar pacientes do mapa de leitos');
+    } finally {
+      setIsLoadingPacientes(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPacientesFromBedMap();
+  }, []);
+
   const pacientesFiltrados = pacientes.filter(p =>
     p.nome.toLowerCase().includes(busca.toLowerCase()) ||
     p.leito.toLowerCase().includes(busca.toLowerCase())
   );
-
-  const handleAddPaciente = () => {
-    if (!formPaciente.nome || !formPaciente.leito) {
-      toast.error('Nome e leito são obrigatórios');
-      return;
-    }
-    const novo: PacienteInternado = {
-      id: crypto.randomUUID(),
-      ...formPaciente,
-      dataInternacao: new Date().toISOString().split('T')[0],
-    };
-    setPacientes([...pacientes, novo]);
-    setFormPaciente({ nome: '', leito: '', setor: 'Observação', diagnostico: '', medico: '', risco: 'moderado', observacoes: '' });
-    setNovoDialogOpen(false);
-    toast.success('Paciente registrado com sucesso');
-  };
 
   const handleAddPassagem = () => {
     if (!formPassagem.paciente || !formPassagem.informacoes) {
@@ -181,80 +249,52 @@ export function InternacaoArea() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input placeholder="Buscar por nome ou leito..." value={busca} onChange={e => setBusca(e.target.value)} className="pl-9" />
               </div>
-              <Dialog open={novoDialogOpen} onOpenChange={setNovoDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button><Plus className="h-4 w-4 mr-1" />Novo Paciente</Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader><DialogTitle>Registrar Paciente Internado</DialogTitle></DialogHeader>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><Label>Nome</Label><Input value={formPaciente.nome} onChange={e => setFormPaciente(p => ({ ...p, nome: e.target.value }))} /></div>
-                      <div><Label>Leito</Label><Input value={formPaciente.leito} onChange={e => setFormPaciente(p => ({ ...p, leito: e.target.value }))} placeholder="Ex: 01A" /></div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><Label>Setor</Label>
-                        <Select value={formPaciente.setor} onValueChange={v => setFormPaciente(p => ({ ...p, setor: v }))}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Observação">Observação</SelectItem>
-                            <SelectItem value="Sala Amarela">Sala Amarela</SelectItem>
-                            <SelectItem value="Sala Vermelha">Sala Vermelha</SelectItem>
-                            <SelectItem value="Pediatria">Pediatria</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div><Label>Risco</Label>
-                        <Select value={formPaciente.risco} onValueChange={v => setFormPaciente(p => ({ ...p, risco: v as any }))}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="baixo">Baixo</SelectItem>
-                            <SelectItem value="moderado">Moderado</SelectItem>
-                            <SelectItem value="alto">Alto</SelectItem>
-                            <SelectItem value="critico">Crítico</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <div><Label>Diagnóstico</Label><Input value={formPaciente.diagnostico} onChange={e => setFormPaciente(p => ({ ...p, diagnostico: e.target.value }))} /></div>
-                    <div><Label>Médico Responsável</Label><Input value={formPaciente.medico} onChange={e => setFormPaciente(p => ({ ...p, medico: e.target.value }))} /></div>
-                    <div><Label>Observações</Label><Textarea value={formPaciente.observacoes} onChange={e => setFormPaciente(p => ({ ...p, observacoes: e.target.value }))} /></div>
-                    <Button onClick={handleAddPaciente} className="w-full">Registrar</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
+              <Button variant="outline" size="sm" onClick={fetchPacientesFromBedMap} disabled={isLoadingPacientes}>
+                <RefreshCw className={cn("h-4 w-4 mr-1", isLoadingPacientes && "animate-spin")} />
+                Atualizar
+              </Button>
             </div>
 
-            <div className="rounded-md border overflow-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Leito</TableHead>
-                    <TableHead>Paciente</TableHead>
-                    <TableHead>Setor</TableHead>
-                    <TableHead>Diagnóstico</TableHead>
-                    <TableHead>Médico</TableHead>
-                    <TableHead>Risco</TableHead>
-                    <TableHead>Internação</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {pacientesFiltrados.length === 0 ? (
-                    <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhum paciente internado registrado</TableCell></TableRow>
-                  ) : pacientesFiltrados.map(p => (
-                    <TableRow key={p.id}>
-                      <TableCell className="font-mono font-semibold">{p.leito}</TableCell>
-                      <TableCell className="font-medium">{p.nome}</TableCell>
-                      <TableCell>{p.setor}</TableCell>
-                      <TableCell>{p.diagnostico}</TableCell>
-                      <TableCell>{p.medico}</TableCell>
-                      <TableCell><Badge className={riscoColor(p.risco)}>{p.risco}</Badge></TableCell>
-                      <TableCell>{p.dataInternacao}</TableCell>
+            {isLoadingPacientes ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-primary mr-2" />
+                <span className="text-muted-foreground">Carregando pacientes do mapa de leitos...</span>
+              </div>
+            ) : (
+              <div className="rounded-md border overflow-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Leito</TableHead>
+                      <TableHead>Paciente</TableHead>
+                      <TableHead>Setor</TableHead>
+                      <TableHead>Diagnóstico</TableHead>
+                      <TableHead>Médico</TableHead>
+                      <TableHead>Risco</TableHead>
+                      <TableHead>Internação</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                  </TableHeader>
+                  <TableBody>
+                    {pacientesFiltrados.length === 0 ? (
+                      <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhum paciente internado no turno atual</TableCell></TableRow>
+                    ) : pacientesFiltrados.map(p => (
+                      <TableRow key={p.id}>
+                        <TableCell className="font-mono font-semibold">{p.leito}</TableCell>
+                        <TableCell className="font-medium">{p.nome}</TableCell>
+                        <TableCell>{p.setor}</TableCell>
+                        <TableCell className="max-w-[200px] truncate">{p.diagnostico || '—'}</TableCell>
+                        <TableCell>{p.medico || '—'}</TableCell>
+                        <TableCell><Badge className={riscoColor(p.risco)}>{p.risco}</Badge></TableCell>
+                        <TableCell>{p.dataInternacao ? new Date(p.dataInternacao + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Dados sincronizados com o Mapa de Leitos (NIR) — Turno: {getCurrentShift().type === 'diurno' ? 'Diurno' : 'Noturno'} | {pacientes.length} paciente(s)
+            </p>
           </div>
         );
 
