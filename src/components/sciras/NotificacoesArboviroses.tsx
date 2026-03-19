@@ -9,7 +9,7 @@ import { SearchInput } from '@/components/ui/search-input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingState } from '@/components/ui/loading-state';
 import { toast } from 'sonner';
-import { Upload, ExternalLink, Bug, FileSpreadsheet, Users, Calendar, AlertTriangle } from 'lucide-react';
+import { Upload, ExternalLink, Bug, FileSpreadsheet, Users, Calendar, AlertTriangle, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import * as XLSX from 'xlsx';
 
