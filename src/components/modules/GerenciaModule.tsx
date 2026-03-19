@@ -5,7 +5,7 @@ import {
   Building2, AlertTriangle, Clock, CheckCircle2, Plus,
   Filter, Users, TrendingUp, Search, History, CalendarClock, FileText, Brain, ReceiptText, GitBranch,
   Stethoscope, Shield, ClipboardCheck, BedDouble, GraduationCap, Wrench,
-  ShieldAlert, HardHat, Skull, UtensilsCrossed, Shirt, Activity
+  ShieldAlert, HardHat, Skull, UtensilsCrossed, Shirt, Activity, BarChart3
 } from 'lucide-react';
 import { DISCFormModule } from '@/components/disc/DISCFormModule';
 import { LancamentoNotas } from '@/components/gerencia/LancamentoNotas';
@@ -23,6 +23,7 @@ import { SegurancaTrabalhoModule } from '@/components/modules/SegurancaTrabalhoM
 import { DashboardIAIncidentes } from '@/components/gestao-incidentes/DashboardIAIncidentes';
 import { RoupariaModule } from '@/components/modules/RoupariaModule';
 import { RestauranteModule } from '@/components/modules/RestauranteModule';
+import { DashboardBIHospitalar } from '@/components/bi/DashboardBIHospitalar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -494,8 +495,12 @@ export function GerenciaModule() {
       </div>
 
       {/* Tabs: Planos de Ação / Visão por Setor */}
-      <Tabs defaultValue="planos">
+      <Tabs defaultValue="bi">
         <TabsList>
+          <TabsTrigger value="bi" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Business Intelligence
+          </TabsTrigger>
           <TabsTrigger value="planos" className="gap-2">
             <CalendarClock className="h-4 w-4" />
             Planos de Ação
@@ -517,6 +522,11 @@ export function GerenciaModule() {
             Gestão de Talentos
           </TabsTrigger>
         </TabsList>
+
+        {/* -- Tab: BI Hospitalar -- */}
+        <TabsContent value="bi" className="mt-4">
+          <DashboardBIHospitalar periodoMeses={3} />
+        </TabsContent>
 
         {/* -- Tab: Planos de Ação -- */}
         <TabsContent value="planos" className="mt-4 space-y-4">
