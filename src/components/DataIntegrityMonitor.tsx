@@ -302,7 +302,7 @@ export function DataIntegrityMonitor({
                   </p>
                   <p>
                     <strong>Severity:</strong>{' '}
-                    <Badge variant={SEVERITY_BADGES[selectedAlert.severity as keyof typeof SEVERITY_BADGES]}>
+                    <Badge variant={SEVERITY_BADGES[selectedAlert.severity as keyof typeof SEVERITY_BADGES] as any}>
                       {selectedAlert.severity?.toUpperCase()}
                     </Badge>
                   </p>

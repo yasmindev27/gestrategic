@@ -119,8 +119,8 @@ export function useMFAVerification() {
 
       if (!factors?.totp) throw new Error('MFA not configured');
 
-      const { error } = await supabase.auth.mfa.verify({
-        factorId: factors.totp.factor.id,
+      const { error } = await (supabase.auth.mfa.verify as any)({
+        factorId: factors.totp[0]?.id,
         code: verificationCode,
       });
 

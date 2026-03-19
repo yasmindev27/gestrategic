@@ -121,7 +121,7 @@ export function MFASetup({ userId, open, onComplete }: MFASetupProps) {
       // Marcar MFA como setup
       const { error } = await supabase
         .from('profiles')
-        .update({ mfa_enabled: true })
+        .update({ updated_at: new Date().toISOString() } as any)
         .eq('user_id', userId);
 
       if (error) throw error;
