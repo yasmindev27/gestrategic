@@ -28,7 +28,6 @@ export const useModules = () => {
     isLaboratorio,
     isNir,
     isRecepcao,
-    isClassificacao,
     isFaturamento,
     isRHDP,
     isRestaurante,
