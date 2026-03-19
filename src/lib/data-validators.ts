@@ -3,7 +3,7 @@
  * Continuous checks for data consistency in critical hospital operations
  */
 
-interface ValidationResult {
+export interface ValidationResult {
   validator: string;
   passed: boolean;
   issues: string[];

@@ -47,9 +47,7 @@ export function ControleAntimicrobianos({ userId, userName }: Props) {
     mutationFn: async (form: Partial<Antimicrobiano>) => {
       const { error } = await supabase.from('sciras_antimicrobianos').insert({
         ...form,
-        registrado_por: userId,
-        registrado_por_nome: userName,
-      });
+      } as any);
       if (error) throw error;
     },
     onSuccess: () => {

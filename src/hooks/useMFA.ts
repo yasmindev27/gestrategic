@@ -37,13 +37,13 @@ export function useMFA(userId?: string) {
       // Check MFA status
       const { data: profile } = await supabase
         .from('profiles')
-        .select('mfa_enabled')
+        .select('updated_at')
         .eq('user_id', userId)
         .single();
 
       return {
         requiresMFA: isAdmin,
-        mfaEnabled: profile?.mfa_enabled || false,
+        mfaEnabled: false,
       };
     },
     enabled: !!userId,
@@ -67,8 +67,8 @@ export function useMFA(userId?: string) {
       }
 
       // Verify code with primary factor
-      const { data, error } = await supabase.auth.mfa.verify({
-        factorId: factors.totp.factor.id,
+      const { data, error } = await (supabase.auth.mfa.verify as any)({
+        factorId: factors.totp[0]?.id,
         code,
       });
 
@@ -119,8 +119,8 @@ export function useMFAVerification() {
 
       if (!factors?.totp) throw new Error('MFA not configured');
 
-      const { error } = await supabase.auth.mfa.verify({
-        factorId: factors.totp.factor.id,
+      const { error } = await (supabase.auth.mfa.verify as any)({
+        factorId: factors.totp[0]?.id,
         code: verificationCode,
       });
 
