@@ -144,12 +144,18 @@ export function ControleSinaisVitaisOxigenio({ storageKey, setor }: Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <HeartPulse className="h-5 w-5 text-primary" />
-          Controle de Sinais Vitais e Oxigenioterapia
-        </h3>
-        <p className="text-sm text-muted-foreground">{setor} — Controle especial de unidade adulto</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <HeartPulse className="h-5 w-5 text-primary" />
+            Controle de Sinais Vitais e Oxigenioterapia
+          </h3>
+          <p className="text-sm text-muted-foreground">{setor} — Controle especial de unidade adulto</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: `SV/Oxigenioterapia — ${setor}`, headers: ['Data', 'Paciente', 'Leito', 'RA', 'Unidade', 'Data Registro'], rows: registros.map(r => [r.data, r.nomePaciente, r.leito, r.ra, r.unidadeInternacao, r.dataRegistro]), fileName: `sv_oxigenio_${setor}` })}
+          onExportExcel={() => exportToExcel({ title: `SV/Oxigenioterapia — ${setor}`, headers: ['Data', 'Paciente', 'Leito', 'RA', 'Unidade', 'Data Registro'], rows: registros.map(r => [r.data, r.nomePaciente, r.leito, r.ra, r.unidadeInternacao, r.dataRegistro]), fileName: `sv_oxigenio_${setor}` })}
+        />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">

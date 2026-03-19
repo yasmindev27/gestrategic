@@ -228,12 +228,18 @@ export function EscalasClinicas({ storageKey, setor }: Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Stethoscope className="h-5 w-5 text-primary" />
-          Escalas Clínicas de Avaliação
-        </h3>
-        <p className="text-sm text-muted-foreground">{setor} — Braden, MEWS, Flebite e Dor</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Stethoscope className="h-5 w-5 text-primary" />
+            Escalas Clínicas de Avaliação
+          </h3>
+          <p className="text-sm text-muted-foreground">{setor} — Braden, MEWS, Flebite e Dor</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: `Escalas Clínicas — ${setor}`, headers: ['Data', 'Paciente', 'Leito', 'Tipo', 'Score', 'Classificação', 'Responsável'], rows: registros.map(r => [r.data, r.paciente, r.leito, r.tipo, r.score, r.classificacao, r.responsavel]), fileName: `escalas_clinicas_${setor}` })}
+          onExportExcel={() => exportToExcel({ title: `Escalas Clínicas — ${setor}`, headers: ['Data', 'Paciente', 'Leito', 'Tipo', 'Score', 'Classificação', 'Responsável'], rows: registros.map(r => [r.data, r.paciente, r.leito, r.tipo, r.score, r.classificacao, r.responsavel]), fileName: `escalas_clinicas_${setor}` })}
+        />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

@@ -191,12 +191,18 @@ export function DiagnosticoPrescricaoEnfermagem({ storageKey, setor }: Props) {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <ClipboardList className="h-5 w-5 text-primary" />
-          Diagnósticos e Prescrições de Enfermagem — Paciente Adulto e Idoso
-        </h3>
-        <p className="text-sm text-muted-foreground">{setor}</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <ClipboardList className="h-5 w-5 text-primary" />
+            Diagnósticos e Prescrições de Enfermagem — Paciente Adulto e Idoso
+          </h3>
+          <p className="text-sm text-muted-foreground">{setor}</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: `Prescrição Enfermagem — ${setor}`, headers: ['Data', 'Paciente', 'Leito', 'Enfermeiro', 'COREN', 'Prescrições', 'Data Registro'], rows: registros.map(r => [r.data, r.pacienteNome, r.leito, r.enfermeiroResponsavel, r.coren, totalPrescricoes(r), r.dataRegistro]), fileName: `prescricao_enf_${setor}` })}
+          onExportExcel={() => exportToExcel({ title: `Prescrição Enfermagem — ${setor}`, headers: ['Data', 'Paciente', 'Leito', 'Enfermeiro', 'COREN', 'Prescrições', 'Data Registro'], rows: registros.map(r => [r.data, r.pacienteNome, r.leito, r.enfermeiroResponsavel, r.coren, totalPrescricoes(r), r.dataRegistro]), fileName: `prescricao_enf_${setor}` })}
+        />
       </div>
 
       {/* KPIs */}
