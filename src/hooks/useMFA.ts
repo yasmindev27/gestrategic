@@ -67,8 +67,8 @@ export function useMFA(userId?: string) {
       }
 
       // Verify code with primary factor
-      const { data, error } = await supabase.auth.mfa.verify({
-        factorId: factors.totp.factor.id,
+      const { data, error } = await (supabase.auth.mfa.verify as any)({
+        factorId: factors.totp[0]?.id,
         code,
       });
 
