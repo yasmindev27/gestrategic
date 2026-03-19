@@ -18,7 +18,7 @@ export async function logAuditAction(
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return;
 
-    await supabase.from("logs_acesso").insert({
+    await (supabase.from("logs_acesso") as any).insert({
       user_id: user.id,
       acao,
       modulo,
