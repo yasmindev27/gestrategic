@@ -15,6 +15,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 
 // === Interfaces ===
 

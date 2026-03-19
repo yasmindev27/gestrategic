@@ -185,14 +185,28 @@ export function MedicacaoArea() {
   const pendentes = prescricoes.filter(p => p.status === 'pendente').length;
   const administrados = prescricoes.filter(p => p.status === 'administrado').length;
 
+  const handleExportMedicacao = (type: 'pdf' | 'excel') => {
+    const headers = ['Paciente', 'Leito', 'Medicamento', 'Dose', 'Via', 'Horário', 'Frequência', 'Status', 'Registrado por', 'Data'];
+    const rows = prescricoes.map(p => [p.paciente, p.leito, p.medicamento, p.dose, p.via, p.horario, p.frequencia, p.status, p.registradoPor, p.dataRegistro]);
+    const options = { title: 'Medicação — Prescrições', headers, rows, fileName: 'medicacao_prescricoes' };
+    if (type === 'pdf') exportToPDF(options);
+    else exportToExcel(options);
+  };
+
   return (
     <div className="space-y-4">
-      <div>
-        <h2 className="text-xl font-semibold flex items-center gap-2">
-          <Pill className="h-5 w-5 text-primary" />
-          Medicação
-        </h2>
-        <p className="text-sm text-muted-foreground">Controle de prescrições, administração, estoque e eventos adversos</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-semibold flex items-center gap-2">
+            <Pill className="h-5 w-5 text-primary" />
+            Medicação
+          </h2>
+          <p className="text-sm text-muted-foreground">Controle de prescrições, administração, estoque e eventos adversos</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => handleExportMedicacao('pdf')}
+          onExportExcel={() => handleExportMedicacao('excel')}
+        />
       </div>
 
       {/* KPIs */}
