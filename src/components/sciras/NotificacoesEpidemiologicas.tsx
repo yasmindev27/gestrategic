@@ -84,69 +84,84 @@ export function NotificacoesEpidemiologicas({ userId, userName }: Props) {
   if (isLoading) return <LoadingState message="Carregando notificações..." />;
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <SearchInput placeholder="Buscar doença/agravo..." value={search} onChange={setSearch} className="flex-1" />
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-2" />Nova Notificação</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Notificação Epidemiológica</DialogTitle>
-            </DialogHeader>
-            <NovaNotificacaoForm onSubmit={(f) => createMutation.mutate(f)} isLoading={createMutation.isPending} />
-          </DialogContent>
-        </Dialog>
-      </div>
+    <Tabs defaultValue="listagem" className="space-y-4">
+      <TabsList>
+        <TabsTrigger value="listagem">
+          <Bell className="h-4 w-4 mr-2" /> Notificações
+        </TabsTrigger>
+        <TabsTrigger value="compulsoria">
+          <FileText className="h-4 w-4 mr-2" /> Notif. Compulsória (Prefeitura)
+        </TabsTrigger>
+      </TabsList>
 
-      {filtered.length === 0 ? (
-        <EmptyState icon={Bell} title="Nenhuma notificação" description="Nenhuma notificação epidemiológica registrada." />
-      ) : (
-        <Card>
-          <CardContent className="p-0">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Nº</TableHead>
-                  <TableHead>Tipo</TableHead>
-                  <TableHead>Doença/Agravo</TableHead>
-                  <TableHead>Setor</TableHead>
-                  <TableHead>Data</TableHead>
-                  <TableHead>ANVISA</TableHead>
-                  <TableHead>Vig. Municipal</TableHead>
-                  <TableHead>Status</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filtered.map(n => (
-                  <TableRow key={n.id}>
-                    <TableCell className="font-mono text-xs">{n.numero_notificacao}</TableCell>
-                    <TableCell>
-                      <Badge variant={n.tipo === 'surto' ? 'destructive' : 'outline'}>
-                        {tipoLabels[n.tipo] || n.tipo}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{n.doenca_agravo}</TableCell>
-                    <TableCell>{n.setor}</TableCell>
-                    <TableCell>{format(new Date(n.data_notificacao), 'dd/MM/yyyy')}</TableCell>
-                    <TableCell>
-                      {n.notificado_anvisa ? <CheckCircle className="h-4 w-4 text-success" /> : <span className="text-muted-foreground">-</span>}
-                    </TableCell>
-                    <TableCell>
-                      {n.notificado_vigilancia_municipal ? <CheckCircle className="h-4 w-4 text-success" /> : <span className="text-muted-foreground">-</span>}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={statusMap[n.status] || 'default'} label={n.status.replace('_', ' ')} />
-                    </TableCell>
+      <TabsContent value="compulsoria">
+        <NotificacaoCompulsoriaPrefeitura userId={userId} userName={userName} />
+      </TabsContent>
+
+      <TabsContent value="listagem" className="space-y-4">
+        <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+          <SearchInput placeholder="Buscar doença/agravo..." value={search} onChange={setSearch} className="flex-1" />
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4 mr-2" />Nova Notificação</Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Notificação Epidemiológica</DialogTitle>
+              </DialogHeader>
+              <NovaNotificacaoForm onSubmit={(f) => createMutation.mutate(f)} isLoading={createMutation.isPending} />
+            </DialogContent>
+          </Dialog>
+        </div>
+
+        {filtered.length === 0 ? (
+          <EmptyState icon={Bell} title="Nenhuma notificação" description="Nenhuma notificação epidemiológica registrada." />
+        ) : (
+          <Card>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Nº</TableHead>
+                    <TableHead>Tipo</TableHead>
+                    <TableHead>Doença/Agravo</TableHead>
+                    <TableHead>Setor</TableHead>
+                    <TableHead>Data</TableHead>
+                    <TableHead>ANVISA</TableHead>
+                    <TableHead>Vig. Municipal</TableHead>
+                    <TableHead>Status</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
-      )}
-    </div>
+                </TableHeader>
+                <TableBody>
+                  {filtered.map(n => (
+                    <TableRow key={n.id}>
+                      <TableCell className="font-mono text-xs">{n.numero_notificacao}</TableCell>
+                      <TableCell>
+                        <Badge variant={n.tipo === 'surto' ? 'destructive' : 'outline'}>
+                          {tipoLabels[n.tipo] || n.tipo}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="font-medium">{n.doenca_agravo}</TableCell>
+                      <TableCell>{n.setor}</TableCell>
+                      <TableCell>{format(new Date(n.data_notificacao), 'dd/MM/yyyy')}</TableCell>
+                      <TableCell>
+                        {n.notificado_anvisa ? <CheckCircle className="h-4 w-4 text-success" /> : <span className="text-muted-foreground">-</span>}
+                      </TableCell>
+                      <TableCell>
+                        {n.notificado_vigilancia_municipal ? <CheckCircle className="h-4 w-4 text-success" /> : <span className="text-muted-foreground">-</span>}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={statusMap[n.status] || 'default'} label={n.status.replace('_', ' ')} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        )}
+      </TabsContent>
+    </Tabs>
   );
 }
 
