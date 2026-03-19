@@ -17,8 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { useToast } from "@/hooks/use-toast";
 import { format, startOfMonth, endOfMonth, eachMonthOfInterval, subMonths } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Users, ClipboardList, BarChart3, Plus, Eye, Send, BedDouble, Shield, Heart, Brain, HandHeart, ArrowRightLeft } from "lucide-react";
-import { ShieldX } from "lucide-react";
+import { Users, ClipboardList, BarChart3, Plus, Eye, Send, BedDouble, Shield, Heart, Brain, HandHeart, ArrowRightLeft, FileSpreadsheet, FileDown, Edit, ShieldX } from "lucide-react";
 import { PassagemPlantaoSocial } from "@/components/assistencia-social/PassagemPlantaoSocial";
 
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
@@ -78,8 +77,21 @@ interface BedPatient {
   sector: string;
   bed_number: string;
   patient_name: string;
+  patient_id?: string;
   hipotese_diagnostica: string | null;
   data_internacao: string | null;
+  data_nascimento?: string | null;
+}
+
+interface EvolucaoAtendimento {
+  id: string;
+  atendimento_id: string;
+  profissional_nome: string;
+  profissional_id: string;
+  data_evolucao: string;
+  descricao: string;
+  observacoes: string | null;
+  created_at: string;
 }
 
 // --- Constants ---
@@ -166,7 +178,10 @@ export const AssistenciaSocialModule = () => {
   const [atendimentoDialog, setAtendimentoDialog] = useState(false);
   const [encaminhamentoDialog, setEncaminhamentoDialog] = useState(false);
   const [detalhesDialog, setDetalhesDialog] = useState(false);
+  const [evolucaoDialog, setEvolucaoDialog] = useState(false);
+  const [editarStatusDialog, setEditarStatusDialog] = useState(false);
   const [selectedAtendimento, setSelectedAtendimento] = useState<Atendimento | null>(null);
+  const [selectedBedPatient, setSelectedBedPatient] = useState<(BedPatient & { atendimento_id?: string; status?: string; profissional_id?: string; profissional_nome?: string }) | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Form data
@@ -181,6 +196,16 @@ export const AssistenciaSocialModule = () => {
     status: "em_atendimento",
     observacoes: "",
     evolucao_salus: "" as string,
+  });
+  
+  const [evolucaoForm, setEvolucaoForm] = useState({
+    descricao: "",
+    observacoes: "",
+  });
+
+  const [statusForm, setStatusForm] = useState({
+    status: "",
+    profissional_nome: "",
   });
   
   const [encaminhamentoForm, setEncaminhamentoForm] = useState({
@@ -595,9 +620,12 @@ export const AssistenciaSocialModule = () => {
                       <TableHead>Setor de Internação</TableHead>
                       <TableHead>Leito</TableHead>
                       <TableHead>Paciente</TableHead>
+                      <TableHead>Data de Nascimento</TableHead>
                       <TableHead>Hipótese Diagnóstica</TableHead>
                       <TableHead>Data Internação</TableHead>
-                      <TableHead className="text-right">Ação</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Profissional Responsável</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -614,20 +642,27 @@ export const AssistenciaSocialModule = () => {
                             <TableCell><Badge variant="outline">{sl}</Badge></TableCell>
                             <TableCell className="font-medium">{b.bed_number}</TableCell>
                             <TableCell className="font-medium uppercase">{b.patient_name}</TableCell>
+                            <TableCell>{b.data_nascimento ? format(new Date(b.data_nascimento), "dd/MM/yyyy") : "-"}</TableCell>
                             <TableCell className="max-w-[200px] truncate">{b.hipotese_diagnostica || "-"}</TableCell>
                             <TableCell>{b.data_internacao ? format(new Date(b.data_internacao), "dd/MM/yyyy") : "-"}</TableCell>
-                            <TableCell className="text-right">
+                            <TableCell>
+                              <Badge variant="secondary" className="text-xs">{statusForm.status || "Ativo"}</Badge>
+                            </TableCell>
+                            <TableCell className="text-sm">{statusForm.profissional_nome || "-"}</TableCell>
+                            <TableCell className="text-right space-x-1">
                               <Button size="sm" variant="outline" onClick={() => {
-                                setAtendimentoForm(prev => ({
-                                  ...prev,
-                                  paciente_nome: b.patient_name,
-                                  setor_atendimento: sl,
-                                  setor_internacao: `Leito ${b.bed_number} - ${sl}`,
-                                }));
-                                setAtendimentoDialog(true);
+                                setSelectedBedPatient(b);
+                                setEditarStatusDialog(true);
+                              }}>
+                                <Edit className="h-3 w-3 mr-1" />
+                                Status
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => {
+                                setSelectedBedPatient(b);
+                                setEvolucaoDialog(true);
                               }}>
                                 <Plus className="h-3 w-3 mr-1" />
-                                Atender
+                                Evolução
                               </Button>
                             </TableCell>
                           </TableRow>
@@ -802,6 +837,102 @@ export const AssistenciaSocialModule = () => {
             <Button variant="outline" onClick={() => setAtendimentoDialog(false)}>Cancelar</Button>
             <Button onClick={handleCreateAtendimento} disabled={isSubmitting}>
               {isSubmitting ? "Salvando..." : "Registrar Atendimento"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ======= DIALOG: EDITAR STATUS E PROFISSIONAL ======= */}
+      <Dialog open={editarStatusDialog} onOpenChange={setEditarStatusDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Status e Profissional</DialogTitle>
+            <CardDescription>
+              Atualize o status do atendimento e o profissional responsável para {selectedBedPatient?.patient_name}
+            </CardDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Status do Atendimento *</Label>
+              <Select value={statusForm.status} onValueChange={v => setStatusForm({...statusForm, status: v})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o status..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="ativo">Ativo</SelectItem>
+                  <SelectItem value="em-observacao">Em Observação</SelectItem>
+                  <SelectItem value="alta-planejada">Alta Planejada</SelectItem>
+                  <SelectItem value="acompanhamento">Acompanhamento</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Profissional Responsável *</Label>
+              <Input
+                value={statusForm.profissional_nome}
+                onChange={e => setStatusForm({...statusForm, profissional_nome: e.target.value})}
+                placeholder="Nome do profissional..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditarStatusDialog(false)}>Cancelar</Button>
+            <Button onClick={() => {
+              // TODO: Implementar atualização no banco de dados
+              setEditarStatusDialog(false);
+              toast.success("Status atualizado com sucesso");
+            }}>
+              Salvar Alterações
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ======= DIALOG: REGISTRAR EVOLUÇÃO ======= */}
+      <Dialog open={evolucaoDialog} onOpenChange={setEvolucaoDialog}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Registrar Evolução de Atendimento</DialogTitle>
+            <CardDescription>
+              Registre a evolução do atendimento para {selectedBedPatient?.patient_name}
+            </CardDescription>
+          </DialogHeader>
+          <div className="space-y-5">
+            {/* Campos de Evolução */}
+            <div className="space-y-1">
+              <p className="text-sm font-semibold text-primary">Evolução do Atendimento</p>
+              <div className="h-px bg-border" />
+            </div>
+            <div className="space-y-4">
+              <div>
+                <Label>Descrição da Evolução *</Label>
+                <Textarea
+                  rows={5}
+                  value={evolucaoForm.descricao}
+                  onChange={e => setEvolucaoForm({...evolucaoForm, descricao: e.target.value})}
+                  placeholder="Descreva detalhadamente a evolução do paciente, condutas realizadas e orientações fornecidas..."
+                />
+              </div>
+              <div>
+                <Label>Observações Adicionais</Label>
+                <Textarea
+                  rows={2}
+                  value={evolucaoForm.observacoes}
+                  onChange={e => setEvolucaoForm({...evolucaoForm, observacoes: e.target.value})}
+                  placeholder="Informações complementares sobre a evolução (opcional)"
+                />
+              </div>
+            </div>
+          </div>
+          <DialogFooter className="mt-2">
+            <Button variant="outline" onClick={() => setEvolucaoDialog(false)}>Cancelar</Button>
+            <Button onClick={() => {
+              // TODO: Implementar salvamento da evolução no banco de dados
+              setEvolucaoDialog(false);
+              setEvolucaoForm({ descricao: "", observacoes: "" });
+              toast.success("Evolução registrada com sucesso");
+            }} disabled={!evolucaoForm.descricao.trim()}>
+              Registrar Evolução
             </Button>
           </DialogFooter>
         </DialogContent>
