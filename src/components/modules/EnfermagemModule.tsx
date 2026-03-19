@@ -160,7 +160,6 @@ export default function EnfermagemModule() {
     { value: "medicacao", label: "Medicação", icon: Pill },
     ...(canAccessProtocolos ? [{ value: "protocolos", label: "Protocolos Clínicos", icon: FileCheck }] : []),
     ...(isGestor ? [
-      { value: "aprovacao-ponto", label: "Aprovação de Ponto", icon: ClipboardCheck },
       { value: "indicadores-upa", label: "Indicadores UPA", icon: Activity },
     ] : []),
   ];
