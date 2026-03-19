@@ -20,7 +20,7 @@ import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
 import { exportToCSV, exportToPDF, createStandardPdf, savePdfWithFooter } from "@/lib/export-utils";
 import autoTable from "jspdf-autotable";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, Line, Legend } from "recharts";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--info))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--accent))'];
 
@@ -308,6 +308,35 @@ export const BancoHorasSection = () => {
     });
     return Object.values(grouped).sort((a, b) => b.saldo - a.saldo);
   }, [registros]);
+
+  // Evolution trend data - monthly credits vs debits
+  const [evolFilterColab, setEvolFilterColab] = useState("todos");
+
+  const evolucaoMensal = useMemo(() => {
+    const MESES_LABEL = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+    const map: Record<string, { credito: number; debito: number; saldo: number }> = {};
+    
+    const source = evolFilterColab === "todos" 
+      ? registros.filter(r => r.data.startsWith(filterAno))
+      : registros.filter(r => r.data.startsWith(filterAno) && r.funcionario_user_id === evolFilterColab);
+
+    source.forEach(r => {
+      const mes = r.data.split("-")[1];
+      if (!map[mes]) map[mes] = { credito: 0, debito: 0, saldo: 0 };
+      if (r.tipo === "credito") {
+        map[mes].credito += Number(r.horas);
+      } else {
+        map[mes].debito += Number(r.horas);
+      }
+      map[mes].saldo = map[mes].credito - map[mes].debito;
+    });
+
+    return Array.from({ length: 12 }, (_, i) => {
+      const mesKey = String(i + 1).padStart(2, "0");
+      const d = map[mesKey] || { credito: 0, debito: 0, saldo: 0 };
+      return { name: MESES_LABEL[i], credito: +d.credito.toFixed(1), debito: +d.debito.toFixed(1), saldo: +d.saldo.toFixed(1) };
+    });
+  }, [registros, filterAno, evolFilterColab]);
 
   const chartDistribuicao = useMemo(() => {
     const credCount = registros.filter(r => r.tipo === 'credito').length;
@@ -878,7 +907,60 @@ export const BancoHorasSection = () => {
             </Card>
           </div>
 
-
+          {/* Evolução Mensal - Trend Chart */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Evolução Mensal de Horas — {filterAno}
+                </CardTitle>
+                <Select value={evolFilterColab} onValueChange={setEvolFilterColab}>
+                  <SelectTrigger className="w-[220px]">
+                    <SelectValue placeholder="Colaborador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os colaboradores</SelectItem>
+                    {profiles.map(p => (
+                      <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[320px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={evolucaoMensal} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="gradCredito" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(142, 76%, 36%)" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradDebito" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(0, 84%, 60%)" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
+                      formatter={(value: number, name: string) => [
+                        formatHM(value),
+                        name === 'credito' ? 'Créditos' : name === 'debito' ? 'Débitos' : 'Saldo'
+                      ]}
+                    />
+                    <Legend formatter={(value) => value === 'credito' ? 'Créditos' : value === 'debito' ? 'Débitos' : 'Saldo'} />
+                    <Area type="monotone" dataKey="credito" stroke="hsl(142, 76%, 36%)" fill="url(#gradCredito)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="debito" stroke="hsl(0, 84%, 60%)" fill="url(#gradDebito)" strokeWidth={2} />
+                    <Line type="monotone" dataKey="saldo" stroke="hsl(var(--primary))" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 3 }} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
 
         </TabsContent>
 

@@ -18,7 +18,7 @@ import { format, differenceInDays } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
 import { exportToCSV, exportToPDF } from "@/lib/export-utils";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, Legend } from "recharts";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--info))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--accent))'];
 
@@ -303,6 +303,31 @@ export const CentralAtestadosSection = () => {
     });
     return Object.entries(months).map(([name, quantidade]) => ({ name, quantidade }));
   }, [atestadosFiltrados]);
+
+  // Evolution trend data
+  const [evolAtestColab, setEvolAtestColab] = useState("todos");
+
+  const evolucaoAtestados = useMemo(() => {
+    const MESES_LABEL = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+    const map: Record<string, { quantidade: number; dias: number }> = {};
+
+    const source = evolAtestColab === "todos"
+      ? atestados.filter(a => a.data_inicio?.startsWith(anoSelecionado))
+      : atestados.filter(a => a.data_inicio?.startsWith(anoSelecionado) && a.funcionario_user_id === evolAtestColab);
+
+    source.forEach(a => {
+      const mes = a.data_inicio.split("-")[1];
+      if (!map[mes]) map[mes] = { quantidade: 0, dias: 0 };
+      map[mes].quantidade += 1;
+      map[mes].dias += a.dias_afastamento || 0;
+    });
+
+    return Array.from({ length: 12 }, (_, i) => {
+      const mesKey = String(i + 1).padStart(2, "0");
+      const d = map[mesKey] || { quantidade: 0, dias: 0 };
+      return { name: MESES_LABEL[i], atestados: d.quantidade, dias: d.dias };
+    });
+  }, [atestados, anoSelecionado, evolAtestColab]);
 
   // ========================
   // Table filtering
@@ -689,6 +714,56 @@ export const CentralAtestadosSection = () => {
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">Sem dados no período</div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Evolução Mensal - Trend Chart */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Evolução Mensal de Atestados — {anoSelecionado}
+                </CardTitle>
+                <Select value={evolAtestColab} onValueChange={setEvolAtestColab}>
+                  <SelectTrigger className="w-[220px]">
+                    <SelectValue placeholder="Colaborador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os colaboradores</SelectItem>
+                    {profiles.map(p => (
+                      <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[320px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={evolucaoAtestados} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="gradAtestados" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradDias" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--warning))" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(var(--warning))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
+                    />
+                    <Legend />
+                    <Area type="monotone" dataKey="atestados" name="Atestados" stroke="hsl(var(--primary))" fill="url(#gradAtestados)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="dias" name="Dias Afastamento" stroke="hsl(var(--warning))" fill="url(#gradDias)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
               </div>
             </CardContent>
           </Card>
