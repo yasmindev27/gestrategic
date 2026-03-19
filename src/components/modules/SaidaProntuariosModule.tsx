@@ -225,18 +225,6 @@ export const SaidaProntuariosModule = () => {
   type VisibleSection = "fluxo" | "folhas" | "faltantes" | null;
   const [visibleSection, setVisibleSection] = useState<VisibleSection>("fluxo");
 
-  useEffect(() => {
-    if (
-      !isLoadingRole &&
-      isClassificacao &&
-      !isAdmin &&
-      !isNir &&
-      !isFaturamento &&
-      statusFilter === "em_fluxo"
-    ) {
-      setStatusFilter("todos");
-    }
-  }, [isLoadingRole, isClassificacao, isAdmin, isNir, isFaturamento, statusFilter]);
 
   useEffect(() => {
     if (!isLoadingRole && canAccess) {
@@ -249,7 +237,7 @@ export const SaidaProntuariosModule = () => {
   const fetchCounts = async () => {
     setIsLoading(true);
     try {
-      const restrictedToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
+      // Recepção e Classificação agora podem ver registros retroativos (sem restrição de data)
 
       const regularCountQuery = supabase
         .from("saida_prontuarios")
@@ -271,9 +259,6 @@ export const SaidaProntuariosModule = () => {
         .select("*", { count: "exact", head: true })
         .eq("is_folha_avulsa", true);
 
-      if (restrictedToToday) {
-        folhasCountQueryBase = folhasCountQueryBase.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-      }
 
       let faltantesCountQueryBase = supabase
         .from("saida_prontuarios")
@@ -285,9 +270,7 @@ export const SaidaProntuariosModule = () => {
         regularCountQuery,
         regularHojeQueryBuilder,
         folhasCountQueryBase,
-        restrictedToToday
-          ? faltantesCountQueryBase.gte("created_at", inicioHoje).lte("created_at", fimHoje)
-          : faltantesCountQueryBase,
+        faltantesCountQueryBase,
       ]);
       setTotalSaidasCount(regularCount.count ?? 0);
       setTotalSaidasHojeCount(regularHojeCount.count ?? 0);
@@ -304,22 +287,11 @@ export const SaidaProntuariosModule = () => {
 
 
   const applySaidasFilters = (query: any) => {
-    // Filtrar por status baseado no setor do usuário
-    if (isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao) {
-      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-    } else if (isNir && !isAdmin && !isFaturamento && !isClassificacao) {
-      // NIR vê todos os registros não concluídos por padrão, mas pode filtrar por status
-      if (statusFilter === "em_fluxo") {
-        query = query.neq("status", "concluido");
-      } else if (statusFilter !== "todos") {
-        query = query.eq("status", statusFilter);
-      }
-    } else {
-      if (statusFilter === "em_fluxo") {
-        query = query.neq("status", "concluido");
-      } else if (statusFilter !== "todos") {
-        query = query.eq("status", statusFilter);
-      }
+    // Todos os perfis com acesso podem ver registros retroativos — filtro por status apenas
+    if (statusFilter === "em_fluxo") {
+      query = query.neq("status", "concluido");
+    } else if (statusFilter !== "todos") {
+      query = query.eq("status", statusFilter);
     }
 
     if (debouncedSearchTerm) query = query.ilike("paciente_nome", `%${debouncedSearchTerm}%`);
@@ -406,10 +378,6 @@ export const SaidaProntuariosModule = () => {
   };
 
   const applyFolhasFilters = (query: any) => {
-    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
-    if (restrictToToday) {
-      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-    }
     if (debouncedFolhasSearch) query = query.ilike("paciente_nome", `%${debouncedFolhasSearch}%`);
     if (folhasDataInicio) query = query.gte("data_atendimento", folhasDataInicio);
     if (folhasDataFim) query = query.lte("data_atendimento", folhasDataFim);
@@ -474,10 +442,6 @@ export const SaidaProntuariosModule = () => {
   };
 
   const applyFaltantesFilters = (query: any) => {
-    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
-    if (restrictToToday) {
-      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-    }
     if (debouncedFaltantesSearch) query = query.ilike("paciente_nome", `%${debouncedFaltantesSearch}%`);
     if (faltantesDataInicio) query = query.gte("data_atendimento", faltantesDataInicio);
     if (faltantesDataFim) query = query.lte("data_atendimento", faltantesDataFim);
@@ -1572,9 +1536,13 @@ export const SaidaProntuariosModule = () => {
                           <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
                           <SelectItem value="concluido">Concluído</SelectItem>
                         </>
-                      ) : isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao ? (
+                      ) : (isRecepcao || isClassificacao) && !isAdmin && !isNir && !isFaturamento ? (
                         <>
                           <SelectItem value="em_fluxo">Em Fluxo (não concluídos)</SelectItem>
+                          <SelectItem value="todos">Todos</SelectItem>
+                          <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
+                          <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
+                          <SelectItem value="concluido">Concluído</SelectItem>
                         </>
                       ) : (
                         <>
