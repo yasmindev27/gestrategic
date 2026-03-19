@@ -93,15 +93,12 @@ export function MFASetup({ userId, open, onComplete }: MFASetupProps) {
       }
 
       // Log audit
-      await supabase.from('audit_log').insert({
-        entity_type: 'user',
-        entity_id: userId,
-        operation: 'CREATE',
-        new_values: { mfa_enabled: true, factor_id: factorId },
-        changed_by: userId,
-        changed_by_name: 'System',
-        reason: 'MFA enrollment',
-      }).select();
+      await supabase.from('logs_acesso' as any).insert({
+        acao: 'MFA enrollment',
+        modulo: 'auth',
+        detalhes: { mfa_enabled: true, factor_id: factorId },
+        user_id: userId,
+      } as any);
 
       setStep('recovery');
       toast({
