@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 
 interface SinaisVitaisPed {
   fc: string; fr: string; pa: string; temperatura: string; spo2: string; glicemiaCapilar: string; peso: string; altura: string; perimetroCefalico: string;
