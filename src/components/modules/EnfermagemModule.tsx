@@ -290,6 +290,9 @@ export default function EnfermagemModule() {
                     <TabsTrigger value="escala-radiologia" className="gap-2 text-xs">
                       <Radio className="h-3.5 w-3.5" /> Escala Radiologia
                     </TabsTrigger>
+                    <TabsTrigger value="aprovacao-ponto" className="gap-2 text-xs">
+                      <ClipboardCheck className="h-3.5 w-3.5" /> Aprovação Ponto
+                    </TabsTrigger>
                   </>
                 )}
               </TabsList>
