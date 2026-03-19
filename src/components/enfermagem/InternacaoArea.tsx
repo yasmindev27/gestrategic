@@ -202,22 +202,6 @@ export function InternacaoArea() {
     p.leito.toLowerCase().includes(busca.toLowerCase())
   );
 
-  const handleAddPassagem = () => {
-    if (!formPassagem.paciente || !formPassagem.informacoes) {
-      toast.error('Paciente e informações são obrigatórios');
-      return;
-    }
-    const nova: PassagemPlantaoItem = {
-      id: crypto.randomUUID(),
-      data: new Date().toISOString().split('T')[0],
-      ...formPassagem,
-    };
-    setPassagens([nova, ...passagens]);
-    setFormPassagem({ turno: 'diurno', paciente: '', leito: '', informacoes: '', pendencias: '', registradoPor: '' });
-    setPassagemDialogOpen(false);
-    toast.success('Passagem de plantão registrada');
-  };
-
   const toggleChecklist = (id: string) => {
     setChecklist(prev => prev.map(c =>
       c.id === id ? { ...c, concluido: !c.concluido, horario: !c.concluido ? new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : undefined } : c
