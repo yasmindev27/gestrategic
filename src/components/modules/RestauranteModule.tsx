@@ -634,6 +634,7 @@ export const RestauranteModule = () => {
   const exportSolicitacoesExcel = () => {
     const data = todasSolicitacoes.map(s => ({
       "Paciente": s.paciente_nome || "N/A",
+      "Data Nascimento": s.paciente_data_nascimento ? format(new Date(s.paciente_data_nascimento + 'T00:00:00'), "dd/MM/yyyy") : "-",
       "Quarto/Leito": s.quarto_leito || "N/A",
       "Tipo de Dieta": tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
       "Data Início": format(new Date(s.data_inicio), "dd/MM/yyyy"),
@@ -657,8 +658,8 @@ export const RestauranteModule = () => {
     doc.setFontSize(16);
     doc.text("Solicitações de Dieta para Pacientes", 14, 15);
     autoTable(doc, {
-      head: [["Paciente", "Quarto", "Dieta", "Período", "Status"]],
-      body: todasSolicitacoes.map(s => [s.paciente_nome || "N/A", s.quarto_leito || "N/A", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, format(new Date(s.data_inicio), "dd/MM") + (s.data_fim ? ` - ${format(new Date(s.data_fim), "dd/MM")}` : ""), s.status.charAt(0).toUpperCase() + s.status.slice(1)]),
+      head: [["Paciente", "Data Nasc.", "Quarto", "Dieta", "Período", "Status"]],
+      body: todasSolicitacoes.map(s => [s.paciente_nome || "N/A", s.paciente_data_nascimento ? format(new Date(s.paciente_data_nascimento + 'T00:00:00'), "dd/MM/yyyy") : "-", s.quarto_leito || "N/A", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, format(new Date(s.data_inicio), "dd/MM") + (s.data_fim ? ` - ${format(new Date(s.data_fim), "dd/MM")}` : ""), s.status.charAt(0).toUpperCase() + s.status.slice(1)]),
       startY: 22,
       styles: {
         fontSize: 8
@@ -825,6 +826,7 @@ export const RestauranteModule = () => {
   const exportMinhasDietasToExcel = () => {
     const dataToExport = minhasSolicitacoesFiltradas.map(s => ({
       "Paciente": s.paciente_nome || "-",
+      "Data Nascimento": s.paciente_data_nascimento ? format(new Date(s.paciente_data_nascimento + 'T00:00:00'), "dd/MM/yyyy") : "-",
       "Quarto/Leito": s.quarto_leito || "-",
       "Tipo de Dieta": tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
       "Tem Acompanhante": s.tem_acompanhante ? "Sim" : "Não",
@@ -856,10 +858,10 @@ export const RestauranteModule = () => {
     doc.setFontSize(11);
     doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 32);
     doc.text(`Total: ${minhasSolicitacoesFiltradas.length} dietas`, 14, 40);
-    const tableData = minhasSolicitacoesFiltradas.map(s => [s.paciente_nome || "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.tem_acompanhante ? "Sim" : "Não", format(new Date(s.data_inicio), "dd/MM/yyyy"), s.data_fim ? format(new Date(s.data_fim), "dd/MM/yyyy") : "-", format(new Date(s.created_at), "dd/MM/yyyy")]);
+    const tableData = minhasSolicitacoesFiltradas.map(s => [s.paciente_nome || "-", s.paciente_data_nascimento ? format(new Date(s.paciente_data_nascimento + 'T00:00:00'), "dd/MM/yyyy") : "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.tem_acompanhante ? "Sim" : "Não", format(new Date(s.data_inicio), "dd/MM/yyyy"), s.data_fim ? format(new Date(s.data_fim), "dd/MM/yyyy") : "-", format(new Date(s.created_at), "dd/MM/yyyy")]);
     autoTable(doc, {
       startY: 48,
-      head: [["Paciente", "Quarto/Leito", "Tipo", "Acomp.", "Data Início", "Data Fim", "Solicitado em"]],
+      head: [["Paciente", "Data Nasc.", "Quarto/Leito", "Tipo", "Acomp.", "Data Início", "Data Fim", "Solicitado em"]],
       body: tableData,
       styles: {
         fontSize: 8
@@ -1054,6 +1056,7 @@ export const RestauranteModule = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Paciente</TableHead>
+                      <TableHead>Data Nasc.</TableHead>
                       <TableHead>Tipo de Dieta</TableHead>
                       <TableHead>Horários</TableHead>
                       <TableHead>Acompanhante</TableHead>
@@ -1068,6 +1071,9 @@ export const RestauranteModule = () => {
                             <span className="font-medium">{s.paciente_nome || "N/A"}</span>
                             {s.quarto_leito && <p className="text-xs text-muted-foreground">{s.quarto_leito}</p>}
                           </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm">{s.paciente_data_nascimento ? format(new Date(s.paciente_data_nascimento + 'T00:00:00'), "dd/MM/yyyy") : "—"}</span>
                         </TableCell>
                         <TableCell>
                           <div>
