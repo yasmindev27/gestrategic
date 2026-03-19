@@ -279,64 +279,8 @@ export function InternacaoArea() {
           </div>
         );
 
-      case 'passagem':
-        return (
-          <div className="space-y-4">
-            <div className="flex justify-end">
-              <Dialog open={passagemDialogOpen} onOpenChange={setPassagemDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button><Plus className="h-4 w-4 mr-1" />Nova Passagem</Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader><DialogTitle>Passagem de Plantão</DialogTitle></DialogHeader>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><Label>Turno</Label>
-                        <Select value={formPassagem.turno} onValueChange={v => setFormPassagem(p => ({ ...p, turno: v }))}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="diurno">Diurno (7h-19h)</SelectItem>
-                            <SelectItem value="noturno">Noturno (19h-7h)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div><Label>Leito</Label><Input value={formPassagem.leito} onChange={e => setFormPassagem(p => ({ ...p, leito: e.target.value }))} /></div>
-                    </div>
-                    <div><Label>Paciente</Label><Input value={formPassagem.paciente} onChange={e => setFormPassagem(p => ({ ...p, paciente: e.target.value }))} /></div>
-                    <div><Label>Informações Clínicas</Label><Textarea value={formPassagem.informacoes} onChange={e => setFormPassagem(p => ({ ...p, informacoes: e.target.value }))} placeholder="Estado geral, medicações, procedimentos realizados..." /></div>
-                    <div><Label>Pendências</Label><Textarea value={formPassagem.pendencias} onChange={e => setFormPassagem(p => ({ ...p, pendencias: e.target.value }))} placeholder="Exames, medicações, procedimentos pendentes..." /></div>
-                    <div><Label>Registrado por</Label><Input value={formPassagem.registradoPor} onChange={e => setFormPassagem(p => ({ ...p, registradoPor: e.target.value }))} /></div>
-                    <Button onClick={handleAddPassagem} className="w-full">Registrar Passagem</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            {passagens.length === 0 ? (
-              <Card><CardContent className="p-8 text-center text-muted-foreground">
-                <ClipboardList className="h-12 w-12 mx-auto mb-3 opacity-40" />
-                <p>Nenhuma passagem de plantão registrada</p>
-              </CardContent></Card>
-            ) : passagens.map(p => (
-              <Card key={p.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{p.paciente} — Leito {p.leito}</CardTitle>
-                    <div className="flex gap-2">
-                      <Badge variant="outline">{p.data}</Badge>
-                      <Badge className={p.turno === 'diurno' ? 'bg-yellow-100 text-yellow-800' : 'bg-indigo-100 text-indigo-800'}>{p.turno === 'diurno' ? 'Diurno' : 'Noturno'}</Badge>
-                    </div>
-                  </div>
-                  <CardDescription>Registrado por: {p.registradoPor}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div><span className="text-sm font-medium">Informações:</span><p className="text-sm text-muted-foreground">{p.informacoes}</p></div>
-                  {p.pendencias && <div><span className="text-sm font-medium text-warning">Pendências:</span><p className="text-sm text-muted-foreground">{p.pendencias}</p></div>}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        );
+      case 'passagem-plantao':
+        return <PassagemPlantaoTecEnfermagem storageKey="enf-passagem-plantao-tec-internacao" setor="Internação" />;
 
       case 'checklist':
         const handleRegistrarChecklist = () => {
