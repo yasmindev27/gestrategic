@@ -397,8 +397,6 @@ export function InternacaoArea() {
         return <ChecklistLimpezaConcorrente storageKey="enf-limpeza-concorrente-internacao" setor="Internação" />;
       case 'fluxometros':
         return <ChecklistFluxometrosBombas storageKey="enf-fluxometros-bombas-internacao" setor="Internação" />;
-      case 'passagem-plantao':
-        return <PassagemPlantaoTecEnfermagem storageKey="enf-passagem-plantao-tec-internacao" setor="Internação" />;
       case 'sv-oxigenio':
         return <ControleSinaisVitaisOxigenio storageKey="enf-sv-oxigenio-internacao" setor="Internação" />;
       case 'escalas':
