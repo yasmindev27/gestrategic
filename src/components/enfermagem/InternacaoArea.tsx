@@ -113,7 +113,7 @@ function mapRisco(record: any): string {
 
 const SUB_NAV_ITEMS = [
   { id: 'pacientes', label: 'Pacientes', icon: BedDouble },
-  { id: 'passagem', label: 'Passagem de Plantão', icon: ClipboardList },
+  { id: 'passagem-plantao', label: 'Passagem de Plantão', icon: ClipboardPen },
   { id: 'checklist', label: 'Checklist Cuidados', icon: CheckCircle2 },
   { id: 'carrinho', label: 'Carrinho de Internação', icon: ShieldAlert },
   { id: 'sinais-vitais', label: 'Sinais Vitais', icon: Thermometer },
@@ -121,7 +121,6 @@ const SUB_NAV_ITEMS = [
   { id: 'nsp', label: 'NSP', icon: Shield },
   { id: 'limpeza', label: 'Limpeza Concorrente', icon: SprayCanIcon },
   { id: 'fluxometros', label: 'Fluxômetros/Bombas', icon: Gauge },
-  { id: 'passagem-plantao', label: 'Passagem Plantão Téc.', icon: ClipboardPen },
   { id: 'sv-oxigenio', label: 'SV/Oxigenioterapia', icon: Activity },
   { id: 'escalas', label: 'Escalas Clínicas', icon: Stethoscope },
   { id: 'sbar', label: 'SBAR Enfermeiros', icon: FileText },
