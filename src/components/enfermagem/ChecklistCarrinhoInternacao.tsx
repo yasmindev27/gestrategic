@@ -180,6 +180,10 @@ export function ChecklistCarrinhoInternacao() {
           </h3>
           <p className="text-sm text-muted-foreground">Controle de lacres, verificação e reposição de materiais — Internação</p>
         </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: 'Checklist Carrinho Internação', headers: ['Data/Hora', 'Lacre Retirado', 'Motivo', 'Lacre Colocado', 'Responsável', 'COREN'], rows: registros.map(r => [r.dataHora, r.lacreRetirado, r.motivo, r.lacreColocado, r.responsavel, r.coren]), fileName: 'checklist_carrinho_internacao' })}
+          onExportExcel={() => exportToExcel({ title: 'Checklist Carrinho Internação', headers: ['Data/Hora', 'Lacre Retirado', 'Motivo', 'Lacre Colocado', 'Responsável', 'COREN'], rows: registros.map(r => [r.dataHora, r.lacreRetirado, r.motivo, r.lacreColocado, r.responsavel, r.coren]), fileName: 'checklist_carrinho_internacao' })}
+        />
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">

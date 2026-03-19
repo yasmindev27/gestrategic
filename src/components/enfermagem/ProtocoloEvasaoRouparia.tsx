@@ -101,12 +101,18 @@ export function ProtocoloEvasaoRouparia({ storageKey, setor }: ProtocoloEvasaoRo
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Shirt className="h-5 w-5 text-primary" />
-          Protocolo de Controle de Evasão de Rouparia em Transferência
-        </h3>
-        <p className="text-sm text-muted-foreground">{setor} — Controle de itens de rouparia em transferências de pacientes</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Shirt className="h-5 w-5 text-primary" />
+            Protocolo de Controle de Evasão de Rouparia em Transferência
+          </h3>
+          <p className="text-sm text-muted-foreground">{setor} — Controle de itens de rouparia em transferências de pacientes</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: `Evasão Rouparia — ${setor}`, headers: ['Data', 'Paciente', 'Item', 'Código', 'Status', 'Responsável', 'Data Registro'], rows: registros.map(r => [r.data, r.nomePaciente, r.item, r.codigoItem, r.status, r.responsavelRegistro, r.dataRegistro]), fileName: `evasao_rouparia_${setor}` })}
+          onExportExcel={() => exportToExcel({ title: `Evasão Rouparia — ${setor}`, headers: ['Data', 'Paciente', 'Item', 'Código', 'Status', 'Responsável', 'Data Registro'], rows: registros.map(r => [r.data, r.nomePaciente, r.item, r.codigoItem, r.status, r.responsavelRegistro, r.dataRegistro]), fileName: `evasao_rouparia_${setor}` })}
+        />
       </div>
 
       {/* KPIs */}
