@@ -140,12 +140,7 @@ export function InternacaoArea() {
   const [checklist, setChecklist] = useState<ChecklistCuidado[]>(
     CHECKLIST_PADRAO.map((c, i) => ({ ...c, id: `ck-${i}`, concluido: false }))
   );
-  const [passagemDialogOpen, setPassagemDialogOpen] = useState(false);
   const [busca, setBusca] = useState('');
-
-  const [formPassagem, setFormPassagem] = useState({
-    turno: 'diurno', paciente: '', leito: '', informacoes: '', pendencias: '', registradoPor: ''
-  });
 
   // Buscar pacientes internados do mapa de leitos (bed_records)
   const fetchPacientesFromBedMap = async () => {
