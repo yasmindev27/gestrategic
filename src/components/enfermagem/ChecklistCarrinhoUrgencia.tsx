@@ -181,6 +181,10 @@ export function ChecklistCarrinhoUrgencia() {
           </h3>
           <p className="text-sm text-muted-foreground">POP SURG 020 — Controle de lacres, verificação e reposição de materiais</p>
         </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: 'Checklist Carrinho de Urgência', headers: ['Data/Hora', 'Lacre Retirado', 'Motivo', 'Lacre Colocado', 'Responsável', 'COREN'], rows: registros.map(r => [r.dataHora, r.lacreRetirado, r.motivo, r.lacreColocado, r.responsavel, r.coren]), fileName: 'checklist_carrinho_urgencia' })}
+          onExportExcel={() => exportToExcel({ title: 'Checklist Carrinho Urgência', headers: ['Data/Hora', 'Lacre Retirado', 'Motivo', 'Lacre Colocado', 'Responsável', 'COREN'], rows: registros.map(r => [r.dataHora, r.lacreRetirado, r.motivo, r.lacreColocado, r.responsavel, r.coren]), fileName: 'checklist_carrinho_urgencia' })}
+        />
       </div>
 
       {/* KPIs */}

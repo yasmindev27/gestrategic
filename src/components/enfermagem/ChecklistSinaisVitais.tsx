@@ -96,12 +96,18 @@ export function ChecklistSinaisVitais({ storageKey, setor }: ChecklistSinaisVita
 
   return (
     <div className="space-y-4">
-      <div>
-        <h3 className="text-lg font-semibold flex items-center gap-2">
-          <Thermometer className="h-5 w-5 text-primary" />
-          Checklist de Sinais Vitais
-        </h3>
-        <p className="text-sm text-muted-foreground">Setor de Enfermagem — {setor} — Controle de Kit de Sinais Vitais</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h3 className="text-lg font-semibold flex items-center gap-2">
+            <Thermometer className="h-5 w-5 text-primary" />
+            Checklist de Sinais Vitais
+          </h3>
+          <p className="text-sm text-muted-foreground">Setor de Enfermagem — {setor} — Controle de Kit de Sinais Vitais</p>
+        </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: `Checklist Sinais Vitais — ${setor}`, headers: ['Data', 'Recebido por', 'Entregue por', 'Observação', 'Data Registro'], rows: registros.map(r => [r.data, r.recebidoPor, r.entreguePor, r.observacao, r.dataRegistro]), fileName: `checklist_sinais_vitais_${setor}` })}
+          onExportExcel={() => exportToExcel({ title: `Checklist Sinais Vitais — ${setor}`, headers: ['Data', 'Recebido por', 'Entregue por', 'Observação', 'Data Registro'], rows: registros.map(r => [r.data, r.recebidoPor, r.entreguePor, r.observacao, r.dataRegistro]), fileName: `checklist_sinais_vitais_${setor}` })}
+        />
       </div>
 
       {/* KPIs */}
