@@ -825,6 +825,7 @@ export const RestauranteModule = () => {
   const exportMinhasDietasToExcel = () => {
     const dataToExport = minhasSolicitacoesFiltradas.map(s => ({
       "Paciente": s.paciente_nome || "-",
+      "Data Nascimento": s.paciente_data_nascimento ? format(new Date(s.paciente_data_nascimento + 'T00:00:00'), "dd/MM/yyyy") : "-",
       "Quarto/Leito": s.quarto_leito || "-",
       "Tipo de Dieta": tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
       "Tem Acompanhante": s.tem_acompanhante ? "Sim" : "Não",
