@@ -79,6 +79,7 @@ export function NotificacoesArboviroses() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [search, setSearch] = useState('');
   const [importing, setImporting] = useState(false);
+  const [syncing, setSyncing] = useState(false);
 
   const { data: registros = [], isLoading } = useQuery({
     queryKey: ['notificacoes-arboviroses'],
