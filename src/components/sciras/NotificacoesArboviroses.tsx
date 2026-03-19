@@ -301,7 +301,7 @@ export function NotificacoesArboviroses() {
       {/* Table */}
       {filtered.length === 0 ? (
         <EmptyState
-          icon={<Bug className="h-10 w-10" />}
+          icon={Bug}
           title="Nenhuma notificação"
           description="Importe a planilha do Google Sheets para visualizar os dados aqui."
         />
