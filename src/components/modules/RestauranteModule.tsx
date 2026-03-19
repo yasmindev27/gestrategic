@@ -1458,6 +1458,7 @@ export const RestauranteModule = () => {
                             <TableHeader>
                               <TableRow>
                                 <TableHead>Paciente</TableHead>
+                                <TableHead>Data Nasc.</TableHead>
                                 <TableHead>Tipo de Dieta</TableHead>
                                 <TableHead>Horários</TableHead>
                                 <TableHead className="text-center">
