@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  BedDouble, ClipboardList, AlertTriangle, Plus, Search,
+  BedDouble, ClipboardList, AlertTriangle, Search,
   CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Activity, Stethoscope, FileText, ShieldCheck, HeartPulse, Pill, Loader2, RefreshCw
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
