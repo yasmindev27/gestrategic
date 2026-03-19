@@ -308,7 +308,12 @@ export const SaidaProntuariosModule = () => {
     if (isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao) {
       query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
     } else if (isNir && !isAdmin && !isFaturamento && !isClassificacao) {
-      query = query.in("status", ["aguardando_nir"]);
+      // NIR vê todos os registros não concluídos por padrão, mas pode filtrar por status
+      if (statusFilter === "em_fluxo") {
+        query = query.neq("status", "concluido");
+      } else if (statusFilter !== "todos") {
+        query = query.eq("status", statusFilter);
+      }
     } else {
       if (statusFilter === "em_fluxo") {
         query = query.neq("status", "concluido");
@@ -1560,7 +1565,12 @@ export const SaidaProntuariosModule = () => {
                     <SelectContent>
                       {isNir && !isAdmin && !isFaturamento ? (
                         <>
-                          <SelectItem value="em_fluxo">Aguardando NIR</SelectItem>
+                          <SelectItem value="em_fluxo">Em Fluxo (não concluídos)</SelectItem>
+                          <SelectItem value="todos">Todos</SelectItem>
+                          <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
+                          <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
+                          <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
+                          <SelectItem value="concluido">Concluído</SelectItem>
                         </>
                       ) : isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao ? (
                         <>
