@@ -20,7 +20,7 @@ import { ptBR } from "date-fns/locale";
 import * as XLSX from "xlsx";
 import { exportToCSV, exportToPDF, createStandardPdf, savePdfWithFooter } from "@/lib/export-utils";
 import autoTable from "jspdf-autotable";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area, Line, Legend } from "recharts";
 
 const COLORS = ['hsl(var(--primary))', 'hsl(var(--info))', 'hsl(var(--success))', 'hsl(var(--warning))', 'hsl(var(--destructive))', 'hsl(var(--accent))'];
 
