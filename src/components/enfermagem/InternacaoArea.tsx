@@ -44,17 +44,6 @@ interface PacienteInternado {
   observacoes: string;
 }
 
-interface PassagemPlantaoItem {
-  id: string;
-  data: string;
-  turno: string;
-  paciente: string;
-  leito: string;
-  informacoes: string;
-  pendencias: string;
-  registradoPor: string;
-}
-
 interface ChecklistCuidado {
   id: string;
   descricao: string;
