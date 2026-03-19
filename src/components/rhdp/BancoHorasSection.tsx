@@ -1305,25 +1305,14 @@ export const BancoHorasSection = () => {
                   <Badge variant="secondary">{filterProfissionais.length} selecionado(s)</Badge>
                 )}
               </div>
-              <div className="max-h-48 overflow-y-auto border rounded-md p-2 bg-background grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
-                {[...new Map(registros.map(r => [r.funcionario_user_id, r.funcionario_nome])).entries()]
+              <SearchableCheckboxList
+                items={[...new Map(registros.map(r => [r.funcionario_user_id, r.funcionario_nome])).entries()]
                   .sort((a, b) => a[1].localeCompare(b[1]))
-                  .map(([userId, nome]) => (
-                    <label key={userId} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                      <Checkbox
-                        checked={filterProfissionais.includes(userId)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setFilterProfissionais(prev => [...prev, userId]);
-                          } else {
-                            setFilterProfissionais(prev => prev.filter(id => id !== userId));
-                          }
-                        }}
-                      />
-                      <span className="truncate">{nome}</span>
-                    </label>
-                  ))}
-              </div>
+                  .map(([userId, nome]) => ({ id: userId, label: nome }))}
+                selected={filterProfissionais}
+                onChange={setFilterProfissionais}
+                placeholder="Buscar colaborador..."
+              />
             </div>
           </div>
         )}
