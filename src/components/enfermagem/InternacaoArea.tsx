@@ -132,43 +132,78 @@ const SUB_NAV_ITEMS = [
 
 export function InternacaoArea() {
   const [activeTab, setActiveTab] = useState('pacientes');
-  const [pacientes, setPacientes] = useLocalStorage<PacienteInternado[]>('enf-internacao-pacientes', []);
+  const [pacientes, setPacientes] = useState<PacienteInternado[]>([]);
+  const [isLoadingPacientes, setIsLoadingPacientes] = useState(true);
   const [passagens, setPassagens] = useLocalStorage<PassagemPlantaoItem[]>('enf-internacao-passagens', []);
   const [checklist, setChecklist] = useState<ChecklistCuidado[]>(
     CHECKLIST_PADRAO.map((c, i) => ({ ...c, id: `ck-${i}`, concluido: false }))
   );
-  const [novoDialogOpen, setNovoDialogOpen] = useState(false);
   const [passagemDialogOpen, setPassagemDialogOpen] = useState(false);
   const [busca, setBusca] = useState('');
-
-  const [formPaciente, setFormPaciente] = useState({
-    nome: '', leito: '', setor: 'Observação', diagnostico: '', medico: '', risco: 'moderado' as PacienteInternado['risco'], observacoes: ''
-  });
 
   const [formPassagem, setFormPassagem] = useState({
     turno: 'diurno', paciente: '', leito: '', informacoes: '', pendencias: '', registradoPor: ''
   });
 
+  // Buscar pacientes internados do mapa de leitos (bed_records)
+  const fetchPacientesFromBedMap = async () => {
+    setIsLoadingPacientes(true);
+    try {
+      const shift = getCurrentShift();
+      
+      const { data, error } = await supabase
+        .from('bed_records')
+        .select('*')
+        .eq('shift_date', shift.date)
+        .eq('shift_type', shift.type)
+        .not('patient_name', 'is', null)
+        .is('motivo_alta', null)
+        .is('data_alta', null);
+
+      if (error) throw error;
+
+      // Deduplicar por nome do paciente (manter registro mais recente)
+      const dedupMap = new Map<string, any>();
+      (data || []).forEach(record => {
+        const name = (record.patient_name || '').trim().toLowerCase();
+        if (!name) return;
+        const existing = dedupMap.get(name);
+        if (!existing || (record.created_at && (!existing.created_at || record.created_at > existing.created_at))) {
+          dedupMap.set(name, record);
+        }
+      });
+
+      const mapped: PacienteInternado[] = Array.from(dedupMap.values()).map(record => ({
+        id: record.id,
+        nome: record.patient_name || '',
+        leito: record.bed_number || '',
+        setor: record.sector || '',
+        diagnostico: record.hipotese_diagnostica || '',
+        dataInternacao: record.data_internacao || record.shift_date || '',
+        medico: record.medicos || '',
+        risco: mapRisco(record),
+        observacoes: record.observacao || '',
+      }));
+
+      // Ordenar por setor e leito
+      mapped.sort((a, b) => a.setor.localeCompare(b.setor) || a.leito.localeCompare(b.leito));
+      setPacientes(mapped);
+    } catch (err) {
+      console.error('[InternacaoArea] Erro ao buscar pacientes:', err);
+      toast.error('Erro ao carregar pacientes do mapa de leitos');
+    } finally {
+      setIsLoadingPacientes(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPacientesFromBedMap();
+  }, []);
+
   const pacientesFiltrados = pacientes.filter(p =>
     p.nome.toLowerCase().includes(busca.toLowerCase()) ||
     p.leito.toLowerCase().includes(busca.toLowerCase())
   );
-
-  const handleAddPaciente = () => {
-    if (!formPaciente.nome || !formPaciente.leito) {
-      toast.error('Nome e leito são obrigatórios');
-      return;
-    }
-    const novo: PacienteInternado = {
-      id: crypto.randomUUID(),
-      ...formPaciente,
-      dataInternacao: new Date().toISOString().split('T')[0],
-    };
-    setPacientes([...pacientes, novo]);
-    setFormPaciente({ nome: '', leito: '', setor: 'Observação', diagnostico: '', medico: '', risco: 'moderado', observacoes: '' });
-    setNovoDialogOpen(false);
-    toast.success('Paciente registrado com sucesso');
-  };
 
   const handleAddPassagem = () => {
     if (!formPassagem.paciente || !formPassagem.informacoes) {
