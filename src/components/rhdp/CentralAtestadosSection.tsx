@@ -304,6 +304,31 @@ export const CentralAtestadosSection = () => {
     return Object.entries(months).map(([name, quantidade]) => ({ name, quantidade }));
   }, [atestadosFiltrados]);
 
+  // Evolution trend data
+  const [evolAtestColab, setEvolAtestColab] = useState("todos");
+
+  const evolucaoAtestados = useMemo(() => {
+    const MESES_LABEL = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+    const map: Record<string, { quantidade: number; dias: number }> = {};
+
+    const source = evolAtestColab === "todos"
+      ? atestados.filter(a => a.data_inicio?.startsWith(anoSelecionado))
+      : atestados.filter(a => a.data_inicio?.startsWith(anoSelecionado) && a.funcionario_user_id === evolAtestColab);
+
+    source.forEach(a => {
+      const mes = a.data_inicio.split("-")[1];
+      if (!map[mes]) map[mes] = { quantidade: 0, dias: 0 };
+      map[mes].quantidade += 1;
+      map[mes].dias += a.dias_afastamento || 0;
+    });
+
+    return Array.from({ length: 12 }, (_, i) => {
+      const mesKey = String(i + 1).padStart(2, "0");
+      const d = map[mesKey] || { quantidade: 0, dias: 0 };
+      return { name: MESES_LABEL[i], atestados: d.quantidade, dias: d.dias };
+    });
+  }, [atestados, anoSelecionado, evolAtestColab]);
+
   // ========================
   // Table filtering
   // ========================
