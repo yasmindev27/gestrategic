@@ -304,22 +304,11 @@ export const SaidaProntuariosModule = () => {
 
 
   const applySaidasFilters = (query: any) => {
-    // Filtrar por status baseado no setor do usuário
-    if (isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao) {
-      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-    } else if (isNir && !isAdmin && !isFaturamento && !isClassificacao) {
-      // NIR vê todos os registros não concluídos por padrão, mas pode filtrar por status
-      if (statusFilter === "em_fluxo") {
-        query = query.neq("status", "concluido");
-      } else if (statusFilter !== "todos") {
-        query = query.eq("status", statusFilter);
-      }
-    } else {
-      if (statusFilter === "em_fluxo") {
-        query = query.neq("status", "concluido");
-      } else if (statusFilter !== "todos") {
-        query = query.eq("status", statusFilter);
-      }
+    // Todos os perfis com acesso podem ver registros retroativos — filtro por status apenas
+    if (statusFilter === "em_fluxo") {
+      query = query.neq("status", "concluido");
+    } else if (statusFilter !== "todos") {
+      query = query.eq("status", statusFilter);
     }
 
     if (debouncedSearchTerm) query = query.ilike("paciente_nome", `%${debouncedSearchTerm}%`);
