@@ -249,7 +249,7 @@ export const SaidaProntuariosModule = () => {
   const fetchCounts = async () => {
     setIsLoading(true);
     try {
-      const restrictedToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
+      // Recepção e Classificação agora podem ver registros retroativos (sem restrição de data)
 
       const regularCountQuery = supabase
         .from("saida_prontuarios")
