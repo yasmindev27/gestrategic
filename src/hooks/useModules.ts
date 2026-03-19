@@ -28,7 +28,6 @@ export const useModules = () => {
     isLaboratorio,
     isNir,
     isRecepcao,
-    isClassificacao,
     isFaturamento,
     isRHDP,
     isRestaurante,
@@ -49,7 +48,7 @@ export const useModules = () => {
   const moduleAccess = useMemo(() => ({
     dashboard: true, // Everyone can access dashboard
     nir: isAdmin || isNir || isCoordenadorMedico || isCoordenadorEnfermagem,
-    faturamento: isAdmin || isFaturamento || isRecepcao || isClassificacao || isGerenteAdministrativo,
+    faturamento: isAdmin || isFaturamento || isRecepcao || isEnfermagem || isGerenteAdministrativo,
     mapaLeitos: isAdmin || isNir || isEnfermagem || isAssistenciaSocial || isCoordenadorEnfermagem,
     enfermagem: isAdmin || isGestor || isEnfermagem || isCoordenadorEnfermagem || isFarmaceuticoRT,
     laboratorio: isAdmin || isLaboratorio || isMedicos || isGestor || isCoordenadorMedico,
@@ -76,7 +75,7 @@ export const useModules = () => {
     segurancaTrabalho: isAdmin || isSeguranca || isSupervisorOperacional,
   }), [
     isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
-    isLaboratorio, isNir, isRecepcao, isClassificacao, isFaturamento, isRHDP,
+    isLaboratorio, isNir, isRecepcao, isFaturamento, isRHDP,
     isRestaurante, isAssistenciaSocial, isQualidade, isMedicos, isEnfermagem,
     isSeguranca, isRouparia, isGerenteAdministrativo, isFarmaceuticoRT,
     isCoordenadorMedico, isSupervisorOperacional, isCoordenadorEnfermagem

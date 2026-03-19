@@ -129,9 +129,9 @@ const roleLabels: Record<AppRole, string> = {
   coordenador_enfermagem: "Coordenador de Enfermagem",
 };
 
-// Roles disponíveis para seleção (exclui "funcionario" que é o padrão)
+// Roles disponíveis para seleção (exclui "funcionario" e "classificacao" que foi absorvido por enfermagem)
 const selectableRoles = Object.entries(roleLabels).filter(
-  ([key]) => key !== "funcionario"
+  ([key]) => key !== "funcionario" && key !== "classificacao"
 ) as [AppRole, string][];
 
 const roleColors: Record<AppRole, string> = {

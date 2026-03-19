@@ -138,14 +138,6 @@ const Sidebar = ({
       );
       return items;
     }
-    if (isClassificacao) {
-      items.push(
-        { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
-        { icon: Receipt, label: "Faturamento", id: "faturamento", category: "assistencial" },
-        { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" }
-      );
-      return items;
-    }
     if (isNir) {
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
