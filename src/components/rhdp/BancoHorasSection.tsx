@@ -62,6 +62,8 @@ export const BancoHorasSection = () => {
   const [filterDataFim, setFilterDataFim] = useState("");
   const [filterProfissionais, setFilterProfissionais] = useState<string[]>([]);
   const [filterCargo, setFilterCargo] = useState("todos");
+  const [filterMes, setFilterMes] = useState("todos");
+  const [filterAno, setFilterAno] = useState(String(new Date().getFullYear()));
 
   // Form state
   const [formData, setFormData] = useState({
@@ -244,26 +246,30 @@ export const BancoHorasSection = () => {
     return saldo;
   };
 
-  const filteredRegistros = registros.filter(r => {
+   const filteredRegistros = registros.filter(r => {
     const matchesSearch = r.funcionario_nome.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTipo = filterTipo === "todos" || r.tipo === filterTipo;
     const matchesDataInicio = !filterDataInicio || r.data >= filterDataInicio;
     const matchesDataFim = !filterDataFim || r.data <= filterDataFim;
     const matchesCard = cardFilter === "todos" || r.tipo === cardFilter;
     const matchesProfissionais = filterProfissionais.length === 0 || filterProfissionais.includes(r.funcionario_user_id);
-    // Cargo filter: match profile cargo
+    // Cargo filter
     const matchesCargo = filterCargo === "todos" || (() => {
       const profile = profiles.find(p => p.user_id === r.funcionario_user_id);
       return profile?.cargo === filterCargo;
     })();
-    return matchesSearch && matchesTipo && matchesDataInicio && matchesDataFim && matchesCard && matchesProfissionais && matchesCargo;
+    // Month/Year filter
+    const dateParts = r.data.split("-");
+    const matchesMes = filterMes === "todos" || dateParts[1] === filterMes;
+    const matchesAno = dateParts[0] === filterAno;
+    return matchesSearch && matchesTipo && matchesDataInicio && matchesDataFim && matchesCard && matchesProfissionais && matchesCargo && matchesMes && matchesAno;
   });
 
-  const totalCreditos = registros
+  const totalCreditos = filteredRegistros
     .filter(r => r.tipo === "credito")
     .reduce((sum, r) => sum + Number(r.horas), 0);
 
-  const totalDebitos = registros
+  const totalDebitos = filteredRegistros
     .filter(r => r.tipo === "debito")
     .reduce((sum, r) => sum + Number(r.horas), 0);
 
@@ -640,6 +646,40 @@ export const BancoHorasSection = () => {
             Registros
           </TabsTrigger>
         </TabsList>
+
+        {/* Filtros de Mês e Ano */}
+        <div className="flex items-center gap-3 mt-4">
+          <Select value={filterMes} onValueChange={setFilterMes}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Mês" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos os meses</SelectItem>
+              <SelectItem value="01">Janeiro</SelectItem>
+              <SelectItem value="02">Fevereiro</SelectItem>
+              <SelectItem value="03">Março</SelectItem>
+              <SelectItem value="04">Abril</SelectItem>
+              <SelectItem value="05">Maio</SelectItem>
+              <SelectItem value="06">Junho</SelectItem>
+              <SelectItem value="07">Julho</SelectItem>
+              <SelectItem value="08">Agosto</SelectItem>
+              <SelectItem value="09">Setembro</SelectItem>
+              <SelectItem value="10">Outubro</SelectItem>
+              <SelectItem value="11">Novembro</SelectItem>
+              <SelectItem value="12">Dezembro</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterAno} onValueChange={setFilterAno}>
+            <SelectTrigger className="w-[120px]">
+              <SelectValue placeholder="Ano" />
+            </SelectTrigger>
+            <SelectContent>
+              {[2024, 2025, 2026, 2027].map(ano => (
+                <SelectItem key={ano} value={String(ano)}>{ano}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         {/* ===== DASHBOARD TAB ===== */}
         <TabsContent value="dashboard" className="space-y-6 mt-4">
