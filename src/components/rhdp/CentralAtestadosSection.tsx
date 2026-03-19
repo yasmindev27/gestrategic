@@ -729,17 +729,14 @@ export const CentralAtestadosSection = () => {
                   <TrendingUp className="h-5 w-5 text-primary" />
                   Evolução Mensal de Atestados — {anoSelecionado}
                 </CardTitle>
-                <Select value={evolAtestColab} onValueChange={setEvolAtestColab}>
-                  <SelectTrigger className="w-[220px]">
-                    <SelectValue placeholder="Colaborador" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos os colaboradores</SelectItem>
-                    {profiles.map(p => (
-                      <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={evolAtestColab}
+                  onValueChange={setEvolAtestColab}
+                  items={profiles.map(p => ({ value: p.user_id, label: p.full_name }))}
+                  placeholder="Colaborador"
+                  allOption={{ value: "todos", label: "Todos os colaboradores" }}
+                  className="w-[220px]"
+                />
               </div>
             </CardHeader>
             <CardContent>
