@@ -224,7 +224,7 @@ export function DataIntegrityMonitor({
                   <AlertTitle>
                     <div className="flex items-center justify-between">
                       <span>{alert.validator}</span>
-                      <Badge variant={SEVERITY_BADGES[alert.severity as keyof typeof SEVERITY_BADGES]}>
+                      <Badge variant={SEVERITY_BADGES[alert.severity as keyof typeof SEVERITY_BADGES] as any}>
                         {alert.severity?.toUpperCase()}
                       </Badge>
                     </div>
