@@ -62,6 +62,8 @@ export const BancoHorasSection = () => {
   const [filterDataFim, setFilterDataFim] = useState("");
   const [filterProfissionais, setFilterProfissionais] = useState<string[]>([]);
   const [filterCargo, setFilterCargo] = useState("todos");
+  const [filterMes, setFilterMes] = useState("todos");
+  const [filterAno, setFilterAno] = useState(String(new Date().getFullYear()));
 
   // Form state
   const [formData, setFormData] = useState({
