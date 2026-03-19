@@ -15,6 +15,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 
 // === Interfaces ===
 
@@ -1049,6 +1051,14 @@ export function CMEArea() {
     );
   };
 
+  const handleExportCME = (type: 'pdf' | 'excel') => {
+    const headers = ['Descrição', 'Tipo', 'Qtd', 'Setor Destino', 'Etapa', 'Data', 'Hora', 'Responsável'];
+    const rows = itens.map(i => [i.descricao, i.tipo, i.quantidade, i.setor_destino, i.etapa, i.dataRegistro, i.horaRegistro, i.responsavel]);
+    const options = { title: 'CME — Itens Processados', headers, rows: rows as (string | number)[][], fileName: 'cme_itens' };
+    if (type === 'pdf') exportToPDF(options);
+    else exportToExcel(options);
+  };
+
   // === Main Render ===
   return (
     <div className="space-y-4">
@@ -1060,6 +1070,10 @@ export function CMEArea() {
           </h2>
           <p className="text-sm text-muted-foreground">Controle de processamento de materiais: recebimento, limpeza, esterilização e distribuição</p>
         </div>
+        <ExportDropdown
+          onExportPDF={() => handleExportCME('pdf')}
+          onExportExcel={() => handleExportCME('excel')}
+        />
       </div>
 
       {/* KPIs */}

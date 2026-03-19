@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { format } from 'date-fns';
+import * as XLSX from 'xlsx';
 
 /**
  * Load the Gestrategic logo and execute callback
@@ -275,4 +276,25 @@ export const exportToPDF = (options: ExportOptions): void => {
   // Try to load logo, fallback to text if fails
   logoImg.onload = () => renderPDF(true);
   logoImg.onerror = () => renderPDF(false);
+};
+
+/**
+ * Export data to Excel file
+ */
+export const exportToExcel = (options: ExportOptions): void => {
+  const { title, headers, rows, fileName } = options;
+  
+  const wsData = [headers, ...rows];
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  
+  // Auto-width columns
+  const colWidths = headers.map((h, i) => {
+    const maxLen = Math.max(h.length, ...rows.map(r => String(r[i] || '').length));
+    return { wch: Math.min(maxLen + 2, 40) };
+  });
+  ws['!cols'] = colWidths;
+  
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, title.substring(0, 31));
+  XLSX.writeFile(wb, `${fileName}_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
 };
