@@ -118,6 +118,10 @@ export const UPA_INDICADORES_RESULTADO = [
   { indicador: 'Encaminhados para HSJ', unidade: 'Nº', meta: null, subcategoria: 'Transferências' },
   { indicador: 'Encaminhados para outros Hospitais', unidade: 'Nº', meta: null, subcategoria: 'Transferências' },
   { indicador: 'Taxa de Mortalidade', unidade: 'Nº', meta: null, subcategoria: 'Saídas' },
+  { indicador: 'Mortalidade Adulto', unidade: 'Nº', meta: null, subcategoria: 'Mortalidade' },
+  { indicador: 'Mortalidade Pediátrica', unidade: 'Nº', meta: null, subcategoria: 'Mortalidade' },
+  { indicador: 'Mortalidade nas primeiras 24h', unidade: 'Nº', meta: null, subcategoria: 'Mortalidade' },
+  { indicador: 'Mortalidade após 24h', unidade: 'Nº', meta: null, subcategoria: 'Mortalidade' },
 ];
 
 export const UPA_INDICADORES_GESTAO = [
