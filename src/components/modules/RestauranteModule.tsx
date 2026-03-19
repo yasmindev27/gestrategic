@@ -658,8 +658,8 @@ export const RestauranteModule = () => {
     doc.setFontSize(16);
     doc.text("Solicitações de Dieta para Pacientes", 14, 15);
     autoTable(doc, {
-      head: [["Paciente", "Quarto", "Dieta", "Período", "Status"]],
-      body: todasSolicitacoes.map(s => [s.paciente_nome || "N/A", s.quarto_leito || "N/A", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, format(new Date(s.data_inicio), "dd/MM") + (s.data_fim ? ` - ${format(new Date(s.data_fim), "dd/MM")}` : ""), s.status.charAt(0).toUpperCase() + s.status.slice(1)]),
+      head: [["Paciente", "Data Nasc.", "Quarto", "Dieta", "Período", "Status"]],
+      body: todasSolicitacoes.map(s => [s.paciente_nome || "N/A", s.paciente_data_nascimento ? format(new Date(s.paciente_data_nascimento + 'T00:00:00'), "dd/MM/yyyy") : "-", s.quarto_leito || "N/A", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, format(new Date(s.data_inicio), "dd/MM") + (s.data_fim ? ` - ${format(new Date(s.data_fim), "dd/MM")}` : ""), s.status.charAt(0).toUpperCase() + s.status.slice(1)]),
       startY: 22,
       styles: {
         fontSize: 8
