@@ -246,19 +246,23 @@ export const BancoHorasSection = () => {
     return saldo;
   };
 
-  const filteredRegistros = registros.filter(r => {
+   const filteredRegistros = registros.filter(r => {
     const matchesSearch = r.funcionario_nome.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesTipo = filterTipo === "todos" || r.tipo === filterTipo;
     const matchesDataInicio = !filterDataInicio || r.data >= filterDataInicio;
     const matchesDataFim = !filterDataFim || r.data <= filterDataFim;
     const matchesCard = cardFilter === "todos" || r.tipo === cardFilter;
     const matchesProfissionais = filterProfissionais.length === 0 || filterProfissionais.includes(r.funcionario_user_id);
-    // Cargo filter: match profile cargo
+    // Cargo filter
     const matchesCargo = filterCargo === "todos" || (() => {
       const profile = profiles.find(p => p.user_id === r.funcionario_user_id);
       return profile?.cargo === filterCargo;
     })();
-    return matchesSearch && matchesTipo && matchesDataInicio && matchesDataFim && matchesCard && matchesProfissionais && matchesCargo;
+    // Month/Year filter
+    const dateParts = r.data.split("-");
+    const matchesMes = filterMes === "todos" || dateParts[1] === filterMes;
+    const matchesAno = dateParts[0] === filterAno;
+    return matchesSearch && matchesTipo && matchesDataInicio && matchesDataFim && matchesCard && matchesProfissionais && matchesCargo && matchesMes && matchesAno;
   });
 
   const totalCreditos = registros
