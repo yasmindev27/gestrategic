@@ -306,6 +306,7 @@ export default function EnfermagemModule() {
                   <TabsContent value="escala-tecnicos" className="mt-4"><EscalaTecEnfermagem tipo="tecnicos" /></TabsContent>
                   <TabsContent value="escala-enfermeiros" className="mt-4"><EscalaTecEnfermagem tipo="enfermeiros" /></TabsContent>
                   <TabsContent value="escala-radiologia" className="mt-4"><EscalaTecEnfermagem tipo="radiologia" /></TabsContent>
+                  <TabsContent value="aprovacao-ponto" className="mt-4"><AprovacaoPontoJustificativa /></TabsContent>
                 </>
               )}
             </Tabs>
