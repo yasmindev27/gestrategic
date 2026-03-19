@@ -234,16 +234,24 @@ export const BancoHorasSection = () => {
       r => r.funcionario_user_id === funcionarioId
     );
     
-    let saldo = 0;
+    // Get latest record per type (absolute values, not accumulated)
+    let latestCredito: BancoHora | null = null;
+    let latestDebito: BancoHora | null = null;
     registrosFuncionario.forEach(r => {
       if (r.tipo === "credito") {
-        saldo += Number(r.horas);
+        if (!latestCredito || r.data > latestCredito.data || (r.data === latestCredito.data && r.created_at > latestCredito.created_at)) {
+          latestCredito = r;
+        }
       } else {
-        saldo -= Number(r.horas);
+        if (!latestDebito || r.data > latestDebito.data || (r.data === latestDebito.data && r.created_at > latestDebito.created_at)) {
+          latestDebito = r;
+        }
       }
     });
     
-    return saldo;
+    const credito = latestCredito ? Number((latestCredito as BancoHora).horas) : 0;
+    const debito = latestDebito ? Number((latestDebito as BancoHora).horas) : 0;
+    return credito - debito;
   };
 
    const filteredRegistros = registros.filter(r => {
