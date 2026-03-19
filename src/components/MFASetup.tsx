@@ -84,7 +84,7 @@ export function MFASetup({ userId, open, onComplete }: MFASetupProps) {
       if (recoveryError) throw recoveryError;
 
       // Codes já aparecem após verificar
-      if (recoveryData?.totp?.factor && recoveryData.totp.factor.id === factorId) {
+      if (recoveryData?.totp?.[0] && recoveryData.totp[0].id === factorId) {
         // Simular recovery codes (em produção, vir da resposta MFA)
         const codes = Array.from({ length: 10 }, () => 
           Math.random().toString(36).substring(2, 10).toUpperCase()
