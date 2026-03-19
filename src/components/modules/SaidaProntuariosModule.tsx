@@ -395,10 +395,6 @@ export const SaidaProntuariosModule = () => {
   };
 
   const applyFolhasFilters = (query: any) => {
-    const restrictToToday = isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao;
-    if (restrictToToday) {
-      query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-    }
     if (debouncedFolhasSearch) query = query.ilike("paciente_nome", `%${debouncedFolhasSearch}%`);
     if (folhasDataInicio) query = query.gte("data_atendimento", folhasDataInicio);
     if (folhasDataFim) query = query.lte("data_atendimento", folhasDataFim);
