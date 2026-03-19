@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Heart, Thermometer, Baby } from 'lucide-react';
+import { Heart, Thermometer, Baby, Bug } from 'lucide-react';
+import { NotificacoesArboviroses } from '@/components/sciras/NotificacoesArboviroses';
 import { ProtocolosList } from './ProtocolosList';
 import { FormDorToracica } from './FormDorToracica';
 import { FormSepseAdulto } from './FormSepseAdulto';
@@ -71,6 +72,11 @@ export const ProtocolosModule = () => {
           <span className="hidden sm:inline">Sepse Pediátrico</span>
           <span className="sm:hidden">SP</span>
         </TabsTrigger>
+        <TabsTrigger value="arboviroses" className="gap-2">
+          <Bug className="h-4 w-4" />
+          <span className="hidden sm:inline">Arboviroses</span>
+          <span className="sm:hidden">ARB</span>
+        </TabsTrigger>
       </TabsList>
 
       <TabsContent value="dor_toracica" className="mt-6">
@@ -81,6 +87,9 @@ export const ProtocolosModule = () => {
       </TabsContent>
       <TabsContent value="sepse_pediatrico" className="mt-6">
         <ProtocolosList tipo="sepse_pediatrico" titulo="Protocolo Sepse Pediátrico" onNovo={handleNovo} onRelatorios={handleRelatorios} onConsolidado={handleConsolidado} />
+      </TabsContent>
+      <TabsContent value="arboviroses" className="mt-6">
+        <NotificacoesArboviroses />
       </TabsContent>
     </Tabs>
   );
