@@ -361,27 +361,106 @@ export function InternacaoArea() {
         );
 
       case 'checklist':
+        const handleRegistrarChecklist = () => {
+          const concluidos = checklist.filter(c => c.concluido);
+          if (concluidos.length === 0) {
+            toast.error('Marque pelo menos um item antes de registrar');
+            return;
+          }
+          const registro = {
+            id: crypto.randomUUID(),
+            data: new Date().toLocaleDateString('pt-BR'),
+            hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+            turno: getCurrentShift().type,
+            itensTotal: checklist.length,
+            itensConcluidos: concluidos.length,
+            itens: checklist.map(c => ({ descricao: c.descricao, categoria: c.categoria, concluido: c.concluido, horario: c.horario })),
+          };
+          setChecklistHistorico([registro, ...checklistHistorico]);
+          setChecklist(CHECKLIST_PADRAO.map((c, i) => ({ ...c, id: `ck-${i}`, concluido: false })));
+          toast.success(`Checklist registrado com ${concluidos.length}/${checklist.length} itens concluídos`);
+        };
+
         return (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Checklist de Cuidados — Turno Atual</CardTitle>
-              <CardDescription>Baseado nas Metas Internacionais de Segurança do Paciente (ONA)</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {checklist.map(item => (
-                  <div key={item.id} className="flex items-center gap-3 p-2 rounded hover:bg-muted/50">
-                    <Checkbox checked={item.concluido} onCheckedChange={() => toggleChecklist(item.id)} />
-                    <div className="flex-1">
-                      <span className={item.concluido ? 'line-through text-muted-foreground' : ''}>{item.descricao}</span>
-                      <Badge variant="outline" className="ml-2 text-xs">{item.categoria}</Badge>
-                    </div>
-                    {item.horario && <span className="text-xs text-muted-foreground">{item.horario}</span>}
+          <div className="space-y-4">
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-base">Checklist de Cuidados — Turno Atual</CardTitle>
+                    <CardDescription>Baseado nas Metas Internacionais de Segurança do Paciente (ONA)</CardDescription>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+                  <div className="flex gap-2">
+                    <ExportDropdown
+                      onExportPDF={() => exportToPDF({ title: 'Checklist de Cuidados', headers: ['Item', 'Categoria', 'Status', 'Horário'], rows: checklist.map(c => [c.descricao, c.categoria, c.concluido ? 'Concluído' : 'Pendente', c.horario || '—']), fileName: 'checklist_cuidados' })}
+                      onExportExcel={() => exportToExcel({ title: 'Checklist de Cuidados', headers: ['Item', 'Categoria', 'Status', 'Horário'], rows: checklist.map(c => [c.descricao, c.categoria, c.concluido ? 'Concluído' : 'Pendente', c.horario || '—']), fileName: 'checklist_cuidados' })}
+                    />
+                    <Button onClick={handleRegistrarChecklist} disabled={checklist.filter(c => c.concluido).length === 0}>
+                      <CheckCircle2 className="h-4 w-4 mr-1" />
+                      Registrar Checklist
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {checklist.map(item => (
+                    <div key={item.id} className="flex items-center gap-3 p-2 rounded hover:bg-muted/50">
+                      <Checkbox checked={item.concluido} onCheckedChange={() => toggleChecklist(item.id)} />
+                      <div className="flex-1">
+                        <span className={item.concluido ? 'line-through text-muted-foreground' : ''}>{item.descricao}</span>
+                        <Badge variant="outline" className="ml-2 text-xs">{item.categoria}</Badge>
+                      </div>
+                      {item.horario && <span className="text-xs text-muted-foreground">{item.horario}</span>}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-4 text-sm text-muted-foreground">
+                  Progresso: {checklist.filter(c => c.concluido).length}/{checklist.length} itens concluídos
+                </div>
+              </CardContent>
+            </Card>
+
+            {checklistHistorico.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base">Histórico de Checklists Registrados</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="rounded-md border overflow-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Data</TableHead>
+                          <TableHead>Hora</TableHead>
+                          <TableHead>Turno</TableHead>
+                          <TableHead>Concluídos</TableHead>
+                          <TableHead>Total</TableHead>
+                          <TableHead>%</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {checklistHistorico.slice(0, 20).map((h: any) => (
+                          <TableRow key={h.id}>
+                            <TableCell>{h.data}</TableCell>
+                            <TableCell>{h.hora}</TableCell>
+                            <TableCell><Badge variant="outline">{h.turno === 'diurno' ? 'Diurno' : 'Noturno'}</Badge></TableCell>
+                            <TableCell className="font-medium">{h.itensConcluidos}</TableCell>
+                            <TableCell>{h.itensTotal}</TableCell>
+                            <TableCell>
+                              <Badge className={h.itensConcluidos === h.itensTotal ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}>
+                                {Math.round((h.itensConcluidos / h.itensTotal) * 100)}%
+                              </Badge>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         );
 
       case 'carrinho':
