@@ -226,17 +226,17 @@ export function NotificacaoCompulsoriaPrefeitura({ userId, userName }: Props) {
       // Registrar log de auditoria
       await supabase.from('logs_acesso').insert({
         user_id: userId,
-        user_name: userName,
-        action: 'NOTIFICACAO_COMPULSORIA_PREFEITURA',
-        module: 'SCIH',
-        target_record: numero,
-        details: JSON.stringify({
+        acao: 'NOTIFICACAO_COMPULSORIA_PREFEITURA',
+        modulo: 'SCIH',
+        detalhes: {
+          numero,
           doenca_agravo: data.doenca_agravo,
           paciente_nome: data.paciente_nome,
           unidade_saude: data.unidade_saude,
+          registrado_por: userName,
           timestamp: now.toISOString(),
           google_forms_preenchido: true,
-        }),
+        },
       });
 
       return numero;
