@@ -187,6 +187,31 @@ export function NotificacoesArboviroses() {
     }
   };
 
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { toast.error('Não autenticado'); return; }
+
+      const response = await supabase.functions.invoke('sync-arboviroses', {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      });
+
+      if (response.error) throw response.error;
+      const result = response.data;
+      if (result.success) {
+        toast.success(result.message);
+        queryClient.invalidateQueries({ queryKey: ['notificacoes-arboviroses'] });
+      } else {
+        toast.error(result.error || 'Erro na sincronização');
+      }
+    } catch (err: any) {
+      toast.error('Erro: ' + (err.message || 'Falha na sincronização'));
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   const filtered = useMemo(() => {
     if (!search) return registros;
     const term = search.toLowerCase();
