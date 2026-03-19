@@ -1565,7 +1565,12 @@ export const SaidaProntuariosModule = () => {
                     <SelectContent>
                       {isNir && !isAdmin && !isFaturamento ? (
                         <>
-                          <SelectItem value="em_fluxo">Aguardando NIR</SelectItem>
+                          <SelectItem value="em_fluxo">Em Fluxo (não concluídos)</SelectItem>
+                          <SelectItem value="todos">Todos</SelectItem>
+                          <SelectItem value="aguardando_classificacao">Aguardando Classificação</SelectItem>
+                          <SelectItem value="aguardando_nir">Aguardando NIR</SelectItem>
+                          <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
+                          <SelectItem value="concluido">Concluído</SelectItem>
                         </>
                       ) : isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao ? (
                         <>
