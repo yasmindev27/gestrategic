@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,8 +11,9 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
   BedDouble, ClipboardList, AlertTriangle, Plus, Search,
-  CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Activity, Stethoscope, FileText, ShieldCheck, HeartPulse, Pill
+  CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Activity, Stethoscope, FileText, ShieldCheck, HeartPulse, Pill, Loader2, RefreshCw
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { ChecklistCarrinhoInternacao } from './ChecklistCarrinhoInternacao';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
@@ -31,6 +32,7 @@ import { SAEPediatrico } from './SAEPediatrico';
 import { TermoGuardaMedicamento } from './TermoGuardaMedicamento';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { getBrasiliaDate, getBrasiliaDateString } from '@/lib/brasilia-time';
 
 interface PacienteInternado {
   id: string;
@@ -40,7 +42,7 @@ interface PacienteInternado {
   diagnostico: string;
   dataInternacao: string;
   medico: string;
-  risco: 'baixo' | 'moderado' | 'alto' | 'critico';
+  risco: string;
   observacoes: string;
 }
 
@@ -75,6 +77,37 @@ const CHECKLIST_PADRAO: Omit<ChecklistCuidado, 'id' | 'concluido' | 'horario'>[]
   { descricao: 'Conferir dieta prescrita', categoria: 'Nutrição' },
   { descricao: 'Registrar balanço hídrico', categoria: 'Monitoramento' },
 ];
+
+/** Calcula o turno atual baseado no horário de Brasília */
+function getCurrentShift(): { date: string; type: 'diurno' | 'noturno' } {
+  const now = getBrasiliaDate();
+  const hours = now.getHours();
+  
+  // Diurno: 7h-18h59 | Noturno: 19h-6h59
+  if (hours >= 7 && hours < 19) {
+    return { date: getBrasiliaDateString(), type: 'diurno' };
+  } else {
+    // Se for após meia-noite (0h-6h59), o turno noturno pertence ao dia anterior
+    if (hours < 7) {
+      const yesterday = new Date(now);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const y = yesterday.getFullYear();
+      const m = (yesterday.getMonth() + 1).toString().padStart(2, '0');
+      const d = yesterday.getDate().toString().padStart(2, '0');
+      return { date: `${y}-${m}-${d}`, type: 'noturno' };
+    }
+    return { date: getBrasiliaDateString(), type: 'noturno' };
+  }
+}
+
+/** Mapeia classificação de risco do mapa de leitos */
+function mapRisco(record: any): string {
+  // Tentar inferir risco pelo setor
+  const sector = (record.sector || '').toLowerCase();
+  if (sector.includes('vermelha') || sector.includes('uti')) return 'critico';
+  if (sector.includes('amarela')) return 'alto';
+  return 'moderado';
+}
 
 const SUB_NAV_ITEMS = [
   { id: 'pacientes', label: 'Pacientes', icon: BedDouble },
