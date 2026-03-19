@@ -160,7 +160,6 @@ export default function EnfermagemModule() {
     { value: "medicacao", label: "Medicação", icon: Pill },
     ...(canAccessProtocolos ? [{ value: "protocolos", label: "Protocolos Clínicos", icon: FileCheck }] : []),
     ...(isGestor ? [
-      { value: "aprovacao-ponto", label: "Aprovação de Ponto", icon: ClipboardCheck },
       { value: "indicadores-upa", label: "Indicadores UPA", icon: Activity },
     ] : []),
   ];
@@ -291,6 +290,9 @@ export default function EnfermagemModule() {
                     <TabsTrigger value="escala-radiologia" className="gap-2 text-xs">
                       <Radio className="h-3.5 w-3.5" /> Escala Radiologia
                     </TabsTrigger>
+                    <TabsTrigger value="aprovacao-ponto" className="gap-2 text-xs">
+                      <ClipboardCheck className="h-3.5 w-3.5" /> Aprovação Ponto
+                    </TabsTrigger>
                   </>
                 )}
               </TabsList>
@@ -304,6 +306,7 @@ export default function EnfermagemModule() {
                   <TabsContent value="escala-tecnicos" className="mt-4"><EscalaTecEnfermagem tipo="tecnicos" /></TabsContent>
                   <TabsContent value="escala-enfermeiros" className="mt-4"><EscalaTecEnfermagem tipo="enfermeiros" /></TabsContent>
                   <TabsContent value="escala-radiologia" className="mt-4"><EscalaTecEnfermagem tipo="radiologia" /></TabsContent>
+                  <TabsContent value="aprovacao-ponto" className="mt-4"><AprovacaoPontoJustificativa /></TabsContent>
                 </>
               )}
             </Tabs>
@@ -315,7 +318,6 @@ export default function EnfermagemModule() {
       case "classificacao": return <ClassificacaoArea />;
       case "medicacao": return <MedicacaoArea />;
       case "protocolos": return <ProtocolosModule />;
-      case "aprovacao-ponto": return <AprovacaoPontoJustificativa />;
       case "indicadores-upa": return <IndicadoresUPA />;
       default: return null;
     }
