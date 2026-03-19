@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Activity, Upload, FileCheck, ClipboardCheck, ClipboardList, Radio, BedDouble, Siren, ShieldCheck, Pill } from 'lucide-react';
+import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Activity, Upload, FileCheck, ClipboardCheck, ClipboardList, Radio, BedDouble, Siren, ShieldCheck, Pill, Microscope } from 'lucide-react';
 import { ProtocolosModule } from '@/components/protocolos/ProtocolosModule';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -158,7 +158,7 @@ export default function EnfermagemModule() {
     { value: "cme", label: "CME", icon: ShieldCheck },
     { value: "classificacao", label: "Classificação", icon: ClipboardCheck },
     { value: "medicacao", label: "Medicação", icon: Pill },
-    ...(canAccessProtocolos ? [{ value: "protocolos", label: "Protocolos Clínicos", icon: FileCheck }] : []),
+    ...(canAccessProtocolos ? [{ value: "scih", label: "SCIH", icon: Microscope }] : []),
     ...(isGestor ? [
       { value: "indicadores-upa", label: "Indicadores UPA", icon: Activity },
     ] : []),
@@ -317,7 +317,7 @@ export default function EnfermagemModule() {
       case "cme": return <CMEArea />;
       case "classificacao": return <ClassificacaoArea />;
       case "medicacao": return <MedicacaoArea />;
-      case "protocolos": return <ProtocolosModule />;
+      case "scih": return <ProtocolosModule />;
       case "indicadores-upa": return <IndicadoresUPA />;
       default: return null;
     }
