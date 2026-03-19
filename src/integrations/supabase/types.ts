@@ -3990,6 +3990,117 @@ export type Database = {
         }
         Relationships: []
       }
+      notificacoes_arboviroses: {
+        Row: {
+          bairro: string | null
+          ciclo1_data: string | null
+          ciclo1_gl: string | null
+          ciclo1_hematocrito: string | null
+          ciclo1_plaquetas: string | null
+          ciclo2_data: string | null
+          ciclo2_gl: string | null
+          ciclo2_hematocrito: string | null
+          ciclo2_plaquetas: string | null
+          ciclo3_data: string | null
+          ciclo3_gl: string | null
+          ciclo3_hematocrito: string | null
+          ciclo3_plaquetas: string | null
+          comorbidades: string | null
+          created_at: string
+          data_inicio_sintomas: string | null
+          data_nascimento: string | null
+          data_notificacao: string
+          dias_evolucao: number | null
+          endereco: string | null
+          grupo: string | null
+          id: string
+          idade: number | null
+          investigacao_campo: string | null
+          lab_data: string | null
+          lab_exame: string | null
+          paciente_nome: string
+          registrado_por: string | null
+          registrado_por_nome: string | null
+          sorologia_data: string | null
+          sorologia_resultado: string | null
+          suspeita: string
+          unidade_notificadora: string | null
+          updated_at: string
+        }
+        Insert: {
+          bairro?: string | null
+          ciclo1_data?: string | null
+          ciclo1_gl?: string | null
+          ciclo1_hematocrito?: string | null
+          ciclo1_plaquetas?: string | null
+          ciclo2_data?: string | null
+          ciclo2_gl?: string | null
+          ciclo2_hematocrito?: string | null
+          ciclo2_plaquetas?: string | null
+          ciclo3_data?: string | null
+          ciclo3_gl?: string | null
+          ciclo3_hematocrito?: string | null
+          ciclo3_plaquetas?: string | null
+          comorbidades?: string | null
+          created_at?: string
+          data_inicio_sintomas?: string | null
+          data_nascimento?: string | null
+          data_notificacao: string
+          dias_evolucao?: number | null
+          endereco?: string | null
+          grupo?: string | null
+          id?: string
+          idade?: number | null
+          investigacao_campo?: string | null
+          lab_data?: string | null
+          lab_exame?: string | null
+          paciente_nome: string
+          registrado_por?: string | null
+          registrado_por_nome?: string | null
+          sorologia_data?: string | null
+          sorologia_resultado?: string | null
+          suspeita: string
+          unidade_notificadora?: string | null
+          updated_at?: string
+        }
+        Update: {
+          bairro?: string | null
+          ciclo1_data?: string | null
+          ciclo1_gl?: string | null
+          ciclo1_hematocrito?: string | null
+          ciclo1_plaquetas?: string | null
+          ciclo2_data?: string | null
+          ciclo2_gl?: string | null
+          ciclo2_hematocrito?: string | null
+          ciclo2_plaquetas?: string | null
+          ciclo3_data?: string | null
+          ciclo3_gl?: string | null
+          ciclo3_hematocrito?: string | null
+          ciclo3_plaquetas?: string | null
+          comorbidades?: string | null
+          created_at?: string
+          data_inicio_sintomas?: string | null
+          data_nascimento?: string | null
+          data_notificacao?: string
+          dias_evolucao?: number | null
+          endereco?: string | null
+          grupo?: string | null
+          id?: string
+          idade?: number | null
+          investigacao_campo?: string | null
+          lab_data?: string | null
+          lab_exame?: string | null
+          paciente_nome?: string
+          registrado_por?: string | null
+          registrado_por_nome?: string | null
+          sorologia_data?: string | null
+          sorologia_resultado?: string | null
+          suspeita?: string
+          unidade_notificadora?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       notificacoes_pendencias: {
         Row: {
           created_at: string
