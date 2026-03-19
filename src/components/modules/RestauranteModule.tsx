@@ -1071,6 +1071,9 @@ export const RestauranteModule = () => {
                           </div>
                         </TableCell>
                         <TableCell>
+                          <span className="text-sm">{s.paciente_data_nascimento ? format(new Date(s.paciente_data_nascimento + 'T00:00:00'), "dd/MM/yyyy") : "—"}</span>
+                        </TableCell>
+                        <TableCell>
                           <div>
                             <span className="font-medium">{tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta}</span>
                             {s.descricao_especifica && <p className="text-xs text-muted-foreground">{s.descricao_especifica}</p>}
