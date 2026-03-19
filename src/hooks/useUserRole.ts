@@ -187,6 +187,10 @@ export const useUserRole = () => {
     isAssistenciaSocial,
     isQualidade,
     isNSP,
+    isMedicos,
+    isEnfermagem,
+    isSeguranca,
+    isRouparia,
     isTecnico,
     // Permissões de módulo
     canAccessSaidaProntuarios,
