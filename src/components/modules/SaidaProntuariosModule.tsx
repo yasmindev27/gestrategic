@@ -271,9 +271,6 @@ export const SaidaProntuariosModule = () => {
         .select("*", { count: "exact", head: true })
         .eq("is_folha_avulsa", true);
 
-      if (restrictedToToday) {
-        folhasCountQueryBase = folhasCountQueryBase.gte("created_at", inicioHoje).lte("created_at", fimHoje);
-      }
 
       let faltantesCountQueryBase = supabase
         .from("saida_prontuarios")
