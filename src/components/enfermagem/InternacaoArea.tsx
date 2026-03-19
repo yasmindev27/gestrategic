@@ -3,14 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-  BedDouble, ClipboardList, AlertTriangle, Plus, Search,
+  BedDouble, ClipboardList, AlertTriangle, Search,
   CheckCircle2, ShieldAlert, Thermometer, Shirt, Shield, SprayCanIcon, Gauge, ClipboardPen, Activity, Stethoscope, FileText, ShieldCheck, HeartPulse, Pill, Loader2, RefreshCw
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,17 +42,6 @@ interface PacienteInternado {
   medico: string;
   risco: string;
   observacoes: string;
-}
-
-interface PassagemPlantaoItem {
-  id: string;
-  data: string;
-  turno: string;
-  paciente: string;
-  leito: string;
-  informacoes: string;
-  pendencias: string;
-  registradoPor: string;
 }
 
 interface ChecklistCuidado {
@@ -113,7 +98,7 @@ function mapRisco(record: any): string {
 
 const SUB_NAV_ITEMS = [
   { id: 'pacientes', label: 'Pacientes', icon: BedDouble },
-  { id: 'passagem', label: 'Passagem de Plantão', icon: ClipboardList },
+  { id: 'passagem-plantao', label: 'Passagem de Plantão', icon: ClipboardPen },
   { id: 'checklist', label: 'Checklist Cuidados', icon: CheckCircle2 },
   { id: 'carrinho', label: 'Carrinho de Internação', icon: ShieldAlert },
   { id: 'sinais-vitais', label: 'Sinais Vitais', icon: Thermometer },
@@ -121,7 +106,6 @@ const SUB_NAV_ITEMS = [
   { id: 'nsp', label: 'NSP', icon: Shield },
   { id: 'limpeza', label: 'Limpeza Concorrente', icon: SprayCanIcon },
   { id: 'fluxometros', label: 'Fluxômetros/Bombas', icon: Gauge },
-  { id: 'passagem-plantao', label: 'Passagem Plantão Téc.', icon: ClipboardPen },
   { id: 'sv-oxigenio', label: 'SV/Oxigenioterapia', icon: Activity },
   { id: 'escalas', label: 'Escalas Clínicas', icon: Stethoscope },
   { id: 'sbar', label: 'SBAR Enfermeiros', icon: FileText },
@@ -136,17 +120,11 @@ export function InternacaoArea() {
   const [activeTab, setActiveTab] = useState('pacientes');
   const [pacientes, setPacientes] = useState<PacienteInternado[]>([]);
   const [isLoadingPacientes, setIsLoadingPacientes] = useState(true);
-  const [passagens, setPassagens] = useLocalStorage<PassagemPlantaoItem[]>('enf-internacao-passagens', []);
   const [checklistHistorico, setChecklistHistorico] = useLocalStorage<any[]>('enf-internacao-checklist-historico', []);
   const [checklist, setChecklist] = useState<ChecklistCuidado[]>(
     CHECKLIST_PADRAO.map((c, i) => ({ ...c, id: `ck-${i}`, concluido: false }))
   );
-  const [passagemDialogOpen, setPassagemDialogOpen] = useState(false);
   const [busca, setBusca] = useState('');
-
-  const [formPassagem, setFormPassagem] = useState({
-    turno: 'diurno', paciente: '', leito: '', informacoes: '', pendencias: '', registradoPor: ''
-  });
 
   // Buscar pacientes internados do mapa de leitos (bed_records)
   const fetchPacientesFromBedMap = async () => {
@@ -207,22 +185,6 @@ export function InternacaoArea() {
     p.nome.toLowerCase().includes(busca.toLowerCase()) ||
     p.leito.toLowerCase().includes(busca.toLowerCase())
   );
-
-  const handleAddPassagem = () => {
-    if (!formPassagem.paciente || !formPassagem.informacoes) {
-      toast.error('Paciente e informações são obrigatórios');
-      return;
-    }
-    const nova: PassagemPlantaoItem = {
-      id: crypto.randomUUID(),
-      data: new Date().toISOString().split('T')[0],
-      ...formPassagem,
-    };
-    setPassagens([nova, ...passagens]);
-    setFormPassagem({ turno: 'diurno', paciente: '', leito: '', informacoes: '', pendencias: '', registradoPor: '' });
-    setPassagemDialogOpen(false);
-    toast.success('Passagem de plantão registrada');
-  };
 
   const toggleChecklist = (id: string) => {
     setChecklist(prev => prev.map(c =>
@@ -301,64 +263,8 @@ export function InternacaoArea() {
           </div>
         );
 
-      case 'passagem':
-        return (
-          <div className="space-y-4">
-            <div className="flex justify-end">
-              <Dialog open={passagemDialogOpen} onOpenChange={setPassagemDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button><Plus className="h-4 w-4 mr-1" />Nova Passagem</Button>
-                </DialogTrigger>
-                <DialogContent className="max-w-lg">
-                  <DialogHeader><DialogTitle>Passagem de Plantão</DialogTitle></DialogHeader>
-                  <div className="space-y-3">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div><Label>Turno</Label>
-                        <Select value={formPassagem.turno} onValueChange={v => setFormPassagem(p => ({ ...p, turno: v }))}>
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="diurno">Diurno (7h-19h)</SelectItem>
-                            <SelectItem value="noturno">Noturno (19h-7h)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div><Label>Leito</Label><Input value={formPassagem.leito} onChange={e => setFormPassagem(p => ({ ...p, leito: e.target.value }))} /></div>
-                    </div>
-                    <div><Label>Paciente</Label><Input value={formPassagem.paciente} onChange={e => setFormPassagem(p => ({ ...p, paciente: e.target.value }))} /></div>
-                    <div><Label>Informações Clínicas</Label><Textarea value={formPassagem.informacoes} onChange={e => setFormPassagem(p => ({ ...p, informacoes: e.target.value }))} placeholder="Estado geral, medicações, procedimentos realizados..." /></div>
-                    <div><Label>Pendências</Label><Textarea value={formPassagem.pendencias} onChange={e => setFormPassagem(p => ({ ...p, pendencias: e.target.value }))} placeholder="Exames, medicações, procedimentos pendentes..." /></div>
-                    <div><Label>Registrado por</Label><Input value={formPassagem.registradoPor} onChange={e => setFormPassagem(p => ({ ...p, registradoPor: e.target.value }))} /></div>
-                    <Button onClick={handleAddPassagem} className="w-full">Registrar Passagem</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-
-            {passagens.length === 0 ? (
-              <Card><CardContent className="p-8 text-center text-muted-foreground">
-                <ClipboardList className="h-12 w-12 mx-auto mb-3 opacity-40" />
-                <p>Nenhuma passagem de plantão registrada</p>
-              </CardContent></Card>
-            ) : passagens.map(p => (
-              <Card key={p.id}>
-                <CardHeader className="pb-2">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="text-base">{p.paciente} — Leito {p.leito}</CardTitle>
-                    <div className="flex gap-2">
-                      <Badge variant="outline">{p.data}</Badge>
-                      <Badge className={p.turno === 'diurno' ? 'bg-yellow-100 text-yellow-800' : 'bg-indigo-100 text-indigo-800'}>{p.turno === 'diurno' ? 'Diurno' : 'Noturno'}</Badge>
-                    </div>
-                  </div>
-                  <CardDescription>Registrado por: {p.registradoPor}</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                  <div><span className="text-sm font-medium">Informações:</span><p className="text-sm text-muted-foreground">{p.informacoes}</p></div>
-                  {p.pendencias && <div><span className="text-sm font-medium text-warning">Pendências:</span><p className="text-sm text-muted-foreground">{p.pendencias}</p></div>}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        );
+      case 'passagem-plantao':
+        return <PassagemPlantaoTecEnfermagem storageKey="enf-passagem-plantao-tec-internacao" setor="Internação" />;
 
       case 'checklist':
         const handleRegistrarChecklist = () => {
@@ -475,8 +381,6 @@ export function InternacaoArea() {
         return <ChecklistLimpezaConcorrente storageKey="enf-limpeza-concorrente-internacao" setor="Internação" />;
       case 'fluxometros':
         return <ChecklistFluxometrosBombas storageKey="enf-fluxometros-bombas-internacao" setor="Internação" />;
-      case 'passagem-plantao':
-        return <PassagemPlantaoTecEnfermagem storageKey="enf-passagem-plantao-tec-internacao" setor="Internação" />;
       case 'sv-oxigenio':
         return <ControleSinaisVitaisOxigenio storageKey="enf-sv-oxigenio-internacao" setor="Internação" />;
       case 'escalas':
@@ -526,7 +430,7 @@ export function InternacaoArea() {
         </CardContent></Card>
         <Card><CardContent className="p-4 flex items-center gap-3">
           <ClipboardList className="h-8 w-8 text-warning opacity-70" />
-          <div><p className="text-sm text-muted-foreground">Passagens Hoje</p><p className="text-2xl font-bold">{passagens.filter(p => p.data === new Date().toISOString().split('T')[0]).length}</p></div>
+          <div><p className="text-sm text-muted-foreground">Setores</p><p className="text-2xl font-bold">{new Set(pacientes.map(p => p.setor)).size}</p></div>
         </CardContent></Card>
         <Card><CardContent className="p-4 flex items-center gap-3">
           <CheckCircle2 className="h-8 w-8 text-success opacity-70" />
