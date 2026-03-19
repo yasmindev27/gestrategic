@@ -11,15 +11,17 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { SearchInput } from '@/components/ui/search-input';
 import { EmptyState } from '@/components/ui/empty-state';
 import { LoadingState } from '@/components/ui/loading-state';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { toast } from 'sonner';
-import { Plus, Bell, ShieldAlert, CheckCircle } from 'lucide-react';
+import { Plus, Bell, ShieldAlert, CheckCircle, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 import { TIPOS_NOTIFICACAO_EPI } from './types';
 import type { NotificacaoEpidemiologica } from './types';
+import { NotificacaoCompulsoriaPrefeitura } from './NotificacaoCompulsoriaPrefeitura';
 
 interface Props {
   userId: string;
