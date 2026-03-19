@@ -430,7 +430,7 @@ export function InternacaoArea() {
         </CardContent></Card>
         <Card><CardContent className="p-4 flex items-center gap-3">
           <ClipboardList className="h-8 w-8 text-warning opacity-70" />
-          <div><p className="text-sm text-muted-foreground">Passagens Hoje</p><p className="text-2xl font-bold">{passagens.filter(p => p.data === new Date().toISOString().split('T')[0]).length}</p></div>
+          <div><p className="text-sm text-muted-foreground">Setores</p><p className="text-2xl font-bold">{new Set(pacientes.map(p => p.setor)).size}</p></div>
         </CardContent></Card>
         <Card><CardContent className="p-4 flex items-center gap-3">
           <CheckCircle2 className="h-8 w-8 text-success opacity-70" />
