@@ -428,6 +428,10 @@ export function InternacaoArea() {
           </h2>
           <p className="text-sm text-muted-foreground">Gestão de pacientes internados, passagem de plantão e checklists de cuidados</p>
         </div>
+        <ExportDropdown
+          onExportPDF={() => exportToPDF({ title: 'Internação — Pacientes', headers: ['Leito', 'Paciente', 'Setor', 'Diagnóstico', 'Médico', 'Risco', 'Internação'], rows: pacientes.map(p => [p.leito, p.nome, p.setor, p.diagnostico || '', p.medico || '', p.risco, p.dataInternacao || '']), fileName: 'internacao_pacientes' })}
+          onExportExcel={() => exportToExcel({ title: 'Internação — Pacientes', headers: ['Leito', 'Paciente', 'Setor', 'Diagnóstico', 'Médico', 'Risco', 'Internação'], rows: pacientes.map(p => [p.leito, p.nome, p.setor, p.diagnostico || '', p.medico || '', p.risco, p.dataInternacao || '']), fileName: 'internacao_pacientes' })}
+        />
       </div>
 
       {/* KPIs */}
