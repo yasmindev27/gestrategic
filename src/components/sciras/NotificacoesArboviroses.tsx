@@ -263,14 +263,18 @@ export function NotificacoesArboviroses() {
           </h2>
           <p className="text-sm text-muted-foreground">Vigilância epidemiológica de Dengue, Zika e Chikungunya</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={() => window.open(GOOGLE_SHEET_URL, '_blank')}>
             <ExternalLink className="h-4 w-4 mr-2" />
             Planilha Google
           </Button>
+          <Button size="sm" onClick={handleSync} disabled={syncing} className="gap-2">
+            <RefreshCw className={`h-4 w-4 ${syncing ? 'animate-spin' : ''}`} />
+            {syncing ? 'Sincronizando...' : 'Sincronizar'}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={importing}>
             <Upload className="h-4 w-4 mr-2" />
-            {importing ? 'Importando...' : 'Importar Planilha'}
+            {importing ? 'Importando...' : 'Importar .xlsx'}
           </Button>
           <input
             ref={fileInputRef}
