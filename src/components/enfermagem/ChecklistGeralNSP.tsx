@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 
 type Resposta = 'sim' | 'nao' | 'na';
 
