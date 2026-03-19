@@ -116,6 +116,7 @@ const Sidebar = ({
       items.push(
         { icon: LayoutDashboard, label: "Dashboard", id: "dashboard", category: "dashboard" },
         { icon: Syringe, label: "Enfermagem", id: "enfermagem", category: "assistencial" },
+        { icon: Heart, label: "Assist. Social/Psicologia", id: "assistencia-social", category: "assistencial" },
         { icon: BedDouble, label: "Mapa de Leitos", id: "mapa-leitos", category: "assistencial" },
         { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante", category: "apoio_logistica" },
         { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" },
