@@ -308,7 +308,12 @@ export const SaidaProntuariosModule = () => {
     if (isRecepcao && !isAdmin && !isNir && !isFaturamento && !isClassificacao) {
       query = query.gte("created_at", inicioHoje).lte("created_at", fimHoje);
     } else if (isNir && !isAdmin && !isFaturamento && !isClassificacao) {
-      query = query.in("status", ["aguardando_nir"]);
+      // NIR vê todos os registros não concluídos por padrão, mas pode filtrar por status
+      if (statusFilter === "em_fluxo") {
+        query = query.neq("status", "concluido");
+      } else if (statusFilter !== "todos") {
+        query = query.eq("status", statusFilter);
+      }
     } else {
       if (statusFilter === "em_fluxo") {
         query = query.neq("status", "concluido");
