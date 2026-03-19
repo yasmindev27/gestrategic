@@ -1396,10 +1396,12 @@ export const BancoHorasSection = () => {
           <form onSubmit={handleEdit} className="space-y-4">
             <div className="space-y-2">
               <Label>Colaborador</Label>
-              <Select value={editFormData.funcionario_user_id} onValueChange={(v) => setEditFormData({ ...editFormData, funcionario_user_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>{profiles.map(p => <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>)}</SelectContent>
-              </Select>
+              <SearchableSelect
+                value={editFormData.funcionario_user_id}
+                onValueChange={(v) => setEditFormData({ ...editFormData, funcionario_user_id: v })}
+                items={profiles.map(p => ({ value: p.user_id, label: p.full_name }))}
+                placeholder="Selecione o colaborador"
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
