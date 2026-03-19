@@ -39,7 +39,6 @@ export function IndicadoresNSP() {
 
   const stats = calculateStats;
 
-  // ── Monthly evolution data ──
   const monthlyEvolutionData = useMemo(() => {
     return MESES.map((mes, idx) => {
       const monthIndicators = indicators.filter(i => i.mes === mes && i.ano === selectedYear);

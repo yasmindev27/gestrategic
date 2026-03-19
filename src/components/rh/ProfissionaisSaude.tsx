@@ -30,7 +30,6 @@ import { useToast } from "@/hooks/use-toast";
 import { Skeleton } from "@/components/ui/skeleton";
 import * as XLSX from "xlsx";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Profissional {
   id: string;
@@ -46,7 +45,6 @@ interface Profissional {
   created_at: string;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const statusConfig: Record<string, { label: string; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   ativo: { label: "Ativo", variant: "default" },
@@ -63,7 +61,6 @@ const resolverTipo = (cargoNome: string): string => {
   return "outros";
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
 
 const ProfissionaisSaude = () => {
   const { toast } = useToast();
@@ -87,11 +84,9 @@ const ProfissionaisSaude = () => {
     observacoes: "",
   });
 
-  // ── Cargos do banco ─────────────────────────────────────────────────────────
   const { data: cargosDb = [] } = useCargos();
   const cargosNomes = cargosDb.map((c) => c.nome);
 
-  // ── Queries ─────────────────────────────────────────────────────────────────
   const { data: profissionais, isLoading } = useQuery({
     queryKey: ["profissionais_saude", filterStatus],
     queryFn: async () => {
@@ -103,7 +98,6 @@ const ProfissionaisSaude = () => {
     },
   });
 
-  // ── Mutations ────────────────────────────────────────────────────────────────
 
   const createMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
@@ -185,7 +179,6 @@ const ProfissionaisSaude = () => {
     },
   });
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
 
   const resetForm = () => {
     setFormData({
@@ -295,7 +288,6 @@ const ProfissionaisSaude = () => {
     XLSX.writeFile(wb, "modelo_importacao_profissionais.xlsx");
   };
 
-  // ── Filtros locais ───────────────────────────────────────────────────────────
 
   const filteredProfissionais = profissionais?.filter((p) => {
     const matchSearch = p.nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -321,7 +313,6 @@ const ProfissionaisSaude = () => {
     cargos: cargosUnicos.length,
   };
 
-  // ── JSX ──────────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">

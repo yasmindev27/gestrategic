@@ -75,7 +75,6 @@ const detectTipoPergunta = (opcoes: string[]): TipoPergunta => {
   return "multipla_escolha";
 };
 
-// ──────── Inline Question Card ────────
 const InlineQuestionCard = ({
   pergunta, index, isSelected, onSelect, onSave, onDelete,
 }: {
@@ -121,7 +120,6 @@ const InlineQuestionCard = ({
     }
   };
 
-  // ─── COLLAPSED VIEW ───
   if (!isSelected) {
     return (
       <div
@@ -140,7 +138,6 @@ const InlineQuestionCard = ({
     );
   }
 
-  // ─── EXPANDED VIEW ───
   return (
     <Card className="ring-2 ring-primary border-primary shadow-lg relative overflow-hidden" onClick={e => e.stopPropagation()}>
       <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-primary" />
@@ -278,7 +275,6 @@ const InlineQuestionCard = ({
   );
 };
 
-// ──────── Main Component ────────
 export const EditorFormulariosAuditoria = () => {
   const { toast } = useToast();
   const [formularios, setFormularios] = useState<FormularioConfig[]>([]);
@@ -416,7 +412,6 @@ export const EditorFormulariosAuditoria = () => {
 
   if (isLoading) return <LoadingState message="Carregando formulários..." />;
 
-  // ───────────────── LIST VIEW ─────────────────
   if (!selectedFormulario) {
     return (
       <div className="space-y-6">
@@ -476,7 +471,6 @@ export const EditorFormulariosAuditoria = () => {
     );
   }
 
-  // ───────────────── DETAIL/EDITOR VIEW ─────────────────
   const formSecoes = secoes.filter(s => s.formulario_id === selectedFormulario.id).sort((a, b) => a.ordem - b.ordem);
   const totalPerguntas = formSecoes.reduce((acc, s) => acc + perguntas.filter(p => p.secao_id === s.id).length, 0);
 

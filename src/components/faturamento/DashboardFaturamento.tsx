@@ -187,7 +187,6 @@ export function DashboardFaturamento() {
     setSelectedPeriod(null); // Clear graph selection on range change
   }, [dateRange]);
 
-  // ── KPIs ──────────────────────────────────────────────────────────────────
   // Metas individuais por profissional (nome → meta diária)
   const METAS_INDIVIDUAIS: Record<string, number> = {
     "Maxuel": 200,
@@ -259,7 +258,6 @@ export function DashboardFaturamento() {
     };
   }, [saidas, avaliacoes, dateRange, totalPendentesGeral]);
 
-  // ── Gráfico de Tendências ─────────────────────────────────────────────────
   const chartData = useMemo(() => {
     const buckets: Record<string, { lancados: number; pendentes: number; avaliados: number }> = {};
 
@@ -292,7 +290,6 @@ export function DashboardFaturamento() {
       .sort((a, b) => a.periodo.localeCompare(b.periodo));
   }, [saidas, avaliacoes, granularity]);
 
-  // ── Tabela de Performance (filtrável por período clicado) ────────────────
   const performanceData = useMemo(() => {
     // Filtrar por período do gráfico clicado — usa data_conclusao para finalizadas (igual ao gráfico)
     let filteredAvaliacoes = selectedPeriod

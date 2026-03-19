@@ -35,7 +35,6 @@ import * as XLSX from "xlsx";
 import { sanitizeText, sanitizeName, sanitizeSearchQuery } from "@/lib/sanitize";
 import { maskMatricula, maskSensitiveText } from "@/lib/data-mask";
 
-// ─── Types ───────────────────────────────────────────────────────────────────
 
 interface Movimentacao {
   id: string;
@@ -69,7 +68,6 @@ interface Ocorrencia {
   created_at: string;
 }
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const TIPOS_OCORRENCIA = [
   { value: "advertencia_verbal", label: "Advertência Verbal" },
@@ -109,7 +107,6 @@ const statusBadge = (status: string) => {
   return <Badge variant="outline" className={s.className}>{s.label}</Badge>;
 };
 
-// ─── Main Component ───────────────────────────────────────────────────────────
 
 export function MovimentacoesDisciplinarSection() {
   const { userId, role } = useUserRole();
@@ -171,7 +168,6 @@ export function MovimentacoesDisciplinarSection() {
   const [transferForm, setTransferForm] = useState(emptyTransfer);
   const [ocorrenciaForm, setOcorrenciaForm] = useState(emptyOcorrencia);
 
-  // ── Queries ──────────────────────────────────────────────────────────────
 
   const { data: movimentacoes = [], isLoading: loadingMov } = useQuery({
     queryKey: ["rh_movimentacoes", dateFrom, dateTo],
@@ -201,7 +197,6 @@ export function MovimentacoesDisciplinarSection() {
     },
   });
 
-  // ── Mutations ─────────────────────────────────────────────────────────────
 
   const insertTransfer = useMutation({
     mutationFn: async (form: typeof transferForm) => {
@@ -263,7 +258,6 @@ export function MovimentacoesDisciplinarSection() {
     onError: () => toast.error("Erro ao lançar ocorrência."),
   });
 
-  // ── Filtros locais (com sanitização de busca) ─────────────────────────────
 
   const cleanSearch = sanitizeSearchQuery(search);
 
@@ -290,7 +284,6 @@ export function MovimentacoesDisciplinarSection() {
   });
   const alertaCritico = Object.entries(ocorrenciasPorColaborador).filter(([, count]) => count > 2);
 
-  // ── Exportações ───────────────────────────────────────────────────────────
 
   const exportPDF = () => {
     exportToPDF({
@@ -349,7 +342,6 @@ export function MovimentacoesDisciplinarSection() {
     URL.revokeObjectURL(url);
   };
 
-  // ─────────────────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-4">

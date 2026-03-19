@@ -37,7 +37,6 @@ import {
   Legend,
 } from "recharts";
 
-// ── Tipos ────────────────────────────────────────────────────────────────────
 interface TableStat {
   name: string;
   label: string;
@@ -59,7 +58,6 @@ interface DbHealthMetrics {
   replicacaoFila: { pendentes: number; falhas: number; concluidos: number };
 }
 
-// ── Componente principal ─────────────────────────────────────────────────────
 export function InfraestruturaPanel() {
   const [metrics, setMetrics] = useState<DbHealthMetrics | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,7 +72,6 @@ export function InfraestruturaPanel() {
     duration?: number;
   } | null>(null);
 
-  // ── Busca métricas reais do banco ────────────────────────────────────────
   const fetchMetrics = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -159,7 +156,6 @@ export function InfraestruturaPanel() {
     fetchMetrics();
   }, [fetchMetrics]);
 
-  // ── Sync externo ────────────────────────────────────────────────────────
   const handleSyncExternalDB = async () => {
     setIsSyncing(true);
     setSyncResult(null);

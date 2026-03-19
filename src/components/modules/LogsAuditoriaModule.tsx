@@ -39,7 +39,6 @@ import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { cn } from "@/lib/utils";
 
-// ── Sanitização XSS ──────────────────────────────────────────────────────────
 const escapeHtml = (text: string | null | undefined): string => {
   if (text == null) return "";
   const div = document.createElement("div");
@@ -51,7 +50,6 @@ const escapeJson = (obj: unknown): string => {
   return escapeHtml(JSON.stringify(obj));
 };
 
-// ── Tipos ────────────────────────────────────────────────────────────────────
 interface LogEntry {
   id: string;
   user_id: string | null;
@@ -78,7 +76,6 @@ interface TrilhaEntry {
   acao_raw: string;
 }
 
-// ── Mapa de ações ─────────────────────────────────────────────────────────────
 const acaoConfig: Record<string, {
   label: string;
   descricao: string;
@@ -105,7 +102,6 @@ const impactoConfig: Record<TrilhaEntry["impacto"], { label: string; color: stri
   alto:  { label: "Alto",   color: "bg-destructive/10 text-destructive border-destructive/20" },
 };
 
-// ── Deriva trilha a partir dos logs ──────────────────────────────────────────
 const derivarTrilha = (logs: LogEntry[]): TrilhaEntry[] =>
   logs.map((log): TrilhaEntry => {
     const cfg = getAcaoConfig(log.acao);
@@ -139,12 +135,10 @@ const derivarTrilha = (logs: LogEntry[]): TrilhaEntry[] =>
     };
   });
 
-// ── Helper ────────────────────────────────────────────────────────────────────
 function formatModulo(modulo: string) {
   return modulo.split("_").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
 
-// ── Componente principal ──────────────────────────────────────────────────────
 export const LogsAuditoriaModule = () => {
   const [logs, setLogs]           = useState<LogEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -169,7 +163,6 @@ export const LogsAuditoriaModule = () => {
     alteracoes_salariais: ["editar_salario", "alterar_salario", "editar", "alterar_role"],
   };
 
-  // ── Resolve matrícula → user_id ────────────────────────────────────────────
   const resolveMatricula = async (mat: string) => {
     if (!mat.trim()) { setMatriculaResolvida(null); return; }
     const { data } = await supabase.rpc("buscar_usuario_por_matricula", { _matricula: mat.trim() });
@@ -180,7 +173,6 @@ export const LogsAuditoriaModule = () => {
     }
   };
 
-  // ── Fetch ──────────────────────────────────────────────────────────────────
   const fetchLogs = async () => {
     setIsLoading(true);
     try {
@@ -279,7 +271,6 @@ export const LogsAuditoriaModule = () => {
     fetchLogs();
   }, [selectedModulo, selectedAcao, selectedCritico, dateFrom, dateTo, dateEspecifica, page, matriculaResolvida]);
 
-  // ── Filtro local (busca textual) ───────────────────────────────────────────
   const filteredLogs = logs.filter(log => {
     if (!searchTerm) return true;
     const s = searchTerm.toLowerCase();
@@ -293,14 +284,12 @@ export const LogsAuditoriaModule = () => {
 
   const trilha = derivarTrilha(filteredLogs);
 
-  // ── KPIs ──────────────────────────────────────────────────────────────────
   const altosImpacto = trilha.filter(t => t.impacto === "alto").length;
   const usuariosUnicos = new Set(logs.map(l => l.user_id)).size;
   const ultimoEvento = logs[0]
     ? format(new Date(logs[0].created_at), "HH:mm", { locale: ptBR })
     : "--:--";
 
-  // ── Export ────────────────────────────────────────────────────────────────
   const exportToCSV = () => {
     const headers = ["Data/Hora", "Quem fez", "O que fez", "Em qual registro", "Módulo", "Impacto", "Detalhes"];
     const rows = trilha.map(t => [
@@ -360,7 +349,6 @@ export const LogsAuditoriaModule = () => {
 
   const totalPages = Math.ceil(totalCount / pageSize);
 
-  // ── Render ─────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-6">
       {/* Header */}

@@ -36,7 +36,6 @@ import { subDays, format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { getBrasiliaDate, getBrasiliaDateString } from "@/lib/brasilia-time";
 
-// ── Types ──
 interface DashboardStats {
   chamadosAbertos: number;
   chamadosPendentes: number;
@@ -73,7 +72,6 @@ interface RiskChartPoint {
   quality: number;
 }
 
-// ── Governance KPI Card ──
 interface KPICardProps {
   title: string;
   value: string;
@@ -120,7 +118,6 @@ const KPICard = ({ title, value, subtitle, icon: Icon, variant, loading, onClick
   </Card>
 );
 
-// ── Audit Activity Log ──
 const AuditActivityLog = ({ logs, loading }: { logs: AuditLogEntry[]; loading: boolean }) => (
   <Card className="shadow-sm">
     <CardHeader className="pb-2 pt-4 px-4">
@@ -153,7 +150,6 @@ const AuditActivityLog = ({ logs, loading }: { logs: AuditLogEntry[]; loading: b
   </Card>
 );
 
-// ── Risk Chart (dados reais) ──
 const RiskChart = ({ data, loading }: { data: RiskChartPoint[]; loading: boolean }) => (
   <Card className="shadow-sm h-full">
     <CardHeader className="pb-2 pt-4 px-4">
@@ -189,7 +185,6 @@ const RiskChart = ({ data, loading }: { data: RiskChartPoint[]; loading: boolean
   </Card>
 );
 
-// ── Resumo Operacional (substitui StatusMatrix) ──
 interface OperationalSummary {
   chamadosAbertos: number;
   incidentesAbertos: number;
@@ -234,7 +229,6 @@ const OperationalStatusCard = ({ data, loading }: { data: OperationalSummary; lo
   </Card>
 );
 
-// ── Main Dashboard ──
 const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   const [stats, setStats] = useState<DashboardStats>({
     chamadosAbertos: 0, chamadosPendentes: 0, chamadosHoje: 0, chamadosResolvidos: 0,
@@ -256,7 +250,6 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
   } = useUserRole();
   useRealtimeSync(REALTIME_PRESETS.dashboard);
 
-  // ── Busca dados do gráfico de risco (últimos 7 dias, dados reais) ──
   const fetchRiskChart = async () => {
     try {
       const days: RiskChartPoint[] = [];
@@ -299,7 +292,6 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
     }
   };
 
-  // ── Busca resumo operacional ──
   const fetchOperationalSummary = async () => {
     try {
       const [chamados, incidentes, auditorias, alertas] = await Promise.all([

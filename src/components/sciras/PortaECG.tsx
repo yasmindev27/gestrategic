@@ -38,7 +38,6 @@ import {
   CheckCircle2, Clock, TrendingUp, AlertTriangle, Trash2, Eye, X,
 } from 'lucide-react';
 
-// ── Types ──
 type RiskClassification = 'vermelho' | 'laranja' | 'amarelo' | 'verde' | 'azul';
 
 const RISK_LABELS: Record<RiskClassification, string> = {
@@ -67,7 +66,6 @@ const MONTHS = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ];
 
-// ── Form Schema ──
 const formSchema = z.object({
   competence_month: z.number().min(1).max(12),
   competence_year: z.number().min(2020),
@@ -89,7 +87,6 @@ const formSchema = z.object({
   observations: z.string().optional(),
 });
 
-// ── Hook ──
 function usePortaECG(month?: number, year?: number) {
   return useQuery({
     queryKey: ['porta-ecg', month, year],
@@ -109,7 +106,6 @@ function usePortaECG(month?: number, year?: number) {
   });
 }
 
-// ── Main Component ──
 interface PortaECGProps {
   userId: string;
   userName: string;
@@ -383,7 +379,6 @@ export function PortaECG({ userId, userName }: PortaECGProps) {
   );
 }
 
-// ── KPI Card ──
 function KPICard({ title, value, subtitle, icon, color }: { title: string; value: string | number; subtitle?: string; icon: React.ReactNode; color: string }) {
   return (
     <Card>
@@ -401,7 +396,6 @@ function KPICard({ title, value, subtitle, icon, color }: { title: string; value
   );
 }
 
-// ── Attendance Form Card ──
 function AttendanceFormCard({ userId, onSuccess }: { userId: string; onSuccess: () => void }) {
   const currentDate = new Date();
   const [doorToEcgMinutes, setDoorToEcgMinutes] = useState<number | null>(null);

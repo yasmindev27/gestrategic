@@ -303,7 +303,6 @@ export function FormulariosQualidade() {
 
   if (isLoading) return <LoadingState message="Carregando formulários..." />;
 
-  // ─── VIEW: FORM (Cadastrar Auditoria) ───
   if (view === "form" && selectedForm) {
     return (
       <div className="space-y-4 max-w-3xl mx-auto">
@@ -564,7 +563,6 @@ export function FormulariosQualidade() {
     );
   }
 
-  // ─── VIEW: HISTORICO ───
   if (view === "historico" && selectedForm) {
     return (
       <div className="space-y-4">
@@ -832,7 +830,6 @@ export function FormulariosQualidade() {
     );
   }
 
-  // ─── VIEW: CONSOLIDADO ───
   if (view === "consolidado" && selectedForm) {
     const tipoRegistros = registros.filter(r => r.tipo === selectedForm.tipo);
 
@@ -938,7 +935,6 @@ export function FormulariosQualidade() {
       </Card>
     );
 
-    // ── 1. INDICADORES DE ESTRUTURA ──
     const estruturaRows = [
       {
         label: "Número Total de Notificações de Incidentes",
@@ -948,7 +944,6 @@ export function FormulariosQualidade() {
       },
     ];
 
-    // ── 2. INDICADORES DE PROCESSO ──
     const classCounts = (month: string, tipo: string) => incByMonth(month).filter(i => i.tipo_incidente === tipo).length;
     const riscoCounts = (month: string, risco: string) => incByMonth(month).filter(i => i.classificacao_risco === risco).length;
 
@@ -966,7 +961,6 @@ export function FormulariosQualidade() {
       { label: "  Catastrófico", unit: "Nº", values: months.map(m => riscoCounts(m, "catastrofico") || ""), avg: calcAvg(months.map(m => riscoCounts(m, "catastrofico")).filter(v => v > 0)) },
     ];
 
-    // ── 2.2 PROCEDÊNCIA DAS NOTIFICAÇÕES ──
     const PROCEDENCIAS = ["Unidade de Internação", "Emergência", "Recepção", "Raio-x", "Laboratório", "Farmácia", "Áreas Administrativas", "Corpo Clínico", "Áreas de Apoio", "Classificação", "Medicação", "Observação", "Outros"];
     const procCount = (month: string, proc: string) => incByMonth(month).filter(i => normalizeProcedencia(i.setor_origem || i.setor) === proc).length;
     const procedenciaRows: typeof processoRows = [];
@@ -978,7 +972,6 @@ export function FormulariosQualidade() {
       }
     });
 
-    // ── 2.2 TIPO DE INCIDENTES - OMS ──
     const TIPOS_OMS = ["Administração Clínica / Processo", "Documentação", "Medicação", "Comportamento", "Infraestrutura / Instalações", "Recursos / Gestão Organizacional", "Equipamentos Médicos", "Outros"];
     const omsCount = (month: string, tipo: string) => incByMonth(month).filter(i => normalizeTipoOMS(i) === tipo).length;
     const omsRows: typeof processoRows = [];
@@ -988,7 +981,6 @@ export function FormulariosQualidade() {
       omsRows.push({ label: "", unit: "%", values: months.map((m, i) => calcPct(vals[i], incByMonth(m).length)), avg: "" });
     });
 
-    // ── AUDITORIAS DE SEGURANÇA DO PACIENTE ──
     const META_SECTIONS = [
       { prefix: "M1_", label: "Identificação Correta do Paciente" },
       { prefix: "M2_", label: "Comunicação Efetiva" },
@@ -1024,7 +1016,6 @@ export function FormulariosQualidade() {
       auditRows.push({ label: "", unit: "%", values: pctVals as any, avg: (() => { const v = pctVals.filter(p => p !== ""); return v.length > 0 ? (v.reduce((a, b) => a + parseFloat(b as string), 0) / v.length).toFixed(1) : ""; })() });
     });
 
-    // ── 4. INDICADORES DE RESULTADO ──
     const RESULTADO_ITEMS = [
       { label: "4.1 Taxa de incidentes - Identificação do Paciente", filter: (i: any) => /identifi.*paciente|pulseira|nome.*errado|troca.*paciente|paciente.*errad/i.test((i.descricao || "") + " " + (i.categoria_operacional || "")) },
       { label: "4.2 Taxa de incidentes - Comunicação Efetiva", filter: (i: any) => /comunica|repasse|inform.*incomplet|passagem.*plant[aã]o/i.test((i.descricao || "") + " " + (i.categoria_operacional || "")) },
@@ -1309,7 +1300,6 @@ export function FormulariosQualidade() {
     );
   }
 
-  // ─── VIEW: HOME (hero + action cards) ───
   const activeForm = formularios[0]; // Currently only "Auditoria de Segurança do Paciente"
   const totalRegistros = registros.filter(r => activeForm && r.tipo === activeForm.tipo).length;
   const avgConf = totalRegistros > 0

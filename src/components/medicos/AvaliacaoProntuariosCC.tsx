@@ -148,7 +148,6 @@ const SATISFACAO_OPTIONS = Array.from({ length: 10 }, (_, i) => ({
   label: String(i + 1),
 }));
 
-// ============ FORM COMPONENT ============
 const FormularioAvaliacao = ({ onSuccess }: { onSuccess: () => void }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -420,7 +419,6 @@ const FormularioAvaliacao = ({ onSuccess }: { onSuccess: () => void }) => {
   );
 };
 
-// ============ INDICATORS / DASHBOARD ============
 const CHART_COLORS = ["#ef4444", "#f97316", "#eab308", "#22c55e", "#3b82f6", "#8b5cf6"];
 
 const IndicadoresDashboard = () => {
@@ -827,7 +825,6 @@ const IndicadoresDashboard = () => {
   );
 };
 
-// ============ MAIN COMPONENT ============
 const AvaliacaoProntuariosCC = () => {
   const [subTab, setSubTab] = useState("indicadores");
 

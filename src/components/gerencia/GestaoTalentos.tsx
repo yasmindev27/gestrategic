@@ -16,7 +16,6 @@ import { Input } from '@/components/ui/input';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { format, isPast } from 'date-fns';
 
-// ─── Types ────────────────────────────────────────────────────
 interface ColaboradorData {
   user_id: string;
   full_name: string;
@@ -107,7 +106,6 @@ function getStatusBadges(c: ColaboradorData) {
   return <div className="flex flex-wrap gap-1">{badges}</div>;
 }
 
-// ─── Deep Dive Profile ────────────────────────────────────────
 function PerfilDetalhado({ colaborador, mediaGeral, onBack }: { colaborador: ColaboradorData; mediaGeral: number; onBack: () => void }) {
   const discKey = colaborador.disc?.perfil_predominante || null;
   const discInfo = discKey ? DISC_DESCRICOES[discKey] : null;
@@ -373,7 +371,6 @@ function PerfilDetalhado({ colaborador, mediaGeral, onBack }: { colaborador: Col
   );
 }
 
-// ─── Main Component ───────────────────────────────────────────
 export function GestaoTalentos() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [search, setSearch] = useState('');

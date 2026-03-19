@@ -84,7 +84,6 @@ export const ImportarSaidasDialog = ({
   const isPdf = (file: File) =>
     file.type === "application/pdf" || file.name.toLowerCase().endsWith(".pdf");
 
-  // ── PDF handling via edge function ──
   const handlePdf = async (file: File) => {
     const formData = new FormData();
     formData.append("file", file);
@@ -125,7 +124,6 @@ export const ImportarSaidasDialog = ({
     await checkDuplicatesAndPreview(rows);
   };
 
-  // ── XLSX/CSV handling ──
   const handleSpreadsheet = async (file: File) => {
     const buffer = await file.arrayBuffer();
     const wb = XLSX.read(buffer, { type: "array" });
@@ -163,7 +161,6 @@ export const ImportarSaidasDialog = ({
     await checkDuplicatesAndPreview(rows);
   };
 
-  // ── Duplicate check shared logic ──
   const checkDuplicatesAndPreview = async (rows: ImportRow[]) => {
     const nomes = rows.map((r) => r.paciente_nome.toUpperCase());
 
@@ -226,7 +223,6 @@ export const ImportarSaidasDialog = ({
     setPreview(previewRows);
   };
 
-  // ── Unified file handler ──
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;

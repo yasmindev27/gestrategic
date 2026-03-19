@@ -35,7 +35,6 @@ export const MESES = [
   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro',
 ] as const;
 
-// ── UPA Indicators ──
 export const UPA_CATEGORIAS = {
   ESTRUTURA: 'Indicadores de Estrutura',
   PROCESSO: 'Indicadores de Processo',
@@ -133,7 +132,6 @@ export const UPA_INDICADORES_GESTAO = [
   { indicador: 'Demissões', unidade: 'Nº', meta: null, subcategoria: 'Turnover' },
 ];
 
-// ── NSP Indicators (Indicadores Hospitalares) ──
 export const NSP_CATEGORIAS = {
   ESTRUTURA: 'Indicadores de Estrutura',
   PROCESSO: 'Indicadores de Processo',

@@ -1,14 +1,8 @@
-/**
- * Gestrategic — Helpers centralizados para Supabase
- * Data fetching padronizado, auditoria automática, query keys.
- */
-
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 
 type TableName = keyof Database["public"]["Tables"];
 
-// ─── Log de auditoria centralizado ────────────────────────────────
 export async function logAuditAction(
   acao: string,
   modulo: string,
@@ -29,7 +23,6 @@ export async function logAuditAction(
   }
 }
 
-// ─── Contagem exata (usando count: "exact") ───────────────────────
 export async function fetchExactCount(
   table: ReturnType<typeof supabase.from>,
 ): Promise<number> {
@@ -38,7 +31,6 @@ export async function fetchExactCount(
   return 0;
 }
 
-// ─── Query keys centralizadas ─────────────────────────────────────
 export const queryKeys = {
   chamados: {
     all: ["chamados"] as const,

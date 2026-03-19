@@ -40,6 +40,7 @@ const MedicosModule = lazy(() => import("@/components/modules/MedicosModule"));
 const EquipeModule = lazy(() => import("@/components/modules/EquipeModule"));
 const ColaboradorModule = lazy(() => import("@/components/modules/ColaboradorModule"));
 const MapaLeitosModule = lazy(() => import("@/components/modules/MapaLeitosModule").then(m => ({ default: m.MapaLeitosModule })));
+const AbrirChamadoModule = lazy(() => import("@/components/modules/AbrirChamadoModule").then(m => ({ default: m.AbrirChamadoModule })));
 
 // Module loading fallback
 const ModuleLoader = () => (
@@ -245,6 +246,8 @@ const Dashboard = () => {
           return <SegurancaPatrimonialModule />;
         case "colaborador":
           return <ColaboradorModule />;
+        case "abrir-chamado":
+          return <AbrirChamadoModule onOpenExternal={handleOpenExternal} />;
         default:
           return <DashboardPersonalizado onNavigate={handleSectionChange} />;
       }

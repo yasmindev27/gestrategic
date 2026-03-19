@@ -125,7 +125,6 @@ export const JustificativaPontoSection = () => {
     }
   };
 
-  // ── LIST VIEW ──
   if (!showForm) {
     return (
       <div className="space-y-4">
@@ -183,7 +182,6 @@ export const JustificativaPontoSection = () => {
     );
   }
 
-  // ── FORM VIEW ──
   return (
     <div className="space-y-4 max-w-4xl mx-auto">
       <div className="flex items-center justify-between">

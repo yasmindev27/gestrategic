@@ -17,7 +17,6 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-// ── Data structure ──
 interface CompetenciaItem {
   id: string;
   descricao: string;
@@ -137,7 +136,6 @@ interface AvaliacaoSalva {
   created_at: string;
 }
 
-// ── Component ──
 export const AvaliacaoDesempenhoSection = () => {
   const [activeTab, setActiveTab] = useState("avaliacao");
 
@@ -173,7 +171,6 @@ export const AvaliacaoDesempenhoSection = () => {
     }));
   };
 
-  // ── Computed averages ──
   const getCompetenciaMedia = (comp: Competencia, field: "atual" | "projetado", customScores?: Record<string, { atual: number; projetado: number }>) => {
     const s = customScores || scores;
     const vals = comp.itens.map(i => s[i.id]?.[field]).filter(v => v !== undefined && v !== null) as number[];
@@ -216,7 +213,6 @@ export const AvaliacaoDesempenhoSection = () => {
 
   const fmtNum = (n: number | null) => (n !== null ? n.toFixed(2) : "—");
 
-  // ── Load history ──
   const fetchHistorico = async () => {
     setLoadingHistorico(true);
     try {
@@ -237,7 +233,6 @@ export const AvaliacaoDesempenhoSection = () => {
     fetchHistorico();
   }, []);
 
-  // ── Save evaluation ──
   const handleSalvar = async () => {
     if (!colaborador.trim()) {
       toast.error("Informe o nome do colaborador.");
@@ -306,7 +301,6 @@ export const AvaliacaoDesempenhoSection = () => {
     }
   };
 
-  // ── PDF Export: Avaliação ──
   const handleExportAvaliacaoPDF = async () => {
     const { doc, logoImg } = await createStandardPdf("Avaliação de Desempenho por Competências", "portrait");
     const pageWidth = doc.internal.pageSize.width;
@@ -405,7 +399,6 @@ export const AvaliacaoDesempenhoSection = () => {
     savePdfWithFooter(doc, "Avaliação de Desempenho", "avaliacao_desempenho", logoImg);
   };
 
-  // ── PDF Export: PDI ──
   const handleExportPDIPDF = async () => {
     const { doc, logoImg } = await createStandardPdf("Plano de Desenvolvimento Individual", "portrait");
     const pageWidth = doc.internal.pageSize.width;
@@ -450,13 +443,11 @@ export const AvaliacaoDesempenhoSection = () => {
     });
     y = (doc as any).lastAutoTable.finalY + 8;
 
-    // ── Nota Geral ──
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
     doc.text(`NOTA GERAL DA AVALIAÇÃO: ${fmtNum(notaGeral)}`, 14, y);
     y += 8;
 
-    // ── Roda das Competências (Radar Chart) ──
     try {
       const chartCanvas = document.createElement("canvas");
       chartCanvas.width = 600;
@@ -642,7 +633,6 @@ export const AvaliacaoDesempenhoSection = () => {
     savePdfWithFooter(doc, "Plano de Desenvolvimento Individual", "pdi", logoImg);
   };
 
-  // ── Export relatório de avaliações aplicadas ──
   const handleExportRelatorioAvaliacoes = async () => {
     if (historico.length === 0) {
       toast.error("Nenhuma avaliação salva para gerar relatório.");
@@ -672,7 +662,6 @@ export const AvaliacaoDesempenhoSection = () => {
     savePdfWithFooter(doc, "Relatório de Avaliações Aplicadas", "relatorio_avaliacoes", logoImg);
   };
 
-  // ── Export full report from saved evaluation ──
   const handleExportRelatorioCompleto = async (av: AvaliacaoSalva) => {
     const { doc, logoImg } = await createStandardPdf("Relatório Completo – Avaliação de Desempenho e PDI", "portrait");
     const pageWidth = doc.internal.pageSize.width;
@@ -696,7 +685,6 @@ export const AvaliacaoDesempenhoSection = () => {
     doc.text("Legenda: 0=Nunca | 1=Raramente | 2=Poucas vezes | 3=Com frequência | 4=Muitas vezes | 5=Todas as vezes", 14, y);
     y += 5;
 
-    // ── PART 1: Avaliação de Desempenho ──
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
     doc.text("AVALIAÇÃO DE DESEMPENHO POR COMPETÊNCIAS", 14, y); y += 6;
@@ -765,7 +753,6 @@ export const AvaliacaoDesempenhoSection = () => {
     doc.setFont("helvetica", "bold");
     doc.text(`NOTA GERAL DA AVALIAÇÃO: ${fmtN(av.nota_geral)}`, 14, y); y += 10;
 
-    // ── PART 2: PDI ──
     if (y + 20 > pageHeight - 40) { doc.addPage(); y = 32; }
     doc.setFontSize(12);
     doc.setFont("helvetica", "bold");
@@ -920,12 +907,10 @@ export const AvaliacaoDesempenhoSection = () => {
     savePdfWithFooter(doc, "Relatório Completo – Avaliação e PDI", `relatorio_completo_${av.colaborador.replace(/\s+/g, "_")}`, logoImg);
   };
 
-  // ── View saved evaluation detail ──
   const handleViewAvaliacao = (av: AvaliacaoSalva) => {
     setViewingAvaliacao(av);
   };
 
-  // ── Score selector component ──
   const ScoreSelect = ({ itemId, field }: { itemId: string; field: "atual" | "projetado" }) => (
     <Select
       value={scores[itemId]?.[field]?.toString() ?? ""}

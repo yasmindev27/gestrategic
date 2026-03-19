@@ -84,7 +84,6 @@ export function useBedRecords() {
     });
 
     if (error) {
-      // Daily statistics update errored - silent fail
       console.warn('Daily statistics update failed:', error.message);
     }
   }, []);

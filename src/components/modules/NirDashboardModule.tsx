@@ -54,7 +54,6 @@ import {
   Legend
 } from 'recharts';
 
-// ── Types ──────────────────────────────────────────────────
 interface OccupancyStats {
   totalBeds: number;
   occupiedBeds: number;
@@ -99,7 +98,6 @@ const COLORS = [
 
 type DatePreset = 'today' | 'week' | 'month' | 'custom';
 
-// ── Helpers ────────────────────────────────────────────────
 /** Total installed capacity (regular + extra beds) */
 const TOTAL_BEDS = SECTORS.reduce(
   (sum, s) => sum + s.beds.length + (s.extraBeds?.length || 0),
@@ -112,7 +110,6 @@ const SECTOR_BED_COUNTS = SECTORS.map((s) => ({
   total: s.beds.length + (s.extraBeds?.length || 0),
 }));
 
-// ── Component ──────────────────────────────────────────────
 export const NirDashboardModule = () => {
   const { isAdmin, isNir, isLoading: isLoadingRole } = useUserRole();
   const { toast } = useToast();
@@ -139,7 +136,6 @@ export const NirDashboardModule = () => {
   const realtimeTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hasAccess = isAdmin || isNir;
 
-  // ── Data loaders ─────────────────────────────────────────
   const loadBedData = useCallback(async () => {
     const { getBrasiliaDateString, getBrasiliaHours } = await import('@/lib/brasilia-time');
     const today = getBrasiliaDateString();
@@ -342,7 +338,6 @@ export const NirDashboardModule = () => {
     };
   }, [hasAccess, isLoadingRole, loadDashboardData]);
 
-  // ── Date presets ─────────────────────────────────────────
   const handleDatePresetChange = (preset: DatePreset) => {
     setDatePreset(preset);
     const today = new Date();
@@ -362,7 +357,6 @@ export const NirDashboardModule = () => {
     }
   };
 
-  // ── Exports ──────────────────────────────────────────────
   const exportToCSV = () => {
     try {
       const headers = ['Setor', 'Ocupados', 'Total', 'Disponíveis', 'Taxa (%)', 'Status'];
@@ -456,7 +450,6 @@ export const NirDashboardModule = () => {
     }
   };
 
-  // ── Guards ───────────────────────────────────────────────
   if (isLoadingRole) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -478,7 +471,6 @@ export const NirDashboardModule = () => {
     );
   }
 
-  // ── Helpers ──────────────────────────────────────────────
   const getOccupancyColor = (rate: number) => {
     if (rate >= 90) return 'text-destructive';
     if (rate >= 70) return 'text-warning';
@@ -491,7 +483,6 @@ export const NirDashboardModule = () => {
     return 'bg-success/10';
   };
 
-  // ── Render ───────────────────────────────────────────────
   return (
     <div className="space-y-6">
       {/* Header */}

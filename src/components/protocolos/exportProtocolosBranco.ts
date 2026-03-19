@@ -4,7 +4,6 @@ import { saveAs } from 'file-saver';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 
-// ─── PDF Helpers ────────────────────────────────────────────────────────────
 
 const COLORS = {
   primary: [13, 33, 55] as [number, number, number],       // #0d2137
@@ -136,7 +135,6 @@ function drawTextArea(doc: jsPDF, y: number, label: string, height: number = 18)
   return y + height + 6;
 }
 
-// ─── Word helpers ───────────────────────────────────────────────────────────
 
 function wordSection(title: string): Paragraph {
   return new Paragraph({
@@ -187,7 +185,6 @@ function wordTextArea(label: string): Paragraph {
   });
 }
 
-// ─── Dor Torácica ───────────────────────────────────────────────────────────
 
 export async function exportDorToracicaPDF() {
   const title = 'Protocolo Dor Torácica — Formulário em Branco';
@@ -284,7 +281,6 @@ export async function exportDorToracicaWord() {
   saveAs(blob, `protocolo_dor_toracica_branco_${format(new Date(), 'yyyy-MM-dd')}.docx`);
 }
 
-// ─── Sepse Adulto ───────────────────────────────────────────────────────────
 
 export async function exportSepseAdultoPDF() {
   const title = 'Protocolo Sepse Adulto — Formulário em Branco';
@@ -435,7 +431,6 @@ export async function exportSepseAdultoWord() {
   saveAs(blob, `protocolo_sepse_adulto_branco_${format(new Date(), 'yyyy-MM-dd')}.docx`);
 }
 
-// ─── Sepse Pediátrico ───────────────────────────────────────────────────────
 
 export async function exportSepsePediatricoPDF() {
   const title = 'Protocolo Sepse Pediátrico — Formulário em Branco';

@@ -6,7 +6,6 @@
 
 import { Database } from "@/integrations/supabase/types";
 
-// ─── Alias para tipos do banco ────────────────────────────────────
 export type Tables = Database["public"]["Tables"];
 export type Enums = Database["public"]["Enums"];
 export type AppRole = Enums["app_role"];
@@ -84,7 +83,6 @@ export type LogAcesso = Tables["logs_acesso"]["Row"];
 // DISC
 export type DISCResult = Tables["disc_results"]["Row"];
 
-// ─── Enums de domínio ─────────────────────────────────────────────
 
 /** Categorias RBAC para agrupamento de módulos */
 export type ModuleCategory =
@@ -144,7 +142,6 @@ export const MODULE_CATEGORIES: Record<ModuleId, ModuleCategory | "dashboard"> =
   salus: "comunicacao",
 };
 
-// ─── Tipos utilitários ────────────────────────────────────────────
 
 /** Permissão de acesso a módulo */
 export interface ModulePermission {

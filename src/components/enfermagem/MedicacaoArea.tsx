@@ -19,7 +19,6 @@ import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
 import { ExportDropdown } from '@/components/ui/export-dropdown';
 import { exportToPDF, exportToCSV, exportToExcel } from '@/lib/export-utils';
 
-// ── Tipos ──
 interface PrescricaoMedicamento {
   id: string;
   paciente: string;
@@ -67,7 +66,6 @@ const FREQUENCIAS = ['1x/dia', '2x/dia', '3x/dia', '4x/dia', '6/6h', '8/8h', '12
 export function MedicacaoArea() {
   const [tab, setTab] = useState('prescricoes');
 
-  // ── Prescrições ──
   const [prescricoes, setPrescricoes] = useLocalStorage<PrescricaoMedicamento[]>('enf-medicacao-prescricoes', []);
   const [prescDialogOpen, setPrescDialogOpen] = useState(false);
   const [buscaPresc, setBuscaPresc] = useState('');
@@ -76,7 +74,6 @@ export function MedicacaoArea() {
     horario: '', frequencia: '1x/dia', observacao: '', registradoPor: '',
   });
 
-  // ── Estoque ──
   const [estoque, setEstoque] = useLocalStorage<ControleEstoque[]>('enf-medicacao-estoque', []);
   const [estoqueDialogOpen, setEstoqueDialogOpen] = useState(false);
   const [buscaEstoque, setBuscaEstoque] = useState('');
@@ -85,7 +82,6 @@ export function MedicacaoArea() {
     tipo: 'entrada' as ControleEstoque['tipo'], registradoPor: '', observacao: '',
   });
 
-  // ── Eventos Adversos ──
   const [eventos, setEventos] = useLocalStorage<EventoAdverso[]>('enf-medicacao-eventos', []);
   const [eventoDialogOpen, setEventoDialogOpen] = useState(false);
   const [formEvento, setFormEvento] = useState({
@@ -93,7 +89,6 @@ export function MedicacaoArea() {
     conduta: '', registradoPor: '',
   });
 
-  // ── Handlers Prescrição ──
   const handleAddPrescricao = () => {
     if (!formPresc.paciente || !formPresc.medicamento || !formPresc.registradoPor) {
       toast.error('Paciente, medicamento e responsável são obrigatórios');
@@ -129,7 +124,6 @@ export function MedicacaoArea() {
     toast.info('Medicamento suspenso');
   };
 
-  // ── Handlers Estoque ──
   const handleAddEstoque = () => {
     if (!formEstoque.medicamento || !formEstoque.registradoPor) {
       toast.error('Medicamento e responsável são obrigatórios');
@@ -146,7 +140,6 @@ export function MedicacaoArea() {
     toast.success('Movimentação de estoque registrada');
   };
 
-  // ── Handlers Eventos Adversos ──
   const handleAddEvento = () => {
     if (!formEvento.paciente || !formEvento.medicamento || !formEvento.descricao || !formEvento.registradoPor) {
       toast.error('Todos os campos obrigatórios devem ser preenchidos');
