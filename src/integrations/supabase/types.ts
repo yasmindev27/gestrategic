@@ -7540,6 +7540,11 @@ export type Database = {
         | "enfermagem"
         | "medicos"
         | "rouparia"
+        | "gerente_administrativo"
+        | "farmaceutico_rt"
+        | "coordenador_medico"
+        | "supervisor_operacional"
+        | "coordenador_enfermagem"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -7688,6 +7693,11 @@ export const Constants = {
         "enfermagem",
         "medicos",
         "rouparia",
+        "gerente_administrativo",
+        "farmaceutico_rt",
+        "coordenador_medico",
+        "supervisor_operacional",
+        "coordenador_enfermagem",
       ],
     },
   },
