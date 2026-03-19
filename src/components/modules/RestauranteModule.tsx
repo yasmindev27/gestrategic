@@ -634,6 +634,7 @@ export const RestauranteModule = () => {
   const exportSolicitacoesExcel = () => {
     const data = todasSolicitacoes.map(s => ({
       "Paciente": s.paciente_nome || "N/A",
+      "Data Nascimento": s.paciente_data_nascimento ? format(new Date(s.paciente_data_nascimento + 'T00:00:00'), "dd/MM/yyyy") : "-",
       "Quarto/Leito": s.quarto_leito || "N/A",
       "Tipo de Dieta": tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta,
       "Data Início": format(new Date(s.data_inicio), "dd/MM/yyyy"),
