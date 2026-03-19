@@ -16,6 +16,8 @@ import { Pill, Plus, Search, Clock, CheckCircle2, AlertTriangle, FileText,
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 import { ChecklistSinaisVitais } from './ChecklistSinaisVitais';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToCSV, exportToExcel } from '@/lib/export-utils';
 
 // ── Tipos ──
 interface PrescricaoMedicamento {
