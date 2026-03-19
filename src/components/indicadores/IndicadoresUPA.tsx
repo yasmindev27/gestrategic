@@ -348,6 +348,84 @@ export function IndicadoresUPA() {
               </CardContent>
             </Card>
           </div>
+
+          {/* CID Adulto */}
+          <Card className="mt-6">
+            <CardHeader><CardTitle className="text-lg">CID - Adulto</CardTitle></CardHeader>
+            <CardContent>
+              {(() => {
+                const cidAdultoData = filteredIndicators
+                  .filter(i => i.subcategoria === 'CID Adulto')
+                  .map(i => ({ name: i.indicador.replace('CID Adulto - ', '').replace(/\s*\(.*\)/, ''), value: Number(i.valor_numero || 0) }))
+                  .filter(d => d.value > 0);
+                const CID_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#eab308', '#8b5cf6', '#ec4899', '#f97316', '#06b6d4', '#6b7280'];
+                return cidAdultoData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart data={cidAdultoData} layout="vertical" margin={{ left: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="name" type="category" width={180} tick={{ fontSize: 11 }} />
+                      <Tooltip />
+                      <Bar dataKey="value" name="Atendimentos" radius={[0, 4, 4, 0]}>
+                        {cidAdultoData.map((_, i) => <Cell key={i} fill={CID_COLORS[i % CID_COLORS.length]} />)}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : <div className="flex items-center justify-center h-[200px] text-muted-foreground">Sem dados de CID Adulto. Preencha na aba "Entrada de Dados".</div>;
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* CID Pediátrico */}
+          <Card className="mt-6">
+            <CardHeader><CardTitle className="text-lg">CID - Pediátrico</CardTitle></CardHeader>
+            <CardContent>
+              {(() => {
+                const cidPedData = filteredIndicators
+                  .filter(i => i.subcategoria === 'CID Pediátrico')
+                  .map(i => ({ name: i.indicador.replace('CID Pediátrico - ', '').replace(/\s*\(.*\)/, ''), value: Number(i.valor_numero || 0) }))
+                  .filter(d => d.value > 0);
+                const CID_COLORS = ['#2563eb', '#dc2626', '#16a34a', '#eab308', '#8b5cf6', '#ec4899', '#f97316'];
+                return cidPedData.length > 0 ? (
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={cidPedData} layout="vertical" margin={{ left: 20 }}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="name" type="category" width={180} tick={{ fontSize: 11 }} />
+                      <Tooltip />
+                      <Bar dataKey="value" name="Atendimentos" radius={[0, 4, 4, 0]}>
+                        {cidPedData.map((_, i) => <Cell key={i} fill={CID_COLORS[i % CID_COLORS.length]} />)}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                ) : <div className="flex items-center justify-center h-[200px] text-muted-foreground">Sem dados de CID Pediátrico. Preencha na aba "Entrada de Dados".</div>;
+              })()}
+            </CardContent>
+          </Card>
+
+          {/* Mortalidade */}
+          <Card className="mt-6">
+            <CardHeader><CardTitle className="text-lg">Mortalidade</CardTitle></CardHeader>
+            <CardContent>
+              {(() => {
+                const mortalidadeData = filteredIndicators
+                  .filter(i => i.subcategoria === 'Mortalidade' || (i.subcategoria === 'Saídas' && i.indicador.includes('Mortalidade')))
+                  .map(i => ({ name: i.indicador.replace('Taxa de ', ''), value: Number(i.valor_numero || 0) }))
+                  .filter(d => d.value > 0);
+                const MORT_COLORS = ['#dc2626', '#f97316', '#8b5cf6', '#2563eb', '#6b7280'];
+                return mortalidadeData.length > 0 ? (
+                  <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    {mortalidadeData.map((d, i) => (
+                      <div key={i} className="rounded-lg border p-4 text-center">
+                        <p className="text-2xl font-bold" style={{ color: MORT_COLORS[i % MORT_COLORS.length] }}>{d.value}</p>
+                        <p className="text-xs text-muted-foreground mt-1">{d.name}</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : <div className="flex items-center justify-center h-[120px] text-muted-foreground">Sem dados de mortalidade. Preencha na aba "Entrada de Dados".</div>;
+              })()}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 

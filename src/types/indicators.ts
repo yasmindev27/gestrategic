@@ -87,6 +87,24 @@ export const UPA_INDICADORES_PROCESSO = [
   { indicador: 'Distúrbios Urológicos - Infantil', unidade: 'Nº', meta: null, subcategoria: 'Patologias Infantil' },
   { indicador: 'Distúrbios Ortopédicos - Infantil', unidade: 'Nº', meta: null, subcategoria: 'Patologias Infantil' },
   { indicador: 'Outros - Infantil', unidade: 'Nº', meta: null, subcategoria: 'Patologias Infantil' },
+  // CID - Adulto
+  { indicador: 'CID Adulto - Doenças do Aparelho Respiratório (J00-J99)', unidade: 'Nº', meta: null, subcategoria: 'CID Adulto' },
+  { indicador: 'CID Adulto - Doenças do Aparelho Circulatório (I00-I99)', unidade: 'Nº', meta: null, subcategoria: 'CID Adulto' },
+  { indicador: 'CID Adulto - Doenças do Aparelho Digestivo (K00-K93)', unidade: 'Nº', meta: null, subcategoria: 'CID Adulto' },
+  { indicador: 'CID Adulto - Doenças do Sistema Nervoso (G00-G99)', unidade: 'Nº', meta: null, subcategoria: 'CID Adulto' },
+  { indicador: 'CID Adulto - Doenças do Aparelho Geniturinário (N00-N99)', unidade: 'Nº', meta: null, subcategoria: 'CID Adulto' },
+  { indicador: 'CID Adulto - Lesões e Causas Externas (S00-T98)', unidade: 'Nº', meta: null, subcategoria: 'CID Adulto' },
+  { indicador: 'CID Adulto - Doenças Infecciosas e Parasitárias (A00-B99)', unidade: 'Nº', meta: null, subcategoria: 'CID Adulto' },
+  { indicador: 'CID Adulto - Doenças Endócrinas/Metabólicas (E00-E90)', unidade: 'Nº', meta: null, subcategoria: 'CID Adulto' },
+  { indicador: 'CID Adulto - Outros', unidade: 'Nº', meta: null, subcategoria: 'CID Adulto' },
+  // CID - Pediátrico
+  { indicador: 'CID Pediátrico - Doenças do Aparelho Respiratório (J00-J99)', unidade: 'Nº', meta: null, subcategoria: 'CID Pediátrico' },
+  { indicador: 'CID Pediátrico - Doenças Infecciosas e Parasitárias (A00-B99)', unidade: 'Nº', meta: null, subcategoria: 'CID Pediátrico' },
+  { indicador: 'CID Pediátrico - Doenças do Aparelho Digestivo (K00-K93)', unidade: 'Nº', meta: null, subcategoria: 'CID Pediátrico' },
+  { indicador: 'CID Pediátrico - Doenças da Pele (L00-L99)', unidade: 'Nº', meta: null, subcategoria: 'CID Pediátrico' },
+  { indicador: 'CID Pediátrico - Lesões e Causas Externas (S00-T98)', unidade: 'Nº', meta: null, subcategoria: 'CID Pediátrico' },
+  { indicador: 'CID Pediátrico - Doenças do Sistema Nervoso (G00-G99)', unidade: 'Nº', meta: null, subcategoria: 'CID Pediátrico' },
+  { indicador: 'CID Pediátrico - Outros', unidade: 'Nº', meta: null, subcategoria: 'CID Pediátrico' },
 ];
 
 export const UPA_INDICADORES_RESULTADO = [
@@ -100,6 +118,10 @@ export const UPA_INDICADORES_RESULTADO = [
   { indicador: 'Encaminhados para HSJ', unidade: 'Nº', meta: null, subcategoria: 'Transferências' },
   { indicador: 'Encaminhados para outros Hospitais', unidade: 'Nº', meta: null, subcategoria: 'Transferências' },
   { indicador: 'Taxa de Mortalidade', unidade: 'Nº', meta: null, subcategoria: 'Saídas' },
+  { indicador: 'Mortalidade Adulto', unidade: 'Nº', meta: null, subcategoria: 'Mortalidade' },
+  { indicador: 'Mortalidade Pediátrica', unidade: 'Nº', meta: null, subcategoria: 'Mortalidade' },
+  { indicador: 'Mortalidade nas primeiras 24h', unidade: 'Nº', meta: null, subcategoria: 'Mortalidade' },
+  { indicador: 'Mortalidade após 24h', unidade: 'Nº', meta: null, subcategoria: 'Mortalidade' },
 ];
 
 export const UPA_INDICADORES_GESTAO = [
