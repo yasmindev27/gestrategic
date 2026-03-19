@@ -284,7 +284,6 @@ export const exportToPDF = (options: ExportOptions): void => {
 export const exportToExcel = (options: ExportOptions): void => {
   const { title, headers, rows, fileName } = options;
   
-  const XLSX = require('xlsx');
   const wsData = [headers, ...rows];
   const ws = XLSX.utils.aoa_to_sheet(wsData);
   
