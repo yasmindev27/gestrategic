@@ -137,6 +137,7 @@ export function InternacaoArea() {
   const [pacientes, setPacientes] = useState<PacienteInternado[]>([]);
   const [isLoadingPacientes, setIsLoadingPacientes] = useState(true);
   const [passagens, setPassagens] = useLocalStorage<PassagemPlantaoItem[]>('enf-internacao-passagens', []);
+  const [checklistHistorico, setChecklistHistorico] = useLocalStorage<any[]>('enf-internacao-checklist-historico', []);
   const [checklist, setChecklist] = useState<ChecklistCuidado[]>(
     CHECKLIST_PADRAO.map((c, i) => ({ ...c, id: `ck-${i}`, concluido: false }))
   );
