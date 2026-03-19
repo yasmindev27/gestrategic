@@ -265,11 +265,11 @@ export const BancoHorasSection = () => {
     return matchesSearch && matchesTipo && matchesDataInicio && matchesDataFim && matchesCard && matchesProfissionais && matchesCargo && matchesMes && matchesAno;
   });
 
-  const totalCreditos = registros
+  const totalCreditos = filteredRegistros
     .filter(r => r.tipo === "credito")
     .reduce((sum, r) => sum + Number(r.horas), 0);
 
-  const totalDebitos = registros
+  const totalDebitos = filteredRegistros
     .filter(r => r.tipo === "debito")
     .reduce((sum, r) => sum + Number(r.horas), 0);
 
