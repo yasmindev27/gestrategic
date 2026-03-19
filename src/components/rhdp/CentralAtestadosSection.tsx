@@ -718,6 +718,56 @@ export const CentralAtestadosSection = () => {
             </CardContent>
           </Card>
 
+          {/* Evolução Mensal - Trend Chart */}
+          <Card className="shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <TrendingUp className="h-5 w-5 text-primary" />
+                  Evolução Mensal de Atestados — {anoSelecionado}
+                </CardTitle>
+                <Select value={evolAtestColab} onValueChange={setEvolAtestColab}>
+                  <SelectTrigger className="w-[220px]">
+                    <SelectValue placeholder="Colaborador" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos os colaboradores</SelectItem>
+                    {profiles.map(p => (
+                      <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[320px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={evolucaoAtestados} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                    <defs>
+                      <linearGradient id="gradAtestados" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
+                      </linearGradient>
+                      <linearGradient id="gradDias" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="hsl(var(--warning))" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="hsl(var(--warning))" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                    <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip
+                      contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }}
+                    />
+                    <Legend />
+                    <Area type="monotone" dataKey="atestados" name="Atestados" stroke="hsl(var(--primary))" fill="url(#gradAtestados)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="dias" name="Dias Afastamento" stroke="hsl(var(--warning))" fill="url(#gradDias)" strokeWidth={2} />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Alerta: Colaboradores com múltiplos atestados no mês */}
           {(() => {
             const alertaColabs = (() => {
