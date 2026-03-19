@@ -317,7 +317,7 @@ export default function EnfermagemModule() {
       case "cme": return <CMEArea />;
       case "classificacao": return <ClassificacaoArea />;
       case "medicacao": return <MedicacaoArea />;
-      case "protocolos": return <ProtocolosModule />;
+      case "scih": return <ProtocolosModule />;
       case "indicadores-upa": return <IndicadoresUPA />;
       default: return null;
     }
