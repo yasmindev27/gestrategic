@@ -309,6 +309,35 @@ export const BancoHorasSection = () => {
     return Object.values(grouped).sort((a, b) => b.saldo - a.saldo);
   }, [registros]);
 
+  // Evolution trend data - monthly credits vs debits
+  const [evolFilterColab, setEvolFilterColab] = useState("todos");
+
+  const evolucaoMensal = useMemo(() => {
+    const MESES_LABEL = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+    const map: Record<string, { credito: number; debito: number; saldo: number }> = {};
+    
+    const source = evolFilterColab === "todos" 
+      ? registros.filter(r => r.data.startsWith(filterAno))
+      : registros.filter(r => r.data.startsWith(filterAno) && r.funcionario_user_id === evolFilterColab);
+
+    source.forEach(r => {
+      const mes = r.data.split("-")[1];
+      if (!map[mes]) map[mes] = { credito: 0, debito: 0, saldo: 0 };
+      if (r.tipo === "credito") {
+        map[mes].credito += Number(r.horas);
+      } else {
+        map[mes].debito += Number(r.horas);
+      }
+      map[mes].saldo = map[mes].credito - map[mes].debito;
+    });
+
+    return Array.from({ length: 12 }, (_, i) => {
+      const mesKey = String(i + 1).padStart(2, "0");
+      const d = map[mesKey] || { credito: 0, debito: 0, saldo: 0 };
+      return { name: MESES_LABEL[i], credito: +d.credito.toFixed(1), debito: +d.debito.toFixed(1), saldo: +d.saldo.toFixed(1) };
+    });
+  }, [registros, filterAno, evolFilterColab]);
+
   const chartDistribuicao = useMemo(() => {
     const credCount = registros.filter(r => r.tipo === 'credito').length;
     const debCount = registros.filter(r => r.tipo === 'debito').length;
