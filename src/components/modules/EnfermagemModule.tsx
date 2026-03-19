@@ -158,7 +158,7 @@ export default function EnfermagemModule() {
     { value: "cme", label: "CME", icon: ShieldCheck },
     { value: "classificacao", label: "Classificação", icon: ClipboardCheck },
     { value: "medicacao", label: "Medicação", icon: Pill },
-    ...(canAccessProtocolos ? [{ value: "protocolos", label: "Protocolos Clínicos", icon: FileCheck }] : []),
+    ...(canAccessProtocolos ? [{ value: "scih", label: "SCIH", icon: Microscope }] : []),
     ...(isGestor ? [
       { value: "indicadores-upa", label: "Indicadores UPA", icon: Activity },
     ] : []),
