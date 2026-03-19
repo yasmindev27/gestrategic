@@ -346,6 +346,9 @@ const Sidebar = ({
     if (!items.some(item => item.id === "salus")) {
       items.push({ icon: Stethoscope, label: "Sistema Salus", id: "salus", category: "comunicacao" });
     }
+    if (isNir && !items.some(item => item.id === "faturamento")) {
+      items.push({ icon: Receipt, label: "Faturamento", id: "faturamento", category: "assistencial" });
+    }
     return items;
   };
 
