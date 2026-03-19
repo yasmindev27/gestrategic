@@ -37,13 +37,13 @@ export function useMFA(userId?: string) {
       // Check MFA status
       const { data: profile } = await supabase
         .from('profiles')
-        .select('mfa_enabled')
+        .select('updated_at')
         .eq('user_id', userId)
         .single();
 
       return {
         requiresMFA: isAdmin,
-        mfaEnabled: profile?.mfa_enabled || false,
+        mfaEnabled: false,
       };
     },
     enabled: !!userId,
