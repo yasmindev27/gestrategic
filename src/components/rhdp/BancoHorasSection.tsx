@@ -265,87 +265,114 @@ export const BancoHorasSection = () => {
     return matchesSearch && matchesTipo && matchesDataInicio && matchesDataFim && matchesCard && matchesProfissionais && matchesCargo && matchesMes && matchesAno;
   });
 
-  const totalCreditos = filteredRegistros
-    .filter(r => r.tipo === "credito")
-    .reduce((sum, r) => sum + Number(r.horas), 0);
-
-  const totalDebitos = filteredRegistros
-    .filter(r => r.tipo === "debito")
-    .reduce((sum, r) => sum + Number(r.horas), 0);
-
-  // Dashboard computed data
-  const top5Creditos = useMemo(() => {
-    const grouped: Record<string, { nome: string; total: number }> = {};
-    registros.filter(r => r.tipo === 'credito').forEach(r => {
+  // Helper: get the latest (most recent) record per collaborator
+  // Since imported values are absolute, we use the latest record per collaborator, not sums
+  const latestPerColaborador = useMemo(() => {
+    const latest: Record<string, { credito: BancoHora | null; debito: BancoHora | null }> = {};
+    // filteredRegistros already has month/year filter applied
+    filteredRegistros.forEach(r => {
       const key = r.funcionario_user_id;
-      if (!grouped[key]) grouped[key] = { nome: r.funcionario_nome, total: 0 };
-      grouped[key].total += Number(r.horas);
+      if (!latest[key]) latest[key] = { credito: null, debito: null };
+      if (r.tipo === 'credito') {
+        if (!latest[key].credito || r.data > latest[key].credito!.data || (r.data === latest[key].credito!.data && r.created_at > latest[key].credito!.created_at)) {
+          latest[key].credito = r;
+        }
+      } else {
+        if (!latest[key].debito || r.data > latest[key].debito!.data || (r.data === latest[key].debito!.data && r.created_at > latest[key].debito!.created_at)) {
+          latest[key].debito = r;
+        }
+      }
     });
-    return Object.values(grouped).sort((a, b) => b.total - a.total).slice(0, 5);
-  }, [registros]);
+    return latest;
+  }, [filteredRegistros]);
+
+  const totalCreditos = Object.values(latestPerColaborador)
+    .reduce((sum, v) => sum + (v.credito ? Number(v.credito.horas) : 0), 0);
+
+  const totalDebitos = Object.values(latestPerColaborador)
+    .reduce((sum, v) => sum + (v.debito ? Number(v.debito.horas) : 0), 0);
+
+  // Dashboard computed data — latest absolute value per collaborator
+  const top5Creditos = useMemo(() => {
+    return Object.entries(latestPerColaborador)
+      .filter(([, v]) => v.credito)
+      .map(([, v]) => ({ nome: v.credito!.funcionario_nome, total: Number(v.credito!.horas) }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+  }, [latestPerColaborador]);
 
   const top5Debitos = useMemo(() => {
-    const grouped: Record<string, { nome: string; total: number }> = {};
-    registros.filter(r => r.tipo === 'debito').forEach(r => {
-      const key = r.funcionario_user_id;
-      if (!grouped[key]) grouped[key] = { nome: r.funcionario_nome, total: 0 };
-      grouped[key].total += Number(r.horas);
-    });
-    return Object.values(grouped).sort((a, b) => b.total - a.total).slice(0, 5);
-  }, [registros]);
+    return Object.entries(latestPerColaborador)
+      .filter(([, v]) => v.debito)
+      .map(([, v]) => ({ nome: v.debito!.funcionario_nome, total: Number(v.debito!.horas) }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 5);
+  }, [latestPerColaborador]);
 
   const saldoPorColaborador = useMemo(() => {
-    const grouped: Record<string, { nome: string; credito: number; debito: number; saldo: number }> = {};
-    registros.forEach(r => {
-      const key = r.funcionario_user_id;
-      if (!grouped[key]) grouped[key] = { nome: r.funcionario_nome, credito: 0, debito: 0, saldo: 0 };
-      if (r.tipo === 'credito') {
-        grouped[key].credito += Number(r.horas);
-      } else {
-        grouped[key].debito += Number(r.horas);
-      }
-      grouped[key].saldo = grouped[key].credito - grouped[key].debito;
-    });
-    return Object.values(grouped).sort((a, b) => b.saldo - a.saldo);
-  }, [registros]);
+    return Object.entries(latestPerColaborador).map(([, v]) => {
+      const nome = v.credito?.funcionario_nome || v.debito?.funcionario_nome || '';
+      const credito = v.credito ? Number(v.credito.horas) : 0;
+      const debito = v.debito ? Number(v.debito.horas) : 0;
+      return { nome, credito, debito, saldo: credito - debito };
+    }).sort((a, b) => b.saldo - a.saldo);
+  }, [latestPerColaborador]);
 
-  // Evolution trend data - monthly credits vs debits
+  // Evolution trend data — raw absolute values per month (latest record per collaborator per month)
   const [evolFilterColab, setEvolFilterColab] = useState("todos");
 
   const evolucaoMensal = useMemo(() => {
     const MESES_LABEL = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-    const map: Record<string, { credito: number; debito: number; saldo: number }> = {};
     
     const source = evolFilterColab === "todos" 
       ? registros.filter(r => r.data.startsWith(filterAno))
       : registros.filter(r => r.data.startsWith(filterAno) && r.funcionario_user_id === evolFilterColab);
 
+    // For each month, get the latest record per collaborator+tipo, then use the raw value
+    const monthData: Record<string, Record<string, { credito: number; debito: number; latestCred: string; latestDeb: string }>> = {};
+
     source.forEach(r => {
       const mes = r.data.split("-")[1];
-      if (!map[mes]) map[mes] = { credito: 0, debito: 0, saldo: 0 };
+      const key = r.funcionario_user_id;
+      if (!monthData[mes]) monthData[mes] = {};
+      if (!monthData[mes][key]) monthData[mes][key] = { credito: 0, debito: 0, latestCred: '', latestDeb: '' };
+      
       if (r.tipo === "credito") {
-        map[mes].credito += Number(r.horas);
+        const ref = r.data + r.created_at;
+        if (ref > monthData[mes][key].latestCred) {
+          monthData[mes][key].credito = Number(r.horas);
+          monthData[mes][key].latestCred = ref;
+        }
       } else {
-        map[mes].debito += Number(r.horas);
+        const ref = r.data + r.created_at;
+        if (ref > monthData[mes][key].latestDeb) {
+          monthData[mes][key].debito = Number(r.horas);
+          monthData[mes][key].latestDeb = ref;
+        }
       }
-      map[mes].saldo = map[mes].credito - map[mes].debito;
     });
 
     return Array.from({ length: 12 }, (_, i) => {
       const mesKey = String(i + 1).padStart(2, "0");
-      const d = map[mesKey] || { credito: 0, debito: 0, saldo: 0 };
-      return { name: MESES_LABEL[i], credito: +d.credito.toFixed(1), debito: +d.debito.toFixed(1), saldo: +d.saldo.toFixed(1) };
+      const colabs = monthData[mesKey] || {};
+      // Sum the latest absolute values across collaborators for this month
+      let credito = 0, debito = 0;
+      Object.values(colabs).forEach(c => {
+        credito += c.credito;
+        debito += c.debito;
+      });
+      return { name: MESES_LABEL[i], credito: +credito.toFixed(1), debito: +debito.toFixed(1), saldo: +(credito - debito).toFixed(1) };
     });
   }, [registros, filterAno, evolFilterColab]);
 
   const chartDistribuicao = useMemo(() => {
-    const credCount = registros.filter(r => r.tipo === 'credito').length;
-    const debCount = registros.filter(r => r.tipo === 'debito').length;
+    const credCount = Object.values(latestPerColaborador).filter(v => v.credito).length;
+    const debCount = Object.values(latestPerColaborador).filter(v => v.debito).length;
     return [
       { name: 'Créditos', value: credCount },
       { name: 'Débitos', value: debCount },
     ].filter(d => d.value > 0);
-  }, [registros]);
+  }, [latestPerColaborador]);
 
   const colaboradoresComCredito = saldoPorColaborador.filter(c => c.saldo > 0).length;
   const colaboradoresComDebito = saldoPorColaborador.filter(c => c.saldo < 0).length;
