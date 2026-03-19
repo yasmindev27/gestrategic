@@ -71,7 +71,7 @@ export function MFASetup({ userId, open, onComplete }: MFASetupProps) {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.auth.mfa.verify({
+      const { data, error } = await (supabase.auth.mfa.verify as any)({
         factorId,
         code: verificationCode,
       });
