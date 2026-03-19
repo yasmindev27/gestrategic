@@ -1458,6 +1458,7 @@ export const RestauranteModule = () => {
                             <TableHeader>
                               <TableRow>
                                 <TableHead>Paciente</TableHead>
+                                <TableHead>Data Nasc.</TableHead>
                                 <TableHead>Tipo de Dieta</TableHead>
                                 <TableHead>Horários</TableHead>
                                 <TableHead className="text-center">
@@ -1475,9 +1476,10 @@ export const RestauranteModule = () => {
                             <TableBody>
                               {solicitacoesFiltradas.map(s => <TableRow key={s.id}>
                                   <TableCell>
-                                    <div>
-                                      <span className="font-medium">{s.paciente_nome || "N/A"}</span>
-                                    </div>
+                                    <span className="font-medium">{s.paciente_nome || "N/A"}</span>
+                                  </TableCell>
+                                  <TableCell>
+                                    <span className="text-sm">{s.paciente_data_nascimento ? format(new Date(s.paciente_data_nascimento + 'T00:00:00'), "dd/MM/yyyy") : "—"}</span>
                                   </TableCell>
                                   <TableCell>
                                     <div>
