@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Heart, Thermometer, Baby } from 'lucide-react';
+import { Heart, Thermometer, Baby, Bug } from 'lucide-react';
+import { NotificacoesArboviroses } from '@/components/sciras/NotificacoesArboviroses';
 import { ProtocolosList } from './ProtocolosList';
 import { FormDorToracica } from './FormDorToracica';
 import { FormSepseAdulto } from './FormSepseAdulto';
