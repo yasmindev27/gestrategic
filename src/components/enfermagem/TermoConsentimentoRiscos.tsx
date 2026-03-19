@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 
 // ===== Conteúdo do termo baseado no formulário =====
 const ORIENTACOES_RISCO_QUEDA = [
