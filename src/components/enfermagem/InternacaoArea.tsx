@@ -30,6 +30,8 @@ import { TermoConsentimentoRiscos } from './TermoConsentimentoRiscos';
 import { SAEAdulto } from './SAEAdulto';
 import { SAEPediatrico } from './SAEPediatrico';
 import { TermoGuardaMedicamento } from './TermoGuardaMedicamento';
+import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { exportToPDF, exportToExcel } from '@/lib/export-utils';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { getBrasiliaDate, getBrasiliaDateString } from '@/lib/brasilia-time';
