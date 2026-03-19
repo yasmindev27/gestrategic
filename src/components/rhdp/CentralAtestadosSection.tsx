@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -565,10 +566,12 @@ export const CentralAtestadosSection = () => {
                   <h3 className="font-semibold text-sm text-muted-foreground uppercase tracking-wide">Dados do Colaborador</h3>
                   <div className="space-y-2">
                     <Label>Colaborador *</Label>
-                    <Select value={formData.funcionario_user_id} onValueChange={(v) => setFormData({ ...formData, funcionario_user_id: v })}>
-                      <SelectTrigger><SelectValue placeholder="Selecione o colaborador" /></SelectTrigger>
-                      <SelectContent>{profiles.map(p => <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>)}</SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      value={formData.funcionario_user_id}
+                      onValueChange={(v) => setFormData({ ...formData, funcionario_user_id: v })}
+                      items={profiles.map(p => ({ value: p.user_id, label: p.full_name }))}
+                      placeholder="Selecione o colaborador"
+                    />
                   </div>
                 </div>
 
@@ -726,17 +729,14 @@ export const CentralAtestadosSection = () => {
                   <TrendingUp className="h-5 w-5 text-primary" />
                   Evolução Mensal de Atestados — {anoSelecionado}
                 </CardTitle>
-                <Select value={evolAtestColab} onValueChange={setEvolAtestColab}>
-                  <SelectTrigger className="w-[220px]">
-                    <SelectValue placeholder="Colaborador" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos os colaboradores</SelectItem>
-                    {profiles.map(p => (
-                      <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={evolAtestColab}
+                  onValueChange={setEvolAtestColab}
+                  items={profiles.map(p => ({ value: p.user_id, label: p.full_name }))}
+                  placeholder="Colaborador"
+                  allOption={{ value: "todos", label: "Todos os colaboradores" }}
+                  className="w-[220px]"
+                />
               </div>
             </CardHeader>
             <CardContent>

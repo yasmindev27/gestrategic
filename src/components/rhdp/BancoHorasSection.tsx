@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableCheckboxList } from "@/components/ui/searchable-checkbox-list";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
@@ -1303,25 +1305,14 @@ export const BancoHorasSection = () => {
                   <Badge variant="secondary">{filterProfissionais.length} selecionado(s)</Badge>
                 )}
               </div>
-              <div className="max-h-48 overflow-y-auto border rounded-md p-2 bg-background grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1">
-                {[...new Map(registros.map(r => [r.funcionario_user_id, r.funcionario_nome])).entries()]
+              <SearchableCheckboxList
+                items={[...new Map(registros.map(r => [r.funcionario_user_id, r.funcionario_nome])).entries()]
                   .sort((a, b) => a[1].localeCompare(b[1]))
-                  .map(([userId, nome]) => (
-                    <label key={userId} className="flex items-center gap-2 p-1.5 rounded hover:bg-muted cursor-pointer text-sm">
-                      <Checkbox
-                        checked={filterProfissionais.includes(userId)}
-                        onCheckedChange={(checked) => {
-                          if (checked) {
-                            setFilterProfissionais(prev => [...prev, userId]);
-                          } else {
-                            setFilterProfissionais(prev => prev.filter(id => id !== userId));
-                          }
-                        }}
-                      />
-                      <span className="truncate">{nome}</span>
-                    </label>
-                  ))}
-              </div>
+                  .map(([userId, nome]) => ({ id: userId, label: nome }))}
+                selected={filterProfissionais}
+                onChange={setFilterProfissionais}
+                placeholder="Buscar colaborador..."
+              />
             </div>
           </div>
         )}
@@ -1405,10 +1396,12 @@ export const BancoHorasSection = () => {
           <form onSubmit={handleEdit} className="space-y-4">
             <div className="space-y-2">
               <Label>Colaborador</Label>
-              <Select value={editFormData.funcionario_user_id} onValueChange={(v) => setEditFormData({ ...editFormData, funcionario_user_id: v })}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>{profiles.map(p => <SelectItem key={p.user_id} value={p.user_id}>{p.full_name}</SelectItem>)}</SelectContent>
-              </Select>
+              <SearchableSelect
+                value={editFormData.funcionario_user_id}
+                onValueChange={(v) => setEditFormData({ ...editFormData, funcionario_user_id: v })}
+                items={profiles.map(p => ({ value: p.user_id, label: p.full_name }))}
+                placeholder="Selecione o colaborador"
+              />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
