@@ -12,37 +12,37 @@ import {
 
 const AUTO_SCROLL_DELAY = 45000;
 
-const GaugeSVG: React.FC<{ valor: number; tamanho?: number }> = ({ valor, tamanho = 160 }) => {
-  const radius = 62;
+const GaugeSVG: React.FC<{ valor: number; tamanho?: number }> = ({ valor, tamanho = 240 }) => {
+  const radius = 93;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (valor / 100) * circumference;
   const cor = valor >= 80 ? '#22c55e' : valor >= 60 ? '#eab308' : '#ef4444';
   return (
     <div className="relative" style={{ width: tamanho, height: tamanho }}>
       <svg width={tamanho} height={tamanho} viewBox="0 0 160 160">
-        <circle cx="80" cy="80" r={radius} fill="none" stroke="#334155" strokeWidth="8" />
-        <circle cx="80" cy="80" r={radius} fill="none" stroke={cor} strokeWidth="8"
+        <circle cx="80" cy="80" r={radius} fill="none" stroke="#334155" strokeWidth="12" />
+        <circle cx="80" cy="80" r={radius} fill="none" stroke={cor} strokeWidth="12"
           strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round"
           transform="rotate(-90 80 80)" style={{ transition: 'stroke-dashoffset 1.5s ease-out' }} />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-4xl font-black text-white tabular-nums">{valor}%</span>
+        <span className="text-7xl font-black text-white tabular-nums">{valor}%</span>
       </div>
     </div>
   );
 };
 
 const TVCard: React.FC<{ titulo: string; valor: string; sub: string; corSub?: string }> = ({ titulo, valor, sub, corSub = 'text-slate-400' }) => (
-  <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col justify-between min-h-[110px]">
-    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{titulo}</p>
-    <p className="text-3xl font-black text-white mt-1 tabular-nums tracking-tight">{valor}</p>
-    <p className={`text-[10px] font-medium mt-0.5 ${corSub}`}>{sub}</p>
+  <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-2xl p-6 flex flex-col justify-between min-h-[160px]">
+    <p className="text-sm font-semibold text-slate-400 uppercase tracking-wider">{titulo}</p>
+    <p className="text-5xl font-black text-white mt-2 tabular-nums tracking-tight">{valor}</p>
+    <p className={`text-sm font-medium mt-1 ${corSub}`}>{sub}</p>
   </div>
 );
 
 const tvTooltipStyle = {
-  contentStyle: { backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: 8, color: '#f1f5f9', fontSize: 11 },
-  labelStyle: { color: '#94a3b8', fontSize: 11 },
+  contentStyle: { backgroundColor: '#1e293b', border: '2px solid #475569', borderRadius: 12, color: '#f1f5f9', fontSize: 16, padding: '12px 16px' },
+  labelStyle: { color: '#94a3b8', fontSize: 16, marginBottom: '4px' },
 };
 
 const formatR$Short = (v: number) => `${(v / 1000).toFixed(0)}k`;
@@ -70,9 +70,9 @@ export const ModoTV: React.FC = () => {
 
   const paginas = ['Financeiro', 'Faturamento', 'Qualidade', 'NIR', 'RH/DP', 'Social', 'Salus'];
   
-  // Rotação automática entre telas NIR (a cada 45s em pausa/ou quando estiver na página NIR)
+  // Rotação automática entre telas NIR (índice 3) e RH/DP (índice 4) - cada tela tem 2 sub-telas que rotacionam
   useEffect(() => {
-    if (paginaAtiva !== 5 && paginaAtiva !== 6) return; // Rotaciona quando estiver em RH/DP (5) ou NIR (6)
+    if (paginaAtiva !== 3 && paginaAtiva !== 4) return; // Rotaciona SOMENTE quando estiver em NIR (3) ou RH/DP (4)
     if (emPausa) return;
     const i = setInterval(() => {
       setTelaRotativa(t => (t + 1) % 2); // Alterna entre 0 e 1
@@ -80,8 +80,9 @@ export const ModoTV: React.FC = () => {
     return () => clearInterval(i);
   }, [paginaAtiva, emPausa]);
 
+  // Rotação automática de páginas principais (a cada 45s)
   useEffect(() => {
-    if (emPausa || paginaAtiva === 5 || paginaAtiva === 6) return; // Não rotaciona quando em pausa ou em RH/DP (5) ou NIR (6) - têm rotação própria
+    if (emPausa || paginaAtiva === 3 || paginaAtiva === 4) return; // Não rotaciona quando em pausa ou em NIR (3) ou RH/DP (4) - têm rotação própria de sub-telas
     const i = setInterval(() => { setPaginaAtiva(p => (p + 1) % paginas.length); setTempoRestante(45); }, AUTO_SCROLL_DELAY);
     return () => clearInterval(i);
   }, [emPausa, paginas.length, paginaAtiva]);
@@ -99,54 +100,93 @@ export const ModoTV: React.FC = () => {
   const conformidade = qual?.taxa_conformidade.valor_atual ?? 0;
   const colaboradores = rh?.colaboradores_ativos.valor_atual ?? 0;
 
-  // Page: Financeiro — Revenue trend + DRE
-  const renderFinanceiro = () => (
-    <div className="flex-1 flex flex-col gap-4 p-5 overflow-hidden">
-      <div className="grid grid-cols-3 gap-3">
-        <TVCard titulo="Receita Total" valor={fmtR$(receita)} sub={`Anterior: ${fmtR$(fin?.receita_realizadas.valor_anterior ?? 0)}`} />
-        <TVCard titulo="Custos" valor={fmtR$(fin?.custos_operacionais.valor_atual ?? 0)} sub={`Margem: ${fin?.margem_operacional.valor_atual.toFixed(1) ?? 0}%`} />
-        <TVCard titulo="Resultado" valor={fmtR$(fin?.resultado_operacional.valor_atual ?? 0)}
-          sub={(fin?.resultado_operacional.valor_atual ?? 0) >= 0 ? 'Positivo' : 'Negativo'}
-          corSub={(fin?.resultado_operacional.valor_atual ?? 0) >= 0 ? 'text-emerald-400' : 'text-red-400'} />
-      </div>
-      <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
-        {/* Revenue Trend */}
-        <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Faturamento por Competência</p>
-          <div className="flex-1 min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trendFin || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 10 }} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={formatR$Short} />
-                <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, '']} />
-                <Legend wrapperStyle={{ fontSize: 10 }} />
-                <Bar dataKey="receita" name="Receita" fill="#22c55e" radius={[3, 3, 0, 0]} />
-                <Bar dataKey="pago" name="Pago" fill="#0ea5e9" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+  // Page: Financeiro — Dados reais de notas fiscais (gerencia_notas_fiscais)
+  const renderFinanceiro = () => {
+    const [notasFiscais, setNotasFiscais] = React.useState<any[]>([]);
+    const [loadingNF, setLoadingNF] = React.useState(true);
+
+    React.useEffect(() => {
+      const fetchNotasFiscais = async () => {
+        try {
+          const { data, error } = await supabase
+            .from('gerencia_notas_fiscais')
+            .select('valor_nota, status_pagamento, competencia, ano')
+            .order('ano', { ascending: false })
+            .order('competencia', { ascending: false })
+            .range(0, 999);
+          
+          if (error) throw error;
+          setNotasFiscais(data || []);
+        } catch (e) {
+          console.error('Erro ao buscar notas fiscais:', e);
+        } finally {
+          setLoadingNF(false);
+        }
+      };
+      
+      fetchNotasFiscais();
+    }, []);
+
+    // Calcular KPIs reais
+    const totalNotas = notasFiscais.length;
+    const totalFaturado = notasFiscais.reduce((sum, n) => sum + Number(n.valor_nota || 0), 0);
+    const totalPago = notasFiscais
+      .filter(n => n.status_pagamento === 'PAGA TOTALMENTE')
+      .reduce((sum, n) => sum + Number(n.valor_nota || 0), 0);
+    const totalEmAberto = totalFaturado - totalPago;
+    const taxaPagamento = totalFaturado > 0 ? Math.round((totalPago / totalFaturado) * 100) : 0;
+
+    return (
+      <div className="flex-1 flex flex-col gap-4 p-6 overflow-hidden">
+        {/* Linha de KPIs grandes */}
+        <div className="grid grid-cols-4 gap-4">
+          <TVCard titulo="Notas Lançadas" valor={`${totalNotas}`} sub="Total de notas" corSub="text-sky-400" />
+          <TVCard titulo="Total Faturado" valor={fmtR$(totalFaturado)} sub={`Meta mensal`} corSub="text-emerald-400" />
+          <TVCard titulo="Total Pago" valor={fmtR$(totalPago)} sub={`${taxaPagamento}% recebido`} />
+          <TVCard titulo="Em Aberto" valor={fmtR$(totalEmAberto)} sub={`${100 - taxaPagamento}% pendente`} corSub="text-amber-400" />
+        </div>
+
+        {/* Gráficos lado a lado em 2 cols */}
+        <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
+          {/* Receita vs Pago por Competência */}
+          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-2xl p-4 flex flex-col">
+            <p className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Faturamento por Competência</p>
+            <div className="flex-1 min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={trendFin || []} margin={{ top: 5, right: 10, left: 0, bottom: 30 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" strokeWidth={1.5} />
+                  <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 14 }} angle={-30} textAnchor="end" height={60} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 14 }} tickFormatter={formatR$Short} />
+                  <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, '']} />
+                  <Legend wrapperStyle={{ fontSize: 14 }} />
+                  <Bar dataKey="receita" name="Faturado" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="pago" name="Recebido" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* DRE — Realizado vs Previsto */}
+          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-2xl p-4 flex flex-col">
+            <p className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">DRE – Realizado vs Previsto</p>
+            <div className="flex-1 min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={trendDRE || []} margin={{ top: 5, right: 10, left: 0, bottom: 30 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" strokeWidth={1.5} />
+                  <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 14 }} angle={-30} textAnchor="end" height={60} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 14 }} tickFormatter={formatR$Short} />
+                  <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, '']} />
+                  <Legend wrapperStyle={{ fontSize: 14 }} />
+                  <Line type="monotone" dataKey="realizado" name="Realizado" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: '#f59e0b' }} />
+                  <Line type="monotone" dataKey="previsto" name="Previsto" stroke="#8b5cf6" strokeWidth={3} strokeDasharray="5 5" dot={{ r: 4, fill: '#8b5cf6' }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         </div>
-        {/* DRE Trend */}
-        <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">DRE – Realizado vs Previsto</p>
-          <div className="flex-1 min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendDRE || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 10 }} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={formatR$Short} />
-                <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, '']} />
-                <Legend wrapperStyle={{ fontSize: 10 }} />
-                <Line type="monotone" dataKey="realizado" name="Realizado" stroke="#f59e0b" strokeWidth={2} dot={{ r: 2, fill: '#f59e0b' }} />
-                <Line type="monotone" dataKey="previsto" name="Previsto" stroke="#8b5cf6" strokeWidth={2} strokeDasharray="5 5" dot={{ r: 2, fill: '#8b5cf6' }} />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Page: Faturamento — KPIs de Prontuários e Avaliações
   const renderFaturamento = () => {
@@ -918,27 +958,27 @@ export const ModoTV: React.FC = () => {
   return (
     <div className="w-screen h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 overflow-hidden flex flex-col select-none">
       {/* Header */}
-      <div className="bg-slate-900/90 backdrop-blur-xl border-b border-slate-800 px-6 py-3 flex items-center justify-between">
+      <div className="bg-slate-900/90 backdrop-blur-xl border-b border-slate-800 px-8 py-4 flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-black text-white tracking-wide uppercase">Gestrategic — Painel Executivo</h1>
-          <p className="text-xs text-slate-500 font-mono mt-0.5">{format(relogio, "dd 'de' MMMM 'de' yyyy | HH:mm:ss", { locale: ptBR })}</p>
+          <h1 className="text-3xl font-black text-white tracking-wide uppercase">Gestrategic — Painel Executivo</h1>
+          <p className="text-lg text-slate-500 font-mono mt-1">{format(relogio, "dd 'de' MMMM 'de' yyyy | HH:mm:ss", { locale: ptBR })}</p>
         </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/50">
-            <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /><span className="text-xs font-bold text-red-400 uppercase">Ao Vivo</span>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 bg-slate-800/60 px-4 py-2 rounded-xl border border-slate-700/50">
+            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" /><span className="text-lg font-bold text-red-400 uppercase">Ao Vivo</span>
           </div>
-          <div className="flex items-center gap-1.5 bg-slate-800/60 px-3 py-1.5 rounded-lg border border-slate-700/50">
-            <Clock className="w-3.5 h-3.5 text-sky-400" /><span className="text-xs font-mono text-white font-bold">{tempoRestante}s</span>
+          <div className="flex items-center gap-2 bg-slate-800/60 px-4 py-2 rounded-xl border border-slate-700/50">
+            <Clock className="w-5 h-5 text-sky-400" /><span className="text-lg font-mono text-white font-bold">{tempoRestante}s</span>
           </div>
           <button onClick={() => setEmPausa(!emPausa)}
-            className={`p-2 rounded-lg border transition-colors ${emPausa ? 'bg-emerald-600/20 border-emerald-500/50 text-emerald-400' : 'bg-slate-800/60 border-slate-700/50 text-slate-400'}`}>
-            {emPausa ? <Play className="w-4 h-4" /> : <Pause className="w-4 h-4" />}
+            className={`p-3 rounded-xl border transition-colors ${emPausa ? 'bg-emerald-600/20 border-emerald-500/50 text-emerald-400' : 'bg-slate-800/60 border-slate-700/50 text-slate-400'}`}>
+            {emPausa ? <Play className="w-6 h-6" /> : <Pause className="w-6 h-6" />}
           </button>
         </div>
       </div>
 
       {/* Progress */}
-      <div className="h-0.5 bg-slate-800">
+      <div className="h-1 bg-slate-800">
         <div className="h-full bg-gradient-to-r from-sky-500 to-cyan-400 transition-all duration-1000" style={{ width: `${((45 - tempoRestante) / 45) * 100}%` }} />
       </div>
 
@@ -946,19 +986,19 @@ export const ModoTV: React.FC = () => {
       {paginasRender[paginaAtiva]()}
 
       {/* Footer Nav */}
-      <div className="bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 px-6 py-2">
+      <div className="bg-slate-900/90 backdrop-blur-xl border-t border-slate-800 px-8 py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             {paginas.map((nome, idx) => (
               <button key={nome} onClick={() => { setPaginaAtiva(idx); setTempoRestante(45); }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`px-5 py-2 rounded-xl text-base font-semibold transition-all ${
                   paginaAtiva === idx ? 'bg-sky-600/20 text-sky-400 border border-sky-500/40' : 'text-slate-500 hover:text-slate-300 border border-transparent'
                 }`}>
-                {nome}{paginaAtiva === idx && <ChevronRight className="w-3 h-3 inline ml-1" />}
+                {nome}{paginaAtiva === idx && <ChevronRight className="w-4 h-4 inline ml-1" />}
               </button>
             ))}
           </div>
-          <span className="text-xs font-mono text-slate-600">{paginaAtiva + 1}/{paginas.length}</span>
+          <span className="text-base font-mono text-slate-600">{paginaAtiva + 1}/{paginas.length}</span>
         </div>
       </div>
     </div>
