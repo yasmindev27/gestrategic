@@ -495,8 +495,12 @@ export function GerenciaModule() {
       </div>
 
       {/* Tabs: Planos de Ação / Visão por Setor */}
-      <Tabs defaultValue="planos">
+      <Tabs defaultValue="bi">
         <TabsList>
+          <TabsTrigger value="bi" className="gap-2">
+            <BarChart3 className="h-4 w-4" />
+            Business Intelligence
+          </TabsTrigger>
           <TabsTrigger value="planos" className="gap-2">
             <CalendarClock className="h-4 w-4" />
             Planos de Ação
@@ -518,6 +522,11 @@ export function GerenciaModule() {
             Gestão de Talentos
           </TabsTrigger>
         </TabsList>
+
+        {/* -- Tab: BI Hospitalar -- */}
+        <TabsContent value="bi" className="mt-4">
+          <DashboardBIHospitalar periodoMeses={3} />
+        </TabsContent>
 
         {/* -- Tab: Planos de Ação -- */}
         <TabsContent value="planos" className="mt-4 space-y-4">

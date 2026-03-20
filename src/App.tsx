@@ -56,6 +56,7 @@ const App = () => (
               <Route path="/terminal" element={<TotemRefeicoes />} />
               <Route path="/transporte" element={<Transporte />} />
               <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+              <Route path="/modo-tv" element={<ModoTVPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
