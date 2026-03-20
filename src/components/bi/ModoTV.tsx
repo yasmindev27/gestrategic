@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useKPIsOperacionais, useKPIsFinanceiros, useKPIsQualidade, useKPIsRH } from '@/hooks/useKPIsHospitalar';
 import { useTendenciaFinanceira, useTendenciaOcupacao, useTendenciaIncidentes, useTendenciaDRE } from '@/hooks/useBITrends';
-import { ChevronRight, Clock, Pause, Play, ExternalLink, Stethoscope } from 'lucide-react';
-import { format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { ChevronRight, Clock, Pause, Play, ExternalLink, Stethoscope, FileText, CheckCircle, AlertCircle } from 'lucide-react';
+import { format, subDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
@@ -67,7 +68,7 @@ export const ModoTV: React.FC = () => {
     return () => clearInterval(i);
   }, []);
 
-  const paginas = ['Executivo', 'Operacional', 'Financeiro', 'Faturamento', 'Qualidade', 'NIR', 'RH/DP', 'Social', 'Salus'];
+  const paginas = ['Financeiro', 'Faturamento', 'Qualidade', 'NIR', 'RH/DP', 'Social', 'Salus'];
   
   // Rotação automática entre telas NIR (a cada 45s em pausa/ou quando estiver na página NIR)
   useEffect(() => {
@@ -97,75 +98,6 @@ export const ModoTV: React.FC = () => {
   const incidentes = qual?.incidentes_seguranca.valor_atual ?? 0;
   const conformidade = qual?.taxa_conformidade.valor_atual ?? 0;
   const colaboradores = rh?.colaboradores_ativos.valor_atual ?? 0;
-
-  // Page: Executivo — KPIs + Occupancy Chart + ONA Gauge
-  const renderExecutivo = () => (
-    <div className="flex-1 flex flex-col gap-4 p-5 overflow-hidden">
-      <div className="grid grid-cols-4 gap-3">
-        <TVCard titulo="Taxa de Ocupação" valor={`${ocupacao.toFixed(0)}%`} sub={ocupacao > 90 ? 'Alerta' : 'Dentro da meta'} corSub={ocupacao > 90 ? 'text-orange-400' : 'text-emerald-400'} />
-        <TVCard titulo="Receita Mensal" valor={fmtR$(receita)} sub={`${fin?.receita_realizadas.variacao_percentual.toFixed(0) ?? 0}% vs anterior`} corSub="text-sky-400" />
-        <TVCard titulo="Incidentes NSP" valor={`${incidentes.toFixed(0)}`} sub="Neste mês" corSub={incidentes > 10 ? 'text-red-400' : 'text-emerald-400'} />
-        <TVCard titulo="Colaboradores" valor={`${colaboradores.toFixed(0)}`} sub="Quadro atual" />
-      </div>
-      <div className="grid grid-cols-3 gap-3 flex-1 min-h-0">
-        {/* Occupancy Trend */}
-        <div className="col-span-2 bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Tendência de Ocupação (14 dias)</p>
-          <div className="flex-1 min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendOcup || []}>
-                <defs>
-                  <linearGradient id="tvGradOcup" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.4} /><stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 10 }} axisLine={{ stroke: '#475569' }} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} domain={[0, 100]} unit="%" axisLine={{ stroke: '#475569' }} />
-                <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`${v}%`, 'Ocupação']} />
-                <Area type="monotone" dataKey="taxa" stroke="#0ea5e9" strokeWidth={2.5} fill="url(#tvGradOcup)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        {/* ONA Gauge */}
-        <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col items-center justify-center">
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Índice Qualidade ONA</p>
-          <GaugeSVG valor={Math.round(conformidade)} />
-          <p className="text-sm text-slate-300 mt-2 font-medium">{conformidade >= 80 ? 'Bom' : conformidade >= 60 ? 'Regular' : 'Crítico'}</p>
-        </div>
-      </div>
-    </div>
-  );
-
-  // Page: Operacional — Occupancy bars + KPIs
-  const renderOperacional = () => (
-    <div className="flex-1 flex flex-col gap-4 p-5 overflow-hidden">
-      <div className="grid grid-cols-4 gap-3">
-        <TVCard titulo="Ocupação de Leitos" valor={`${ocupacao.toFixed(0)}%`} sub="Meta: 85%" corSub={ocupacao > 85 ? 'text-amber-400' : 'text-emerald-400'} />
-        <TVCard titulo="Pacientes Ativos" valor={`${op?.pacientes_ativos.valor_atual.toFixed(0) ?? 0}`} sub={`Anterior: ${op?.pacientes_ativos.valor_anterior.toFixed(0) ?? 0}`} />
-        <TVCard titulo="Tempo Médio" valor={`${(op?.tempo_medio_internacao ?? 0).toFixed(1)}h`} sub="Internação" />
-        <TVCard titulo="Leitos Disponíveis" valor={`${op?.disponibilidade_leitos.valor_atual.toFixed(0) ?? 0}`} sub={`Total: ${op?.disponibilidade_leitos.meta.toFixed(0) ?? 0}`} />
-      </div>
-      {/* Occupancy by day - bar chart */}
-      <div className="flex-1 bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col min-h-0">
-        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Leitos Ocupados vs Disponíveis por Dia</p>
-        <div className="flex-1 min-h-0">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={trendOcup || []}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-              <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 10 }} />
-              <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} />
-              <Tooltip {...tvTooltipStyle} />
-              <Legend wrapperStyle={{ fontSize: 10, color: '#94a3b8' }} />
-              <Bar dataKey="ocupados" name="Ocupados" fill="#f59e0b" radius={[3, 3, 0, 0]} />
-              <Bar dataKey="total" name="Total Leitos" fill="#334155" radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </div>
-    </div>
-  );
 
   // Page: Financeiro — Revenue trend + DRE
   const renderFinanceiro = () => (
@@ -216,88 +148,150 @@ export const ModoTV: React.FC = () => {
     </div>
   );
 
-  // Page: Faturamento — KPIs detalhados de billing e receita
+  // Page: Faturamento — KPIs de Prontuários e Avaliações
   const renderFaturamento = () => {
-    const faturamentoMedio = fin?.faturamento_medio_paciente?.valor_atual ?? 0;
-    const custoPorLeito = fin?.custos_por_leito?.valor_atual ?? 0;
+    const [saidaProntuarios, setSaidaProntuarios] = React.useState<any[]>([]);
+    const [avaliacoes, setAvaliacoes] = React.useState<any[]>([]);
+    const [loadingFat, setLoadingFat] = React.useState(true);
+
+    React.useEffect(() => {
+      const fetchFaturamentoData = async () => {
+        try {
+          const since = subDays(new Date(), 30).toISOString();
+          
+          // Fetch saida_prontuarios
+          const { data: saidas, error: err1 } = await supabase
+            .from('saida_prontuarios')
+            .select('id, status, data_atendimento, created_at')
+            .gte('created_at', since)
+            .range(0, 999);
+          
+          if (err1) throw err1;
+          setSaidaProntuarios(saidas || []);
+
+          // Fetch avaliacoes_prontuarios
+          const { data: avals, error: err2 } = await supabase
+            .from('avaliacoes_prontuarios')
+            .select('id, saida_prontuario_id, is_finalizada, data_inicio')
+            .gte('data_inicio', since)
+            .range(0, 999);
+          
+          if (err2) throw err2;
+          setAvaliacoes(avals || []);
+        } catch (e) {
+          console.error('Erro ao buscar dados de faturamento:', e);
+        } finally {
+          setLoadingFat(false);
+        }
+      };
+      
+      fetchFaturamentoData();
+    }, []);
+
+    // Calcular estatísticas
+    const totalSaidas = saidaProntuarios.length;
+    const saidasPendentes = saidaProntuarios.filter((s: any) => s.status === 'pendente').length;
+    const saidasFinalizadas = saidaProntuarios.filter((s: any) => s.status === 'finalizado').length;
+    const saidasEmProgresso = saidaProntuarios.filter((s: any) => s.status === 'em_progresso').length;
+    const avaliadas = avaliacoes.filter((a: any) => a.is_finalizada).length;
+    const taxaAvaliacao = totalSaidas > 0 ? Math.round((avaliadas / totalSaidas) * 100) : 0;
+
+    // Status distribution
+    const statusDistribution = [
+      { name: 'Pendente', value: saidasPendentes, color: '#f59e0b' },
+      { name: 'Em Progresso', value: saidasEmProgresso, color: '#0ea5e9' },
+      { name: 'Finalizado', value: saidasFinalizadas, color: '#22c55e' },
+    ].filter(s => s.value > 0);
+
+    // Evolução por dia (últimos 14 dias)
+    const diasMap = new Map<string, { pendente: number; progresso: number; finalizado: number }>();
+    for (let i = 13; i >= 0; i--) {
+      const d = subDays(new Date(), i);
+      const key = format(d, 'dd/MM');
+      diasMap.set(key, { pendente: 0, progresso: 0, finalizado: 0 });
+    }
     
-    // Mock data para gráficos de faturamento
-    const faturamentoPorOrigem = [
-      { name: 'Particular', value: 35, color: '#22c55e' },
-      { name: 'Convênio', value: 45, color: '#0ea5e9' },
-      { name: 'SUS', value: 20, color: '#f59e0b' },
-    ];
+    saidaProntuarios.forEach((s: any) => {
+      const d = format(new Date(s.created_at), 'dd/MM');
+      if (diasMap.has(d)) {
+        const stat = diasMap.get(d)!;
+        if (s.status === 'pendente') stat.pendente++;
+        else if (s.status === 'em_progresso') stat.progresso++;
+        else if (s.status === 'finalizado') stat.finalizado++;
+      }
+    });
 
-    const recebiveisEvolution = [
-      { mes: 'Jan', a_receber: 120000, recebido: 450000 },
-      { mes: 'Fev', a_receber: 135000, recebido: 480000 },
-      { mes: 'Mar', a_receber: 125000, recebido: 520000 },
-      { mes: 'Abr', a_receber: 145000, recebido: 510000 },
-      { mes: 'Mai', a_receber: 140000, recebido: 530000 },
-      { mes: 'Jun', a_receber: 155000, recebido: 550000 },
-    ];
-
-    const ticketMedioPorSetor = [
-      { setor: 'UTI', ticket: 8500 },
-      { setor: 'Clínica', ticket: 4200 },
-      { setor: 'Pediatria', ticket: 3800 },
-      { setor: 'Maternidade', ticket: 5600 },
-    ];
+    const evolucaoSaidas = Array.from(diasMap.entries()).map(([dia, vals]) => ({
+      dia,
+      pendente: vals.pendente,
+      progresso: vals.progresso,
+      finalizado: vals.finalizado,
+    }));
 
     return (
-      <div className="flex-1 flex flex-col gap-4 p-5 overflow-hidden">
-        <div className="grid grid-cols-4 gap-3">
-          <TVCard titulo="Receita Total" valor={fmtR$(receita)} sub={`Variação: ${fin?.receita_realizadas.variacao_percentual > 0 ? '+' : ''}${fin?.receita_realizadas.variacao_percentual.toFixed(1)}%`}
-            corSub={fin?.receita_realizadas.variacao_percentual > 0 ? 'text-emerald-400' : 'text-red-400'} />
-          <TVCard titulo="Ticket Médio" valor={fmtR$(faturamentoMedio)} sub={`Por paciente`} />
-          <TVCard titulo="Custo por Leito" valor={fmtR$(custoPorLeito)} sub="Diário" />
-          <TVCard titulo="Margem" valor={`${fin?.margem_operacional.valor_atual.toFixed(1) ?? 0}%`} sub="Operacional"
-            corSub={fin?.margem_operacional.valor_atual > 15 ? 'text-emerald-400' : 'text-amber-400'} />
+      <div className="flex-1 flex flex-col gap-3 p-4 overflow-hidden">
+        <div className="grid grid-cols-4 gap-2">
+          <TVCard titulo="Total Saídas" valor={`${totalSaidas}`} sub={`Últimos 30 dias`} corSub="text-sky-400" />
+          <TVCard titulo="Pendentes" valor={`${saidasPendentes}`} sub={`${totalSaidas > 0 ? Math.round((saidasPendentes / totalSaidas) * 100) : 0}%`} corSub="text-amber-400" />
+          <TVCard titulo="Finalizadas" valor={`${saidasFinalizadas}`} sub={`${totalSaidas > 0 ? Math.round((saidasFinalizadas / totalSaidas) * 100) : 0}%`} corSub="text-emerald-400" />
+          <TVCard titulo="Taxa Avaliação" valor={`${taxaAvaliacao}%`} sub={`${avaliadas}/${totalSaidas}`} corSub={taxaAvaliacao >= 80 ? 'text-emerald-400' : 'text-amber-400'} />
         </div>
-        <div className="grid grid-cols-3 gap-3 flex-1 min-h-0">
-          {/* Recebíveis Evolution */}
-          <div className="col-span-2 bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Recebíveis vs Recebido</p>
-            <div className="flex-1 min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={recebiveisEvolution}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 10 }} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} tickFormatter={formatR$Short} />
-                  <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, '']} />
-                  <Legend wrapperStyle={{ fontSize: 10 }} />
-                  <Bar dataKey="a_receber" name="A Receber" fill="#f59e0b" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="recebido" name="Recebido" fill="#22c55e" radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
 
-          {/* Distribuição por Origem de Faturamento */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col items-center justify-center">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Faturamento por Origem</p>
-            <div className="flex-1 min-h-0 flex items-center justify-center w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={faturamentoPorOrigem} cx="50%" cy="50%" innerRadius={25} outerRadius={55} paddingAngle={2} dataKey="value">
-                    {faturamentoPorOrigem.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`${v}%`]} />
-                </PieChart>
-              </ResponsiveContainer>
+        {!loadingFat && totalSaidas > 0 ? (
+          <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
+            {/* Evolução de Saídas */}
+            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-3 flex flex-col">
+              <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Evolução de Saídas (14 dias)</p>
+              <div className="flex-1 min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={evolucaoSaidas} margin={{ top: 0, right: 10, left: 0, bottom: 30 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis dataKey="dia" tick={{ fill: '#94a3b8', fontSize: 7 }} angle={-45} textAnchor="end" height={50} />
+                    <YAxis tick={{ fill: '#94a3b8', fontSize: 8 }} />
+                    <Tooltip {...tvTooltipStyle} />
+                    <Legend wrapperStyle={{ fontSize: 8 }} />
+                    <Bar dataKey="pendente" name="Pendente" fill="#f59e0b" stackId="a" radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="progresso" name="Em Prog." fill="#0ea5e9" stackId="a" radius={[2, 2, 0, 0]} />
+                    <Bar dataKey="finalizado" name="Finalizado" fill="#22c55e" stackId="a" radius={[2, 2, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
             </div>
-            <div className="mt-2 text-xs space-y-1 w-full">
-              {faturamentoPorOrigem.map(item => (
-                <div key={item.name} className="flex items-center justify-between">
-                  <span className="text-slate-400">{item.name}</span>
-                  <span className="font-bold text-slate-300">{item.value}%</span>
-                </div>
-              ))}
+
+            {/* Distribuição por Status */}
+            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-3 flex flex-col items-center justify-center">
+              <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Status Atual</p>
+              <div className="flex-1 min-h-0 flex items-center justify-center w-full">
+                {statusDistribution.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={statusDistribution} cx="50%" cy="50%" innerRadius={12} outerRadius={35} paddingAngle={1} dataKey="value">
+                        {statusDistribution.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`${v}`, 'Saídas']} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="text-slate-400 text-[8px]">Sem dados</div>
+                )}
+              </div>
+              <div className="mt-1 text-[8px] space-y-0.5 w-full">
+                {statusDistribution.map(item => (
+                  <div key={item.name} className="flex items-center justify-between">
+                    <span className="text-slate-400">{item.name}</span>
+                    <span className="font-bold text-slate-300">{item.value}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
+            {loadingFat ? 'Carregando dados...' : 'Sem dados de prontuários'}
+          </div>
+        )}
       </div>
     );
   };
@@ -807,22 +801,24 @@ export const ModoTV: React.FC = () => {
     const profComMaisProdutividade = socialData.produtividadeProfissional.reduce((a, p) => p.taxa > a.taxa ? p : a);
 
     return (
-      <div className="flex-1 flex flex-col gap-4 p-5 overflow-hidden">
-        <div className="grid grid-cols-4 gap-3">
+      <div className="flex-1 flex flex-col gap-3 p-4 overflow-hidden">
+        {/* Header Cards */}
+        <div className="grid grid-cols-4 gap-2">
           <TVCard titulo="Total Atendimentos" valor={`${totalAtendimentos}`} sub="Junho 2026" corSub="text-sky-400" />
           <TVCard titulo="Média Mensal" valor={`${mediaAtendimentos}`} sub="2026" />
           <TVCard titulo="Produtividade Máx" valor={`${profComMaisProdutividade.taxa}%`} sub={profComMaisProdutividade.nome} corSub="text-emerald-400" />
           <TVCard titulo="Motivo Primário" valor="Financeiras" sub="28% dos casos" corSub="text-amber-400" />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+        {/* Row 1: Tipo Atendimento + Demanda Local */}
+        <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
           {/* Perfil por Tipo de Atendimento */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Perfil por Tipo de Atendimento</p>
+          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-3 flex flex-col">
+            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Tipo de Atendimento</p>
             <div className="flex-1 min-h-0 flex items-center justify-center">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={socialData.tiposAtendimento} cx="50%" cy="50%" innerRadius={25} outerRadius={55} paddingAngle={2} dataKey="value">
+                  <Pie data={socialData.tiposAtendimento} cx="50%" cy="50%" innerRadius={20} outerRadius={45} paddingAngle={2} dataKey="value">
                     {socialData.tiposAtendimento.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.color} />
                     ))}
@@ -833,56 +829,57 @@ export const ModoTV: React.FC = () => {
             </div>
           </div>
 
-          {/* Demanda por Local de Atendimento */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Demanda por Local de Atendimento</p>
+          {/* Demanda por Local */}
+          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-3 flex flex-col">
+            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Demanda por Local</p>
             <div className="flex-1 min-h-0">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={socialData.localAtendimento} layout="vertical">
+                <BarChart data={socialData.localAtendimento} layout="vertical" margin={{ top: 0, right: 10, left: 70, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 9 }} />
-                  <YAxis dataKey="local" type="category" tick={{ fill: '#94a3b8', fontSize: 8 }} width={85} />
+                  <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 8 }} />
+                  <YAxis dataKey="local" type="category" tick={{ fill: '#94a3b8', fontSize: 7 }} width={65} />
                   <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`${v}`, 'Demanda']} />
-                  <Bar dataKey="demanda" fill="#0ea5e9" radius={[0, 3, 3, 0]} />
+                  <Bar dataKey="demanda" fill="#0ea5e9" radius={[0, 2, 2, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+        {/* Row 2: Produtividade + Motivos */}
+        <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
           {/* Produtividade por Profissional */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Produtividade por Profissional</p>
+          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-3 flex flex-col">
+            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Produtividade por Profissional</p>
             <div className="flex-1 min-h-0">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={socialData.produtividadeProfissional}>
+                <BarChart data={socialData.produtividadeProfissional} margin={{ top: 0, right: 10, left: 0, bottom: 50 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="nome" tick={{ fill: '#94a3b8', fontSize: 8 }} angle={-45} textAnchor="end" height={60} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 9 }} />
-                  <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`${v}`, 'Atendimentos']} />
-                  <Bar dataKey="atendimentos" fill="#22c55e" radius={[3, 3, 0, 0]} />
+                  <XAxis dataKey="nome" tick={{ fill: '#94a3b8', fontSize: 7 }} angle={-35} textAnchor="end" height={50} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 8 }} />
+                  <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`${v}`, 'Atend.']} />
+                  <Bar dataKey="atendimentos" fill="#22c55e" radius={[2, 2, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
 
-          {/* Motivos de Atendimento Mais Frequentes */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Motivos Mais Frequentes</p>
-            <div className="flex-1 overflow-y-auto space-y-1.5">
+          {/* Motivos Mais Frequentes */}
+          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-3 flex flex-col">
+            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Motivos Mais Frequentes</p>
+            <div className="flex-1 overflow-y-auto space-y-1">
               {socialData.motivosMais.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs">
-                  <div className="flex-1">
-                    <p className="text-slate-300 truncate">{item.motivo}</p>
-                    <div className="h-1.5 bg-slate-700 rounded mt-0.5 overflow-hidden">
+                <div key={idx} className="flex items-center justify-between text-[9px]">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-slate-300 truncate text-[8px]">{item.motivo}</p>
+                    <div className="h-1 bg-slate-700 rounded mt-0.5 overflow-hidden">
                       <div 
                         className="h-full bg-gradient-to-r from-sky-500 to-cyan-400" 
                         style={{ width: `${item.percentual}%` }} 
                       />
                     </div>
                   </div>
-                  <span className="text-slate-400 font-bold ml-2 text-[9px]">{item.percentual}%</span>
+                  <span className="text-slate-400 font-bold ml-1 text-[8px] flex-shrink-0">{item.percentual}%</span>
                 </div>
               ))}
             </div>
@@ -914,7 +911,7 @@ export const ModoTV: React.FC = () => {
     </div>
   );
 
-  const paginasRender = [renderExecutivo, renderOperacional, renderFinanceiro, renderFaturamento, renderQualidade, renderNIR, renderRHDP, renderAssistenteSocial, renderSalus];
+  const paginasRender = [renderFinanceiro, renderFaturamento, renderQualidade, renderNIR, renderRHDP, renderAssistenteSocial, renderSalus];
 
   return (
     <div className="w-screen h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 overflow-hidden flex flex-col select-none">
