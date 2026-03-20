@@ -18,6 +18,7 @@ const TotemRefeicoes = lazy(() => import("./pages/TotemRefeicoes"));
 const Transporte = lazy(() => import("./pages/Transporte"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PoliticaPrivacidade = lazy(() => import("./pages/PoliticaPrivacidade"));
+const ModoTVPage = lazy(() => import("./pages/ModoTVPage"));
 
 
 // Loading fallback component
