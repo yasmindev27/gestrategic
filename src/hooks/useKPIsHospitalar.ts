@@ -529,12 +529,17 @@ export const useKPIsRH = (periodoMeses: number = 3) => {
         distribuicao[setor] = (distribuicao[setor] || 0) + 1;
       });
 
+      // Cálculo de turnover: desligamentos do mês / colaboradores ativos * 100
+      // Se dados não existem, usar 0 mas com meta apropriada
+      const turnoverMes = 0; // Será calculado quando tabela de desligamentos existir
+      const turnoverAnterior = 0;
+      
       return {
         absenteismo: calcularKPI(absenteismo, absenteismoAnterior, 5),
-        turnover: calcularKPI(0, 0, 5),
+        turnover: calcularKPI(turnoverMes, turnoverAnterior, 5), // Placeholder até dados reais
         capacitacoes_realizadas: calcularKPI(capacitacoesMes, capacitacoesAnterior, 20),
         colaboradores_ativos: calcularKPI(total, total, total * 1.1),
-        idade_media_equipe: 0,
+        idade_media_equipe: 0, // Será calculado quando dados completos existirem
         distribuicao_por_setor: distribuicao,
       } as IndicadorRH;
     },

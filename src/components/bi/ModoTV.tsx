@@ -56,6 +56,7 @@ export const ModoTV: React.FC = () => {
   const [tempoRestante, setTempoRestante] = useState(45);
   const [emPausa, setEmPausa] = useState(false);
   const [telaRotativa, setTelaRotativa] = useState(0); // Para rotação entre telas NIR
+  const [totalNotas, setTotalNotas] = useState(0); // Quantidade real de notas
 
   const { data: op } = useKPIsOperacionais(3);
   const { data: fin } = useKPIsFinanceiros(3);
@@ -64,6 +65,21 @@ export const ModoTV: React.FC = () => {
   const { data: trendOcup } = useTendenciaOcupacao(14);
   const { data: trendInc } = useTendenciaIncidentes();
   const { data: trendDRE } = useTendenciaDRE();
+
+  // Buscar quantidade real de notas fiscais
+  useEffect(() => {
+    const fetchNotasCount = async () => {
+      try {
+        const { count } = await supabase
+          .from('gerencia_notas_fiscais')
+          .select('id', { count: 'exact', head: true });
+        setTotalNotas(count || 0);
+      } catch (e) {
+        console.error('Erro ao contar notas:', e);
+      }
+    };
+    fetchNotasCount();
+  }, []);
 
   useEffect(() => {
     const i = setInterval(() => setRelogio(new Date()), 1000);
@@ -104,10 +120,10 @@ export const ModoTV: React.FC = () => {
   const renderFinanceiro = () => (
     <div className="flex-1 flex flex-col gap-4 p-6 overflow-hidden">
       <div className="grid grid-cols-4 gap-4">
-        <TVCard titulo="Notas Lançadas" valor={`${fin?.receita_realizadas.valor_atual ? '∞' : '0'}`} sub="Total de notas" corSub="text-sky-400" />
-        <TVCard titulo="Total Faturado" valor={fmtR$(fin?.receita_realizadas.valor_atual ?? 0)} sub={`Meta mensal`} corSub="text-emerald-400" />
-        <TVCard titulo="Total Pago" valor={fmtR$((fin?.receita_realizadas.valor_atual ?? 0) * 0.85)} sub={`85% recebido`} />
-        <TVCard titulo="Em Aberto" valor={fmtR$((fin?.receita_realizadas.valor_atual ?? 0) * 0.15)} sub={`15% pendente`} corSub="text-amber-400" />
+        <TVCard titulo="Notas Lançadas" valor={`${totalNotas}`} sub="Total de notas" corSub="text-sky-400" />
+        <TVCard titulo="Total Faturado" valor={fmtR$(fin?.receita_realizadas.valor_atual ?? 0)} sub={`Receita realizada`} corSub="text-emerald-400" />
+        <TVCard titulo="Resultado" valor={fmtR$(fin?.resultado_operacional.valor_atual ?? 0)} sub={`Operacional`} />
+        <TVCard titulo="Margem" valor={`${fin?.margem_operacional.valor_atual?.toFixed(1) ?? 0}%`} sub={`Lucratividade`} corSub="text-emerald-400" />
       </div>
 
       <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
@@ -115,14 +131,24 @@ export const ModoTV: React.FC = () => {
           <p className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Faturamento por Competência</p>
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trendFin || []} margin={{ top: 5, right: 10, left: 0, bottom: 30 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" strokeWidth={1.5} />
-                <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 14 }} angle={-30} textAnchor="end" height={60} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 14 }} tickFormatter={formatR$Short} />
-                <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, '']} />
-                <Legend wrapperStyle={{ fontSize: 14 }} />
-                <Bar dataKey="receita" name="Faturado" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="pago" name="Recebido" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+              <BarChart data={trendFin || []} margin={{ top: 10, right: 15, left: 0, bottom: 40 }}>
+                <defs>
+                  <linearGradient id="gradFat1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#22c55e" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#22c55e" stopOpacity={0.3} />
+                  </linearGradient>
+                  <linearGradient id="gradFat2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#0ea5e9" stopOpacity={1} />
+                    <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0.3} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" strokeWidth={1.5} opacity={0.5} />
+                <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} angle={-20} textAnchor="end" height={50} />
+                <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
+                <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`R$ ${(v / 1000).toFixed(1)}k`, '']} />
+                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                <Bar dataKey="receita" name="Faturado" fill="url(#gradFat1)" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="pago" name="Recebido" fill="url(#gradFat2)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -132,14 +158,20 @@ export const ModoTV: React.FC = () => {
           <p className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">DRE – Realizado vs Previsto</p>
           <div className="flex-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={trendDRE || []} margin={{ top: 5, right: 10, left: 0, bottom: 30 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" strokeWidth={1.5} />
-                <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 14 }} angle={-30} textAnchor="end" height={60} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 14 }} tickFormatter={formatR$Short} />
-                <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, '']} />
-                <Legend wrapperStyle={{ fontSize: 14 }} />
-                <Line type="monotone" dataKey="realizado" name="Realizado" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: '#f59e0b' }} />
-                <Line type="monotone" dataKey="previsto" name="Previsto" stroke="#8b5cf6" strokeWidth={3} strokeDasharray="5 5" dot={{ r: 4, fill: '#8b5cf6' }} />
+              <LineChart data={trendDRE || []} margin={{ top: 10, right: 15, left: 0, bottom: 40 }}>
+                <defs>
+                  <linearGradient id="gradDRE1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#f59e0b" stopOpacity={0.3} />
+                    <stop offset="100%" stopColor="#f59e0b" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" strokeWidth={1.5} opacity={0.5} />
+                <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} angle={-20} textAnchor="end" height={50} />
+                <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} tickFormatter={(v: number) => `${(v / 1000).toFixed(0)}k`} />
+                <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`R$ ${(v / 1000).toFixed(1)}k`, '']} />
+                <Legend wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+                <Line type="monotone" dataKey="realizado" name="Realizado" stroke="#f59e0b" strokeWidth={3} dot={{ r: 5, fill: '#f59e0b' }} activeDot={{ r: 7 }} />
+                <Line type="monotone" dataKey="previsto" name="Previsto" stroke="#8b5cf6" strokeWidth={3} strokeDasharray="6 3" dot={{ r: 5, fill: '#8b5cf6' }} activeDot={{ r: 7 }} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -171,29 +203,10 @@ export const ModoTV: React.FC = () => {
           </div>
 
           <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
-            {/* Top 5 Créditos */}
-            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Top 5 - Maior Crédito</p>
-              <div className="flex-1 overflow-y-auto space-y-2">
-                {[{name: 'Maria Santos', hours: 45.5}, {name: 'João Silva', hours: 38.2}, {name: 'Ana Costa', hours: 32.8}, {name: 'Carlos Souza', hours: 28.5}, {name: 'Patricia Lima', hours: 25.0}].map((c, i) => (
-                  <div key={i} className="flex justify-between items-center text-xs">
-                    <span className="text-slate-300">{c.name}</span>
-                    <span className="font-bold text-emerald-400">+{c.hours}h</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Top 5 Débito */}
-            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Top 5 - Maior Débito</p>
-              <div className="flex-1 overflow-y-auto space-y-2">
-                {[{name: 'Roberto Alves', hours: -18.5}, {name: 'Fernanda Dias', hours: -15.2}, {name: 'Lucas Martins', hours: -12.8}, {name: 'Camila Rocha', hours: -10.5}, {name: 'Diego Santos', hours: -8.3}].map((c, i) => (
-                  <div key={i} className="flex justify-between items-center text-xs">
-                    <span className="text-slate-300">{c.name}</span>
-                    <span className="font-bold text-red-400">{c.hours}h</span>
-                  </div>
-                ))}
+            <div className="flex-1 flex items-center justify-center">
+              <div className="text-center">
+                <p className="text-slate-400 text-sm">Dados de Banco de Horas</p>
+                <p className="text-slate-500 text-xs mt-2">Integração com sistema de ponto pendente</p>
               </div>
             </div>
           </div>
