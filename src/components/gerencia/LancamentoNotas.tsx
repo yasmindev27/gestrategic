@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
   FileText, Plus, Pencil, Trash2, Search, DollarSign, CheckCircle,
-  Clock, Wallet, TrendingUp, Save, Users as UsersIcon
+  Clock, Wallet, TrendingUp, Save, Users as UsersIcon, Upload
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ExportDropdown } from '@/components/ui/export-dropdown';
+import { ImportDataDialog } from '@/components/gerencia/ImportDataDialog';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 import { format } from 'date-fns';
@@ -97,6 +98,8 @@ export function LancamentoNotas() {
   });
 
   const [supplierForm, setSupplierForm] = useState({ nome: '', cnpj: '' });
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [importingFile, setImportingFile] = useState<File | null>(null);
 
   // Queries
   const { data: fornecedores = [] } = useQuery({
@@ -277,6 +280,128 @@ export function LancamentoNotas() {
     return { totalInvoices, totalLancado, totalPendente, totalPago, valorTotal, valorPago };
   }, [filteredNotas]);
 
+  // Import function
+  const handleImportFile = async () => {
+    if (!importingFile) {
+      toast({ title: 'Erro', description: 'Selecione um arquivo', variant: 'destructive' });
+      return;
+    }
+
+    try {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        const data = e.target?.result;
+        const workbook = XLSX.read(data, { type: 'binary' });
+        
+        // Verificar abas disponíveis
+        const sheetNames = workbook.SheetNames;
+        let fornecedoresImportados = 0;
+        let notasImportadas = 0;
+        let erros: string[] = [];
+
+        // 1. Importar Fornecedores
+        if (sheetNames.includes('Fornecedores')) {
+          const wsForncedores = workbook.Sheets['Fornecedores'];
+          const dataFornecedores = XLSX.utils.sheet_to_json(wsForncedores) as any[];
+          
+          for (const row of dataFornecedores) {
+            try {
+              const nome = row.Nome || row.nome || row.NOME;
+              const cnpj = row.CNPJ || row.cnpj;
+              
+              if (!nome || !cnpj) {
+                erros.push(`Fornecedor sem nome ou CNPJ: linha ${dataFornecedores.indexOf(row) + 2}`);
+                continue;
+              }
+
+              // Verificar se já existe
+              const { data: existing } = await supabase
+                .from('gerencia_fornecedores')
+                .select('id')
+                .eq('cnpj', cnpj)
+                .single();
+
+              if (!existing) {
+                const { error } = await supabase.from('gerencia_fornecedores').insert({
+                  nome, cnpj, created_by: userId, ativo: true,
+                });
+                if (error) throw error;
+                fornecedoresImportados++;
+              }
+            } catch (err: any) {
+              erros.push(`Erro ao importar fornecedor: ${err.message}`);
+            }
+          }
+        }
+
+        // 2. Importar Notas Fiscais
+        if (sheetNames.includes('Notas Fiscais')) {
+          const wsNotas = workbook.Sheets['Notas Fiscais'];
+          const dataNotas = XLSX.utils.sheet_to_json(wsNotas) as any[];
+          
+          for (const row of dataNotas) {
+            try {
+              const fornecedor_nome = row['Fornecedor'] || row['fornecedor'] || row.Fornecedor;
+              const cnpj = row.CNPJ || row.cnpj;
+              const numero_nf = row['Nº NF'] || row['numero_nf'] || row.numero_nf;
+              const competencia = row.Competência || row.competencia;
+              const ano = parseInt(row.Ano || row.ano || '2026');
+              const valor_nota = parseFloat(row['Valor (R$)'] || row.valor || '0');
+              const status = row.Status || row.status || 'LANÇADO';
+              const status_pagamento = row['Status Pagamento'] || row.pagamento || 'PENDENTE';
+              
+              if (!fornecedor_nome || !numero_nf) {
+                erros.push(`Nota sem fornecedor ou NF: linha ${dataNotas.indexOf(row) + 2}`);
+                continue;
+              }
+
+              const { error } = await supabase.from('gerencia_notas_fiscais').insert({
+                fornecedor_nome,
+                cnpj: cnpj || '',
+                numero_nf,
+                competencia: competencia || 'JANEIRO',
+                ano,
+                valor_nota,
+                status,
+                status_pagamento,
+                created_by: userId,
+              });
+              
+              if (error) throw error;
+              notasImportadas++;
+            } catch (err: any) {
+              erros.push(`Erro ao importar nota: ${err.message}`);
+            }
+          }
+        }
+
+        // Atualizar dados
+        queryClient.invalidateQueries({ queryKey: ['gerencia_fornecedores'] });
+        queryClient.invalidateQueries({ queryKey: ['gerencia_notas_fiscais'] });
+
+        setImportDialogOpen(false);
+        setImportingFile(null);
+
+        toast({
+          title: 'Importação Concluída',
+          description: `
+✓ Fornecedores: ${fornecedoresImportados}
+✓ Notas: ${notasImportadas}
+${erros.length > 0 ? `⚠ Erros: ${erros.length}` : ''}
+          `,
+        });
+
+        if (erros.length > 0) {
+          console.warn('Erros na importação:', erros);
+        }
+      };
+      
+      reader.readAsBinaryString(importingFile);
+    } catch (error: any) {
+      toast({ title: 'Erro', description: error.message, variant: 'destructive' });
+    }
+  };
+
   // Exports
   const handleExportExcel = () => {
     const rows = filteredNotas.map(n => ({
@@ -356,6 +481,13 @@ export function LancamentoNotas() {
                 {MESES.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
               </SelectContent>
             </Select>
+            <Button 
+              variant="outline" 
+              onClick={() => setImportDialogOpen(true)}
+              className="gap-2"
+            >
+              <Upload className="h-4 w-4" /> Importar
+            </Button>
             <ExportDropdown onExportExcel={handleExportExcel} onExportPDF={handleExportPDF} label="Exportar" />
             <Button onClick={() => { resetNotaForm(); setDialogOpen(true); }}>
               <Plus className="h-4 w-4 mr-1" /> Nova Nota
