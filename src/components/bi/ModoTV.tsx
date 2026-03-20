@@ -244,25 +244,24 @@ export const ModoTV: React.FC = () => {
     </div>
   );
 
-  // Page: Salus — Kiosk embed
+  // Page: Salus — Open in new tab (iframe blocked by X-Frame-Options)
   const renderSalus = () => (
-    <div className="flex-1 flex flex-col p-5 overflow-hidden">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Painel Salus — Entrada por Classificação</p>
+    <div className="flex-1 flex flex-col items-center justify-center p-5 overflow-hidden">
+      <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-2xl p-10 flex flex-col items-center gap-6 max-w-lg text-center">
+        <div className="w-20 h-20 rounded-full bg-sky-500/10 border border-sky-500/30 flex items-center justify-center">
+          <Stethoscope className="w-10 h-10 text-sky-400" />
+        </div>
+        <div>
+          <h2 className="text-xl font-bold text-white mb-2">Painel Salus</h2>
+          <p className="text-sm text-slate-400">Entrada por Classificação de Atendimento</p>
+        </div>
         <button
           onClick={() => window.open('https://dashboard-appolus.streamlit.app/#painel-entrada-por-classificacao', '_blank', 'noopener,noreferrer')}
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/50 text-slate-400 hover:text-white transition-colors text-xs"
+          className="flex items-center gap-2 px-6 py-3 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold transition-colors text-sm"
         >
-          <ExternalLink className="w-3.5 h-3.5" /> Abrir em nova aba
+          <ExternalLink className="w-4 h-4" /> Abrir Dashboard Salus
         </button>
-      </div>
-      <div className="flex-1 bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl overflow-hidden">
-        <iframe
-          src="https://dashboard-appolus.streamlit.app/#painel-entrada-por-classificacao"
-          className="w-full h-full border-0"
-          title="Painel Salus"
-          allow="fullscreen"
-        />
+        <p className="text-[10px] text-slate-500">Abre em nova aba por restrição de segurança do servidor externo</p>
       </div>
     </div>
   );
