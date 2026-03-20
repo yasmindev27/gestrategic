@@ -2818,6 +2818,42 @@ export type Database = {
         }
         Relationships: []
       }
+      gerencia_dre_entries: {
+        Row: {
+          ano: number
+          categoria_pai: string | null
+          created_at: string
+          id: string
+          mes: string
+          rubrica: string
+          updated_at: string
+          valor_previsto: number
+          valor_realizado: number
+        }
+        Insert: {
+          ano?: number
+          categoria_pai?: string | null
+          created_at?: string
+          id?: string
+          mes: string
+          rubrica: string
+          updated_at?: string
+          valor_previsto?: number
+          valor_realizado?: number
+        }
+        Update: {
+          ano?: number
+          categoria_pai?: string | null
+          created_at?: string
+          id?: string
+          mes?: string
+          rubrica?: string
+          updated_at?: string
+          valor_previsto?: number
+          valor_realizado?: number
+        }
+        Relationships: []
+      }
       gerencia_fornecedores: {
         Row: {
           ativo: boolean
