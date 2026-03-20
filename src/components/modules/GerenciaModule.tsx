@@ -23,6 +23,7 @@ import { SegurancaTrabalhoModule } from '@/components/modules/SegurancaTrabalhoM
 import { DashboardIAIncidentes } from '@/components/gestao-incidentes/DashboardIAIncidentes';
 import { RoupariaModule } from '@/components/modules/RoupariaModule';
 import { RestauranteModule } from '@/components/modules/RestauranteModule';
+import { DashboardBIHospitalar } from '@/components/bi/DashboardBIHospitalar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
