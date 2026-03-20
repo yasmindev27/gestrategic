@@ -421,13 +421,13 @@ export const useKPIsRH = (periodoMeses: number = 3) => {
       let capacitacoesAnterior = 0;
       try {
         const { count: capMes } = await supabase
-          .from('lms_participacoes')
+          .from('lms_inscricoes')
           .select('id', { count: 'exact', head: true })
           .gte('created_at', inicioMes.toISOString());
         capacitacoesMes = capMes || 0;
 
         const { count: capAnterior } = await supabase
-          .from('lms_participacoes')
+          .from('lms_inscricoes')
           .select('id', { count: 'exact', head: true })
           .gte('created_at', inicioMesAnterior.toISOString())
           .lt('created_at', inicioMes.toISOString());
