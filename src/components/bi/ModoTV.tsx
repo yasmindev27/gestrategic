@@ -403,52 +403,54 @@ export const ModoTV: React.FC = () => {
     // Tela 1: Banco de Horas
     if (telaRotativa === 0) {
       return (
-        <div className="flex-1 flex flex-col gap-4 p-5 overflow-hidden">
-          <div className="grid grid-cols-3 gap-3">
+        <div className="flex-1 flex flex-col gap-2 p-3 overflow-hidden">
+          <div className="grid grid-cols-3 gap-2">
             <TVCard titulo="Saldo Total" valor={`${bancHoras.evolucaoMensal[bancHoras.evolucaoMensal.length - 1].saldo.toFixed(1)}h`} sub="Banco de horas" corSub="text-emerald-400" />
             <TVCard titulo="Créditos" valor={`${bancHoras.evolucaoMensal[bancHoras.evolucaoMensal.length - 1].creditos.toFixed(0)}h`} sub="Este mês" />
             <TVCard titulo="Débitos" valor={`${bancHoras.evolucaoMensal[bancHoras.evolucaoMensal.length - 1].debitos.toFixed(0)}h`} sub="Utilizadas" corSub="text-amber-400" />
           </div>
-          <div className="grid grid-cols-3 gap-3 flex-1 min-h-0">
-            {/* TOP 5 Créditos + Débitos */}
-            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Top 5 Mais Créditos</p>
-              <div className="flex-1 overflow-y-auto space-y-2">
+          <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
+            {/* Row 1: TOP 5 Créditos + Débitos */}
+            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-2 flex flex-col">
+              <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Top 5 Créditos</p>
+              <div className="flex-1 overflow-y-auto space-y-1">
                 {bancHoras.top5Creditos.map((colab, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs">
+                  <div key={idx} className="flex items-center justify-between text-[8px]">
                     <div className="flex-1 min-w-0">
-                      <p className="text-slate-300 truncate">{colab.nome}</p>
-                      <p className="text-slate-500 text-[10px]">{colab.tipo}</p>
+                      <p className="text-slate-300 truncate text-[8px]">{colab.nome}</p>
+                      <p className="text-slate-500 text-[7px]">{colab.tipo}</p>
                     </div>
-                    <span className="text-emerald-400 font-bold ml-2">{colab.horas}h</span>
+                    <span className="text-emerald-400 font-bold ml-1 flex-shrink-0">{colab.horas}h</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* TOP 5 Débitos */}
-            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Top 5 Mais Débitos</p>
-              <div className="flex-1 overflow-y-auto space-y-2">
+            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-2 flex flex-col">
+              <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Top 5 Débitos</p>
+              <div className="flex-1 overflow-y-auto space-y-1">
                 {bancHoras.top5Debitos.map((colab, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs">
+                  <div key={idx} className="flex items-center justify-between text-[8px]">
                     <div className="flex-1 min-w-0">
-                      <p className="text-slate-300 truncate">{colab.nome}</p>
-                      <p className="text-slate-500 text-[10px]">{colab.tipo}</p>
+                      <p className="text-slate-300 truncate text-[8px]">{colab.nome}</p>
+                      <p className="text-slate-500 text-[7px]">{colab.tipo}</p>
                     </div>
-                    <span className="text-red-400 font-bold ml-2">{colab.horas}h</span>
+                    <span className="text-red-400 font-bold ml-1 flex-shrink-0">{colab.horas}h</span>
                   </div>
                 ))}
               </div>
             </div>
+          </div>
 
+          {/* Row 2: Distribuição + Evolução Mensal */}
+          <div className="grid grid-cols-5 gap-2 flex-1 min-h-0">
             {/* Distribuição */}
-            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col items-center justify-center">
-              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Distribuição</p>
+            <div className="col-span-1 bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-2 flex flex-col items-center justify-center">
+              <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Distrib.</p>
               <div className="flex-1 min-h-0 flex items-center justify-center w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie data={bancHoras.distribuicao} cx="50%" cy="50%" innerRadius={20} outerRadius={40} paddingAngle={2} dataKey="value">
+                    <Pie data={bancHoras.distribuicao} cx="50%" cy="50%" innerRadius={10} outerRadius={25} paddingAngle={1} dataKey="value">
                       {bancHoras.distribuicao.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
@@ -458,24 +460,24 @@ export const ModoTV: React.FC = () => {
                 </ResponsiveContainer>
               </div>
             </div>
-          </div>
 
-          {/* Evolução Mensal */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Evolução Mensal de Horas</p>
-            <div className="flex-1 min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={bancHoras.evolucaoMensal}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 9 }} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 9 }} />
-                  <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`${v}h`, '']} />
-                  <Legend wrapperStyle={{ fontSize: 9 }} />
-                  <Line type="monotone" dataKey="creditos" name="Créditos" stroke="#22c55e" strokeWidth={2} dot={{ r: 2 }} />
-                  <Line type="monotone" dataKey="debitos" name="Débitos" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
-                  <Line type="monotone" dataKey="saldo" name="Saldo" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 2 }} />
-                </LineChart>
-              </ResponsiveContainer>
+            {/* Evolução Mensal */}
+            <div className="col-span-4 bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-2 flex flex-col">
+              <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Evolução Mensal de Horas</p>
+              <div className="flex-1 min-h-0">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart data={bancHoras.evolucaoMensal} margin={{ top: 0, right: 10, left: 0, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                    <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 8 }} />
+                    <YAxis tick={{ fill: '#94a3b8', fontSize: 8 }} />
+                    <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`${v}h`, '']} />
+                    <Legend wrapperStyle={{ fontSize: 8 }} />
+                    <Line type="monotone" dataKey="creditos" name="Créditos" stroke="#22c55e" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="debitos" name="Débitos" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
+                    <Line type="monotone" dataKey="saldo" name="Saldo" stroke="#0ea5e9" strokeWidth={2} dot={{ r: 2 }} />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
             </div>
           </div>
         </div>
@@ -484,63 +486,63 @@ export const ModoTV: React.FC = () => {
 
     // Tela 2: Atestados
     return (
-      <div className="flex-1 flex flex-col gap-4 p-5 overflow-hidden">
-        <div className="grid grid-cols-3 gap-3">
-          <TVCard titulo="Total de Atestados" valor={`${atestados.atestadosPorMes[atestados.atestadosPorMes.length - 1].total}`} sub="Junho 2026" />
+      <div className="flex-1 flex flex-col gap-2 p-3 overflow-hidden">
+        <div className="grid grid-cols-3 gap-2">
+          <TVCard titulo="Total Atestados" valor={`${atestados.atestadosPorMes[atestados.atestadosPorMes.length - 1].total}`} sub="Junho 2026" />
           <TVCard titulo="Com Múltiplos" valor={`${atestados.multiploAtestados.length}`} sub="Colaboradores" corSub="text-amber-400" />
           <TVCard titulo="Média Mensal" valor={`${(atestados.atestadosPorMes.reduce((a, m) => a + m.total, 0) / atestados.atestadosPorMes.length).toFixed(0)}`} sub="Atestados" />
         </div>
-        <div className="grid grid-cols-3 gap-3 flex-1 min-h-0">
-          {/* TOP 5 Colaboradores + Múltiplos Atestados */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Top 5 com Mais Atestados</p>
-            <div className="flex-1 overflow-y-auto space-y-2">
+        <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
+          {/* TOP 5 Colaboradores */}
+          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-2 flex flex-col">
+            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Top 5 com Mais Atestados</p>
+            <div className="flex-1 overflow-y-auto space-y-1">
               {atestados.top5Colaboradores.map((colab, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs">
-                  <div className="flex-1">
-                    <p className="text-slate-300">{colab.nome}</p>
-                    <p className="text-slate-500 text-[10px]">
+                <div key={idx} className="flex items-center justify-between text-[8px]">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-slate-300 truncate text-[8px]">{colab.nome}</p>
+                    <p className="text-slate-500 text-[7px]">
                       {colab.critico > 0 ? `⚠️ ${colab.critico} crítico` : 'Normal'}
                     </p>
                   </div>
-                  <span className="text-orange-400 font-bold ml-2">{colab.total}</span>
+                  <span className="text-orange-400 font-bold ml-1 flex-shrink-0">{colab.total}</span>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Atestados por Mês */}
-          <div className="col-span-2 bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Atestados por Mês - 2026</p>
+          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-2 flex flex-col">
+            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Atestados/Mês 2026</p>
             <div className="flex-1 min-h-0">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={atestados.atestadosPorMes}>
+                <BarChart data={atestados.atestadosPorMes} margin={{ top: 0, right: 5, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 9 }} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 9 }} />
-                  <Tooltip {...tvTooltipStyle} />
-                  <Legend wrapperStyle={{ fontSize: 9 }} />
-                  <Bar dataKey="médicos" name="Médicos" fill="#0ea5e9" radius={[3, 3, 0, 0]} stackId="a" />
-                  <Bar dataKey="odonto" name="Odonto" fill="#22c55e" radius={[3, 3, 0, 0]} stackId="a" />
-                  <Bar dataKey="outro" name="Outro" fill="#f59e0b" radius={[3, 3, 0, 0]} stackId="a" />
+                  <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 7 }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 7 }} />
+                  <Tooltip {...tvTooltipStyle} formatter={(v) => [v, '']} />
+                  <Legend wrapperStyle={{ fontSize: 7 }} />
+                  <Bar dataKey="médicos" name="Médicos" fill="#0ea5e9" radius={[2, 2, 0, 0]} stackId="a" />
+                  <Bar dataKey="odonto" name="Odonto" fill="#22c55e" radius={[2, 2, 0, 0]} stackId="a" />
+                  <Bar dataKey="outro" name="Outro" fill="#f59e0b" radius={[2, 2, 0, 0]} stackId="a" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </div>
         </div>
 
-        {/* Detalhamento + Evolução */}
-        <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+        {/* Row 2: Múltiplos + Evolução */}
+        <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
           {/* Colaboradores com Múltiplos */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Múltiplos Atestados - Detalhes</p>
-            <div className="flex-1 overflow-y-auto space-y-2">
+          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-2 flex flex-col">
+            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Múltiplos Atestados</p>
+            <div className="flex-1 overflow-y-auto space-y-1">
               {atestados.multiploAtestados.map((colab, idx) => (
-                <div key={idx} className="bg-slate-700/50 rounded p-2 text-xs">
-                  <p className="text-slate-200 font-medium">{colab.nome}</p>
-                  <div className="flex justify-between text-slate-400 mt-1">
+                <div key={idx} className="bg-slate-700/50 rounded p-1 text-[7px]">
+                  <p className="text-slate-200 font-medium truncate">{colab.nome}</p>
+                  <div className="flex justify-between text-slate-400 mt-0.5">
                     <span>{colab.atestados} atestados</span>
-                    <span>{colab.periodos}</span>
+                    <span className="text-slate-500 text-[6px]">{colab.periodos}</span>
                   </div>
                 </div>
               ))}
@@ -548,16 +550,16 @@ export const ModoTV: React.FC = () => {
           </div>
 
           {/* Evolução Anual */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Evolução 2026</p>
+          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-2 flex flex-col">
+            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Evolução 2026</p>
             <div className="flex-1 min-h-0">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={atestados.evolucaoAnual}>
+                <LineChart data={atestados.evolucaoAnual} margin={{ top: 0, right: 5, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 9 }} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 9 }} />
-                  <Tooltip {...tvTooltipStyle} />
-                  <Legend wrapperStyle={{ fontSize: 9 }} />
+                  <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 7 }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 7 }} />
+                  <Tooltip {...tvTooltipStyle} formatter={(v) => [v, '']} />
+                  <Legend wrapperStyle={{ fontSize: 7 }} />
                   <Line type="monotone" dataKey="atestados" name="Total Atestados" stroke="#ef4444" strokeWidth={2} dot={{ r: 2 }} />
                   <Line type="monotone" dataKey="colaboradores" name="Colaboradores" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 2 }} />
                 </LineChart>
