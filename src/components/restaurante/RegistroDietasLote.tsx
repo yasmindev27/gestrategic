@@ -104,6 +104,13 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
       return;
     }
 
+    // Debug check for required props
+    if (!userId) {
+      toast({ title: "Erro", description: "Usuário não identificado. Recarregue a página.", variant: "destructive" });
+      console.error("userId is empty:", { userId, userName });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const registros = linhasValidas.map(l => {
@@ -126,8 +133,15 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
         };
       });
 
-      const { error } = await supabase.from("solicitacoes_dieta").insert(registros);
-      if (error) throw error;
+      console.log("Inserting registros:", registros);
+
+      const { error, data } = await supabase.from("solicitacoes_dieta").insert(registros);
+      if (error) {
+        console.error("Supabase insert error:", error);
+        throw error;
+      }
+
+      console.log("Insert successful:", data);
 
       const extras = linhasValidas.filter(l => l.is_extra).length;
       const normais = linhasValidas.length - extras;
@@ -139,7 +153,8 @@ export const RegistroDietasLote = ({ userName, userId, onSuccess }: Props) => {
       onSuccess();
     } catch (error) {
       console.error("Erro ao salvar dietas em lote:", error);
-      toast({ title: "Erro", description: "Erro ao salvar dietas. Tente novamente.", variant: "destructive" });
+      const errorMessage = error instanceof Error ? error.message : "Erro desconhecido";
+      toast({ title: "Erro", description: `Erro ao salvar dietas: ${errorMessage}`, variant: "destructive" });
     } finally {
       setIsSubmitting(false);
     }
