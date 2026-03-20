@@ -122,7 +122,7 @@ interface EntregaInfo {
 }
 
 export const SaidaProntuariosModule = () => {
-  const { isRecepcao, isClassificacao, isNir, isAdmin, isFaturamento, userId, role, isLoading: isLoadingRole } = useUserRole();
+  const { isRecepcao, isClassificacao, isNir, isAdmin, isFaturamento, isEnfermagem, userId, role, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
   const { toast } = useToast();
   
@@ -204,11 +204,11 @@ export const SaidaProntuariosModule = () => {
   const [deletingSaida, setDeletingSaida] = useState<SaidaProntuario | null>(null);
   const [importarOpen, setImportarOpen] = useState(false);
 
-  const canAccess = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
-  const canInsert = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento;
-  const canValidateClassificacao = isClassificacao || isAdmin;
-  const canValidateNir = isNir || isAdmin;
-  const isFullAccessRole = isFaturamento || isAdmin || isNir || isClassificacao;
+  const canAccess = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento || isEnfermagem;
+  const canInsert = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento || isEnfermagem;
+  const canValidateClassificacao = isClassificacao || isAdmin || isEnfermagem;
+  const canValidateNir = isNir || isAdmin || isEnfermagem;
+  const isFullAccessRole = isFaturamento || isAdmin || isNir || isClassificacao || isEnfermagem;
 
   // Data de referência no fuso de Brasília (UTC-3) com offset explícito para filtros de created_at
   const hoje = getBrasiliaDateString();

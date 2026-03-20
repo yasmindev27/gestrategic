@@ -172,7 +172,7 @@ const resultadoFinalOptions = [
 ];
 
 export const FaturamentoModule = () => {
-  const { isFaturamento, isAdmin, isGestor, userId, isLoading: isLoadingRole } = useUserRole();
+  const { isFaturamento, isAdmin, isGestor, isEnfermagem, userId, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
   const { toast } = useToast();
   
@@ -209,7 +209,7 @@ export const FaturamentoModule = () => {
   const [viewDialogOpen, setViewDialogOpen] = useState(false);
   const [selectedAvaliacao, setSelectedAvaliacao] = useState<Avaliacao | null>(null);
 
-  const canAccess = isFaturamento || isAdmin;
+  const canAccess = isFaturamento || isAdmin || isEnfermagem;
 
   // Debounce search term
   const [debouncedSearch, setDebouncedSearch] = useState("");
