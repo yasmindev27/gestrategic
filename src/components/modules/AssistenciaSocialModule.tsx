@@ -880,7 +880,7 @@ export const AssistenciaSocialModule = () => {
             <Button onClick={() => {
               // TODO: Implementar atualização no banco de dados
               setEditarStatusDialog(false);
-              toast.success("Status atualizado com sucesso");
+              toast({ title: "Status atualizado com sucesso" });
             }}>
               Salvar Alterações
             </Button>
