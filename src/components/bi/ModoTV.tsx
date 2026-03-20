@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useKPIsOperacionais, useKPIsFinanceiros, useKPIsQualidade, useKPIsRH } from '@/hooks/useKPIsHospitalar';
 import { useTendenciaFinanceira, useTendenciaOcupacao, useTendenciaIncidentes, useTendenciaDRE } from '@/hooks/useBITrends';
-import { ChevronRight, Clock, Pause, Play } from 'lucide-react';
+import { ChevronRight, Clock, Pause, Play, ExternalLink } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -66,7 +66,7 @@ export const ModoTV: React.FC = () => {
     return () => clearInterval(i);
   }, []);
 
-  const paginas = ['Executivo', 'Operacional', 'Financeiro', 'Qualidade'];
+  const paginas = ['Executivo', 'Operacional', 'Financeiro', 'Qualidade', 'Salus'];
 
   useEffect(() => {
     if (emPausa) return;
@@ -244,7 +244,30 @@ export const ModoTV: React.FC = () => {
     </div>
   );
 
-  const paginasRender = [renderExecutivo, renderOperacional, renderFinanceiro, renderQualidade];
+  // Page: Salus — Kiosk embed
+  const renderSalus = () => (
+    <div className="flex-1 flex flex-col p-5 overflow-hidden">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider">Painel Salus — Entrada por Classificação</p>
+        <button
+          onClick={() => window.open('https://dashboard-appolus.streamlit.app/#painel-entrada-por-classificacao', '_blank', 'noopener,noreferrer')}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800/60 border border-slate-700/50 text-slate-400 hover:text-white transition-colors text-xs"
+        >
+          <ExternalLink className="w-3.5 h-3.5" /> Abrir em nova aba
+        </button>
+      </div>
+      <div className="flex-1 bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl overflow-hidden">
+        <iframe
+          src="https://dashboard-appolus.streamlit.app/#painel-entrada-por-classificacao"
+          className="w-full h-full border-0"
+          title="Painel Salus"
+          allow="fullscreen"
+        />
+      </div>
+    </div>
+  );
+
+  const paginasRender = [renderExecutivo, renderOperacional, renderFinanceiro, renderQualidade, renderSalus];
 
   return (
     <div className="w-screen h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 overflow-hidden flex flex-col select-none">
