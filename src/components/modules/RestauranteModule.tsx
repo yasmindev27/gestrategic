@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { UtensilsCrossed, Calendar, CalendarDays, Salad, Loader2, Plus, Coffee, Sun, Cookie, Moon, Clock, CheckCircle2, XCircle, AlertCircle, BarChart3, FileDown, FileSpreadsheet, Filter, ClipboardList, TrendingUp, Search, Users, AlertTriangle, Pencil, Trash2 } from "lucide-react";
+import { UtensilsCrossed, Calendar, CalendarDays, Salad, Loader2, Plus, Coffee, Sun, Cookie, Moon, Clock, CheckCircle2, XCircle, AlertCircle, BarChart3, FileDown, FileSpreadsheet, Filter, ClipboardList, TrendingUp, Search, Users, AlertTriangle, Pencil, Trash2, ListPlus } from "lucide-react";
 import { RegistrosRefeicoes } from "@/components/restaurante/RegistrosRefeicoes";
 import { RelatorioQuantitativoRefeicoes } from "@/components/restaurante/RelatorioQuantitativoRefeicoes";
 import { ColaboradoresManager } from "@/components/restaurante/ColaboradoresManager";
@@ -921,9 +921,13 @@ export const RestauranteModule = () => {
             <UtensilsCrossed className="h-4 w-4" />
             Cardápio
           </TabsTrigger>
+          <TabsTrigger value="dietas-lote" className="flex items-center gap-2">
+            <ListPlus className="h-4 w-4" />
+            Dietas em Lote
+          </TabsTrigger>
           <TabsTrigger value="solicitar" className="flex items-center gap-2">
             <Salad className="h-4 w-4" />
-            Dietas
+            Dieta Individual
           </TabsTrigger>
         {canManage && <>
               <TabsTrigger value="dashboard" className="flex items-center gap-2">
@@ -1020,9 +1024,8 @@ export const RestauranteModule = () => {
           </Card>
         </TabsContent>
 
-        {/* Dietas Tab */}
-        <TabsContent value="solicitar" className="space-y-4">
-          {/* Registro de Dietas em Lote */}
+        {/* Dietas em Lote Tab */}
+        <TabsContent value="dietas-lote" className="space-y-4">
           <RegistroDietasLote 
             userName={userName || "Usuário"} 
             userId={userId} 
@@ -1031,7 +1034,10 @@ export const RestauranteModule = () => {
               refetchMinhas();
             }}
           />
+        </TabsContent>
 
+        {/* Dieta Individual Tab */}
+        <TabsContent value="solicitar" className="space-y-4">
           <Card>
             <CardHeader>
               <div className="flex flex-col gap-4">
