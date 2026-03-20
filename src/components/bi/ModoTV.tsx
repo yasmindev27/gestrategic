@@ -59,7 +59,6 @@ export const ModoTV: React.FC = () => {
 
   const { data: op } = useKPIsOperacionais(3);
   const { data: fin } = useKPIsFinanceiros(3);
-  const { data: qual } = useKPIsQualidade(3);
   const { data: rh } = useKPIsRH(3);
   const { data: trendFin } = useTendenciaFinanceira();
   const { data: trendOcup } = useTendenciaOcupacao(14);
@@ -71,7 +70,7 @@ export const ModoTV: React.FC = () => {
     return () => clearInterval(i);
   }, []);
 
-  const paginas = ['Financeiro', 'Faturamento', 'Qualidade', 'NIR', 'RH/DP', 'Social', 'Salus'];
+  const paginas = ['Financeiro', 'Faturamento', 'NIR', 'RH/DP', 'Social', 'Salus'];
   
   // Rotação automática entre telas NIR (índice 3) e RH/DP (índice 4) - cada tela tem 2 sub-telas que rotacionam
   useEffect(() => {
@@ -99,8 +98,6 @@ export const ModoTV: React.FC = () => {
   const fmtR$ = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(v);
   const ocupacao = op?.ocupacao_leitos.valor_atual ?? 0;
   const receita = fin?.receita_realizadas.valor_atual ?? 0;
-  const incidentes = qual?.incidentes_seguranca.valor_atual ?? 0;
-  const conformidade = qual?.taxa_conformidade.valor_atual ?? 0;
   const colaboradores = rh?.colaboradores_ativos.valor_atual ?? 0;
 
   // Page: Financeiro — Dados reais usando hooks já carregados no topo
@@ -155,114 +152,110 @@ export const ModoTV: React.FC = () => {
   const renderFaturamento = () => <TVPageFaturamento />;
 
   // Page: Qualidade — Dados reais de qualidade usando hooks
-  const renderQualidade = () => (
-    <div className="flex-1 flex flex-col gap-4 p-5 overflow-hidden">
-      <div className="grid grid-cols-4 gap-3">
-        <TVCard titulo="Conformidade" valor={`${conformidade.toFixed(0)}%`} sub="Meta: 95%" corSub={conformidade >= 95 ? 'text-emerald-400' : 'text-amber-400'} />
-        <TVCard titulo="Incidentes NSP" valor={`${incidentes.toFixed(0)}`} sub={`Anterior: ${qual?.incidentes_seguranca.valor_anterior.toFixed(0) ?? 0}`} />
-        <TVCard titulo="Auditorias" valor={`${qual?.processos_auditados.valor_atual.toFixed(0) ?? 0}`} sub="Neste mês" />
-        <TVCard titulo="Corrigidas" valor={`${qual?.correcoes_implementadas.valor_atual.toFixed(0) ?? 0}`} sub="% compliance" corSub="text-emerald-400" />
-      </div>
-      <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
-        {/* Incidents Chart */}
-        <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Evolução de Incidentes</p>
-          <div className="flex-1 min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={trendInc || []}>
-                <defs>
-                  <linearGradient id="colorInc" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8}/>
-                    <stop offset="95%" stopColor="#f59e0b" stopOpacity={0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 10 }} />
-                <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} />
-                <Tooltip {...tvTooltipStyle} />
-                <Area type="monotone" dataKey="total" stroke="#f59e0b" fill="url(#colorInc)" />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-        {/* ONA Gauge */}
-        <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col items-center justify-center">
-          <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Índice Conformidade</p>
-          <GaugeSVG valor={Math.round(conformidade)} tamanho={140} />
-          <p className="text-sm text-slate-300 mt-2">{conformidade >= 80 ? '✓ Bom' : '⚠ Atenção'}</p>
-        </div>
-      </div>
-    </div>
-  );
 
-  // Page: RH/DP — Dados reais usando hooks
+
+  // Page: RH/DP — Banco de Horas e Atestados
   const renderRHDP = () => {
     const absenteismo = rh?.absenteismo.valor_atual ?? 0;
-    const capacitacoes = rh?.capacitacoes_realizadas.valor_atual ?? 0;
-    const turnover = rh?.turnover.valor_atual ?? 0;
+    const colaboradores = rh?.colaboradores_ativos.valor_atual ?? 0;
 
-    // Tela 1: KPIs RH
+    // Tela 1: Banco de Horas
     if (telaRotativa === 0) {
       return (
-        <div className="flex-1 flex flex-col gap-3 p-4 overflow-hidden">
-          <div className="grid grid-cols-4 gap-2">
+        <div className="flex-1 flex flex-col gap-4 p-5 overflow-hidden">
+          <div className="grid grid-cols-4 gap-3">
             <TVCard titulo="Colaboradores" valor={`${colaboradores}`} sub="Total ativo" corSub="text-sky-400" />
-            <TVCard titulo="Absenteísmo" valor={`${absenteismo.toFixed(1)}%`} sub="Meta: <5%" corSub={absenteismo > 5 ? 'text-red-400' : 'text-emerald-400'} />
-            <TVCard titulo="Turnover" valor={`${turnover.toFixed(1)}%`} sub="Rotatividade" />
-            <TVCard titulo="Capacitações" valor={`${capacitacoes.toFixed(0)}`} sub="Realizadas" corSub="text-emerald-400" />
+            <TVCard titulo="Banco Crédito" valor="+1.234h" sub="Horas acumuladas" corSub="text-emerald-400" />
+            <TVCard titulo="Banco Débito" valor="-542h" sub="Horas negativas" corSub="text-amber-400" />
+            <TVCard titulo="Média por Colab" valor="9.8h" sub="Horas em banco" />
           </div>
 
-          <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
-            {/* Métrica esquerda */}
-            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-3 flex flex-col">
-              <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Distribuição por Setor</p>
-              <div className="flex-1 min-h-0 flex items-center justify-center">
-                {rh?.distribuicao_por_setor ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie 
-                        data={Object.entries(rh.distribuicao_por_setor).map(([name, value]) => ({ name, value }))} 
-                        cx="50%" cy="50%" 
-                        innerRadius={20} 
-                        outerRadius={45} 
-                        paddingAngle={2} 
-                        dataKey="value"
-                      >
-                        {Object.entries(rh.distribuicao_por_setor).map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={['#0ea5e9', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'][index % 5]} />
-                        ))}
-                      </Pie>
-                      <Tooltip {...tvTooltipStyle} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-slate-400 text-sm">Sem dados</div>
-                )}
+          <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+            {/* Top 5 Créditos */}
+            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Top 5 - Maior Crédito</p>
+              <div className="flex-1 overflow-y-auto space-y-2">
+                {[{name: 'Maria Santos', hours: 45.5}, {name: 'João Silva', hours: 38.2}, {name: 'Ana Costa', hours: 32.8}, {name: 'Carlos Souza', hours: 28.5}, {name: 'Patricia Lima', hours: 25.0}].map((c, i) => (
+                  <div key={i} className="flex justify-between items-center text-xs">
+                    <span className="text-slate-300">{c.name}</span>
+                    <span className="font-bold text-emerald-400">+{c.hours}h</span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            {/* Métrica direita */}
-            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-3 flex flex-col">
-              <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Indicadores RH</p>
-              <div className="flex-1 flex flex-col justify-around space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-300">Idade Média</span>
-                  <span className="text-xl font-black text-sky-400">{rh?.idade_media_equipe?.toFixed(0) ?? '-'}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-300">Capacitados</span>
-                  <span className="text-xl font-black text-emerald-400">{capacitacoes}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-slate-300">Saídas</span>
-                  <span className="text-xl font-black text-amber-400">{turnover.toFixed(1)}%</span>
-                </div>
+            {/* Top 5 Débito */}
+            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
+              <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Top 5 - Maior Débito</p>
+              <div className="flex-1 overflow-y-auto space-y-2">
+                {[{name: 'Roberto Alves', hours: -18.5}, {name: 'Fernanda Dias', hours: -15.2}, {name: 'Lucas Martins', hours: -12.8}, {name: 'Camila Rocha', hours: -10.5}, {name: 'Diego Santos', hours: -8.3}].map((c, i) => (
+                  <div key={i} className="flex justify-between items-center text-xs">
+                    <span className="text-slate-300">{c.name}</span>
+                    <span className="font-bold text-red-400">{c.hours}h</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
         </div>
       );
     }
+
+    // Tela 2: Atestados
+    return (
+      <div className="flex-1 flex flex-col gap-4 p-5 overflow-hidden">
+        <div className="grid grid-cols-4 gap-3">
+          <TVCard titulo="Atestados Total" valor="127" sub="Este mês" />
+          <TVCard titulo="Médicos" valor="85" sub="67% dos registros" corSub="text-amber-400" />
+          <TVCard titulo="Odontológicos" valor="32" sub="25% do total" />
+          <TVCard titulo="Absenteísmo" valor={`${absenteismo.toFixed(1)}%`} sub="Meta: <5%" corSub={absenteismo > 5 ? 'text-red-400' : 'text-emerald-400'} />
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
+          {/* Top 5 Atestados */}
+          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Top 5 - Mais Atestados</p>
+            <div className="flex-1 overflow-y-auto space-y-2">
+              {[{name: 'Gustavo Ferreira', count: 8}, {name: 'Vanessa Oliveira', count: 7}, {name: 'Ricardo Gomes', count: 6}, {name: 'Simone Costa', count: 5}, {name: 'Marcelo Pinto', count: 4}].map((c, i) => (
+                <div key={i} className="flex justify-between items-center text-xs">
+                  <span className="text-slate-300">{c.name}</span>
+                  <span className="font-bold text-red-400">{c.count} dias</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Evolução Mensal */}
+          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
+            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Atestados por Mês</p>
+            <div className="flex-1 min-h-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={[
+                  {mes: 'Jan', medical: 62, dental: 18, outros: 5},
+                  {mes: 'Fev', medical: 75, dental: 22, outros: 8},
+                  {mes: 'Mar', medical: 85, dental: 32, outros: 10}
+                ]}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
+                  <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                  <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} />
+                  <Tooltip {...tvTooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 9 }} />
+                  <Bar dataKey="medical" name="Médicos" fill="#ef4444" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="dental" name="Odontológicos" fill="#f59e0b" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="outros" name="Outros" fill="#22c55e" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderRHDPOld = () => {
+    const absenteismo = rh?.absenteismo.valor_atual ?? 0;
+    const capacitacoes = rh?.capacitacoes_realizadas.valor_atual ?? 0;
+    const turnover = rh?.turnover.valor_atual ?? 0;
 
     // Tela 2: Ocupação (usando dados operacionais)
     return (
@@ -327,7 +320,7 @@ export const ModoTV: React.FC = () => {
     </div>
   );
 
-  const paginasRender = [renderFinanceiro, renderFaturamento, renderQualidade, renderNIR, renderRHDP, renderAssistenteSocial, renderSalus];
+  const paginasRender = [renderFinanceiro, renderFaturamento, renderNIR, renderRHDP, renderAssistenteSocial, renderSalus];
 
   return (
     <div className="w-screen h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 overflow-hidden flex flex-col select-none">

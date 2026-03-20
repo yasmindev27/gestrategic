@@ -80,8 +80,7 @@ export function useNIRKPIs(): NIRDashboardData {
         // 1. Ocupação por Setor (ATUAL)
         const { data: bedsData, error: bedsError } = await supabase
           .from('bed_records')
-          .select('sector, patient_name, motivo_alta, data_alta')
-          .or(`and(patient_name.is.not.null,motivo_alta.is.null,data_alta.is.null),and(sector.eq.enfermaria-masculina),and(sector.eq.pediatria),and(sector.eq.uti),and(sector.eq.maternidade)`);
+          .select('sector, patient_name, motivo_alta, data_alta');
 
         if (bedsError) throw bedsError;
 
