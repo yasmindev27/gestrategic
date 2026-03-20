@@ -363,3 +363,4 @@ export const GaugeMetrica: React.FC<GaugeProps> = ({
     </div>
   );
 };
+

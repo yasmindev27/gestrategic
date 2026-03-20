@@ -16,9 +16,9 @@ const Dashboard = lazy(() => import("./pages/Dashboard"));
 const TotemRefeicoes = lazy(() => import("./pages/TotemRefeicoes"));
 // const ControleFichasPublico = lazy(() => import("./pages/ControleFichasPublico"));
 const Transporte = lazy(() => import("./pages/Transporte"));
-const ModoTVPage = lazy(() => import("./pages/ModoTVPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const PoliticaPrivacidade = lazy(() => import("./pages/PoliticaPrivacidade"));
+const ModoTVPage = lazy(() => import("./pages/ModoTVPage"));
 
 
 // Loading fallback component
@@ -55,8 +55,8 @@ const App = () => (
               <Route path="/totem" element={<TotemRefeicoes />} />
               <Route path="/terminal" element={<TotemRefeicoes />} />
               <Route path="/transporte" element={<Transporte />} />
-              <Route path="/modo-tv" element={<ModoTVPage />} />
               <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+              <Route path="/modo-tv" element={<ModoTVPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

@@ -560,3 +560,4 @@ export const DashboardBIHospitalar: React.FC<DashboardBIProps> = ({ periodoMeses
     </div>
   );
 };
+

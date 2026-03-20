@@ -11,8 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogD
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Checkbox } from "@/components/ui/checkbox";
-import { UtensilsCrossed, Calendar, CalendarDays, Salad, Loader2, Plus, Coffee, Sun, Cookie, Moon, Clock, CheckCircle2, XCircle, AlertCircle, BarChart3, FileDown, FileSpreadsheet, Filter, ClipboardList, TrendingUp, Search, Users, AlertTriangle, Pencil, Trash2, Save } from "lucide-react";
+import { UtensilsCrossed, Calendar, CalendarDays, Salad, Loader2, Plus, Coffee, Sun, Cookie, Moon, Clock, CheckCircle2, XCircle, AlertCircle, BarChart3, FileDown, FileSpreadsheet, Filter, ClipboardList, TrendingUp, Search, Users, AlertTriangle, Pencil, Trash2 } from "lucide-react";
 import { RegistrosRefeicoes } from "@/components/restaurante/RegistrosRefeicoes";
 import { RelatorioQuantitativoRefeicoes } from "@/components/restaurante/RelatorioQuantitativoRefeicoes";
 import { ColaboradoresManager } from "@/components/restaurante/ColaboradoresManager";
@@ -125,18 +124,6 @@ const horariosRefeicaoOptions = [{
 
 // Status removido - dietas são automaticamente aceitas
 
-interface LinhaSolicitacaoDieta {
-  id: string;
-  paciente_nome: string;
-  paciente_data_nascimento: string;
-  quarto_leito: string;
-  tipo_dieta: string;
-  tem_acompanhante: boolean;
-  restricoes_alimentares: string;
-  horarios_refeicoes: string[];
-  observacoes: string;
-}
-
 export const RestauranteModule = () => {
   const {
     toast
@@ -168,16 +155,6 @@ export const RestauranteModule = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userName, setUserName] = useState("");
-  
-  // Estados para registro em lote de solicitações
-  const [dietasNovas, setDietasNovas] = useState<LinhaSolicitacaoDieta[]>([
-    criarLinhaSolicitacao(),
-    criarLinhaSolicitacao(),
-    criarLinhaSolicitacao()
-  ]);
-  const [dataSolicitacaoDietas, setDataSolicitacaoDietas] = useState(format(new Date(), "yyyy-MM-dd"));
-  const [isSubmittingLote, setIsSubmittingLote] = useState(false);
-  
   const [formData, setFormData] = useState({
     paciente_nome: "",
     paciente_data_nascimento: "",
@@ -192,21 +169,6 @@ export const RestauranteModule = () => {
     is_dieta_extra: false,
     observacao_dieta_extra: ""
   });
-
-  // Função auxiliar para criar linha vazia
-  function criarLinhaSolicitacao(): LinhaSolicitacaoDieta {
-    return {
-      id: crypto.randomUUID(),
-      paciente_nome: "",
-      paciente_data_nascimento: "",
-      quarto_leito: "",
-      tipo_dieta: "geral",
-      tem_acompanhante: false,
-      restricoes_alimentares: "",
-      horarios_refeicoes: [] as string[],
-      observacoes: ""
-    };
-  }
 
   // Cardápio management states (for admin/restaurante)
   const [cardapioDialogOpen, setCardapioDialogOpen] = useState(false);
@@ -542,85 +504,6 @@ export const RestauranteModule = () => {
       setIsDietaSubmitting(false);
     }
   };
-
-  // Funções para registro em lote de dietas
-  const adicionarLinhasDieta = (qtd: number) => {
-    const novas = Array.from({ length: qtd }, () => criarLinhaSolicitacao());
-    setDietasNovas(prev => [...prev, ...novas]);
-  };
-
-  const removerLinhaDieta = (id: string) => {
-    setDietasNovas(prev => prev.filter(l => l.id !== id));
-  };
-
-  const atualizarLinhaDieta = (id: string, campo: keyof LinhaSolicitacaoDieta, valor: any) => {
-    setDietasNovas(prev => prev.map(l => l.id === id ? { ...l, [campo]: valor } : l));
-  };
-
-  const toggleRefeicaoDieta = (id: string, refeicao: string) => {
-    setDietasNovas(prev => prev.map(l => {
-      if (l.id !== id) return l;
-      const atual = l.horarios_refeicoes;
-      const novo = atual.includes(refeicao)
-        ? atual.filter(r => r !== refeicao)
-        : [...atual, refeicao];
-      return { ...l, horarios_refeicoes: novo };
-    }));
-  };
-
-  const handleSalvarSolicitacoesLote = async () => {
-    const linhasValidas = dietasNovas.filter(l => 
-      l.paciente_nome.trim() && l.quarto_leito.trim() && l.tipo_dieta
-    );
-
-    if (linhasValidas.length === 0) {
-      toast({ 
-        title: "Atenção", 
-        description: "Preencha ao menos uma linha válida com nome do paciente, quarto/leito e tipo de dieta.", 
-        variant: "destructive" 
-      });
-      return;
-    }
-
-    setIsSubmittingLote(true);
-    try {
-      const registros = linhasValidas.map(l => ({
-        solicitante_id: userId,
-        solicitante_nome: userName,
-        tipo_dieta: l.tipo_dieta,
-        paciente_nome: l.paciente_nome.trim(),
-        paciente_data_nascimento: l.paciente_data_nascimento || null,
-        quarto_leito: l.quarto_leito.trim(),
-        tem_acompanhante: l.tem_acompanhante,
-        restricoes_alimentares: l.restricoes_alimentares || null,
-        horarios_refeicoes: l.horarios_refeicoes.length > 0 ? l.horarios_refeicoes : null,
-        data_inicio: dataSolicitacaoDietas,
-        data_fim: null,
-        observacoes: l.observacoes || null,
-        status: "aprovada",
-      }));
-
-      const { error } = await supabase.from("solicitacoes_dieta").insert(registros);
-      if (error) throw error;
-
-      toast({ 
-        title: "Sucesso", 
-        description: `${linhasValidas.length} solicitação(ões) de dieta registrada(s) com sucesso!` 
-      });
-      setDietasNovas([criarLinhaSolicitacao(), criarLinhaSolicitacao(), criarLinhaSolicitacao()]);
-      fetchData();
-    } catch (error) {
-      console.error("Erro ao salvar solicitações em lote:", error);
-      toast({ 
-        title: "Erro", 
-        description: "Erro ao salvar solicitações. Tente novamente.", 
-        variant: "destructive" 
-      });
-    } finally {
-      setIsSubmittingLote(false);
-    }
-  };
-
   const handleSubmitCardapio = async () => {
     if (!cardapioFormData.data || !cardapioFormData.tipo_refeicao || !cardapioFormData.descricao) {
       toast({
@@ -679,7 +562,7 @@ export const RestauranteModule = () => {
       tem_acompanhante: false,
       tipo_dieta: "",
       restricoes_alimentares: "",
-      horarios_refeicoes: ["cafe", "almoco", "café", "jantar"],
+      horarios_refeicoes: ["cafe", "almoco", "lanche", "jantar"],
       data_inicio: format(new Date(), "yyyy-MM-dd"),
       data_fim: "",
       observacoes: "",
@@ -1119,203 +1002,18 @@ export const RestauranteModule = () => {
 
         {/* Dietas Tab */}
         <TabsContent value="solicitar" className="space-y-4">
-          {/* Novas Solicitações - Tabela Editável */}
-          <Card className="border shadow-sm">
-            <CardHeader className="border-b bg-muted/30 py-4">
-              <div className="flex flex-col gap-2">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <Plus className="h-5 w-5" />
-                      Nova Solicitação de Dieta
-                    </CardTitle>
-                    <CardDescription className="mt-0.5 text-xs">Registre solicitações para um ou mais pacientes</CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Data:</span>
-                    <Input
-                      type="date"
-                      value={dataSolicitacaoDietas}
-                      onChange={e => setDataSolicitacaoDietas(e.target.value)}
-                      className="w-[150px] h-8 text-sm"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground border-t border-border/50 pt-2">
-                  <span>Solicitante:</span>
-                  <Badge variant="secondary" className="text-xs font-normal">{userName || "Carregando..."}</Badge>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="p-3 space-y-3">
-              <div className="border rounded-md overflow-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="border-b border-border bg-background hover:bg-background">
-                      <TableHead className="w-[36px] text-center text-xs font-semibold text-foreground py-2.5 uppercase"></TableHead>
-                      <TableHead className="min-w-[170px] text-xs font-semibold text-foreground py-2.5 uppercase">Paciente *</TableHead>
-                      <TableHead className="min-w-[120px] text-xs font-semibold text-foreground py-2.5 uppercase">Dt. Nasc.</TableHead>
-                      <TableHead className="min-w-[100px] text-xs font-semibold text-foreground py-2.5 uppercase">Quarto/Leito *</TableHead>
-                      <TableHead className="min-w-[130px] text-xs font-semibold text-foreground py-2.5 uppercase">Tipo de Dieta *</TableHead>
-                      <TableHead className="text-center min-w-[90px] text-xs font-semibold text-foreground py-2.5 uppercase">Acompanhante</TableHead>
-                      <TableHead className="min-w-[190px] text-xs font-semibold text-foreground py-2.5 uppercase">Refeições</TableHead>
-                      <TableHead className="min-w-[150px] text-xs font-semibold text-foreground py-2.5 uppercase">Restrições</TableHead>
-                      <TableHead className="min-w-[150px] text-xs font-semibold text-foreground py-2.5 uppercase">Observações</TableHead>
-                      <TableHead className="w-[40px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dietasNovas.map((linha, idx) => {
-                      const isValid = linha.paciente_nome.trim() && linha.quarto_leito.trim() && linha.tipo_dieta;
-                      return (
-                        <TableRow key={linha.id} className="border-b border-border/40 bg-background hover:bg-muted/10">
-                          <TableCell className="text-center text-xs font-mono text-muted-foreground py-1.5">
-                            {idx + 1}
-                          </TableCell>
-                          <TableCell className="py-1 px-1">
-                            <Input
-                              placeholder="Nome do paciente"
-                              value={linha.paciente_nome}
-                              onChange={e => atualizarLinhaDieta(linha.id, "paciente_nome", e.target.value)}
-                              className="h-8 text-sm"
-                            />
-                          </TableCell>
-                          <TableCell className="py-1 px-1">
-                            <Input
-                              type="date"
-                              value={linha.paciente_data_nascimento}
-                              onChange={e => atualizarLinhaDieta(linha.id, "paciente_data_nascimento", e.target.value)}
-                              className="h-8 text-sm"
-                            />
-                          </TableCell>
-                          <TableCell className="py-1 px-1">
-                            <Input
-                              placeholder="Ex: 101-A"
-                              value={linha.quarto_leito}
-                              onChange={e => atualizarLinhaDieta(linha.id, "quarto_leito", e.target.value)}
-                              className="h-8 text-sm"
-                            />
-                          </TableCell>
-                          <TableCell className="py-1 px-1">
-                            <Select value={linha.tipo_dieta} onValueChange={v => atualizarLinhaDieta(linha.id, "tipo_dieta", v)}>
-                              <SelectTrigger className="h-8 text-sm">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {Object.entries(tipoDietaLabels).map(([value, label]) => (
-                                  <SelectItem key={value} value={value}>{label}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </TableCell>
-                          <TableCell className="py-1 px-1 text-center">
-                            <Checkbox
-                              checked={linha.tem_acompanhante}
-                              onCheckedChange={v => atualizarLinhaDieta(linha.id, "tem_acompanhante", !!v)}
-                            />
-                          </TableCell>
-                          <TableCell className="py-1 px-1">
-                            <div className="flex gap-1 flex-wrap">
-                              {horariosRefeicaoOptions.map(r => (
-                                <Badge
-                                  key={r.value}
-                                  variant={linha.horarios_refeicoes.includes(r.value) ? "default" : "outline"}
-                                  className="cursor-pointer text-xs select-none"
-                                  onClick={() => toggleRefeicaoDieta(linha.id, r.value)}
-                                >
-                                  {r.label.split(" ")[0]}
-                                </Badge>
-                              ))}
-                            </div>
-                          </TableCell>
-                          <TableCell className="py-1 px-1">
-                            <Input
-                              placeholder="Restrições"
-                              value={linha.restricoes_alimentares}
-                              onChange={e => atualizarLinhaDieta(linha.id, "restricoes_alimentares", e.target.value)}
-                              className="h-8 text-sm"
-                            />
-                          </TableCell>
-                          <TableCell className="py-1 px-1">
-                            <Input
-                              placeholder="Obs."
-                              value={linha.observacoes}
-                              onChange={e => atualizarLinhaDieta(linha.id, "observacoes", e.target.value)}
-                              className="h-8 text-sm"
-                            />
-                          </TableCell>
-                          <TableCell className="py-1 px-0.5">
-                            {dietasNovas.length > 1 && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground hover:text-destructive"
-                                onClick={() => removerLinhaDieta(linha.id)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
-              <div className="flex gap-2 items-center pt-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => adicionarLinhasDieta(1)}
-                  className="text-xs"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Adicionar 1 linha
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => adicionarLinhasDieta(3)}
-                  className="text-xs"
-                >
-                  <Plus className="h-3 w-3 mr-1" />
-                  Adicionar 3 linhas
-                </Button>
-              </div>
-              <div className="flex gap-2 pt-4 border-t">
-                <Button
-                  onClick={handleSalvarSolicitacoesLote}
-                  disabled={isSubmittingLote}
-                  className="flex-1"
-                >
-                  {isSubmittingLote ? (
-                    <>
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Salvar Solicitações
-                    </>
-                  )}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Minhas Solicitações */}
           <Card>
             <CardHeader>
               <div className="flex flex-col gap-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="flex items-center gap-2">
-                      <CheckCircle2 className="h-5 w-5" />
-                      Minhas Solicitações
-                    </CardTitle>
-                    <CardDescription>Histórico de solicitações realizadas</CardDescription>
+                    <CardTitle>Solicitações de Dieta</CardTitle>
+                    <CardDescription>Solicite uma dieta especial</CardDescription>
                   </div>
+                  <Button onClick={() => setDialogOpen(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Nova Solicitação
+                  </Button>
                 </div>
                 
                 {/* Filtros e Exportação */}
@@ -1362,6 +1060,7 @@ export const RestauranteModule = () => {
                       <TableHead>Tipo de Dieta</TableHead>
                       <TableHead>Horários</TableHead>
                       <TableHead>Acompanhante</TableHead>
+                      <TableHead>Período</TableHead>
                       <TableHead>Solicitado em</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -1379,7 +1078,7 @@ export const RestauranteModule = () => {
                         <TableCell>
                           <div>
                             <span className="font-medium">{tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta}</span>
-                            {s.restricoes_alimentares && <p className="text-xs text-orange-600 mt-1">{s.restricoes_alimentares}</p>}
+                            {s.descricao_especifica && <p className="text-xs text-muted-foreground">{s.descricao_especifica}</p>}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -1387,13 +1086,20 @@ export const RestauranteModule = () => {
                             {s.horarios_refeicoes && s.horarios_refeicoes.length > 0 ? s.horarios_refeicoes.map(h => {
                         const option = horariosRefeicaoOptions.find(o => o.value === h);
                         return option ? option.label : h;
-                      }).join(", ") : "Nenhum"}
+                      }).join(", ") : "Todos"}
                           </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant={s.tem_acompanhante ? "default" : "outline"}>
                             {s.tem_acompanhante ? "Sim" : "Não"}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-sm">
+                            <Clock className="h-3 w-3" />
+                            {format(new Date(s.data_inicio), "dd/MM/yyyy")}
+                            {s.data_fim && ` - ${format(new Date(s.data_fim), "dd/MM/yyyy")}`}
+                          </div>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">
                           {format(new Date(s.created_at), "dd/MM/yyyy HH:mm")}
@@ -1917,6 +1623,160 @@ export const RestauranteModule = () => {
             </Tabs>
           </TabsContent>}
       </Tabs>
+
+      {/* Dialog para Solicitar Dieta */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Solicitar Dieta para Paciente</DialogTitle>
+            <DialogDescription>
+              Preencha os dados do paciente para solicitar uma dieta especial.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            {/* Dados do Paciente */}
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <h4 className="font-medium text-sm">Dados do Paciente</h4>
+              <div className="space-y-2">
+                <Label>Nome Completo do Paciente *</Label>
+                <Input value={formData.paciente_nome} onChange={e => setFormData({
+                ...formData,
+                paciente_nome: e.target.value
+              })} placeholder="Nome completo do paciente" />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Data de Nascimento</Label>
+                  <Input type="date" value={formData.paciente_data_nascimento} onChange={e => setFormData({
+                  ...formData,
+                  paciente_data_nascimento: e.target.value
+                })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Quarto e Leito *</Label>
+                  <Input value={formData.quarto_leito} onChange={e => setFormData({
+                  ...formData,
+                  quarto_leito: e.target.value
+                })} placeholder="Ex: Quarto 101 - Leito A" />
+                </div>
+              </div>
+              <div className="flex items-center space-x-2">
+                <input type="checkbox" id="tem_acompanhante" checked={formData.tem_acompanhante} onChange={e => setFormData({
+                ...formData,
+                tem_acompanhante: e.target.checked
+              })} className="h-4 w-4 rounded border-gray-300" />
+                <Label htmlFor="tem_acompanhante">O paciente tem acompanhante?</Label>
+              </div>
+            </div>
+
+            {/* Tipo de Dieta */}
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <h4 className="font-medium text-sm">Tipo de Dieta</h4>
+              <div className="space-y-2">
+                <Label>Selecione o Tipo de Dieta *</Label>
+                <Select value={formData.tipo_dieta} onValueChange={value => setFormData({
+                ...formData,
+                tipo_dieta: value
+              })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o tipo de dieta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(tipoDietaLabels).map(([value, label]) => <SelectItem key={value} value={value}>
+                        {label}
+                      </SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Restrições Alimentares</Label>
+                <Textarea value={formData.restricoes_alimentares} onChange={e => setFormData({
+                ...formData,
+                restricoes_alimentares: e.target.value
+              })} placeholder="Descreva as restrições alimentares do paciente (alergias, intolerâncias, etc.)" rows={2} />
+              </div>
+            </div>
+
+            {/* Horários das Refeições */}
+            <div className="space-y-4 p-4 border rounded-lg bg-muted/30">
+              <h4 className="font-medium text-sm">Horários das Refeições</h4>
+              <div className="grid grid-cols-2 gap-2">
+                {horariosRefeicaoOptions.map(horario => <div key={horario.value} className="flex items-center space-x-2">
+                    <input type="checkbox" id={`horario_${horario.value}`} checked={formData.horarios_refeicoes.includes(horario.value)} onChange={e => {
+                  if (e.target.checked) {
+                    setFormData({
+                      ...formData,
+                      horarios_refeicoes: [...formData.horarios_refeicoes, horario.value]
+                    });
+                  } else {
+                    setFormData({
+                      ...formData,
+                      horarios_refeicoes: formData.horarios_refeicoes.filter(h => h !== horario.value)
+                    });
+                  }
+                }} className="h-4 w-4 rounded border-gray-300" />
+                    <Label htmlFor={`horario_${horario.value}`}>{horario.label}</Label>
+                  </div>)}
+              </div>
+            </div>
+
+            {/* Período e Observações */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Data Início *</Label>
+                <Input type="date" value={formData.data_inicio} onChange={e => setFormData({
+                ...formData,
+                data_inicio: e.target.value
+              })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Data Fim (opcional)</Label>
+                <Input type="date" value={formData.data_fim} onChange={e => setFormData({
+                ...formData,
+                data_fim: e.target.value
+              })} />
+              </div>
+            </div>
+
+            {/* Dieta Extra */}
+            <div className="space-y-3 p-4 border rounded-lg bg-amber-50/50 border-amber-200">
+              <div className="flex items-center space-x-2">
+                <input type="checkbox" id="is_dieta_extra" checked={formData.is_dieta_extra} onChange={e => setFormData({
+                ...formData,
+                is_dieta_extra: e.target.checked
+              })} className="h-4 w-4 rounded border-gray-300" />
+                <Label htmlFor="is_dieta_extra" className="font-medium text-amber-800">
+                  Dieta Extra (para possíveis internações ou outros casos)
+                </Label>
+              </div>
+              {formData.is_dieta_extra && <div className="space-y-2">
+                  <Label className="text-amber-700">Observação da Dieta Extra *</Label>
+                  <Textarea value={formData.observacao_dieta_extra} onChange={e => setFormData({
+                ...formData,
+                observacao_dieta_extra: e.target.value
+              })} placeholder="Descreva o motivo da dieta extra (ex: possível internação, acompanhante extra, visitante, etc.)" rows={2} className="border-amber-200 focus:border-amber-400" />
+                </div>}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Observações Gerais</Label>
+              <Textarea value={formData.observacoes} onChange={e => setFormData({
+              ...formData,
+              observacoes: e.target.value
+            })} placeholder="Informações adicionais sobre a dieta ou o paciente" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmitSolicitacao} disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Enviar Solicitação
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Dialog para Cadastrar Cardápio */}
       <Dialog open={cardapioDialogOpen} onOpenChange={setCardapioDialogOpen}>
