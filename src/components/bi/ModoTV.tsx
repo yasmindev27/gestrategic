@@ -66,7 +66,7 @@ export const ModoTV: React.FC = () => {
     return () => clearInterval(i);
   }, []);
 
-  const paginas = ['Executivo', 'Operacional', 'Financeiro', 'Qualidade'];
+  const paginas = ['Executivo', 'Operacional', 'Financeiro', 'Qualidade', 'Salus'];
 
   useEffect(() => {
     if (emPausa) return;
