@@ -5,7 +5,7 @@ import {
   Building2, AlertTriangle, Clock, CheckCircle2, Plus,
   Filter, Users, TrendingUp, Search, History, CalendarClock, FileText, Brain, ReceiptText, GitBranch,
   Stethoscope, Shield, ClipboardCheck, BedDouble, GraduationCap, Wrench,
-  ShieldAlert, HardHat, Skull, UtensilsCrossed, Shirt, Activity
+  ShieldAlert, HardHat, Skull, UtensilsCrossed, Shirt, Activity, BarChart3
 } from 'lucide-react';
 import { DISCFormModule } from '@/components/disc/DISCFormModule';
 import { LancamentoNotas } from '@/components/gerencia/LancamentoNotas';
