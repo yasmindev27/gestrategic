@@ -452,27 +452,11 @@ export const ModoTV: React.FC = () => {
           <div>Sistema Gestrategic BI v2.0 • Atualização automática a cada 10 minutos</div>
           <div className="flex gap-4">
             <span>Status: ✓ Produção</span>
-            <span>Base: {format(new Date(), 'jan/fev/mar 2026')}</span>
+            <span>Base: {format(new Date(), "'jan/fev/mar' yyyy")}</span>
             <span>Painel: {paginaAtiva + 1}/{PAINEIS.length}</span>
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(148, 163, 184, 0.1);
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(148, 163, 184, 0.5);
-          border-radius: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(148, 163, 184, 0.7);
-        }
-      `}</style>
     </div>
   );
 };
