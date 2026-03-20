@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useKPIsOperacionais, useKPIsFinanceiros, useKPIsQualidade, useKPIsRH } from '@/hooks/useKPIsHospitalar';
 import { useTendenciaFinanceira, useTendenciaOcupacao, useTendenciaIncidentes, useTendenciaDRE } from '@/hooks/useBITrends';
+import { useBancoHorasKPIs } from '@/hooks/useBancoHorasKPIs';
 import { supabase } from '@/integrations/supabase/client';
 import { ChevronRight, Clock, Pause, Play, ExternalLink, Stethoscope, FileText, CheckCircle, AlertCircle } from 'lucide-react';
 import { format, subDays } from 'date-fns';
@@ -61,6 +62,7 @@ export const ModoTV: React.FC = () => {
   const { data: op } = useKPIsOperacionais(3);
   const { data: fin } = useKPIsFinanceiros(3);
   const { data: rh } = useKPIsRH(3);
+  const { data: bancoHoras } = useBancoHorasKPIs(3);
   const { data: trendFin } = useTendenciaFinanceira();
   const { data: trendOcup } = useTendenciaOcupacao(14);
   const { data: trendInc } = useTendenciaIncidentes();
@@ -191,22 +193,50 @@ export const ModoTV: React.FC = () => {
     const absenteismo = rh?.absenteismo.valor_atual ?? 0;
     const colaboradores = rh?.colaboradores_ativos.valor_atual ?? 0;
 
-    // Tela 1: Banco de Horas
+    // Tela 1: Banco de Horas (dados reais)
     if (telaRotativa === 0) {
+      const saldoPositivo = (bancoHoras?.saldo_geral ?? 0) >= 0;
+      const saldoColor = saldoPositivo ? 'text-emerald-400' : 'text-red-400';
+      
       return (
         <div className="flex-1 flex flex-col gap-4 p-5 overflow-hidden">
           <div className="grid grid-cols-4 gap-3">
             <TVCard titulo="Colaboradores" valor={`${colaboradores}`} sub="Total ativo" corSub="text-sky-400" />
-            <TVCard titulo="Banco Crédito" valor="+1.234h" sub="Horas acumuladas" corSub="text-emerald-400" />
-            <TVCard titulo="Banco Débito" valor="-542h" sub="Horas negativas" corSub="text-amber-400" />
-            <TVCard titulo="Média por Colab" valor="9.8h" sub="Horas em banco" />
+            <TVCard titulo="Crédito Total" valor={`+${(bancoHoras?.total_credito ?? 0).toFixed(1)}h`} sub="Acumulado" corSub="text-emerald-400" />
+            <TVCard titulo="Débito Total" valor={`-${(bancoHoras?.total_debito ?? 0).toFixed(1)}h`} sub="Pendente" corSub="text-amber-400" />
+            <TVCard titulo="Saldo Geral" valor={`${saldoPositivo ? '+' : ''}${(bancoHoras?.saldo_geral ?? 0).toFixed(1)}h`} sub={`Média: ${(bancoHoras?.media_por_colaborador ?? 0).toFixed(1)}h`} corSub={saldoColor} />
           </div>
 
-          <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
-            <div className="flex-1 flex items-center justify-center">
-              <div className="text-center">
-                <p className="text-slate-400 text-sm">Dados de Banco de Horas</p>
-                <p className="text-slate-500 text-xs mt-2">Integração com sistema de ponto pendente</p>
+          <div className="grid grid-cols-2 gap-3 flex-1 min-h-0 overflow-hidden">
+            {/* Top 5 Crédito */}
+            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-3 flex flex-col">
+              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Top 5 - Maior Crédito</p>
+              <div className="flex-1 overflow-y-auto space-y-1.5">
+                {(bancoHoras?.top_5_credito || []).map((item, i) => (
+                  <div key={i} className="flex justify-between items-center bg-slate-700/30 px-2 py-1.5 rounded-lg border border-emerald-500/20">
+                    <span className="text-xs font-medium text-slate-300 truncate flex-1">{item.nome}</span>
+                    <span className="text-xs font-bold text-emerald-400 ml-2">+{item.horas.toFixed(1)}h</span>
+                  </div>
+                ))}
+                {(!bancoHoras?.top_5_credito || bancoHoras.top_5_credito.length === 0) && (
+                  <div className="text-[10px] text-slate-500 text-center py-4">Nenhum crédito registrado</div>
+                )}
+              </div>
+            </div>
+
+            {/* Top 5 Débito */}
+            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-3 flex flex-col">
+              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Top 5 - Maior Débito</p>
+              <div className="flex-1 overflow-y-auto space-y-1.5">
+                {(bancoHoras?.top_5_debito || []).map((item, i) => (
+                  <div key={i} className="flex justify-between items-center bg-slate-700/30 px-2 py-1.5 rounded-lg border border-red-500/20">
+                    <span className="text-xs font-medium text-slate-300 truncate flex-1">{item.nome}</span>
+                    <span className="text-xs font-bold text-red-400 ml-2">-{item.horas.toFixed(1)}h</span>
+                  </div>
+                ))}
+                {(!bancoHoras?.top_5_debito || bancoHoras.top_5_debito.length === 0) && (
+                  <div className="text-[10px] text-slate-500 text-center py-4">Nenhum débito registrado</div>
+                )}
               </div>
             </div>
           </div>
@@ -224,54 +254,22 @@ export const ModoTV: React.FC = () => {
           <TVCard titulo="Capacitações" valor={`${rh?.capacitacoes_realizadas.valor_atual.toFixed(0) ?? 0}`} sub="Realizadas" corSub="text-emerald-400" />
         </div>
 
-        <div className="flex-1 flex items-center justify-center p-5">
-          <div className="text-center">
-            <p className="text-slate-400 text-lg">Dados de atestados serão integrados quando disponível na base de dados</p>
+        <div className="flex-1 min-h-0 bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
+          <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-3">Distribuição por Setor</p>
+          <div className="flex-1 flex flex-wrap gap-2 items-start content-start overflow-y-auto">
+            {Object.entries(rh?.distribuicao_por_setor || {}).map(([setor, count], i) => (
+              <div key={i} className="bg-slate-700/40 px-3 py-2 rounded-lg border border-slate-600/50 flex flex-col items-center">
+                <span className="text-[10px] font-medium text-slate-400 text-center line-clamp-2">{setor}</span>
+                <span className="text-sm font-bold text-cyan-400 mt-1">{count}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>
     );
   };
 
-  const renderRHDPOld = () => {
-    const absenteismo = rh?.absenteismo.valor_atual ?? 0;
-    const capacitacoes = rh?.capacitacoes_realizadas.valor_atual ?? 0;
-    const turnover = rh?.turnover.valor_atual ?? 0;
-
-    // Tela 2: Ocupação (usando dados operacionais)
-    return (
-      <div className="flex-1 flex flex-col gap-3 p-4 overflow-hidden">
-        <div className="grid grid-cols-3 gap-2">
-          <TVCard titulo="Ocupação" valor={`${ocupacao.toFixed(0)}%`} sub="Leitos ocupados" corSub={ocupacao >= 80 ? 'text-amber-400' : 'text-emerald-400'} />
-          <TVCard titulo="Eficiência Op." valor={`${op?.eficiencia_operacional.valor_atual?.toFixed(0) ?? 0}%`} sub="Operacional" />
-          <TVCard titulo="Taxa Mortalidade" valor={`${op?.taxa_mortalidade.valor_atual?.toFixed(2) ?? 0}%`} sub="Internados" />
-        </div>
-
-        <div className="flex-1 min-h-0">
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-3 flex flex-col h-full">
-            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Ocupação Temporal</p>
-            <div className="flex-1 min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trendOcup || []}>
-                  <defs>
-                    <linearGradient id="colorOcup" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="shift_date" tick={{ fill: '#94a3b8', fontSize: 8 }} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 8 }} />
-                  <Tooltip {...tvTooltipStyle} />
-                  <Area type="monotone" dataKey="ocupacao_atual" stroke="#0ea5e9" fill="url(#colorOcup)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // Deixado vazio - função renderRHDPOld não é mais usada
 
   // Page: NIR — Tela 1: Dashboard KPIs + Tela 2: Produtividade (dados reais de bed_records e nir_registros_producao)
   const renderNIR = () => <TVPageNIR telaRotativa={telaRotativa} />;
