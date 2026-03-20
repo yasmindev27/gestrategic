@@ -622,7 +622,7 @@ ${erros.length > 0 ? `⚠ Erros: ${erros.length}` : ''}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {notas.map(nota => (
+                  {filteredNotas.map(nota => (
                     <ValorEditorRow key={nota.id} nota={nota} onUpdate={(id, val) =>
                       updateNotaMutation.mutate({ id, updates: { valor_nota: val } })
                     } />
