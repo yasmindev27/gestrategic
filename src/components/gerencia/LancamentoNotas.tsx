@@ -627,7 +627,7 @@ ${erros.length > 0 ? `⚠ Erros: ${erros.length}` : ''}
                       updateNotaMutation.mutate({ id, updates: { valor_nota: val } })
                     } />
                   ))}
-                  {notas.length === 0 && (
+                  {filteredNotas.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         Nenhuma nota para editar.
