@@ -622,12 +622,12 @@ ${erros.length > 0 ? `⚠ Erros: ${erros.length}` : ''}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {notas.map(nota => (
+                  {filteredNotas.map(nota => (
                     <ValorEditorRow key={nota.id} nota={nota} onUpdate={(id, val) =>
                       updateNotaMutation.mutate({ id, updates: { valor_nota: val } })
                     } />
                   ))}
-                  {notas.length === 0 && (
+                  {filteredNotas.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                         Nenhuma nota para editar.
