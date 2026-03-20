@@ -201,51 +201,19 @@ export const ModoTV: React.FC = () => {
       );
     }
 
-    // Tela 2: Atestados
+    // Tela 2: Indicadores RH (dados reais apenas)
     return (
       <div className="flex-1 flex flex-col gap-4 p-5 overflow-hidden">
         <div className="grid grid-cols-4 gap-3">
-          <TVCard titulo="Atestados Total" valor="127" sub="Este mês" />
-          <TVCard titulo="Médicos" valor="85" sub="67% dos registros" corSub="text-amber-400" />
-          <TVCard titulo="Odontológicos" valor="32" sub="25% do total" />
+          <TVCard titulo="Colaboradores" valor={`${colaboradores}`} sub="Total ativo" corSub="text-sky-400" />
           <TVCard titulo="Absenteísmo" valor={`${absenteismo.toFixed(1)}%`} sub="Meta: <5%" corSub={absenteismo > 5 ? 'text-red-400' : 'text-emerald-400'} />
+          <TVCard titulo="Turnover" valor={`${rh?.turnover.valor_atual.toFixed(1) ?? 0}%`} sub="Rotatividade" />
+          <TVCard titulo="Capacitações" valor={`${rh?.capacitacoes_realizadas.valor_atual.toFixed(0) ?? 0}`} sub="Realizadas" corSub="text-emerald-400" />
         </div>
 
-        <div className="grid grid-cols-2 gap-3 flex-1 min-h-0">
-          {/* Top 5 Atestados */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Top 5 - Mais Atestados</p>
-            <div className="flex-1 overflow-y-auto space-y-2">
-              {[{name: 'Gustavo Ferreira', count: 8}, {name: 'Vanessa Oliveira', count: 7}, {name: 'Ricardo Gomes', count: 6}, {name: 'Simone Costa', count: 5}, {name: 'Marcelo Pinto', count: 4}].map((c, i) => (
-                <div key={i} className="flex justify-between items-center text-xs">
-                  <span className="text-slate-300">{c.name}</span>
-                  <span className="font-bold text-red-400">{c.count} dias</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Evolução Mensal */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-xl p-4 flex flex-col">
-            <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-wider mb-2">Atestados por Mês</p>
-            <div className="flex-1 min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={[
-                  {mes: 'Jan', medical: 62, dental: 18, outros: 5},
-                  {mes: 'Fev', medical: 75, dental: 22, outros: 8},
-                  {mes: 'Mar', medical: 85, dental: 32, outros: 10}
-                ]}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 10 }} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 10 }} />
-                  <Tooltip {...tvTooltipStyle} />
-                  <Legend wrapperStyle={{ fontSize: 9 }} />
-                  <Bar dataKey="medical" name="Médicos" fill="#ef4444" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="dental" name="Odontológicos" fill="#f59e0b" radius={[3, 3, 0, 0]} />
-                  <Bar dataKey="outros" name="Outros" fill="#22c55e" radius={[3, 3, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+        <div className="flex-1 flex items-center justify-center p-5">
+          <div className="text-center">
+            <p className="text-slate-400 text-lg">Dados de atestados serão integrados quando disponível na base de dados</p>
           </div>
         </div>
       </div>
