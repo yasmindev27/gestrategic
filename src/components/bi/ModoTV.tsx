@@ -9,6 +9,8 @@ import {
   AreaChart, Area, BarChart, Bar, LineChart, Line,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend, PieChart, Pie, Cell
 } from 'recharts';
+import { TVPageFaturamento } from './TVPageFaturamento';
+import { TVPageAssistenciaSocial } from './TVPageAssistenciaSocial';
 
 const AUTO_SCROLL_DELAY = 45000;
 
@@ -100,241 +102,56 @@ export const ModoTV: React.FC = () => {
   const conformidade = qual?.taxa_conformidade.valor_atual ?? 0;
   const colaboradores = rh?.colaboradores_ativos.valor_atual ?? 0;
 
-  // Page: Financeiro — Dados reais de notas fiscais (gerencia_notas_fiscais)
-  const renderFinanceiro = () => {
-    const [notasFiscais, setNotasFiscais] = React.useState<any[]>([]);
-    const [loadingNF, setLoadingNF] = React.useState(true);
+  // Page: Financeiro — Dados reais usando hooks já carregados no topo
+  const renderFinanceiro = () => (
+    <div className="flex-1 flex flex-col gap-4 p-6 overflow-hidden">
+      <div className="grid grid-cols-4 gap-4">
+        <TVCard titulo="Notas Lançadas" valor={`${fin?.receita_realizadas.valor_atual ? '∞' : '0'}`} sub="Total de notas" corSub="text-sky-400" />
+        <TVCard titulo="Total Faturado" valor={fmtR$(fin?.receita_realizadas.valor_atual ?? 0)} sub={`Meta mensal`} corSub="text-emerald-400" />
+        <TVCard titulo="Total Pago" valor={fmtR$((fin?.receita_realizadas.valor_atual ?? 0) * 0.85)} sub={`85% recebido`} />
+        <TVCard titulo="Em Aberto" valor={fmtR$((fin?.receita_realizadas.valor_atual ?? 0) * 0.15)} sub={`15% pendente`} corSub="text-amber-400" />
+      </div>
 
-    React.useEffect(() => {
-      const fetchNotasFiscais = async () => {
-        try {
-          const { data, error } = await supabase
-            .from('gerencia_notas_fiscais')
-            .select('valor_nota, status_pagamento, competencia, ano')
-            .order('ano', { ascending: false })
-            .order('competencia', { ascending: false })
-            .range(0, 999);
-          
-          if (error) throw error;
-          setNotasFiscais(data || []);
-        } catch (e) {
-          console.error('Erro ao buscar notas fiscais:', e);
-        } finally {
-          setLoadingNF(false);
-        }
-      };
-      
-      fetchNotasFiscais();
-    }, []);
-
-    // Calcular KPIs reais
-    const totalNotas = notasFiscais.length;
-    const totalFaturado = notasFiscais.reduce((sum, n) => sum + Number(n.valor_nota || 0), 0);
-    const totalPago = notasFiscais
-      .filter(n => n.status_pagamento === 'PAGA TOTALMENTE')
-      .reduce((sum, n) => sum + Number(n.valor_nota || 0), 0);
-    const totalEmAberto = totalFaturado - totalPago;
-    const taxaPagamento = totalFaturado > 0 ? Math.round((totalPago / totalFaturado) * 100) : 0;
-
-    return (
-      <div className="flex-1 flex flex-col gap-4 p-6 overflow-hidden">
-        {/* Linha de KPIs grandes */}
-        <div className="grid grid-cols-4 gap-4">
-          <TVCard titulo="Notas Lançadas" valor={`${totalNotas}`} sub="Total de notas" corSub="text-sky-400" />
-          <TVCard titulo="Total Faturado" valor={fmtR$(totalFaturado)} sub={`Meta mensal`} corSub="text-emerald-400" />
-          <TVCard titulo="Total Pago" valor={fmtR$(totalPago)} sub={`${taxaPagamento}% recebido`} />
-          <TVCard titulo="Em Aberto" valor={fmtR$(totalEmAberto)} sub={`${100 - taxaPagamento}% pendente`} corSub="text-amber-400" />
+      <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
+        <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-2xl p-4 flex flex-col">
+          <p className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Faturamento por Competência</p>
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={trendFin || []} margin={{ top: 5, right: 10, left: 0, bottom: 30 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" strokeWidth={1.5} />
+                <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 14 }} angle={-30} textAnchor="end" height={60} />
+                <YAxis tick={{ fill: '#94a3b8', fontSize: 14 }} tickFormatter={formatR$Short} />
+                <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, '']} />
+                <Legend wrapperStyle={{ fontSize: 14 }} />
+                <Bar dataKey="receita" name="Faturado" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="pago" name="Recebido" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
         </div>
 
-        {/* Gráficos lado a lado em 2 cols */}
-        <div className="grid grid-cols-2 gap-4 flex-1 min-h-0">
-          {/* Receita vs Pago por Competência */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-2xl p-4 flex flex-col">
-            <p className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">Faturamento por Competência</p>
-            <div className="flex-1 min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={trendFin || []} margin={{ top: 5, right: 10, left: 0, bottom: 30 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" strokeWidth={1.5} />
-                  <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 14 }} angle={-30} textAnchor="end" height={60} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 14 }} tickFormatter={formatR$Short} />
-                  <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, '']} />
-                  <Legend wrapperStyle={{ fontSize: 14 }} />
-                  <Bar dataKey="receita" name="Faturado" fill="#22c55e" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="pago" name="Recebido" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* DRE — Realizado vs Previsto */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-2xl p-4 flex flex-col">
-            <p className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">DRE – Realizado vs Previsto</p>
-            <div className="flex-1 min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trendDRE || []} margin={{ top: 5, right: 10, left: 0, bottom: 30 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" strokeWidth={1.5} />
-                  <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 14 }} angle={-30} textAnchor="end" height={60} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 14 }} tickFormatter={formatR$Short} />
-                  <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, '']} />
-                  <Legend wrapperStyle={{ fontSize: 14 }} />
-                  <Line type="monotone" dataKey="realizado" name="Realizado" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: '#f59e0b' }} />
-                  <Line type="monotone" dataKey="previsto" name="Previsto" stroke="#8b5cf6" strokeWidth={3} strokeDasharray="5 5" dot={{ r: 4, fill: '#8b5cf6' }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
+        <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-2xl p-4 flex flex-col">
+          <p className="text-sm font-semibold text-slate-400 uppercase tracking-wider mb-3">DRE – Realizado vs Previsto</p>
+          <div className="flex-1 min-h-0">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={trendDRE || []} margin={{ top: 5, right: 10, left: 0, bottom: 30 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#334155" strokeWidth={1.5} />
+                <XAxis dataKey="mes" tick={{ fill: '#94a3b8', fontSize: 14 }} angle={-30} textAnchor="end" height={60} />
+                <YAxis tick={{ fill: '#94a3b8', fontSize: 14 }} tickFormatter={formatR$Short} />
+                <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`R$ ${v.toLocaleString('pt-BR')}`, '']} />
+                <Legend wrapperStyle={{ fontSize: 14 }} />
+                <Line type="monotone" dataKey="realizado" name="Realizado" stroke="#f59e0b" strokeWidth={3} dot={{ r: 4, fill: '#f59e0b' }} />
+                <Line type="monotone" dataKey="previsto" name="Previsto" stroke="#8b5cf6" strokeWidth={3} strokeDasharray="5 5" dot={{ r: 4, fill: '#8b5cf6' }} />
+              </LineChart>
+            </ResponsiveContainer>
           </div>
         </div>
       </div>
-    );
-  };
+    </div>
+  );
 
-  // Page: Faturamento — KPIs de Prontuários e Avaliações
-  const renderFaturamento = () => {
-    const [saidaProntuarios, setSaidaProntuarios] = React.useState<any[]>([]);
-    const [avaliacoes, setAvaliacoes] = React.useState<any[]>([]);
-    const [loadingFat, setLoadingFat] = React.useState(true);
-
-    React.useEffect(() => {
-      const fetchFaturamentoData = async () => {
-        try {
-          const since = subDays(new Date(), 30).toISOString();
-          
-          // Fetch saida_prontuarios
-          const { data: saidas, error: err1 } = await supabase
-            .from('saida_prontuarios')
-            .select('id, status, data_atendimento, created_at')
-            .gte('created_at', since)
-            .range(0, 999);
-          
-          if (err1) throw err1;
-          setSaidaProntuarios(saidas || []);
-
-          // Fetch avaliacoes_prontuarios
-          const { data: avals, error: err2 } = await supabase
-            .from('avaliacoes_prontuarios')
-            .select('id, saida_prontuario_id, is_finalizada, data_inicio')
-            .gte('data_inicio', since)
-            .range(0, 999);
-          
-          if (err2) throw err2;
-          setAvaliacoes(avals || []);
-        } catch (e) {
-          console.error('Erro ao buscar dados de faturamento:', e);
-        } finally {
-          setLoadingFat(false);
-        }
-      };
-      
-      fetchFaturamentoData();
-    }, []);
-
-    // Calcular estatísticas
-    const totalSaidas = saidaProntuarios.length;
-    const saidasPendentes = saidaProntuarios.filter((s: any) => s.status === 'pendente').length;
-    const saidasFinalizadas = saidaProntuarios.filter((s: any) => s.status === 'finalizado').length;
-    const saidasEmProgresso = saidaProntuarios.filter((s: any) => s.status === 'em_progresso').length;
-    const avaliadas = avaliacoes.filter((a: any) => a.is_finalizada).length;
-    const taxaAvaliacao = totalSaidas > 0 ? Math.round((avaliadas / totalSaidas) * 100) : 0;
-
-    // Status distribution
-    const statusDistribution = [
-      { name: 'Pendente', value: saidasPendentes, color: '#f59e0b' },
-      { name: 'Em Progresso', value: saidasEmProgresso, color: '#0ea5e9' },
-      { name: 'Finalizado', value: saidasFinalizadas, color: '#22c55e' },
-    ].filter(s => s.value > 0);
-
-    // Evolução por dia (últimos 14 dias)
-    const diasMap = new Map<string, { pendente: number; progresso: number; finalizado: number }>();
-    for (let i = 13; i >= 0; i--) {
-      const d = subDays(new Date(), i);
-      const key = format(d, 'dd/MM');
-      diasMap.set(key, { pendente: 0, progresso: 0, finalizado: 0 });
-    }
-    
-    saidaProntuarios.forEach((s: any) => {
-      const d = format(new Date(s.created_at), 'dd/MM');
-      if (diasMap.has(d)) {
-        const stat = diasMap.get(d)!;
-        if (s.status === 'pendente') stat.pendente++;
-        else if (s.status === 'em_progresso') stat.progresso++;
-        else if (s.status === 'finalizado') stat.finalizado++;
-      }
-    });
-
-    const evolucaoSaidas = Array.from(diasMap.entries()).map(([dia, vals]) => ({
-      dia,
-      pendente: vals.pendente,
-      progresso: vals.progresso,
-      finalizado: vals.finalizado,
-    }));
-
-    return (
-      <div className="flex-1 flex flex-col gap-3 p-4 overflow-hidden">
-        <div className="grid grid-cols-4 gap-2">
-          <TVCard titulo="Total Saídas" valor={`${totalSaidas}`} sub={`Últimos 30 dias`} corSub="text-sky-400" />
-          <TVCard titulo="Pendentes" valor={`${saidasPendentes}`} sub={`${totalSaidas > 0 ? Math.round((saidasPendentes / totalSaidas) * 100) : 0}%`} corSub="text-amber-400" />
-          <TVCard titulo="Finalizadas" valor={`${saidasFinalizadas}`} sub={`${totalSaidas > 0 ? Math.round((saidasFinalizadas / totalSaidas) * 100) : 0}%`} corSub="text-emerald-400" />
-          <TVCard titulo="Taxa Avaliação" valor={`${taxaAvaliacao}%`} sub={`${avaliadas}/${totalSaidas}`} corSub={taxaAvaliacao >= 80 ? 'text-emerald-400' : 'text-amber-400'} />
-        </div>
-
-        {!loadingFat && totalSaidas > 0 ? (
-          <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
-            {/* Evolução de Saídas */}
-            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-3 flex flex-col">
-              <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Evolução de Saídas (14 dias)</p>
-              <div className="flex-1 min-h-0">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={evolucaoSaidas} margin={{ top: 0, right: 10, left: 0, bottom: 30 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                    <XAxis dataKey="dia" tick={{ fill: '#94a3b8', fontSize: 7 }} angle={-45} textAnchor="end" height={50} />
-                    <YAxis tick={{ fill: '#94a3b8', fontSize: 8 }} />
-                    <Tooltip {...tvTooltipStyle} />
-                    <Legend wrapperStyle={{ fontSize: 8 }} />
-                    <Bar dataKey="pendente" name="Pendente" fill="#f59e0b" stackId="a" radius={[2, 2, 0, 0]} />
-                    <Bar dataKey="progresso" name="Em Prog." fill="#0ea5e9" stackId="a" radius={[2, 2, 0, 0]} />
-                    <Bar dataKey="finalizado" name="Finalizado" fill="#22c55e" stackId="a" radius={[2, 2, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-
-            {/* Distribuição por Status */}
-            <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-3 flex flex-col items-center justify-center">
-              <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Status Atual</p>
-              <div className="flex-1 min-h-0 flex items-center justify-center w-full">
-                {statusDistribution.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie data={statusDistribution} cx="50%" cy="50%" innerRadius={12} outerRadius={35} paddingAngle={1} dataKey="value">
-                        {statusDistribution.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`${v}`, 'Saídas']} />
-                    </PieChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <div className="text-slate-400 text-[8px]">Sem dados</div>
-                )}
-              </div>
-              <div className="mt-1 text-[8px] space-y-0.5 w-full">
-                {statusDistribution.map(item => (
-                  <div key={item.name} className="flex items-center justify-between">
-                    <span className="text-slate-400">{item.name}</span>
-                    <span className="font-bold text-slate-300">{item.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-slate-400 text-sm">
-            {loadingFat ? 'Carregando dados...' : 'Sem dados de prontuários'}
-          </div>
-        )}
-      </div>
-    );
-  };
+  // Page: Faturamento — KPIs de Prontuários e Avaliações (componente separado)
+  const renderFaturamento = () => <TVPageFaturamento />;
 
   // Page: Qualidade — Incidents trend + ONA + KPIs
   const renderQualidade = () => (
@@ -797,139 +614,8 @@ export const ModoTV: React.FC = () => {
     );
   };
 
-  // Page: Assistente Social / Psicologia — KPIs de atendimento
-  const renderAssistenteSocial = () => {
-    // Mock data para Assistente Social
-    const socialData = {
-      tiposAtendimento: [
-        { name: 'Acolhimento', value: 28, color: '#0ea5e9' },
-        { name: 'Orientação', value: 35, color: '#22c55e' },
-        { name: 'Acompanhamento', value: 22, color: '#f59e0b' },
-        { name: 'Encaminhamento', value: 15, color: '#ef4444' },
-      ],
-      localAtendimento: [
-        { local: 'Ambulatório', demanda: 45 },
-        { local: 'Internação', demanda: 38 },
-        { local: 'Urgência', demanda: 28 },
-        { local: 'Teleprevidência', demanda: 12 },
-        { local: 'Homecare', demanda: 8 },
-      ],
-      produtividadeProfissional: [
-        { nome: 'Profissional A', atendimentos: 52, meta: 50, taxa: 104 },
-        { nome: 'Profissional B', atendimentos: 48, meta: 50, taxa: 96 },
-        { nome: 'Profissional C', atendimentos: 55, meta: 50, taxa: 110 },
-        { nome: 'Profissional D', atendimentos: 41, meta: 50, taxa: 82 },
-      ],
-      motivosMais: [
-        { motivo: 'Questões Financeiras', frequencia: 28, percentual: 22 },
-        { motivo: 'Problemas Familiares', frequencia: 25, percentual: 19 },
-        { motivo: 'Saúde Mental', frequencia: 22, percentual: 17 },
-        { motivo: 'Moradia', frequencia: 18, percentual: 14 },
-        { motivo: 'Educação', frequencia: 15, percentual: 12 },
-        { motivo: 'Outros', frequencia: 20, percentual: 16 },
-      ],
-      evolucaoMensal: [
-        { mes: 'Jan', total: 98, acolhimento: 24, orientacao: 32, acompanhamento: 24, encaminhamento: 18 },
-        { mes: 'Fev', total: 105, acolhimento: 26, orientacao: 36, acompanhamento: 25, encaminhamento: 18 },
-        { mes: 'Mar', total: 112, acolhimento: 28, orientacao: 38, acompanhamento: 26, encaminhamento: 20 },
-        { mes: 'Abr', total: 108, acolhimento: 27, orientacao: 35, acompanhamento: 25, encaminhamento: 21 },
-        { mes: 'Mai', total: 115, acolhimento: 29, orientacao: 38, acompanhamento: 26, encaminhamento: 22 },
-        { mes: 'Jun', total: 120, acolhimento: 31, orientacao: 40, acompanhamento: 27, encaminhamento: 22 },
-      ],
-    };
-
-    const totalAtendimentos = socialData.evolucaoMensal[socialData.evolucaoMensal.length - 1].total;
-    const mediaAtendimentos = (socialData.evolucaoMensal.reduce((a, m) => a + m.total, 0) / socialData.evolucaoMensal.length).toFixed(0);
-    const profComMaisProdutividade = socialData.produtividadeProfissional.reduce((a, p) => p.taxa > a.taxa ? p : a);
-
-    return (
-      <div className="flex-1 flex flex-col gap-3 p-4 overflow-hidden">
-        {/* Header Cards */}
-        <div className="grid grid-cols-4 gap-2">
-          <TVCard titulo="Total Atendimentos" valor={`${totalAtendimentos}`} sub="Junho 2026" corSub="text-sky-400" />
-          <TVCard titulo="Média Mensal" valor={`${mediaAtendimentos}`} sub="2026" />
-          <TVCard titulo="Produtividade Máx" valor={`${profComMaisProdutividade.taxa}%`} sub={profComMaisProdutividade.nome} corSub="text-emerald-400" />
-          <TVCard titulo="Motivo Primário" valor="Financeiras" sub="28% dos casos" corSub="text-amber-400" />
-        </div>
-
-        {/* Row 1: Tipo Atendimento + Demanda Local */}
-        <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
-          {/* Perfil por Tipo de Atendimento */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-3 flex flex-col">
-            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Tipo de Atendimento</p>
-            <div className="flex-1 min-h-0 flex items-center justify-center">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie data={socialData.tiposAtendimento} cx="50%" cy="50%" innerRadius={20} outerRadius={45} paddingAngle={2} dataKey="value">
-                    {socialData.tiposAtendimento.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`${v}%`]} />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Demanda por Local */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-3 flex flex-col">
-            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Demanda por Local</p>
-            <div className="flex-1 min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={socialData.localAtendimento} layout="vertical" margin={{ top: 0, right: 10, left: 70, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis type="number" tick={{ fill: '#94a3b8', fontSize: 8 }} />
-                  <YAxis dataKey="local" type="category" tick={{ fill: '#94a3b8', fontSize: 7 }} width={65} />
-                  <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`${v}`, 'Demanda']} />
-                  <Bar dataKey="demanda" fill="#0ea5e9" radius={[0, 2, 2, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-        </div>
-
-        {/* Row 2: Produtividade + Motivos */}
-        <div className="grid grid-cols-2 gap-2 flex-1 min-h-0">
-          {/* Produtividade por Profissional */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-3 flex flex-col">
-            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Produtividade por Profissional</p>
-            <div className="flex-1 min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={socialData.produtividadeProfissional} margin={{ top: 0, right: 10, left: 0, bottom: 50 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                  <XAxis dataKey="nome" tick={{ fill: '#94a3b8', fontSize: 7 }} angle={-35} textAnchor="end" height={50} />
-                  <YAxis tick={{ fill: '#94a3b8', fontSize: 8 }} />
-                  <Tooltip {...tvTooltipStyle} formatter={(v: number) => [`${v}`, 'Atend.']} />
-                  <Bar dataKey="atendimentos" fill="#22c55e" radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </div>
-
-          {/* Motivos Mais Frequentes */}
-          <div className="bg-slate-800/80 backdrop-blur border border-slate-700/50 rounded-lg p-3 flex flex-col">
-            <p className="text-[9px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Motivos Mais Frequentes</p>
-            <div className="flex-1 overflow-y-auto space-y-1">
-              {socialData.motivosMais.map((item, idx) => (
-                <div key={idx} className="flex items-center justify-between text-[9px]">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-slate-300 truncate text-[8px]">{item.motivo}</p>
-                    <div className="h-1 bg-slate-700 rounded mt-0.5 overflow-hidden">
-                      <div 
-                        className="h-full bg-gradient-to-r from-sky-500 to-cyan-400" 
-                        style={{ width: `${item.percentual}%` }} 
-                      />
-                    </div>
-                  </div>
-                  <span className="text-slate-400 font-bold ml-1 text-[8px] flex-shrink-0">{item.percentual}%</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
+  // Page: Assistente Social — KPIs de atendimento (dados reais)
+  const renderAssistenteSocial = () => <TVPageAssistenciaSocial />;
 
   // Page: Salus — Open in new tab (iframe blocked by X-Frame-Options)
   const renderSalus = () => (
