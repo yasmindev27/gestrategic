@@ -110,19 +110,22 @@ export const DashboardBIHospitalar: React.FC<DashboardBIProps> = ({ periodoMeses
 
   if (!dados || dados.length === 0) {
     return (
-      <Card className="border-yellow-500">
-        <CardContent className="p-6 text-center">
-          <AlertTriangle className="w-12 h-12 mx-auto text-yellow-500 mb-2" />
-          <p className="font-semibold mb-2">Nenhum dado importado</p>
-          <p className="text-sm text-muted-foreground mb-4">
-            Importe dados do sistema V3 para visualizar o Dashboard BI
-          </p>
-          <Button onClick={() => setImportDialogOpen(true)} className="gap-2">
-            <Upload className="w-4 h-4" />
-            Importar Dados
-          </Button>
-        </CardContent>
-      </Card>
+      <>
+        <Card className="border-yellow-500">
+          <CardContent className="p-6 text-center">
+            <AlertTriangle className="w-12 h-12 mx-auto text-yellow-500 mb-2" />
+            <p className="font-semibold mb-2">Nenhum dado importado</p>
+            <p className="text-sm text-muted-foreground mb-4">
+              Importe dados do sistema V3 para visualizar o Dashboard BI
+            </p>
+            <Button onClick={() => setImportDialogOpen(true)} className="gap-2">
+              <Upload className="w-4 h-4" />
+              Importar Dados
+            </Button>
+          </CardContent>
+        </Card>
+        <BIDataImport open={importDialogOpen} onOpenChange={setImportDialogOpen} />
+      </>
     );
   }
 
