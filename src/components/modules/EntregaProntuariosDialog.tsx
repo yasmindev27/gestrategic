@@ -36,7 +36,7 @@ interface Props {
 }
 
 export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Props) {
-  const { isRecepcao, isClassificacao, isNir, isAdmin, isFaturamento, userId } = useUserRole();
+  const { isRecepcao, isNir, isAdmin, isFaturamento, isEnfermagem, userId } = useUserRole();
   const { toast } = useToast();
   const [fullName, setFullName] = useState("");
 
@@ -56,13 +56,12 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
     if (isAdmin) {
       // Admin segue o fluxo baseado no setor que ele está operando
       if (isNir) return { origem: "NIR", destino: "Faturamento" };
-      if (isClassificacao) return { origem: "Classificação", destino: "NIR" };
-      if (isRecepcao) return { origem: "Recepção", destino: "Classificação" };
+      if (isRecepcao) return { origem: "Recepção", destino: "Enfermagem" };
       // Admin puro: padrão NIR → Faturamento
       return { origem: "NIR", destino: "Faturamento" };
     }
-    if (isRecepcao) return { origem: "Recepção", destino: "Classificação" };
-    if (isClassificacao) return { origem: "Classificação", destino: "NIR" };
+    if (isRecepcao) return { origem: "Recepção", destino: "Enfermagem" };
+    if (isEnfermagem) return { origem: "Enfermagem", destino: "NIR" };
     if (isNir) return { origem: "NIR", destino: "Faturamento" };
     if (isFaturamento) return { origem: "Faturamento", destino: "Arquivo" };
     return null;
@@ -80,7 +79,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
       setSearchPaciente("");
       setColabResults([]);
     }
-  }, [open, userId, isClassificacao, isNir, isRecepcao, isAdmin]);
+  }, [open, userId, isNir, isRecepcao, isAdmin, isEnfermagem]);
 
   useEffect(() => {
     if (!open || !userId) return;
@@ -93,7 +92,7 @@ export function EntregaProntuariosDialog({ open, onOpenChange, onSuccess }: Prop
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [searchPaciente, open, userId, isClassificacao, isNir, isRecepcao, isAdmin]);
+  }, [searchPaciente, open, userId, isNir, isRecepcao, isAdmin, isEnfermagem]);
 
   const fetchUserName = async () => {
     if (!userId) return;

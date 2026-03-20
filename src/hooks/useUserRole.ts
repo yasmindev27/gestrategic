@@ -139,7 +139,6 @@ export const useUserRole = () => {
   const isAdmin = state.roles.includes("admin");
   const isGestor = state.roles.includes("gestor");
   const isRecepcao = state.roles.includes("recepcao");
-  const isClassificacao = state.roles.includes("classificacao");
   const isNir = state.roles.includes("nir");
   const isFaturamento = state.roles.includes("faturamento");
   const isTI = state.roles.includes("ti");
@@ -163,7 +162,7 @@ export const useUserRole = () => {
   const isTecnico = isTI || isManutencao || isEngenhariaCinica || isLaboratorio;
 
   // Permissões específicas por módulo
-  const canAccessSaidaProntuarios = isAdmin || isRecepcao || isClassificacao || isNir || isFaturamento;
+  const canAccessSaidaProntuarios = isAdmin || isRecepcao || isNir || isFaturamento || isEnfermagem;
   const canAccessControleFichas = isAdmin || isRecepcao;
   const canAccessAvaliacaoProntuarios = isAdmin || isFaturamento;
   const canAccessEquipe = isAdmin || isGestor;
@@ -180,7 +179,6 @@ export const useUserRole = () => {
     isAdmin,
     isGestor,
     isRecepcao,
-    isClassificacao,
     isNir,
     isFaturamento,
     isTI,

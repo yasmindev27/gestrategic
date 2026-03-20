@@ -122,7 +122,7 @@ interface EntregaInfo {
 }
 
 export const SaidaProntuariosModule = () => {
-  const { isRecepcao, isClassificacao, isNir, isAdmin, isFaturamento, isEnfermagem, userId, role, isLoading: isLoadingRole } = useUserRole();
+  const { isRecepcao, isNir, isAdmin, isFaturamento, isEnfermagem, userId, role, isLoading: isLoadingRole } = useUserRole();
   const { logAction } = useLogAccess();
   const { toast } = useToast();
   
@@ -204,11 +204,11 @@ export const SaidaProntuariosModule = () => {
   const [deletingSaida, setDeletingSaida] = useState<SaidaProntuario | null>(null);
   const [importarOpen, setImportarOpen] = useState(false);
 
-  const canAccess = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento || isEnfermagem;
-  const canInsert = isRecepcao || isClassificacao || isNir || isAdmin || isFaturamento || isEnfermagem;
-  const canValidateClassificacao = isClassificacao || isAdmin || isEnfermagem;
+  const canAccess = isRecepcao || isNir || isAdmin || isFaturamento || isEnfermagem;
+  const canInsert = isRecepcao || isNir || isAdmin || isFaturamento || isEnfermagem;
+  const canValidateClassificacao = isAdmin || isEnfermagem;
   const canValidateNir = isNir || isAdmin || isEnfermagem;
-  const isFullAccessRole = isFaturamento || isAdmin || isNir || isClassificacao || isEnfermagem;
+  const isFullAccessRole = isFaturamento || isAdmin || isNir || isEnfermagem;
 
   // Data de referência no fuso de Brasília (UTC-3) com offset explícito para filtros de created_at
   const hoje = getBrasiliaDateString();
@@ -423,7 +423,7 @@ export const SaidaProntuariosModule = () => {
             let origem_pendencia: string | undefined;
             if (match.status === "pendente" || match.status === "aguardando_pendencia") {
               if (match.conferido_nir_em) origem_pendencia = "NIR";
-              else if (match.validado_classificacao_em) origem_pendencia = "Classificação";
+              else if (match.validado_classificacao_em) origem_pendencia = "Enfermagem";
               else origem_pendencia = "Recepção";
             }
             vinculadosMap[folha.id] = {
@@ -977,7 +977,7 @@ export const SaidaProntuariosModule = () => {
   const filteredFaltantesSalus = faltantesSalus;
 
   const defaultStatusFilter =
-    isClassificacao && !isAdmin && !isNir && !isFaturamento ? "todos" : "em_fluxo";
+    false ? "todos" : "em_fluxo";
 
   const clearFilters = () => {
     setSearchTerm("");
@@ -1215,7 +1215,7 @@ export const SaidaProntuariosModule = () => {
         </div>
         <div className="flex flex-wrap gap-2">
           {isNir && <SalusImportModule />}
-          {!isRecepcao && !isClassificacao && (
+          {!isRecepcao && (
             <>
               {isAdmin && (
               <TooltipProvider>
@@ -1365,7 +1365,7 @@ export const SaidaProntuariosModule = () => {
                 </DialogContent>
               </Dialog>
 
-              {!isClassificacao && <Dialog open={newFolhaAvulsaOpen} onOpenChange={setNewFolhaAvulsaOpen}>
+              <Dialog open={newFolhaAvulsaOpen} onOpenChange={setNewFolhaAvulsaOpen}>
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1446,9 +1446,9 @@ export const SaidaProntuariosModule = () => {
                     </Button>
                   </DialogFooter>
                 </DialogContent>
-              </Dialog>}
+              </Dialog>
 
-              {(isNir || isAdmin || isRecepcao || isClassificacao || isFaturamento) && (
+              {(isNir || isAdmin || isRecepcao || isFaturamento) && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger asChild>
@@ -1536,7 +1536,7 @@ export const SaidaProntuariosModule = () => {
                           <SelectItem value="aguardando_faturamento">Aguardando Faturamento</SelectItem>
                           <SelectItem value="concluido">Concluído</SelectItem>
                         </>
-                      ) : (isRecepcao || isClassificacao) && !isAdmin && !isNir && !isFaturamento ? (
+                      ) : (isRecepcao) && !isAdmin && !isNir && !isFaturamento ? (
                         <>
                           <SelectItem value="em_fluxo">Em Fluxo (não concluídos)</SelectItem>
                           <SelectItem value="todos">Todos</SelectItem>
@@ -1871,7 +1871,7 @@ export const SaidaProntuariosModule = () => {
                         </TableCell>
                         <TableCell className="py-1.5 whitespace-nowrap">
                           {(() => {
-                            const entrega = entregasMap[saida.id]?.find(e => e.setor_origem === "Classificação");
+                            const entrega = entregasMap[saida.id]?.find(e => e.setor_origem === "Classificação" || e.setor_origem === "Enfermagem");
                             if (!entrega) return <span className="text-muted-foreground">-</span>;
                             return (
                               <Popover>

@@ -40,7 +40,7 @@ const Sidebar = ({
   const { toast } = useToast();
   const {
     role, isAdmin, isGestor, isTI, isManutencao, isEngenhariaCinica,
-    isLaboratorio, isTecnico, isRecepcao, isClassificacao, isNir,
+    isLaboratorio, isTecnico, isRecepcao, isNir,
     isFaturamento, isRHDP, isQualidade, isNSP, isMedicos, isEnfermagem,
     isSeguranca, isAssistenciaSocial, isRestaurante, isRouparia,
     isGerenteAdministrativo, isFarmaceuticoRT, isCoordenadorMedico,

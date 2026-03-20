@@ -55,7 +55,7 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [activeSection, setActiveSection] = useState("");
   const [externalUrl, setExternalUrl] = useState<{ url: string; title: string } | null>(null);
-  const { isNir, isRecepcao, isFaturamento, isClassificacao, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isLoading: isLoadingRole } = useUserRole();
+  const { isNir, isRecepcao, isFaturamento, isEnfermagem, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, isLoading: isLoadingRole } = useUserRole();
   const { canAccessModule } = useModules();
 
   // Segurança: logout automático por inatividade (15 min) — LGPD / UPA
@@ -98,8 +98,8 @@ const Dashboard = () => {
         setActiveSection("recepcao");
       } else if (isFaturamento) {
         setActiveSection("faturamento");
-      } else if (isClassificacao) {
-        setActiveSection("faturamento");
+      } else if (isEnfermagem) {
+        setActiveSection("saida_prontuarios");
       } else if (isTI) {
         setActiveSection("tecnico-ti");
       } else if (isManutencao) {
@@ -112,7 +112,7 @@ const Dashboard = () => {
         setActiveSection("dashboard");
       }
     }
-  }, [isLoadingRole, isNir, isRecepcao, isFaturamento, isClassificacao, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, activeSection]);
+  }, [isLoadingRole, isNir, isRecepcao, isFaturamento, isEnfermagem, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, activeSection]);
 
   // Memoized section change handler
   const handleSectionChange = useCallback((section: string) => {
