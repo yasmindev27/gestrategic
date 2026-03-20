@@ -16,6 +16,7 @@ import { RegistrosRefeicoes } from "@/components/restaurante/RegistrosRefeicoes"
 import { RelatorioQuantitativoRefeicoes } from "@/components/restaurante/RelatorioQuantitativoRefeicoes";
 import { ColaboradoresManager } from "@/components/restaurante/ColaboradoresManager";
 import { TentativasDuplicidade } from "@/components/restaurante/TentativasDuplicidade";
+import { RegistroDietasLote } from "@/components/restaurante/RegistroDietasLote";
 import { useToast } from "@/hooks/use-toast";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
@@ -155,6 +156,7 @@ export const RestauranteModule = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userName, setUserName] = useState("");
+  const [userId, setUserId] = useState("");
   const [formData, setFormData] = useState({
     paciente_nome: "",
     paciente_data_nascimento: "",
@@ -227,6 +229,7 @@ export const RestauranteModule = () => {
       }
     } = await supabase.auth.getUser();
     if (user) {
+      setUserId(user.id);
       const {
         data: profile
       } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).single();
@@ -309,7 +312,24 @@ export const RestauranteModule = () => {
     }
   };
 
-  // Combinar registros de dieta e refeições para o registro geral
+  // Função para refetch apenas das minhas solicitações
+  const refetchMinhas = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const { data: minhasData, error } = await supabase
+          .from("solicitacoes_dieta")
+          .select("*")
+          .eq("solicitante_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(200);
+        if (error) throw error;
+        setMinhasSolicitacoes(minhasData || []);
+      }
+    } catch (error) {
+      console.error("Erro ao refetch minhas solicitações:", error);
+    }
+  };
   // Usar mesma lógica do Quantitativo: dietas ATIVAS no período (não apenas as que iniciaram no período)
   const registrosGerais: RegistroGeral[] = [...todasSolicitacoes.filter(s => {
     // Dieta está ativa se: começou antes/durante o período E termina durante/depois do período
@@ -1002,6 +1022,16 @@ export const RestauranteModule = () => {
 
         {/* Dietas Tab */}
         <TabsContent value="solicitar" className="space-y-4">
+          {/* Registro de Dietas em Lote */}
+          <RegistroDietasLote 
+            userName={userName || "Usuário"} 
+            userId={userId} 
+            onSuccess={() => {
+              toast({ title: "Sucesso", description: "Dietas registradas com sucesso!" });
+              refetchMinhas();
+            }}
+          />
+
           <Card>
             <CardHeader>
               <div className="flex flex-col gap-4">
@@ -1012,7 +1042,7 @@ export const RestauranteModule = () => {
                   </div>
                   <Button onClick={() => setDialogOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
-                    Nova Solicitação
+                    Nova Solicitação Individual
                   </Button>
                 </div>
                 
