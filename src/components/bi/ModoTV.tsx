@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useKPIsOperacionais, useKPIsFinanceiros, useKPIsQualidade, useKPIsRH } from '@/hooks/useKPIsHospitalar';
 import { useTendenciaFinanceira, useTendenciaOcupacao, useTendenciaIncidentes, useTendenciaDRE } from '@/hooks/useBITrends';
-import { ChevronRight, Clock, Pause, Play, ExternalLink } from 'lucide-react';
+import { ChevronRight, Clock, Pause, Play, ExternalLink, Stethoscope } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
