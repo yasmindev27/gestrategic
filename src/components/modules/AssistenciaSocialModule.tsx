@@ -930,7 +930,7 @@ export const AssistenciaSocialModule = () => {
               // TODO: Implementar salvamento da evolução no banco de dados
               setEvolucaoDialog(false);
               setEvolucaoForm({ descricao: "", observacoes: "" });
-              toast.success("Evolução registrada com sucesso");
+              toast({ title: "Evolução registrada com sucesso" });
             }} disabled={!evolucaoForm.descricao.trim()}>
               Registrar Evolução
             </Button>
