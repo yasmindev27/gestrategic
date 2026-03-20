@@ -156,7 +156,6 @@ export const RestauranteModule = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userName, setUserName] = useState("");
-  const [userId, setUserId] = useState("");
   const [formData, setFormData] = useState({
     paciente_nome: "",
     paciente_data_nascimento: "",
@@ -229,7 +228,6 @@ export const RestauranteModule = () => {
       }
     } = await supabase.auth.getUser();
     if (user) {
-      setUserId(user.id);
       const {
         data: profile
       } = await supabase.from("profiles").select("full_name").eq("user_id", user.id).single();
