@@ -246,7 +246,7 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
   const {
     role, userId, isAdmin, isGestor, isTI, isManutencao,
     isEngenhariaCinica, isLaboratorio, isFaturamento,
-    isRecepcao, isNir, isTecnico
+    isRecepcao, isNir, isEnfermagem, isCoordenadorEnfermagem, isTecnico
   } = useUserRole();
   useRealtimeSync(REALTIME_PRESETS.dashboard);
 
@@ -523,7 +523,7 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
               onClick={() => onNavigate?.("logs")}
             />
           )}
-          {(isFaturamento || isRecepcao || isNir || isAdmin) && (
+          {(isFaturamento || isRecepcao || isNir || isEnfermagem || isCoordenadorEnfermagem || isAdmin) && (
             <KPICard
               title="Saídas Registradas"
               value={String(stats.prontuariosPendentes)}
@@ -531,7 +531,7 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
               icon={FileText}
               variant="primary"
               loading={loading}
-              onClick={() => onNavigate?.("saida-prontuarios")}
+              onClick={() => onNavigate?.("faturamento")}
             />
           )}
           <KPICard
