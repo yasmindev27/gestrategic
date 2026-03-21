@@ -126,6 +126,21 @@ export const SaidaProntuariosModule = () => {
   const { logAction } = useLogAccess();
   const { toast } = useToast();
   
+  // Debug: log permissions
+  useEffect(() => {
+    console.log("[SaidaProntuariosModule] Permissions:", {
+      isAdmin,
+      isRecepcao,
+      isNir,
+      isFaturamento,
+      isEnfermagem,
+      role,
+      userId,
+      isLoadingRole,
+      canAccess: isRecepcao || isNir || isAdmin || isFaturamento || isEnfermagem
+    });
+  }, [isAdmin, isRecepcao, isNir, isFaturamento, isEnfermagem, role, userId, isLoadingRole]);
+  
   const [saidas, setSaidas] = useState<SaidaProntuario[]>([]);
   const [folhasAvulsas, setFolhasAvulsas] = useState<SaidaProntuario[]>([]);
   const [faltantesSalus, setFaltantesSalus] = useState<SaidaProntuario[]>([]);
@@ -272,6 +287,12 @@ export const SaidaProntuariosModule = () => {
         folhasCountQueryBase,
         faltantesCountQueryBase,
       ]);
+      console.log("[fetchCounts] Initial counts:", {
+        total: regularCount.count ?? 0,
+        hoje: regularHojeCount.count ?? 0,
+        folhas: folhasCount.count ?? 0,
+        salus: salusCount.count ?? 0
+      });
       setTotalSaidasCount(regularCount.count ?? 0);
       setTotalSaidasHojeCount(regularHojeCount.count ?? 0);
       setTotalFolhasCount(folhasCount.count ?? 0);
@@ -319,6 +340,13 @@ export const SaidaProntuariosModule = () => {
     countQuery = applySaidasFilters(countQuery);
 
     const [{ data, error }, { count: filteredCount }] = await Promise.all([query, countQuery]);
+    console.log("[fetchSaidasPage] Query result:", {
+      dataLength: data?.length ?? 0,
+      filteredCount,
+      error: error?.message,
+      statusFilter,
+      searchTerm: debouncedSearchTerm
+    });
     if (!error && data) {
       setSaidas(data as SaidaProntuario[]);
       fetchEntregas(data.map((d: any) => d.id));
