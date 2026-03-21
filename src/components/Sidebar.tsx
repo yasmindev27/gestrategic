@@ -306,6 +306,7 @@ const Sidebar = ({
         { icon: Ambulance, label: "NIR", id: "nir", category: "assistencial" },
         { icon: Heart, label: "Assist. Social/Psicologia", id: "assistencia-social", category: "assistencial" },
         { icon: BedDouble, label: "Mapa de Leitos", id: "mapa-leitos", category: "assistencial" },
+        { icon: Receipt, label: "Faturamento", id: "faturamento", category: "assistencial" },
         { icon: UtensilsCrossed, label: "Restaurante", id: "restaurante", category: "apoio_logistica" },
         { icon: Calendar, label: "Agenda", id: "agenda", category: "comunicacao" },
       );
