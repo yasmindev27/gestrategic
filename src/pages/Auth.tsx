@@ -128,12 +128,15 @@ const Auth = () => {
     setIsLoading(false);
 
     if (error) {
-      let errorMessage = "Erro ao fazer login";
+      console.error("Login error details:", error.message, error.status);
+      let errorMessage = "Email/matrícula ou senha incorretos. Tente novamente ou contate o administrador.";
       
       if (error.message.includes("Invalid login credentials")) {
-        errorMessage = "Email/matrícula ou senha incorretos";
+        errorMessage = "Email/matrícula ou senha incorretos. Verifique suas credenciais.";
       } else if (error.message.includes("Email not confirmed")) {
-        errorMessage = "Por favor, confirme seu email antes de fazer login";
+        errorMessage = "Por favor, confirme seu email antes de fazer login.";
+      } else if (error.message.includes("too many requests") || error.status === 429) {
+        errorMessage = "Muitas tentativas de login. Aguarde alguns minutos e tente novamente.";
       }
       
       toast({
