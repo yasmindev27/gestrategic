@@ -71,7 +71,7 @@ const ImportEquipeDialog = ({ open, onOpenChange, type }: ImportEquipeDialogProp
 
   const downloadTemplateColaboradores = () => {
     const template = [
-      { Nome: "JOÃO DA SILVA", Tipo: "medico", "Registro Profissional": "CRM 12345", Especialidade: "Clínico Geral", Telefone: "(14) 99999-9999", Email: "joao@email.com" },
+      { Nome: "JOÃO DA SILVA", Tipo: "medico", "Registro Profissional": "CRM 12345", Especialidade: "Clínico Geral", Telefone: "(37) 99142-1269", Email: "joao@email.com" },
       { Nome: "MARIA SANTOS", Tipo: "enfermagem", "Registro Profissional": "COREN 54321", Especialidade: "UTI", Telefone: "(14) 88888-8888", Email: "maria@email.com" },
     ];
     const ws = XLSX.utils.json_to_sheet(template);

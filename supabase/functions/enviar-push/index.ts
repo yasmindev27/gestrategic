@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const vapidPublicKey = Deno.env.get("VAPID_PUBLIC_KEY");
     const vapidPrivateKey = Deno.env.get("VAPID_PRIVATE_KEY");
-    const vapidSubject = "mailto:contato@gestrategic.com.br";
+    const vapidSubject = "https://gestrategic.com.br";
 
     if (!vapidPublicKey || !vapidPrivateKey) {
       return new Response(
