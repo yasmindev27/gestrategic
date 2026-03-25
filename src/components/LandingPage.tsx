@@ -423,7 +423,7 @@ const LandingPage = () => {
                   {[
                     { label: "Conformidade LGPD", pct: 100 },
                     { label: "Criptografia de dados", pct: 100 },
-                    { label: "Controles de acesso", pct: 98 },
+                    { label: "Controles de acesso", pct: 100 },
                     { label: "Políticas de backup", pct: 100 },
                   ].map((item) => (
                     <div key={item.label} className="space-y-2">
@@ -515,12 +515,12 @@ const LandingPage = () => {
             </div>
 
             <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
-              <a href="https://gestrategic.com.br" className="group flex flex-col items-center text-center p-8 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1" style={{ background: C.surfaceLight, border: `1px solid ${C.cardBorder}` }}>
+              <a href="mailto:gestrategic@saude.com.br" className="group flex flex-col items-center text-center p-8 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1" style={{ background: C.surfaceLight, border: `1px solid ${C.cardBorder}` }}>
                 <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 transition-colors" style={{ background: "rgba(26,83,92,0.08)" }}>
                   <Mail className="w-6 h-6" style={{ color: C.primary }} />
                 </div>
                 <h3 className="font-bold mb-1" style={{ color: C.textBody }}>E-mail</h3>
-                <p className="text-sm font-medium" style={{ color: C.primary }}>gestrategic.com.br</p>
+                <p className="text-sm font-medium" style={{ color: C.primary }}>gestrategic@saude.com.br</p>
               </a>
 
               <a href="tel:+5514999999999" className="group flex flex-col items-center text-center p-8 rounded-2xl hover:shadow-xl transition-all duration-300 hover:-translate-y-1" style={{ background: C.surfaceLight, border: `1px solid ${C.cardBorder}` }}>
@@ -596,7 +596,7 @@ const LandingPage = () => {
               <div>
                 <h4 className="text-white font-semibold text-sm mb-4">Contato</h4>
                 <ul className="space-y-2">
-                  <li className="flex items-center gap-2 text-xs"><Mail className="w-3.5 h-3.5" /> gestrategic.com.br</li>
+                  <li className="flex items-center gap-2 text-xs"><Mail className="w-3.5 h-3.5" /> gestrategic@saude.com.br</li>
                   <li className="flex items-center gap-2 text-xs"><Phone className="w-3.5 h-3.5" /> (37) 99142-1269</li>
                   <li className="flex items-center gap-2 text-xs"><MapPin className="w-3.5 h-3.5" /> Belo Horizonte - MG</li>
                 </ul>
