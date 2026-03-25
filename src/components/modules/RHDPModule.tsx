@@ -5,6 +5,8 @@ import { Clock, FileText, ShieldX, ClipboardList, Users, UserCog, AlertTriangle,
 import { useUserRole } from "@/hooks/useUserRole";
 import { useLogAccess } from "@/hooks/useLogAccess";
 import { BancoHorasSection } from "@/components/rhdp/BancoHorasSection";
+import { JustificativaPontoSection } from "@/components/rhdp/JustificativaPontoSection";
+import { TrocasPlantcoesHistorico } from "@/components/rhdp/TrocasPlantcoesHistorico";
 import { CentralAtestadosSection } from "@/components/rhdp/CentralAtestadosSection";
 import { FormulariosSection } from "@/components/rhdp/FormulariosSection";
 import { MovimentacoesDisciplinarSection } from "@/components/rhdp/MovimentacoesDisciplinarSection";
@@ -17,6 +19,8 @@ import { cn } from "@/lib/utils";
 
 const RHDP_NAV_ITEMS = [
   { id: 'banco-horas', label: 'Banco de Horas', icon: Clock },
+  { id: 'pontos', label: 'Pontos', icon: Clock },
+  { id: 'troca-plantao', label: 'Troca de Plantão', icon: Users },
   { id: 'atestados', label: 'Atestados', icon: FileText },
   { id: 'aso', label: 'ASO', icon: Stethoscope },
   { id: 'escalas', label: 'Escalas', icon: CalendarDays },
@@ -75,32 +79,46 @@ export const RHDPModule = () => {
 
   const renderContent = () => {
     switch (activeTab) {
-      case 'banco-horas': return <BancoHorasSection />;
-      case 'atestados': return <CentralAtestadosSection />;
-      case 'aso': return <ASOControl />;
-      case 'escalas': return (
-        <Tabs value={escalasSubTab} onValueChange={setEscalasSubTab}>
-          <TabsList className="flex flex-wrap h-auto gap-1">
+      case 'banco-horas':
+        return <BancoHorasSection />;
+      case 'pontos':
+        return <JustificativaPontoSection />;
+      case 'troca-plantao':
+        return <TrocasPlantcoesHistorico />;
+      case 'atestados':
+        return <CentralAtestadosSection />;
+      case 'aso':
+        return <ASOControl />;
+      case 'escalas':
+        return (
+          <Tabs value={escalasSubTab} onValueChange={setEscalasSubTab}>
+            <TabsList className="flex flex-wrap h-auto gap-1">
+              {ESCALAS_SUB_ITEMS.map(item => (
+                <TabsTrigger key={item.id} value={item.id} className="gap-2">
+                  <item.icon className="h-4 w-4" />
+                  {item.label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
             {ESCALAS_SUB_ITEMS.map(item => (
-              <TabsTrigger key={item.id} value={item.id} className="gap-2">
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </TabsTrigger>
+              <TabsContent key={item.id} value={item.id} className="mt-4">
+                <EscalaTecEnfermagem tipo={item.id as any} />
+              </TabsContent>
             ))}
-          </TabsList>
-          {ESCALAS_SUB_ITEMS.map(item => (
-            <TabsContent key={item.id} value={item.id} className="mt-4">
-              <EscalaTecEnfermagem tipo={item.id as any} />
-            </TabsContent>
-          ))}
-        </Tabs>
-      );
-      case 'formularios': return <FormulariosSection />;
-      case 'disciplinar': return <MovimentacoesDisciplinarSection />;
-      case 'profissionais': return <ProfissionaisSaude />;
-      case 'avaliacao': return <AvaliacaoDesempenhoSection />;
-      case 'experiencia': return <AvaliacaoExperienciaSection />;
-      default: return null;
+          </Tabs>
+        );
+      case 'formularios':
+        return <FormulariosSection />;
+      case 'disciplinar':
+        return <MovimentacoesDisciplinarSection />;
+      case 'profissionais':
+        return <ProfissionaisSaude />;
+      case 'avaliacao':
+        return <AvaliacaoDesempenhoSection />;
+      case 'experiencia':
+        return <AvaliacaoExperienciaSection />;
+      default:
+        return null;
     }
   };
 
