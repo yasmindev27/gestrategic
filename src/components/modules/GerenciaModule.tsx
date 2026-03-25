@@ -522,6 +522,10 @@ export function GerenciaModule() {
             <Users className="h-4 w-4" />
             Gestão de Talentos
           </TabsTrigger>
+          <TabsTrigger value="plano-desenvolvimento" className="gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Plano Desenvolvimento
+          </TabsTrigger>
         </TabsList>
 
         {/* -- Tab: BI Hospitalar -- */}
