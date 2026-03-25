@@ -848,6 +848,10 @@ export function GerenciaModule() {
           <GestaoTalentos />
         </TabsContent>
 
+        <TabsContent value="plano-desenvolvimento" className="mt-4">
+          <PlanoDesenvolvimentoSection />
+        </TabsContent>
+
       </Tabs>
 
       {/* New Plan Dialog */}
