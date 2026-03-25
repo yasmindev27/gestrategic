@@ -316,98 +316,55 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
     setLoading(true);
     try {
       const hojeStr = getBrasiliaDateString();
+      // Buscar todos os leitos ativos e ocupados (sem alta)
+      const { data: leitosData } = await supabase
+        .from("bed_records")
+        .select("id, bed_id, bed_number, sector, patient_name, motivo_alta, data_alta, data_obito")
+        .eq("ativo", true);
 
-      // Detect current shift in Brasília timezone (system standard)
-      const brasiliaNow = getBrasiliaDate();
-      const hour = brasiliaNow.getHours();
-      const isNoturno = hour >= 19 || hour < 7;
-      const shiftDate = new Date(brasiliaNow);
-      if (isNoturno && hour < 7) {
-        shiftDate.setDate(shiftDate.getDate() - 1);
-      }
-      const shiftDateStr = `${shiftDate.getFullYear()}-${String(shiftDate.getMonth() + 1).padStart(2, "0")}-${String(shiftDate.getDate()).padStart(2, "0")}`;
-      const shiftType = isNoturno ? "noturno" : "diurno";
+      // Ocupação de leitos: leitos com paciente e sem alta
+      const leitosOcupados = (leitosData || []).filter(r => r.patient_name && !r.motivo_alta && !r.data_alta).length;
+      const totalLeitos = SECTORS.reduce((sum, s) => sum + s.beds.length + (s.extraBeds?.length || 0), 0);
 
-      const [chamadosData, tarefasData, saidasData, escalasData, incidentesData, chamadosManutData, leitosData] = await Promise.all([
-        supabase.from("chamados").select("status, data_abertura", { count: "exact" }),
-        supabase.rpc("get_tarefas_pendentes_count", { _user_id: userId }),
-        supabase.from("saida_prontuarios").select("id", { count: "exact", head: true }).eq("is_folha_avulsa", false),
-        supabase.from("escalas_laboratorio").select("id", { count: "exact", head: true })
-          .eq("dia", new Date().getDate()).eq("mes", new Date().getMonth() + 1).eq("ano", new Date().getFullYear()),
-        supabase.from("incidentes_nsp").select("id", { count: "exact", head: true })
-          .eq("status", "aberto").gte("created_at", `${hojeStr}T00:00:00`),
-        supabase.from("chamados").select("id", { count: "exact", head: true })
-          .eq("categoria", "manutencao").neq("status", "resolvido"),
-        supabase.from("bed_records").select("id, bed_id, bed_number, sector, patient_name, motivo_alta, data_alta", { count: "exact" })
-          .eq("shift_date", shiftDateStr)
-          .eq("shift_type", shiftType),
-      ]);
+      // Pacientes ativos: pacientes únicos em leitos ocupados
+      const pacientesAtivos = Array.from(new Set((leitosData || [])
+        .filter(r => r.patient_name && !r.motivo_alta && !r.data_alta)
+        .map(r => r.patient_name))).length;
 
-      const chamados = chamadosData.data || [];
-      const chamadosAbertos = chamados.filter(c => c.status === "aberto").length;
-      const chamadosPendentes = chamados.filter(c => c.status === "em_andamento").length;
-      const chamadosResolvidos = chamados.filter(c => c.status === "resolvido").length;
-      const chamadosHoje = chamados.filter(c => c.data_abertura?.startsWith(hojeStr)).length;
+      // Eficiência operacional: % de leitos ocupados
+      const eficienciaOperacional = totalLeitos > 0 ? Math.round((leitosOcupados / totalLeitos) * 100) : 0;
 
-      const { data: agendaData } = await supabase.from("agenda_items").select("id", { count: "exact" }).gte("data_inicio", hojeStr);
+      // Taxa de mortalidade: óbitos no mês atual / pacientes internados no mês
+      const mesAtual = hojeStr.slice(0, 7);
+      const obitosMes = (leitosData || []).filter(r => r.data_obito && r.data_obito.startsWith(mesAtual)).length;
+      const internacoesMes = (leitosData || []).filter(r => r.data_alta && r.data_alta.startsWith(mesAtual)).length;
+      const taxaMortalidade = internacoesMes > 0 ? Math.round((obitosMes / internacoesMes) * 100) : 0;
 
-      let colaboradoresSobGestao = 0;
-      if (isGestor || isAdmin) {
-        const { data: colabData } = await supabase.rpc("get_usuarios_sob_gestao", { _gestor_id: userId });
-        colaboradoresSobGestao = colabData?.length || 0;
-      }
-
-      let logsHoje = 0;
-      if (isAdmin) {
-        const { count } = await supabase.from("logs_acesso").select("id", { count: "exact", head: true }).gte("created_at", `${hojeStr}T00:00:00`);
-        logsHoje = count || 0;
+      // Tendência de ocupação (últimos 14 dias)
+      // Para cada dia, calcular leitos ocupados naquele dia
+      const tendenciaOcupacao: { dia: string, ocupacao: number }[] = [];
+      for (let i = 13; i >= 0; i--) {
+        const dataRef = new Date();
+        dataRef.setDate(dataRef.getDate() - i);
+        const dataStr = dataRef.toISOString().slice(0, 10);
+        const ocupadosNoDia = (leitosData || []).filter(r => {
+          // Paciente estava internado neste dia
+          const dataEntrada = r.created_at ? r.created_at.slice(0, 10) : dataStr;
+          const dataAlta = r.data_alta ? r.data_alta.slice(0, 10) : null;
+          return dataEntrada <= dataStr && (!dataAlta || dataAlta > dataStr);
+        }).length;
+        tendenciaOcupacao.push({ dia: format(dataRef, "dd/MM"), ocupacao: ocupadosNoDia });
       }
 
-      let capacitacoesPendentes = 0;
-      const { count: capCount } = await supabase.from("lms_inscricoes").select("id", { count: "exact", head: true })
-        .eq("usuario_id", userId).neq("status", "capacitado");
-      capacitacoesPendentes = capCount || 0;
-
-      // Leitos ocupados — plantão atual + sem alta + deduplicado por leito
-      const TOTAL_BEDS_CAPACITY = SECTORS.reduce((sum, s) => sum + s.beds.length + (s.extraBeds?.length || 0), 0);
-      const occupiedBedKeys = new Set(
-        (leitosData.data || [])
-          .filter(r => r.patient_name && r.patient_name.trim() !== "" && !r.motivo_alta && !r.data_alta)
-          .map(r => r.bed_id || `${r.sector ?? "setor"}:${r.bed_number ?? r.id}`)
-      );
-      const leitosOcupados = occupiedBedKeys.size;
-
-      // Conformidade de dietas — calcular baseado em registros reais
-      let conformidadeDietas = 0;
-      try {
-        const { count: totalRefeicoes } = await supabase
-          .from("refeicoes_registros")
-          .select("id", { count: "exact", head: true })
-          .gte("created_at", `${hojeStr}T00:00:00`);
-        // Se há registros hoje, conformidade = 100%, senão 0
-        // Em cenário real, poderia comparar com expectativa de dietas programadas
-        conformidadeDietas = (totalRefeicoes || 0) > 0 ? 100 : 0;
-      } catch {
-        conformidadeDietas = 0;
-      }
-
-      setStats({
-        chamadosAbertos, chamadosPendentes, chamadosHoje, chamadosResolvidos,
-        tarefasPendentes: tarefasData.data || 0,
-        tarefasHoje: agendaData?.length || 0,
-        prontuariosPendentes: saidasData.count || 0,
-        prontuariosAvaliados: 0,
-        produtosEstoqueBaixo: 0,
-        escalasHoje: escalasData.count || 0,
-        colaboradoresSobGestao,
-        logsHoje,
-        capacitacoesPendentes,
+      setStats(prev => ({
+        ...prev,
         leitosOcupados,
-        totalLeitos: TOTAL_BEDS_CAPACITY,
-        incidentesCriticos: incidentesData.count || 0,
-        chamadosManutencao: chamadosManutData.count || 0,
-        conformidadeDietas,
-      });
+        totalLeitos,
+        pacientesAtivos,
+        eficienciaOperacional,
+        taxaMortalidade,
+        tendenciaOcupacao,
+      }));
     } catch (error) {
       // Error loading statistics handled silently
     } finally {

@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+
+export function EnfermagemModule() {
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Activity, Upload, FileCheck, ClipboardCheck, ClipboardList, Radio, BedDouble, Siren, ShieldCheck, Pill, Microscope } from 'lucide-react';
 import { ProtocolosModule } from '@/components/protocolos/ProtocolosModule';
@@ -40,6 +42,7 @@ import { CMEArea } from '@/components/enfermagem/CMEArea';
 import { ClassificacaoArea } from '@/components/enfermagem/ClassificacaoArea';
 import { MedicacaoArea } from '@/components/enfermagem/MedicacaoArea';
 
+export function EnfermagemModule() {
   const navigate = useNavigate();
   const location = useLocation();
   // Tab principal sincronizada com a URL: /dashboard/enfermagem/:tab
