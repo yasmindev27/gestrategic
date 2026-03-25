@@ -38,7 +38,7 @@ export async function userHasRole(userId: string, role: string): Promise<boolean
       .from('user_roles')
       .select('id')
       .eq('user_id', userId)
-      .eq('role', role)
+      .eq('role', role as any)
       .maybeSingle();
 
     if (error && error.code !== 'PGRST116') {

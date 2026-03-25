@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { PlanoDesenvolvimentoSection } from '@/components/gerencia/PlanoDesenvolvimentoSection';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
@@ -521,6 +522,10 @@ export function GerenciaModule() {
             <Users className="h-4 w-4" />
             Gestão de Talentos
           </TabsTrigger>
+          <TabsTrigger value="plano-desenvolvimento" className="gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Plano Desenvolvimento
+          </TabsTrigger>
         </TabsList>
 
         {/* -- Tab: BI Hospitalar -- */}
@@ -841,6 +846,10 @@ export function GerenciaModule() {
         {/* -- Tab: Gestão de Talentos -- */}
         <TabsContent value="talentos" className="mt-4">
           <GestaoTalentos />
+        </TabsContent>
+
+        <TabsContent value="plano-desenvolvimento" className="mt-4">
+          <PlanoDesenvolvimentoSection />
         </TabsContent>
 
       </Tabs>
