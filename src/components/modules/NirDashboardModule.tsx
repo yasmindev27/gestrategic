@@ -167,11 +167,9 @@ export const NirDashboardModule = () => {
         rate: sc.total > 0 ? Math.round((sectorOccupied / sc.total) * 100) : 0,
       };
     });
-    setSectorOccupancy(sectorStats);
 
+    setSectorOccupancy(sectorStats);
     // 3) Admissions & Discharges — query across the selected date range
-    const startDateStr = format(startDate, 'yyyy-MM-dd');
-    const endDateStr = format(endDate, 'yyyy-MM-dd');
 
     const { data: rangeRecords } = await supabase
       .from('bed_records')
