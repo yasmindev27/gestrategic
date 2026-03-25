@@ -159,7 +159,7 @@ export function LaundryStatusTooltip({
     disponivel: "concluido",
     em_lavagem: "em_progresso",
     em_reparo: "pendente",
-    descarte: "rejeitado",
+    descarte: "pendente",
   };
 
   return (
