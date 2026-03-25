@@ -57,8 +57,8 @@ const App = () => (
               <Route path="/transporte" element={<Transporte />} />
               <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
               <Route path="/modo-tv" element={<ModoTVPage />} />
-              {/* Redireciona /dashboard para /dashboard (Dashboard faz o redirect para a seção correta) */}
-              <Route path="/dashboard" element={<Navigate to="/dashboard" replace />} />
+              {/* Renderiza o Dashboard diretamente para evitar loop de redirecionamento */}
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
