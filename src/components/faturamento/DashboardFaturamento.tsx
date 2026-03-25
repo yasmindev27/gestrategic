@@ -108,37 +108,39 @@ export function DashboardFaturamento() {
         ? startOfDay(new Date()).toISOString()
         : subDays(new Date(), rangeToDays[dateRange]).toISOString();
 
-      const pageSize = 1000;
+      // Fetch saidas, avaliacoes, and counts in parallel (limited to 5000 max to avoid freezing)
+      const MAX_ROWS = 5000;
 
-      // Fetch all saidas in range
-      const allSaidas: SaidaProntuario[] = [];
-      let from = 0;
-      while (true) {
-        const { data, error } = await supabase
+      const [saidasRes, avaliacoesRes, totalSaidasRes, totalAvalFinRes] = await Promise.all([
+        supabase
           .from("saida_prontuarios")
           .select("id, status, data_atendimento, created_at")
           .gte("created_at", since)
-          .range(from, from + pageSize - 1);
-        if (error) throw error;
-        allSaidas.push(...((data || []) as SaidaProntuario[]));
-        if ((data || []).length < pageSize) break;
-        from += pageSize;
-      }
-
-      // Fetch all avaliacoes in range
-      const allAvaliacoes: Avaliacao[] = [];
-      from = 0;
-      while (true) {
-        const { data, error } = await supabase
+          .order("created_at", { ascending: false })
+          .limit(MAX_ROWS),
+        supabase
           .from("avaliacoes_prontuarios")
           .select("id, saida_prontuario_id, avaliador_id, is_finalizada, data_inicio, data_conclusao")
           .gte("data_inicio", since)
-          .range(from, from + pageSize - 1);
-        if (error) throw error;
-        allAvaliacoes.push(...((data || []) as Avaliacao[]));
-        if ((data || []).length < pageSize) break;
-        from += pageSize;
-      }
+          .order("data_inicio", { ascending: false })
+          .limit(MAX_ROWS),
+        supabase
+          .from("saida_prontuarios")
+          .select("*", { count: "exact", head: true }),
+        supabase
+          .from("avaliacoes_prontuarios")
+          .select("*", { count: "exact", head: true })
+          .eq("is_finalizada", true)
+          .not("saida_prontuario_id", "is", null),
+      ]);
+
+      if (saidasRes.error) throw saidasRes.error;
+      if (avaliacoesRes.error) throw avaliacoesRes.error;
+      if (totalSaidasRes.error) throw totalSaidasRes.error;
+      if (totalAvalFinRes.error) throw totalAvalFinRes.error;
+
+      const allSaidas = (saidasRes.data || []) as SaidaProntuario[];
+      const allAvaliacoes = (avaliacoesRes.data || []) as Avaliacao[];
 
       // Fetch profiles for avaliadores
       const avaliadorIds = [...new Set(allAvaliacoes.map((a) => a.avaliador_id).filter(Boolean))];
@@ -152,24 +154,9 @@ export function DashboardFaturamento() {
           console.error("[Dashboard Fat] Erro ao buscar profiles:", profilesError);
         }
         profilesData = (data || []) as Profile[];
-        console.log("[Dashboard Fat] Profiles carregados:", profilesData.length, "de", avaliadorIds.length, "IDs");
       }
 
-      // Calcular pendentes gerais usando contagem eficiente
-      const { count: totalSaidasCount, error: errSaidas } = await supabase
-        .from("saida_prontuarios")
-        .select("*", { count: "exact", head: true });
-      if (errSaidas) throw errSaidas;
-
-      const { count: totalAvalFinCount, error: errAvalFin } = await supabase
-        .from("avaliacoes_prontuarios")
-        .select("*", { count: "exact", head: true })
-        .eq("is_finalizada", true)
-        .not("saida_prontuario_id", "is", null);
-      if (errAvalFin) throw errAvalFin;
-
-      const pendentesGeral = (totalSaidasCount || 0) - (totalAvalFinCount || 0);
-      console.log("[Dashboard Fat] saidas:", totalSaidasCount, "avalFin:", totalAvalFinCount, "pendentes:", pendentesGeral);
+      const pendentesGeral = (totalSaidasRes.count || 0) - (totalAvalFinRes.count || 0);
       setTotalPendentesGeral(Math.max(pendentesGeral, 0));
 
       setSaidas(allSaidas);
