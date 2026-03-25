@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Activity, Upload, FileCheck, ClipboardCheck, ClipboardList, Radio, BedDouble, Siren, ShieldCheck, Pill, Microscope } from 'lucide-react';
 import { ProtocolosModule } from '@/components/protocolos/ProtocolosModule';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -40,8 +40,10 @@ import { CMEArea } from '@/components/enfermagem/CMEArea';
 import { ClassificacaoArea } from '@/components/enfermagem/ClassificacaoArea';
 import { MedicacaoArea } from '@/components/enfermagem/MedicacaoArea';
 
-export default function EnfermagemModule() {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Tab principal sincronizada com a URL: /dashboard/enfermagem/:tab
+  const mainTabFromUrl = location.pathname.split('/')[3] || 'operacional';
   const { role, isLoading: roleLoading, userId } = useUserRole();
   const { logAction } = useLogAccess();
   useRealtimeSync(REALTIME_PRESETS.enfermagem);
@@ -52,7 +54,7 @@ export default function EnfermagemModule() {
   const [novaEscalaOpen, setNovaEscalaOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>();
-  const [mainTab, setMainTab] = useState('operacional');
+  // mainTab agora é derivado da URL
   const [operacionalTab, setOperacionalTab] = useState('meus-plantoes');
   const [canAccessProtocolos, setCanAccessProtocolos] = useState(false);
   // scirasTab removed
@@ -336,9 +338,13 @@ export default function EnfermagemModule() {
           {areas.map(({ value, label, icon: Icon }) => (
             <button
               key={value}
-              onClick={() => setMainTab(value)}
+              onClick={() => {
+                if (mainTabFromUrl !== value) {
+                  navigate(`/dashboard/enfermagem/${value}`);
+                }
+              }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left text-[13px] transition-colors ${
-                mainTab === value
+                mainTabFromUrl === value
                   ? "bg-primary text-primary-foreground font-medium"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}

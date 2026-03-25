@@ -1091,6 +1091,10 @@ export const AvaliacaoDesempenhoSection = () => {
               </p>
 
               <div className="mt-4 flex gap-3 flex-wrap">
+                <Button onClick={handleSalvar} disabled={saving} variant="default" className="gap-2">
+                  <Save className="h-4 w-4" />
+                  {saving ? "Salvando..." : "Salvar Avaliação"}
+                </Button>
                 <Button onClick={handleExportAvaliacaoPDF} variant="outline" className="gap-2">
                   <Download className="h-4 w-4" />
                   Exportar Avaliação em PDF
@@ -1275,7 +1279,7 @@ export const AvaliacaoDesempenhoSection = () => {
                 Este formulário destina-se à avaliação do desempenho por competência e deverá ser tratado de forma confidencial.
               </p>
               <div className="flex gap-3 flex-wrap">
-                <Button onClick={handleSalvar} disabled={saving} variant="success" className="gap-2">
+                <Button onClick={handleSalvar} disabled={saving} variant="default" className="gap-2">
                   <Save className="h-4 w-4" />
                   {saving ? "Salvando..." : "Salvar Avaliação"}
                 </Button>

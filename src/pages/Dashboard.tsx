@@ -1,5 +1,5 @@
 import { useState, useEffect, lazy, Suspense, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams, useLocation, Navigate } from "react-router-dom";
 import ExternalViewer from "@/components/ExternalViewer";
 import { supabase } from "@/integrations/supabase/client";
 import { User, Session } from "@supabase/supabase-js";
@@ -51,9 +51,10 @@ const ModuleLoader = () => (
 
 const Dashboard = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const params = useParams();
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [activeSection, setActiveSection] = useState("");
   const [externalUrl, setExternalUrl] = useState<{ url: string; title: string } | null>(null);
   const {
     isNir,
@@ -68,6 +69,11 @@ const Dashboard = () => {
     isLoading: isLoadingRole,
   } = useUserRole();
   const { canAccessModule } = useModules();
+
+  // Extrai a seção da URL: /dashboard/:section?
+  const sectionFromUrl = location.pathname.startsWith("/dashboard/")
+    ? location.pathname.replace("/dashboard/", "").split("/")[0]
+    : location.pathname === "/dashboard" ? "" : null;
 
   // Segurança: logout automático por inatividade (15 min) — LGPD / UPA
   useSessionTimeout(15);
@@ -100,55 +106,37 @@ const Dashboard = () => {
     };
   }, [navigate]);
 
-  // Set initial section based on user role
+  // Redireciona para a seção padrão se não houver seção na URL
   useEffect(() => {
-    if (!isLoadingRole && activeSection === "") {
-      if (isNir) {
-        setActiveSection("nir");
-      } else if (isRecepcao) {
-        setActiveSection("recepcao");
-      } else if (isFaturamento) {
-        setActiveSection("faturamento");
-      } else if (isEnfermagem || isCoordenadorEnfermagem) {
-        setActiveSection("faturamento");
-      } else if (isTI) {
-        setActiveSection("tecnico-ti");
-      } else if (isManutencao) {
-        setActiveSection("tecnico-manutencao");
-      } else if (isEngenhariaCinica) {
-        setActiveSection("tecnico-engenharia");
-      } else if (isLaboratorio) {
-        setActiveSection("laboratorio");
-      } else {
-        setActiveSection("dashboard");
-      }
+    if (!isLoadingRole && sectionFromUrl === "") {
+      let defaultSection = "dashboard";
+      if (isNir) defaultSection = "nir";
+      else if (isRecepcao) defaultSection = "recepcao";
+      else if (isFaturamento) defaultSection = "faturamento";
+      else if (isEnfermagem || isCoordenadorEnfermagem) defaultSection = "faturamento";
+      else if (isTI) defaultSection = "tecnico-ti";
+      else if (isManutencao) defaultSection = "tecnico-manutencao";
+      else if (isEngenhariaCinica) defaultSection = "tecnico-engenharia";
+      else if (isLaboratorio) defaultSection = "laboratorio";
+      // Redireciona para a rota correta
+      navigate(`/dashboard/${defaultSection}`, { replace: true });
     }
-  }, [
-    isLoadingRole,
-    isNir,
-    isRecepcao,
-    isFaturamento,
-    isEnfermagem,
-    isCoordenadorEnfermagem,
-    isTI,
-    isManutencao,
-    isEngenhariaCinica,
-    isLaboratorio,
-    activeSection,
-  ]);
+  }, [isLoadingRole, isNir, isRecepcao, isFaturamento, isEnfermagem, isCoordenadorEnfermagem, isTI, isManutencao, isEngenhariaCinica, isLaboratorio, sectionFromUrl, navigate]);
 
   // Memoized section change handler
   const handleSectionChange = useCallback((section: string) => {
     setExternalUrl(null);
-    setActiveSection(section);
-  }, []);
+    if (sectionFromUrl !== section) {
+      navigate(`/dashboard/${section}`);
+    }
+  }, [navigate, sectionFromUrl]);
 
   const handleOpenExternal = useCallback((url: string, title: string) => {
     setExternalUrl({ url, title });
   }, []);
 
   // Loading state
-  if (isLoading || isLoadingRole || activeSection === "") {
+  if (isLoading || isLoadingRole || sectionFromUrl === null) {
     return <PageLoader />;
   }
 
@@ -200,13 +188,13 @@ const Dashboard = () => {
   // Render active module content - all wrapped in Suspense for lazy loading
   const renderContent = () => {
     // Module access guard
-    const moduleKey = sectionToModule[activeSection];
+    const moduleKey = sectionToModule[sectionFromUrl || "dashboard"];
     if (moduleKey && !canAccessModule(moduleKey)) {
-      return <AccessDenied onTryAgain={() => setActiveSection("dashboard")} />;
+      return <AccessDenied onTryAgain={() => handleSectionChange("dashboard")} />;
     }
 
     const content = (() => {
-      switch (activeSection) {
+      switch (sectionFromUrl) {
         case "dashboard":
           return <DashboardPersonalizado onNavigate={handleSectionChange} />;
         case "faturamento":
@@ -285,7 +273,7 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout
-      activeSection={activeSection}
+      activeSection={sectionFromUrl || "dashboard"}
       onSectionChange={handleSectionChange}
       onOpenExternal={handleOpenExternal}
       fullContent={!!externalUrl}

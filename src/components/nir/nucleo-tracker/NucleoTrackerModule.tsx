@@ -2,6 +2,8 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { getRegistrosDB, getColaboradoresDB, getCurrentUserInfo } from "./storage";
 import { RegistroProducao, Colaborador } from "./types";
 import { StatCard } from "./StatCard";
+import { useAltasInternacoesNIR } from "@/hooks/useAltasInternacoesNIR";
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { RegistroForm } from "./RegistroForm";
 import { RegistrosTable } from "./RegistrosTable";
 import { ProducaoChart } from "./ProducaoChart";
@@ -44,6 +46,28 @@ export function NucleoTrackerModule() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+// KPIs Clínicos NIR: Internações e Altas
+function KPIsClinicosNIR() {
+  const { data, isLoading, isError } = useAltasInternacoesNIR();
+  if (isLoading) return <div>Carregando KPIs clínicos...</div>;
+  if (isError || !data) return <div>Erro ao carregar KPIs clínicos</div>;
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4 my-4">
+      <StatCard
+        title="Internações Clínicas"
+        value={data.totalInternacoes}
+        icon={ArrowDown}
+        color="info"
+      />
+      <StatCard
+        title="Altas Clínicas"
+        value={data.totalAltas}
+        icon={ArrowUp}
+        color="success"
+      />
+    </div>
+  );
+}
 
   const filtered = useMemo(() => {
     return registros.filter((r) => {
@@ -75,6 +99,7 @@ export function NucleoTrackerModule() {
       </div>
 
       <Tabs defaultValue="painel" className="w-full">
+
         <TabsList className={`grid w-full max-w-lg ${isPrivileged ? 'grid-cols-3' : 'grid-cols-1'}`}>
           <TabsTrigger value="painel" className="gap-2">
             <LayoutDashboard className="h-4 w-4" />
@@ -103,6 +128,9 @@ export function NucleoTrackerModule() {
             <StatCard title="Contato c/ Estabelecimentos" value={countByAtividade("Contato")} icon={Phone} color="primary" />
           </div>
 
+          {/* KPIs Clínicos NIR */}
+          <KPIsClinicosNIR />
+
           <RegistroForm onRegistroAdded={refresh} />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -126,6 +154,7 @@ export function NucleoTrackerModule() {
 
           <RegistrosTable registros={filtered} onUpdate={refresh} />
         </TabsContent>
+
 
         {isPrivileged && (
           <TabsContent value="relatorios" className="mt-6">

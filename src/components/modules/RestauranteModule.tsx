@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -126,6 +127,10 @@ const horariosRefeicaoOptions = [{
 // Status removido - dietas são automaticamente aceitas
 
 export const RestauranteModule = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  // Tab principal sincronizada com a URL: /dashboard/restaurante/:tab
+  const activeTabFromUrl = location.pathname.split('/')[3] || 'cardapio';
   const {
     toast
   } = useToast();
@@ -138,15 +143,17 @@ export const RestauranteModule = () => {
   } = useUserRole();
   const isRestaurante = hasRole("restaurante");
   const canManage = isAdmin || isRestaurante;
-  const [activeTab, setActiveTab] = useState("cardapio");
+  // activeTab agora é derivado da URL
 
   useEffect(() => {
     logAction("acesso_modulo", "restaurante");
   }, [logAction]);
 
   const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    logAction("navegacao_aba", "restaurante", { aba: value });
+    if (activeTabFromUrl !== value) {
+      navigate(`/dashboard/restaurante/${value}`);
+      logAction("navegacao_aba", "restaurante", { aba: value });
+    }
   };
   const [cardapioView, setCardapioView] = useState<"dia" | "semana">("dia");
   const [cardapios, setCardapios] = useState<Cardapio[]>([]);
@@ -913,7 +920,7 @@ export const RestauranteModule = () => {
         </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs value={activeTabFromUrl} onValueChange={handleTabChange}>
         <TabsList>
           <TabsTrigger value="cardapio" className="flex items-center gap-2">
             <UtensilsCrossed className="h-4 w-4" />
