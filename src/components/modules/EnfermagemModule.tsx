@@ -309,7 +309,9 @@ export function EnfermagemModule() {
                   </>
                 )}
               </TabsList>
-              <TabsContent value="meus-plantoes" className="mt-4"><MinhasEscalas userId={userId || ''} userName={userName || ''} /></TabsContent>
+              <TabsContent value="meus-plantoes" className="mt-4">
+                <MinhasEscalas userId={userId ?? ''} userName={userName ?? ''} />
+              </TabsContent>
               <TabsContent value="pega-plantao" className="mt-4"><TrocasDisponiveis userId={userId || ''} userName={userName || ''} /></TabsContent>
               <TabsContent value="calendario" className="mt-4"><CalendarioEscalas onDayClick={handleDayClick} onAddClick={isGestor ? handleAddClick : undefined} selectedSetor={selectedSetor} /></TabsContent>
               {isGestor && <TabsContent value="aprovacoes" className="mt-4"><AprovacaoTrocas userId={userId || ''} userName={userName || ''} /></TabsContent>}
