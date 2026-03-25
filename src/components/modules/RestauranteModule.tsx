@@ -756,10 +756,10 @@ export const RestauranteModule = () => {
     }
   };
   useEffect(() => {
-    if (canManage && activeTab === "dashboard") {
+    if (canManage && activeTabFromUrl === "dashboard") {
       fetchDashboardData();
     }
-  }, [activeTab, dashboardDataInicio, dashboardDataFim, canManage]);
+  }, [activeTabFromUrl, dashboardDataInicio, dashboardDataFim, canManage]);
   const dashboardStats = {
     total: dashboardSolicitacoes.length
     // Status removidos - dietas são automaticamente aceitas
