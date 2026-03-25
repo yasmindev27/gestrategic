@@ -136,29 +136,28 @@ export const NirDashboardModule = () => {
   const realtimeTimerRef = useRef<NodeJS.Timeout | null>(null);
   const hasAccess = isAdmin || isNir;
 
-  const loadBedData = useCallback(async () => {
-    const { getBrasiliaDateString, getBrasiliaHours } = await import('@/lib/brasilia-time');
-    const today = getBrasiliaDateString();
-    const currentHour = getBrasiliaHours();
-    const currentShift = currentHour >= 7 && currentHour < 19 ? 'diurno' : 'noturno';
 
-    // 1) Current occupancy — filter by CURRENT shift to match Mapa de Leitos
-    const { data: currentRecords, error: bedError } = await supabase
+  const loadBedData = useCallback(async () => {
+    // Busca todos os registros do período filtrado
+    const startDateStr = format(startDate, 'yyyy-MM-dd');
+    const endDateStr = format(endDate, 'yyyy-MM-dd');
+
+    // Busca todos os registros do último dia do filtro
+    const { data: lastDayRecords, error: lastDayError } = await supabase
       .from('bed_records')
       .select('bed_id, sector, patient_name, motivo_alta')
-      .eq('shift_date', today)
-      .eq('shift_type', currentShift);
+      .eq('shift_date', endDateStr);
 
-    if (bedError) throw bedError;
+    if (lastDayError) throw lastDayError;
 
-    const occupiedRecords = currentRecords?.filter(r => r.patient_name && !r.motivo_alta) || [];
+    const occupiedRecords = lastDayRecords?.filter(r => r.patient_name && !r.motivo_alta) || [];
     const occupiedBeds = occupiedRecords.length;
     const availableBeds = Math.max(0, TOTAL_BEDS - occupiedBeds);
     const occupancyRate = TOTAL_BEDS > 0 ? Math.round((occupiedBeds / TOTAL_BEDS) * 100) : 0;
 
     setOccupancyStats({ totalBeds: TOTAL_BEDS, occupiedBeds, availableBeds, occupancyRate });
 
-    // 2) Occupancy by sector
+    // Ocupação por setor no último dia do filtro
     const sectorStats: SectorOccupancy[] = SECTOR_BED_COUNTS.map((sc) => {
       const sectorOccupied = occupiedRecords.filter(r => r.sector === sc.id).length;
       return {
