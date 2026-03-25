@@ -136,15 +136,24 @@ export function EnfermagemModule() {
     loadSetores();
   }, []);
 
-  const { data: trocasDisponiveis = [] } = useTrocasDisponiveis();
-  const { data: trocasPendentes = [] } = useTrocasPendentes();
-  const { data: minhasEscalas = [] } = useMinhasEscalas(userId || undefined);
+  const { data: trocasDisponiveis = [], isLoading: loadingTrocas, error: errorTrocas } = useTrocasDisponiveis();
+  const { data: trocasPendentes = [], isLoading: loadingPendentes, error: errorPendentes } = useTrocasPendentes();
+  const { data: minhasEscalas = [], isLoading: loadingEscalas, error: errorEscalas } = useMinhasEscalas(userId || undefined);
 
   const isGestor = role === 'admin' || role === 'gestor';
   const trocasDisponiveisCount = trocasDisponiveis.filter(t => t.ofertante_id !== userId).length;
 
-  if (roleLoading) return <LoadingState message="Carregando módulo de enfermagem..." />;
+  if (roleLoading || loadingTrocas || loadingPendentes || loadingEscalas) return <LoadingState message="Carregando módulo de enfermagem..." />;
   if (!session) return <LoadingState message="Verificando autenticação..." />;
+
+  if (errorTrocas || errorPendentes || errorEscalas) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px]">
+        <p className="text-destructive font-medium mb-2">Erro ao carregar dados. Tente novamente mais tarde.</p>
+        <Button variant="outline" onClick={() => window.location.reload()}>Recarregar</Button>
+      </div>
+    );
+  }
 
   const handleDayClick = (date: Date, escalas: Escala[]) => {
     console.log('Dia clicado:', date, escalas);

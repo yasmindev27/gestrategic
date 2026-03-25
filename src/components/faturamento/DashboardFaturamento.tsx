@@ -92,6 +92,7 @@ export function DashboardFaturamento() {
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [totalPendentesGeral, setTotalPendentesGeral] = useState(0);
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   const [granularity, setGranularity] = useState<Granularity>("day");
@@ -103,6 +104,7 @@ export function DashboardFaturamento() {
 
   const fetchData = async () => {
     setIsLoading(true);
+    setError(null);
     try {
       const since = dateRange === "1d"
         ? startOfDay(new Date()).toISOString()
@@ -159,13 +161,26 @@ export function DashboardFaturamento() {
       const pendentesGeral = (totalSaidasRes.count || 0) - (totalAvalFinRes.count || 0);
       setTotalPendentesGeral(Math.max(pendentesGeral, 0));
 
-      setSaidas(allSaidas);
-      setAvaliacoes(allAvaliacoes);
-      setProfiles(profilesData);
+      setSaidas(allSaidas || []);
+      setAvaliacoes(allAvaliacoes || []);
+      setProfiles(profilesData || []);
     } catch (err) {
       console.error("Dashboard faturamento error:", err);
+      setError("Erro ao carregar dados do faturamento. Tente novamente mais tarde.");
     } finally {
       setIsLoading(false);
+    }
+    if (isLoading) {
+      return <ModuleLoadingSkeleton />;
+    }
+
+    if (error) {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-[300px]">
+          <p className="text-destructive font-medium mb-2">{error}</p>
+          <Button variant="outline" onClick={fetchData}>Tentar novamente</Button>
+        </div>
+      );
     }
   };
 
