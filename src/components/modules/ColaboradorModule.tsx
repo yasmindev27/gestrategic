@@ -1,11 +1,15 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { UserRound } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { UserRound, Clock, Calendar, Users } from "lucide-react";
 import { useLogAccess } from "@/hooks/useLogAccess";
-import { JustificativaPontoSection } from "@/components/rhdp/JustificativaPontoSection";
+import { HorasScreen } from "@/components/colaborador/mobile/HorasScreen";
+import { EscalaScreen } from "@/components/colaborador/mobile/EscalaScreen";
+import { TrocaPlantaoScreen } from "@/components/colaborador/mobile/TrocaPlantaoScreen";
 
 const ColaboradorModule = () => {
   const { logAction } = useLogAccess();
+  const [activeTab, setActiveTab] = useState("horas");
 
   useEffect(() => {
     logAction("acesso_modulo", "colaborador");
@@ -20,11 +24,41 @@ const ColaboradorModule = () => {
             Colaborador
           </CardTitle>
           <CardDescription>
-            Área do colaborador — justificativas de ponto e formulários pessoais
+            Área do colaborador — horas, escala e trocas de plantão
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <JustificativaPontoSection />
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="horas" className="flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                <span className="hidden sm:inline">Horas</span>
+                <span className="sm:hidden">Hrs</span>
+              </TabsTrigger>
+              <TabsTrigger value="escala" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                <span className="hidden sm:inline">Escala</span>
+                <span className="sm:hidden">Esc.</span>
+              </TabsTrigger>
+              <TabsTrigger value="trocas" className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span className="hidden sm:inline">Trocas</span>
+                <span className="sm:hidden">Troc.</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="horas" className="mt-6">
+              <HorasScreen />
+            </TabsContent>
+
+            <TabsContent value="escala" className="mt-6">
+              <EscalaScreen />
+            </TabsContent>
+
+            <TabsContent value="trocas" className="mt-6">
+              <TrocaPlantaoScreen />
+            </TabsContent>
+          </Tabs>
         </CardContent>
       </Card>
     </div>
