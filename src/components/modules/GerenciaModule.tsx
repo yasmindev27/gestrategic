@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { PlanoDesenvolvimentoSection } from '@/components/gerencia/PlanoDesenvolvimentoSection';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import {
