@@ -199,7 +199,7 @@ const LandingPage = () => {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex items-center justify-between h-16">
               <a href="#" className="flex items-center gap-2.5 shrink-0" aria-label="Gestrategic - Página Inicial">
-                <img src={logoGestrategic} alt="Gestrategic Logo" className="h-9 w-auto rounded" width={36} height={36} loading="eager" />
+                <img src={logoGestrategic} alt="Gestrategic Logo" className="h-12 w-auto rounded" width={48} height={48} loading="eager" />
                 <div className="hidden sm:block">
                   <span className="text-white font-semibold text-sm leading-none block">Gestrategic</span>
                   <span className="text-[10px] leading-none" style={{ color: C.textLight }}>Tecnologia em Saúde</span>
