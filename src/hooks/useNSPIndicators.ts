@@ -47,8 +47,11 @@ export const useNSPIndicators = () => {
     loadData();
   }, [fetchIndicators, fetchActionPlans]);
 
+  const normalize = (str: string) => str?.toLocaleLowerCase('pt-BR').trim();
   const filteredIndicators = useMemo(() => {
-    return indicators.filter(ind => ind.mes === selectedMonth && ind.ano === selectedYear);
+    return indicators.filter(
+      ind => normalize(ind.mes) === normalize(selectedMonth) && ind.ano === selectedYear
+    );
   }, [indicators, selectedMonth, selectedYear]);
 
   const saveIndicator = async (indicatorData: Partial<IndicatorData> & { mes: string; ano: number; categoria: string; indicador: string }) => {
