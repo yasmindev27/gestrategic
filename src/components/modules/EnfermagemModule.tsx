@@ -42,8 +42,6 @@ import { ClassificacaoArea } from '@/components/enfermagem/ClassificacaoArea';
 import { MedicacaoArea } from '@/components/enfermagem/MedicacaoArea';
 
 export function EnfermagemModule() {
-
-export function EnfermagemModule() {
   const navigate = useNavigate();
   const location = useLocation();
   // Tab principal sincronizada com a URL: /dashboard/enfermagem/:tab
