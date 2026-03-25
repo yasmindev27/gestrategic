@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PontoColaborador from '@/components/PontoColaborador/PontoColaborador';
 import { MobileNav } from '@/components/colaborador/mobile/MobileNav';
 import { HomeScreen } from '@/components/colaborador/mobile/HomeScreen';
 import { EscalaScreen } from '@/components/colaborador/mobile/EscalaScreen';
@@ -95,15 +96,20 @@ const ColaboradorModule = () => {
     switch (activeTab) {
       case 'home':
         return (
-          <HomeScreen
-            userName={userName}
-            userRole={userRole}
-            pendingActions={{
-              horasExtras: pendingHoras,
-              trocasPlantao: pendingTrocas,
-              escalasAjustar: 0,
-            }}
-          />
+          <>
+            <HomeScreen
+              userName={userName}
+              userRole={userRole}
+              pendingActions={{
+                horasExtras: pendingHoras,
+                trocasPlantao: pendingTrocas,
+                escalasAjustar: 0,
+              }}
+            />
+            <div style={{ marginTop: 32 }}>
+              <PontoColaborador />
+            </div>
+          </>
         );
       case 'escalas':
         return <EscalaScreen />;
