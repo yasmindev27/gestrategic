@@ -352,7 +352,7 @@ export function EnfermagemModule() {
             <button
               key={value}
               onClick={() => {
-                if (mainTabFromUrl !== value) {
+                if (mainTab !== value) {
                   navigate(`/dashboard/enfermagem/${value}`);
                 }
               }}
