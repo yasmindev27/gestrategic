@@ -45,7 +45,7 @@ export function EnfermagemModule() {
   const navigate = useNavigate();
   const location = useLocation();
   // Tab principal sincronizada com a URL: /dashboard/enfermagem/:tab
-  const mainTabFromUrl = location.pathname.split('/')[3] || 'operacional';
+  const mainTab = location.pathname.split('/')[3] || 'operacional';
   const { role, isLoading: roleLoading, userId } = useUserRole();
   const { logAction } = useLogAccess();
   useRealtimeSync(REALTIME_PRESETS.enfermagem);

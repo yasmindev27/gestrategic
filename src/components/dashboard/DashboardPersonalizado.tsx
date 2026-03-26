@@ -335,8 +335,8 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
 
       // Taxa de mortalidade: óbitos no mês atual / pacientes internados no mês
       const mesAtual = hojeStr.slice(0, 7);
-      const obitosMes = (leitosData || []).filter(r => r.data_obito && r.data_obito.startsWith(mesAtual)).length;
-      const internacoesMes = (leitosData || []).filter(r => r.data_alta && r.data_alta.startsWith(mesAtual)).length;
+      const obitosMes = (leitosData || []).filter((r: any) => r.data_obito && r.data_obito.startsWith(mesAtual)).length;
+      const internacoesMes = (leitosData || []).filter((r: any) => r.data_alta && r.data_alta.startsWith(mesAtual)).length;
       const taxaMortalidade = internacoesMes > 0 ? Math.round((obitosMes / internacoesMes) * 100) : 0;
 
       // Tendência de ocupação (últimos 14 dias)

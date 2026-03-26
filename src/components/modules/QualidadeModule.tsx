@@ -24,7 +24,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { StatusBadge, mapStatusToType } from "@/components/ui/status-badge";
 import { ExportDropdown } from "@/components/ui/export-dropdown";
 import { DateRangeFilter } from "@/components/ui/date-range-filter";
-import { AuditoriasSegurancaPaciente, DashboardConformidade } from "@/components/qualidade";
+import { AuditoriasSegurancaPaciente, DashboardConformidade, MetasSegurancaPaciente } from "@/components/qualidade";
 import { RiscosOperacionaisChart, DashboardIAIncidentes, ReportarIncidenteRapido, AnalisarIncidenteIA } from "@/components/gestao-incidentes";
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";

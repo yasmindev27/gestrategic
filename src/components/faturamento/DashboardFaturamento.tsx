@@ -170,18 +170,6 @@ export function DashboardFaturamento() {
     } finally {
       setIsLoading(false);
     }
-    if (isLoading) {
-      return <ModuleLoadingSkeleton />;
-    }
-
-    if (error) {
-      return (
-        <div className="flex flex-col items-center justify-center min-h-[300px]">
-          <p className="text-destructive font-medium mb-2">{error}</p>
-          <Button variant="outline" onClick={fetchData}>Tentar novamente</Button>
-        </div>
-      );
-    }
   };
 
   useEffect(() => {
