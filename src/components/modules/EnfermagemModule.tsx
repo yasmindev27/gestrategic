@@ -357,7 +357,7 @@ export function EnfermagemModule() {
                 }
               }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left text-[13px] transition-colors ${
-                mainTabFromUrl === value
+                mainTab === value
                   ? "bg-primary text-primary-foreground font-medium"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
