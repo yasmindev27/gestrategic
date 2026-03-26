@@ -1048,6 +1048,9 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
                         }} title="Visualizar">
                           <Eye className="h-4 w-4" />
                         </Button>
+                        <Button size="icon" variant="ghost" onClick={() => exportSingleAuditoriaPDF(a)} title="Exportar PDF">
+                          <Download className="h-4 w-4" />
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );
