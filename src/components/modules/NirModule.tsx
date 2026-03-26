@@ -28,175 +28,176 @@ export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
   // SPA: define subroutes for each view
   return (
     <Routes>
-      <Route
-        path="nir"
-        element={
-          <div className="space-y-6">
-            <div className="flex items-center justify-between flex-wrap gap-4">
-              <div>
-                <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                  <Ambulance className="h-6 w-6 text-primary" />
-                  Núcleo Interno de Regulação
-                </h2>
-                <p className="text-muted-foreground">Gestão de leitos e regulação hospitalar</p>
+      <Route path="nir">
+        <Route
+          index
+          element={
+            <div className="space-y-6">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
+                    <Ambulance className="h-6 w-6 text-primary" />
+                    Núcleo Interno de Regulação
+                  </h2>
+                  <p className="text-muted-foreground">Gestão de leitos e regulação hospitalar</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <Card
+                  className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
+                  onClick={() => navigate("dashboard")}
+                >
+                  <CardHeader className="text-center pb-2">
+                    <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
+                      <LayoutDashboard className="h-8 w-8 text-primary" />
+                    </div>
+                    <CardTitle className="mt-4">Dashboard</CardTitle>
+                    <CardDescription>
+                      Métricas e indicadores de ocupação hospitalar
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <Button variant="outline" className="w-full">
+                      Acessar Dashboard
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
+                  onClick={() => navigate("mapa-leitos")}
+                >
+                  <CardHeader className="text-center pb-2">
+                    <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
+                      <BedDouble className="h-8 w-8 text-primary" />
+                    </div>
+                    <CardTitle className="mt-4">Mapa de Leitos</CardTitle>
+                    <CardDescription>
+                      Visualização e gestão de leitos por setor
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <Button variant="outline" className="w-full">
+                      Acessar Mapa
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
+                  onClick={() => navigate("transferencias")}
+                >
+                  <CardHeader className="text-center pb-2">
+                    <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
+                      <Truck className="h-8 w-8 text-primary" />
+                    </div>
+                    <CardTitle className="mt-4">Transferências</CardTitle>
+                    <CardDescription>
+                      Solicitação e acompanhamento de transferências
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <Button variant="outline" className="w-full">
+                      Acessar Transferências
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
+                  onClick={() => window.open("/transporte", "_blank")}
+                >
+                  <CardHeader className="text-center pb-2">
+                    <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
+                      <Navigation className="h-8 w-8 text-primary" />
+                    </div>
+                    <CardTitle className="mt-4">Área do Motorista</CardTitle>
+                    <CardDescription>
+                      Painel mobile para motoristas em rota
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <Button variant="outline" className="w-full gap-2">
+                      <ExternalLink className="h-4 w-4" />
+                      Abrir Painel
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                <Card
+                  className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
+                  onClick={() => {
+                    const url = "https://www.susfacil.mg.gov.br/administrativo/seguranca/GEN/gen_acesso.php?ini=1";
+                    window.open(url, "_blank", "noopener,noreferrer");
+                  }}
+                >
+                  <CardHeader className="text-center pb-2">
+                    <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
+                      <BarChart3 className="h-8 w-8 text-primary" />
+                    </div>
+                    <CardTitle className="mt-4">Relatório SUSFácil</CardTitle>
+                    <CardDescription>
+                      Acesso ao sistema SUSFácil MG
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="text-center">
+                    <Button variant="outline" className="w-full gap-2">
+                      <ExternalLink className="h-4 w-4" />
+                      Acessar SUSFácil
+                    </Button>
+                  </CardContent>
+                </Card>
               </div>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <Card
-                className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
-                onClick={() => navigate("dashboard")}
-              >
-                <CardHeader className="text-center pb-2">
-                  <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
-                    <LayoutDashboard className="h-8 w-8 text-primary" />
-                  </div>
-                  <CardTitle className="mt-4">Dashboard</CardTitle>
-                  <CardDescription>
-                    Métricas e indicadores de ocupação hospitalar
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <Button variant="outline" className="w-full">
-                    Acessar Dashboard
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card
-                className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
-                onClick={() => navigate("mapa-leitos")}
-              >
-                <CardHeader className="text-center pb-2">
-                  <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
-                    <BedDouble className="h-8 w-8 text-primary" />
-                  </div>
-                  <CardTitle className="mt-4">Mapa de Leitos</CardTitle>
-                  <CardDescription>
-                    Visualização e gestão de leitos por setor
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <Button variant="outline" className="w-full">
-                    Acessar Mapa
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card
-                className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
-                onClick={() => navigate("transferencias")}
-              >
-                <CardHeader className="text-center pb-2">
-                  <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
-                    <Truck className="h-8 w-8 text-primary" />
-                  </div>
-                  <CardTitle className="mt-4">Transferências</CardTitle>
-                  <CardDescription>
-                    Solicitação e acompanhamento de transferências
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <Button variant="outline" className="w-full">
-                    Acessar Transferências
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card
-                className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
-                onClick={() => window.open("/transporte", "_blank")}
-              >
-                <CardHeader className="text-center pb-2">
-                  <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
-                    <Navigation className="h-8 w-8 text-primary" />
-                  </div>
-                  <CardTitle className="mt-4">Área do Motorista</CardTitle>
-                  <CardDescription>
-                    Painel mobile para motoristas em rota
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <Button variant="outline" className="w-full gap-2">
-                    <ExternalLink className="h-4 w-4" />
-                    Abrir Painel
-                  </Button>
-                </CardContent>
-              </Card>
-
-              <Card
-                className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
-                onClick={() => {
-                  const url = "https://www.susfacil.mg.gov.br/administrativo/seguranca/GEN/gen_acesso.php?ini=1";
-                  window.open(url, "_blank", "noopener,noreferrer");
-                }}
-              >
-                <CardHeader className="text-center pb-2">
-                  <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
-                    <BarChart3 className="h-8 w-8 text-primary" />
-                  </div>
-                  <CardTitle className="mt-4">Relatório SUSFácil</CardTitle>
-                  <CardDescription>
-                    Acesso ao sistema SUSFácil MG
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className="text-center">
-                  <Button variant="outline" className="w-full gap-2">
-                    <ExternalLink className="h-4 w-4" />
-                    Acessar SUSFácil
-                  </Button>
-                </CardContent>
-              </Card>
+          }
+        />
+        <Route
+          path="dashboard"
+          element={
+            <div className="space-y-4">
+              <Link to="/dashboard/nir" className="mb-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                ← Voltar ao NIR
+              </Link>
+              <NirDashboardModule />
             </div>
-          </div>
-        }
-      />
-      <Route
-        path="dashboard"
-        element={
-          <div className="space-y-4">
-            <Link to=".." relative="path" className="mb-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-              ← Voltar ao NIR
-            </Link>
-            <NirDashboardModule />
-          </div>
-        }
-      />
-      <Route
-        path="mapa-leitos"
-        element={
-          <div className="space-y-4">
-            <Link to=".." relative="path" className="mb-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-              ← Voltar ao NIR
-            </Link>
-            <MapaLeitosModule />
-          </div>
-        }
-      />
-      <Route
-        path="transferencias"
-        element={
-          <div className="space-y-4">
-            <Link to=".." relative="path" className="mb-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-              ← Voltar ao NIR
-            </Link>
-            <TransferenciasModule />
-          </div>
-        }
-      />
-      <Route
-        path="relatorio"
-        element={
-          <div className="space-y-4">
-            <Link to=".." relative="path" className="mb-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-              ← Voltar ao NIR
-            </Link>
-            <NucleoTrackerModule />
-          </div>
-        }
-      />
-      {/* SPA fallback: redirect unknown subroutes to root */}
-      <Route path="*" element={<Navigate to="." replace />} />
+          }
+        />
+        <Route
+          path="mapa-leitos"
+          element={
+            <div className="space-y-4">
+              <Link to="/dashboard/nir" className="mb-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                ← Voltar ao NIR
+              </Link>
+              <MapaLeitosModule />
+            </div>
+          }
+        />
+        <Route
+          path="transferencias"
+          element={
+            <div className="space-y-4">
+              <Link to="/dashboard/nir" className="mb-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                ← Voltar ao NIR
+              </Link>
+              <TransferenciasModule />
+            </div>
+          }
+        />
+        <Route
+          path="relatorio"
+          element={
+            <div className="space-y-4">
+              <Link to="/dashboard/nir" className="mb-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                ← Voltar ao NIR
+              </Link>
+              <NucleoTrackerModule />
+            </div>
+          }
+        />
+        <Route path="*" element={<Navigate to="/dashboard/nir" replace />} />
+      </Route>
     </Routes>
   );
 };
