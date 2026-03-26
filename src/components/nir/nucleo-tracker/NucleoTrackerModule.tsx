@@ -57,7 +57,7 @@ function KPIsClinicosNIR() {
         title="Internações Clínicas"
         value={data.totalInternacoes}
         icon={ArrowDown}
-        color="info"
+        variant="info"
       />
       <StatCard
         title="Altas Clínicas"
