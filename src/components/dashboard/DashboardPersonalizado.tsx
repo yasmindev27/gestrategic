@@ -319,8 +319,7 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
       // Buscar todos os leitos ativos e ocupados (sem alta)
       const { data: leitosData } = await supabase
         .from("bed_records")
-        .select("id, bed_id, bed_number, sector, patient_name, motivo_alta, data_alta, data_obito")
-        .eq("ativo", true);
+        .select("id, bed_id, bed_number, sector, patient_name, motivo_alta, data_alta, created_at") as { data: any[] | null };
 
       // Ocupação de leitos: leitos com paciente e sem alta
       const leitosOcupados = (leitosData || []).filter(r => r.patient_name && !r.motivo_alta && !r.data_alta).length;
