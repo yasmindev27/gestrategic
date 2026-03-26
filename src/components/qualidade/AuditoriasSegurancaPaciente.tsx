@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, Eye, Pencil, FileText, ClipboardList, CheckCircle, XCircle, MinusCircle, Stethoscope } from "lucide-react";
+import { Plus, Eye, Pencil, FileText, ClipboardList, CheckCircle, XCircle, MinusCircle, Stethoscope, Download } from "lucide-react";
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
 import { SearchInput } from "@/components/ui/search-input";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -525,6 +525,126 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
     savePdfWithFooter(doc, 'Auditorias de Segurança do Paciente', `auditorias-seguranca-${format(new Date(), "yyyy-MM-dd")}`, logoImg);
   };
 
+  const exportSingleAuditoriaPDF = async (auditoria: AuditoriaSeguranca) => {
+    const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
+    const tipoLabel = activeTipos.find(t => t.value === auditoria.tipo)?.label || auditoria.tipo;
+    const { doc, logoImg } = await createStandardPdf(tipoLabel);
+    const stats = getConformidadeStats(auditoria);
+    const pageWidth = doc.internal.pageSize.width;
+
+    let y = 32;
+
+    // Info header table
+    const infoRows: string[][] = [
+      ["Data da Auditoria", format(new Date(auditoria.data_auditoria), "dd/MM/yyyy")],
+      ["Setor", auditoria.setor],
+      ["Auditor", auditoria.auditor_nome],
+    ];
+    if (auditoria.paciente_iniciais) infoRows.push(["Paciente (Iniciais)", auditoria.paciente_iniciais]);
+    if (auditoria.paciente_ra) infoRows.push(["RA do Paciente", auditoria.paciente_ra]);
+    if (auditoria.numero_prontuario) infoRows.push(["Nº Prontuário", auditoria.numero_prontuario]);
+    if (auditoria.score_risco) {
+      const scoreLabel = scoreRiscoQueda.find(s => s.value === auditoria.score_risco)?.label || auditoria.score_risco;
+      infoRows.push(["Score de Risco", scoreLabel]);
+    }
+    if (auditoria.profissional_auditado) {
+      const profLabel = profissionaisAuditados.find(p => p.value === auditoria.profissional_auditado)?.label || auditoria.profissional_auditado;
+      infoRows.push(["Profissional Auditado", profLabel]);
+    }
+    if (auditoria.mes_avaliacao) infoRows.push(["Mês de Avaliação", auditoria.mes_avaliacao]);
+    if (auditoria.unidade_atendimento) infoRows.push(["Unidade de Atendimento", auditoria.unidade_atendimento]);
+    if (auditoria.tipo === "lesao_pressao") {
+      infoRows.push(["Possui LPP?", auditoria.possui_lpp ? "Sim" : "Não"]);
+      if (auditoria.possui_lpp && auditoria.grau_lpp) {
+        const grauLabel = grausLPP.find(g => g.value === auditoria.grau_lpp)?.label || auditoria.grau_lpp;
+        infoRows.push(["Grau LPP", grauLabel]);
+      }
+    }
+    if (auditoria.tipo === "queda") {
+      infoRows.push(["Apresentou Queda?", auditoria.apresentou_queda ? "Sim" : "Não"]);
+      if (auditoria.apresentou_queda && auditoria.notificacao_aberta) {
+        infoRows.push(["Notificação Aberta?", auditoria.notificacao_aberta === "sim" ? "Sim" : auditoria.notificacao_aberta === "nao" ? "Não" : "Não se aplica"]);
+      }
+    }
+    infoRows.push(["Conformidade Geral", `${stats.percentual}% (${stats.conforme}/${stats.total})`]);
+
+    autoTable(doc, {
+      startY: y,
+      body: infoRows,
+      theme: 'grid',
+      styles: { fontSize: 9, cellPadding: 3 },
+      columnStyles: { 0: { fontStyle: 'bold', cellWidth: 55 } },
+      margin: { bottom: 30 },
+    });
+    y = (doc as any).lastAutoTable.finalY + 6;
+
+    // Checklist sections
+    const sections = activeChecklist[auditoria.tipo] || checklistItems[auditoria.tipo] || [];
+    const resps = auditoria.respostas as Record<string, string>;
+
+    for (const section of sections) {
+      const sectionBody = section.items.map(item => {
+        const val = resps[item.id] || "-";
+        const displayValue = val === "conforme" ? "✓ Conforme" :
+          val === "nao_conforme" ? "✗ Não Conforme" :
+          val === "nao_aplica" ? "N/A" :
+          val === "sim" ? "✓ Sim" :
+          val === "nao" ? "✗ Não" :
+          val === "sim_completo" ? "✓ Sim, completo" :
+          val === "parcial" ? "⚠ Parcialmente" :
+          val === "parcial_sem_manchester" ? "⚠ Parcial (sem Manchester)" :
+          val === "parcial_sem_sinais" ? "⚠ Parcial (sem sinais vitais)" :
+          val === "sim_aberto" ? "✓ Sim, aberto corretamente" :
+          val === "sim_nao_aberto" ? "✗ Sim, porém não aberto" :
+          val === "nao_abriu_indevido" ? "✗ Não, porém abriu protocolo" :
+          val === "nao_aberto" ? "Não foi aberto" :
+          likertLabels[val] || val;
+        return [item.label, displayValue];
+      });
+
+      // Check page space
+      if (y > doc.internal.pageSize.height - 60) {
+        doc.addPage();
+        y = 32;
+      }
+
+      autoTable(doc, {
+        startY: y,
+        head: [[section.section, "Resposta"]],
+        body: sectionBody,
+        theme: 'striped',
+        styles: { fontSize: 8, cellPadding: 3 },
+        headStyles: { fillColor: [30, 58, 95], fontSize: 9 },
+        columnStyles: { 0: { cellWidth: 120 }, 1: { cellWidth: 50, halign: 'center' } },
+        margin: { bottom: 30 },
+      });
+      y = (doc as any).lastAutoTable.finalY + 4;
+    }
+
+    // Satisfaction score for prontuarios
+    if (auditoria.tipo === "avaliacao_prontuarios_enfermeiros" && auditoria.satisfacao_geral != null) {
+      if (y > doc.internal.pageSize.height - 50) { doc.addPage(); y = 32; }
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text(`Satisfação Geral: ${auditoria.satisfacao_geral}/10`, 14, y + 4);
+      y += 10;
+    }
+
+    // Observations
+    if (auditoria.observacoes) {
+      if (y > doc.internal.pageSize.height - 50) { doc.addPage(); y = 32; }
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text("Observações:", 14, y + 4);
+      doc.setFont('helvetica', 'normal');
+      const obsLines = doc.splitTextToSize(auditoria.observacoes, pageWidth - 28);
+      doc.text(obsLines, 14, y + 10);
+    }
+
+    const fileName = `auditoria-${auditoria.tipo}-${auditoria.setor}-${format(new Date(auditoria.data_auditoria), "dd-MM-yyyy")}`;
+    savePdfWithFooter(doc, tipoLabel, fileName, logoImg);
+  };
+
   const renderFormFields = () => {
     if (!tipoSelecionado) return null;
 
@@ -927,6 +1047,9 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
                           setDetalhesDialog(true);
                         }} title="Visualizar">
                           <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" onClick={() => exportSingleAuditoriaPDF(a)} title="Exportar PDF">
+                          <Download className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
