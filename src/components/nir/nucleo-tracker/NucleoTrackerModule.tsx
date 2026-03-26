@@ -63,7 +63,7 @@ function KPIsClinicosNIR() {
         title="Altas Clínicas"
         value={data.totalAltas}
         icon={ArrowUp}
-        color="success"
+        color="secondary"
       />
     </div>
   );

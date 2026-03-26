@@ -319,8 +319,7 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
       // Buscar todos os leitos ativos e ocupados (sem alta)
       const { data: leitosData } = await supabase
         .from("bed_records")
-        .select("id, bed_id, bed_number, sector, patient_name, motivo_alta, data_alta, data_obito")
-        .eq("ativo", true);
+        .select("id, bed_id, bed_number, sector, patient_name, motivo_alta, data_alta, created_at") as { data: any[] | null };
 
       // Ocupação de leitos: leitos com paciente e sem alta
       const leitosOcupados = (leitosData || []).filter(r => r.patient_name && !r.motivo_alta && !r.data_alta).length;
@@ -336,8 +335,8 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
 
       // Taxa de mortalidade: óbitos no mês atual / pacientes internados no mês
       const mesAtual = hojeStr.slice(0, 7);
-      const obitosMes = (leitosData || []).filter(r => r.data_obito && r.data_obito.startsWith(mesAtual)).length;
-      const internacoesMes = (leitosData || []).filter(r => r.data_alta && r.data_alta.startsWith(mesAtual)).length;
+      const obitosMes = (leitosData || []).filter((r: any) => r.data_obito && r.data_obito.startsWith(mesAtual)).length;
+      const internacoesMes = (leitosData || []).filter((r: any) => r.data_alta && r.data_alta.startsWith(mesAtual)).length;
       const taxaMortalidade = internacoesMes > 0 ? Math.round((obitosMes / internacoesMes) * 100) : 0;
 
       // Tendência de ocupação (últimos 14 dias)

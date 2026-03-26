@@ -45,7 +45,7 @@ export function EnfermagemModule() {
   const navigate = useNavigate();
   const location = useLocation();
   // Tab principal sincronizada com a URL: /dashboard/enfermagem/:tab
-  const mainTabFromUrl = location.pathname.split('/')[3] || 'operacional';
+  const mainTab = location.pathname.split('/')[3] || 'operacional';
   const { role, isLoading: roleLoading, userId } = useUserRole();
   const { logAction } = useLogAccess();
   useRealtimeSync(REALTIME_PRESETS.enfermagem);
@@ -352,12 +352,12 @@ export function EnfermagemModule() {
             <button
               key={value}
               onClick={() => {
-                if (mainTabFromUrl !== value) {
+                if (mainTab !== value) {
                   navigate(`/dashboard/enfermagem/${value}`);
                 }
               }}
               className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-md text-left text-[13px] transition-colors ${
-                mainTabFromUrl === value
+                mainTab === value
                   ? "bg-primary text-primary-foreground font-medium"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}

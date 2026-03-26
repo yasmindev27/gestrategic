@@ -34,7 +34,7 @@ const ReportarIncidenteDialog = lazy(() => import("@/components/gestao-incidente
 const LMSModule = lazy(() => import("@/components/lms/LMSModule"));
 const ReuniaoModule = lazy(() => import("@/components/modules/ReuniaoModule"));
 const GerenciaModule = lazy(() => import("@/components/modules/GerenciaModule").then(m => ({ default: m.GerenciaModule })));
-const EnfermagemModule = lazy(() => import("@/components/modules/EnfermagemModule"));
+const EnfermagemModule = lazy(() => import("@/components/modules/EnfermagemModule").then(m => ({ default: m.EnfermagemModule })));
 const SalusModule = lazy(() => import("@/components/modules/SalusModule"));
 const MedicosModule = lazy(() => import("@/components/modules/MedicosModule"));
 const EquipeModule = lazy(() => import("@/components/modules/EquipeModule"));

@@ -155,9 +155,9 @@ export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
         path="dashboard"
         element={
           <div className="space-y-4">
-            <Button variant="ghost" as={Link} to=".." relative="path" className="mb-2">
+            <Link to=".." relative="path" className="mb-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
               ← Voltar ao NIR
-            </Button>
+            </Link>
             <NirDashboardModule />
           </div>
         }
@@ -166,9 +166,9 @@ export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
         path="mapa-leitos"
         element={
           <div className="space-y-4">
-            <Button variant="ghost" as={Link} to=".." relative="path" className="mb-2">
+            <Link to=".." relative="path" className="mb-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
               ← Voltar ao NIR
-            </Button>
+            </Link>
             <MapaLeitosModule />
           </div>
         }
@@ -177,9 +177,9 @@ export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
         path="transferencias"
         element={
           <div className="space-y-4">
-            <Button variant="ghost" as={Link} to=".." relative="path" className="mb-2">
+            <Link to=".." relative="path" className="mb-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
               ← Voltar ao NIR
-            </Button>
+            </Link>
             <TransferenciasModule />
           </div>
         }
@@ -188,9 +188,9 @@ export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
         path="relatorio"
         element={
           <div className="space-y-4">
-            <Button variant="ghost" as={Link} to=".." relative="path" className="mb-2">
+            <Link to=".." relative="path" className="mb-2 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
               ← Voltar ao NIR
-            </Button>
+            </Link>
             <NucleoTrackerModule />
           </div>
         }

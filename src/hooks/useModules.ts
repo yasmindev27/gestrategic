@@ -14,7 +14,7 @@ export interface ModuleConfig {
 
 // Lazy loaded modules for better code splitting
 const LazyModules = {
-  EnfermagemModule: lazy(() => import("@/components/modules/EnfermagemModule")),
+  EnfermagemModule: lazy(() => import("@/components/modules/EnfermagemModule").then(m => ({ default: m.EnfermagemModule }))),
 };
 
 // Module registry with role-based access
