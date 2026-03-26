@@ -13,7 +13,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Plus, Eye, Pencil, FileText, ClipboardList, CheckCircle, XCircle, MinusCircle, Stethoscope } from "lucide-react";
+import { Plus, Eye, Pencil, FileText, ClipboardList, CheckCircle, XCircle, MinusCircle, Stethoscope, Download } from "lucide-react";
 import { SectionHeader, ActionButton } from "@/components/ui/action-buttons";
 import { SearchInput } from "@/components/ui/search-input";
 import { LoadingState } from "@/components/ui/loading-state";
