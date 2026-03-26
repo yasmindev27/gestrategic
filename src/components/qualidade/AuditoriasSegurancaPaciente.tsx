@@ -24,16 +24,11 @@ import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
 // Types
-type TipoAuditoria = 
-  | "comunicacao_efetiva"
-  | "lesao_pressao"
-  | "queda"
-  | "higiene_maos"
-  | "avaliacao_prontuarios_enfermeiros";
+type TipoAuditoria = "seguranca_paciente";
 
 interface AuditoriaSeguranca {
   id: string;
-  tipo: TipoAuditoria;
+  tipo: string;
   data_auditoria: string;
   setor: string;
   auditor_id: string;
@@ -55,150 +50,128 @@ interface AuditoriaSeguranca {
   created_at: string;
 }
 
-// Audit type configurations
-const tiposAuditoria: { value: TipoAuditoria; label: string; icon: React.ElementType }[] = [
-  { value: "comunicacao_efetiva", label: "Comunicação Efetiva", icon: FileText },
-  { value: "lesao_pressao", label: "Prevenção de Lesão por Pressão", icon: Stethoscope },
-  { value: "queda", label: "Prevenção de Queda", icon: ClipboardList },
-  { value: "higiene_maos", label: "Higiene das Mãos", icon: CheckCircle },
-  { value: "avaliacao_prontuarios_enfermeiros", label: "Avaliação de Prontuários (Enfermeiros)", icon: FileText },
+// Sector options
+const setoresOpcoes = [
+  "Enfermaria Masculina",
+  "Enfermaria Feminina",
+  "Enfermaria Pediátrica",
+  "Isolamento",
+  "Urgência",
+  "Medicação",
+  "Recepção",
+  "Classificação 1",
+  "Classificação 2",
+  "Sutura",
+  "Consultórios Médicos",
+  "Laboratório",
+  "Raio-x",
 ];
 
-// Sector options for each audit type
-const setoresPorTipo: Record<TipoAuditoria, string[]> = {
-  comunicacao_efetiva: ["Internação", "Urgência", "Laboratório", "Raio-x", "Consultórios Médicos"],
-  lesao_pressao: ["Isolamento", "Pediatria", "Enfermaria Masculina", "Enfermaria Feminina", "Medicação", "Urgência"],
-  queda: ["Recepção", "Classificação 1", "Classificação 2", "Urgência", "Isolamento", "Enfermaria Masculina", "Enfermaria Feminina", "Pediatria", "Medicação"],
-  higiene_maos: ["Classificação 1", "Classificação 2", "Urgência", "Sutura", "Isolamento", "Medicação", "Consultórios Médicos", "Internação"],
-  avaliacao_prontuarios_enfermeiros: ["Emergência (observação vermelha)", "Internação (observação amarela)", "Observação sem leito"],
-};
+// Unified checklist: 6 International Patient Safety Goals
+const checklistUnificado: { section: string; items: { id: string; label: string; options: string[] }[] }[] = [
+  {
+    section: "Meta 1 – Identificação Correta do Paciente",
+    items: [
+      { id: "m1_pulseira_legivel", label: "Paciente com pulseira de identificação legível?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m1_pulseira_dados", label: "Pulseira contém nome completo, data de nascimento e nome da mãe?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m1_orientado_importancia", label: "Paciente orientado quanto à importância da identificação?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m1_documentos_identificados", label: "Documentos de prontuário estão identificados corretamente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m1_identificado_beira_leito", label: "Paciente identificado à beira do leito contendo nome completo e data de nascimento?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m1_conferencia_procedimentos", label: "Colaboradores conferem as informações antes de procedimentos?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m1_paciente_declara", label: "Paciente declara o nome completo e data de nascimento antes de procedimentos?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m1_conhece_protocolo", label: "Conhece o protocolo institucional?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m1_dois_identificadores", label: "Conhece os dois identificadores obrigatórios?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m1_nome_social", label: "Conhece sobre nome social?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m1_homonimos", label: "Conhece fluxo sobre pacientes homônimos?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m1_desconhecido", label: "Conhece sobre paciente desconhecido?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m1_confere_antes", label: "Confere as informações antes de procedimentos?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m1_acesso_protocolo", label: "Possui fácil acesso ao protocolo?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+    ],
+  },
+  {
+    section: "Meta 2 – Segurança da Cadeia Medicamentosa",
+    items: [
+      { id: "m2_conhece_alta_vigilancia", label: "Profissional conhece a relação de medicamentos de alta vigilância?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m2_relacao_disponivel", label: "A relação está disponível na unidade em local de fácil acesso?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m2_dupla_checagem_admin", label: "Na administração de medicamentos de alta vigilância é realizada a dupla checagem?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m2_dupla_checagem_dispensa", label: "Na dispensação do medicamento de alta vigilância é realizada a dupla checagem?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m2_armazenados_seguranca", label: "Os medicamentos de alta vigilância são armazenados com segurança?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m2_etiqueta_vermelha", label: "Os medicamentos de alta vigilância estão identificados com etiqueta vermelha?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m2_treze_certos", label: "Conhece os 13 certos?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m2_metodo_identificacao", label: "Conhece o método de identificação dos medicamentos de alta vigilância?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+    ],
+  },
+  {
+    section: "Meta 3 – Prevenção de Lesão por Pressão",
+    items: [
+      { id: "m3_risco_lpp_admissao", label: "Avaliado o risco de LPP na admissão do paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m3_fatores_risco_beira_leito", label: "Paciente com fatores de risco de LPP identificados à beira leito?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m3_fatores_risco_prontuario", label: "Pacientes com fatores de risco de LPP identificados em Prontuário?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m3_ferramenta_braden", label: "Foi utilizado ferramenta estruturada (Braden Adulto/BradenQ) para classificação de risco?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m3_prescricao_enfermagem_risco", label: "Prescrição de enfermagem de acordo com o risco do paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m3_reavaliacao_risco", label: "Enfermeiro realiza reavaliação do risco conforme score?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m3_mudanca_decubito", label: "Mudança de decúbito conforme o risco do paciente (4/4h leve/moderado; 2/2h alto/muito alto)?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m3_uso_coxins", label: "Paciente possui uso de coxins para proteção de proeminências ósseas?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m3_educacao_mobilidade", label: "Paciente ou familiares foram educados para otimização da mobilidade?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m3_colab_notifica", label: "Conhece e/ou notifica os casos de Lesão de Pressão da unidade?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m3_colab_educacao", label: "Colaborador realiza educação com o paciente e familiares?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m3_colab_barreiras", label: "Colaborador conhece as barreiras de prevenção?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m3_colab_registro_pele", label: "Registra no prontuário as condições da pele do paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+    ],
+  },
+  {
+    section: "Meta 4 – Comunicação Efetiva",
+    items: [
+      { id: "m4_lab_valor_critico", label: "O laboratório comunicou o setor do resultado de valor crítico e registrou em sua planilha?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m4_registro_priorizacao_rx", label: "Foi realizado o registro de comunicação de priorização de análise médica do raio-x?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m4_registro_valor_critico_lab", label: "Foi registrado o resultado de valor crítico do exame laboratorial no prontuário?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m4_registro_alteracao_rx", label: "Foi registrado a alteração crítica do exame de raio-x?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m4_conhece_receptor_critico", label: "O colaborador sabe quem pode receber o resultado de valor crítico e a comunicação de priorização?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m4_transferencia_interna", label: "Foi realizado o preenchimento completo e correto do formulário de transferência interna?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m4_transferencia_externa", label: "Foi realizado o preenchimento completo e correto do formulário de transferência externa?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m4_sbar_internacao", label: "As transferências de cuidados são realizadas pelo método SBAR no setor de internação (12/12h)?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m4_sbar_urgencia", label: "As transferências de cuidados são realizadas pelo método SBAR no setor de urgência (12/12h)?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m4_siglario", label: "Os profissionais seguem o siglário institucional, utilizando apenas siglas padronizadas?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m4_caderno_passagem_plantao", label: "O corpo clínico utiliza o caderno institucional para passagem de plantão de pacientes não internados?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m4_conhece_protocolo", label: "Há evidências de que o profissional conhece e executa as diretrizes do Protocolo de Comunicação Efetiva?", options: ["conforme", "nao_conforme"] },
+    ],
+  },
+  {
+    section: "Meta 5 – Higiene das Mãos",
+    items: [
+      { id: "m5_antes_contato", label: "Colaborador realiza a higienização das mãos antes do contato com o paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m5_antes_procedimento", label: "Colaborador realiza a higienização das mãos antes de procedimento asséptico?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m5_apos_fluidos", label: "Colaborador realiza a higienização das mãos após risco de exposição a fluidos corporais?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m5_apos_contato", label: "Colaborador realiza a higienização das mãos após contato com o paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m5_apos_areas_proximas", label: "Colaborador realiza a higienização das mãos após contato com áreas próximas ao paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m5_educacao_paciente", label: "Pacientes foram educados sobre a importância da higienização das mãos?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m5_sem_adornos", label: "Profissional não está utilizando adornos que comprometem a higienização (anéis, relógios, pulseiras)?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+    ],
+  },
+  {
+    section: "Meta 6 – Prevenção de Queda",
+    items: [
+      { id: "m6_risco_queda_admissao", label: "Paciente com risco de Queda identificado na admissão (pulseira preta)?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m6_risco_queda_beira_leito", label: "Paciente com Risco de Queda identificado à beira leito?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m6_risco_queda_prontuario", label: "Pacientes com Risco de Queda identificados em Prontuário?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m6_ferramenta_morse", label: "Foi utilizado ferramenta estruturada (Morse/Humpty Dumpty) para classificação de risco?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m6_prescricao_enfermagem", label: "Prescrição de enfermagem de acordo com o risco do paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m6_reavaliacao_diaria", label: "Enfermeiro realiza reavaliação do Risco diariamente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m6_grades_cama", label: "As camas possuem grades de proteção nas laterais com rodízios com trava?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m6_educacao_risco", label: "Paciente ou familiares foram educados quanto ao risco e barreiras de prevenção?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m6_registro_cuidados", label: "Existe registro em prontuário dos cuidados e orientações realizadas?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m6_campainha_funcionando", label: "Leito do paciente possui campainha ao alcance do paciente e funcionando?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m6_colab_notifica", label: "Conhece e/ou notifica os casos de Queda da unidade?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+      { id: "m6_colab_barreiras", label: "Colaborador conhece as barreiras de prevenção de queda?", options: ["conforme", "nao_conforme", "nao_aplica"] },
+    ],
+  },
+];
 
-// Checklist items for each audit type
-const checklistItems: Record<TipoAuditoria, { section: string; items: { id: string; label: string; options: string[] }[] }[]> = {
-  comunicacao_efetiva: [
-    {
-      section: "Avaliação de Comunicação",
-      items: [
-        { id: "lab_valor_critico", label: "O laboratório comunicou o setor do resultado de valor crítico e registrou em sua planilha interna de controle?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "registro_priorizacao_rx", label: "Foi realizado o registro de comunicação de priorização de análise médica do raio-x?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "registro_valor_critico_lab", label: "Foi registrado o resultado de valor crítico do exame laboratorial no prontuário do paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "registro_alteracao_rx", label: "Foi registrado a alteração crítica do exame de raio-x?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "conhece_receptor_critico", label: "O colaborador sabe quem pode receber o resultado de valor crítico e a comunicação de priorização análise do raio-x?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "transferencia_interna", label: "Foi realizado o preenchimento completo e correto do formulário de transferência interna entre os setores da unidade?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "transferencia_externa", label: "Foi realizado o preenchimento completo e correto do formulário de transferência externa?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "sbar_internacao", label: "As transferências de cuidados são realizadas por meio do método SBAR em todas as trocas de plantão (12/12 horas) no setor de internação e todos os campos preenchido corretamente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "sbar_urgencia", label: "As transferências de cuidados são realizadas por meio do método SBAR em todas as trocas de plantão (12/12 horas) no setor de urgência e todos os campos preenchido corretamente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "siglario", label: "Os profissionais seguem o siglário institucional, utilizando apenas siglas padronizadas nos registros e comunicações internas?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "caderno_passagem_plantao", label: "O corpo clínico utiliza o caderno institucional para registrar a passagem de plantão entre turnos nos casos de pacientes não internados em continuidade de atendimento?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "conhece_protocolo", label: "Há evidências de que o profissional conhece, entende e executa as diretrizes descritas no Protocolo de Comunicação Efetiva?", options: ["conforme", "nao_conforme"] },
-      ],
-    },
-  ],
-  lesao_pressao: [
-    {
-      section: "Avaliação com Paciente",
-      items: [
-        { id: "risco_lpp_admissao", label: "Avaliado o risco de LPP na admissão do paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "fatores_risco_beira_leito", label: "Paciente com fatores de risco de LPP identificados a beira leito?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "fatores_risco_prontuario", label: "Pacientes com fatores de risco de LPP identificados em Prontuário?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "ferramenta_braden", label: "Foi utilizado ferramenta estruturada (Braden - Adulto/BradenQ - neonatal e pediátrico) para classificação de risco?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "prescricao_enfermagem_risco", label: "Prescrição de enfermagem de acordo com o risco do paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "reavaliacao_risco", label: "Enfermeiro realiza reavaliação do Risco conforme score de risco?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "mudanca_decubito", label: "Mudança de decúbito conforme o risco do paciente (4/4h para risco leve e moderado 2/2h para risco alto e muito alto)", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "uso_coxins", label: "Paciente possui uso de coxins para proteção de proeminências ósseas (calcanhar, escapular, sacral)?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "educacao_mobilidade", label: "Paciente ou familiares foram educados para otimização da mobilidade?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-      ],
-    },
-    {
-      section: "Avaliação com Colaborador",
-      items: [
-        { id: "colab_protocolo", label: "Conhece o protocolo institucional?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "colab_notifica", label: "Conhece e/ou notifica os casos de Lesão por Pressão da unidade?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "colab_educacao", label: "Colaborador realiza educação com o paciente e familiares?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "colab_barreiras", label: "Colaborador conhece as barreiras de prevenção?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "colab_registro_pele", label: "Registra no prontuário as condições da pele do paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-      ],
-    },
-  ],
-  queda: [
-    {
-      section: "Avaliação com Paciente",
-      items: [
-        { id: "risco_queda_admissao", label: "Paciente com risco de Queda identificado na admissão (possui pulseira preta)?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "risco_queda_beira_leito", label: "Paciente com Risco de Queda identificados a beira leito?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "risco_queda_prontuario", label: "Pacientes com Risco de Queda identificados em Prontuário?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "ferramenta_morse", label: "Foi utilizado ferramenta estruturada (Morse/Humpty Dumpty) para classificação de risco?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "prescricao_enfermagem", label: "Prescrição de enfermagem de acordo com o risco do paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "reavaliacao_diaria", label: "Enfermeiro realiza reavaliação do Risco diariamente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "grades_cama", label: "As camas possuem grades de proteção nas laterais com rodízios com trava? Testar o funcionamento.", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "educacao_risco", label: "Paciente ou familiares foram educados quanto ao risco e barreiras de prevenção?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "registro_cuidados", label: "Existe registro em prontuário quanto aos cuidados com o paciente, bem como as orientações realizadas?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "campainha_funcionando", label: "Leito do paciente possui campainha ao alcance do paciente e funcionando?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-      ],
-    },
-    {
-      section: "Avaliação com Colaborador",
-      items: [
-        { id: "colab_protocolo", label: "Conhece o protocolo institucional?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "colab_notifica", label: "Conhece e/ou notifica os casos de Queda da unidade?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "colab_educacao", label: "Colaborador realizam educação com o paciente e familiares?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "colab_barreiras", label: "Colaborador conhece as barreiras de prevenção de queda?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-      ],
-    },
-  ],
-  higiene_maos: [
-    {
-      section: "Avaliação (5 Momentos)",
-      items: [
-        { id: "antes_contato", label: "Colaborador realiza a higienização das mãos (lavagem ou solução alcoólica) antes do contato com o paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "antes_procedimento", label: "Colaborador realiza a higienização das mãos (lavagem ou solução alcoólica) antes de realizar procedimento asséptico com o paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "apos_fluidos", label: "Colaborador realiza a higienização das mãos (lavagem ou solução alcoólica) após risco de exposição a fluidos corporais?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "apos_contato", label: "Colaborador realiza a higienização das mãos (lavagem ou solução alcoólica) após contato com o paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "apos_areas_proximas", label: "Colaborador realiza a higienização das mãos (lavagem ou solução alcoólica) após contato com as áreas próximas ao paciente?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "educacao_paciente", label: "Pacientes foram educados sobre a importância da higienização das mãos?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-      ],
-    },
-    {
-      section: "Avaliação com Colaborador",
-      items: [
-        { id: "colab_protocolo", label: "Conhece o protocolo institucional?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "colab_educacao", label: "Colaborador realiza educação com o paciente e familiares?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-        { id: "sem_adornos", label: "Profissional não está utilizando adornos que comprometem a higienização das mãos, como anéis, relógios e pulseiras?", options: ["conforme", "nao_conforme", "nao_aplica"] },
-      ],
-    },
-  ],
-  avaliacao_prontuarios_enfermeiros: [
-    {
-      section: "Classificação e Protocolos",
-      items: [
-        { id: "classificacao_manchester", label: "A classificação do paciente foi realizada de forma adequada, contendo todos os sinais vitais registrados, seguindo corretamente o Protocolo de Manchester?", options: ["sim_completo", "parcial_sem_manchester", "parcial_sem_sinais", "nao_conforme", "nao_aplica"] },
-        { id: "protocolo_sepse_dor", label: "Considerando os sintomas apresentados e sinais vitais, havia indicação de abertura de Protocolo de Sepse ou Protocolo de Dor Torácica?", options: ["sim_aberto", "sim_nao_aberto", "nao_abriu_indevido", "nao_aberto"] },
-        { id: "dupla_checagem", label: "Medicamentos de alta vigilância apresenta dupla checagem (carimbo e assinatura)", options: ["sim", "nao", "nao_aplica"] },
-        { id: "evolucao_anexada", label: "Possui evolução da sala de medicação anexada a prescrição médica?", options: ["sim", "nao", "nao_aplica"] },
-        { id: "evolucao_preenchida", label: "Evolução da sala de medicação preenchida corretamente?", options: ["sim_completo", "parcial", "nao", "nao_aplica"] },
-        { id: "assinatura_carimbo_classificacao", label: "A classificação de risco possui assinatura e carimbo do enfermeiro responsável?", options: ["sim_completo", "parcial", "nao"] },
-        { id: "aprazamento", label: "Aprazamento da prescrição médica correta?", options: ["sim", "nao", "nao_aplica"] },
-        { id: "checagem_medicamentos", label: "A checagem dos medicamentos administrados na sala de medicação, contem assinatura e carimbo?", options: ["sim", "nao", "nao_aplica"] },
-      ],
-    },
-    {
-      section: "Avaliação Qualitativa (Escala 0-10)",
-      items: [
-        { id: "historico_enfermagem", label: "Como você avalia o Histórico de Enfermagem? (Avaliação inicial completa do paciente na admissão)", options: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "nao_aplica"] },
-        { id: "diagnostico_enfermagem", label: "Como você avalia a descrição do Diagnóstico de Enfermagem?", options: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "nao_aplica"] },
-        { id: "prescricao_enfermagem", label: "Como você avalia a Prescrição de Enfermagem? (Plano de cuidados individualizado)", options: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "nao_aplica"] },
-        { id: "evolucao_enfermagem", label: "Como você avalia a descrição da Evolução de Enfermagem?", options: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "nao_aplica"] },
-        { id: "orientacao_alta", label: "Como você avalia a descrição da orientação de alta de enfermagem?", options: ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "nao_aplica"] },
-      ],
-    },
-  ],
-};
-
-// Score options for queda audit
+// Score options for risk
 const scoreRiscoQueda = [
   { value: "sem_risco_adulto", label: "Sem Risco (0 - 24 pontos) adulto" },
   { value: "baixo_risco_adulto", label: "Baixo Risco (25 - 50 pontos) adulto" },
-  { value: "alto_risco_adulto", label: "Alto Risco (Maior/igual 51 pontos) adulto" },
+  { value: "alto_risco_adulto", label: "Alto Risco (≥51 pontos) adulto" },
   { value: "baixo_risco_pediatrico", label: "Baixo Risco (7 a 11 pontos) pediátrico" },
   { value: "alto_risco_pediatrico", label: "Alto Risco (12 a 22 pontos) pediátrico" },
 ];
@@ -212,28 +185,13 @@ const grausLPP = [
   { value: "nao_aplica", label: "Não se aplica" },
 ];
 
-// Professional types for hygiene audit
+// Professional types
 const profissionaisAuditados = [
   { value: "auxiliar_tecnico", label: "Auxiliar/Técnico de Enfermagem" },
   { value: "enfermeiro", label: "Enfermeiro" },
   { value: "medico", label: "Médico" },
   { value: "outro", label: "Outro" },
 ];
-
-// Likert scale labels
-const likertLabels: Record<string, string> = {
-  "0": "0 - Registro inexistente",
-  "1": "1 - Registro insuficiente, sem utilidade clínica",
-  "2": "2 - Registro muito ruim",
-  "3": "3 - Registro ruim",
-  "4": "4 - Registro insatisfatório",
-  "5": "5 - Registro medíocre (mínimo aceitável)",
-  "6": "6 - Registro regular",
-  "7": "7 - Registro satisfatório",
-  "8": "8 - Registro bom",
-  "9": "9 - Registro muito bom",
-  "nao_aplica": "Não se aplica",
-};
 
 interface Props {
   currentUser: { id: string; nome: string };
@@ -244,13 +202,6 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
   const [auditorias, setAuditorias] = useState<AuditoriaSeguranca[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [tipoFilter, setTipoFilter] = useState<TipoAuditoria | "todos">("todos");
-  
-  // Dynamic config from DB
-  const [dynamicTipos, setDynamicTipos] = useState<{ value: string; label: string; icon: React.ElementType }[]>([]);
-  const [dynamicSetores, setDynamicSetores] = useState<Record<string, string[]>>({});
-  const [dynamicChecklist, setDynamicChecklist] = useState<Record<string, { section: string; items: { id: string; label: string; options: string[] }[] }[]>>({});
-  const [configLoaded, setConfigLoaded] = useState(false);
 
   // Dialog states
   const [novaAuditoriaDialog, setNovaAuditoriaDialog] = useState(false);
@@ -260,7 +211,6 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Form state
-  const [tipoSelecionado, setTipoSelecionado] = useState<TipoAuditoria | null>(null);
   const [formData, setFormData] = useState({
     data_auditoria: format(new Date(), "yyyy-MM-dd"),
     setor: "",
@@ -273,66 +223,13 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
     apresentou_queda: false,
     notificacao_aberta: "",
     profissional_auditado: "",
-    mes_avaliacao: "",
-    unidade_atendimento: "",
-    satisfacao_geral: 5,
     observacoes: "",
   });
   const [respostas, setRespostas] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    loadConfig();
     loadAuditorias();
   }, []);
-
-  const iconMap: Record<string, React.ElementType> = {
-    FileText, Stethoscope, ClipboardList, CheckCircle,
-  };
-
-  const loadConfig = async () => {
-    const [fRes, sRes, pRes] = await Promise.all([
-      supabase.from("auditoria_formularios_config").select("*").eq("ativo", true).order("ordem"),
-      supabase.from("auditoria_secoes_config").select("*").order("ordem"),
-      supabase.from("auditoria_perguntas_config").select("*").eq("ativo", true).order("ordem"),
-    ]);
-
-    if (fRes.data && sRes.data && pRes.data) {
-      const tipos = fRes.data.map((f: any) => ({
-        value: f.tipo as TipoAuditoria,
-        label: f.nome,
-        icon: iconMap[f.icone] || FileText,
-      }));
-      setDynamicTipos(tipos);
-
-      const setoresMap: Record<string, string[]> = {};
-      fRes.data.forEach((f: any) => { setoresMap[f.tipo] = f.setores || []; });
-      setDynamicSetores(setoresMap);
-
-      const checklistMap: Record<string, { section: string; items: { id: string; label: string; options: string[] }[] }[]> = {};
-      fRes.data.forEach((f: any) => {
-        const formSecoes = sRes.data.filter((s: any) => s.formulario_id === f.id);
-        checklistMap[f.tipo] = formSecoes.map((s: any) => ({
-          section: s.nome,
-          items: pRes.data
-            .filter((p: any) => p.secao_id === s.id)
-            .map((p: any) => ({ id: p.codigo, label: p.label, options: p.opcoes })),
-        }));
-      });
-      setDynamicChecklist(checklistMap);
-      setConfigLoaded(true);
-    } else {
-      // Fallback to hardcoded
-      setDynamicTipos(tiposAuditoria);
-      setDynamicSetores(setoresPorTipo);
-      setDynamicChecklist(checklistItems);
-      setConfigLoaded(true);
-    }
-  };
-
-  // Use dynamic or fallback
-  const activeTipos = configLoaded ? dynamicTipos : tiposAuditoria;
-  const activeSetores = configLoaded ? dynamicSetores : setoresPorTipo;
-  const activeChecklist = configLoaded ? dynamicChecklist : checklistItems;
 
   const loadAuditorias = async () => {
     setIsLoading(true);
@@ -347,8 +244,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
     setIsLoading(false);
   };
 
-  const handleSelectTipo = (tipo: TipoAuditoria) => {
-    setTipoSelecionado(tipo);
+  const resetForm = () => {
     setRespostas({});
     setFormData({
       data_auditoria: format(new Date(), "yyyy-MM-dd"),
@@ -362,9 +258,6 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       apresentou_queda: false,
       notificacao_aberta: "",
       profissional_auditado: "",
-      mes_avaliacao: "",
-      unidade_atendimento: "",
-      satisfacao_geral: 5,
       observacoes: "",
     });
   };
@@ -375,7 +268,6 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
 
   const handleEdit = (auditoria: AuditoriaSeguranca) => {
     setEditingAuditoriaId(auditoria.id);
-    setTipoSelecionado(auditoria.tipo);
     setFormData({
       data_auditoria: auditoria.data_auditoria,
       setor: auditoria.setor,
@@ -388,9 +280,6 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       apresentou_queda: auditoria.apresentou_queda || false,
       notificacao_aberta: auditoria.notificacao_aberta || "",
       profissional_auditado: auditoria.profissional_auditado || "",
-      mes_avaliacao: auditoria.mes_avaliacao || "",
-      unidade_atendimento: auditoria.unidade_atendimento || "",
-      satisfacao_geral: auditoria.satisfacao_geral || 5,
       observacoes: auditoria.observacoes || "",
     });
     setRespostas(auditoria.respostas as Record<string, string>);
@@ -398,13 +287,18 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
   };
 
   const handleSubmit = async () => {
-    if (!tipoSelecionado || !formData.setor || !formData.data_auditoria) {
-      toast({ title: "Erro", description: "Preencha os campos obrigatórios", variant: "destructive" });
+    if (!formData.setor || !formData.data_auditoria) {
+      toast({ title: "Erro", description: "Preencha os campos obrigatórios (Data e Setor)", variant: "destructive" });
+      return;
+    }
+
+    if (!formData.paciente_iniciais || !formData.paciente_ra || !formData.numero_prontuario) {
+      toast({ title: "Erro", description: "Preencha os dados do paciente (Iniciais, RA e Nº Prontuário)", variant: "destructive" });
       return;
     }
 
     // Check if all checklist items are answered
-    const allItems = (activeChecklist[tipoSelecionado] || []).flatMap(section => section.items);
+    const allItems = checklistUnificado.flatMap(section => section.items);
     const unansweredItems = allItems.filter(item => !respostas[item.id]);
     if (unansweredItems.length > 0) {
       toast({ 
@@ -418,7 +312,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
     setIsSubmitting(true);
 
     const payload = {
-      tipo: tipoSelecionado,
+      tipo: "seguranca_paciente",
       data_auditoria: formData.data_auditoria,
       setor: formData.setor,
       auditor_id: currentUser.id,
@@ -427,14 +321,12 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       paciente_ra: formData.paciente_ra || null,
       numero_prontuario: formData.numero_prontuario || null,
       score_risco: formData.score_risco || null,
-      possui_lpp: tipoSelecionado === "lesao_pressao" ? formData.possui_lpp : null,
+      possui_lpp: formData.possui_lpp,
       grau_lpp: formData.grau_lpp || null,
-      apresentou_queda: tipoSelecionado === "queda" ? formData.apresentou_queda : null,
+      apresentou_queda: formData.apresentou_queda,
       notificacao_aberta: formData.notificacao_aberta || null,
       profissional_auditado: formData.profissional_auditado || null,
-      mes_avaliacao: formData.mes_avaliacao || null,
-      unidade_atendimento: formData.unidade_atendimento || null,
-      satisfacao_geral: tipoSelecionado === "avaliacao_prontuarios_enfermeiros" ? formData.satisfacao_geral : null,
+      unidade_atendimento: formData.setor,
       respostas,
       observacoes: formData.observacoes || null,
     };
@@ -458,8 +350,8 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
     } else {
       toast({ title: "Sucesso", description: editingAuditoriaId ? "Auditoria atualizada com sucesso" : "Auditoria registrada com sucesso" });
       setNovaAuditoriaDialog(false);
-      setTipoSelecionado(null);
       setEditingAuditoriaId(null);
+      resetForm();
       loadAuditorias();
     }
     setIsSubmitting(false);
@@ -479,19 +371,19 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       a.setor.toLowerCase().includes(searchTerm.toLowerCase()) ||
       a.auditor_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (a.paciente_iniciais?.toLowerCase().includes(searchTerm.toLowerCase()));
-    const matchTipo = tipoFilter === "todos" || a.tipo === tipoFilter;
-    return matchSearch && matchTipo;
+    return matchSearch;
   });
 
   const exportToExcel = () => {
     const data = filteredAuditorias.map(a => {
       const stats = getConformidadeStats(a);
       return {
-        Tipo: activeTipos.find(t => t.value === a.tipo)?.label || a.tipo,
         Data: format(new Date(a.data_auditoria), "dd/MM/yyyy"),
         Setor: a.setor,
         Auditor: a.auditor_nome,
         "Paciente": a.paciente_iniciais || "-",
+        "RA": a.paciente_ra || "-",
+        "Nº Prontuário": a.numero_prontuario || "-",
         "Conformidade (%)": stats.percentual + "%",
         Observações: a.observacoes || "",
       };
@@ -508,14 +400,14 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
     
     autoTable(doc, {
       startY: 32,
-      head: [["Tipo", "Data", "Setor", "Auditor", "Conformidade"]],
+      head: [["Data", "Setor", "Auditor", "Paciente", "Conformidade"]],
       body: filteredAuditorias.map(a => {
         const stats = getConformidadeStats(a);
         return [
-          activeTipos.find(t => t.value === a.tipo)?.label || a.tipo,
           format(new Date(a.data_auditoria), "dd/MM/yyyy"),
           a.setor,
           a.auditor_nome,
+          a.paciente_iniciais || "-",
           stats.percentual + "%",
         ];
       }),
@@ -527,7 +419,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
 
   const exportSingleAuditoriaPDF = async (auditoria: AuditoriaSeguranca) => {
     const { createStandardPdf, savePdfWithFooter } = await import('@/lib/export-utils');
-    const tipoLabel = activeTipos.find(t => t.value === auditoria.tipo)?.label || auditoria.tipo;
+    const tipoLabel = "Auditoria de Segurança do Paciente";
     const { doc, logoImg } = await createStandardPdf(tipoLabel);
     const stats = getConformidadeStats(auditoria);
     const pageWidth = doc.internal.pageSize.width;
@@ -551,18 +443,17 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       const profLabel = profissionaisAuditados.find(p => p.value === auditoria.profissional_auditado)?.label || auditoria.profissional_auditado;
       infoRows.push(["Profissional Auditado", profLabel]);
     }
-    if (auditoria.mes_avaliacao) infoRows.push(["Mês de Avaliação", auditoria.mes_avaliacao]);
     if (auditoria.unidade_atendimento) infoRows.push(["Unidade de Atendimento", auditoria.unidade_atendimento]);
-    if (auditoria.tipo === "lesao_pressao") {
-      infoRows.push(["Possui LPP?", auditoria.possui_lpp ? "Sim" : "Não"]);
-      if (auditoria.possui_lpp && auditoria.grau_lpp) {
+    if (auditoria.possui_lpp) {
+      infoRows.push(["Possui LPP?", "Sim"]);
+      if (auditoria.grau_lpp) {
         const grauLabel = grausLPP.find(g => g.value === auditoria.grau_lpp)?.label || auditoria.grau_lpp;
         infoRows.push(["Grau LPP", grauLabel]);
       }
     }
-    if (auditoria.tipo === "queda") {
-      infoRows.push(["Apresentou Queda?", auditoria.apresentou_queda ? "Sim" : "Não"]);
-      if (auditoria.apresentou_queda && auditoria.notificacao_aberta) {
+    if (auditoria.apresentou_queda) {
+      infoRows.push(["Apresentou Queda?", "Sim"]);
+      if (auditoria.notificacao_aberta) {
         infoRows.push(["Notificação Aberta?", auditoria.notificacao_aberta === "sim" ? "Sim" : auditoria.notificacao_aberta === "nao" ? "Não" : "Não se aplica"]);
       }
     }
@@ -578,8 +469,8 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
     });
     y = (doc as any).lastAutoTable.finalY + 6;
 
-    // Checklist sections
-    const sections = activeChecklist[auditoria.tipo] || checklistItems[auditoria.tipo] || [];
+    // Use unified checklist for new audits, or try to match old structure
+    const sections = checklistUnificado;
     const resps = auditoria.respostas as Record<string, string>;
 
     for (const section of sections) {
@@ -589,20 +480,10 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
           val === "nao_conforme" ? "✗ Não Conforme" :
           val === "nao_aplica" ? "N/A" :
           val === "sim" ? "✓ Sim" :
-          val === "nao" ? "✗ Não" :
-          val === "sim_completo" ? "✓ Sim, completo" :
-          val === "parcial" ? "⚠ Parcialmente" :
-          val === "parcial_sem_manchester" ? "⚠ Parcial (sem Manchester)" :
-          val === "parcial_sem_sinais" ? "⚠ Parcial (sem sinais vitais)" :
-          val === "sim_aberto" ? "✓ Sim, aberto corretamente" :
-          val === "sim_nao_aberto" ? "✗ Sim, porém não aberto" :
-          val === "nao_abriu_indevido" ? "✗ Não, porém abriu protocolo" :
-          val === "nao_aberto" ? "Não foi aberto" :
-          likertLabels[val] || val;
+          val === "nao" ? "✗ Não" : val;
         return [item.label, displayValue];
       });
 
-      // Check page space
       if (y > doc.internal.pageSize.height - 60) {
         doc.addPage();
         y = 32;
@@ -621,15 +502,6 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       y = (doc as any).lastAutoTable.finalY + 4;
     }
 
-    // Satisfaction score for prontuarios
-    if (auditoria.tipo === "avaliacao_prontuarios_enfermeiros" && auditoria.satisfacao_geral != null) {
-      if (y > doc.internal.pageSize.height - 50) { doc.addPage(); y = 32; }
-      doc.setFontSize(9);
-      doc.setFont('helvetica', 'bold');
-      doc.text(`Satisfação Geral: ${auditoria.satisfacao_geral}/10`, 14, y + 4);
-      y += 10;
-    }
-
     // Observations
     if (auditoria.observacoes) {
       if (y > doc.internal.pageSize.height - 50) { doc.addPage(); y = 32; }
@@ -641,16 +513,14 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       doc.text(obsLines, 14, y + 10);
     }
 
-    const fileName = `auditoria-${auditoria.tipo}-${auditoria.setor}-${format(new Date(auditoria.data_auditoria), "dd-MM-yyyy")}`;
+    const fileName = `auditoria-seguranca_paciente-${auditoria.setor}-${format(new Date(auditoria.data_auditoria), "dd-MM-yyyy")}`;
     savePdfWithFooter(doc, tipoLabel, fileName, logoImg);
   };
 
   const renderFormFields = () => {
-    if (!tipoSelecionado) return null;
-
     return (
       <div className="space-y-6 max-h-[60vh] overflow-y-auto pr-2">
-        {/* Common fields */}
+        {/* Top fields: Data + Setor */}
         <div className="grid grid-cols-2 gap-4">
           <div>
             <Label htmlFor="data">Data da Auditoria *</Label>
@@ -665,10 +535,10 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
             <Label htmlFor="setor">Setor *</Label>
             <Select value={formData.setor} onValueChange={(v) => setFormData(prev => ({ ...prev, setor: v }))}>
               <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
+                <SelectValue placeholder="Selecione o setor" />
               </SelectTrigger>
               <SelectContent>
-                {(activeSetores[tipoSelecionado] || []).map(s => (
+                {setoresOpcoes.map(s => (
                   <SelectItem key={s} value={s}>{s}</SelectItem>
                 ))}
               </SelectContent>
@@ -676,32 +546,38 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
           </div>
         </div>
 
-        {/* Patient-specific fields */}
-        {(tipoSelecionado === "lesao_pressao" || tipoSelecionado === "queda") && (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Iniciais do Paciente</Label>
-              <Input
-                value={formData.paciente_iniciais}
-                onChange={(e) => setFormData(prev => ({ ...prev, paciente_iniciais: e.target.value }))}
-                placeholder="Ex: J.S."
-              />
-            </div>
-            <div>
-              <Label>RA do Paciente</Label>
-              <Input
-                value={formData.paciente_ra}
-                onChange={(e) => setFormData(prev => ({ ...prev, paciente_ra: e.target.value }))}
-                placeholder="Número do RA"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Score de risco for queda */}
-        {tipoSelecionado === "queda" && (
+        {/* Patient fields */}
+        <div className="grid grid-cols-3 gap-4">
           <div>
-            <Label>Score de Risco (Morse/Humpty Dumpty)</Label>
+            <Label>Paciente (Iniciais) *</Label>
+            <Input
+              value={formData.paciente_iniciais}
+              onChange={(e) => setFormData(prev => ({ ...prev, paciente_iniciais: e.target.value }))}
+              placeholder="Ex: P.M.O"
+            />
+          </div>
+          <div>
+            <Label>RA do Paciente *</Label>
+            <Input
+              value={formData.paciente_ra}
+              onChange={(e) => setFormData(prev => ({ ...prev, paciente_ra: e.target.value }))}
+              placeholder="Número do RA"
+            />
+          </div>
+          <div>
+            <Label>Nº Prontuário *</Label>
+            <Input
+              value={formData.numero_prontuario}
+              onChange={(e) => setFormData(prev => ({ ...prev, numero_prontuario: e.target.value }))}
+              placeholder="Número do prontuário"
+            />
+          </div>
+        </div>
+
+        {/* Score de Risco + Profissional Auditado */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <Label>Score de Risco (Morse/Humpty Dumpty/Braden)</Label>
             <Select value={formData.score_risco} onValueChange={(v) => setFormData(prev => ({ ...prev, score_risco: v }))}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione o score" />
@@ -713,10 +589,6 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
               </SelectContent>
             </Select>
           </div>
-        )}
-
-        {/* Professional type for higiene_maos */}
-        {tipoSelecionado === "higiene_maos" && (
           <div>
             <Label>Profissional Auditado</Label>
             <Select value={formData.profissional_auditado} onValueChange={(v) => setFormData(prev => ({ ...prev, profissional_auditado: v }))}>
@@ -730,58 +602,21 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
               </SelectContent>
             </Select>
           </div>
-        )}
+        </div>
 
-        {/* Avaliação de prontuários specific fields */}
-        {tipoSelecionado === "avaliacao_prontuarios_enfermeiros" && (
-          <>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <Label>Mês de Avaliação</Label>
-                <Input
-                  value={formData.mes_avaliacao}
-                  onChange={(e) => setFormData(prev => ({ ...prev, mes_avaliacao: e.target.value }))}
-                  placeholder="Ex: Janeiro/2026"
-                />
-              </div>
-              <div>
-                <Label>Iniciais do Paciente</Label>
-                <Input
-                  value={formData.paciente_iniciais}
-                  onChange={(e) => setFormData(prev => ({ ...prev, paciente_iniciais: e.target.value }))}
-                />
-              </div>
-              <div>
-                <Label>Nº Prontuário</Label>
-                <Input
-                  value={formData.numero_prontuario}
-                  onChange={(e) => setFormData(prev => ({ ...prev, numero_prontuario: e.target.value }))}
-                />
-              </div>
-            </div>
-            <div>
-              <Label>Unidade de Atendimento</Label>
-              <Select value={formData.unidade_atendimento} onValueChange={(v) => setFormData(prev => ({ ...prev, unidade_atendimento: v }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {setoresPorTipo.avaliacao_prontuarios_enfermeiros.map(u => (
-                    <SelectItem key={u} value={u}>{u}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </>
-        )}
-
-        {/* Checklist sections */}
-        {(activeChecklist[tipoSelecionado] || []).map((section, idx) => (
+        {/* Checklist sections - All 6 Metas */}
+        {checklistUnificado.map((section, idx) => (
           <Card key={idx} className="border-l-4 border-l-primary">
             <CardHeader className="py-3">
               <CardTitle className="text-base">{section.section}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {/* Meta 5 has Profissional Auditado info reminder */}
+              {section.section.includes("Meta 5") && formData.profissional_auditado && (
+                <div className="text-sm text-muted-foreground bg-muted p-2 rounded">
+                  Profissional Auditado: {profissionaisAuditados.find(p => p.value === formData.profissional_auditado)?.label || formData.profissional_auditado}
+                </div>
+              )}
               {section.items.map((item) => (
                 <div key={item.id} className="space-y-2">
                   <Label className="text-sm leading-relaxed">{item.label}</Label>
@@ -793,18 +628,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
                     {item.options.map((opt) => {
                       const label = opt === "conforme" ? "Conforme" :
                         opt === "nao_conforme" ? "Não Conforme" :
-                        opt === "nao_aplica" ? "Não se aplica" :
-                        opt === "sim" ? "Sim" :
-                        opt === "nao" ? "Não" :
-                        opt === "sim_completo" ? "Sim, completo" :
-                        opt === "parcial" ? "Parcialmente" :
-                        opt === "parcial_sem_manchester" ? "Parcial (sem Manchester)" :
-                        opt === "parcial_sem_sinais" ? "Parcial (sem sinais vitais)" :
-                        opt === "sim_aberto" ? "Sim, foi aberto corretamente" :
-                        opt === "sim_nao_aberto" ? "Sim, porém não foi aberto" :
-                        opt === "nao_abriu_indevido" ? "Não, porém abriu protocolo" :
-                        opt === "nao_aberto" ? "Não, não foi aberto" :
-                        likertLabels[opt] || opt;
+                        opt === "nao_aplica" ? "Não se aplica" : opt;
 
                       return (
                         <div key={opt} className="flex items-center space-x-2">
@@ -822,126 +646,95 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
           </Card>
         ))}
 
-        {/* LPP specific questions */}
-        {tipoSelecionado === "lesao_pressao" && (
-          <Card className="border-l-4 border-l-orange-500">
-            <CardHeader className="py-3">
-              <CardTitle className="text-base">Informações sobre LPP</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        {/* LPP specific */}
+        <Card className="border-l-4 border-l-orange-500">
+          <CardHeader className="py-3">
+            <CardTitle className="text-base">Informações sobre LPP</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Paciente auditado com Lesão por Pressão?</Label>
+              <RadioGroup
+                value={formData.possui_lpp ? "sim" : "nao"}
+                onValueChange={(v) => setFormData(prev => ({ ...prev, possui_lpp: v === "sim" }))}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="sim" id="lpp-sim" />
+                  <Label htmlFor="lpp-sim">Sim</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="nao" id="lpp-nao" />
+                  <Label htmlFor="lpp-nao">Não</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            {formData.possui_lpp && (
+              <div>
+                <Label>Qual o grau da LPP?</Label>
+                <Select value={formData.grau_lpp} onValueChange={(v) => setFormData(prev => ({ ...prev, grau_lpp: v }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione o grau" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {grausLPP.map(g => (
+                      <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Queda specific */}
+        <Card className="border-l-4 border-l-orange-500">
+          <CardHeader className="py-3">
+            <CardTitle className="text-base">Informações sobre Queda</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Paciente auditado apresentou queda durante internação?</Label>
+              <RadioGroup
+                value={formData.apresentou_queda ? "sim" : "nao"}
+                onValueChange={(v) => setFormData(prev => ({ ...prev, apresentou_queda: v === "sim" }))}
+                className="flex gap-4"
+              >
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="sim" id="queda-sim" />
+                  <Label htmlFor="queda-sim">Sim</Label>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <RadioGroupItem value="nao" id="queda-nao" />
+                  <Label htmlFor="queda-nao">Não</Label>
+                </div>
+              </RadioGroup>
+            </div>
+            {formData.apresentou_queda && (
               <div className="space-y-2">
-                <Label>Paciente auditado com Lesão por Pressão?</Label>
+                <Label>Foi aberto notificação de incidentes?</Label>
                 <RadioGroup
-                  value={formData.possui_lpp ? "sim" : "nao"}
-                  onValueChange={(v) => setFormData(prev => ({ ...prev, possui_lpp: v === "sim" }))}
+                  value={formData.notificacao_aberta}
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, notificacao_aberta: v }))}
                   className="flex gap-4"
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="sim" id="lpp-sim" />
-                    <Label htmlFor="lpp-sim">Sim</Label>
+                    <RadioGroupItem value="sim" id="notif-sim" />
+                    <Label htmlFor="notif-sim">Sim</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="nao" id="lpp-nao" />
-                    <Label htmlFor="lpp-nao">Não</Label>
+                    <RadioGroupItem value="nao" id="notif-nao" />
+                    <Label htmlFor="notif-nao">Não</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="nao_aplica" id="notif-na" />
+                    <Label htmlFor="notif-na">Não se aplica</Label>
                   </div>
                 </RadioGroup>
               </div>
-              {formData.possui_lpp && (
-                <div>
-                  <Label>Qual o grau da LPP?</Label>
-                  <Select value={formData.grau_lpp} onValueChange={(v) => setFormData(prev => ({ ...prev, grau_lpp: v }))}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione o grau" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {grausLPP.map(g => (
-                        <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Queda specific questions */}
-        {tipoSelecionado === "queda" && (
-          <Card className="border-l-4 border-l-orange-500">
-            <CardHeader className="py-3">
-              <CardTitle className="text-base">Informações sobre Queda</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label>Paciente auditado apresentou queda durante internação?</Label>
-                <RadioGroup
-                  value={formData.apresentou_queda ? "sim" : "nao"}
-                  onValueChange={(v) => setFormData(prev => ({ ...prev, apresentou_queda: v === "sim" }))}
-                  className="flex gap-4"
-                >
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="sim" id="queda-sim" />
-                    <Label htmlFor="queda-sim">Sim</Label>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="nao" id="queda-nao" />
-                    <Label htmlFor="queda-nao">Não</Label>
-                  </div>
-                </RadioGroup>
-              </div>
-              {formData.apresentou_queda && (
-                <div className="space-y-2">
-                  <Label>Foi aberto notificação de incidentes?</Label>
-                  <RadioGroup
-                    value={formData.notificacao_aberta}
-                    onValueChange={(v) => setFormData(prev => ({ ...prev, notificacao_aberta: v }))}
-                    className="flex gap-4"
-                  >
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="sim" id="notif-sim" />
-                      <Label htmlFor="notif-sim">Sim</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="nao" id="notif-nao" />
-                      <Label htmlFor="notif-nao">Não</Label>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="nao_aplica" id="notif-na" />
-                      <Label htmlFor="notif-na">Não se aplica</Label>
-                    </div>
-                  </RadioGroup>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Satisfação geral for avaliação prontuários */}
-        {tipoSelecionado === "avaliacao_prontuarios_enfermeiros" && (
-          <Card className="border-l-4 border-l-blue-500">
-            <CardHeader className="py-3">
-              <CardTitle className="text-base">Satisfação Geral</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label>No geral, qual é o seu nível de satisfação com a qualidade das informações deste prontuário? (1-10)</Label>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm text-muted-foreground">Extremamente insatisfeito</span>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    value={formData.satisfacao_geral}
-                    onChange={(e) => setFormData(prev => ({ ...prev, satisfacao_geral: parseInt(e.target.value) }))}
-                    className="flex-1"
-                  />
-                  <span className="text-sm text-muted-foreground">Extremamente satisfeito</span>
-                  <Badge variant="outline" className="ml-2">{formData.satisfacao_geral}</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+            )}
+          </CardContent>
+        </Card>
 
         {/* Observações */}
         <div>
@@ -967,23 +760,12 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
         <SearchInput
           value={searchTerm}
           onChange={setSearchTerm}
-          placeholder="Buscar..."
-          className="w-[250px]"
+          placeholder="Buscar por setor, auditor ou paciente..."
+          className="w-[300px]"
         />
-        <Select value={tipoFilter} onValueChange={(v) => setTipoFilter(v as TipoAuditoria | "todos")}>
-          <SelectTrigger className="w-[280px]">
-            <SelectValue placeholder="Tipo de auditoria" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos os tipos</SelectItem>
-            {activeTipos.map(t => (
-              <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
         <div className="ml-auto flex gap-2">
           <ExportDropdown onExportExcel={exportToExcel} onExportPDF={exportToPDF} />
-          <Button onClick={() => setNovaAuditoriaDialog(true)}>
+          <Button onClick={() => { resetForm(); setNovaAuditoriaDialog(true); }}>
             <Plus className="h-4 w-4 mr-2" />
             Nova Auditoria
           </Button>
@@ -995,7 +777,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
           icon={ClipboardList}
           title="Nenhuma auditoria encontrada"
           description="Registre auditorias de segurança do paciente"
-          action={{ label: "Nova Auditoria", onClick: () => setNovaAuditoriaDialog(true) }}
+          action={{ label: "Nova Auditoria", onClick: () => { resetForm(); setNovaAuditoriaDialog(true); } }}
         />
       ) : (
         <Card>
@@ -1003,11 +785,11 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Tipo</TableHead>
                   <TableHead>Data</TableHead>
                   <TableHead>Setor</TableHead>
                   <TableHead>Auditor</TableHead>
                   <TableHead>Paciente</TableHead>
+                  <TableHead>RA</TableHead>
                   <TableHead>Conformidade</TableHead>
                   <TableHead className="text-right">Ações</TableHead>
                 </TableRow>
@@ -1018,15 +800,11 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
                   const percentNum = parseFloat(stats.percentual);
                   return (
                     <TableRow key={a.id}>
-                      <TableCell>
-                        <Badge variant="outline" className="whitespace-nowrap">
-                          {activeTipos.find(t => t.value === a.tipo)?.label || a.tipo}
-                        </Badge>
-                      </TableCell>
                       <TableCell>{format(new Date(a.data_auditoria), "dd/MM/yyyy")}</TableCell>
                       <TableCell>{a.setor}</TableCell>
                       <TableCell>{a.auditor_nome}</TableCell>
                       <TableCell>{a.paciente_iniciais || "-"}</TableCell>
+                      <TableCell>{a.paciente_ra || "-"}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
@@ -1064,59 +842,28 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       {/* Nova Auditoria Dialog */}
       <Dialog open={novaAuditoriaDialog} onOpenChange={(open) => {
         setNovaAuditoriaDialog(open);
-        if (!open) { setTipoSelecionado(null); setEditingAuditoriaId(null); }
+        if (!open) { setEditingAuditoriaId(null); resetForm(); }
       }}>
         <DialogContent className="max-w-4xl max-h-[90vh]">
           <DialogHeader>
             <DialogTitle>
-              {tipoSelecionado 
-                ? (editingAuditoriaId ? "Editar — " : "") + (activeTipos.find(t => t.value === tipoSelecionado)?.label || "")
-                : "Nova Auditoria de Segurança do Paciente"
-              }
+              {editingAuditoriaId ? "Editar Auditoria de Segurança do Paciente" : "Nova Auditoria de Segurança do Paciente"}
             </DialogTitle>
             <DialogDescription>
-              {tipoSelecionado 
-                ? "Preencha todos os campos do formulário de auditoria"
-                : "Selecione o tipo de auditoria que deseja realizar"
-              }
+              Formulário unificado com as 6 Metas Internacionais de Segurança do Paciente
             </DialogDescription>
           </DialogHeader>
 
-          {!tipoSelecionado ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
-              {activeTipos.map(tipo => (
-                <Card 
-                  key={tipo.value} 
-                  className="cursor-pointer hover:border-primary transition-colors"
-                  onClick={() => handleSelectTipo(tipo.value as TipoAuditoria)}
-                >
-                  <CardContent className="flex items-center gap-4 py-4">
-                    <div className="p-3 rounded-lg bg-primary/10">
-                      <tipo.icon className="h-6 w-6 text-primary" />
-                    </div>
-                    <div>
-                      <h4 className="font-medium">{tipo.label}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {(activeChecklist[tipo.value as TipoAuditoria] || []).reduce((acc: number, s: any) => acc + s.items.length, 0)} itens
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <>
-              {renderFormFields()}
-              <DialogFooter className="mt-4">
-                <Button variant="outline" onClick={() => setTipoSelecionado(null)}>
-                  Voltar
-                </Button>
-                <Button onClick={handleSubmit} disabled={isSubmitting}>
-                  {isSubmitting ? "Salvando..." : editingAuditoriaId ? "Atualizar Auditoria" : "Salvar Auditoria"}
-                </Button>
-              </DialogFooter>
-            </>
-          )}
+          {renderFormFields()}
+          
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setNovaAuditoriaDialog(false)}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSubmit} disabled={isSubmitting}>
+              {isSubmitting ? "Salvando..." : editingAuditoriaId ? "Atualizar Auditoria" : "Salvar Auditoria"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
@@ -1124,17 +871,11 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       <Dialog open={detalhesDialog} onOpenChange={setDetalhesDialog}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              Detalhes da Auditoria
-            </DialogTitle>
+            <DialogTitle>Detalhes da Auditoria</DialogTitle>
           </DialogHeader>
           {selectedAuditoria && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label className="text-muted-foreground">Tipo</Label>
-                  <p className="font-medium">{activeTipos.find(t => t.value === selectedAuditoria.tipo)?.label}</p>
-                </div>
                 <div>
                   <Label className="text-muted-foreground">Data</Label>
                   <p className="font-medium">{format(new Date(selectedAuditoria.data_auditoria), "dd/MM/yyyy")}</p>
@@ -1153,35 +894,67 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
                     <p className="font-medium">{selectedAuditoria.paciente_iniciais}</p>
                   </div>
                 )}
+                {selectedAuditoria.paciente_ra && (
+                  <div>
+                    <Label className="text-muted-foreground">RA do Paciente</Label>
+                    <p className="font-medium">{selectedAuditoria.paciente_ra}</p>
+                  </div>
+                )}
+                {selectedAuditoria.numero_prontuario && (
+                  <div>
+                    <Label className="text-muted-foreground">Nº Prontuário</Label>
+                    <p className="font-medium">{selectedAuditoria.numero_prontuario}</p>
+                  </div>
+                )}
+                {selectedAuditoria.score_risco && (
+                  <div>
+                    <Label className="text-muted-foreground">Score de Risco</Label>
+                    <p className="font-medium">{scoreRiscoQueda.find(s => s.value === selectedAuditoria.score_risco)?.label || selectedAuditoria.score_risco}</p>
+                  </div>
+                )}
+                {selectedAuditoria.profissional_auditado && (
+                  <div>
+                    <Label className="text-muted-foreground">Profissional Auditado</Label>
+                    <p className="font-medium">{profissionaisAuditados.find(p => p.value === selectedAuditoria.profissional_auditado)?.label || selectedAuditoria.profissional_auditado}</p>
+                  </div>
+                )}
               </div>
 
               <div className="border-t pt-4">
                 <h4 className="font-medium mb-3">Respostas do Checklist</h4>
-                <div className="space-y-2">
-                  {Object.entries(selectedAuditoria.respostas as Record<string, string>).map(([key, value]) => {
-                    const allItems = (activeChecklist[selectedAuditoria.tipo] || checklistItems[selectedAuditoria.tipo] || []).flatMap((s: any) => s.items) || [];
-                    const item = allItems.find(i => i.id === key);
-                    const displayValue = value === "conforme" ? "Conforme" :
-                      value === "nao_conforme" ? "Não Conforme" :
-                      value === "nao_aplica" ? "Não se aplica" :
-                      value === "sim" ? "Sim" :
-                      value === "nao" ? "Não" :
-                      likertLabels[value] || value;
-                    
-                    return (
-                      <div key={key} className="flex items-start justify-between py-2 border-b last:border-0">
-                        <span className="text-sm flex-1 pr-4">{item?.label || key}</span>
-                        <Badge 
-                          variant={value === "conforme" || value === "sim" || value === "sim_completo" ? "default" : 
-                            value === "nao_conforme" || value === "nao" ? "destructive" : "secondary"}
-                          className="shrink-0"
-                        >
-                          {displayValue}
-                        </Badge>
+                {checklistUnificado.map((section, idx) => {
+                  const resps = selectedAuditoria.respostas as Record<string, string>;
+                  const sectionHasAnswers = section.items.some(item => resps[item.id]);
+                  if (!sectionHasAnswers) return null;
+                  
+                  return (
+                    <div key={idx} className="mb-4">
+                      <h5 className="text-sm font-semibold text-primary mb-2">{section.section}</h5>
+                      <div className="space-y-1">
+                        {section.items.map(item => {
+                          const value = resps[item.id];
+                          if (!value) return null;
+                          const displayValue = value === "conforme" ? "Conforme" :
+                            value === "nao_conforme" ? "Não Conforme" :
+                            value === "nao_aplica" ? "Não se aplica" : value;
+                          
+                          return (
+                            <div key={item.id} className="flex items-start justify-between py-2 border-b last:border-0">
+                              <span className="text-sm flex-1 pr-4">{item.label}</span>
+                              <Badge 
+                                variant={value === "conforme" ? "default" : 
+                                  value === "nao_conforme" ? "destructive" : "secondary"}
+                                className="shrink-0"
+                              >
+                                {displayValue}
+                              </Badge>
+                            </div>
+                          );
+                        })}
                       </div>
-                    );
-                  })}
-                </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {selectedAuditoria.observacoes && (
