@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useUserRole } from "@/hooks/useUserRole";
 import { LayoutDashboard, Users, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ClipboardX, Receipt, Shield, ShieldAlert, Monitor, Wrench, Stethoscope, FlaskConical, Calendar, UtensilsCrossed, Ambulance, FileText, UserCog, Shirt, HardHat, Heart, AlertTriangle, Syringe, ExternalLink, MessageSquare, Ticket, GraduationCap, Video, Building2, UserRound, BedDouble } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { NavLink } from "@/components/NavLink";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
