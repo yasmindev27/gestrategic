@@ -22,21 +22,15 @@ const PoliticaPrivacidade = lazy(() => import("./pages/PoliticaPrivacidade"));
 const ModoTVPage = lazy(() => import("./pages/ModoTVPage"));
 
 
-// Loading fallback component
-const PageLoader = () => (
-  <div className="min-h-screen bg-background flex items-center justify-center">
-    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-  </div>
-);
+// (Removido PageLoader global)
 
-// Optimized QueryClient with better caching defaults
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 5 * 60 * 1000, // 5 minutos: mantém cache fresco por 5min
-      gcTime: 1000 * 60 * 30, // 30 minutes (previously cacheTime)
+      staleTime: 10 * 60 * 1000, // 10 minutos: cache first
+      gcTime: 1000 * 60 * 30,
       refetchOnWindowFocus: false,
-      // Retry apenas se não for erro de rede/socket/403
+      refetchOnMount: false,
       retry: (failureCount, error: any) => {
         if (
           error?.message?.includes('WebSocket') ||
@@ -50,6 +44,11 @@ const queryClient = new QueryClient({
   },
 });
 
+
+// Layout estático fora do Suspense
+import Sidebar from "@/components/Sidebar";
+// (Se houver Topbar, importar também)
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -58,21 +57,24 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/dashboard/*" element={<Dashboard />} />
-                <Route path="/totem" element={<TotemRefeicoes />} />
-                <Route path="/terminal" element={<TotemRefeicoes />} />
-                <Route path="/transporte" element={<Transporte />} />
-                <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
-                <Route path="/modo-tv" element={<ModoTVPage />} />
-                {/* Renderiza o Dashboard diretamente para evitar loop de redirecionamento */}
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </Suspense>
+            <div className="flex min-h-screen">
+              <Sidebar />
+              <main className="flex-1">
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<Auth />} />
+                  <Route path="/dashboard/*" element={<Dashboard />} />
+                  <Route path="/totem" element={<TotemRefeicoes />} />
+                  <Route path="/terminal" element={<TotemRefeicoes />} />
+                  <Route path="/transporte" element={<Transporte />} />
+                  <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+                  <Route path="/modo-tv" element={<ModoTVPage />} />
+                  {/* Renderiza o Dashboard diretamente para evitar loop de redirecionamento */}
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </main>
+            </div>
           </BrowserRouter>
         </ErrorBoundary>
       </TooltipProvider>
