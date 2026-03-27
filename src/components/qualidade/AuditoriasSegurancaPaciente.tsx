@@ -574,22 +574,6 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
           </div>
         </div>
 
-        {/* Score de Risco + Profissional Auditado */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label>Score de Risco (Morse/Humpty Dumpty/Braden)</Label>
-            <Select value={formData.score_risco} onValueChange={(v) => setFormData(prev => ({ ...prev, score_risco: v }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o score" />
-              </SelectTrigger>
-              <SelectContent>
-                {scoreRiscoQueda.map(s => (
-                  <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
 
         {/* Checklist sections - All 6 Metas */}
         {checklistUnificado.map((section, idx) => (
@@ -608,6 +592,21 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
                     <SelectContent>
                       {profissionaisAuditados.map(p => (
                         <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+              {section.section.includes("Meta 6") && (
+                <div className="space-y-2">
+                  <Label>Score de Risco (Morse/Humpty Dumpty)</Label>
+                  <Select value={formData.score_risco} onValueChange={(v) => setFormData(prev => ({ ...prev, score_risco: v }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o score" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {scoreRiscoQueda.map(s => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
