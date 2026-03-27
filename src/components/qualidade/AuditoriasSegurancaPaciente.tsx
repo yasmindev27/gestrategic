@@ -589,19 +589,6 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label>Profissional Auditado</Label>
-            <Select value={formData.profissional_auditado} onValueChange={(v) => setFormData(prev => ({ ...prev, profissional_auditado: v }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {profissionaisAuditados.map(p => (
-                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         {/* Checklist sections - All 6 Metas */}
