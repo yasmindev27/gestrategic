@@ -33,7 +33,7 @@ const PageLoader = () => (
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5, // 5 minutes
+      staleTime: 5 * 60 * 1000, // 5 minutos: mantém cache fresco por 5min
       gcTime: 1000 * 60 * 30, // 30 minutes (previously cacheTime)
       refetchOnWindowFocus: false,
       // Retry apenas se não for erro de rede/socket/403

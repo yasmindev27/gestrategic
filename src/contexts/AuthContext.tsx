@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useMemo, useState, ReactNode } from "react";
+import React, { createContext, useContext, useEffect, useMemo, useState, useRef, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const initialLoadComplete = useRef(false);
 
 
 
@@ -25,10 +26,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setSession(data.session);
         setUser(data.session?.user ?? null);
         setIsLoading(false);
+        initialLoadComplete.current = true;
       }
     }).catch((err) => {
-      // Falha de rede/socket/Realtime: mantém estado anterior
       setIsLoading(false);
+      initialLoadComplete.current = true;
     });
     return () => { mounted = false; };
   }, []);
@@ -45,6 +47,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setSession(prev => {
         if (prev?.user?.id === newSession?.user?.id) return prev;
         setUser(newSession?.user ?? null);
+        // Nunca volte a exibir loading após o primeiro carregamento
+        if (!initialLoadComplete.current) setIsLoading(true);
+        else setIsLoading(false);
         return newSession;
       });
     });
@@ -55,7 +60,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value = useMemo(() => ({
     session,
     user,
-    isLoading,
+    isLoading: initialLoadComplete.current ? false : isLoading,
   }), [session, user, isLoading]);
 
   return (
