@@ -591,7 +591,7 @@ const LandingPage = () => {
                 <ul className="space-y-2">
                   {navLinks.map((link) => (
                     <li key={link.label}>
-                      <a href={link.href} className="text-xs hover:text-white transition-colors">{link.label}</a>
+                      <NavLink to={link.to} className="text-xs hover:text-white transition-colors">{link.label}</NavLink>
                     </li>
                   ))}
                 </ul>
