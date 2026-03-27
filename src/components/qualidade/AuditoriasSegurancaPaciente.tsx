@@ -453,7 +453,12 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
     if (auditoria.numero_prontuario) infoRows.push(["Nº Prontuário", auditoria.numero_prontuario]);
     if (auditoria.score_risco) {
       const scoreLabel = scoreRiscoQueda.find(s => s.value === auditoria.score_risco)?.label || auditoria.score_risco;
-      infoRows.push(["Score de Risco", scoreLabel]);
+      infoRows.push(["Score de Risco (Queda)", scoreLabel]);
+    }
+    const bradenScore = (auditoria.respostas as any)?.score_risco_braden;
+    if (bradenScore) {
+      const bradenLabel = scoreRiscoBraden.find(s => s.value === bradenScore)?.label || bradenScore;
+      infoRows.push(["Score de Risco (Braden/BradenQ)", bradenLabel]);
     }
     if (auditoria.profissional_auditado) {
       const profLabel = profissionaisAuditados.find(p => p.value === auditoria.profissional_auditado)?.label || auditoria.profissional_auditado;
