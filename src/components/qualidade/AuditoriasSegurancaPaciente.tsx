@@ -598,6 +598,21 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
               <CardTitle className="text-base">{section.section}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {section.section.includes("Meta 3") && (
+                <div className="space-y-2">
+                  <Label>Score de Risco (Braden Adulto / BradenQ Pediátrico)</Label>
+                  <Select value={formData.score_risco_braden} onValueChange={(v) => setFormData(prev => ({ ...prev, score_risco_braden: v }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o score Braden" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {scoreRiscoBraden.map(s => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               {section.section.includes("Meta 5") && (
                 <div className="space-y-2">
                   <Label>Profissional Auditado</Label>
