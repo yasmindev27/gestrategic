@@ -36,9 +36,13 @@ const queryClient = new QueryClient({
       staleTime: 1000 * 60 * 5, // 5 minutes
       gcTime: 1000 * 60 * 30, // 30 minutes (previously cacheTime)
       refetchOnWindowFocus: false,
-      // Retry apenas se não for erro de rede/socket
+      // Retry apenas se não for erro de rede/socket/403
       retry: (failureCount, error: any) => {
-        if (error?.message?.includes('WebSocket') || error?.message?.includes('NetworkError')) return false;
+        if (
+          error?.message?.includes('WebSocket') ||
+          error?.message?.includes('NetworkError') ||
+          error?.message?.includes('403')
+        ) return false;
         return failureCount < 2;
       },
       retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 10000),
