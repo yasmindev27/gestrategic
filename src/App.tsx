@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import { AuthProvider } from "./contexts/AuthContext";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -42,29 +43,31 @@ const queryClient = new QueryClient({
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <ErrorBoundary moduleName="App">
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/dashboard/*" element={<Dashboard />} />
-              <Route path="/totem" element={<TotemRefeicoes />} />
-              <Route path="/terminal" element={<TotemRefeicoes />} />
-              <Route path="/transporte" element={<Transporte />} />
-              <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
-              <Route path="/modo-tv" element={<ModoTVPage />} />
-              {/* Renderiza o Dashboard diretamente para evitar loop de redirecionamento */}
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
-        </BrowserRouter>
-      </ErrorBoundary>
-    </TooltipProvider>
+    <AuthProvider>
+      <TooltipProvider>
+        <ErrorBoundary moduleName="App">
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/dashboard/*" element={<Dashboard />} />
+                <Route path="/totem" element={<TotemRefeicoes />} />
+                <Route path="/terminal" element={<TotemRefeicoes />} />
+                <Route path="/transporte" element={<Transporte />} />
+                <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+                <Route path="/modo-tv" element={<ModoTVPage />} />
+                {/* Renderiza o Dashboard diretamente para evitar loop de redirecionamento */}
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </Suspense>
+          </BrowserRouter>
+        </ErrorBoundary>
+      </TooltipProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 
