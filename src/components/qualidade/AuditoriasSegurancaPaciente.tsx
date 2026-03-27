@@ -176,6 +176,19 @@ const scoreRiscoQueda = [
   { value: "alto_risco_pediatrico", label: "Alto Risco (12 a 22 pontos) pediátrico" },
 ];
 
+// Score options for Braden (LPP)
+const scoreRiscoBraden = [
+  { value: "sem_risco_braden", label: "Sem Risco (≥19 pontos) - Braden Adulto" },
+  { value: "baixo_risco_braden", label: "Baixo Risco (15 a 18 pontos) - Braden Adulto" },
+  { value: "moderado_risco_braden", label: "Risco Moderado (13 a 14 pontos) - Braden Adulto" },
+  { value: "alto_risco_braden", label: "Alto Risco (10 a 12 pontos) - Braden Adulto" },
+  { value: "muito_alto_risco_braden", label: "Muito Alto Risco (≤9 pontos) - Braden Adulto" },
+  { value: "sem_risco_bradenq", label: "Sem Risco (≥25 pontos) - BradenQ Pediátrico" },
+  { value: "baixo_risco_bradenq", label: "Baixo Risco (21 a 24 pontos) - BradenQ Pediátrico" },
+  { value: "moderado_risco_bradenq", label: "Risco Moderado (17 a 20 pontos) - BradenQ Pediátrico" },
+  { value: "alto_risco_bradenq", label: "Alto Risco (≤16 pontos) - BradenQ Pediátrico" },
+];
+
 // LPP grades
 const grausLPP = [
   { value: "grau_1", label: "Grau I" },
