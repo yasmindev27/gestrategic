@@ -44,6 +44,25 @@ export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                <Card
+                                  className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
+                                  onClick={() => navigate("relatorio")}
+                                >
+                                  <CardHeader className="text-center pb-2">
+                                    <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
+                                      <BarChart3 className="h-8 w-8 text-primary" />
+                                    </div>
+                                    <CardTitle className="mt-4">Relatório</CardTitle>
+                                    <CardDescription>
+                                      Produtividade e indicadores da equipe NIR
+                                    </CardDescription>
+                                  </CardHeader>
+                                  <CardContent className="text-center">
+                                    <Button variant="outline" className="w-full gap-2">
+                                      Acessar Relatório
+                                    </Button>
+                                  </CardContent>
+                                </Card>
                 <Card
                   className="cursor-pointer hover:border-primary hover:shadow-lg transition-all group"
                   onClick={() => navigate("dashboard")}
