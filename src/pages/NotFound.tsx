@@ -1,4 +1,5 @@
-import { useLocation, NavLink } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import { NavLink } from "@/components/NavLink";
 import { useEffect } from "react";
 
 const NotFound = () => {

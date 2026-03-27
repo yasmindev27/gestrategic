@@ -6,6 +6,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { NavLink } from "@/components/NavLink";
 import logoGestrategic from "@/assets/logo-gestrategic.jpg";
 import heroImage from "@/assets/hero-hospital-tech.png";
 import logoSusfacil from "@/assets/logo-susfacil.png";
