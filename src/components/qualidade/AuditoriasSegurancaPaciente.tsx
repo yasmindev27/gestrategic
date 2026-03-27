@@ -597,6 +597,21 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
                   </Select>
                 </div>
               )}
+              {section.section.includes("Meta 6") && (
+                <div className="space-y-2">
+                  <Label>Score de Risco (Morse/Humpty Dumpty)</Label>
+                  <Select value={formData.score_risco} onValueChange={(v) => setFormData(prev => ({ ...prev, score_risco: v }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o score" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {scoreRiscoQueda.map(s => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               {section.items.map((item) => (
                 <div key={item.id} className="space-y-2">
                   <Label className="text-sm leading-relaxed">{item.label}</Label>
