@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { NavLink } from "react-router-dom";
+// import { NavLink } from "react-router-dom";
 import PontoColaborador from '@/components/PontoColaborador/PontoColaborador';
 import { MobileNav } from '@/components/colaborador/mobile/MobileNav';
 import { HomeScreen } from '@/components/colaborador/mobile/HomeScreen';
@@ -149,9 +149,9 @@ const ColaboradorModule = () => {
       <div className="flex items-center justify-center h-screen">
         <div className="text-center">
           <p className="text-gray-600 mb-4">Você precisa estar autenticado</p>
-          <NavLink to="/auth" className="text-blue-600 hover:underline">
+          <a href="/auth" className="text-blue-600 hover:underline">
             Clique aqui para fazer login
-          </NavLink>
+          </a>
         </div>
       </div>
     );
