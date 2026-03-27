@@ -141,11 +141,11 @@ const LandingPage = () => {
   }, []);
 
   const navLinks = [
-    { label: "Início", href: "#" },
-    { label: "Soluções", href: "#solucoes" },
-    { label: "Segurança & LGPD", href: "#seguranca" },
-    { label: "Sobre Nós", href: "#sobre" },
-    { label: "Contato", href: "#contato" },
+     { label: "Início", to: "/" },
+     { label: "Soluções", to: "/#solucoes" },
+     { label: "Segurança & LGPD", to: "/#seguranca" },
+     { label: "Sobre Nós", to: "/#sobre" },
+     { label: "Contato", to: "/#contato" },
   ];
 
   const features = [
@@ -208,9 +208,16 @@ const LandingPage = () => {
 
               <nav className="hidden lg:flex items-center gap-1" role="navigation" aria-label="Navegação principal">
                 {navLinks.map((link) => (
-                  <a key={link.label} href={link.href} className="text-sm px-3 py-2 rounded-md hover:bg-white/5 transition-all font-semibold" style={{ color: C.textLight }} onMouseEnter={(e) => { (e.target as HTMLElement).style.color = C.white; }} onMouseLeave={(e) => { (e.target as HTMLElement).style.color = C.textLight; }}>
+                  <NavLink
+                    key={link.label}
+                    to={link.to}
+                    className="text-sm px-3 py-2 rounded-md hover:bg-white/5 transition-all font-semibold"
+                    style={{ color: C.textLight }}
+                    onMouseEnter={(e) => { (e.target as HTMLElement).style.color = C.white; }}
+                    onMouseLeave={(e) => { (e.target as HTMLElement).style.color = C.textLight; }}
+                  >
                     {link.label}
-                  </a>
+                  </NavLink>
                 ))}
               </nav>
 
@@ -229,9 +236,15 @@ const LandingPage = () => {
               <nav className="lg:hidden py-3 border-t border-white/10 animate-fade-in">
                 <div className="flex flex-col gap-1">
                   {navLinks.map((link) => (
-                    <a key={link.label} href={link.href} className="text-sm py-2.5 px-3 rounded-lg hover:bg-white/5 transition-colors" style={{ color: C.textLight }} onClick={closeMobileMenu}>
+                    <NavLink
+                      key={link.label}
+                      to={link.to}
+                      className="text-sm py-2.5 px-3 rounded-lg hover:bg-white/5 transition-colors"
+                      style={{ color: C.textLight }}
+                      onClick={closeMobileMenu}
+                    >
                       {link.label}
-                    </a>
+                    </NavLink>
                   ))}
                   <div className="flex flex-col gap-2 mt-3 pt-3 border-t border-white/10">
                     <Button variant="outline" className="border-white/20 hover:bg-white/5 hover:text-white w-full rounded-lg" style={{ color: C.textLight }} onClick={() => { closeMobileMenu(); handleDocumentosInteract(); }}>
