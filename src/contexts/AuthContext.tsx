@@ -15,6 +15,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+
   // Inicialização sem flash de null
   useEffect(() => {
     let mounted = true;
@@ -24,6 +25,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(data.session?.user ?? null);
         setIsLoading(false);
       }
+    }).catch(() => {
+      // Falha de rede/socket: mantém estado anterior
+      setIsLoading(false);
     });
     return () => { mounted = false; };
   }, []);
@@ -31,6 +35,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Atualização reativa, mas só se o user.id realmente mudar
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      // Se erro de WebSocket/network, ignora alteração de estado
+      if (newSession === null && navigator.onLine === false) return;
       setSession(prev => {
         if (prev?.user?.id === newSession?.user?.id) return prev;
         setUser(newSession?.user ?? null);
