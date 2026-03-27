@@ -290,6 +290,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       paciente_ra: auditoria.paciente_ra || "",
       numero_prontuario: auditoria.numero_prontuario || "",
       score_risco: auditoria.score_risco || "",
+      score_risco_braden: (auditoria.respostas as any)?.score_risco_braden || "",
       possui_lpp: auditoria.possui_lpp || false,
       grau_lpp: auditoria.grau_lpp || "",
       apresentou_queda: auditoria.apresentou_queda || false,
