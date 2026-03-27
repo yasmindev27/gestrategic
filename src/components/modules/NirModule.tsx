@@ -162,7 +162,7 @@ export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
                   </CardHeader>
                   <CardContent className="text-center">
                     <Button variant="outline" className="w-full gap-2">
-                      <ExternalLink className="h-4 w-4" />
+                      <img src={logoSusFacil} alt="SUSFácil MG" className="h-5 w-auto" />
                       Acessar SUSFácil
                     </Button>
                   </CardContent>
