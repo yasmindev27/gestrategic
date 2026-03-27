@@ -11,7 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Shield, Plus, Search, CheckCircle2, Clock, AlertTriangle
 } from 'lucide-react';
-import { useLocalStorage } from '@/hooks/useLocalStorage';
+// import { useLocalStorage } from '@/hooks/useLocalStorage';
 import { toast } from 'sonner';
 import { ExportDropdown } from '@/components/ui/export-dropdown';
 import { exportToPDF, exportToExcel } from '@/lib/export-utils';
@@ -53,7 +53,8 @@ interface ChecklistNSPProps {
 }
 
 export function ChecklistGeralNSP({ storageKey, setor }: ChecklistNSPProps) {
-  const [registros, setRegistros] = useLocalStorage<RegistroNSP[]>(storageKey, []);
+  // TODO: Substituir por hook React Query/Supabase
+  const [registros, setRegistros] = useState<RegistroNSP[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [busca, setBusca] = useState('');
 
@@ -82,24 +83,16 @@ export function ChecklistGeralNSP({ storageKey, setor }: ChecklistNSPProps) {
     (acc, localRespostas) => acc + Object.keys(localRespostas).length, 0
   );
 
+  // TODO: Substituir por inserção no Supabase
   const handleSalvar = () => {
     if (!form.responsavel || !form.coren) {
       toast.error('Responsável e COREN são obrigatórios');
       return;
     }
-    const novo: RegistroNSP = {
-      id: crypto.randomUUID(),
-      ...form,
-      dataRegistro: new Date().toLocaleString('pt-BR'),
-    };
-    setRegistros([novo, ...registros]);
-    setForm({
-      data: new Date().toISOString().split('T')[0],
-      responsavel: '', coren: '', setorUnidade: setor,
-      locais: LOCAIS_PADRAO, respostas: {}, observacoes: '',
-    });
+    // Aqui será feita a chamada para o Supabase
+    // Exemplo: await supabase.from('checklist_nsp').insert({ ...form })
+    toast.success('Checklist NSP registrado (mock)');
     setDialogOpen(false);
-    toast.success('Checklist NSP registrado');
   };
 
   // Calcular conformidade

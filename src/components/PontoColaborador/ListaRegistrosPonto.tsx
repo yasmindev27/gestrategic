@@ -20,17 +20,25 @@ const ListaRegistrosPonto: React.FC<Props> = ({ registros }) => {
           </tr>
         </thead>
         <tbody>
-          {registros.map((r, idx) => (
-            <tr key={idx}>
-              <td>{r.data}</td>
-              <td>{r.tipo}</td>
-              <td>{r.horario}</td>
-              <td>{r.localizacao}</td>
-              <td>
-                <span style={{ color: r.status === 'Aprovado' ? 'green' : 'orange' }}>{r.status}</span>
+          {registros.length === 0 ? (
+            <tr>
+              <td colSpan={5} style={{ textAlign: 'center', color: '#888', padding: '24px 0' }}>
+                Nenhum registro encontrado
               </td>
             </tr>
-          ))}
+          ) : (
+            registros.map((r, idx) => (
+              <tr key={idx}>
+                <td>{r.data}</td>
+                <td>{r.tipo}</td>
+                <td>{r.horario}</td>
+                <td>{r.localizacao}</td>
+                <td>
+                  <span style={{ color: r.status === 'Aprovado' ? 'green' : 'orange' }}>{r.status}</span>
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

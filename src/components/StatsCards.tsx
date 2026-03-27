@@ -36,29 +36,7 @@ interface AgendaItem {
   time: string;
 }
 
-const sectors = [
-  "Recepção",
-  "Triagem",
-  "Enfermagem",
-  "Médico",
-  "Farmácia",
-  "Administrativo",
-  "Limpeza",
-  "Segurança",
-];
-
-const initialTasks: Task[] = [
-  { id: 1, title: "Revisar prontuários", sector: "Enfermagem", status: "pendente" },
-  { id: 2, title: "Atualizar escalas", sector: "Administrativo", status: "pendente" },
-  { id: 3, title: "Conferir estoque", sector: "Farmácia", status: "concluida" },
-];
-
-const agendaItems: AgendaItem[] = [
-  { id: 1, title: "Reunião de equipe", type: "reuniao", date: "Hoje", time: "14:00" },
-  { id: 2, title: "Relatório mensal", type: "relatorio", date: "Hoje", time: "17:00" },
-  { id: 3, title: "NF Fornecedor ABC", type: "nota_fiscal", date: "Amanhã", time: "10:00" },
-  { id: 4, title: "Reunião com gestor", type: "reuniao", date: "Amanhã", time: "15:00" },
-];
+// Dados devem vir de hooks (React Query/Supabase)
 
 const typeLabels = {
   reuniao: { label: "Reunião", className: "bg-primary/10 text-primary border-primary/20" },

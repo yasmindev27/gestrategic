@@ -28,7 +28,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setIsLoading(false);
         initialLoadComplete.current = true;
       }
-    }).catch((err) => {
+    }).catch(() => {
       setIsLoading(false);
       initialLoadComplete.current = true;
     });
@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(newSession?.user ?? null);
         // Nunca volte a exibir loading após o primeiro carregamento
         if (!initialLoadComplete.current) setIsLoading(true);
-        else setIsLoading(false);
+        // Após o primeiro carregamento, nunca mais setIsLoading(true)
         return newSession;
       });
     });

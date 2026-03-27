@@ -3,12 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 
-const todayTeam = [
-  { id: 1, name: "Dr. Carlos Silva", role: "Médico Plantonista", shift: "07:00 - 19:00", status: "active" },
-  { id: 2, name: "Enf. Maria Santos", role: "Enfermeira Chefe", shift: "07:00 - 19:00", status: "active" },
-  { id: 3, name: "Téc. João Oliveira", role: "Técnico de Enfermagem", shift: "07:00 - 19:00", status: "active" },
-  { id: 4, name: "Dra. Ana Costa", role: "Médica", shift: "19:00 - 07:00", status: "upcoming" },
-];
+// Os dados da equipe devem vir de hook (React Query/Supabase)
+const todayTeam = [];
 
 const menuOptions = [
   {
