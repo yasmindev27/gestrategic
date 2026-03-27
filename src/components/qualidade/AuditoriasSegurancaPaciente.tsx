@@ -589,19 +589,6 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label>Profissional Auditado</Label>
-            <Select value={formData.profissional_auditado} onValueChange={(v) => setFormData(prev => ({ ...prev, profissional_auditado: v }))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione" />
-              </SelectTrigger>
-              <SelectContent>
-                {profissionaisAuditados.map(p => (
-                  <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
 
         {/* Checklist sections - All 6 Metas */}
@@ -611,10 +598,19 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
               <CardTitle className="text-base">{section.section}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {/* Meta 5 has Profissional Auditado info reminder */}
-              {section.section.includes("Meta 5") && formData.profissional_auditado && (
-                <div className="text-sm text-muted-foreground bg-muted p-2 rounded">
-                  Profissional Auditado: {profissionaisAuditados.find(p => p.value === formData.profissional_auditado)?.label || formData.profissional_auditado}
+              {section.section.includes("Meta 5") && (
+                <div className="space-y-2">
+                  <Label>Profissional Auditado</Label>
+                  <Select value={formData.profissional_auditado} onValueChange={(v) => setFormData(prev => ({ ...prev, profissional_auditado: v }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o profissional" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {profissionaisAuditados.map(p => (
+                        <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
               {section.items.map((item) => (
