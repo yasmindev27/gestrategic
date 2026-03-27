@@ -46,7 +46,7 @@ const queryClient = new QueryClient({
 
 
 // Layout estático fora do Suspense
-import Sidebar from "@/components/Sidebar";
+// import Sidebar from "@/components/Sidebar";
 // (Se houver Topbar, importar também)
 
 const App = () => (
@@ -57,24 +57,19 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
-            <div className="flex min-h-screen">
-              <Sidebar />
-              <main className="flex-1">
-                <Routes>
-                  <Route path="/" element={<Index />} />
-                  <Route path="/auth" element={<Auth />} />
-                  <Route path="/dashboard/*" element={<Dashboard />} />
-                  <Route path="/totem" element={<TotemRefeicoes />} />
-                  <Route path="/terminal" element={<TotemRefeicoes />} />
-                  <Route path="/transporte" element={<Transporte />} />
-                  <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
-                  <Route path="/modo-tv" element={<ModoTVPage />} />
-                  {/* Renderiza o Dashboard diretamente para evitar loop de redirecionamento */}
-                  <Route path="/dashboard" element={<Dashboard />} />
-                  <Route path="*" element={<NotFound />} />
-                </Routes>
-              </main>
-            </div>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<Auth />} />
+              <Route path="/dashboard/*" element={<Dashboard />} />
+              <Route path="/totem" element={<TotemRefeicoes />} />
+              <Route path="/terminal" element={<TotemRefeicoes />} />
+              <Route path="/transporte" element={<Transporte />} />
+              <Route path="/politica-privacidade" element={<PoliticaPrivacidade />} />
+              <Route path="/modo-tv" element={<ModoTVPage />} />
+              {/* Renderiza o Dashboard diretamente para evitar loop de redirecionamento */}
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
           </BrowserRouter>
         </ErrorBoundary>
       </TooltipProvider>
