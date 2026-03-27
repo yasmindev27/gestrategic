@@ -176,6 +176,19 @@ const scoreRiscoQueda = [
   { value: "alto_risco_pediatrico", label: "Alto Risco (12 a 22 pontos) pediátrico" },
 ];
 
+// Score options for Braden (LPP)
+const scoreRiscoBraden = [
+  { value: "sem_risco_braden", label: "Sem Risco (≥19 pontos) - Braden Adulto" },
+  { value: "baixo_risco_braden", label: "Baixo Risco (15 a 18 pontos) - Braden Adulto" },
+  { value: "moderado_risco_braden", label: "Risco Moderado (13 a 14 pontos) - Braden Adulto" },
+  { value: "alto_risco_braden", label: "Alto Risco (10 a 12 pontos) - Braden Adulto" },
+  { value: "muito_alto_risco_braden", label: "Muito Alto Risco (≤9 pontos) - Braden Adulto" },
+  { value: "sem_risco_bradenq", label: "Sem Risco (≥25 pontos) - BradenQ Pediátrico" },
+  { value: "baixo_risco_bradenq", label: "Baixo Risco (21 a 24 pontos) - BradenQ Pediátrico" },
+  { value: "moderado_risco_bradenq", label: "Risco Moderado (17 a 20 pontos) - BradenQ Pediátrico" },
+  { value: "alto_risco_bradenq", label: "Alto Risco (≤16 pontos) - BradenQ Pediátrico" },
+];
+
 // LPP grades
 const grausLPP = [
   { value: "grau_1", label: "Grau I" },
@@ -218,6 +231,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
     paciente_ra: "",
     numero_prontuario: "",
     score_risco: "",
+    score_risco_braden: "",
     possui_lpp: false,
     grau_lpp: "",
     apresentou_queda: false,
@@ -253,6 +267,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       paciente_ra: "",
       numero_prontuario: "",
       score_risco: "",
+      score_risco_braden: "",
       possui_lpp: false,
       grau_lpp: "",
       apresentou_queda: false,
@@ -275,6 +290,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       paciente_ra: auditoria.paciente_ra || "",
       numero_prontuario: auditoria.numero_prontuario || "",
       score_risco: auditoria.score_risco || "",
+      score_risco_braden: (auditoria.respostas as any)?.score_risco_braden || "",
       possui_lpp: auditoria.possui_lpp || false,
       grau_lpp: auditoria.grau_lpp || "",
       apresentou_queda: auditoria.apresentou_queda || false,
@@ -327,7 +343,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       notificacao_aberta: formData.notificacao_aberta || null,
       profissional_auditado: formData.profissional_auditado || null,
       unidade_atendimento: formData.setor,
-      respostas,
+      respostas: { ...respostas, score_risco_braden: formData.score_risco_braden || null },
       observacoes: formData.observacoes || null,
     };
 
@@ -437,7 +453,12 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
     if (auditoria.numero_prontuario) infoRows.push(["Nº Prontuário", auditoria.numero_prontuario]);
     if (auditoria.score_risco) {
       const scoreLabel = scoreRiscoQueda.find(s => s.value === auditoria.score_risco)?.label || auditoria.score_risco;
-      infoRows.push(["Score de Risco", scoreLabel]);
+      infoRows.push(["Score de Risco (Queda)", scoreLabel]);
+    }
+    const bradenScore = (auditoria.respostas as any)?.score_risco_braden;
+    if (bradenScore) {
+      const bradenLabel = scoreRiscoBraden.find(s => s.value === bradenScore)?.label || bradenScore;
+      infoRows.push(["Score de Risco (Braden/BradenQ)", bradenLabel]);
     }
     if (auditoria.profissional_auditado) {
       const profLabel = profissionaisAuditados.find(p => p.value === auditoria.profissional_auditado)?.label || auditoria.profissional_auditado;
@@ -582,6 +603,21 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
               <CardTitle className="text-base">{section.section}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
+              {section.section.includes("Meta 3") && (
+                <div className="space-y-2">
+                  <Label>Score de Risco (Braden Adulto / BradenQ Pediátrico)</Label>
+                  <Select value={formData.score_risco_braden} onValueChange={(v) => setFormData(prev => ({ ...prev, score_risco_braden: v }))}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Selecione o score Braden" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {scoreRiscoBraden.map(s => (
+                        <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               {section.section.includes("Meta 5") && (
                 <div className="space-y-2">
                   <Label>Profissional Auditado</Label>
