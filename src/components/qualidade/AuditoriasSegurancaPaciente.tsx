@@ -343,7 +343,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       notificacao_aberta: formData.notificacao_aberta || null,
       profissional_auditado: formData.profissional_auditado || null,
       unidade_atendimento: formData.setor,
-      respostas,
+      respostas: { ...respostas, score_risco_braden: formData.score_risco_braden || null },
       observacoes: formData.observacoes || null,
     };
 
