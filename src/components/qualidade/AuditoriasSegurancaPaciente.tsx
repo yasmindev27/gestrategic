@@ -267,6 +267,7 @@ export const AuditoriasSegurancaPaciente = ({ currentUser }: Props) => {
       paciente_ra: "",
       numero_prontuario: "",
       score_risco: "",
+      score_risco_braden: "",
       possui_lpp: false,
       grau_lpp: "",
       apresentou_queda: false,
