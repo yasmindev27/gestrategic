@@ -6,10 +6,34 @@ import { supabase } from "@/integrations/supabase/client";
  * the alarm sound + vibration continuously until all alerts are attended,
  * regardless of which page/module the user is viewing.
  */
+
+// Flag global para liberar vibração só após interação do usuário
+let vibrationAllowed = false;
+function enableVibrationOnUserInteraction() {
+  if (!vibrationAllowed) {
+    vibrationAllowed = true;
+    window.removeEventListener('pointerdown', enableVibrationOnUserInteraction);
+  }
+}
+if (typeof window !== 'undefined') {
+  window.addEventListener('pointerdown', enableVibrationOnUserInteraction, { once: true });
+}
+
 export function GlobalSecurityAlarm() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const vibrationInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const pendingRef = useRef(0);
+
+  const safeVibrate = (pattern: number | number[]) => {
+    if (!vibrationAllowed) return;
+    try {
+      if (navigator.vibrate) {
+        navigator.vibrate(pattern);
+      }
+    } catch (e) {
+      // Silencia qualquer erro de bloqueio
+    }
+  };
 
   const startAlarm = useCallback(() => {
     // Sound
@@ -20,11 +44,11 @@ export function GlobalSecurityAlarm() {
     }
     audioRef.current.play().catch(() => {});
 
-    // Vibration (continuous pattern every 2s)
-    if (!vibrationInterval.current && navigator.vibrate) {
-      navigator.vibrate([500, 300, 500]);
+    // Vibration (continuous pattern every 2s, só após interação do usuário)
+    if (!vibrationInterval.current && vibrationAllowed) {
+      safeVibrate([500, 300, 500]);
       vibrationInterval.current = setInterval(() => {
-        navigator.vibrate([500, 300, 500]);
+        safeVibrate([500, 300, 500]);
       }, 2000);
     }
   }, []);
@@ -38,9 +62,7 @@ export function GlobalSecurityAlarm() {
       clearInterval(vibrationInterval.current);
       vibrationInterval.current = null;
     }
-    if (navigator.vibrate) {
-      navigator.vibrate(0);
-    }
+    safeVibrate(0);
   }, []);
 
   const checkPending = useCallback(async () => {
