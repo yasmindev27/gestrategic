@@ -153,7 +153,7 @@ export const NirModule = ({ onOpenExternal }: NirModuleProps) => {
                 >
                   <CardHeader className="text-center pb-2">
                     <div className="mx-auto p-4 bg-primary/10 rounded-full w-fit group-hover:bg-primary/20 transition-colors">
-                      <BarChart3 className="h-8 w-8 text-primary" />
+                      <img src={logoSusFacil} alt="SUSFácil MG" className="h-10 w-auto mx-auto" />
                     </div>
                     <CardTitle className="mt-4">Relatório SUSFácil</CardTitle>
                     <CardDescription>

@@ -45,10 +45,5 @@ export interface ShiftInfo {
   reguladorNIR: string;
 }
 
-export const SECTORS: SectorConfig[] = [
-  { id: 'enfermaria-masculina', name: 'Enfermaria Masculina', beds: [1, 2, 3, 4, 5], extraBeds: ['EXTRA'] },
-  { id: 'enfermaria-feminina', name: 'Enfermaria Feminina', beds: [6, 7, 8, 9, 10], extraBeds: ['EXTRA'] },
-  { id: 'pediatria', name: 'Pediatria', beds: [11, 12, 13, 14, 15], extraBeds: ['EXTRA'] },
-  { id: 'isolamento', name: 'Isolamento', beds: [16, 17] },
-  { id: 'urgencia', name: 'Urgência', beds: [18, 19, 20], extraBeds: ['DE APOIO', 'DE APOIO 2', 'MACA PCR'] },
-];
+// ATENÇÃO: Não use dados hardcoded. Os setores e leitos devem ser buscados do banco de dados.
+export const SECTORS: SectorConfig[] = [];
