@@ -36,6 +36,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Atualização reativa, mas só se o user.id realmente mudar
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      // Nunca faça reload automático!
       // Se erro de WebSocket/network/Realtime, ignora alteração de estado
       if (
         (newSession === null && navigator.onLine === false) ||

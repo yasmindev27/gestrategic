@@ -4,18 +4,12 @@ import type { Database } from './types';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
-// Desativa o Realtime globalmente e aumenta timeout de reconexão
 export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
-  realtime: {
-    enabled: false, // Desativa Realtime (broadcast/presence) se não estiver usando
-    params: {
-      timeout: 60000, // 60 segundos de timeout para conexão
-      attempts: 1, // Não tenta reconectar
-    },
-  },
+  // Não inicializa o Realtime (WebSocket) para evitar erros no console
   auth: {
-    storage: localStorage,
     persistSession: true,
     autoRefreshToken: true,
+    detectSessionInUrl: true,
+    // storage: localStorage, // opcional, padrão já é localStorage
   },
 });
