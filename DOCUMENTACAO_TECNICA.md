@@ -9,7 +9,7 @@
 
 **GEStrategic** é uma plataforma web SPA (Single Page Application) de gestão hospitalar completa, voltada para UPAs 24h. Abrange desde controle de leitos, escalas de enfermagem, prontuários e faturamento, até qualidade (NSP), chamados de TI/manutenção, restaurante, rouparia, segurança patrimonial, RH/DP e mais.
 
-**Stack principal:** React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui + Lovable Cloud (Supabase)
+**Stack principal:** React 18 + TypeScript + Vite + Tailwind CSS + shadcn/ui + Supabase
 
 ---
 

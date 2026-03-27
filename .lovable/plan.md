@@ -1,6 +1,6 @@
 
 ## CONTEXTO INSTITUCIONAL — NÃO REMOVER
-Este projeto é o sistema de gestão de uma **instituição hospitalar (UPA 24h)**. A integridade e fidedignidade dos dados é crítica — erros de estatística, contagem duplicada ou inconsistências em relatórios podem impactar decisões clínicas e operacionais. Todo processamento de dados deve priorizar precisão, deduplicação e auditabilidade. Conformidade com LGPD e ONA são requisitos permanentes.
+Este projeto é o sistema de gestão hospitalar **Gestrategic Ibirite**. A integridade e fidedignidade dos dados é crítica — erros de estatística, contagem duplicada ou inconsistências em relatórios podem impactar decisões clínicas e operacionais. Todo processamento de dados deve priorizar precisão, deduplicação e auditabilidade. Conformidade com LGPD e ONA são requisitos permanentes.
 
 ---
 
@@ -78,25 +78,25 @@ Esta e a parte mais complexa e sera dividida em etapas.
 ### 3.4 Geracao Automatica de Ata com IA
 
 **Nova Edge Function:** `supabase/functions/gerar-ata-reuniao/index.ts`
-- Recebe a transcricao completa da reuniao
-- Utiliza Lovable AI (modelo `google/gemini-3-flash-preview`) para gerar:
+- Recebe a transcrição completa da reunião
+- Utiliza modelo de IA para gerar:
   - Resumo Executivo
-  - Decisoes Tomadas
-  - Plano de Acao (lista de tarefas)
+  - Decisões Tomadas
+  - Plano de Ação (lista de tarefas)
 - Retorna JSON estruturado
 
 **Componente de resultado:** `src/components/reuniao/AtaReuniao.tsx`
-- Exibe a ata gerada com formatacao limpa
-- Botao "Exportar PDF" usando o padrao de branding ja existente (`createStandardPdf` + `savePdfWithFooter`)
+- Exibe a ata gerada com formatação limpa
+- Botão "Exportar PDF" usando o padrão de branding já existente (`createStandardPdf` + `savePdfWithFooter`)
 
-### 3.5 Integracao no Menu e Roteamento
+### 3.5 Integração no Menu e Roteamento
 
-- Adicionar item "Reunioes" no menu lateral (Sidebar)
+- Adicionar item "Reuniões" no menu lateral (Sidebar)
 - Registrar rota `reuniao` no switch do `Dashboard.tsx`
 
----
+----
 
-## Detalhes Tecnicos
+## Detalhes Técnicos
 
 ### Novas tabelas no banco de dados
 
@@ -117,12 +117,12 @@ reunioes
 ### Novo bucket de storage
 
 - Nome: `reunioes`
-- Publico: Nao
+- Público: Não
 - RLS: Apenas participantes podem acessar
 
 ### Nova Edge Function
 
-- `gerar-ata-reuniao`: Usa LOVABLE_API_KEY com Lovable AI Gateway, sem necessidade de chave adicional
+- `gerar-ata-reuniao`: Usa integração com IA, sem necessidade de chave adicional
 
 ### Arquivos a criar
 

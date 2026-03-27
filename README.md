@@ -1,4 +1,4 @@
-# Welcome to your Lovable project
+# Gestrategic Ibirite
 
 ## Project info
 
@@ -23,11 +23,12 @@ The only requirement is having Node.js & npm installed - [install with nvm](http
 Follow these steps:
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
+
+# Step 1: Clone o repositório usando a URL do Git do projeto.
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Step 2: Navegue até o diretório do projeto.
+cd Gestrategic-IBIRITE
 
 # Step 3: Install the necessary dependencies.
 npm i

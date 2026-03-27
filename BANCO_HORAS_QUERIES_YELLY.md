@@ -1,12 +1,12 @@
 # Exemplos de Queries e Dados para Banco de Horas
 
-## 1. Exemplo de Registro Completo para Yelly Silva
+## 1. Exemplo de Registro Completo para Funcionário
 
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
   "funcionario_user_id": "12345678-1234-1234-1234-123456789000",
-  "funcionario_nome": "Yelly Silva",
+  "funcionario_nome": "NOME DO FUNCIONÁRIO",
   "data": "2026-03-20",
   "tipo": "credito",
   "horas": 8.50,
@@ -23,9 +23,9 @@
 
 ---
 
-## 2. Queries SQL para Yelly Silva
+## 2. Queries SQL para Funcionário
 
-### 2.1. Buscar todos os registros de Yelly Silva
+### 2.1. Buscar todos os registros de um funcionário
 
 ```sql
 SELECT 
@@ -37,7 +37,7 @@ SELECT
   status,
   aprovado_em
 FROM public.banco_horas
-WHERE funcionario_nome = 'Yelly Silva'
+WHERE funcionario_nome = 'NOME DO FUNCIONÁRIO'
 ORDER BY data DESC;
 ```
 

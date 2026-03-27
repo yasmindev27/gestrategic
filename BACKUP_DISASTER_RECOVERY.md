@@ -20,7 +20,7 @@
 
 | Failure Scenario | Impact | Duration | Patients Affected |
 |-----------------|--------|----------|-------------------|
-| Database corruption | All data inaccessible | 2-4 hours | 100+ in UPA |
+| Database corruption | All data inaccessible | 2-4 hours | 100+ pacientes |
 | Ransomware attack | Data encrypted, can't access | 4-8 hours | All active patients |
 | Accidental deletion | Historical records lost | 1-2 hours | Partial recovery only |
 | Storage failure | Complete data loss | Permanent | Everything |
