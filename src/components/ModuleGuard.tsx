@@ -5,6 +5,7 @@
  */
 
 import { ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { useModules } from "@/hooks/useModules";
 import { useUserRole } from "@/hooks/useUserRole";
 import AccessDenied from "@/components/AccessDenied";
@@ -38,9 +39,10 @@ export const ModuleGuard = ({
 
   const hasAccess = canAccessModule(moduleId);
 
+  const navigate = useNavigate();
   if (!hasAccess) {
     if (showDenied) {
-      return <AccessDenied onTryAgain={() => window.location.reload()} />;
+      return <AccessDenied onTryAgain={() => navigate('/dashboard')} />;
     }
     return null;
   }

@@ -150,7 +150,7 @@ export function EnfermagemModule() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[300px]">
         <p className="text-destructive font-medium mb-2">Erro ao carregar dados. Tente novamente mais tarde.</p>
-        <Button variant="outline" onClick={() => window.location.reload()}>Recarregar</Button>
+        <Button variant="outline" onClick={() => navigate(0)}>Recarregar</Button>
       </div>
     );
   }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 // import { NavLink } from "react-router-dom";
 import PontoColaborador from '@/components/PontoColaborador/PontoColaborador';
 import { MobileNav } from '@/components/colaborador/mobile/MobileNav';
@@ -88,9 +89,10 @@ const ColaboradorModule = () => {
     }
   };
 
+  const navigate = useNavigate();
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    window.location.href = '/auth';
+    navigate('/auth', { replace: true });
   };
 
   const renderContent = () => {

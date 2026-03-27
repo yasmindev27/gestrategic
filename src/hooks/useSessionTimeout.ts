@@ -1,4 +1,5 @@
 import { useEffect, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
@@ -13,15 +14,16 @@ export function useSessionTimeout(timeoutMinutes = 15) {
   const timeoutMs = timeoutMinutes * 60 * 1000;
   const warningMs = (timeoutMinutes - 2) * 60 * 1000; // avisa 2 min antes
 
+  const navigate = useNavigate();
   const logout = useCallback(async () => {
     toast.error("Sessão encerrada por inatividade", {
       description: `Por segurança, a sessão foi encerrada após ${timeoutMinutes} minutos sem uso.`,
       duration: 6000,
     });
     await supabase.auth.signOut();
-    // Força redirect para login
-    window.location.href = "/auth";
-  }, [timeoutMinutes]);
+    // Redireciona via SPA
+    navigate("/auth", { replace: true });
+  }, [timeoutMinutes, navigate]);
 
   const resetTimer = useCallback(() => {
     if (timerRef.current) clearTimeout(timerRef.current);
