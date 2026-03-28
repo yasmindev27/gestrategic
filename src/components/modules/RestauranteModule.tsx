@@ -826,22 +826,23 @@ export const RestauranteModule = () => {
   };
 
   // Filtrar minhas solicitações pelo período selecionado
+  // Filtro de "Hoje" compara apenas a data (YYYY-MM-DD), ignorando hora/fuso
   const minhasSolicitacoesFiltradas = minhasSolicitacoes.filter(s => {
-    const hoje = new Date();
-    const dataInicio = new Date(s.data_inicio);
+    const hoje = format(new Date(), "yyyy-MM-dd");
+    const dataInicio = s.data_inicio ? s.data_inicio.slice(0, 10) : "";
     switch (minhasDietasFiltro) {
       case "dia":
-        return format(dataInicio, "yyyy-MM-dd") === format(hoje, "yyyy-MM-dd");
-      case "semana":
-        const inicioSemana = startOfWeek(hoje, {
-          weekStartsOn: 0
-        });
-        const fimSemana = endOfWeek(hoje, {
-          weekStartsOn: 0
-        });
-        return dataInicio >= inicioSemana && dataInicio <= fimSemana;
-      case "mes":
-        return dataInicio >= startOfMonth(hoje) && dataInicio <= endOfMonth(hoje);
+        return dataInicio === hoje;
+      case "semana": {
+        const inicioSemana = startOfWeek(new Date(), { weekStartsOn: 0 });
+        const fimSemana = endOfWeek(new Date(), { weekStartsOn: 0 });
+        return new Date(dataInicio) >= inicioSemana && new Date(dataInicio) <= fimSemana;
+      }
+      case "mes": {
+        const inicioMes = startOfMonth(new Date());
+        const fimMes = endOfMonth(new Date());
+        return new Date(dataInicio) >= inicioMes && new Date(dataInicio) <= fimMes;
+      }
       default:
         return true;
     }
@@ -1033,6 +1034,7 @@ export const RestauranteModule = () => {
             userId={userId} 
             onSuccess={() => {
               toast({ title: "Sucesso", description: "Dietas registradas com sucesso!" });
+              // Refaz a busca das solicitações para garantir atualização instantânea
               refetchMinhas();
             }}
           />
