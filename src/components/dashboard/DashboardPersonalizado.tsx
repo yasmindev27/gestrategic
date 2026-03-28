@@ -65,12 +65,8 @@ interface DashboardStats {
   conformidadeDietas: number;
 };
 
+
 export default DashboardPersonalizado;
-  created_at: string;
-  acao: string;
-  modulo: string;
-  user_id: string;
-}
 
 interface RiskChartPoint {
   day: string;
