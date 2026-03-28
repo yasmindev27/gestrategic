@@ -399,36 +399,6 @@ const DashboardPersonalizado = React.memo(({ onNavigate }: { onNavigate?: (secti
       {isAdmin && <MetricasSegurancaWidget />}
     </div>
   );
-          supabase.from("incidentes_nsp").select("classificacao_risco")
-            .gte("created_at", `${dateStr}T00:00:00`)
-            .lt("created_at", `${dateStr}T23:59:59`),
-          supabase.from("auditorias_qualidade").select("id", { count: "exact", head: true })
-            .gte("created_at", `${dateStr}T00:00:00`)
-            .lt("created_at", `${dateStr}T23:59:59`),
-        ]);
-
-        const incData = incidentes.data || [];
-        const nearMiss = incData.filter(i => 
-          i.classificacao_risco?.toLowerCase().includes("near") || 
-          i.classificacao_risco?.toLowerCase().includes("quase")
-        ).length;
-        const adverseEvents = incData.filter(i => 
-          !i.classificacao_risco?.toLowerCase().includes("near") && 
-          !i.classificacao_risco?.toLowerCase().includes("quase")
-        ).length;
-
-        days.push({
-          day: `${dayName} ${format(date, "dd/MM")}`,
-          nearMiss,
-          adverseEvents,
-          quality: auditorias.count || 0,
-        });
-      }
-      setRiskChartData(days);
-    } catch (err) {
-      console.error("Erro ao buscar dados de risco:", err);
-    }
-  };
 
   const fetchOperationalSummary = async () => {
     try {
