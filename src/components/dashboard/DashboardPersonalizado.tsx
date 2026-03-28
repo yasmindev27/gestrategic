@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useMemo } from "react";
 import { SECTORS } from "@/types/bed";
 import {
   BedDouble, AlertTriangle, Wrench, ClipboardCheck,
@@ -13,6 +13,7 @@ import { useRealtimeSync, REALTIME_PRESETS } from "@/hooks/useRealtimeSync";
 import { useUserRole } from "@/hooks/useUserRole";
 import { Skeleton } from "@/components/ui/skeleton";
 import { MetricasSegurancaWidget } from "@/components/seguranca";
+import { useQuery } from "@tanstack/react-query";
 import {
   Tooltip,
   TooltipContent,
@@ -229,20 +230,150 @@ const OperationalStatusCard = ({ data, loading }: { data: OperationalSummary; lo
   </Card>
 );
 
-const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string) => void }) => {
-  const [stats, setStats] = useState<DashboardStats>({
-    chamadosAbertos: 0, chamadosPendentes: 0, chamadosHoje: 0, chamadosResolvidos: 0,
-    tarefasPendentes: 0, tarefasHoje: 0, prontuariosPendentes: 0, prontuariosAvaliados: 0,
-    produtosEstoqueBaixo: 0, escalasHoje: 0, colaboradoresSobGestao: 0, logsHoje: 0,
-    capacitacoesPendentes: 0, leitosOcupados: 0, totalLeitos: 0,
-    incidentesCriticos: 0, chamadosManutencao: 0, conformidadeDietas: 0,
+const DashboardPersonalizado = React.memo(({ onNavigate }: { onNavigate?: (section: string) => void }) => {
+  // Funções de fetch para React Query
+  // Funções de fetch para React Query
+  const fetchStats = async () => {
+    // userId e role vêm do hook, mas React Query não aceita dependências diretas, então é preciso garantir que só rode se userId existir
+    if (!userId) return {};
+    const hojeStr = getBrasiliaDateString();
+    const { data: leitosData } = await supabase
+      .from("bed_records")
+      .select("id, bed_id, bed_number, sector, patient_name, motivo_alta, data_alta, created_at, data_obito") as { data: any[] | null };
+    const leitosOcupados = (leitosData || []).filter(r => r.patient_name && !r.motivo_alta && !r.data_alta).length;
+    const totalLeitos = SECTORS.reduce((sum, s) => sum + s.beds.length + (s.extraBeds?.length || 0), 0);
+    const pacientesAtivos = Array.from(new Set((leitosData || [])
+      .filter(r => r.patient_name && !r.motivo_alta && !r.data_alta)
+      .map(r => r.patient_name))).length;
+    const eficienciaOperacional = totalLeitos > 0 ? Math.round((leitosOcupados / totalLeitos) * 100) : 0;
+    const mesAtual = hojeStr.slice(0, 7);
+    const obitosMes = (leitosData || []).filter((r: any) => r.data_obito && r.data_obito.startsWith(mesAtual)).length;
+    const internacoesMes = (leitosData || []).filter((r: any) => r.data_alta && r.data_alta.startsWith(mesAtual)).length;
+    const taxaMortalidade = internacoesMes > 0 ? Math.round((obitosMes / internacoesMes) * 100) : 0;
+    const tendenciaOcupacao: { dia: string, ocupacao: number }[] = [];
+    for (let i = 13; i >= 0; i--) {
+      const dataRef = new Date();
+      dataRef.setDate(dataRef.getDate() - i);
+      const dataStr = dataRef.toISOString().slice(0, 10);
+      const ocupadosNoDia = (leitosData || []).filter(r => {
+        const dataEntrada = r.created_at ? r.created_at.slice(0, 10) : dataStr;
+        const dataAlta = r.data_alta ? r.data_alta.slice(0, 10) : null;
+        return dataEntrada <= dataStr && (!dataAlta || dataAlta > dataStr);
+      }).length;
+      tendenciaOcupacao.push({ dia: format(dataRef, "dd/MM"), ocupacao: ocupadosNoDia });
+    }
+    // Retornar todos os campos esperados
+    return {
+      leitosOcupados,
+      totalLeitos,
+      pacientesAtivos,
+      eficienciaOperacional,
+      taxaMortalidade,
+      tendenciaOcupacao,
+      chamadosAbertos: 0, chamadosPendentes: 0, chamadosHoje: 0, chamadosResolvidos: 0,
+      tarefasPendentes: 0, tarefasHoje: 0, prontuariosPendentes: 0, prontuariosAvaliados: 0,
+      produtosEstoqueBaixo: 0, escalasHoje: 0, colaboradoresSobGestao: 0, logsHoje: 0,
+      capacitacoesPendentes: 0, incidentesCriticos: 0, chamadosManutencao: 0, conformidadeDietas: 0,
+    };
+  };
+
+  const fetchAuditLogs = async () => {
+    if (!userId) return [];
+    const { data } = await supabase
+      .from("logs_acesso")
+      .select("id, created_at, acao, modulo, user_id")
+      .order("created_at", { ascending: false })
+      .limit(10);
+    return data || [];
+  };
+
+  const fetchRiskChart = async () => {
+    if (!userId) return [];
+    const days: RiskChartPoint[] = [];
+    const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+    for (let i = 6; i >= 0; i--) {
+      const date = subDays(new Date(), i);
+      const dateStr = format(date, "yyyy-MM-dd");
+      const dayName = dayNames[date.getDay()];
+      const [incidentes, auditorias] = await Promise.all([
+        supabase.from("incidentes_nsp").select("classificacao_risco")
+          .gte("created_at", `${dateStr}T00:00:00`)
+          .lt("created_at", `${dateStr}T23:59:59`),
+        supabase.from("auditorias_qualidade").select("id", { count: "exact", head: true })
+          .gte("created_at", `${dateStr}T00:00:00`)
+          .lt("created_at", `${dateStr}T23:59:59`),
+      ]);
+      const incData = incidentes.data || [];
+      const nearMiss = incData.filter(i => 
+        i.classificacao_risco?.toLowerCase().includes("near") || 
+        i.classificacao_risco?.toLowerCase().includes("quase")
+      ).length;
+      const adverseEvents = incData.filter(i => 
+        !i.classificacao_risco?.toLowerCase().includes("near") && 
+        !i.classificacao_risco?.toLowerCase().includes("quase")
+      ).length;
+      days.push({
+        day: `${dayName} ${format(date, "dd/MM")}`,
+        nearMiss,
+        adverseEvents,
+        quality: auditorias.count || 0,
+      });
+    }
+    return days;
+  };
+
+  const fetchOperationalSummary = async () => {
+    if (!userId) return {};
+    const [chamados, incidentes, auditorias, alertas] = await Promise.all([
+      supabase.from("chamados").select("id", { count: "exact", head: true }).eq("status", "aberto"),
+      supabase.from("incidentes_nsp").select("id", { count: "exact", head: true }).eq("status", "aberto"),
+      supabase.from("auditorias_qualidade").select("id", { count: "exact", head: true }).eq("status", "em_andamento"),
+      supabase.from("alertas_seguranca").select("id", { count: "exact", head: true }).eq("status", "ativo"),
+    ]);
+    return {
+      chamadosAbertos: chamados.count || 0,
+      incidentesAbertos: incidentes.count || 0,
+      auditoriasAndamento: auditorias.count || 0,
+      alertasAtivos: alertas.count || 0,
+    };
+  };
+
+  // React Query hooks
+  const { data: stats = {}, isLoading: loadingStats, refetch: refetchStats, isFetching: fetchingStats } = useQuery({
+    queryKey: ["dashboard-stats"],
+    queryFn: fetchStats,
+    staleTime: 5 * 60 * 1000, // 5 minutos
+    keepPreviousData: true,
   });
-  const [loading, setLoading] = useState(true);
-  const [auditLogs, setAuditLogs] = useState<AuditLogEntry[]>([]);
-  const [riskChartData, setRiskChartData] = useState<RiskChartPoint[]>([]);
-  const [operationalSummary, setOperationalSummary] = useState<OperationalSummary>({
-    chamadosAbertos: 0, incidentesAbertos: 0, auditoriasAndamento: 0, alertasAtivos: 0,
+  const { data: auditLogs = [], isLoading: loadingAudit, refetch: refetchAudit, isFetching: fetchingAudit } = useQuery({
+    queryKey: ["dashboard-auditLogs"],
+    queryFn: fetchAuditLogs,
+    staleTime: 5 * 60 * 1000,
+    keepPreviousData: true,
   });
+  const { data: riskChartData = [], isLoading: loadingRisk, refetch: refetchRisk, isFetching: fetchingRisk } = useQuery({
+    queryKey: ["dashboard-riskChart"],
+    queryFn: fetchRiskChart,
+    staleTime: 5 * 60 * 1000,
+    keepPreviousData: true,
+  });
+  const { data: operationalSummary = {}, isLoading: loadingOp, refetch: refetchOp, isFetching: fetchingOp } = useQuery({
+    queryKey: ["dashboard-operationalSummary"],
+    queryFn: fetchOperationalSummary,
+    staleTime: 5 * 60 * 1000,
+    keepPreviousData: true,
+  });
+
+  // Estados de loading combinados
+  const loading = loadingStats || loadingAudit || loadingRisk || loadingOp;
+  const isFetching = fetchingStats || fetchingAudit || fetchingRisk || fetchingOp;
+
+  // Memoização dos dados pesados
+  const memoizedRiskChartData = useMemo(() => riskChartData, [riskChartData]);
+  const memoizedAuditLogs = useMemo(() => auditLogs, [auditLogs]);
+  const memoizedStats = useMemo(() => stats, [stats]);
+  const memoizedOperationalSummary = useMemo(() => operationalSummary, [operationalSummary]);
+
   const {
     role, userId, isAdmin, isGestor, isTI, isManutencao,
     isEngenhariaCinica, isLaboratorio, isFaturamento,
@@ -389,7 +520,7 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
     }
   }, [userId, role]);
 
-  const occupancyRate = stats.totalLeitos > 0 ? Math.round((stats.leitosOcupados / stats.totalLeitos) * 100) : 0;
+  const occupancyRate = memoizedStats.totalLeitos > 0 ? Math.round((memoizedStats.leitosOcupados / memoizedStats.totalLeitos) * 100) : 0;
 
   return (
     <div className="space-y-6">
@@ -404,10 +535,10 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
 
       {/* Governance KPI Row */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <KPICard
+        <MemoKPICard
           title="Leitos Ocupados"
           value={`${occupancyRate}%`}
-          subtitle={`${stats.leitosOcupados}/${stats.totalLeitos} leitos`}
+          subtitle={`${memoizedStats.leitosOcupados}/${memoizedStats.totalLeitos} leitos`}
           icon={BedDouble}
           variant="primary"
           loading={loading}
@@ -447,12 +578,12 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
-          <RiskChart data={riskChartData} loading={loading} />
+          <MemoRiskChart data={memoizedRiskChartData} loading={loading} />
         </div>
-        <OperationalStatusCard data={operationalSummary} loading={loading} />
+        <MemoOperationalStatusCard data={memoizedOperationalSummary} loading={loading} />
       </div>
 
-      <AuditActivityLog logs={auditLogs} loading={loading} />
+      <MemoAuditActivityLog logs={memoizedAuditLogs} loading={loading} />
 
       {/* Role-specific extra cards */}
       <TooltipProvider delayDuration={300}>
@@ -507,5 +638,11 @@ const DashboardPersonalizado = ({ onNavigate }: { onNavigate?: (section: string)
     </div>
   );
 };
+
+// Memoização dos componentes pesados
+const MemoRiskChart = React.memo(RiskChart);
+const MemoAuditActivityLog = React.memo(AuditActivityLog);
+const MemoKPICard = React.memo(KPICard);
+const MemoOperationalStatusCard = React.memo(OperationalStatusCard);
 
 export default DashboardPersonalizado;
