@@ -570,8 +570,6 @@ const DashboardPersonalizado = React.memo(({ onNavigate }: { onNavigate?: (secti
       {isAdmin && <MetricasSegurancaWidget />}
     </div>
   );
-};
-
-
+}
 
 export default DashboardPersonalizado;
