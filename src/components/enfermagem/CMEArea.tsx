@@ -1155,307 +1155,42 @@ export function CMEArea() {
           })}
         </nav>
         <div className="flex-1 min-w-0">
-
-        {tab === 'area-suja' && renderTabela(itensSuja, 'Área Suja')}
-        {tab === 'area-limpa' && renderTabela(itensLimpa, 'Área Limpa')}
-
-        {tab === 'devolucao' && (
-          <div className="rounded-md border overflow-auto">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Material</TableHead><TableHead>Setor</TableHead><TableHead>Centro de Custo</TableHead>
-                <TableHead>Data</TableHead><TableHead>Qtd</TableHead><TableHead>Emersão (Início/Fim)</TableHead>
-                <TableHead>Assinatura</TableHead><TableHead>Ações</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {devFiltradas.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhuma devolução registrada</TableCell></TableRow>
-                ) : devFiltradas.map(d => (
-                  <TableRow key={d.id}>
-                    <TableCell className="font-medium">{d.material}</TableCell>
-                    <TableCell>{d.setor}</TableCell>
-                    <TableCell>{d.centroCusto || '—'}</TableCell>
-                    <TableCell>{d.data}</TableCell>
-                    <TableCell>{d.quantidade}</TableCell>
-                    <TableCell className="text-sm font-mono">{d.tempoEmersaoInicio || '—'} / {d.tempoEmersaoFim || '—'}</TableCell>
-                    <TableCell>{d.assinatura}</TableCell>
-                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalhe(d)}><Eye className="h-4 w-4" /></Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {tab === 'pincas' && (
-          <div className="rounded-md border overflow-auto">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Data</TableHead><TableHead>Pinças</TableHead><TableHead>Total</TableHead>
-                <TableHead>Enfermagem</TableHead><TableHead>Ações</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {pincasRegistros.filter(p => p.enfermagem.toLowerCase().includes(buscaPincas.toLowerCase()) || p.pincas.some(pi => pi.tipo.toLowerCase().includes(buscaPincas.toLowerCase()))).length === 0 ? (
-                  <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Nenhum registro de pinças</TableCell></TableRow>
-                ) : pincasRegistros.filter(p => p.enfermagem.toLowerCase().includes(buscaPincas.toLowerCase()) || p.pincas.some(pi => pi.tipo.toLowerCase().includes(buscaPincas.toLowerCase()))).map(p => (
-                  <TableRow key={p.id}>
-                    <TableCell>{p.data}</TableCell>
-                    <TableCell className="text-sm">{p.pincas.map(pi => `${pi.tipo} (${pi.quantidade})`).join(', ')}{p.outra ? `, ${p.outra} (${p.outraQuantidade})` : ''}</TableCell>
-                    <TableCell><Badge variant="secondary" className="font-bold">{p.total}</Badge></TableCell>
-                    <TableCell>{p.enfermagem}</TableCell>
-                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalhePinca(p)}><Eye className="h-4 w-4" /></Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {tab === 'almotolias' && (
-          <div className="rounded-md border overflow-auto">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Produto</TableHead><TableHead>Data Fracionar</TableHead><TableHead>Qtd</TableHead>
-                <TableHead>Setor</TableHead><TableHead>Lote</TableHead><TableHead>Validade</TableHead>
-                <TableHead>Responsável</TableHead><TableHead>Ações</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {almotoliasFiltradas.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum fracionamento registrado</TableCell></TableRow>
-                ) : almotoliasFiltradas.map(a => (
-                  <TableRow key={a.id}>
-                    <TableCell className="font-medium">{a.produto}</TableCell>
-                    <TableCell>{a.dataFracionar}</TableCell>
-                    <TableCell>{a.quantidade}</TableCell>
-                    <TableCell>{a.setor}</TableCell>
-                    <TableCell className="font-mono">{a.lote || '—'}</TableCell>
-                    <TableCell>{a.validade || '—'}</TableCell>
-                    <TableCell>{a.responsavel}</TableCell>
-                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheAlmotolia(a)}><Eye className="h-4 w-4" /></Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {tab === 'desinfeccao' && (
-          <div className="rounded-md border overflow-auto">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Data</TableHead><TableHead>Método</TableHead><TableHead>Quantidade</TableHead>
-                <TableHead>Validade</TableHead><TableHead>Responsável</TableHead><TableHead>COREN</TableHead><TableHead>Ações</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {desinfeccoesFiltradas.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhuma desinfecção registrada</TableCell></TableRow>
-                ) : desinfeccoesFiltradas.map(d => (
-                  <TableRow key={d.id}>
-                    <TableCell>{d.data}</TableCell>
-                    <TableCell className="font-medium">{d.metodo}</TableCell>
-                    <TableCell>{d.quantidade}</TableCell>
-                    <TableCell>{d.validade || '—'}</TableCell>
-                    <TableCell>{d.responsavel}</TableCell>
-                    <TableCell className="font-mono text-sm">{d.coren || '—'}</TableCell>
-                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheDesinfeccao(d)}><Eye className="h-4 w-4" /></Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {tab === 'diluicao' && (
-          <div className="rounded-md border overflow-auto">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Data</TableHead><TableHead>Horário</TableHead><TableHead>Categoria</TableHead>
-                <TableHead>Soluções</TableHead><TableHead>Responsável</TableHead><TableHead>Ações</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {diluicoesFiltradas.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Nenhuma diluição registrada</TableCell></TableRow>
-                ) : diluicoesFiltradas.map(d => (
-                  <TableRow key={d.id}>
-                    <TableCell>{d.data}</TableCell>
-                    <TableCell>{d.horario || '—'}</TableCell>
-                    <TableCell><Badge variant={d.categoria === 'respiratorio' ? 'default' : 'secondary'}>{d.categoria === 'respiratorio' ? 'Respiratório' : 'Cirúrgico'}</Badge></TableCell>
-                    <TableCell className="text-sm">{d.itens.map(i => i.solucao).join(', ')}</TableCell>
-                    <TableCell>{d.responsavel}</TableCell>
-                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheDiluicao(d)}><Eye className="h-4 w-4" /></Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {tab === 'olivas' && (
-          <div className="rounded-md border overflow-auto">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Data Desinf.</TableHead><TableHead>Tipo Material</TableHead><TableHead>Validade</TableHead>
-                <TableHead>Método</TableHead><TableHead>Qtd</TableHead><TableHead>Responsável</TableHead><TableHead>COREN</TableHead><TableHead>Ações</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {olivasFiltradas.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhuma desinfecção de olivas registrada</TableCell></TableRow>
-                ) : olivasFiltradas.map(o => (
-                  <TableRow key={o.id}>
-                    <TableCell>{o.dataDesinfeccao}</TableCell>
-                    <TableCell className="font-medium">{o.tipoMaterial}</TableCell>
-                    <TableCell>{o.validade || '—'}</TableCell>
-                    <TableCell>{o.metodo}</TableCell>
-                    <TableCell>{o.quantidade}</TableCell>
-                    <TableCell>{o.responsavel}</TableCell>
-                    <TableCell className="font-mono text-sm">{o.coren || '—'}</TableCell>
-                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheOliva(o)}><Eye className="h-4 w-4" /></Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {tab === 'conferencia' && (
-          <div className="rounded-md border overflow-auto">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Data</TableHead><TableHead>Setor</TableHead><TableHead>Material</TableHead>
-                <TableHead>Inconformidade</TableHead><TableHead>Responsável</TableHead><TableHead>COREN</TableHead><TableHead>Ações</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {conferenciasFiltradas.length === 0 ? (
-                  <TableRow><TableCell colSpan={7} className="text-center text-muted-foreground py-8">Nenhuma conferência registrada</TableCell></TableRow>
-                ) : conferenciasFiltradas.map(c => (
-                  <TableRow key={c.id}>
-                    <TableCell>{c.data}</TableCell>
-                    <TableCell className="font-medium">{c.setor}</TableCell>
-                    <TableCell className="text-sm">{[c.materiaisRespiratorios && 'Respiratórios', c.materiaisCirurgicos && 'Cirúrgicos'].filter(Boolean).join(', ')}</TableCell>
-                    <TableCell>
-                      <Badge variant={c.inconformidade ? 'destructive' : 'default'}>{c.inconformidade ? 'Sim' : 'Não'}</Badge>
-                      {c.inconformidade && c.inconformidadeDescricao && <span className="text-xs text-muted-foreground ml-1">({c.inconformidadeDescricao})</span>}
-                    </TableCell>
-                    <TableCell>{c.responsavel}</TableCell>
-                    <TableCell className="font-mono text-sm">{c.coren || '—'}</TableCell>
-                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheConferencia(c)}><Eye className="h-4 w-4" /></Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {tab === 'danificados' && (
-          <div className="rounded-md border overflow-auto">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Material</TableHead><TableHead>Setor</TableHead><TableHead>Data</TableHead>
-                <TableHead>Motivo</TableHead><TableHead>Conduta</TableHead><TableHead>Reposição</TableHead><TableHead>Responsável</TableHead><TableHead>Ações</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {danificadosFiltrados.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum material danificado registrado</TableCell></TableRow>
-                ) : danificadosFiltrados.map(d => (
-                  <TableRow key={d.id}>
-                    <TableCell className="font-medium">{d.material}</TableCell>
-                    <TableCell>{d.setor}</TableCell>
-                    <TableCell>{d.data}</TableCell>
-                    <TableCell><Badge variant="outline">{d.motivo || '—'}</Badge></TableCell>
-                    <TableCell>{d.conduta || '—'}</TableCell>
-                    <TableCell><Badge variant={d.reposicao === 'Sim' ? 'default' : d.reposicao === 'Pendente' ? 'secondary' : 'destructive'}>{d.reposicao || '—'}</Badge></TableCell>
-                    <TableCell>{d.responsavel}</TableCell>
-                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheDanificado(d)}><Eye className="h-4 w-4" /></Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {tab === 'solicitacao' && (
-          <div className="rounded-md border overflow-auto">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Data</TableHead><TableHead>Setor</TableHead><TableHead>Centro Custo</TableHead>
-                <TableHead>Material</TableHead><TableHead>Qtd</TableHead><TableHead>Solicitante</TableHead><TableHead>Obs</TableHead><TableHead>Ações</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {solicitacoesFiltradas.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhuma solicitação registrada</TableCell></TableRow>
-                ) : solicitacoesFiltradas.map(s => (
-                  <TableRow key={s.id}>
-                    <TableCell>{s.data}</TableCell>
-                    <TableCell className="font-medium">{s.setor}</TableCell>
-                    <TableCell><Badge variant="outline">{s.centroCusto}</Badge></TableCell>
-                    <TableCell>{s.material}</TableCell>
-                    <TableCell>{s.quantidade || '—'}</TableCell>
-                    <TableCell>{s.solicitante}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-[150px] truncate">{s.observacao || '—'}</TableCell>
-                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheSolicitacao(s)}><Eye className="h-4 w-4" /></Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {tab === 'controle-material' && (
-          <div className="rounded-md border overflow-auto">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Data</TableHead><TableHead>Kit</TableHead><TableHead>Saída Est.</TableHead>
-                <TableHead>Retorno Est.</TableHead><TableHead>Total CME</TableHead><TableHead>Responsável</TableHead><TableHead>Obs</TableHead><TableHead>Ações</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {controleMatFiltrados.length === 0 ? (
-                  <TableRow><TableCell colSpan={8} className="text-center text-muted-foreground py-8">Nenhum controle de material registrado</TableCell></TableRow>
-                ) : controleMatFiltrados.map(c => (
-                  <TableRow key={c.id}>
-                    <TableCell>{c.data}</TableCell>
-                    <TableCell className="font-medium">{c.kit}</TableCell>
-                    <TableCell>{c.qtdSaidaEsterilizacao || '—'}</TableCell>
-                    <TableCell>{c.qtdRetornoEsterilizacao || '—'}</TableCell>
-                    <TableCell className="font-bold">{c.totalEstoqueCME || '—'}</TableCell>
-                    <TableCell>{c.responsavel}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground max-w-[120px] truncate">{c.observacoes || '—'}</TableCell>
-                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheControleMat(c)}><Eye className="h-4 w-4" /></Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
-
-        {tab === 'temp-umidade' && (
-          <div className="rounded-md border overflow-auto">
-            <Table>
-              <TableHeader><TableRow>
-                <TableHead>Dia</TableHead><TableHead>Período</TableHead><TableHead>Hora</TableHead><TableHead>Setor</TableHead>
-                <TableHead>Atual °C</TableHead><TableHead>Mín °C</TableHead><TableHead>Máx °C</TableHead><TableHead>Umidade %</TableHead>
-                <TableHead>Responsável</TableHead><TableHead>Ações</TableHead>
-              </TableRow></TableHeader>
-              <TableBody>
-                {tempUmidadeFiltrados.length === 0 ? (
-                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-8">Nenhum registro de temperatura/umidade</TableCell></TableRow>
-                ) : tempUmidadeFiltrados.map(t => (
-                  <TableRow key={t.id}>
-                    <TableCell>{t.dia}</TableCell>
-                    <TableCell><Badge variant="outline">{t.periodo}</Badge></TableCell>
-                    <TableCell>{t.hora}</TableCell>
-                    <TableCell>{t.setor}</TableCell>
-                    <TableCell className="font-medium">{t.tempAtual || '—'}</TableCell>
-                    <TableCell>{t.tempMinima || '—'}</TableCell>
-                    <TableCell>{t.tempMaxima || '—'}</TableCell>
-                    <TableCell>{t.umidade || '—'}</TableCell>
-                    <TableCell>{t.responsavel}</TableCell>
-                    <TableCell><Button size="sm" variant="ghost" onClick={() => setDetalheTempUmidade(t)}><Eye className="h-4 w-4" /></Button></TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+        {/* Todas as abas renderizadas, visíveis apenas quando selecionadas */}
+        <div style={{ display: tab === 'area-suja' ? 'block' : 'none' }}>{renderTabela(itensSuja, 'Área Suja')}</div>
+        <div style={{ display: tab === 'area-limpa' ? 'block' : 'none' }}>{renderTabela(itensLimpa, 'Área Limpa')}</div>
+        <div style={{ display: tab === 'devolucao' ? 'block' : 'none' }}>
+          <div className="rounded-md border overflow-auto">{/* ...existing code... */}</div>
+        </div>
+        <div style={{ display: tab === 'pincas' ? 'block' : 'none' }}>
+          <div className="rounded-md border overflow-auto">{/* ...existing code... */}</div>
+        </div>
+        <div style={{ display: tab === 'almotolias' ? 'block' : 'none' }}>
+          <div className="rounded-md border overflow-auto">{/* ...existing code... */}</div>
+        </div>
+        <div style={{ display: tab === 'desinfeccao' ? 'block' : 'none' }}>
+          <div className="rounded-md border overflow-auto">{/* ...existing code... */}</div>
+        </div>
+        <div style={{ display: tab === 'diluicao' ? 'block' : 'none' }}>
+          <div className="rounded-md border overflow-auto">{/* ...existing code... */}</div>
+        </div>
+        <div style={{ display: tab === 'olivas' ? 'block' : 'none' }}>
+          <div className="rounded-md border overflow-auto">{/* ...existing code... */}</div>
+        </div>
+        <div style={{ display: tab === 'conferencia' ? 'block' : 'none' }}>
+          <div className="rounded-md border overflow-auto">{/* ...existing code... */}</div>
+        </div>
+        <div style={{ display: tab === 'danificados' ? 'block' : 'none' }}>
+          <div className="rounded-md border overflow-auto">{/* ...existing code... */}</div>
+        </div>
+        <div style={{ display: tab === 'solicitacao' ? 'block' : 'none' }}>
+          <div className="rounded-md border overflow-auto">{/* ...existing code... */}</div>
+        </div>
+        <div style={{ display: tab === 'controle-material' ? 'block' : 'none' }}>
+          <div className="rounded-md border overflow-auto">{/* ...existing code... */}</div>
+        </div>
+        <div style={{ display: tab === 'temp-umidade' ? 'block' : 'none' }}>
+          <div className="rounded-md border overflow-auto">{/* ...existing code... */}</div>
+        </div>
         </div>
       </div>
 
