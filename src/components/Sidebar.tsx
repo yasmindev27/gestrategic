@@ -5,6 +5,7 @@ import { useUserRole } from "@/hooks/useUserRole";
 import { LayoutDashboard, Users, Settings, HelpCircle, LogOut, ChevronLeft, ChevronRight, ClipboardX, Receipt, Shield, ShieldAlert, Monitor, Wrench, Stethoscope, FlaskConical, Calendar, UtensilsCrossed, Ambulance, FileText, UserCog, Shirt, HardHat, Heart, AlertTriangle, Syringe, ExternalLink, MessageSquare, Ticket, GraduationCap, Video, Building2, UserRound, BedDouble } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { NavLink } from "@/components/NavLink";
+import { NavLink as RouterNavLink } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -429,22 +430,47 @@ const Sidebar = ({
         }
       };
 
+      // Se for link interno (rota do app), use NavLink do react-router-dom
+      const isInternal = typeof externalUrl === "string" && externalUrl.startsWith("/");
       const link = (
         <li>
-          <a
-            href={externalUrl}
-            onClick={handleClick}
-            className={cn(buttonClasses, "text-sidebar-foreground hover:bg-white/5 hover:text-white")}
-          >
-            {content}
-            {!isCollapsed && <ExternalLink className="h-3 w-3 opacity-60 ml-auto flex-shrink-0" />}
-          </a>
+          {isInternal ? (
+            <RouterNavLink
+              to={externalUrl}
+              className={({ isActive }) => cn(buttonClasses, "text-sidebar-foreground hover:bg-white/5 hover:text-white", isActive && "bg-white/10")}
+              onClick={handleClick}
+            >
+              {content}
+              {!isCollapsed && <ExternalLink className="h-3 w-3 opacity-60 ml-auto flex-shrink-0" />}
+            </RouterNavLink>
+          ) : (
+            <a
+              href={externalUrl}
+              onClick={handleClick}
+              className={cn(buttonClasses, "text-sidebar-foreground hover:bg-white/5 hover:text-white")}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {content}
+              {!isCollapsed && <ExternalLink className="h-3 w-3 opacity-60 ml-auto flex-shrink-0" />}
+            </a>
+          )}
         </li>
       );
       return isCollapsed ? <li>{withTooltip(
-        <a href={externalUrl} onClick={handleClick} className={cn(buttonClasses, "text-sidebar-foreground hover:bg-white/5 hover:text-white")}>
-          {content}
-        </a>
+        isInternal ? (
+          <RouterNavLink
+            to={externalUrl}
+            className={({ isActive }) => cn(buttonClasses, "text-sidebar-foreground hover:bg-white/5 hover:text-white", isActive && "bg-white/10")}
+            onClick={handleClick}
+          >
+            {content}
+          </RouterNavLink>
+        ) : (
+          <a href={externalUrl} onClick={handleClick} className={cn(buttonClasses, "text-sidebar-foreground hover:bg-white/5 hover:text-white")} target="_blank" rel="noopener noreferrer">
+            {content}
+          </a>
+        )
       )}</li> : link;
     }
 

@@ -1,3 +1,10 @@
+  // Exibe indicador discreto de atualização em background
+  const BackgroundLoader = () => isFetching && !loading ? (
+    <div className="fixed top-2 right-2 z-50 flex items-center gap-2 bg-card/80 px-3 py-1 rounded shadow text-xs text-muted-foreground">
+      <span className="animate-spin mr-1 w-3 h-3 border-2 border-primary border-t-transparent rounded-full" />
+      Atualizando dados…
+    </div>
+  ) : null;
 import React, { useMemo } from "react";
 import { SECTORS } from "@/types/bed";
 import {
@@ -276,122 +283,122 @@ const DashboardPersonalizado = React.memo(({ onNavigate }: { onNavigate?: (secti
       capacitacoesPendentes: 0, incidentesCriticos: 0, chamadosManutencao: 0, conformidadeDietas: 0,
     };
   };
+  return (
+    <div className="space-y-6">
+      <BackgroundLoader />
+      {/* Section Title */}
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold text-foreground">Governança Hospitalar</h2>
+        <Button variant="outline" size="sm" onClick={() => { refetchStats(); refetchRisk(); refetchOp(); }} disabled={loading}>
+          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
+          Atualizar
+        </Button>
+      </div>
 
-  const fetchAuditLogs = async () => {
-    if (!userId) return [];
-    const { data } = await supabase
-      .from("logs_acesso")
-      .select("id, created_at, acao, modulo, user_id")
-      .order("created_at", { ascending: false })
-      .limit(10);
-    return data || [];
-  };
+      {/* Governance KPI Row */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <MemoKPICard
+          title="Leitos Ocupados"
+          value={`${occupancyRate}%`}
+          subtitle={`${memoizedStats.leitosOcupados}/${memoizedStats.totalLeitos} leitos`}
+          icon={BedDouble}
+          variant="primary"
+          loading={loading}
+          onClick={() => onNavigate?.("mapa-leitos")}
+        />
+        <MemoKPICard
+          title="Incidentes Críticos (Hoje)"
+          value={String(memoizedStats.incidentesCriticos).padStart(2, "0")}
+          subtitle="NSP-triggered"
+          icon={AlertTriangle}
+          variant="destructive"
+          loading={loading}
+          onClick={() => onNavigate?.("qualidade")}
+        />
+        <MemoKPICard
+          title="Chamados de Manutenção"
+          value={String(memoizedStats.chamadosManutencao).padStart(2, "0")}
+          subtitle={`${memoizedStats.chamadosPendentes} em andamento`}
+          icon={Wrench}
+          variant="warning"
+          loading={loading}
+          onClick={() => onNavigate?.("abrir-chamado")}
+        />
+        <MemoKPICard
+          title="Conformidade Dietas"
+          value={memoizedStats.conformidadeDietas > 0 ? `${memoizedStats.conformidadeDietas}%` : "—"}
+          subtitle="Meta: 95%"
+          icon={ClipboardCheck}
+          variant={memoizedStats.conformidadeDietas >= 95 ? "success" : memoizedStats.conformidadeDietas > 0 ? "warning" : "primary"}
+          loading={loading}
+          onClick={() => onNavigate?.("restaurante")}
+        />
+      </div>
 
-  const fetchRiskChart = async () => {
-    if (!userId) return [];
-    const days: RiskChartPoint[] = [];
-    const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-    for (let i = 6; i >= 0; i--) {
-      const date = subDays(new Date(), i);
-      const dateStr = format(date, "yyyy-MM-dd");
-      const dayName = dayNames[date.getDay()];
-      const [incidentes, auditorias] = await Promise.all([
-        supabase.from("incidentes_nsp").select("classificacao_risco")
-          .gte("created_at", `${dateStr}T00:00:00`)
-          .lt("created_at", `${dateStr}T23:59:59`),
-        supabase.from("auditorias_qualidade").select("id", { count: "exact", head: true })
-          .gte("created_at", `${dateStr}T00:00:00`)
-          .lt("created_at", `${dateStr}T23:59:59`),
-      ]);
-      const incData = incidentes.data || [];
-      const nearMiss = incData.filter(i => 
-        i.classificacao_risco?.toLowerCase().includes("near") || 
-        i.classificacao_risco?.toLowerCase().includes("quase")
-      ).length;
-      const adverseEvents = incData.filter(i => 
-        !i.classificacao_risco?.toLowerCase().includes("near") && 
-        !i.classificacao_risco?.toLowerCase().includes("quase")
-      ).length;
-      days.push({
-        day: `${dayName} ${format(date, "dd/MM")}`,
-        nearMiss,
-        adverseEvents,
-        quality: auditorias.count || 0,
-      });
-    }
-    return days;
-  };
+      {/* Management Dashboard */}
+      <h3 className="text-lg font-bold text-foreground">Painel de Gestão</h3>
 
-  const fetchOperationalSummary = async () => {
-    if (!userId) return {};
-    const [chamados, incidentes, auditorias, alertas] = await Promise.all([
-      supabase.from("chamados").select("id", { count: "exact", head: true }).eq("status", "aberto"),
-      supabase.from("incidentes_nsp").select("id", { count: "exact", head: true }).eq("status", "aberto"),
-      supabase.from("auditorias_qualidade").select("id", { count: "exact", head: true }).eq("status", "em_andamento"),
-      supabase.from("alertas_seguranca").select("id", { count: "exact", head: true }).eq("status", "ativo"),
-    ]);
-    return {
-      chamadosAbertos: chamados.count || 0,
-      incidentesAbertos: incidentes.count || 0,
-      auditoriasAndamento: auditorias.count || 0,
-      alertasAtivos: alertas.count || 0,
-    };
-  };
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <MemoRiskChart data={memoizedRiskChartData} loading={loading} />
+        </div>
+        <MemoOperationalStatusCard data={memoizedOperationalSummary} loading={loading} />
+      </div>
 
-  // React Query hooks
-  const { data: stats = {}, isLoading: loadingStats, refetch: refetchStats, isFetching: fetchingStats } = useQuery({
-    queryKey: ["dashboard-stats"],
-    queryFn: fetchStats,
-    staleTime: 5 * 60 * 1000, // 5 minutos
-    keepPreviousData: true,
-  });
-  const { data: auditLogs = [], isLoading: loadingAudit, refetch: refetchAudit, isFetching: fetchingAudit } = useQuery({
-    queryKey: ["dashboard-auditLogs"],
-    queryFn: fetchAuditLogs,
-    staleTime: 5 * 60 * 1000,
-    keepPreviousData: true,
-  });
-  const { data: riskChartData = [], isLoading: loadingRisk, refetch: refetchRisk, isFetching: fetchingRisk } = useQuery({
-    queryKey: ["dashboard-riskChart"],
-    queryFn: fetchRiskChart,
-    staleTime: 5 * 60 * 1000,
-    keepPreviousData: true,
-  });
-  const { data: operationalSummary = {}, isLoading: loadingOp, refetch: refetchOp, isFetching: fetchingOp } = useQuery({
-    queryKey: ["dashboard-operationalSummary"],
-    queryFn: fetchOperationalSummary,
-    staleTime: 5 * 60 * 1000,
-    keepPreviousData: true,
-  });
+      <MemoAuditActivityLog logs={memoizedAuditLogs} loading={loading} />
 
-  // Estados de loading combinados
-  const loading = loadingStats || loadingAudit || loadingRisk || loadingOp;
-  const isFetching = fetchingStats || fetchingAudit || fetchingRisk || fetchingOp;
+      {/* Role-specific extra cards */}
+      <TooltipProvider delayDuration={300}>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {(isAdmin || isGestor) && (
+            <MemoKPICard
+              title="Colaboradores"
+              value={String(memoizedStats.colaboradoresSobGestao)}
+              subtitle="Sob sua gestão"
+              icon={Users}
+              variant="primary"
+              loading={loading}
+              onClick={() => onNavigate?.("equipe")}
+            />
+          )}
+          {isAdmin && (
+            <MemoKPICard
+              title="Logs do Sistema"
+              value={String(memoizedStats.logsHoje)}
+              subtitle="Ações registradas hoje"
+              icon={BarChart3}
+              variant="primary"
+              loading={loading}
+              onClick={() => onNavigate?.("logs")}
+            />
+          )}
+          {(isFaturamento || isRecepcao || isNir || isEnfermagem || isCoordenadorEnfermagem || isAdmin) && (
+            <MemoKPICard
+              title="Saídas Registradas"
+              value={String(memoizedStats.prontuariosPendentes)}
+              subtitle="Total de saídas"
+              icon={FileText}
+              variant="primary"
+              loading={loading}
+              onClick={() => onNavigate?.("faturamento")}
+            />
+          )}
+          <MemoKPICard
+            title="Capacitações"
+            value={String(memoizedStats.capacitacoesPendentes)}
+            subtitle={memoizedStats.capacitacoesPendentes > 0 ? "Pendentes" : "Tudo em dia"}
+            icon={GraduationCap}
+            variant={memoizedStats.capacitacoesPendentes > 0 ? "warning" : "success"}
+            loading={loading}
+            onClick={() => onNavigate?.("lms")}
+          />
+        </div>
+      </TooltipProvider>
 
-  // Memoização dos dados pesados
-  const memoizedRiskChartData = useMemo(() => riskChartData, [riskChartData]);
-  const memoizedAuditLogs = useMemo(() => auditLogs, [auditLogs]);
-  const memoizedStats = useMemo(() => stats, [stats]);
-  const memoizedOperationalSummary = useMemo(() => operationalSummary, [operationalSummary]);
-
-  const {
-    role, userId, isAdmin, isGestor, isTI, isManutencao,
-    isEngenhariaCinica, isLaboratorio, isFaturamento,
-    isRecepcao, isNir, isEnfermagem, isCoordenadorEnfermagem, isTecnico
-  } = useUserRole();
-  useRealtimeSync(REALTIME_PRESETS.dashboard);
-
-  const fetchRiskChart = async () => {
-    try {
-      const days: RiskChartPoint[] = [];
-      const dayNames = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-
-      for (let i = 6; i >= 0; i--) {
-        const date = subDays(new Date(), i);
-        const dateStr = format(date, "yyyy-MM-dd");
-        const dayName = dayNames[date.getDay()];
-
-        const [incidentes, auditorias] = await Promise.all([
+      {/* Security metrics for admin */}
+      {isAdmin && <MetricasSegurancaWidget />}
+    </div>
+  );
           supabase.from("incidentes_nsp").select("classificacao_risco")
             .gte("created_at", `${dateStr}T00:00:00`)
             .lt("created_at", `${dateStr}T23:59:59`),
@@ -524,6 +531,7 @@ const DashboardPersonalizado = React.memo(({ onNavigate }: { onNavigate?: (secti
 
   return (
     <div className="space-y-6">
+      <BackgroundLoader />
       {/* Section Title */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">Governança Hospitalar</h2>
