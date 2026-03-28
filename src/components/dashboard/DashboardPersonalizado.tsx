@@ -239,57 +239,13 @@ const OperationalStatusCard = ({ data, loading }: { data: OperationalSummary; lo
 
 const DashboardPersonalizado = React.memo(({ onNavigate }: { onNavigate?: (section: string) => void }) => {
   // Funções de fetch para React Query
-  // Funções de fetch para React Query
-  const fetchStats = async () => {
-    // userId e role vêm do hook, mas React Query não aceita dependências diretas, então é preciso garantir que só rode se userId existir
-    if (!userId) return {};
-    const hojeStr = getBrasiliaDateString();
-    const { data: leitosData } = await supabase
-      .from("bed_records")
-      .select("id, bed_id, bed_number, sector, patient_name, motivo_alta, data_alta, created_at, data_obito") as { data: any[] | null };
-    const leitosOcupados = (leitosData || []).filter(r => r.patient_name && !r.motivo_alta && !r.data_alta).length;
-    const totalLeitos = SECTORS.reduce((sum, s) => sum + s.beds.length + (s.extraBeds?.length || 0), 0);
-    const pacientesAtivos = Array.from(new Set((leitosData || [])
-      .filter(r => r.patient_name && !r.motivo_alta && !r.data_alta)
-      .map(r => r.patient_name))).length;
-    const eficienciaOperacional = totalLeitos > 0 ? Math.round((leitosOcupados / totalLeitos) * 100) : 0;
-    const mesAtual = hojeStr.slice(0, 7);
-    const obitosMes = (leitosData || []).filter((r: any) => r.data_obito && r.data_obito.startsWith(mesAtual)).length;
-    const internacoesMes = (leitosData || []).filter((r: any) => r.data_alta && r.data_alta.startsWith(mesAtual)).length;
-    const taxaMortalidade = internacoesMes > 0 ? Math.round((obitosMes / internacoesMes) * 100) : 0;
-    const tendenciaOcupacao: { dia: string, ocupacao: number }[] = [];
-    for (let i = 13; i >= 0; i--) {
-      const dataRef = new Date();
-      dataRef.setDate(dataRef.getDate() - i);
-      const dataStr = dataRef.toISOString().slice(0, 10);
-      const ocupadosNoDia = (leitosData || []).filter(r => {
-        const dataEntrada = r.created_at ? r.created_at.slice(0, 10) : dataStr;
-        const dataAlta = r.data_alta ? r.data_alta.slice(0, 10) : null;
-        return dataEntrada <= dataStr && (!dataAlta || dataAlta > dataStr);
-      }).length;
-      tendenciaOcupacao.push({ dia: format(dataRef, "dd/MM"), ocupacao: ocupadosNoDia });
-    }
-    // Retornar todos os campos esperados
-    return {
-      leitosOcupados,
-      totalLeitos,
-      pacientesAtivos,
-      eficienciaOperacional,
-      taxaMortalidade,
-      tendenciaOcupacao,
-      chamadosAbertos: 0, chamadosPendentes: 0, chamadosHoje: 0, chamadosResolvidos: 0,
-      tarefasPendentes: 0, tarefasHoje: 0, prontuariosPendentes: 0, prontuariosAvaliados: 0,
-      produtosEstoqueBaixo: 0, escalasHoje: 0, colaboradoresSobGestao: 0, logsHoje: 0,
-      capacitacoesPendentes: 0, incidentesCriticos: 0, chamadosManutencao: 0, conformidadeDietas: 0,
-    };
-  };
   return (
     <div className="space-y-6">
       <BackgroundLoader />
       {/* Section Title */}
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-foreground">Governança Hospitalar</h2>
-        <Button variant="outline" size="sm" onClick={() => { refetchStats(); refetchRisk(); refetchOp(); }} disabled={loading}>
+        <Button variant="outline" size="sm" onClick={() => { fetchStats(); fetchRiskChart(); fetchOperationalSummary(); }} disabled={loading}>
           <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
           Atualizar
         </Button>
@@ -617,10 +573,6 @@ const DashboardPersonalizado = React.memo(({ onNavigate }: { onNavigate?: (secti
   );
 };
 
-// Memoização dos componentes pesados
-const MemoRiskChart = React.memo(RiskChart);
-const MemoAuditActivityLog = React.memo(AuditActivityLog);
-const MemoKPICard = React.memo(KPICard);
-const MemoOperationalStatusCard = React.memo(OperationalStatusCard);
+
 
 export default DashboardPersonalizado;
