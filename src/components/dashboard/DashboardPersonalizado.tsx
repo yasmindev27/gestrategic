@@ -62,9 +62,9 @@ interface DashboardStats {
   totalLeitos: number;
   incidentesCriticos: number;
   chamadosManutencao: number;
-  conformidadeDietas: number;
-};
 
+  conformidadeDietas: number;
+}
 
 export default DashboardPersonalizado;
 
