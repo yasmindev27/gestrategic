@@ -22,25 +22,3 @@ const ModuleLoader = () => (
 export default function Dashboard() {
   return <DashboardPersonalizado onNavigate={() => {}} />;
 }
-  return (
-    <DashboardLayout
-      activeSection={sectionFromUrl || "dashboard"}
-      onSectionChange={handleSectionChange}
-      onOpenExternal={handleOpenExternal}
-      fullContent={!!externalUrl}
-    >
-      {externalUrl ? (
-        <ExternalViewer
-          url={externalUrl.url}
-          title={externalUrl.title}
-          onClose={() => setExternalUrl(null)}
-        />
-      ) : (
-        renderContent()
-      )}
-      <CookieBanner />
-    </DashboardLayout>
-  );
-};
-
-export default Dashboard;
