@@ -47,15 +47,15 @@ const ColaboradorModule = () => {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="horas" className="mt-6">
+            <TabsContent value="horas" forceMount className="mt-6 data-[state=inactive]:hidden">
               <HorasScreen />
             </TabsContent>
 
-            <TabsContent value="escala" className="mt-6">
+            <TabsContent value="escala" forceMount className="mt-6 data-[state=inactive]:hidden">
               <EscalaScreen />
             </TabsContent>
 
-            <TabsContent value="trocas" className="mt-6">
+            <TabsContent value="trocas" forceMount className="mt-6 data-[state=inactive]:hidden">
               <TrocaPlantaoScreen />
             </TabsContent>
           </Tabs>

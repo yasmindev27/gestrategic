@@ -77,6 +77,7 @@ import { PermissoesManager } from "@/components/admin/PermissoesManager";
 import { InfraestruturaPanel } from "@/components/admin/InfraestruturaPanel";
 import { LogsAuditoriaModule } from "@/components/modules/LogsAuditoriaModule";
 import { FluxogramaSetores } from "@/components/admin/FluxogramaSetores";
+import { useQuery } from "@tanstack/react-query";
 
 type AppRole = Database["public"]["Enums"]["app_role"];
 
@@ -197,55 +198,27 @@ export const AdminModule = () => {
   });
   const [loginType, setLoginType] = useState<"email" | "matricula">("email");
 
-  useEffect(() => {
-    if (isAdmin) {
-      fetchUsers();
-      fetchLogs();
-      fetchCargosSetores();
-      logAction("acesso", "admin");
-    }
-  }, [isAdmin]);
-
-  const fetchCargosSetores = async () => {
-    try {
-      const [cargosRes, setoresRes] = await Promise.all([
-        supabase.from("cargos").select("id, nome").eq("ativo", true).order("nome"),
-        supabase.from("setores").select("id, nome").eq("ativo", true).order("nome"),
-      ]);
-
-      if (cargosRes.error) throw cargosRes.error;
-      if (setoresRes.error) throw setoresRes.error;
-
-      setCargosOptions(cargosRes.data || []);
-      setSetoresOptions(setoresRes.data || []);
-    } catch (error) {
-      console.error("Error fetching cargos/setores:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar cargos e setores.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const fetchUsers = async () => {
-    setIsLoading(true);
-    try {
-      // Fetch profiles with roles
+  // React Query: busca usuários
+  const {
+    data: usersData,
+    isLoading: isLoadingUsers,
+    error: errorUsers,
+    refetch: refetchUsers
+  } = useQuery({
+    queryKey: ["admin-users"],
+    queryFn: async () => {
+      // Busca perfis
       const { data: profiles, error: profilesError } = await supabase
         .from("profiles")
         .select("id, user_id, full_name, matricula, cargo, setor");
-
       if (profilesError) throw profilesError;
-
+      // Busca roles
       const { data: roles, error: rolesError } = await supabase
         .from("user_roles")
         .select("id, user_id, role");
-
       if (rolesError) throw rolesError;
-
-      // Combine data
-      const usersWithRoles: UserWithRole[] = (profiles || []).map(profile => {
+      // Combina
+      return (profiles || []).map(profile => {
         const userRole = roles?.find(r => r.user_id === profile.user_id);
         return {
           id: profile.id,
@@ -258,34 +231,68 @@ export const AdminModule = () => {
           role_id: userRole?.id || "",
         };
       });
+    },
+    enabled: isAdmin,
+  });
 
-      setUsers(usersWithRoles);
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      toast({
-        title: "Erro",
-        description: "Erro ao carregar usuários.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
+  useEffect(() => {
+    if (usersData) setUsers(usersData);
+  }, [usersData]);
+
+  // React Query: busca cargos e setores
+  const {
+    data: cargosSetoresData,
+    isLoading: isLoadingCargosSetores,
+    error: errorCargosSetores,
+    refetch: refetchCargosSetores
+  } = useQuery({
+    queryKey: ["cargos-setores"],
+    queryFn: async () => {
+      const [cargosRes, setoresRes] = await Promise.all([
+        supabase.from("cargos").select("id, nome").eq("ativo", true).order("nome"),
+        supabase.from("setores").select("id, nome").eq("ativo", true).order("nome"),
+      ]);
+      if (cargosRes.error) throw cargosRes.error;
+      if (setoresRes.error) throw setoresRes.error;
+      return {
+        cargos: cargosRes.data || [],
+        setores: setoresRes.data || []
+      };
+    },
+    enabled: isAdmin,
+  });
+
+  // Atualiza os estados locais quando os dados são carregados
+  useEffect(() => {
+    if (cargosSetoresData) {
+      setCargosOptions(cargosSetoresData.cargos);
+      setSetoresOptions(cargosSetoresData.setores);
     }
-  };
+  }, [cargosSetoresData]);
 
-  const fetchLogs = async () => {
-    try {
+  // React Query: busca logs
+  const {
+    data: logsData,
+    isLoading: isLoadingLogs,
+    error: errorLogs,
+    refetch: refetchLogs
+  } = useQuery({
+    queryKey: ["admin-logs"],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from("logs_acesso")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(100);
-
       if (error) throw error;
-      setLogs(data || []);
-    } catch (error) {
-      console.error("Error fetching logs:", error);
-    }
-  };
+      return data || [];
+    },
+    enabled: isAdmin,
+  });
+
+  useEffect(() => {
+    if (logsData) setLogs(logsData);
+  }, [logsData]);
 
   const handleUpdateRole = async () => {
     if (!selectedUser || !newRole) return;
@@ -327,7 +334,9 @@ export const AdminModule = () => {
       setEditDialogOpen(false);
       setSelectedUser(null);
       setNewRole("");
-      fetchUsers();
+      refetchUsers();
+      refetchCargosSetores();
+      refetchLogs();
     } catch (error) {
       console.error("Error:", error);
       toast({
@@ -417,7 +426,9 @@ export const AdminModule = () => {
 
       setCreateDialogOpen(false);
       resetFormData();
-      fetchUsers();
+      refetchUsers();
+      refetchCargosSetores();
+      refetchLogs();
     } catch (error: unknown) {
       console.error("Error:", error);
       toast({
@@ -470,7 +481,9 @@ export const AdminModule = () => {
       setEditUserDialogOpen(false);
       setSelectedUser(null);
       resetFormData();
-      fetchUsers();
+      refetchUsers();
+      refetchCargosSetores();
+      refetchLogs();
     } catch (error: unknown) {
       console.error("Error:", error);
       toast({
@@ -515,7 +528,9 @@ export const AdminModule = () => {
 
       setDeleteDialogOpen(false);
       setSelectedUser(null);
-      fetchUsers();
+      refetchUsers();
+      refetchCargosSetores();
+      refetchLogs();
     } catch (error: unknown) {
       console.error("Error:", error);
       toast({
@@ -618,7 +633,7 @@ export const AdminModule = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="usuarios" className="space-y-4 mt-4">
+        <TabsContent value="usuarios" forceMount className="space-y-4 mt-4 data-[state=inactive]:hidden">
           {/* Search and Add Button */}
           <Card>
             <CardContent className="pt-6">
@@ -632,7 +647,7 @@ export const AdminModule = () => {
                     className="pl-10"
                   />
                 </div>
-                <Button variant="outline" onClick={() => fetchUsers()} disabled={isLoading}>
+                <Button variant="outline" onClick={() => refetchUsers()} disabled={isLoading}>
                   <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
                   Atualizar
                 </Button>
@@ -755,31 +770,31 @@ export const AdminModule = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="permissoes" className="space-y-4 mt-4">
+        <TabsContent value="permissoes" forceMount className="space-y-4 mt-4 data-[state=inactive]:hidden">
           <PermissoesManager />
         </TabsContent>
 
-        <TabsContent value="cargos" className="space-y-4 mt-4">
+        <TabsContent value="cargos" forceMount className="space-y-4 mt-4 data-[state=inactive]:hidden">
           <CargosManager />
         </TabsContent>
 
-        <TabsContent value="setores" className="space-y-4 mt-4">
+        <TabsContent value="setores" forceMount className="space-y-4 mt-4 data-[state=inactive]:hidden">
           <SetoresManager />
         </TabsContent>
 
-        <TabsContent value="gestores" className="space-y-4 mt-4">
+        <TabsContent value="gestores" forceMount className="space-y-4 mt-4 data-[state=inactive]:hidden">
           <GestoresVinculacao />
         </TabsContent>
 
-        <TabsContent value="logs" className="space-y-4 mt-4">
+        <TabsContent value="logs" forceMount className="space-y-4 mt-4 data-[state=inactive]:hidden">
           <LogsAuditoriaModule />
         </TabsContent>
 
-        <TabsContent value="infraestrutura" className="space-y-4 mt-4">
+        <TabsContent value="infraestrutura" forceMount className="space-y-4 mt-4 data-[state=inactive]:hidden">
           <InfraestruturaPanel />
         </TabsContent>
 
-        <TabsContent value="configuracoes" className="space-y-4 mt-4">
+        <TabsContent value="configuracoes" forceMount className="space-y-4 mt-4 data-[state=inactive]:hidden">
           <Card>
             <CardHeader>
               <CardTitle>Configurações do Sistema</CardTitle>
@@ -796,7 +811,7 @@ export const AdminModule = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="fluxograma" className="mt-4">
+        <TabsContent value="fluxograma" forceMount className="mt-4 data-[state=inactive]:hidden">
           <FluxogramaSetores />
         </TabsContent>
       </Tabs>

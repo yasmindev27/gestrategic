@@ -516,7 +516,7 @@ export const AssistenciaSocialModule = () => {
         </TabsList>
 
         {/* ======= ATENDIMENTOS TAB ======= */}
-        <TabsContent value="atendimentos" className="space-y-4">
+        <TabsContent value="atendimentos" forceMount className="space-y-4 data-[state=inactive]:hidden">
           <Card>
             <CardContent className="pt-4">
               <div className="flex flex-wrap items-end gap-4">
@@ -595,7 +595,7 @@ export const AssistenciaSocialModule = () => {
         </TabsContent>
 
         {/* ======= CORRIDA DE LEITO TAB ======= */}
-        <TabsContent value="corrida-leito" className="space-y-4">
+        <TabsContent value="corrida-leito" forceMount className="space-y-4 data-[state=inactive]:hidden">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -676,7 +676,7 @@ export const AssistenciaSocialModule = () => {
         </TabsContent>
 
         {/* ======= ENCAMINHAMENTOS TAB ======= */}
-        <TabsContent value="encaminhamentos" className="space-y-4">
+        <TabsContent value="encaminhamentos" forceMount className="space-y-4 data-[state=inactive]:hidden">
           <Card>
             <CardHeader>
               <CardTitle>Encaminhamentos para Rede de Atenção</CardTitle>
@@ -722,12 +722,12 @@ export const AssistenciaSocialModule = () => {
         </TabsContent>
 
         {/* ======= PASSAGEM DE PLANTÃO + SUPORTE TAB ======= */}
-        <TabsContent value="passagem" className="space-y-4">
+        <TabsContent value="passagem" forceMount className="space-y-4 data-[state=inactive]:hidden">
           <PassagemPlantaoSocial currentUser={currentUser} atendimentos={atendimentos} onRefresh={loadData} />
         </TabsContent>
 
         {/* ======= RELATÓRIOS ONA TAB ======= */}
-        <TabsContent value="relatorios" className="space-y-4">
+        <TabsContent value="relatorios" forceMount className="space-y-4 data-[state=inactive]:hidden">
           <ReportSection atendimentos={atendimentos} encaminhamentos={encaminhamentos} bedPatients={bedPatients} />
         </TabsContent>
       </Tabs>

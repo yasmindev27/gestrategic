@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { Stethoscope, Calendar, ArrowRightLeft, History, CheckCircle, Users, Activity, Upload, FileCheck, ClipboardCheck, ClipboardList, Radio, BedDouble, Siren, ShieldCheck, Pill, Microscope } from 'lucide-react';
@@ -309,19 +308,19 @@ export function EnfermagemModule() {
                   </>
                 )}
               </TabsList>
-              <TabsContent value="meus-plantoes" className="mt-4">
+              <TabsContent value="meus-plantoes" forceMount className="mt-4 data-[state=inactive]:hidden">
                 <MinhasEscalas userId={userId ?? ''} userName={userName ?? ''} />
               </TabsContent>
-              <TabsContent value="pega-plantao" className="mt-4"><TrocasDisponiveis userId={userId || ''} userName={userName || ''} /></TabsContent>
-              <TabsContent value="calendario" className="mt-4"><CalendarioEscalas onDayClick={handleDayClick} onAddClick={isGestor ? handleAddClick : undefined} selectedSetor={selectedSetor} /></TabsContent>
-              {isGestor && <TabsContent value="aprovacoes" className="mt-4"><AprovacaoTrocas userId={userId || ''} userName={userName || ''} /></TabsContent>}
-              <TabsContent value="historico" className="mt-4"><HistoricoTrocas /></TabsContent>
+              <TabsContent value="pega-plantao" forceMount className="mt-4 data-[state=inactive]:hidden"><TrocasDisponiveis userId={userId || ''} userName={userName || ''} /></TabsContent>
+              <TabsContent value="calendario" forceMount className="mt-4 data-[state=inactive]:hidden"><CalendarioEscalas onDayClick={handleDayClick} onAddClick={isGestor ? handleAddClick : undefined} selectedSetor={selectedSetor} /></TabsContent>
+              {isGestor && <TabsContent value="aprovacoes" forceMount className="mt-4 data-[state=inactive]:hidden"><AprovacaoTrocas userId={userId || ''} userName={userName || ''} /></TabsContent>}
+              <TabsContent value="historico" forceMount className="mt-4 data-[state=inactive]:hidden"><HistoricoTrocas /></TabsContent>
               {isGestor && (
                 <>
-                  <TabsContent value="escala-tecnicos" className="mt-4"><EscalaTecEnfermagem tipo="tecnicos" /></TabsContent>
-                  <TabsContent value="escala-enfermeiros" className="mt-4"><EscalaTecEnfermagem tipo="enfermeiros" /></TabsContent>
-                  <TabsContent value="escala-radiologia" className="mt-4"><EscalaTecEnfermagem tipo="radiologia" /></TabsContent>
-                  <TabsContent value="aprovacao-ponto" className="mt-4"><AprovacaoPontoJustificativa /></TabsContent>
+                  <TabsContent value="escala-tecnicos" forceMount className="mt-4 data-[state=inactive]:hidden"><EscalaTecEnfermagem tipo="tecnicos" /></TabsContent>
+                  <TabsContent value="escala-enfermeiros" forceMount className="mt-4 data-[state=inactive]:hidden"><EscalaTecEnfermagem tipo="enfermeiros" /></TabsContent>
+                  <TabsContent value="escala-radiologia" forceMount className="mt-4 data-[state=inactive]:hidden"><EscalaTecEnfermagem tipo="radiologia" /></TabsContent>
+                  <TabsContent value="aprovacao-ponto" forceMount className="mt-4 data-[state=inactive]:hidden"><AprovacaoPontoJustificativa /></TabsContent>
                 </>
               )}
             </Tabs>

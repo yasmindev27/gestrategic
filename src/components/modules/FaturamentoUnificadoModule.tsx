@@ -44,11 +44,11 @@ export const FaturamentoUnificadoModule = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="saida" className="mt-6">
+        <TabsContent value="saida" forceMount className="mt-6 data-[state=inactive]:hidden">
           <SaidaProntuariosModule />
         </TabsContent>
 
-        <TabsContent value="avaliacao" className="mt-6">
+        <TabsContent value="avaliacao" forceMount className="mt-6 data-[state=inactive]:hidden">
           <FaturamentoModule />
         </TabsContent>
       </Tabs>

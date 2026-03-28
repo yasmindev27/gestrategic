@@ -529,12 +529,12 @@ export function GerenciaModule() {
         </TabsList>
 
         {/* -- Tab: BI Hospitalar -- */}
-        <TabsContent value="bi" className="mt-4">
+        <TabsContent value="bi" forceMount className="mt-4 data-[state=inactive]:hidden">
           <DashboardBIHospitalar periodoMeses={3} />
         </TabsContent>
 
         {/* -- Tab: Planos de Ação -- */}
-        <TabsContent value="planos" className="mt-4 space-y-4">
+        <TabsContent value="planos" forceMount className="mt-4 space-y-4 data-[state=inactive]:hidden">
           {/* Filters */}
           <Card>
             <CardContent className="p-4 flex flex-wrap gap-3 items-end">
@@ -685,7 +685,7 @@ export function GerenciaModule() {
         </TabsContent>
 
         {/* -- Tab: Visão por Setor -- */}
-        <TabsContent value="setores" className="mt-4">
+        <TabsContent value="setores" forceMount className="mt-4 data-[state=inactive]:hidden">
           <Tabs defaultValue="geral">
             <TabsList className="flex flex-wrap h-auto gap-1">
               <TabsTrigger value="geral" className="gap-1 text-xs sm:text-sm">
@@ -742,7 +742,7 @@ export function GerenciaModule() {
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="geral">
+            <TabsContent value="geral" forceMount className="data-[state=inactive]:hidden">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {resumoSetores.map(([setor, data]) => (
                   <Card
@@ -783,72 +783,72 @@ export function GerenciaModule() {
             </TabsContent>
 
 
-            <TabsContent value="faturamento">
+            <TabsContent value="faturamento" forceMount className="data-[state=inactive]:hidden">
               <DashboardFaturamento />
             </TabsContent>
 
-            <TabsContent value="indicadores-upa">
+            <TabsContent value="indicadores-upa" forceMount className="data-[state=inactive]:hidden">
               <IndicadoresUPA />
             </TabsContent>
 
-            <TabsContent value="indicadores-nsp">
+            <TabsContent value="indicadores-nsp" forceMount className="data-[state=inactive]:hidden">
               <IndicadoresNSP />
             </TabsContent>
 
-            <TabsContent value="qualidade">
+            <TabsContent value="qualidade" forceMount className="data-[state=inactive]:hidden">
               <DashboardConformidade />
             </TabsContent>
 
-            <TabsContent value="nir">
+            <TabsContent value="nir" forceMount className="data-[state=inactive]:hidden">
               <NirDashboardModule />
             </TabsContent>
 
-            <TabsContent value="capacitacao">
+            <TabsContent value="capacitacao" forceMount className="data-[state=inactive]:hidden">
               <DashboardIndicadores />
             </TabsContent>
 
-            <TabsContent value="seg-patrimonial">
+            <TabsContent value="seg-patrimonial" forceMount className="data-[state=inactive]:hidden">
               <SegurancaPatrimonialModule />
             </TabsContent>
 
-            <TabsContent value="seg-trabalho">
+            <TabsContent value="seg-trabalho" forceMount className="data-[state=inactive]:hidden">
               <SegurancaTrabalhoModule />
             </TabsContent>
 
-            <TabsContent value="incidentes">
+            <TabsContent value="incidentes" forceMount className="data-[state=inactive]:hidden">
               <DashboardIAIncidentes />
             </TabsContent>
 
-            <TabsContent value="rouparia">
+            <TabsContent value="rouparia" forceMount className="data-[state=inactive]:hidden">
               <RoupariaModule />
             </TabsContent>
 
-            <TabsContent value="restaurante">
+            <TabsContent value="restaurante" forceMount className="data-[state=inactive]:hidden">
               <RestauranteModule />
             </TabsContent>
 
-            <TabsContent value="fluxograma">
+            <TabsContent value="fluxograma" forceMount className="data-[state=inactive]:hidden">
               <FluxogramaSetores />
             </TabsContent>
           </Tabs>
         </TabsContent>
 
         {/* -- Tab: Lançamento de Notas -- */}
-        <TabsContent value="notas-fiscais" className="mt-4">
+        <TabsContent value="notas-fiscais" forceMount className="mt-4 data-[state=inactive]:hidden">
           <LancamentoNotas />
         </TabsContent>
 
         {/* -- Tab: DISC Liderança -- */}
-        <TabsContent value="disc" className="mt-4">
+        <TabsContent value="disc" forceMount className="mt-4 data-[state=inactive]:hidden">
           <DISCFormModule />
         </TabsContent>
 
         {/* -- Tab: Gestão de Talentos -- */}
-        <TabsContent value="talentos" className="mt-4">
+        <TabsContent value="talentos" forceMount className="mt-4 data-[state=inactive]:hidden">
           <GestaoTalentos />
         </TabsContent>
 
-        <TabsContent value="plano-desenvolvimento" className="mt-4">
+        <TabsContent value="plano-desenvolvimento" forceMount className="mt-4 data-[state=inactive]:hidden">
           <PlanoDesenvolvimentoSection />
         </TabsContent>
 

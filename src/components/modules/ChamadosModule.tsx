@@ -811,7 +811,7 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="chamados" className="space-y-4 mt-4">
+        <TabsContent value="chamados" forceMount className="space-y-4 mt-4 data-[state=inactive]:hidden">
           <Card>
             <CardContent className="pt-6">
               <div className="flex flex-col gap-4">
@@ -1000,7 +1000,7 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="dashboard" className="space-y-4 mt-4">
+        <TabsContent value="dashboard" forceMount className="space-y-4 mt-4 data-[state=inactive]:hidden">
           <Card>
             <CardHeader>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -1120,8 +1120,124 @@ export const ChamadosModule = ({ setor }: ChamadosModuleProps) => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="analitico" className="mt-4">
-          <ChamadosDashboard />
+        <TabsContent value="analitico" forceMount className="space-y-4 mt-4 data-[state=inactive]:hidden">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                  <CardTitle>Dashboard Analítico</CardTitle>
+                  <CardDescription>Visualização detalhada dos chamados</CardDescription>
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-[140px] justify-start text-left font-normal",
+                          !dashboardDataInicio && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dashboardDataInicio ? format(dashboardDataInicio, "dd/MM/yyyy") : "Data início"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dashboardDataInicio}
+                        onSelect={setDashboardDataInicio}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                        locale={ptBR}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={cn(
+                          "w-[140px] justify-start text-left font-normal",
+                          !dashboardDataFim && "text-muted-foreground"
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {dashboardDataFim ? format(dashboardDataFim, "dd/MM/yyyy") : "Data fim"}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0" align="start">
+                      <Calendar
+                        mode="single"
+                        selected={dashboardDataFim}
+                        onSelect={setDashboardDataFim}
+                        initialFocus
+                        className={cn("p-3 pointer-events-auto")}
+                        locale={ptBR}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {(dashboardDataInicio || dashboardDataFim) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setDashboardDataInicio(undefined);
+                        setDashboardDataFim(undefined);
+                      }}
+                    >
+                      Limpar
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {(() => {
+                const dashboardChamados = chamados.filter(c => {
+                  const dataAbertura = parseISO(c.data_abertura);
+                  if (dashboardDataInicio && isBefore(dataAbertura, startOfDay(dashboardDataInicio))) return false;
+                  if (dashboardDataFim && isAfter(dataAbertura, endOfDay(dashboardDataFim))) return false;
+                  return true;
+                });
+                return (
+                  <>
+                    <div className="mb-4 text-sm text-muted-foreground">
+                      Total de chamados no período: <span className="font-semibold text-foreground">{dashboardChamados.length}</span>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <h4 className="font-semibold mb-4">Por Prioridade</h4>
+                        {['urgente', 'alta', 'media', 'baixa'].map(prioridade => {
+                          const count = dashboardChamados.filter(c => c.prioridade === prioridade).length;
+                          return (
+                            <div key={prioridade} className="flex justify-between items-center p-2 border-b">
+                              <Badge className={prioridadeColors[prioridade]}>
+                                {prioridade.charAt(0).toUpperCase() + prioridade.slice(1)}
+                              </Badge>
+                              <span className="font-bold">{count}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div>
+                        <h4 className="font-semibold mb-4">Por Status</h4>
+                        {Object.entries(statusLabels).map(([status, label]) => {
+                          const count = dashboardChamados.filter(c => c.status === status).length;
+                          return (
+                            <div key={status} className="flex justify-between items-center p-2 border-b">
+                              <Badge className={statusColors[status]}>{label}</Badge>
+                              <span className="font-bold">{count}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </>
+                );
+              })()}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
