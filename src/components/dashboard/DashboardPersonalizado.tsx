@@ -374,126 +374,10 @@ const DashboardPersonalizado = React.memo(({ onNavigate }: { onNavigate?: (secti
     }
   };
 
-  const fetchStats = async () => {
-    if (!userId) return;
-    setLoading(true);
-    try {
-      const hojeStr = getBrasiliaDateString();
-      // Buscar todos os leitos ativos e ocupados (sem alta)
-      const { data: leitosData } = await supabase
-        .from("bed_records")
-        .select("id, bed_id, bed_number, sector, patient_name, motivo_alta, data_alta, created_at") as { data: any[] | null };
-
-      // Ocupação de leitos: leitos com paciente e sem alta
-      const leitosOcupados = (leitosData || []).filter(r => r.patient_name && !r.motivo_alta && !r.data_alta).length;
-      const totalLeitos = SECTORS.reduce((sum, s) => sum + s.beds.length + (s.extraBeds?.length || 0), 0);
-
-      // Pacientes ativos: pacientes únicos em leitos ocupados
-      const pacientesAtivos = Array.from(new Set((leitosData || [])
-        .filter(r => r.patient_name && !r.motivo_alta && !r.data_alta)
-        .map(r => r.patient_name))).length;
-
-      // Eficiência operacional: % de leitos ocupados
-      const eficienciaOperacional = totalLeitos > 0 ? Math.round((leitosOcupados / totalLeitos) * 100) : 0;
-
-      // Taxa de mortalidade: óbitos no mês atual / pacientes internados no mês
-      const mesAtual = hojeStr.slice(0, 7);
-      const obitosMes = (leitosData || []).filter((r: any) => r.data_obito && r.data_obito.startsWith(mesAtual)).length;
-      const internacoesMes = (leitosData || []).filter((r: any) => r.data_alta && r.data_alta.startsWith(mesAtual)).length;
-      const taxaMortalidade = internacoesMes > 0 ? Math.round((obitosMes / internacoesMes) * 100) : 0;
-
-      // Tendência de ocupação (últimos 14 dias)
-      // Para cada dia, calcular leitos ocupados naquele dia
-      const tendenciaOcupacao: { dia: string, ocupacao: number }[] = [];
-      for (let i = 13; i >= 0; i--) {
-        const dataRef = new Date();
-        dataRef.setDate(dataRef.getDate() - i);
-        const dataStr = dataRef.toISOString().slice(0, 10);
-        const ocupadosNoDia = (leitosData || []).filter(r => {
-          // Paciente estava internado neste dia
-          const dataEntrada = r.created_at ? r.created_at.slice(0, 10) : dataStr;
-          const dataAlta = r.data_alta ? r.data_alta.slice(0, 10) : null;
-          return dataEntrada <= dataStr && (!dataAlta || dataAlta > dataStr);
-        }).length;
-        tendenciaOcupacao.push({ dia: format(dataRef, "dd/MM"), ocupacao: ocupadosNoDia });
-      }
-
-      setStats(prev => ({
-        ...prev,
-        leitosOcupados,
-        totalLeitos,
-        pacientesAtivos,
-        eficienciaOperacional,
-        taxaMortalidade,
-        tendenciaOcupacao,
-      }));
-    } catch (error) {
-      // Error loading statistics handled silently
-    } finally {
-      setLoading(false);
-    }
-  };
+  // ...existing code...
 
   const fetchAuditLogs = async () => {
-    const { data } = await supabase
-      .from("logs_acesso")
-      .select("id, created_at, acao, modulo, user_id")
-      .order("created_at", { ascending: false })
-      .limit(10);
-    if (data) setAuditLogs(data as AuditLogEntry[]);
-  };
-
-  useEffect(() => {
-    if (userId) {
-      fetchStats();
-      fetchAuditLogs();
-      fetchRiskChart();
-      fetchOperationalSummary();
-    }
-  }, [userId, role]);
-
-  const occupancyRate = memoizedStats.totalLeitos > 0 ? Math.round((memoizedStats.leitosOcupados / memoizedStats.totalLeitos) * 100) : 0;
-
-  return (
-    <div className="space-y-6">
-      <BackgroundLoader />
-      {/* Section Title */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-foreground">Governança Hospitalar</h2>
-        <Button variant="outline" size="sm" onClick={() => { fetchStats(); fetchRiskChart(); fetchOperationalSummary(); }} disabled={loading}>
-          <RefreshCw className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`} />
-          Atualizar
-        </Button>
-      </div>
-
-      {/* Governance KPI Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <MemoKPICard
-          title="Leitos Ocupados"
-          value={`${occupancyRate}%`}
-          subtitle={`${memoizedStats.leitosOcupados}/${memoizedStats.totalLeitos} leitos`}
-          icon={BedDouble}
-          variant="primary"
-          loading={loading}
-          onClick={() => onNavigate?.("mapa-leitos")}
-        />
-        <KPICard
-          title="Incidentes Críticos (Hoje)"
-          value={String(stats.incidentesCriticos).padStart(2, "0")}
-          subtitle="NSP-triggered"
-          icon={AlertTriangle}
-          variant="destructive"
-          loading={loading}
-          onClick={() => onNavigate?.("qualidade")}
-        />
-        <KPICard
-          title="Chamados de Manutenção"
-          value={String(stats.chamadosManutencao).padStart(2, "0")}
-          subtitle={`${stats.chamadosPendentes} em andamento`}
-          icon={Wrench}
-          variant="warning"
-          loading={loading}
-          onClick={() => onNavigate?.("abrir-chamado")}
+    // ...existing code...
         />
         <KPICard
           title="Conformidade Dietas"
@@ -570,6 +454,4 @@ const DashboardPersonalizado = React.memo(({ onNavigate }: { onNavigate?: (secti
       {isAdmin && <MetricasSegurancaWidget />}
     </div>
   );
-}
-
-export default DashboardPersonalizado;
+// ...existing code...
