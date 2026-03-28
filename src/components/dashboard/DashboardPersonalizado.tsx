@@ -63,10 +63,9 @@ interface DashboardStats {
   incidentesCriticos: number;
   chamadosManutencao: number;
   conformidadeDietas: number;
-}
+};
 
-interface AuditLogEntry {
-  id: string;
+export default DashboardPersonalizado;
   created_at: string;
   acao: string;
   modulo: string;
