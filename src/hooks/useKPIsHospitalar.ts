@@ -251,6 +251,7 @@ export const useKPIsOperacionais = (periodoMeses: number = 3) => {
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 10 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 };
 
@@ -364,6 +365,7 @@ export const useKPIsFinanceiros = (periodoMeses: number = 3) => {
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 10 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 };
 
@@ -470,6 +472,7 @@ export const useKPIsQualidade = (periodoMeses: number = 3) => {
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 10 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 };
 
@@ -545,6 +548,7 @@ export const useKPIsRH = (periodoMeses: number = 3) => {
     },
     staleTime: 5 * 60 * 1000,
     refetchInterval: 10 * 60 * 1000,
+    placeholderData: (prev) => prev,
   });
 };
 
