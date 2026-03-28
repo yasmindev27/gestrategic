@@ -849,7 +849,7 @@ export const RestauranteModule = () => {
 
   // Exportar minhas solicitações para Excel
   const exportMinhasDietasToExcel = () => {
-    const dataToExport = minhasSolicitacoesFiltradas.map(s => ({
+    const dataToExport = todasDietasFiltradas.map(s => ({
       "Paciente": s.paciente_nome || "-",
       "Data Nascimento": s.paciente_data_nascimento ? format(new Date(s.paciente_data_nascimento + 'T00:00:00'), "dd/MM/yyyy") : "-",
       "Quarto/Leito": s.quarto_leito || "-",
@@ -882,8 +882,8 @@ export const RestauranteModule = () => {
     doc.text("Minhas Solicitações de Dieta", 14, 22);
     doc.setFontSize(11);
     doc.text(`Gerado em: ${format(new Date(), "dd/MM/yyyy HH:mm")}`, 14, 32);
-    doc.text(`Total: ${minhasSolicitacoesFiltradas.length} dietas`, 14, 40);
-    const tableData = minhasSolicitacoesFiltradas.map(s => [s.paciente_nome || "-", s.paciente_data_nascimento ? format(new Date(s.paciente_data_nascimento + 'T00:00:00'), "dd/MM/yyyy") : "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.tem_acompanhante ? "Sim" : "Não", format(new Date(s.data_inicio), "dd/MM/yyyy"), s.data_fim ? format(new Date(s.data_fim), "dd/MM/yyyy") : "-", format(new Date(s.created_at), "dd/MM/yyyy")]);
+    doc.text(`Total: ${todasDietasFiltradas.length} dietas`, 14, 40);
+    const tableData = todasDietasFiltradas.map(s => [s.paciente_nome || "-", s.paciente_data_nascimento ? format(new Date(s.paciente_data_nascimento + 'T00:00:00'), "dd/MM/yyyy") : "-", s.quarto_leito || "-", tipoDietaLabels[s.tipo_dieta] || s.tipo_dieta, s.tem_acompanhante ? "Sim" : "Não", format(new Date(s.data_inicio), "dd/MM/yyyy"), s.data_fim ? format(new Date(s.data_fim), "dd/MM/yyyy") : "-", format(new Date(s.created_at), "dd/MM/yyyy")]);
     autoTable(doc, {
       startY: 48,
       head: [["Paciente", "Data Nasc.", "Quarto/Leito", "Tipo", "Acomp.", "Data Início", "Data Fim", "Solicitado em"]],
@@ -1069,11 +1069,11 @@ export const RestauranteModule = () => {
                     </Button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button variant="outline" size="sm" onClick={exportMinhasDietasToExcel} disabled={minhasSolicitacoesFiltradas.length === 0}>
+                    <Button variant="outline" size="sm" onClick={exportMinhasDietasToExcel} disabled={todasDietasFiltradas.length === 0}>
                       <FileSpreadsheet className="h-4 w-4 mr-1" />
                       Excel
                     </Button>
-                    <Button variant="outline" size="sm" onClick={exportMinhasDietasToPDF} disabled={minhasSolicitacoesFiltradas.length === 0}>
+                    <Button variant="outline" size="sm" onClick={exportMinhasDietasToPDF} disabled={todasDietasFiltradas.length === 0}>
                       <FileDown className="h-4 w-4 mr-1" />
                       PDF
                     </Button>
@@ -1084,9 +1084,9 @@ export const RestauranteModule = () => {
             <CardContent>
               {isLoading ? <div className="flex items-center justify-center py-8">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                </div> : minhasSolicitacoesFiltradas.length === 0 ? <div className="text-center py-8 text-muted-foreground">
+                </div> : todasDietasFiltradas.length === 0 ? <div className="text-center py-8 text-muted-foreground">
                   <Salad className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>{minhasSolicitacoes.length === 0 ? "Você ainda não fez nenhuma solicitação de dieta." : "Nenhuma dieta encontrada para o período selecionado."}
+                  <p>{todasSolicitacoes.length === 0 ? "Nenhuma dieta cadastrada." : "Nenhuma dieta encontrada para o período selecionado."}
                   </p>
                 </div> : <Table>
                   <TableHeader>
@@ -1101,7 +1101,7 @@ export const RestauranteModule = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {minhasSolicitacoesFiltradas.map(s => <TableRow key={s.id}>
+                    {todasDietasFiltradas.map(s => <TableRow key={s.id}>
                         <TableCell>
                           <div>
                             <span className="font-medium">{s.paciente_nome || "N/A"}</span>
