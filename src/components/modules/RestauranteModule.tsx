@@ -825,23 +825,22 @@ export const RestauranteModule = () => {
     });
   };
 
-  // Filtrar minhas solicitações pelo período selecionado
-  // Filtro de "Hoje" compara apenas a data (YYYY-MM-DD), ignorando hora/fuso
-  const minhasSolicitacoesFiltradas = minhasSolicitacoes.filter(s => {
-    const hoje = format(new Date(), "yyyy-MM-dd");
-    const dataInicio = s.data_inicio ? s.data_inicio.slice(0, 10) : "";
+  // Filtrar solicitações de dieta pelo período selecionado, considerando todos os usuários e created_at
+  const hoje = format(new Date(), "yyyy-MM-dd");
+  const todasDietasFiltradas = todasSolicitacoes.filter(s => {
+    const dataCriacao = s.created_at ? s.created_at.slice(0, 10) : "";
     switch (minhasDietasFiltro) {
       case "dia":
-        return dataInicio === hoje;
+        return dataCriacao === hoje;
       case "semana": {
         const inicioSemana = startOfWeek(new Date(), { weekStartsOn: 0 });
         const fimSemana = endOfWeek(new Date(), { weekStartsOn: 0 });
-        return new Date(dataInicio) >= inicioSemana && new Date(dataInicio) <= fimSemana;
+        return new Date(dataCriacao) >= inicioSemana && new Date(dataCriacao) <= fimSemana;
       }
       case "mes": {
         const inicioMes = startOfMonth(new Date());
         const fimMes = endOfMonth(new Date());
-        return new Date(dataInicio) >= inicioMes && new Date(dataInicio) <= fimMes;
+        return new Date(dataCriacao) >= inicioMes && new Date(dataCriacao) <= fimMes;
       }
       default:
         return true;
