@@ -117,8 +117,9 @@ export const useUserRole = () => {
     // Initial load
     refresh();
 
-    // Keep in sync on login/logout
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
+    // Keep in sync on login/logout — ignore TOKEN_REFRESHED to avoid reloading the UI
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === "TOKEN_REFRESHED" || event === "INITIAL_SESSION") return;
       refresh();
     });
 
